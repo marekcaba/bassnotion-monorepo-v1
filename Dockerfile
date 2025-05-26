@@ -43,9 +43,12 @@ RUN echo "Checking node_modules structure..." && \
     node -e "console.log(require.resolve('@nestjs/common'))" || echo "Cannot resolve @nestjs/common"
 
 # Build the backend application using TypeScript project references
+# Set NODE_PATH to help TypeScript find modules from workspace root
+ENV NODE_PATH=/app/node_modules
 RUN echo "Building backend with TypeScript..." && \
     mkdir -p dist/apps/backend && \
-    npx tsc --build apps/backend/tsconfig.json --verbose
+    cd apps/backend && \
+    npx tsc --build tsconfig.json --verbose
 
 # Verify backend build output
 RUN ls -la dist/apps/backend/ || echo "Backend dist not found"
