@@ -105,4 +105,4 @@ ENV NODE_ENV=production
 EXPOSE 3000
 
 # Command to run the application
-CMD ["node", "dist/apps/backend/main.js"] 
+CMD ["node", "dist/apps/backend/src/main.js"] 
