@@ -23,7 +23,9 @@
     "production": {
       "variables": {
         "NODE_ENV": "production",
-        "PORT": "3000"
+        "PORT": "3000",
+        "SUPABASE_URL": "https://placeholder.supabase.co",
+        "SUPABASE_KEY": "placeholder-key-replace-with-real-values"
       }
     }
   }

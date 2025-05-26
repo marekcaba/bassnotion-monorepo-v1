@@ -27,11 +27,15 @@ export class DatabaseService implements OnModuleInit {
       const supabaseKey = this.configService.get<string>('SUPABASE_KEY');
 
       if (!supabaseUrl || !supabaseKey) {
-        this.logger.error('Missing Supabase configuration', {
-          hasUrl: !!supabaseUrl,
-          hasKey: !!supabaseKey
-        });
-        throw new Error('Missing Supabase configuration. Please check your .env file');
+        this.logger.warn(
+          'Missing Supabase configuration - running in limited mode',
+          {
+            hasUrl: !!supabaseUrl,
+            hasKey: !!supabaseKey,
+          },
+        );
+        // Don't throw error - allow app to start without Supabase for health checks
+        return;
       }
 
       this.supabase = createClient(supabaseUrl, supabaseKey);
@@ -44,11 +48,17 @@ export class DatabaseService implements OnModuleInit {
         }
         this.logger.debug('Supabase client initialized successfully');
       } catch (error) {
-        this.logger.error('Error during Supabase client initialization:', error);
+        this.logger.error(
+          'Error during Supabase client initialization:',
+          error,
+        );
         throw error;
       }
     } catch (error) {
-      this.logger.error('Fatal error in DatabaseService initialization:', error);
+      this.logger.error(
+        'Fatal error in DatabaseService initialization:',
+        error,
+      );
       throw error;
     }
   }

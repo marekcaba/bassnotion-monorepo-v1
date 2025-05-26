@@ -12,10 +12,11 @@ export class AppController {
   }
 
   @Get('api/health')
-  getHealth(): { status: string; timestamp: string } {
+  getHealth(): { status: string; timestamp: string; message: string } {
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
+      message: 'BassNotion Backend is running',
     };
   }
 }
