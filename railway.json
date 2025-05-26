@@ -25,7 +25,7 @@
         "PORT": "3000",
         "SUPABASE_URL": "https://placeholder.supabase.co",
         "SUPABASE_KEY": "placeholder-key-replace-with-real-values",
-        "DEPLOYMENT_TRIGGER": "remove-start-command-2025-05-26-22:10"
+        "DEPLOYMENT_TRIGGER": "extensive-debug-2025-05-26-22:15"
       }
     }
   }

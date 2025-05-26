@@ -53,5 +53,5 @@ ENV NODE_ENV=production
 # Expose port
 EXPOSE 3000
 
-# Start the application with debugging
-CMD ["sh", "-c", "echo 'Starting NestJS app...' && echo 'PORT=$PORT' && echo 'NODE_ENV=$NODE_ENV' && node dist/apps/backend/src/main.js"] 
+# Start the application with extensive debugging
+CMD ["sh", "-c", "echo '=== CONTAINER STARTUP DEBUG ===' && echo 'PWD:' && pwd && echo 'PORT=$PORT' && echo 'NODE_ENV=$NODE_ENV' && echo 'Checking if main.js exists:' && ls -la dist/apps/backend/src/main.js && echo 'Testing node version:' && node --version && echo 'Testing @nestjs/core import:' && node -e \"import('@nestjs/core').then(() => console.log('✅ @nestjs/core import SUCCESS')).catch(e => console.log('❌ @nestjs/core import FAILED:', e.message))\" && echo 'Starting NestJS application...' && node dist/apps/backend/src/main.js"] 
