@@ -5,7 +5,7 @@
   "projectType": "application",
   "targets": {
     "build": {
-      "executor": "@nx/vite:build",
+      "executor": "@nx/js:tsc",
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "dependsOn": ["@bassnotion/contracts:build"],
@@ -13,19 +13,13 @@
         "outputPath": "dist/apps/backend",
         "main": "apps/backend/src/main.ts",
         "tsConfig": "apps/backend/tsconfig.json",
-        "assets": ["apps/backend/src/assets"],
-        "generatePackageJson": false,
-        "target": "node20"
+        "assets": ["apps/backend/src/assets"]
       },
       "configurations": {
         "development": {
-          "mode": "development"
+          "sourceMap": true
         },
         "production": {
-          "mode": "production",
-          "optimization": false,
-          "extractLicenses": true,
-          "inspect": false,
           "sourceMap": false
         }
       }

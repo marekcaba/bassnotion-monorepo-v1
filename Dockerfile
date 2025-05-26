@@ -17,10 +17,22 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Build the shared contracts library first
-RUN npx nx build @bassnotion/contracts --configuration=production
+RUN npx nx build @bassnotion/contracts --configuration=production --verbose
 
-# Build the backend application
-RUN npx nx build @bassnotion/backend --configuration=production
+# Verify contracts build output
+RUN ls -la dist/libs/contracts/ || echo "Contracts dist not found"
+
+# Build the backend application with verbose logging
+RUN npx nx build @bassnotion/backend --configuration=production --verbose || {
+  echo "Backend build failed. Checking for more details..."
+  echo "Nx version:"
+  npx nx --version
+  echo "Available projects:"
+  npx nx show projects
+  echo "Backend project details:"
+  npx nx show project @bassnotion/backend
+  exit 1
+}
 
 # Stage 2: Production Runtime Image
 FROM node:20-alpine AS runner

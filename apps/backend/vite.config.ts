@@ -26,6 +26,7 @@ export default defineConfig({
         dir: path.join(projectRoot, 'dist/apps/backend'),
       },
       // Externalize NestJS and Node.js built-in modules to prevent them from being bundled
+      // Note: @bassnotion/contracts is NOT externalized so it gets bundled with the app
       external: [
         'node:*',
         '@nestjs/core',
@@ -43,7 +44,6 @@ export default defineConfig({
         '@fastify/view',
         'class-transformer',
         'class-validator',
-        '@bassnotion/contracts',
       ],
       treeshake: false, // Keep false for debugging, can enable later if needed
     },
