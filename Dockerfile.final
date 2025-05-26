@@ -1,98 +1,67 @@
-# Single-stage build - keeps all dependencies intact
-FROM node:20-alpine
+# Multi-stage build for BassNotion monorepo
+# Stage 1: Build stage
+FROM node:20-alpine AS builder
 
-# SINGLE STAGE BUILD - Force complete rebuild - timestamp: 2025-05-26-21:20
-ARG CACHE_BUST=2025-05-26-21:20-FIX-RUNTIME-DEPS
-
-# Set the working directory to /app
 WORKDIR /app
 
-# Copy pnpm-lock.yaml and package.json to leverage Docker caching for dependencies
+# Copy package files for dependency installation
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-
-# Copy workspace package.json files so pnpm knows what dependencies to install
 COPY apps/backend/package.json ./apps/backend/
 COPY libs/contracts/package.json ./libs/contracts/
 
-# Install pnpm
+# Install pnpm and all dependencies
 RUN npm install -g pnpm
+RUN pnpm install --frozen-lockfile
 
-# Install all monorepo dependencies, which will also set up workspace symlinks
-RUN pnpm install --frozen-lockfile --prod=false
-
-# Debug: Check what pnpm created in node_modules
-RUN echo "=== After pnpm install - checking node_modules ===" && \
-    ls -la node_modules/ | grep bassnotion || echo "No @bassnotion found in node_modules" && \
-    ls -la node_modules/@bassnotion/ || echo "No @bassnotion directory found"
-
-# Copy the rest of the monorepo source code AFTER dependencies are installed
+# Copy source code
 COPY . .
-
-# Debug: Verify our DatabaseService changes are present
-RUN echo "=== Checking DatabaseService for our fixes ===" && \
-    grep -n "running in limited mode" apps/backend/src/infrastructure/database/database.service.ts || echo "ERROR: Our fixes not found in DatabaseService!"
-
-# Debug: Check workspace structure after copying source
-RUN echo "=== After COPY - checking workspace structure ===" && \
-    ls -la libs/ && \
-    ls -la apps/ && \
-    cat pnpm-workspace.yaml
 
 # Create necessary directories for Nx
 RUN mkdir -p /app/tmp /app/.nx/cache
 
-# Set Nx environment variables for Docker
+# Set Nx environment variables
 ENV NX_DAEMON=false
 ENV NX_CACHE_DIRECTORY=/app/.nx/cache
 ENV NX_CLOUD_ACCESS_TOKEN=""
-ENV NX_SKIP_NX_CACHE=false
 
-# Ensure workspace symlinks are created (pnpm should have done this, but let's be explicit)
-RUN pnpm install --frozen-lockfile --prod=false
-
-# Debug: Final check of workspace symlinks before build
-RUN echo "=== Before build - final symlink check ===" && \
-    ls -la node_modules/@bassnotion/ || echo "Still no @bassnotion directory" && \
-    ls -la node_modules/@bassnotion/contracts || echo "Still no contracts symlink"
-
-# Build the shared contracts library first using Nx
+# Build contracts and backend
 RUN npx nx build contracts --configuration=production
+RUN npx nx build backend --configuration=production
 
-# Manually create workspace symlink since pnpm didn't create it automatically
+# Stage 2: Production runtime
+FROM node:20-alpine AS runtime
+
+WORKDIR /app
+
+# Copy package files for production dependency installation
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/backend/package.json ./apps/backend/
+COPY libs/contracts/package.json ./libs/contracts/
+
+# Install pnpm and all dependencies (including dev deps for safety)
+RUN npm install -g pnpm
+RUN pnpm install --frozen-lockfile
+
+# Copy built application from builder stage
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/libs/contracts/dist ./libs/contracts/dist
+
+# Create workspace symlink for contracts
 RUN mkdir -p node_modules/@bassnotion && \
     ln -sf /app/libs/contracts node_modules/@bassnotion/contracts
 
-# Verify contracts build output and workspace linking
-RUN echo "=== Contracts build verification ===" && \
-    ls -la libs/contracts/dist/ && \
-    echo "=== Checking workspace symlink ===" && \
-    ls -la node_modules/@bassnotion/contracts && \
-    echo "=== Checking contracts package.json ===" && \
-    cat libs/contracts/package.json && \
-    echo "=== Checking if contracts types are accessible ===" && \
-    cat libs/contracts/dist/src/index.d.ts
-
-# Build the backend application using Nx from monorepo root
-# Nx handles the monorepo context and module resolution correctly
-RUN npx nx build backend --configuration=production
-
-# Verify backend build output
-RUN ls -la dist/apps/backend/ || echo "Backend dist not found"
-
-# Ensure all production dependencies are available for runtime
-# This is critical for NestJS apps that use imports at runtime
-RUN echo "=== Installing production dependencies ===" && \
-    pnpm install --frozen-lockfile --prod=false && \
-    echo "=== Verifying @nestjs/core is available ===" && \
-    ls -la node_modules/@nestjs/core || echo "ERROR: @nestjs/core not found!" && \
-    echo "=== Checking all @nestjs packages ===" && \
-    ls -la node_modules/@nestjs/ || echo "ERROR: No @nestjs packages found!"
+# Debug: Verify dependencies are available
+RUN echo "=== Production Dependencies Check ===" && \
+    ls -la node_modules/@nestjs/ && \
+    ls -la node_modules/@nestjs/core && \
+    echo "=== Contracts Check ===" && \
+    ls -la node_modules/@bassnotion/contracts
 
 # Environment variables
 ENV NODE_ENV=production
 
-# Expose the port your NestJS app listens on
+# Expose port
 EXPOSE 3000
 
-# Command to run the NestJS application (single-stage build keeps all dependencies intact)
+# Start the application
 CMD ["node", "dist/apps/backend/src/main.js"] 
