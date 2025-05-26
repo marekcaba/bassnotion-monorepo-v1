@@ -1,0 +1,20 @@
+{
+  "name": "@bassnotion/contracts",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/source.js",
+  "types": "./dist/source.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/source.js",
+      "types": "./dist/source.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "5.3.3"
+  }
+}

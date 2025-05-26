@@ -1,0 +1,112 @@
+---
+description: Standardized import rules for the BassNotion TypeScript monorepo. These rules are critical for maintaining consistent code style and ensuring proper compilation with NodeNext module resolution.
+globs: 
+alwaysApply: false
+---
+# Import Rules for BassNotion Project
+
+## Overview
+
+This document defines the rules for managing imports in the BassNotion monorepo project. These rules are designed to work with our TypeScript configuration using `NodeNext` module resolution.
+
+Key Rules:
+  1. Relative imports (./ or ../) MUST include .js extension
+  2. Alias imports (@/ or @bassnotion/) MUST NOT include .js extension
+  3. Package imports (node_modules) NEVER use extensions
+
+## Import Rules
+
+### 1. Relative Imports (starting with `.` or `..`)
+
+```typescript
+// ALWAYS add .js extension, even when importing .ts files
+import { AuthController } from './auth.controller.js';
+import { UserService } from '../services/user.service.js';
+import { types } from './types/index.js';
+```
+
+**Why?** With `NodeNext` module resolution, Node.js requires explicit file extensions for relative imports. TypeScript will handle the compilation correctly, replacing `.ts` with `.js` in the output.
+
+### 2. Absolute Imports (using aliases)
+
+```typescript
+// NEVER add .js extension for aliased imports
+import { AuthUser } from '@/domains/user/auth/types/auth.types';
+import { User } from '@bassnotion/contracts';
+```
+
+**Why?** These imports are resolved through TypeScript's path mapping configuration, which handles the file resolution differently from relative imports.
+
+### 3. Package Imports (from node_modules)
+
+```typescript
+// NEVER add extensions for package imports
+import { Injectable } from '@nestjs/common';
+import { createClient } from '@supabase/supabase-js';
+```
+
+## Common Patterns
+
+### ✅ Correct Examples
+
+```typescript
+// Relative imports
+import { UserEntity } from './user.entity.js';
+import { AuthService } from '../auth/auth.service.js';
+import { EmailValidator } from '../../validators/email.validator.js';
+
+// Absolute imports (with aliases)
+import { DatabaseService } from '@/infrastructure/database/database.service';
+import { UserTypes } from '@bassnotion/contracts';
+
+// Package imports
+import { Module } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+```
+
+### ❌ Incorrect Examples
+
+```typescript
+// Don't omit .js for relative imports
+import { UserEntity } from './user.entity';           // ❌
+import { AuthService } from '../auth/auth.service';   // ❌
+
+// Don't add .js for aliased imports
+import { DatabaseService } from '@/infrastructure/database/database.service.js';  // ❌
+import { UserTypes } from '@bassnotion/contracts.js';  // ❌
+```
+
+## TypeScript Configuration
+
+These rules work in conjunction with the following TypeScript configuration:
+
+```json
+{
+  "compilerOptions": {
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext",
+    // ... other options
+  }
+}
+```
+
+## IDE Support
+
+### VS Code / Cursor
+- Configure your IDE to automatically add `.js` extensions for relative imports
+- Use the TypeScript import organizer with these rules in mind
+
+## Migration Guide
+
+When migrating existing files:
+1. Add `.js` extension to all relative imports
+2. Remove `.js` extension from all aliased imports
+3. Keep package imports unchanged
+4. Run TypeScript compiler to verify changes
+
+## Questions & Support
+
+If you encounter any issues with imports or need clarification about these rules, please:
+1. Check the TypeScript configuration
+2. Verify the import type (relative vs aliased vs package)
+3. Contact the team lead if issues persist 

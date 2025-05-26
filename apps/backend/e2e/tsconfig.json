@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "outDir": "../dist/e2e",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../src/*"],
+      "@backend/*": ["../src/*"],
+      "@test/*": ["../test/*"],
+      "@e2e/*": ["./*"],
+      "@bassnotion/contracts": ["../../contracts/src/types"]
+    },
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "sourceMap": true
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.spec.ts",
+    "**/*.e2e-spec.ts",
+    "factories/**/*.ts",
+    "migrations/**/*.ts",
+    "mocks/**/*.ts",
+    "specs/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

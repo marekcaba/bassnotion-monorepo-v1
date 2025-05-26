@@ -1,0 +1,35 @@
+{
+  "name": "frontend-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/frontend-e2e/src",
+  "projectType": "application",
+  "targets": {
+    "e2e": {
+      "executor": "@nx/playwright:playwright",
+      "outputs": ["{workspaceRoot}/dist/apps/frontend-e2e"],
+      "options": {
+        "config": "apps/frontend-e2e/playwright.config.ts"
+      },
+      "configurations": {
+        "production": {
+          "config": "apps/frontend-e2e/playwright.config.ts"
+        }
+      }
+    },
+    "e2e-ci": {
+      "executor": "@nx/playwright:playwright",
+      "options": {
+        "config": "apps/frontend-e2e/playwright.config.ts"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/frontend-e2e/**/*.{js,ts}"]
+      }
+    }
+  },
+  "tags": [],
+  "implicitDependencies": ["@bassnotion/frontend"]
+} 

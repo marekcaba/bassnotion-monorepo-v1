@@ -1,0 +1,117 @@
+{
+  "name": "@bassnotion/backend",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/backend",
+        "main": "apps/backend/src/main.ts",
+        "tsConfig": "apps/backend/tsconfig.json",
+        "assets": ["apps/backend/src/assets"],
+        "generatePackageJson": false,
+        "target": "node20"
+      },
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production",
+          "optimization": true,
+          "extractLicenses": true,
+          "inspect": false,
+          "sourceMap": false
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "options": {
+        "buildTarget": "@bassnotion/backend:build",
+        "watch": true,
+        "port": 3000
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "@bassnotion/backend:build:development"
+        },
+        "production": {
+          "buildTarget": "@bassnotion/backend:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/backend/**/*.ts"]
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prettier --write \"apps/backend/src/**/*.ts\" \"apps/backend/test/**/*.ts\"",
+        "cwd": "."
+      }
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "outputs": ["{options.reportsDirectory}"],
+      "options": {
+        "config": "apps/backend/vitest.config.ts",
+        "reportsDirectory": "../../coverage/apps/backend",
+        "tsConfig": "apps/backend/tsconfig.spec.json"
+      }
+    },
+    "test:watch": {
+      "executor": "@nx/vite:test",
+      "options": {
+        "config": "apps/backend/vitest.config.ts",
+        "watch": true,
+        "tsConfig": "apps/backend/tsconfig.spec.json"
+      }
+    },
+    "test:cov": {
+      "executor": "@nx/vite:test",
+      "outputs": ["{options.reportsDirectory}"],
+      "options": {
+        "config": "apps/backend/vitest.config.ts",
+        "reportsDirectory": "../../coverage/apps/backend",
+        "coverage": true,
+        "tsConfig": "apps/backend/tsconfig.spec.json"
+      }
+    },
+    "test:debug": {
+      "executor": "@nx/vite:test",
+      "options": {
+        "config": "apps/backend/vitest.config.ts",
+        "inspect": true,
+        "threads": false,
+        "logHeapUsage": true,
+        "tsConfig": "apps/backend/tsconfig.spec.json"
+      }
+    },
+    "test:e2e": {
+      "executor": "@nx/vite:test",
+      "options": {
+        "config": "apps/backend/vitest.config.e2e.ts",
+        "reportsDirectory": "../../coverage/apps/backend-e2e",
+        "tsConfig": "apps/backend/tsconfig.spec.json"
+      }
+    },
+    "test:integration": {
+      "executor": "@nx/vite:test",
+      "options": {
+        "config": "apps/backend/vitest.config.ts",
+        "include": ["**/*.integration.spec.ts"],
+        "tsConfig": "apps/backend/tsconfig.spec.json"
+      }
+    }
+  },
+  "tags": []
+}

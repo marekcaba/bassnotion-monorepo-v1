@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "types": [
+      "node",
+      "vitest",
+      "@nestjs/common",
+      "@nestjs/core",
+      "@nestjs/testing",
+      "@nestjs/config"
+    ],
+    "moduleResolution": "node",
+    "esModuleInterop": true
+  },
+  "include": ["src/**/*", "test/**/*", "e2e/**/*", "vitest.*.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}

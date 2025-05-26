@@ -1,0 +1,63 @@
+{
+  "root": true,
+  "ignorePatterns": [
+    "**/node_modules/*",
+    "**/dist/*",
+    "**/coverage/*",
+    "**/.nx/*"
+  ],
+  "plugins": ["@nx", "@typescript-eslint", "prettier"],
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+      "rules": {
+        "@nx/enforce-module-boundaries": [
+          "error",
+          {
+            "enforceBuildableLibDependency": true,
+            "allow": [],
+            "depConstraints": [
+              {
+                "sourceTag": "*",
+                "onlyDependOnLibsWithTags": ["*"]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["*.ts", "*.tsx"],
+      "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@nx/typescript",
+        "prettier"
+      ],
+      "parserOptions": {
+        "project": ["./tsconfig.json", "./apps/*/tsconfig.json"]
+      },
+      "rules": {
+        "prettier/prettier": "error",
+        "@typescript-eslint/interface-name-prefix": "off",
+        "@typescript-eslint/explicit-function-return-type": "off",
+        "@typescript-eslint/explicit-module-boundary-types": "off",
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    },
+    {
+      "files": ["*.js", "*.jsx"],
+      "extends": ["eslint:recommended", "plugin:@nx/javascript", "prettier"],
+      "rules": {
+        "prettier/prettier": "error"
+      }
+    },
+    {
+      "files": ["*.json"],
+      "parser": "jsonc-eslint-parser",
+      "rules": {
+        "@nx/dependency-checks": "error"
+      }
+    }
+  ]
+}

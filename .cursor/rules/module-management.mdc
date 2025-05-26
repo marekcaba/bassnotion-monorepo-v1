@@ -1,0 +1,262 @@
+---
+description: Standardized rules for build configuration and module management within the BassNotion monorepo
+globs: 
+alwaysApply: false
+---
+# BassNotion Monorepo Build & Module Rules
+
+This document defines the standardized rules for build configuration and module management within the BassNotion monorepo. These rules are mandatory for all new development and should be applied when modifying existing code.
+
+## Core Technologies
+
+- **Module System**: ES Modules (ESM)
+- **Build Tool**: Vite
+- **Package Manager**: pnpm
+- **Framework**: NestJS (backend), Next.js (frontend)
+- **Language**: TypeScript
+
+## 1. Module System Configuration
+
+### 1.1 Package.json Configuration
+
+All `package.json` files must include:
+
+```json
+{
+  "type": "module"
+}
+```
+
+This should be set:
+- In the root `package.json` (preferred)
+- Or in individual project `package.json` files if different module systems are needed
+
+### 1.2 Import/Export Syntax
+
+✅ **Required**:
+```typescript
+import { Something } from './something.js';
+export const MyThing = {};
+```
+
+❌ **Forbidden**:
+```typescript
+const something = require('./something');
+module.exports = MyThing;
+```
+
+## 2. Build Configuration
+
+### 2.1 NX Project Configuration
+
+Each project's `project.json` must use Vite as the build executor:
+
+```json
+{
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/[project-name]",
+        "main": "apps/[project-name]/src/main.ts",
+        "tsConfig": "apps/[project-name]/tsconfig.app.json",
+        "assets": ["apps/[project-name]/src/assets"],
+        "generatePackageJson": true,
+        "target": "node"
+      }
+    }
+  }
+}
+```
+
+### 2.2 Vite Configuration
+
+Each project requiring build must have a `vite.config.ts`:
+
+```typescript
+import { defineConfig } from 'vite';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
+
+export default defineConfig({
+  build: {
+    target: 'esnext',
+    rollupOptions: {
+      external: [
+        // Node.js built-ins
+        'node:*',
+        // Common packages that should not be bundled
+        '@nestjs/core',
+        '@nestjs/common',
+        '@nestjs/platform-express',
+        'rxjs',
+        'reflect-metadata'
+      ]
+    }
+  },
+  plugins: [
+    // Add necessary plugins
+  ]
+});
+```
+
+## 3. TypeScript Configuration
+
+### 3.1 Base Configuration
+
+Root `tsconfig.base.json` should include:
+
+```json
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "NodeNext",
+    "moduleResolution": "bundler",
+    "lib": ["es2022"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      // Define your path aliases here
+    }
+  }
+}
+```
+
+### 3.2 Project-specific Configuration
+
+Each project's `tsconfig.json` should extend the base config:
+
+```json
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../dist/out-tsc",
+    "declaration": true,
+    "types": ["node"],
+    "allowJs": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "tmp"]
+}
+```
+
+For NestJS projects, add:
+```json
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  }
+}
+```
+
+## 4. Dependencies Management
+
+### 4.1 External Dependencies
+
+- CommonJS-only dependencies must be properly externalized in Vite configuration
+- Node.js built-in modules should always be externalized
+- Heavy runtime dependencies should be externalized
+
+### 4.2 Version Management
+
+- All dependencies must be declared with exact versions or appropriate version ranges
+- Peer dependencies should use compatible version ranges
+- Development dependencies should be in devDependencies
+
+## 5. Testing Configuration
+
+### 5.1 Vitest Configuration
+
+Use Vitest for all testing:
+
+```json
+{
+  "targets": {
+    "test": {
+      "executor": "@nx/vite:test",
+      "outputs": ["{options.reportsDirectory}"],
+      "options": {
+        "config": "apps/[project-name]/vitest.config.ts",
+        "reportsDirectory": "../../coverage/apps/[project-name]"
+      }
+    }
+  }
+}
+```
+
+## 6. Code Organization
+
+### 6.1 File Extensions
+
+- Use `.ts` for TypeScript files
+- Use `.js` in import statements (even for TypeScript files)
+- Use `.jsx` or `.tsx` for React components
+
+### 6.2 Import Organization
+
+1. External dependencies
+2. Internal shared modules
+3. Local modules
+4. Types and interfaces
+5. Assets and styles
+
+Example:
+```typescript
+// 1. External dependencies
+import { Injectable } from '@nestjs/common';
+import { Observable } from 'rxjs';
+
+// 2. Internal shared modules
+import { SharedService } from '@shared/services';
+
+// 3. Local modules
+import { LocalUtil } from './utils';
+
+// 4. Types and interfaces
+import type { MyType } from './types';
+
+// 5. Assets and styles
+import styles from './styles.module.css';
+```
+
+## 7. Migration Guide
+
+When migrating existing code to comply with these rules:
+
+1. Add `"type": "module"` to package.json
+2. Update build executor to Vite
+3. Update TypeScript configuration
+4. Convert require/exports to import/export
+5. Update import paths to include file extensions
+6. Update test configuration to use Vitest
+
+## 8. Enforcement
+
+These rules are enforced through:
+
+- ESLint configuration
+- TypeScript compiler options
+- NX project configuration
+- CI/CD pipeline checks
+- Code review guidelines
+
+## 9. Exceptions
+
+Exceptions to these rules must be:
+
+1. Documented in the project's README
+2. Approved by the technical lead
+3. Accompanied by a clear justification
+4. Time-boxed with a plan to conform to the rules 

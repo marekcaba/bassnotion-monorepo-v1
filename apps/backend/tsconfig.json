@@ -1,0 +1,39 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../dist/out-tsc",
+    "target": "es2021",
+    "lib": ["es2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": "../..",
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "typeRoots": ["node_modules/@types", "src/types"],
+    "types": ["node"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "incremental": true,
+    "composite": true
+  },
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "e2e/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "vitest.*.config.ts"
+  ],
+  "references": [
+    {
+      "path": "../../libs/contracts"
+    }
+  ]
+}

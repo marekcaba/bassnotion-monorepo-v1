@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "Node16",
+    "moduleResolution": "NodeNext",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@test/*": ["test/*"],
+      "@e2e/*": ["e2e/*"]
+    },
+    "types": ["node", "vitest"],
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true
+  },
+  "include": ["src/**/*", "test/**/*", "e2e/**/*", "vitest.e2e.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,6 +1,19 @@
 {
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
+  "compilerOptions": {
+    "baseUrl": "."
+  },
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./libs/contracts"
+    },
+    {
+      "path": "./apps/backend"
+    },
+    {
+      "path": "./apps/frontend-e2e"
+    }
+  ]
 }
