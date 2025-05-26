@@ -8,6 +8,7 @@
       "executor": "@nx/vite:build",
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
+      "dependsOn": ["@bassnotion/contracts:build"],
       "options": {
         "outputPath": "dist/apps/backend",
         "main": "apps/backend/src/main.ts",
