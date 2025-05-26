@@ -1,4 +1,4 @@
-import type { User } from '@bassnotion/contracts' with { "resolution-mode": "require" };
+import type { User } from '@bassnotion/contracts';
 import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { AuthError as SupabaseAuthError } from '@supabase/supabase-js';
 
