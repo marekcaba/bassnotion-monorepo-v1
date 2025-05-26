@@ -40,7 +40,21 @@ COPY libs/contracts/package.json ./libs/contracts/
 
 # Install pnpm and all dependencies (including dev deps for safety)
 RUN npm install -g pnpm
+
+# Debug: Check what package files we have
+RUN echo "=== Package files check ===" && \
+    ls -la package.json && \
+    ls -la apps/backend/package.json && \
+    ls -la libs/contracts/package.json
+
+# Install dependencies
 RUN pnpm install --frozen-lockfile
+
+# Debug: Check if dependencies were installed
+RUN echo "=== After pnpm install ===" && \
+    ls -la node_modules/ | head -20 && \
+    echo "=== Checking for @nestjs ===" && \
+    ls -la node_modules/@nestjs/ || echo "No @nestjs found"
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
@@ -52,10 +66,12 @@ RUN mkdir -p node_modules/@bassnotion && \
 
 # Debug: Verify dependencies are available
 RUN echo "=== Production Dependencies Check ===" && \
-    ls -la node_modules/@nestjs/ && \
-    ls -la node_modules/@nestjs/core && \
+    ls -la node_modules/@nestjs/ || echo "No @nestjs directory found" && \
+    ls -la node_modules/@nestjs/core || echo "No @nestjs/core found" && \
     echo "=== Contracts Check ===" && \
-    ls -la node_modules/@bassnotion/contracts
+    ls -la node_modules/@bassnotion/contracts || echo "No contracts symlink found" && \
+    echo "=== Full node_modules listing ===" && \
+    ls -la node_modules/ | head -30
 
 # Environment variables
 ENV NODE_ENV=production
