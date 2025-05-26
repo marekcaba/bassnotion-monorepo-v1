@@ -37,13 +37,13 @@ RUN npx nx build contracts --configuration=production
 
 # Verify contracts build output and workspace linking
 RUN echo "=== Contracts build verification ===" && \
-    ls -la dist/libs/contracts/ && \
+    ls -la libs/contracts/dist/ && \
     echo "=== Checking workspace symlink ===" && \
     ls -la node_modules/@bassnotion/contracts && \
     echo "=== Checking contracts package.json ===" && \
     cat libs/contracts/package.json && \
     echo "=== Checking if contracts types are accessible ===" && \
-    cat dist/libs/contracts/index.d.ts
+    cat libs/contracts/dist/src/index.d.ts
 
 # Build the backend application using Nx from monorepo root
 # Nx handles the monorepo context and module resolution correctly
