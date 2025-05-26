@@ -7,7 +7,9 @@
       "apps/backend/**",
       "libs/**",
       "package.json",
-      "pnpm-lock.yaml"
+      "pnpm-lock.yaml",
+      "build.sh",
+      "railway.json"
     ]
   },
   "deploy": {
