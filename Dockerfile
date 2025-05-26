@@ -16,11 +16,23 @@ RUN pnpm install --frozen-lockfile
 # Copy the rest of the monorepo source code
 COPY . .
 
-# Build the shared contracts library first
-RUN npx nx build @bassnotion/contracts --configuration=production --verbose
+# Create necessary directories for Nx
+RUN mkdir -p /app/tmp /app/.nx/cache
+
+# Set Nx environment variables for Docker
+ENV NX_DAEMON=false
+ENV NX_CACHE_DIRECTORY=/app/.nx/cache
+ENV NX_CLOUD_ACCESS_TOKEN=""
+ENV NX_REJECT_UNKNOWN_LOCAL_CACHE=0
+ENV NX_SKIP_NX_CACHE=false
+
+# Build the shared contracts library first using direct TypeScript compilation
+WORKDIR /app/libs/contracts
+RUN pnpm build
+WORKDIR /app
 
 # Verify contracts build output
-RUN ls -la dist/libs/contracts/ || echo "Contracts dist not found"
+RUN ls -la libs/contracts/dist/ || echo "Contracts dist not found"
 
 # Build the backend application with verbose logging
 RUN npx nx build @bassnotion/backend --configuration=production --verbose || \
@@ -54,7 +66,7 @@ RUN pnpm install --frozen-lockfile --prod
 COPY --from=builder /app/dist/apps/backend ./dist/apps/backend
 
 # Copy the built contracts library (needed for runtime imports)
-COPY --from=builder /app/dist/libs/contracts ./dist/libs/contracts
+COPY --from=builder /app/libs/contracts/dist ./libs/contracts/dist
 
 # Environment variables
 ENV NODE_ENV=production
