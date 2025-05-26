@@ -11,16 +11,16 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Copy workspace package.json files so pnpm knows what dependencies to install
-COPY apps/backend/package.json ./apps/backend/package.json
-COPY libs/contracts/package.json ./libs/contracts/package.json
+COPY apps/backend/package.json ./apps/backend/
+COPY libs/contracts/package.json ./libs/contracts/
 
 # Install pnpm
 RUN npm install -g pnpm
 
 # Install all monorepo dependencies, which will also set up workspace symlinks
-RUN pnpm install --frozen-lockfile --ignore-scripts
+RUN pnpm install --frozen-lockfile
 
-# Copy the rest of the monorepo source code
+# Copy the rest of the monorepo source code AFTER dependencies are installed
 COPY . .
 
 # Create necessary directories for Nx
@@ -35,18 +35,15 @@ ENV NX_SKIP_NX_CACHE=false
 # Build the shared contracts library first using Nx
 RUN npx nx build contracts --configuration=production
 
-# Explicitly link workspace dependencies after build
-RUN pnpm install --frozen-lockfile
-
 # Verify contracts build output and workspace linking
 RUN echo "=== Contracts build verification ===" && \
-    ls -la libs/contracts/dist/ && \
+    ls -la dist/libs/contracts/ && \
     echo "=== Checking workspace symlink ===" && \
     ls -la node_modules/@bassnotion/contracts && \
     echo "=== Checking contracts package.json ===" && \
     cat libs/contracts/package.json && \
     echo "=== Checking if contracts types are accessible ===" && \
-    cat libs/contracts/dist/src/index.d.ts
+    cat dist/libs/contracts/index.d.ts
 
 # Build the backend application using Nx from monorepo root
 # Nx handles the monorepo context and module resolution correctly
