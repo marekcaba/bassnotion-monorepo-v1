@@ -12,7 +12,16 @@ COPY libs/contracts/package.json ./libs/contracts/
 RUN npm install -g pnpm
 
 # Install ALL dependencies in workspace context
-RUN pnpm install --frozen-lockfile
+RUN echo "=== Before pnpm install ===" && \
+    cat pnpm-workspace.yaml && \
+    echo "=== Backend package.json ===" && \
+    cat apps/backend/package.json && \
+    echo "=== Running pnpm install ===" && \
+    pnpm install --frozen-lockfile && \
+    echo "=== After pnpm install - checking node_modules ===" && \
+    ls -la node_modules/ | grep -E "(@nestjs|@bassnotion)" || echo "No @nestjs or @bassnotion found" && \
+    echo "=== Checking if backend deps are in .pnpm store ===" && \
+    find node_modules/.pnpm -name "*nestjs*" | head -10 || echo "No nestjs in .pnpm store"
 
 # Copy source code
 COPY . .
@@ -31,11 +40,14 @@ RUN npx nx build backend --configuration=production
 
 # Verify that @nestjs packages are available (this should work now)
 RUN echo "=== Final Dependency Verification ===" && \
-    ls -la node_modules/@nestjs/ && \
-    ls -la node_modules/@nestjs/core && \
+    ls -la node_modules/@nestjs/ || echo "No @nestjs directory found" && \
+    ls -la node_modules/@nestjs/core || echo "No @nestjs/core found" && \
     echo "=== Built Application Check ===" && \
     ls -la dist/apps/backend/src/ && \
-    echo "=== SUCCESS: All dependencies available ===" 
+    echo "=== Full node_modules listing ===" && \
+    ls -la node_modules/ | head -20 && \
+    echo "=== Checking .pnpm store for nestjs ===" && \
+    find node_modules/.pnpm -name "*nestjs*" | head -5 || echo "No nestjs in .pnpm store" 
 
 # Environment variables
 ENV NODE_ENV=production
