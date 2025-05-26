@@ -11,7 +11,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN npm install -g pnpm
 
 # Install all monorepo dependencies, which will also set up workspace symlinks
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Copy the rest of the monorepo source code
 COPY . .
@@ -26,29 +26,15 @@ ENV NX_CLOUD_ACCESS_TOKEN=""
 ENV NX_REJECT_UNKNOWN_LOCAL_CACHE=0
 ENV NX_SKIP_NX_CACHE=false
 
-# Build the shared contracts library first using direct TypeScript compilation
-WORKDIR /app/libs/contracts
-RUN pnpm build
-WORKDIR /app
+# Build the shared contracts library first using Nx
+RUN npx nx build contracts --configuration=production
 
 # Verify contracts build output
 RUN ls -la libs/contracts/dist/ || echo "Contracts dist not found"
 
-# Debug: Check if dependencies are accessible
-RUN echo "Checking node_modules structure..." && \
-    ls -la node_modules/@nestjs/ | head -10 && \
-    echo "Checking backend node_modules..." && \
-    ls -la apps/backend/node_modules/ 2>/dev/null || echo "No backend node_modules" && \
-    echo "Checking if TypeScript can find @nestjs/common..." && \
-    node -e "console.log(require.resolve('@nestjs/common'))" || echo "Cannot resolve @nestjs/common"
-
-# Build the backend application using TypeScript project references
-# Set NODE_PATH to help TypeScript find modules from workspace root
-ENV NODE_PATH=/app/node_modules
-RUN echo "Building backend with TypeScript..." && \
-    mkdir -p dist/apps/backend && \
-    cd apps/backend && \
-    npx tsc --build tsconfig.json --verbose
+# Build the backend application using Nx from monorepo root
+# Nx handles the monorepo context and module resolution correctly
+RUN npx nx build backend --configuration=production
 
 # Verify backend build output
 RUN ls -la dist/apps/backend/ || echo "Backend dist not found"
