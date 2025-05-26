@@ -1,6 +1,5 @@
-# Multi-stage build for BassNotion monorepo
-# Stage 1: Build stage
-FROM node:20-alpine AS builder
+# Single-stage build for BassNotion monorepo - ensures all dependencies are available
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -9,8 +8,10 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/backend/package.json ./apps/backend/
 COPY libs/contracts/package.json ./libs/contracts/
 
-# Install pnpm and all dependencies
+# Install pnpm
 RUN npm install -g pnpm
+
+# Install ALL dependencies in workspace context
 RUN pnpm install --frozen-lockfile
 
 # Copy source code
@@ -28,53 +29,13 @@ ENV NX_CLOUD_ACCESS_TOKEN=""
 RUN npx nx build contracts --configuration=production
 RUN npx nx build backend --configuration=production
 
-# Stage 2: Production runtime
-FROM node:20-alpine AS runtime
-
-WORKDIR /app
-
-# Copy package files for production dependency installation
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/backend/package.json ./apps/backend/
-COPY libs/contracts/package.json ./libs/contracts/
-
-# Install pnpm and all dependencies (including dev deps for safety)
-RUN npm install -g pnpm
-
-# Debug: Check what package files we have
-RUN echo "=== Package files check ===" && \
-    ls -la package.json && \
-    ls -la apps/backend/package.json && \
-    ls -la libs/contracts/package.json
-
-# Install dependencies - use --filter to ensure backend deps are installed
-RUN pnpm install --frozen-lockfile
-RUN pnpm install --frozen-lockfile --filter @bassnotion/backend
-
-# Debug: Check if dependencies were installed
-RUN echo "=== After pnpm install ===" && \
-    ls -la node_modules/ | head -20 && \
-    echo "=== Checking for @nestjs ===" && \
-    ls -la node_modules/@nestjs/ || echo "No @nestjs found" && \
-    echo "=== Checking backend-specific deps ===" && \
-    ls -la node_modules/@nestjs/core || echo "No @nestjs/core found"
-
-# Copy built application from builder stage
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/libs/contracts/dist ./libs/contracts/dist
-
-# Create workspace symlink for contracts
-RUN mkdir -p node_modules/@bassnotion && \
-    ln -sf /app/libs/contracts node_modules/@bassnotion/contracts
-
-# Debug: Verify dependencies are available
-RUN echo "=== Production Dependencies Check ===" && \
-    ls -la node_modules/@nestjs/ || echo "No @nestjs directory found" && \
-    ls -la node_modules/@nestjs/core || echo "No @nestjs/core found" && \
-    echo "=== Contracts Check ===" && \
-    ls -la node_modules/@bassnotion/contracts || echo "No contracts symlink found" && \
-    echo "=== Full node_modules listing ===" && \
-    ls -la node_modules/ | head -30
+# Verify that @nestjs packages are available (this should work now)
+RUN echo "=== Final Dependency Verification ===" && \
+    ls -la node_modules/@nestjs/ && \
+    ls -la node_modules/@nestjs/core && \
+    echo "=== Built Application Check ===" && \
+    ls -la dist/apps/backend/src/ && \
+    echo "=== SUCCESS: All dependencies available ===" 
 
 # Environment variables
 ENV NODE_ENV=production
