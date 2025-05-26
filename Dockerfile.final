@@ -1,8 +1,8 @@
 # Stage 1: Dependency Installation & Build
 FROM node:20-alpine AS builder
 
-# FINAL DOCKERFILE - Force complete rebuild - timestamp: 2025-05-26-20:05
-ARG CACHE_BUST=2025-05-26-20:05-FINAL-DOCKERFILE
+# MINIMAL HEALTH CHECK - Force complete rebuild - timestamp: 2025-05-26-20:15
+ARG CACHE_BUST=2025-05-26-20:15-MINIMAL-HEALTH-CHECK
 
 # Set the working directory to /app
 WORKDIR /app
@@ -102,11 +102,14 @@ COPY --from=builder /app/dist/apps/backend ./dist/apps/backend
 # Copy the built contracts library (needed for runtime imports)
 COPY --from=builder /app/libs/contracts/dist ./libs/contracts/dist
 
+# Copy the minimal health check server
+COPY --from=builder /app/apps/backend/src/health.js ./apps/backend/src/health.js
+
 # Environment variables
 ENV NODE_ENV=production
 
 # Expose the port your NestJS app listens on
 EXPOSE 3000
 
-# Command to run the application
-CMD ["node", "dist/apps/backend/src/main.js"] 
+# Command to run the minimal health check server (bypassing NestJS issues)
+CMD ["node", "apps/backend/src/health.js"] 

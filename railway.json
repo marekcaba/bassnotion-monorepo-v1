@@ -25,7 +25,8 @@
         "NODE_ENV": "production",
         "PORT": "3000",
         "SUPABASE_URL": "https://placeholder.supabase.co",
-        "SUPABASE_KEY": "placeholder-key-replace-with-real-values"
+        "SUPABASE_KEY": "placeholder-key-replace-with-real-values",
+        "DEPLOYMENT_TRIGGER": "minimal-health-check-2025-05-26-20:15"
       }
     }
   }
