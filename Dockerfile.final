@@ -47,14 +47,17 @@ RUN echo "=== Package files check ===" && \
     ls -la apps/backend/package.json && \
     ls -la libs/contracts/package.json
 
-# Install dependencies
+# Install dependencies - use --filter to ensure backend deps are installed
 RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --filter @bassnotion/backend
 
 # Debug: Check if dependencies were installed
 RUN echo "=== After pnpm install ===" && \
     ls -la node_modules/ | head -20 && \
     echo "=== Checking for @nestjs ===" && \
-    ls -la node_modules/@nestjs/ || echo "No @nestjs found"
+    ls -la node_modules/@nestjs/ || echo "No @nestjs found" && \
+    echo "=== Checking backend-specific deps ===" && \
+    ls -la node_modules/@nestjs/core || echo "No @nestjs/core found"
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
