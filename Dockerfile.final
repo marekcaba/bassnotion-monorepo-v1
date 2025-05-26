@@ -14,18 +14,28 @@ RUN npm install -g pnpm
 # Install ALL dependencies in workspace context
 RUN pnpm install --frozen-lockfile
 
-# CRITICAL FIX: Manually create symlinks for @nestjs packages since pnpm isn't doing it
-RUN echo "=== Creating @nestjs symlinks manually ===" && \
+# CRITICAL FIX: Find and link the actual @nestjs packages from .pnpm store
+RUN echo "=== Finding actual @nestjs packages in .pnpm store ===" && \
+    find node_modules/.pnpm -name "@nestjs" -type d | head -5 && \
+    echo "=== Creating correct symlinks ===" && \
     mkdir -p node_modules/@nestjs && \
-    ln -sf ../node_modules/.pnpm/node_modules/@nestjs/common node_modules/@nestjs/common && \
-    ln -sf ../node_modules/.pnpm/node_modules/@nestjs/core node_modules/@nestjs/core && \
-    ln -sf ../node_modules/.pnpm/node_modules/@nestjs/config node_modules/@nestjs/config && \
-    ln -sf ../node_modules/.pnpm/node_modules/@nestjs/cqrs node_modules/@nestjs/cqrs && \
-    ln -sf ../node_modules/.pnpm/node_modules/@nestjs/platform-fastify node_modules/@nestjs/platform-fastify && \
+    NESTJS_CORE_PATH=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/core" | head -1) && \
+    NESTJS_COMMON_PATH=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/common" | head -1) && \
+    NESTJS_CONFIG_PATH=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/config" | head -1) && \
+    NESTJS_CQRS_PATH=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/cqrs" | head -1) && \
+    NESTJS_FASTIFY_PATH=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/platform-fastify" | head -1) && \
+    echo "Found paths:" && \
+    echo "CORE: $NESTJS_CORE_PATH" && \
+    echo "COMMON: $NESTJS_COMMON_PATH" && \
+    ln -sf "../../$NESTJS_CORE_PATH" node_modules/@nestjs/core && \
+    ln -sf "../../$NESTJS_COMMON_PATH" node_modules/@nestjs/common && \
+    ln -sf "../../$NESTJS_CONFIG_PATH" node_modules/@nestjs/config && \
+    ln -sf "../../$NESTJS_CQRS_PATH" node_modules/@nestjs/cqrs && \
+    ln -sf "../../$NESTJS_FASTIFY_PATH" node_modules/@nestjs/platform-fastify && \
     echo "=== Verifying symlinks ===" && \
     ls -la node_modules/@nestjs/ && \
     echo "=== Testing @nestjs/core import ===" && \
-    node -e "console.log('Testing import...'); import('@nestjs/core').then(() => console.log('SUCCESS')).catch(e => console.log('ERROR:', e.message))"
+    node -e "console.log('Testing import...'); import('@nestjs/core').then(() => console.log('✅ SUCCESS')).catch(e => console.log('❌ ERROR:', e.message))"
 
 # Copy source code
 COPY . .
