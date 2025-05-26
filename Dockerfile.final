@@ -14,8 +14,8 @@ RUN npm install -g pnpm
 # Install ALL dependencies in workspace context
 RUN pnpm install --frozen-lockfile
 
-# CRITICAL FIX: Find and link the actual @nestjs packages from .pnpm store
-RUN echo "=== Finding actual @nestjs packages in .pnpm store ===" && \
+# CRITICAL FIX: Find and link the actual packages from .pnpm store
+RUN echo "=== Finding actual packages in .pnpm store ===" && \
     find node_modules/.pnpm -name "@nestjs" -type d | head -5 && \
     echo "=== Creating correct symlinks ===" && \
     mkdir -p node_modules/@nestjs && \
@@ -24,18 +24,23 @@ RUN echo "=== Finding actual @nestjs packages in .pnpm store ===" && \
     NESTJS_CONFIG_PATH=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/config" | head -1) && \
     NESTJS_CQRS_PATH=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/cqrs" | head -1) && \
     NESTJS_FASTIFY_PATH=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/platform-fastify" | head -1) && \
+    REFLECT_METADATA_PATH=$(find node_modules/.pnpm -path "*/node_modules/reflect-metadata" | head -1) && \
     echo "Found paths:" && \
     echo "CORE: $NESTJS_CORE_PATH" && \
     echo "COMMON: $NESTJS_COMMON_PATH" && \
+    echo "REFLECT: $REFLECT_METADATA_PATH" && \
     ln -sf "../../$NESTJS_CORE_PATH" node_modules/@nestjs/core && \
     ln -sf "../../$NESTJS_COMMON_PATH" node_modules/@nestjs/common && \
     ln -sf "../../$NESTJS_CONFIG_PATH" node_modules/@nestjs/config && \
     ln -sf "../../$NESTJS_CQRS_PATH" node_modules/@nestjs/cqrs && \
     ln -sf "../../$NESTJS_FASTIFY_PATH" node_modules/@nestjs/platform-fastify && \
+    ln -sf "../$REFLECT_METADATA_PATH" node_modules/reflect-metadata && \
     echo "=== Verifying symlinks ===" && \
     ls -la node_modules/@nestjs/ && \
-    echo "=== Testing @nestjs/core import ===" && \
-    node -e "console.log('Testing import...'); import('@nestjs/core').then(() => console.log('✅ SUCCESS')).catch(e => console.log('❌ ERROR:', e.message))"
+    ls -la node_modules/reflect-metadata && \
+    echo "=== Testing imports ===" && \
+    node -e "console.log('Testing @nestjs/core...'); import('@nestjs/core').then(() => console.log('✅ @nestjs/core SUCCESS')).catch(e => console.log('❌ @nestjs/core ERROR:', e.message))" && \
+    node -e "console.log('Testing reflect-metadata...'); import('reflect-metadata').then(() => console.log('✅ reflect-metadata SUCCESS')).catch(e => console.log('❌ reflect-metadata ERROR:', e.message))"
 
 # Copy source code
 COPY . .
