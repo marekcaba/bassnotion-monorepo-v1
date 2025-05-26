@@ -14,33 +14,49 @@ RUN npm install -g pnpm
 # Install ALL dependencies in workspace context
 RUN pnpm install --frozen-lockfile
 
-# CRITICAL FIX: Find and link the actual packages from .pnpm store
-RUN echo "=== Finding actual packages in .pnpm store ===" && \
-    find node_modules/.pnpm -name "@nestjs" -type d | head -5 && \
-    echo "=== Creating correct symlinks ===" && \
+# CRITICAL FIX: Create symlinks for ALL backend dependencies
+RUN echo "=== Creating symlinks for ALL backend dependencies ===" && \
     mkdir -p node_modules/@nestjs && \
-    NESTJS_CORE_PATH=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/core" | head -1) && \
-    NESTJS_COMMON_PATH=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/common" | head -1) && \
-    NESTJS_CONFIG_PATH=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/config" | head -1) && \
-    NESTJS_CQRS_PATH=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/cqrs" | head -1) && \
-    NESTJS_FASTIFY_PATH=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/platform-fastify" | head -1) && \
-    REFLECT_METADATA_PATH=$(find node_modules/.pnpm -path "*/node_modules/reflect-metadata" | head -1) && \
-    echo "Found paths:" && \
-    echo "CORE: $NESTJS_CORE_PATH" && \
-    echo "COMMON: $NESTJS_COMMON_PATH" && \
-    echo "REFLECT: $REFLECT_METADATA_PATH" && \
-    ln -sf "../../$NESTJS_CORE_PATH" node_modules/@nestjs/core && \
-    ln -sf "../../$NESTJS_COMMON_PATH" node_modules/@nestjs/common && \
-    ln -sf "../../$NESTJS_CONFIG_PATH" node_modules/@nestjs/config && \
-    ln -sf "../../$NESTJS_CQRS_PATH" node_modules/@nestjs/cqrs && \
-    ln -sf "../../$NESTJS_FASTIFY_PATH" node_modules/@nestjs/platform-fastify && \
-    ln -sf "../$REFLECT_METADATA_PATH" node_modules/reflect-metadata && \
-    echo "=== Verifying symlinks ===" && \
+    mkdir -p node_modules/@supabase && \
+    mkdir -p node_modules/@fastify && \
+    echo "=== Finding and linking @nestjs packages ===" && \
+    for pkg in core common config cqrs platform-fastify; do \
+        path=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/$pkg" | head -1); \
+        if [ -n "$path" ]; then \
+            echo "Linking @nestjs/$pkg -> $path"; \
+            ln -sf "../../$path" "node_modules/@nestjs/$pkg"; \
+        fi; \
+    done && \
+    echo "=== Finding and linking other dependencies ===" && \
+    for pkg in reflect-metadata class-transformer class-validator fastify rxjs; do \
+        path=$(find node_modules/.pnpm -path "*/node_modules/$pkg" | head -1); \
+        if [ -n "$path" ]; then \
+            echo "Linking $pkg -> $path"; \
+            ln -sf "../$path" "node_modules/$pkg"; \
+        fi; \
+    done && \
+    echo "=== Finding and linking @supabase/supabase-js ===" && \
+    supabase_path=$(find node_modules/.pnpm -path "*/node_modules/@supabase/supabase-js" | head -1) && \
+    if [ -n "$supabase_path" ]; then \
+        echo "Linking @supabase/supabase-js -> $supabase_path"; \
+        ln -sf "../../$supabase_path" "node_modules/@supabase/supabase-js"; \
+    fi && \
+    echo "=== Finding and linking @fastify packages ===" && \
+    for pkg in static view; do \
+        path=$(find node_modules/.pnpm -path "*/node_modules/@fastify/$pkg" | head -1); \
+        if [ -n "$path" ]; then \
+            echo "Linking @fastify/$pkg -> $path"; \
+            ln -sf "../../$path" "node_modules/@fastify/$pkg"; \
+        fi; \
+    done && \
+    echo "=== Verifying key symlinks ===" && \
     ls -la node_modules/@nestjs/ && \
+    ls -la node_modules/@supabase/ && \
     ls -la node_modules/reflect-metadata && \
-    echo "=== Testing imports ===" && \
-    node -e "console.log('Testing @nestjs/core...'); import('@nestjs/core').then(() => console.log('✅ @nestjs/core SUCCESS')).catch(e => console.log('❌ @nestjs/core ERROR:', e.message))" && \
-    node -e "console.log('Testing reflect-metadata...'); import('reflect-metadata').then(() => console.log('✅ reflect-metadata SUCCESS')).catch(e => console.log('❌ reflect-metadata ERROR:', e.message))"
+    echo "=== Testing critical imports ===" && \
+    node -e "import('@nestjs/core').then(() => console.log('✅ @nestjs/core')).catch(e => console.log('❌ @nestjs/core:', e.message))" && \
+    node -e "import('@supabase/supabase-js').then(() => console.log('✅ @supabase/supabase-js')).catch(e => console.log('❌ @supabase/supabase-js:', e.message))" && \
+    node -e "import('reflect-metadata').then(() => console.log('✅ reflect-metadata')).catch(e => console.log('❌ reflect-metadata:', e.message))"
 
 # Copy source code
 COPY . .
