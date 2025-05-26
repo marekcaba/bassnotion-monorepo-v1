@@ -11,6 +11,10 @@ export NX_REJECT_UNKNOWN_LOCAL_CACHE=0
 echo "Installing dependencies..."
 pnpm install --no-frozen-lockfile
 
+# Build contracts library first
+echo "Building contracts library..."
+cd libs/contracts && pnpm build && cd ../..
+
 # Build the backend
 echo "Building backend..."
 npx nx build @bassnotion/backend --prod --skip-nx-cache --verbose --force
