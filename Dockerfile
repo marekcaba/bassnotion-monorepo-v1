@@ -34,16 +34,15 @@ WORKDIR /app
 # Verify contracts build output
 RUN ls -la libs/contracts/dist/ || echo "Contracts dist not found"
 
-# Build the backend application with verbose logging
-RUN npx nx build @bassnotion/backend --configuration=production --verbose || \
-    (echo "Backend build failed. Checking for more details..." && \
-     echo "Nx version:" && \
-     npx nx --version && \
-     echo "Available projects:" && \
-     npx nx show projects && \
-     echo "Backend project details:" && \
-     npx nx show project @bassnotion/backend && \
-     exit 1)
+# Build the backend application using direct TypeScript compilation
+WORKDIR /app/apps/backend
+RUN echo "Building backend with TypeScript..." && \
+    mkdir -p ../../dist/apps/backend && \
+    npx tsc --project tsconfig.json --outDir ../../dist/apps/backend --rootDir src
+WORKDIR /app
+
+# Verify backend build output
+RUN ls -la dist/apps/backend/ || echo "Backend dist not found"
 
 # Stage 2: Production Runtime Image
 FROM node:20-alpine AS runner
