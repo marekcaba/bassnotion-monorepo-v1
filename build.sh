@@ -25,13 +25,13 @@ find src -name "*.ts" -type f 2>/dev/null || echo "No TypeScript files found in 
 # Ensure dist directory exists
 mkdir -p dist
 
-# Build with verbose output
+# Build with TypeScript
 echo "Running TypeScript compilation..."
 echo "Current working directory: $(pwd)"
 echo "TypeScript config:"
 cat tsconfig.json
 
-pnpm build --verbose || {
+pnpm build || {
   echo "TypeScript compilation failed. Checking for errors..."
   echo "Running tsc with noEmit to see errors:"
   npx tsc --noEmit
