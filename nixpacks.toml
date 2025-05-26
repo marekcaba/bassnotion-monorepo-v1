@@ -2,10 +2,10 @@
 nixPkgs = ["nodejs_20", "pnpm"]
 
 [phases.install]
-cmds = ["pnpm install --no-frozen-lockfile"]
+cmds = ["echo 'Skipping install phase - handled by build script'"]
 
 [phases.build]
-cmds = ["NX_CLOUD_ACCESS_TOKEN= npx nx build @bassnotion/backend --prod --skip-nx-cache --verbose --force"]
+cmds = ["chmod +x build.sh && ./build.sh"]
 
 [start]
 cmd = "node dist/apps/backend/main.js" 

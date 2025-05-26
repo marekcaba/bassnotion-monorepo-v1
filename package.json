@@ -4,9 +4,9 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "npx nx build @bassnotion/backend --prod",
+    "build": "NX_CLOUD_ACCESS_TOKEN= npx nx build @bassnotion/backend --prod --skip-nx-cache --verbose --force",
     "start": "node dist/apps/backend/main.js",
-    "build:backend": "npx nx build @bassnotion/backend --prod",
+    "build:backend": "NX_CLOUD_ACCESS_TOKEN= npx nx build @bassnotion/backend --prod --skip-nx-cache --verbose --force",
     "start:backend": "node dist/apps/backend/main.js"
   },
   "private": true,
