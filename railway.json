@@ -26,7 +26,7 @@
         "PORT": "3000",
         "SUPABASE_URL": "https://placeholder.supabase.co",
         "SUPABASE_KEY": "placeholder-key-replace-with-real-values",
-        "DEPLOYMENT_TRIGGER": "full-nestjs-app-2025-05-26-20:30"
+        "DEPLOYMENT_TRIGGER": "full-dependencies-2025-05-26-20:35"
       }
     }
   }
