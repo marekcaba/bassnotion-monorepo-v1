@@ -26,7 +26,7 @@
         "PORT": "3000",
         "SUPABASE_URL": "https://placeholder.supabase.co",
         "SUPABASE_KEY": "placeholder-key-replace-with-real-values",
-        "DEPLOYMENT_TRIGGER": "revert-to-working-health-check-2025-05-26-20:45"
+        "DEPLOYMENT_TRIGGER": "nestjs-v11-upgrade-2025-05-26-21:10"
       }
     }
   }
