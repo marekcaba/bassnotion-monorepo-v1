@@ -1,8 +1,8 @@
 # Single-stage build - keeps all dependencies intact
 FROM node:20-alpine
 
-# SINGLE STAGE BUILD - Force complete rebuild - timestamp: 2025-05-26-20:40
-ARG CACHE_BUST=2025-05-26-20:40-SINGLE-STAGE-BUILD
+# SINGLE STAGE BUILD - Force complete rebuild - timestamp: 2025-05-26-21:20
+ARG CACHE_BUST=2025-05-26-21:20-FIX-RUNTIME-DEPS
 
 # Set the working directory to /app
 WORKDIR /app
@@ -18,7 +18,7 @@ COPY libs/contracts/package.json ./libs/contracts/
 RUN npm install -g pnpm
 
 # Install all monorepo dependencies, which will also set up workspace symlinks
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --prod=false
 
 # Debug: Check what pnpm created in node_modules
 RUN echo "=== After pnpm install - checking node_modules ===" && \
@@ -48,7 +48,7 @@ ENV NX_CLOUD_ACCESS_TOKEN=""
 ENV NX_SKIP_NX_CACHE=false
 
 # Ensure workspace symlinks are created (pnpm should have done this, but let's be explicit)
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --prod=false
 
 # Debug: Final check of workspace symlinks before build
 RUN echo "=== Before build - final symlink check ===" && \
@@ -78,6 +78,15 @@ RUN npx nx build backend --configuration=production
 
 # Verify backend build output
 RUN ls -la dist/apps/backend/ || echo "Backend dist not found"
+
+# Ensure all production dependencies are available for runtime
+# This is critical for NestJS apps that use imports at runtime
+RUN echo "=== Installing production dependencies ===" && \
+    pnpm install --frozen-lockfile --prod=false && \
+    echo "=== Verifying @nestjs/core is available ===" && \
+    ls -la node_modules/@nestjs/core || echo "ERROR: @nestjs/core not found!" && \
+    echo "=== Checking all @nestjs packages ===" && \
+    ls -la node_modules/@nestjs/ || echo "ERROR: No @nestjs packages found!"
 
 # Environment variables
 ENV NODE_ENV=production
