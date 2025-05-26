@@ -34,10 +34,18 @@ WORKDIR /app
 # Verify contracts build output
 RUN ls -la libs/contracts/dist/ || echo "Contracts dist not found"
 
+# Debug: Check if dependencies are accessible
+RUN echo "Checking node_modules structure..." && \
+    ls -la node_modules/@nestjs/ | head -10 && \
+    echo "Checking backend node_modules..." && \
+    ls -la apps/backend/node_modules/ 2>/dev/null || echo "No backend node_modules" && \
+    echo "Checking if TypeScript can find @nestjs/common..." && \
+    node -e "console.log(require.resolve('@nestjs/common'))" || echo "Cannot resolve @nestjs/common"
+
 # Build the backend application using TypeScript project references
 RUN echo "Building backend with TypeScript..." && \
     mkdir -p dist/apps/backend && \
-    npx tsc --build apps/backend/tsconfig.json
+    npx tsc --build apps/backend/tsconfig.json --verbose
 
 # Verify backend build output
 RUN ls -la dist/apps/backend/ || echo "Backend dist not found"
