@@ -176,8 +176,33 @@ This template is production-ready with:
 - ✅ **Type safety** across the entire codebase
 - ✅ **Test coverage** with unit and e2e tests
 - ✅ **Code quality** with linting and formatting
+- ✅ **CI/CD pipeline** with GitHub Actions
+- ✅ **Security scanning** and dependency audits
 - ✅ **Documentation** for all major components
 - ✅ **Scalable architecture** for future growth
+
+## 🔄 CI/CD Pipeline
+
+### Automated Workflows
+- **CI Pipeline** (`ci.yml`): Runs on every PR and push to main
+  - Linting and code formatting checks
+  - TypeScript type checking
+  - Unit tests with Vitest
+  - E2E tests with Playwright across 5 browsers
+  - Build verification for all projects
+  - Test artifact uploads (reports, screenshots, videos)
+
+- **Deployment** (`deploy.yml`): Automated production deployments
+  - Triggered on main branch pushes and version tags
+  - Full test suite execution
+  - Frontend deployment to Vercel (configurable)
+  - Backend deployment ready (platform agnostic)
+
+- **Security** (`security.yml`): Weekly security and dependency audits
+  - pnpm security audit
+  - CodeQL static analysis
+  - Dependency review for PRs
+  - Outdated package detection
 
 ## 📈 Next Steps
 
