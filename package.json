@@ -3,7 +3,12 @@
   "version": "0.0.0",
   "license": "MIT",
   "type": "module",
-  "scripts": {},
+  "scripts": {
+    "build": "npx nx build @bassnotion/backend --prod",
+    "start": "node dist/apps/backend/main.js",
+    "build:backend": "npx nx build @bassnotion/backend --prod",
+    "start:backend": "node dist/apps/backend/main.js"
+  },
   "private": true,
   "devDependencies": {
     "@nx/esbuild": "21.1.2",
@@ -43,6 +48,7 @@
     "tsconfig-paths-webpack-plugin": "^4.2.0",
     "tslib": "^2.3.0",
     "typescript": "~5.7.2",
+    "unplugin-swc": "^1.5.3",
     "vite-plugin-dts": "^4.3.0",
     "vitest": "^3.1.4"
   },

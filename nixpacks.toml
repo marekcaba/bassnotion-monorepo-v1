@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "pnpm"]
+
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = ["npx nx build @bassnotion/backend --prod"]
+
+[start]
+cmd = "node dist/apps/backend/main.js" 
