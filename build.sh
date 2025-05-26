@@ -11,9 +11,13 @@ export NX_REJECT_UNKNOWN_LOCAL_CACHE=0
 echo "Installing dependencies..."
 pnpm install --no-frozen-lockfile
 
-# Build contracts library first in workspace context
-echo "Building contracts library..."
-pnpm --filter @bassnotion/contracts build
+# Build all TypeScript project references first
+echo "Building TypeScript project references..."
+npx tsc --build
+
+# Verify contracts library was built
+echo "Verifying contracts library build..."
+ls -la libs/contracts/dist/
 
 # Build the backend
 echo "Building backend..."
