@@ -13,7 +13,7 @@
     ]
   },
   "deploy": {
-    "startCommand": "node apps/backend/src/health.js",
+    "startCommand": "node dist/apps/backend/src/main.js",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
@@ -26,7 +26,7 @@
         "PORT": "3000",
         "SUPABASE_URL": "https://placeholder.supabase.co",
         "SUPABASE_KEY": "placeholder-key-replace-with-real-values",
-        "DEPLOYMENT_TRIGGER": "nestjs-v11-upgrade-2025-05-26-21:10"
+        "DEPLOYMENT_TRIGGER": "fix-start-command-2025-05-26-21:15"
       }
     }
   }
