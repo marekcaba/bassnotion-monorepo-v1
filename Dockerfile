@@ -1,8 +1,8 @@
 # Stage 1: Dependency Installation & Build
 FROM node:20-alpine AS builder
 
-# Force cache invalidation - timestamp: 2025-05-26-19:15
-ARG CACHE_BUST=2025-05-26-19:15
+# Force cache invalidation - timestamp: 2025-05-26-19:45
+ARG CACHE_BUST=2025-05-26-19:45
 
 # Set the working directory to /app
 WORKDIR /app
