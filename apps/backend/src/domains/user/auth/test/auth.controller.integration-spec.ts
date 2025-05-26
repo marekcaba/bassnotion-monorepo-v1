@@ -2,7 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
-  User,
+  User as SupabaseUser,
   Session,
   AuthResponse,
   AuthTokenResponse,
@@ -72,7 +72,7 @@ describe('AuthController (Integration)', () => {
     });
 
     it('should register a new user successfully', async () => {
-      const mockSupabaseUser: User = {
+      const mockSupabaseUser: SupabaseUser = {
         id: 'test-id',
         email: 'test@example.com',
         aud: 'authenticated',
@@ -133,7 +133,7 @@ describe('AuthController (Integration)', () => {
     });
 
     it('should login user successfully', async () => {
-      const mockSupabaseUser: User = {
+      const mockSupabaseUser: SupabaseUser = {
         id: 'test-id',
         email: 'test@example.com',
         aud: 'authenticated',
