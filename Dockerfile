@@ -7,6 +7,10 @@ WORKDIR /app
 # Copy pnpm-lock.yaml and package.json to leverage Docker caching for dependencies
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
+# Copy workspace package.json files so pnpm knows what dependencies to install
+COPY apps/backend/package.json ./apps/backend/package.json
+COPY libs/contracts/package.json ./libs/contracts/package.json
+
 # Install pnpm
 RUN npm install -g pnpm
 
