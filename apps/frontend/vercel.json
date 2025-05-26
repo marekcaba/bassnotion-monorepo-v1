@@ -1,8 +1,5 @@
 {
-  "name": "bass-notion-app-ddd-v4-fe",
-  "framework": "vite",
-  "buildCommand": "pnpm run build",
-  "outputDirectory": "dist",
+  "name": "bassnotion-frontend",
   "cleanUrls": true,
   "trailingSlash": false,
   "github": {
@@ -25,12 +22,6 @@
           "value": "1; mode=block"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
     }
   ]
 }

@@ -22,7 +22,7 @@
         },
         "production": {
           "mode": "production",
-          "optimization": true,
+          "optimization": false,
           "extractLicenses": true,
           "inspect": false,
           "sourceMap": false
