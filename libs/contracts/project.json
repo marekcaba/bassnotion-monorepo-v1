@@ -4,17 +4,6 @@
   "sourceRoot": "libs/contracts/src",
   "projectType": "library",
   "targets": {
-    "build": {
-      "executor": "@nx/vite:build",
-      "outputs": ["{options.outputPath}"],
-      "defaultConfiguration": "production",
-      "options": {
-        "outputPath": "dist/libs/contracts",
-        "main": "libs/contracts/src/index.ts",
-        "tsConfig": "libs/contracts/tsconfig.json",
-        "assets": ["libs/contracts/*.md"]
-      }
-    },
     "lint": {
       "executor": "@nx/eslint:lint",
       "outputs": ["{options.outputFile}"],
