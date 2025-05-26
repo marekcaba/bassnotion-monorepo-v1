@@ -54,6 +54,10 @@ RUN echo "=== Before build - final symlink check ===" && \
 # Build the shared contracts library first using Nx
 RUN npx nx build contracts --configuration=production
 
+# Manually create workspace symlink since pnpm didn't create it automatically
+RUN mkdir -p node_modules/@bassnotion && \
+    ln -sf /app/libs/contracts node_modules/@bassnotion/contracts
+
 # Verify contracts build output and workspace linking
 RUN echo "=== Contracts build verification ===" && \
     ls -la libs/contracts/dist/ && \
