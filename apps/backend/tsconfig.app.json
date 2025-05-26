@@ -17,9 +17,7 @@
     "composite": true,
     "incremental": true
   },
-  "include": [
-    "src/**/*"
-  ],
+  "include": ["src/**/*"],
   "exclude": [
     "node_modules",
     "dist",
@@ -27,5 +25,10 @@
     "**/*.spec.ts",
     "**/*.test.ts",
     "vitest.*.config.ts"
+  ],
+  "references": [
+    {
+      "path": "../../libs/contracts"
+    }
   ]
-} 
+}
