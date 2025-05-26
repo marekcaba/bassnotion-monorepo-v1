@@ -34,12 +34,10 @@ WORKDIR /app
 # Verify contracts build output
 RUN ls -la libs/contracts/dist/ || echo "Contracts dist not found"
 
-# Build the backend application using direct TypeScript compilation
-WORKDIR /app/apps/backend
+# Build the backend application using TypeScript project references
 RUN echo "Building backend with TypeScript..." && \
-    mkdir -p ../../dist/apps/backend && \
-    npx tsc --project tsconfig.json --outDir ../../dist/apps/backend --rootDir src
-WORKDIR /app
+    mkdir -p dist/apps/backend && \
+    npx tsc --build apps/backend/tsconfig.json
 
 # Verify backend build output
 RUN ls -la dist/apps/backend/ || echo "Backend dist not found"
