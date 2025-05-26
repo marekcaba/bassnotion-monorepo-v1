@@ -20,8 +20,19 @@ RUN npm install -g pnpm
 # Install all monorepo dependencies, which will also set up workspace symlinks
 RUN pnpm install --frozen-lockfile
 
+# Debug: Check what pnpm created in node_modules
+RUN echo "=== After pnpm install - checking node_modules ===" && \
+    ls -la node_modules/ | grep bassnotion || echo "No @bassnotion found in node_modules" && \
+    ls -la node_modules/@bassnotion/ || echo "No @bassnotion directory found"
+
 # Copy the rest of the monorepo source code AFTER dependencies are installed
 COPY . .
+
+# Debug: Check workspace structure after copying source
+RUN echo "=== After COPY - checking workspace structure ===" && \
+    ls -la libs/ && \
+    ls -la apps/ && \
+    cat pnpm-workspace.yaml
 
 # Create necessary directories for Nx
 RUN mkdir -p /app/tmp /app/.nx/cache
@@ -31,6 +42,14 @@ ENV NX_DAEMON=false
 ENV NX_CACHE_DIRECTORY=/app/.nx/cache
 ENV NX_CLOUD_ACCESS_TOKEN=""
 ENV NX_SKIP_NX_CACHE=false
+
+# Ensure workspace symlinks are created (pnpm should have done this, but let's be explicit)
+RUN pnpm install --frozen-lockfile
+
+# Debug: Final check of workspace symlinks before build
+RUN echo "=== Before build - final symlink check ===" && \
+    ls -la node_modules/@bassnotion/ || echo "Still no @bassnotion directory" && \
+    ls -la node_modules/@bassnotion/contracts || echo "Still no contracts symlink"
 
 # Build the shared contracts library first using Nx
 RUN npx nx build contracts --configuration=production
