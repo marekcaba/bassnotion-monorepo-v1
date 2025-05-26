@@ -1,8 +1,8 @@
-# Stage 1: Dependency Installation & Build
-FROM node:20-alpine AS builder
+# Single-stage build - keeps all dependencies intact
+FROM node:20-alpine
 
-# FULL DEPENDENCIES - Force complete rebuild - timestamp: 2025-05-26-20:35
-ARG CACHE_BUST=2025-05-26-20:35-FULL-DEPENDENCIES
+# SINGLE STAGE BUILD - Force complete rebuild - timestamp: 2025-05-26-20:40
+ARG CACHE_BUST=2025-05-26-20:40-SINGLE-STAGE-BUILD
 
 # Set the working directory to /app
 WORKDIR /app
@@ -79,37 +79,11 @@ RUN npx nx build backend --configuration=production
 # Verify backend build output
 RUN ls -la dist/apps/backend/ || echo "Backend dist not found"
 
-# Stage 2: Production Runtime Image
-FROM node:20-alpine AS runner
-
-# Set the working directory
-WORKDIR /app
-
-# Install pnpm in runner stage
-RUN npm install -g pnpm
-
-# Copy package files for production dependencies
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY libs/contracts/package.json ./libs/contracts/package.json
-COPY apps/backend/package.json ./apps/backend/package.json
-
-# Install all dependencies (including NestJS runtime dependencies)
-RUN pnpm install --frozen-lockfile
-
-# Copy the built backend application from the builder stage
-COPY --from=builder /app/dist/apps/backend ./dist/apps/backend
-
-# Copy the built contracts library (needed for runtime imports)
-COPY --from=builder /app/libs/contracts/dist ./libs/contracts/dist
-
-# Copy the minimal health check server
-COPY --from=builder /app/apps/backend/src/health.js ./apps/backend/src/health.js
-
 # Environment variables
 ENV NODE_ENV=production
 
 # Expose the port your NestJS app listens on
 EXPOSE 3000
 
-# Command to run the minimal health check server (bypassing NestJS issues)
-CMD ["node", "apps/backend/src/health.js"] 
+# Command to run the NestJS application (single-stage build keeps all dependencies intact)
+CMD ["node", "dist/apps/backend/src/main.js"] 
