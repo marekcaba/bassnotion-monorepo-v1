@@ -35,6 +35,9 @@ ENV NX_SKIP_NX_CACHE=false
 # Build the shared contracts library first using Nx
 RUN npx nx build contracts --configuration=production
 
+# Explicitly link workspace dependencies after build
+RUN pnpm install --frozen-lockfile
+
 # Verify contracts build output and workspace linking
 RUN echo "=== Contracts build verification ===" && \
     ls -la libs/contracts/dist/ && \
@@ -43,7 +46,7 @@ RUN echo "=== Contracts build verification ===" && \
     echo "=== Checking contracts package.json ===" && \
     cat libs/contracts/package.json && \
     echo "=== Checking if contracts types are accessible ===" && \
-    cat libs/contracts/dist/index.d.ts
+    cat libs/contracts/dist/src/index.d.ts
 
 # Build the backend application using Nx from monorepo root
 # Nx handles the monorepo context and module resolution correctly
