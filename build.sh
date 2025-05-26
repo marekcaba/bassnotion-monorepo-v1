@@ -15,14 +15,26 @@ pnpm install --no-frozen-lockfile
 echo "Building contracts library..."
 cd libs/contracts
 
+# Debug: Check if source files exist
+echo "Checking contracts library structure..."
+pwd
+ls -la
+echo "Source files:"
+find src -name "*.ts" -type f 2>/dev/null || echo "No TypeScript files found in src/"
+
 # Ensure dist directory exists
 mkdir -p dist
 
 # Build with verbose output
 echo "Running TypeScript compilation..."
+echo "Current working directory: $(pwd)"
+echo "TypeScript config:"
+cat tsconfig.json
+
 pnpm build --verbose || {
   echo "TypeScript compilation failed. Checking for errors..."
-  npx tsc --noEmit --listFiles
+  echo "Running tsc with noEmit to see errors:"
+  npx tsc --noEmit
   exit 1
 }
 
