@@ -11,9 +11,9 @@ export NX_REJECT_UNKNOWN_LOCAL_CACHE=0
 echo "Installing dependencies..."
 pnpm install --no-frozen-lockfile
 
-# Build contracts library first
+# Build contracts library first in workspace context
 echo "Building contracts library..."
-cd libs/contracts && pnpm build && cd ../..
+pnpm --filter @bassnotion/contracts build
 
 # Build the backend
 echo "Building backend..."
