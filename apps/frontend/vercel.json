@@ -1,7 +1,5 @@
 {
   "name": "bassnotion-frontend",
-  "buildCommand": "cd ../.. && npx nx build @bassnotion/frontend --configuration=production",
-  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "framework": "nextjs",
   "cleanUrls": true,
   "trailingSlash": false,

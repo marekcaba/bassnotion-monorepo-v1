@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api-client';
-import type { User, UserProfile } from '@bassnotion/contracts';
+import type { User, UserProfile } from '@/shared/types/contracts';
 
 // Query Keys - centralized for consistency
 export const queryKeys = {
