@@ -17,7 +17,7 @@ COPY . .
 # Build contracts library first
 RUN pnpm nx build @bassnotion/contracts
 
-# Build backend (disable Nx daemon for Docker environment)
+# Build backend
 ENV NX_DAEMON=false
 RUN pnpm nx build @bassnotion/backend --prod
 
@@ -25,13 +25,19 @@ RUN pnpm nx build @bassnotion/backend --prod
 FROM node:20-alpine AS production
 WORKDIR /app
 
-# Copy built application and dependencies
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+# Install pnpm in production stage
+RUN npm install -g pnpm
 
-# Set environment variables
-ENV NODE_ENV=production
+# Copy package files for production install
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/backend/package.json ./apps/backend/package.json
+COPY libs/contracts/package.json ./libs/contracts/package.json
+
+# Install only production dependencies
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy built application and contracts
+COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
-CMD ["node", "--experimental-specifier-resolution=node", "dist/apps/backend/src/main.js"] 
+CMD ["node", "dist/apps/backend/main.js"] 
