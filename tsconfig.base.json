@@ -19,7 +19,7 @@
     "baseUrl": ".",
     "paths": {
       "@bassnotion/backend": ["apps/backend/src/index.ts"],
-      "@bassnotion/contracts": ["libs/contracts/dist/src/index.d.ts"],
+      "@bassnotion/contracts": ["libs/contracts/dist/index.d.ts"],
       "@bassnotion/frontend": ["apps/frontend/src/index.ts"]
     }
   },

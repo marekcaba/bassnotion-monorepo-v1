@@ -125,3 +125,4 @@ export default function RegisterPage() {
     </Suspense>
   );
 }
+ 
