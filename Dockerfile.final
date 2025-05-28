@@ -17,7 +17,8 @@ COPY . .
 # Build contracts library first
 RUN pnpm nx build @bassnotion/contracts
 
-# Build backend
+# Build backend (disable Nx daemon for Docker environment)
+ENV NX_DAEMON=false
 RUN pnpm nx build @bassnotion/backend --prod
 
 # Production stage
