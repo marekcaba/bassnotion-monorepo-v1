@@ -1,33 +1,35 @@
-import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
+import { signUpSchema, SignUpData } from '@bassnotion/contracts';
 
-import { Match } from '../../../../shared/decorators/match.decorator.js';
+export class SignUpDto implements SignUpData {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  displayName: string;
+  bio?: string;
 
-export class SignUpDto {
-  constructor(data: Partial<SignUpDto> = {}) {
-    this.email = data.email ?? '';
-    this.password = data.password ?? '';
-    this.confirmPassword = data.confirmPassword ?? '';
-    this.displayName = data.displayName ?? '';
-    this.bio = data.bio ?? '';
+  constructor(data: Partial<SignUpData> = {}) {
+    // Validate the input data with Zod schema
+    const validated = signUpSchema.parse(data);
+
+    this.email = validated.email;
+    this.password = validated.password;
+    this.confirmPassword = validated.confirmPassword;
+    this.displayName = validated.displayName;
+    this.bio = validated.bio;
   }
 
-  @IsEmail()
-  email: string;
+  /**
+   * Static method to create and validate a SignUpDto
+   */
+  static create(data: unknown): SignUpDto {
+    const validated = signUpSchema.parse(data);
+    return new SignUpDto(validated);
+  }
 
-  @IsString()
-  @MinLength(8)
-  password: string;
-
-  @IsString()
-  @MinLength(8)
-  @Match('password')
-  confirmPassword: string;
-
-  @IsString()
-  @MinLength(2)
-  displayName: string;
-
-  @IsString()
-  @IsOptional()
-  bio: string;
+  /**
+   * Get the Zod schema for this DTO
+   */
+  static getSchema() {
+    return signUpSchema;
+  }
 }

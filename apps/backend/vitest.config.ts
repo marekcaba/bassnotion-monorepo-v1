@@ -7,7 +7,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  plugins: [tsconfigPaths()],
+  plugins: [tsconfigPaths() as any],
   test: {
     globals: true,
     environment: 'node',

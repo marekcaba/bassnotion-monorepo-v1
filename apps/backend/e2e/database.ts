@@ -35,7 +35,8 @@ const validateEnvVars = () => {
 };
 
 export class TestDatabase {
-  private client: SupabaseClient;
+  private client: SupabaseClient | null = null;
+  private initialized = false;
   private tables: string[] = [
     // User domain tables
     'users',
@@ -69,6 +70,15 @@ export class TestDatabase {
   ];
 
   constructor() {
+    // Don't validate environment variables during construction
+    // This allows the module to be imported before environment variables are loaded
+  }
+
+  private async ensureInitialized() {
+    if (this.initialized) {
+      return;
+    }
+
     const env = validateEnvVars();
     this.client = createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
       auth: {
@@ -91,13 +101,15 @@ export class TestDatabase {
       },
     });
 
-    this.verifyConnection().catch((error: Error) => {
-      logger.error('Failed to verify Supabase connection:', error);
-      throw error;
-    });
+    await this.verifyConnection();
+    this.initialized = true;
   }
 
   private async verifyConnection(): Promise<void> {
+    if (!this.client) {
+      throw new Error('Database client not initialized');
+    }
+
     try {
       const { error } = await this.client
         .from('profiles')
@@ -118,6 +130,10 @@ export class TestDatabase {
   }
 
   private async createGetTablesFunction() {
+    if (!this.client) {
+      throw new Error('Database client not initialized');
+    }
+
     const sql = `
       CREATE OR REPLACE FUNCTION get_all_tables(schema_name text)
       RETURNS TABLE (table_name text)
@@ -147,6 +163,11 @@ export class TestDatabase {
   }
 
   async cleanDatabase() {
+    await this.ensureInitialized();
+    if (!this.client) {
+      throw new Error('Database client not initialized');
+    }
+
     logger.debug('Cleaning test database...');
     try {
       // Get list of existing tables using a raw query
@@ -211,6 +232,11 @@ export class TestDatabase {
   }
 
   async seedDatabase() {
+    await this.ensureInitialized();
+    if (!this.client) {
+      throw new Error('Database client not initialized');
+    }
+
     logger.debug('Seeding test database...');
     try {
       // Create test users
@@ -230,6 +256,10 @@ export class TestDatabase {
   }
 
   private async seedExerciseData() {
+    if (!this.client) {
+      throw new Error('Database client not initialized');
+    }
+
     try {
       // Seed exercise categories
       const { error: catError } = await this.client
@@ -257,6 +287,10 @@ export class TestDatabase {
   }
 
   private async seedLearningData() {
+    if (!this.client) {
+      throw new Error('Database client not initialized');
+    }
+
     try {
       // Seed learning paths
       const { error: pathError } = await this.client
@@ -276,6 +310,10 @@ export class TestDatabase {
   }
 
   private async seedWidgetData() {
+    if (!this.client) {
+      throw new Error('Database client not initialized');
+    }
+
     try {
       // Seed widget configurations
       const { error: widgetError } = await this.client
@@ -303,6 +341,11 @@ export class TestDatabase {
   }
 
   getClient() {
+    if (!this.client) {
+      throw new Error(
+        'Database client not initialized. Call ensureInitialized() first.',
+      );
+    }
     return this.client;
   }
 }

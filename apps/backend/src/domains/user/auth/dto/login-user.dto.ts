@@ -1,19 +1,30 @@
-import { IsEmail, IsString, IsNotEmpty, MinLength } from 'class-validator';
-
+import { loginSchema, LoginData } from '@bassnotion/contracts';
 import { AuthCredentials } from '../types/auth.types.js';
 
-export class LoginUserDto implements AuthCredentials {
-  constructor(data: Partial<LoginUserDto> = {}) {
-    this.email = data.email ?? '';
-    this.password = data.password ?? '';
+export class LoginUserDto implements AuthCredentials, LoginData {
+  email: string;
+  password: string;
+
+  constructor(data: Partial<LoginData> = {}) {
+    // Validate the input data with Zod schema
+    const validated = loginSchema.parse(data);
+
+    this.email = validated.email;
+    this.password = validated.password;
   }
 
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  /**
+   * Static method to create and validate a LoginUserDto
+   */
+  static create(data: unknown): LoginUserDto {
+    const validated = loginSchema.parse(data);
+    return new LoginUserDto(validated);
+  }
 
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(8)
-  password: string;
+  /**
+   * Get the Zod schema for this DTO
+   */
+  static getSchema() {
+    return loginSchema;
+  }
 }

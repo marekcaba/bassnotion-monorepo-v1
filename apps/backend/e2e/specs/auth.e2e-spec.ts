@@ -1,4 +1,3 @@
-import { ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import {
   FastifyAdapter,
@@ -50,13 +49,6 @@ describe('AuthController (e2e)', () => {
     // Create and configure app
     app = moduleFixture.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter(),
-    );
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-      }),
     );
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
@@ -126,7 +118,7 @@ describe('AuthController (e2e)', () => {
       expect(response.statusCode).toBe(400);
       const body = JSON.parse(response.payload) as AuthResponse;
       expect(body.success).toBe(false);
-      expect(body.error?.message).toContain('email must be an email');
+      expect(body.error?.message).toContain('Invalid email format');
     });
 
     it('should validate password strength', async () => {
@@ -143,7 +135,9 @@ describe('AuthController (e2e)', () => {
       expect(response.statusCode).toBe(400);
       const body = JSON.parse(response.payload) as AuthResponse;
       expect(body.success).toBe(false);
-      expect(body.error?.message).toContain('password is too weak');
+      expect(body.error?.message).toContain(
+        'Password must contain uppercase, lowercase, number and special character',
+      );
     });
 
     it('should validate password match', async () => {
@@ -159,7 +153,7 @@ describe('AuthController (e2e)', () => {
       expect(response.statusCode).toBe(400);
       const body = JSON.parse(response.payload) as AuthResponse;
       expect(body.success).toBe(false);
-      expect(body.error?.message).toContain('passwords do not match');
+      expect(body.error?.message).toContain("Passwords don't match");
     });
   });
 
@@ -240,7 +234,7 @@ describe('AuthController (e2e)', () => {
       expect(response.statusCode).toBe(400);
       const body = JSON.parse(response.payload) as AuthResponse;
       expect(body.success).toBe(false);
-      expect(body.error?.message).toContain('email should not be empty');
+      expect(body.error?.message).toContain('Email is required');
     });
 
     it('should require password field', async () => {
@@ -255,7 +249,7 @@ describe('AuthController (e2e)', () => {
       expect(response.statusCode).toBe(400);
       const body = JSON.parse(response.payload) as AuthResponse;
       expect(body.success).toBe(false);
-      expect(body.error?.message).toContain('password should not be empty');
+      expect(body.error?.message).toContain('Password is required');
     });
   });
 });

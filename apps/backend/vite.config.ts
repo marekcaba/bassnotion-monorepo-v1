@@ -42,8 +42,6 @@ export default defineConfig({
         '@supabase/supabase-js',
         '@fastify/static',
         '@fastify/view',
-        'class-transformer',
-        'class-validator',
       ],
       treeshake: false, // Keep false for debugging, can enable later if needed
     },
@@ -71,13 +69,7 @@ export default defineConfig({
   // This is important for NestJS: make sure it's not trying to optimize deps
   // that are only loaded via DI.
   optimizeDeps: {
-    exclude: [
-      '@nestjs/microservices',
-      '@nestjs/websockets',
-      'cache-manager',
-      'class-validator',
-      'class-transformer',
-    ],
+    exclude: ['@nestjs/microservices', '@nestjs/websockets', 'cache-manager'],
   },
   resolve: {
     alias: {

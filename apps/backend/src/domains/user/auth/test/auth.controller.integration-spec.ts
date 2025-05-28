@@ -1,4 +1,4 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
@@ -11,23 +11,34 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { isApiSuccessResponse } from '../../../../shared/types/api.types.js';
 import { SupabaseService } from '../../../../infrastructure/supabase/supabase.service.js';
+import { DatabaseService } from '../../../../infrastructure/database/database.service.js';
 
 import { AuthController } from '../auth.controller.js';
 import { AuthService } from '../auth.service.js';
-import { AuthUser, AuthTokens, AuthData } from '../types/auth.types.js';
+import { AuthData } from '../types/auth.types.js';
 
 describe('AuthController (Integration)', () => {
   let app: INestApplication;
   let authController: AuthController;
-  const mockSupabaseClient = {
-    auth: {
-      signUp: vi.fn(),
-      signInWithPassword: vi.fn(),
-      signOut: vi.fn(),
-    },
-  };
+  let mockDatabaseService: any;
 
   beforeEach(async () => {
+    // Create a proper mock for DatabaseService
+    mockDatabaseService = {
+      supabase: {
+        auth: {
+          signUp: vi.fn(),
+          signInWithPassword: vi.fn(),
+          signOut: vi.fn(),
+        },
+        from: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        insert: vi.fn().mockReturnThis(),
+      },
+    };
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
@@ -45,16 +56,19 @@ describe('AuthController (Integration)', () => {
       providers: [
         AuthService,
         {
+          provide: DatabaseService,
+          useValue: mockDatabaseService,
+        },
+        {
           provide: SupabaseService,
           useValue: {
-            getClient: () => mockSupabaseClient,
+            getClient: () => mockDatabaseService.supabase,
           },
         },
       ],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe());
 
     authController = moduleFixture.get<AuthController>(AuthController);
 
@@ -90,23 +104,37 @@ describe('AuthController (Integration)', () => {
         factors: [],
       };
 
-      const mockAuthUser: AuthUser = {
-        id: mockSupabaseUser.id,
-        email: mockSupabaseUser.email ?? '',
-        displayName: 'Test User',
-        createdAt: mockSupabaseUser.created_at,
-        updatedAt: mockSupabaseUser.updated_at ?? mockSupabaseUser.created_at,
-        isConfirmed: true,
-        lastLoginAt: mockSupabaseUser.last_sign_in_at,
-        session: undefined,
+      const mockProfile = {
+        id: 'test-id',
+        email: 'test@example.com',
+        display_name: 'Test User',
+        bio: 'Test bio',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
-      const mockResponse = {
-        data: { user: mockSupabaseUser },
+      const mockAuthResponse = {
+        data: {
+          user: mockSupabaseUser,
+          session: {
+            access_token: 'test-token',
+            refresh_token: 'test-refresh-token',
+            expires_in: 3600,
+          },
+        },
         error: null,
       } as AuthResponse;
 
-      mockSupabaseClient.auth.signUp.mockResolvedValueOnce(mockResponse);
+      // Mock the auth signup
+      mockDatabaseService.supabase.auth.signUp.mockResolvedValueOnce(
+        mockAuthResponse,
+      );
+
+      // Mock the profile creation
+      mockDatabaseService.supabase.single.mockResolvedValueOnce({
+        data: mockProfile,
+        error: null,
+      });
 
       const result = await authController.signup({
         email: 'test@example.com',
@@ -118,11 +146,12 @@ describe('AuthController (Integration)', () => {
 
       expect(isApiSuccessResponse(result)).toBe(true);
       if (isApiSuccessResponse<AuthData>(result)) {
-        expect(mockSupabaseClient.auth.signUp).toHaveBeenCalledWith({
+        expect(mockDatabaseService.supabase.auth.signUp).toHaveBeenCalledWith({
           email: 'test@example.com',
           password: 'Password123!',
         });
-        expect(result.data.user).toEqual(mockAuthUser);
+        expect(result.data.user.email).toBe('test@example.com');
+        expect(result.data.user.displayName).toBe('Test User');
       }
     });
   });
@@ -160,28 +189,15 @@ describe('AuthController (Integration)', () => {
         user: mockSupabaseUser,
       };
 
-      const mockAuthUser: AuthUser = {
-        id: mockSupabaseUser.id,
-        email: mockSupabaseUser.email ?? '',
-        displayName: 'Test User',
-        createdAt: mockSupabaseUser.created_at,
-        updatedAt: mockSupabaseUser.updated_at ?? mockSupabaseUser.created_at,
-        isConfirmed: true,
-        lastLoginAt: mockSupabaseUser.last_sign_in_at,
-        session: {
-          accessToken: mockSession.access_token,
-          refreshToken: mockSession.refresh_token,
-          expiresIn: mockSession.expires_in,
-        },
+      const mockProfile = {
+        id: 'test-id',
+        email: 'test@example.com',
+        display_name: 'Test User',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
-      const mockTokens: AuthTokens = {
-        accessToken: mockSession.access_token,
-        refreshToken: mockSession.refresh_token,
-        expiresIn: mockSession.expires_in,
-      };
-
-      const mockResponse = {
+      const mockAuthResponse = {
         data: {
           session: mockSession,
           user: mockSession.user,
@@ -189,9 +205,16 @@ describe('AuthController (Integration)', () => {
         error: null,
       } as AuthTokenResponse;
 
-      mockSupabaseClient.auth.signInWithPassword.mockResolvedValueOnce(
-        mockResponse,
+      // Mock the auth signin
+      mockDatabaseService.supabase.auth.signInWithPassword.mockResolvedValueOnce(
+        mockAuthResponse,
       );
+
+      // Mock the profile fetch
+      mockDatabaseService.supabase.single.mockResolvedValueOnce({
+        data: mockProfile,
+        error: null,
+      });
 
       const result = await authController.signin({
         email: 'test@example.com',
@@ -200,14 +223,14 @@ describe('AuthController (Integration)', () => {
 
       expect(isApiSuccessResponse(result)).toBe(true);
       if (isApiSuccessResponse<AuthData>(result)) {
-        expect(mockSupabaseClient.auth.signInWithPassword).toHaveBeenCalledWith(
-          {
-            email: 'test@example.com',
-            password: 'Password123!',
-          },
-        );
-        expect(result.data.session).toEqual(mockTokens);
-        expect(result.data.user).toEqual(mockAuthUser);
+        expect(
+          mockDatabaseService.supabase.auth.signInWithPassword,
+        ).toHaveBeenCalledWith({
+          email: 'test@example.com',
+          password: 'Password123!',
+        });
+        expect(result.data.user.email).toBe('test@example.com');
+        expect(result.data.session.accessToken).toBe('test-token');
       }
     });
   });

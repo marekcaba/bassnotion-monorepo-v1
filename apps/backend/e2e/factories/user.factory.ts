@@ -272,7 +272,7 @@ export class UserFactory {
   private async retryOperation<T>(
     operation: () => Promise<T>,
     maxRetries: number,
-    delay: number = 1000,
+    delay = 1000,
   ): Promise<T | null> {
     let lastError: Error | null = null;
 

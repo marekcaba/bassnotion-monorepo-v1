@@ -1,4 +1,4 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import {
   NestFastifyApplication,
@@ -8,14 +8,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as dotenv from 'dotenv';
 import { beforeAll, afterAll, afterEach } from 'vitest';
 
-import { testDb } from './database.js';
-import { UserModule } from '../src/domains/user/user.module.js';
-import { DatabaseModule } from '../src/infrastructure/database/database.module.js';
-
-const logger = new Logger('E2E Setup');
-
-// Load test environment variables first
-const envResult = dotenv.config({ path: '.env.test' });
+// Load test environment variables first before importing database
+const envResult = dotenv.config({ path: 'e2e/.env.test' });
 if (envResult.error) {
   throw new Error(
     `Error loading test environment variables: ${envResult.error.message}`,
@@ -24,6 +18,12 @@ if (envResult.error) {
 
 // Set test environment
 process.env['NODE_ENV'] = 'test';
+
+import { testDb } from './database.js';
+import { UserModule } from '../src/domains/user/user.module.js';
+import { DatabaseModule } from '../src/infrastructure/database/database.module.js';
+
+const logger = new Logger('E2E Setup');
 
 // Validate required environment variables
 const requiredEnvVars = [
@@ -60,8 +60,8 @@ declare global {
 // Add retry logic for database operations
 async function retryOperation<T>(
   operation: () => Promise<T>,
-  maxRetries: number = 3,
-  delay: number = 1000,
+  maxRetries = 3,
+  delay = 1000,
 ): Promise<T> {
   let lastError: Error | null = null;
 
@@ -99,7 +99,7 @@ beforeAll(async () => {
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
-          envFilePath: '.env.test',
+          envFilePath: 'e2e/.env.test',
           load: [
             () => ({
               SUPABASE_URL: process.env['SUPABASE_URL'],
@@ -142,15 +142,7 @@ beforeAll(async () => {
       }),
     );
 
-    // Apply global validation pipe
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-        forbidUnknownValues: true,
-      }),
-    );
+    // Note: Removed global ValidationPipe since DTOs now handle validation internally with Zod
 
     // Start application with retry
     await retryOperation(async () => {

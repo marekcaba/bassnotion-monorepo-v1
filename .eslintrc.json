@@ -35,7 +35,12 @@
         "prettier"
       ],
       "parserOptions": {
-        "project": ["./tsconfig.json", "./apps/*/tsconfig.json"]
+        "project": [
+          "./tsconfig.json", 
+          "./apps/*/tsconfig.json", 
+          "./apps/*/tsconfig.node.json",
+          "./libs/*/tsconfig.json"
+        ]
       },
       "rules": {
         "prettier/prettier": "error",

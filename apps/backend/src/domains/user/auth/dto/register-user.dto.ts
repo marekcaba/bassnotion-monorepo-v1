@@ -1,35 +1,31 @@
-import {
-  IsEmail,
-  IsString,
-  IsNotEmpty,
-  MinLength,
-  Matches,
-} from 'class-validator';
+import { registrationSchema, RegistrationData } from '@bassnotion/contracts';
 
-import { Match } from '../../../../shared/decorators/match.decorator.js';
+export class RegisterUserDto implements RegistrationData {
+  email: string;
+  password: string;
+  confirmPassword: string;
 
-export class RegisterUserDto {
-  constructor(data: Partial<RegisterUserDto> = {}) {
-    this.email = data.email ?? '';
-    this.password = data.password ?? '';
-    this.confirmPassword = data.confirmPassword ?? '';
+  constructor(data: Partial<RegistrationData> = {}) {
+    // Validate the input data with Zod schema
+    const validated = registrationSchema.parse(data);
+
+    this.email = validated.email;
+    this.password = validated.password;
+    this.confirmPassword = validated.confirmPassword;
   }
 
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  /**
+   * Static method to create and validate a RegisterUserDto
+   */
+  static create(data: unknown): RegisterUserDto {
+    const validated = registrationSchema.parse(data);
+    return new RegisterUserDto(validated);
+  }
 
-  @IsString()
-  @MinLength(8)
-  @IsNotEmpty()
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9!@#$%^&*])/, {
-    message:
-      'Password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 number or special character',
-  })
-  password: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @Match('password')
-  confirmPassword: string;
+  /**
+   * Get the Zod schema for this DTO
+   */
+  static getSchema() {
+    return registrationSchema;
+  }
 }

@@ -13,6 +13,9 @@
       "path": "./apps/backend"
     },
     {
+      "path": "./apps/backend/tsconfig.node.json"
+    },
+    {
       "path": "./apps/frontend-e2e"
     }
   ]
