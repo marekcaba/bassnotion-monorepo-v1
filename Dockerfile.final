@@ -22,14 +22,12 @@ ENV NX_DAEMON=false
 RUN pnpm nx build @bassnotion/backend --prod
 
 # Debug: Check what was actually built
-RUN echo "=== Checking dist directory structure ===" && \
-    find dist -type f -name "*.js" | head -20 && \
-    echo "=== Looking for main.js specifically ===" && \
-    find . -name "main.js" -type f && \
-    echo "=== Contents of dist directory ===" && \
-    ls -la dist/ && \
-    echo "=== Contents of dist/apps if it exists ===" && \
-    ls -la dist/apps/ || echo "No dist/apps directory found"
+RUN echo "=== Contents of dist/apps/backend ===" && \
+    ls -la dist/apps/backend/ && \
+    echo "=== All files in dist/apps/backend recursively ===" && \
+    find dist/apps/backend -type f && \
+    echo "=== Looking for any .js files in dist/apps/backend ===" && \
+    find dist/apps/backend -name "*.js" -type f
 
 # Production stage
 FROM node:20-alpine AS production
@@ -39,6 +37,12 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+
+# Debug production stage
+RUN echo "=== Production stage - Contents of dist/apps/backend ===" && \
+    ls -la dist/apps/backend/ && \
+    echo "=== All files in production dist/apps/backend ===" && \
+    find dist/apps/backend -type f
 
 EXPOSE 3000
 CMD ["node", "dist/apps/backend/main.js"] 
