@@ -21,13 +21,13 @@ RUN pnpm nx build @bassnotion/contracts
 ENV NX_DAEMON=false
 RUN pnpm nx build @bassnotion/backend --prod
 
-# Debug: Check what was actually built
-RUN echo "=== Contents of dist/apps/backend ===" && \
-    ls -la dist/apps/backend/ && \
-    echo "=== All files in dist/apps/backend recursively ===" && \
-    find dist/apps/backend -type f && \
-    echo "=== Looking for any .js files in dist/apps/backend ===" && \
-    find dist/apps/backend -name "*.js" -type f
+# Debug: Look specifically for main.js
+RUN echo "=== Looking for main.js in dist/apps/backend/src ===" && \
+    ls -la dist/apps/backend/src/ | grep main || echo "No main.js found in src/" && \
+    echo "=== Looking for main.js anywhere in dist/apps/backend ===" && \
+    find dist/apps/backend -name "*main*" -type f && \
+    echo "=== First 10 .js files in dist/apps/backend/src ===" && \
+    find dist/apps/backend/src -name "*.js" | head -10
 
 # Production stage
 FROM node:20-alpine AS production
@@ -45,4 +45,4 @@ RUN echo "=== Production stage - Contents of dist/apps/backend ===" && \
     find dist/apps/backend -type f
 
 EXPOSE 3000
-CMD ["node", "dist/apps/backend/main.js"] 
+CMD ["node", "dist/apps/backend/src/main.js"] 
