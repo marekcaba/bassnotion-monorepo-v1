@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "../../dist/out-tsc",
+    "outDir": "../../dist/apps/backend",
     "target": "es2021",
     "lib": ["es2022"],
     "module": "NodeNext",
