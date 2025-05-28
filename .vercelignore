@@ -1,5 +1,8 @@
+# Exclude pnpm files to force npm usage
 pnpm-lock.yaml
 pnpm-workspace.yaml
+
+# Exclude other apps and directories
 apps/backend/
 bmad-agent/
 deploy/
