@@ -122,7 +122,9 @@ export class AuthService {
       }
 
       if (!profile) {
-        this.logger.error('User profile data is null after successful registration.');
+        this.logger.error(
+          'User profile data is null after successful registration.',
+        );
         const errorResponse: ApiErrorResponse = {
           success: false,
           message: 'User profile data missing',
@@ -242,7 +244,9 @@ export class AuthService {
       }
 
       if (!profile) {
-        this.logger.error('User profile data is null after successful authentication.');
+        this.logger.error(
+          'User profile data is null after successful authentication.',
+        );
         const errorResponse: ApiErrorResponse = {
           success: false,
           message: 'User profile data missing',
@@ -321,7 +325,7 @@ export class AuthService {
         createdAt: profile.created_at,
         updatedAt: profile.updated_at,
       };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid token');
     }
   }
@@ -354,7 +358,7 @@ export class AuthService {
         createdAt: profile.created_at,
         updatedAt: profile.updated_at,
       };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('No active session');
     }
   }

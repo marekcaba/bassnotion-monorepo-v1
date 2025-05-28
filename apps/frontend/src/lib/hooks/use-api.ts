@@ -43,7 +43,7 @@ export function useUpdateUserProfile() {
     onSuccess: (data, variables) => {
       // Update the user profile cache
       queryClient.setQueryData(queryKeys.userProfile(variables.userId), data);
-      
+
       // Invalidate related queries
       queryClient.invalidateQueries({
         queryKey: queryKeys.user(variables.userId),
@@ -71,7 +71,7 @@ export function useCreateYouTubeExercise() {
 // Generic hooks for common patterns
 export function useOptimisticUpdate<T>(
   queryKey: readonly unknown[],
-  mutationFn: (data: T) => Promise<T>
+  mutationFn: (data: T) => Promise<T>,
 ) {
   const queryClient = useQueryClient();
 
@@ -112,4 +112,4 @@ export function useInfiniteExercises(limit = 10) {
     // Note: For infinite queries, you'd typically use useInfiniteQuery
     // This is just an example structure
   });
-} 
+}

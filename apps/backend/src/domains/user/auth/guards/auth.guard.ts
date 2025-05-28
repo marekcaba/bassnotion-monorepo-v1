@@ -24,7 +24,7 @@ export class AuthGuard implements CanActivate {
       const user = await this.authService.validateToken(token);
       (request as FastifyRequest & { user: unknown }).user = user;
       return true;
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid token');
     }
   }

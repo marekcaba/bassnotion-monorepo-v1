@@ -106,7 +106,8 @@ describe('AuthService', () => {
       };
 
       // Mock auth signInWithPassword
-      const signInSpy = vi.spyOn(mockDatabaseService.supabase.auth, 'signInWithPassword')
+      const signInSpy = vi
+        .spyOn(mockDatabaseService.supabase.auth, 'signInWithPassword')
         .mockResolvedValue({
           data: {
             user: mockSupabaseUser,
@@ -138,7 +139,9 @@ describe('AuthService', () => {
       }>;
 
       // Přepíšeme single() pro tento konkrétní test
-      mockPostgrestQueryBuilder.single.mockResolvedValueOnce(mockProfileResponse);
+      mockPostgrestQueryBuilder.single.mockResolvedValueOnce(
+        mockProfileResponse,
+      );
 
       const result = (await authService.authenticateUser(
         signInDto,
@@ -175,7 +178,10 @@ describe('AuthService', () => {
       });
       expect(mockSupabaseClient.from).toHaveBeenCalledWith('profiles');
       expect(mockPostgrestQueryBuilder.select).toHaveBeenCalled();
-      expect(mockPostgrestQueryBuilder.eq).toHaveBeenCalledWith('id', mockSupabaseUser.id);
+      expect(mockPostgrestQueryBuilder.eq).toHaveBeenCalledWith(
+        'id',
+        mockSupabaseUser.id,
+      );
       expect(mockPostgrestQueryBuilder.single).toHaveBeenCalled();
     });
 
@@ -258,7 +264,9 @@ describe('AuthService', () => {
         error: null,
       };
 
-      mockPostgrestQueryBuilder.single.mockResolvedValueOnce(mockProfileResponse);
+      mockPostgrestQueryBuilder.single.mockResolvedValueOnce(
+        mockProfileResponse,
+      );
 
       const result = await authService.authenticateUser({ email, password });
 
@@ -278,7 +286,10 @@ describe('AuthService', () => {
       });
       expect(mockSupabaseClient.from).toHaveBeenCalledWith('profiles');
       expect(mockPostgrestQueryBuilder.select).toHaveBeenCalled();
-      expect(mockPostgrestQueryBuilder.eq).toHaveBeenCalledWith('id', mockSupabaseUser.id);
+      expect(mockPostgrestQueryBuilder.eq).toHaveBeenCalledWith(
+        'id',
+        mockSupabaseUser.id,
+      );
       expect(mockPostgrestQueryBuilder.single).toHaveBeenCalled();
     });
   });
@@ -312,7 +323,8 @@ describe('AuthService', () => {
       };
 
       // Mock auth signUp
-      const signUpSpy = vi.spyOn(mockDatabaseService.supabase.auth, 'signUp')
+      const signUpSpy = vi
+        .spyOn(mockDatabaseService.supabase.auth, 'signUp')
         .mockResolvedValue({
           data: {
             user: mockSupabaseUser,
@@ -346,7 +358,9 @@ describe('AuthService', () => {
       }>;
 
       // Přepíšeme single() pro tento konkrétní test
-      mockPostgrestQueryBuilder.single.mockResolvedValueOnce(mockProfileResponse);
+      mockPostgrestQueryBuilder.single.mockResolvedValueOnce(
+        mockProfileResponse,
+      );
 
       const result = await authService.registerUser(signUpDto);
 

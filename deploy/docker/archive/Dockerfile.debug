@@ -1,0 +1,94 @@
+# Stage 1: Dependency Installation & Build
+FROM node:20-alpine AS builder
+
+# Set the working directory to /app
+WORKDIR /app
+
+# Copy pnpm-lock.yaml and package.json to leverage Docker caching for dependencies
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Copy workspace package.json files so pnpm knows what dependencies to install
+COPY apps/backend/package.json ./apps/backend/package.json
+COPY libs/contracts/package.json ./libs/contracts/package.json
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Install all monorepo dependencies, which will also set up workspace symlinks
+RUN pnpm install --frozen-lockfile --ignore-scripts
+
+# Copy the rest of the monorepo source code
+COPY . .
+
+# Create necessary directories for Nx
+RUN mkdir -p /app/tmp /app/.nx/cache
+
+# Set Nx environment variables for Docker
+ENV NX_DAEMON=false
+ENV NX_CACHE_DIRECTORY=/app/.nx/cache
+ENV NX_CLOUD_ACCESS_TOKEN=""
+ENV NX_REJECT_UNKNOWN_LOCAL_CACHE=0
+ENV NX_SKIP_NX_CACHE=false
+
+# Build the shared contracts library first using Nx
+RUN npx nx build contracts --configuration=production
+
+# Verify contracts build output
+RUN ls -la libs/contracts/dist/ || echo "Contracts dist not found"
+
+# ADVANCED DEBUGGING - Inspect file contents and structure before backend build
+RUN echo "=== DEBUGGING: Checking auth.controller.ts file ===" && \
+    ls -la /app/apps/backend/src/domains/user/auth/auth.controller.ts && \
+    echo "=== DEBUGGING: Content of auth.controller.ts ===" && \
+    cat /app/apps/backend/src/domains/user/auth/auth.controller.ts && \
+    echo "=== DEBUGGING: Checking contracts dist structure ===" && \
+    ls -laR /app/libs/contracts/dist/ && \
+    echo "=== DEBUGGING: Content of contracts index.d.ts ===" && \
+    cat /app/libs/contracts/dist/index.d.ts && \
+    echo "=== DEBUGGING: Checking @bassnotion/contracts symlink ===" && \
+    ls -la /app/node_modules/@bassnotion/ && \
+    echo "=== DEBUGGING: Checking @nestjs/common module ===" && \
+    ls -la /app/node_modules/@nestjs/common/ | head -10 && \
+    echo "=== DEBUGGING: Checking tsconfig.base.json paths ===" && \
+    cat /app/tsconfig.base.json && \
+    echo "=== DEBUGGING: Checking backend tsconfig.json ===" && \
+    cat /app/apps/backend/tsconfig.json
+
+# Build the backend application using Nx from monorepo root
+# Nx handles the monorepo context and module resolution correctly
+RUN npx nx build backend --configuration=production
+
+# Verify backend build output
+RUN ls -la dist/apps/backend/ || echo "Backend dist not found"
+
+# Stage 2: Production Runtime Image
+FROM node:20-alpine AS runner
+
+# Set the working directory
+WORKDIR /app
+
+# Install pnpm in runner stage
+RUN npm install -g pnpm
+
+# Copy package files for production dependencies
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY libs/contracts/package.json ./libs/contracts/package.json
+COPY apps/backend/package.json ./apps/backend/package.json
+
+# Install only production dependencies
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy the built backend application from the builder stage
+COPY --from=builder /app/dist/apps/backend ./dist/apps/backend
+
+# Copy the built contracts library (needed for runtime imports)
+COPY --from=builder /app/libs/contracts/dist ./libs/contracts/dist
+
+# Environment variables
+ENV NODE_ENV=production
+
+# Expose the port your NestJS app listens on
+EXPOSE 3000
+
+# Command to run the application
+CMD ["node", "dist/apps/backend/main.js"] 
