@@ -1,5 +1,5 @@
-# Single-stage build for BassNotion monorepo - ensures all dependencies are available
-FROM node:20-alpine
+# Multi-stage build for BassNotion monorepo
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -14,69 +14,29 @@ RUN npm install -g pnpm
 # Install ALL dependencies in workspace context
 RUN pnpm install --frozen-lockfile
 
-# CRITICAL FIX: Create symlinks for ALL backend dependencies
-RUN echo "=== Creating symlinks for ALL backend dependencies ===" && \
-    mkdir -p node_modules/@nestjs && \
-    mkdir -p node_modules/@supabase && \
-    mkdir -p node_modules/@fastify && \
-    echo "=== Finding and linking @nestjs packages ===" && \
-    for pkg in core common config cqrs platform-fastify; do \
-        path=$(find node_modules/.pnpm -path "*/node_modules/@nestjs/$pkg" | head -1); \
-        if [ -n "$path" ]; then \
-            echo "Linking @nestjs/$pkg -> $path"; \
-            ln -sf "../../$path" "node_modules/@nestjs/$pkg"; \
-        fi; \
-    done && \
-    echo "=== Finding and linking other dependencies ===" && \
-    for pkg in reflect-metadata class-transformer class-validator fastify rxjs; do \
-        path=$(find node_modules/.pnpm -path "*/node_modules/$pkg" | head -1); \
-        if [ -n "$path" ]; then \
-            echo "Linking $pkg -> $path"; \
-            ln -sf "../$path" "node_modules/$pkg"; \
-        fi; \
-    done && \
-    echo "=== Finding and linking @supabase/supabase-js ===" && \
-    supabase_path=$(find node_modules/.pnpm -path "*/node_modules/@supabase/supabase-js" | head -1) && \
-    if [ -n "$supabase_path" ]; then \
-        echo "Linking @supabase/supabase-js -> $supabase_path"; \
-        ln -sf "../../$supabase_path" "node_modules/@supabase/supabase-js"; \
-    fi && \
-    echo "=== Finding and linking @fastify packages ===" && \
-    for pkg in static view; do \
-        path=$(find node_modules/.pnpm -path "*/node_modules/@fastify/$pkg" | head -1); \
-        if [ -n "$path" ]; then \
-            echo "Linking @fastify/$pkg -> $path"; \
-            ln -sf "../../$path" "node_modules/@fastify/$pkg"; \
-        fi; \
-    done && \
-    echo "=== Verifying key symlinks ===" && \
-    ls -la node_modules/@nestjs/ && \
-    ls -la node_modules/@supabase/ && \
-    ls -la node_modules/reflect-metadata && \
-    echo "=== Testing critical imports ===" && \
-    node -e "import('@nestjs/core').then(() => console.log('✅ @nestjs/core')).catch(e => console.log('❌ @nestjs/core:', e.message))" && \
-    node -e "import('@supabase/supabase-js').then(() => console.log('✅ @supabase/supabase-js')).catch(e => console.log('❌ @supabase/supabase-js:', e.message))" && \
-    node -e "import('reflect-metadata').then(() => console.log('✅ reflect-metadata')).catch(e => console.log('❌ reflect-metadata:', e.message))"
-
 # Copy source code
 COPY . .
 
-# Create necessary directories for Nx
-RUN mkdir -p /app/tmp /app/.nx/cache
+# Build contracts library first
+RUN pnpm nx build @bassnotion/contracts
 
-# Set Nx environment variables
-ENV NX_DAEMON=false
-ENV NX_CACHE_DIRECTORY=/app/.nx/cache
-ENV NX_CLOUD_ACCESS_TOKEN=""
+# Create contracts library as proper npm module
+RUN mkdir -p node_modules/@bassnotion/contracts && \
+    cp -r libs/contracts/dist/* node_modules/@bassnotion/contracts/ && \
+    cp libs/contracts/package.json node_modules/@bassnotion/contracts/
 
-# Build contracts and backend
-RUN npx nx build contracts --configuration=production
-RUN npx nx build backend --configuration=production
+# Build backend
+RUN pnpm nx build @bassnotion/backend --prod
 
-# Final verification - this should work now!
-RUN echo "=== FINAL CHECK - @nestjs should be available ===" && \
-    ls -la node_modules/@nestjs/ && \
-    echo "=== SUCCESS: NestJS packages are now available! ===" 
+# Production stage
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+# Copy built application and dependencies
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
 # Environment variables
 ENV NODE_ENV=production
@@ -84,5 +44,5 @@ ENV NODE_ENV=production
 # Expose port
 EXPOSE 3000
 
-# Start the application with extensive debugging
-CMD ["sh", "-c", "echo '=== CONTAINER STARTUP DEBUG ===' && echo 'PWD:' && pwd && echo 'PORT=$PORT' && echo 'NODE_ENV=$NODE_ENV' && echo 'Checking if main.js exists:' && ls -la dist/apps/backend/src/main.js && echo 'Testing node version:' && node --version && echo 'Testing @nestjs/core import:' && node -e \"import('@nestjs/core').then(() => console.log('✅ @nestjs/core import SUCCESS')).catch(e => console.log('❌ @nestjs/core import FAILED:', e.message))\" && echo 'Starting NestJS application...' && node dist/apps/backend/src/main.js"] 
+# Start the application
+CMD ["node", "dist/apps/backend/main.js"] 
