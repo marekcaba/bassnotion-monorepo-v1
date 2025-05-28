@@ -1,5 +1,5 @@
 {
-  "installCommand": "npm install",
+  "installCommand": "npm install && mkdir -p node_modules/@bassnotion && cp -r ../../libs/contracts node_modules/@bassnotion/ && cp ../../libs/contracts/dist/package.json node_modules/@bassnotion/contracts/",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
