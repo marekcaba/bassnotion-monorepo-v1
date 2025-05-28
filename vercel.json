@@ -1,6 +1,6 @@
 {
-  "installCommand": "echo 'Dependencies will be installed by build script'",
-  "buildCommand": "chmod +x build-frontend.sh && ./build-frontend.sh",
+  "installCommand": "ls -la && cd apps/frontend && npm install",
+  "buildCommand": "ls -la && cd apps/frontend && npm run build",
   "outputDirectory": "apps/frontend/.next",
   "framework": "nextjs",
   "cleanUrls": true,

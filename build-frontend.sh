@@ -2,6 +2,7 @@
 set -e
 
 echo "Building BassNotion Frontend..."
+# Deployment triggered at: $(date)
 
 # Navigate to frontend directory
 cd apps/frontend
