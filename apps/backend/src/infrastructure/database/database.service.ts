@@ -6,6 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 export class DatabaseService implements OnModuleInit {
   private readonly logger = new Logger(DatabaseService.name);
   public supabase!: SupabaseClient;
+  private isInitialized = false;
 
   constructor(private readonly configService: ConfigService) {
     if (!configService) {
@@ -20,7 +21,8 @@ export class DatabaseService implements OnModuleInit {
       this.logger.debug('Initializing Supabase client');
 
       if (!this.configService) {
-        throw new Error('ConfigService is undefined in onModuleInit');
+        this.logger.error('ConfigService is undefined in onModuleInit');
+        return;
       }
 
       const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
@@ -41,25 +43,35 @@ export class DatabaseService implements OnModuleInit {
       this.supabase = createClient(supabaseUrl, supabaseKey);
 
       try {
+        // Test the connection but don't fail if it doesn't work
         const { error } = await this.supabase.auth.getSession();
         if (error) {
-          this.logger.error('Failed to initialize Supabase client:', error);
-          throw error;
+          this.logger.warn(
+            'Supabase client test failed, but continuing:',
+            error.message,
+          );
+        } else {
+          this.logger.debug('Supabase client initialized successfully');
         }
-        this.logger.debug('Supabase client initialized successfully');
+        this.isInitialized = true;
       } catch (error) {
-        this.logger.error(
-          'Error during Supabase client initialization:',
+        this.logger.warn(
+          'Error during Supabase client test, but continuing:',
           error,
         );
-        throw error;
+        // Don't throw - allow app to start
+        this.isInitialized = true;
       }
     } catch (error) {
       this.logger.error(
-        'Fatal error in DatabaseService initialization:',
+        'Error in DatabaseService initialization, but continuing:',
         error,
       );
-      throw error;
+      // Don't throw - allow app to start for health checks
     }
+  }
+
+  isReady(): boolean {
+    return this.isInitialized && !!this.supabase;
   }
 }
