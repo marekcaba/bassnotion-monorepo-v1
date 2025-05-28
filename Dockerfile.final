@@ -28,10 +28,18 @@ RUN mkdir -p /tmp/.nx/cache
 # Build contracts library first
 RUN pnpm nx build @bassnotion/contracts
 
-# Create contracts library as proper npm module
+# Verify contracts build output
+RUN echo "=== Contracts build verification ===" && \
+    ls -la libs/contracts/dist/ && \
+    echo "=== Contracts package.json ===" && \
+    cat libs/contracts/package.json
+
+# Create contracts library as proper npm module AND ensure path mapping works
 RUN mkdir -p node_modules/@bassnotion/contracts && \
     cp -r libs/contracts/dist/* node_modules/@bassnotion/contracts/ && \
-    cp libs/contracts/package.json node_modules/@bassnotion/contracts/
+    cp libs/contracts/package.json node_modules/@bassnotion/contracts/ && \
+    echo "=== Verifying node_modules contracts ===" && \
+    ls -la node_modules/@bassnotion/contracts/
 
 # Build backend using the correct Nx syntax
 RUN pnpm nx run @bassnotion/backend:build:production --verbose
