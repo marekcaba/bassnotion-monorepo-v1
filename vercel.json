@@ -1,7 +1,7 @@
 {
-  "installCommand": "ls -la && cd apps/frontend && npm install",
-  "buildCommand": "ls -la && cd apps/frontend && npm run build",
-  "outputDirectory": "apps/frontend/.next",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
   "framework": "nextjs",
   "cleanUrls": true,
   "trailingSlash": false,
