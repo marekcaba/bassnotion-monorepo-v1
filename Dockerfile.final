@@ -22,11 +22,15 @@ ENV NX_DAEMON=false
 ENV NX_CACHE_DIRECTORY=/tmp/.nx/cache
 ENV NX_CLOUD_ACCESS_TOKEN=""
 
-# Create cache directory
-RUN mkdir -p /tmp/.nx/cache
+# Create cache directory and clear any existing builds
+RUN mkdir -p /tmp/.nx/cache && \
+    rm -rf dist && \
+    rm -rf libs/contracts/dist && \
+    rm -rf .nx/cache
 
-# Build contracts library first
-RUN pnpm nx build @bassnotion/contracts
+# Clear Nx cache and build contracts library fresh
+RUN pnpm nx reset && \
+    pnpm nx build @bassnotion/contracts --skip-nx-cache
 
 # Verify contracts build output
 RUN echo "=== Contracts build verification ===" && \
@@ -41,8 +45,8 @@ RUN mkdir -p node_modules/@bassnotion/contracts && \
     echo "=== Verifying node_modules contracts ===" && \
     ls -la node_modules/@bassnotion/contracts/
 
-# Build backend using the correct Nx syntax
-RUN pnpm nx run @bassnotion/backend:build:production --verbose
+# Build backend using fresh build without cache
+RUN pnpm nx run @bassnotion/backend:build:production --skip-nx-cache --verbose
 
 # Production stage
 FROM node:20-alpine AS production
