@@ -1,6 +1,6 @@
 {
   "installCommand": "npm install",
-  "buildCommand": "npm run build:frontend",
+  "buildCommand": "npx nx build @bassnotion/contracts && npx nx build @bassnotion/frontend",
   "outputDirectory": "apps/frontend/.next",
   "framework": "nextjs",
   "cleanUrls": true,
