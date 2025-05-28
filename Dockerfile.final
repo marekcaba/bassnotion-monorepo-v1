@@ -18,8 +18,9 @@ COPY . .
 # Build contracts library first
 RUN pnpm nx build @bassnotion/contracts
 
-# Build backend
-RUN pnpm nx build @bassnotion/backend --prod
+# Build backend with Nx daemon disabled
+ENV NX_DAEMON=false
+RUN pnpm nx build @bassnotion/backend --prod --verbose
 
 # Production stage
 FROM node:20-alpine AS production
