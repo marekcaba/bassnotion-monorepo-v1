@@ -5,7 +5,7 @@
     "dockerfilePath": "Dockerfile.final",
     "watchPatterns": [
       "apps/backend/**",
-      "libs/**",
+      "libs/contracts/**",
       "package.json",
       "pnpm-lock.yaml",
       "Dockerfile.final",
@@ -25,7 +25,7 @@
         "PORT": "3000",
         "SUPABASE_URL": "https://placeholder.supabase.co",
         "SUPABASE_KEY": "placeholder-key-replace-with-real-values",
-        "DEPLOYMENT_TRIGGER": "ALL-DEPS-comprehensive-fix-2025-05-26-22:35"
+        "DEPLOYMENT_TRIGGER": "BACKEND-ONLY-contracts-fix-2025-05-28"
       }
     }
   }
