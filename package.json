@@ -7,7 +7,8 @@
     "build": "NX_CLOUD_ACCESS_TOKEN= npx nx build @bassnotion/backend --prod --skip-nx-cache --verbose --force",
     "start": "node dist/apps/backend/main.js",
     "build:backend": "NX_CLOUD_ACCESS_TOKEN= npx nx build @bassnotion/backend --prod --skip-nx-cache --verbose --force",
-    "start:backend": "node dist/apps/backend/main.js"
+    "start:backend": "node dist/apps/backend/main.js",
+    "build:frontend": "npx nx build @bassnotion/contracts && npx nx build @bassnotion/frontend"
   },
   "private": true,
   "devDependencies": {
