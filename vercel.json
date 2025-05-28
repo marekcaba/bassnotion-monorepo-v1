@@ -1,5 +1,5 @@
 {
-  "installCommand": "npm install && mkdir -p node_modules/@bassnotion/contracts && cp -r ../../libs/contracts/* node_modules/@bassnotion/contracts/ && echo 'Contracts library copied:' && ls -la node_modules/@bassnotion/contracts/ && echo 'Dist folder:' && ls -la node_modules/@bassnotion/contracts/dist/src/",
+  "installCommand": "chmod +x setup-contracts.sh && ./setup-contracts.sh",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
