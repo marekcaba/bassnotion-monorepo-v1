@@ -21,6 +21,16 @@ RUN pnpm nx build @bassnotion/contracts
 ENV NX_DAEMON=false
 RUN pnpm nx build @bassnotion/backend --prod
 
+# Debug: Check what was actually built
+RUN echo "=== Checking dist directory structure ===" && \
+    find dist -type f -name "*.js" | head -20 && \
+    echo "=== Looking for main.js specifically ===" && \
+    find . -name "main.js" -type f && \
+    echo "=== Contents of dist directory ===" && \
+    ls -la dist/ && \
+    echo "=== Contents of dist/apps if it exists ===" && \
+    ls -la dist/apps/ || echo "No dist/apps directory found"
+
 # Production stage
 FROM node:20-alpine AS production
 WORKDIR /app
