@@ -2,17 +2,17 @@
   "name": "@bassnotion/contracts",
   "version": "0.1.0",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
     }
   },
   "scripts": {
-    "build": "npx tsc",
-    "typecheck": "npx tsc --noEmit"
+    "build": "./node_modules/.bin/tsc",
+    "typecheck": "./node_modules/.bin/tsc --noEmit"
   },
   "dependencies": {
     "zod": "^3.25.32"
