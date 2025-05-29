@@ -59,4 +59,18 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
 EXPOSE 3000
-CMD ["node", "dist/apps/backend/src/main.js"] 
+
+# Debug: Check what files exist and test the command
+RUN echo "=== Production stage debugging ===" && \
+    ls -la dist/apps/backend/ && \
+    echo "=== Checking main.js file ===" && \
+    ls -la dist/apps/backend/src/main.js && \
+    echo "=== Testing node command ===" && \
+    node --version && \
+    echo "=== Files in dist ===" && \
+    find dist/ -name "*.js" | grep main && \
+    echo "=== Testing simple health server ===" && \
+    ls -la apps/backend/src/health.js
+
+# Temporarily use simple health server for testing
+CMD ["node", "apps/backend/src/health.js"] 
