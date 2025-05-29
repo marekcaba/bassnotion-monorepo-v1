@@ -73,7 +73,11 @@ RUN echo "=== Production stage debugging ===" && \
     echo "=== Files in dist ===" && \
     find dist/ -name "*.js" | grep main && \
     echo "=== Testing simple health server ===" && \
-    ls -la health.js
+    ls -la health.js && \
+    echo "=== Testing health.js syntax ===" && \
+    node -c health.js && \
+    echo "=== Testing health.js startup (5 second test) ===" && \
+    timeout 5 node health.js || echo "Health server test completed"
 
 # Temporarily use simple health server for testing
 CMD ["node", "health.js"] 
