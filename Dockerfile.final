@@ -79,5 +79,5 @@ RUN echo "=== Production stage debugging ===" && \
     echo "=== Testing health.js startup (5 second test) ===" && \
     timeout 5 node health.js || echo "Health server test completed"
 
-# Temporarily use simple health server for testing
-CMD ["node", "health.js"] 
+# Switch back to the full NestJS application
+CMD ["node", "dist/apps/backend/src/main.js"] 
