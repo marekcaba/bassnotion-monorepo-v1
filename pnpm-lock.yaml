@@ -419,13 +419,12 @@ importers:
 
   libs/contracts:
     dependencies:
-      zod:
-        specifier: ^3.25.32
-        version: 3.25.32
-    devDependencies:
       typescript:
         specifier: 5.3.3
         version: 5.3.3
+      zod:
+        specifier: ^3.25.32
+        version: 3.25.32
 
 packages:
 
