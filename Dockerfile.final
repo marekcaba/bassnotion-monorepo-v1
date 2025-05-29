@@ -58,6 +58,9 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
+# Copy the simple health server for testing
+COPY --from=builder /app/apps/backend/src/health.js ./health.js
+
 EXPOSE 3000
 
 # Debug: Check what files exist and test the command
@@ -70,7 +73,7 @@ RUN echo "=== Production stage debugging ===" && \
     echo "=== Files in dist ===" && \
     find dist/ -name "*.js" | grep main && \
     echo "=== Testing simple health server ===" && \
-    ls -la apps/backend/src/health.js
+    ls -la health.js
 
 # Temporarily use simple health server for testing
-CMD ["node", "apps/backend/src/health.js"] 
+CMD ["node", "health.js"] 

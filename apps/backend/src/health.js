@@ -1,33 +1,43 @@
-import { createServer } from 'http';
+const http = require('http');
 
-const server = createServer((req, res) => {
-  if (req.url === '/api/health' && req.method === 'GET') {
+const server = http.createServer((req, res) => {
+  if (req.url === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(
       JSON.stringify({
         status: 'ok',
+        message: 'Simple health server is running',
         timestamp: new Date().toISOString(),
-        message: 'BassNotion Backend Health Check - Minimal Server',
+        environment: process.env.NODE_ENV || 'development',
       }),
     );
   } else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not Found' }));
+    res.end(JSON.stringify({ error: 'Not found' }));
   }
 });
 
 const port = process.env.PORT || 3000;
-const host = '0.0.0.0';
-
-server.listen(port, host, () => {
-  console.log(`Health check server running on http://${host}:${port}`);
-  console.log(`Health check available at: http://${host}:${port}/api/health`);
+server.listen(port, '0.0.0.0', () => {
+  console.log(`Simple health server running on port ${port}`);
+  console.log(
+    `Health endpoint available at: http://localhost:${port}/api/health`,
+  );
 });
 
-// Handle graceful shutdown
+// Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully');
   server.close(() => {
-    console.log('Process terminated');
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
   });
 });
