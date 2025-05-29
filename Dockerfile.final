@@ -18,6 +18,7 @@ COPY . .
 RUN pnpm nx build @bassnotion/contracts
 
 # Build backend
+ENV NX_DAEMON=false
 RUN pnpm nx build @bassnotion/backend --prod
 
 # Production stage
