@@ -9,10 +9,10 @@ COPY libs/contracts/package.json ./libs/contracts/package.json
 
 # Install pnpm and dependencies
 RUN npm install -g pnpm
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --shamefully-hoist
 
-# Install backend-specific dependencies explicitly
-RUN cd apps/backend && pnpm install --frozen-lockfile
+# Install backend-specific dependencies explicitly with hoisting
+RUN cd apps/backend && pnpm install --frozen-lockfile --shamefully-hoist
 
 # Copy source code
 COPY . .
