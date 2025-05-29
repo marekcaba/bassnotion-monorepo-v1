@@ -9,7 +9,8 @@
       "package.json",
       "pnpm-lock.yaml",
       "Dockerfile.final",
-      "railway.json"
+      "railway.json",
+      "tsconfig.base.json"
     ]
   },
   "deploy": {
@@ -25,7 +26,7 @@
         "PORT": "3000",
         "SUPABASE_URL": "https://placeholder.supabase.co",
         "SUPABASE_KEY": "placeholder-key-replace-with-real-values",
-        "DEPLOYMENT_TRIGGER": "BACKEND-ONLY-contracts-fix-2025-05-28"
+        "DEPLOYMENT_TRIGGER": "BACKEND-contracts-path-fix-2025-05-29"
       }
     }
   }
