@@ -36,8 +36,12 @@ COPY libs/contracts/package.json ./libs/contracts/package.json
 # Install only production dependencies
 RUN pnpm install --frozen-lockfile --prod
 
-# Copy built application and contracts
+# Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
+
+# Copy built contracts library so it's available for runtime module resolution
+COPY --from=builder /app/libs/contracts/dist ./node_modules/@bassnotion/contracts/dist
+COPY --from=builder /app/libs/contracts/package.json ./node_modules/@bassnotion/contracts/package.json
 
 EXPOSE 3000
 CMD ["node", "dist/apps/backend/main.js"] 
