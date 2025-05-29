@@ -17,35 +17,17 @@ COPY . .
 # Build contracts library first
 RUN pnpm nx build @bassnotion/contracts
 
-# Create symlink for contracts library so backend can find it during build
-RUN mkdir -p node_modules/@bassnotion && \
-    ln -sf ../../libs/contracts node_modules/@bassnotion/contracts
-
 # Build backend
-ENV NX_DAEMON=false
 RUN pnpm nx build @bassnotion/backend --prod
 
 # Production stage
 FROM node:20-alpine AS production
 WORKDIR /app
 
-# Install pnpm in production stage
-RUN npm install -g pnpm
-
-# Copy package files for production install
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/backend/package.json ./apps/backend/package.json
-COPY libs/contracts/package.json ./libs/contracts/package.json
-
-# Install only production dependencies
-RUN pnpm install --frozen-lockfile --prod
-
-# Copy built application from builder stage
+# Copy built application
 COPY --from=builder /app/dist ./dist
-
-# Copy built contracts library so it's available for runtime module resolution
-COPY --from=builder /app/libs/contracts/dist ./node_modules/@bassnotion/contracts/dist
-COPY --from=builder /app/libs/contracts/package.json ./node_modules/@bassnotion/contracts/package.json
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
 EXPOSE 3000
 CMD ["node", "dist/apps/backend/main.js"] 
