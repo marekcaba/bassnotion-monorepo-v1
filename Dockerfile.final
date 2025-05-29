@@ -28,6 +28,15 @@ RUN pnpm nx build @bassnotion/contracts
 # Make sure contracts are freshly built with correct structure
 RUN cd libs/contracts && rm -rf dist tsconfig.tsbuildinfo && npm run build
 
+# Debug: Check what hoisting created and manually ensure contracts are available
+RUN echo "=== Checking hoisted node_modules ===" && \
+    ls -la node_modules/@bassnotion/ || echo "No @bassnotion in hoisted node_modules" && \
+    echo "=== Ensuring contracts are available for TypeScript ===" && \
+    mkdir -p node_modules/@bassnotion/contracts && \
+    cp -r libs/contracts/dist/* node_modules/@bassnotion/contracts/ 2>/dev/null || true && \
+    cp libs/contracts/package.json node_modules/@bassnotion/contracts/ 2>/dev/null || true && \
+    ls -la node_modules/@bassnotion/contracts/
+
 # Build backend (hoisting already handled contracts placement)
 RUN pnpm nx build @bassnotion/backend --prod
 
