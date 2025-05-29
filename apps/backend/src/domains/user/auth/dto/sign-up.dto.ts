@@ -1,4 +1,5 @@
 import { signUpSchema, SignUpData } from '@bassnotion/contracts';
+import { z } from 'zod';
 
 export class SignUpDto implements SignUpData {
   email: string;
@@ -29,7 +30,7 @@ export class SignUpDto implements SignUpData {
   /**
    * Get the Zod schema for this DTO
    */
-  static getSchema() {
+  static getSchema(): z.ZodSchema<SignUpData> {
     return signUpSchema;
   }
 }

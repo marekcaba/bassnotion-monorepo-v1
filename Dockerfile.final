@@ -22,10 +22,8 @@ ENV NX_DAEMON=false
 # Build contracts library first
 RUN pnpm nx build @bassnotion/contracts
 
-# Make contracts available for backend build - copy entire dist to match expected structure
-RUN mkdir -p node_modules/@bassnotion/contracts && \
-    cp -r libs/contracts/dist/* node_modules/@bassnotion/contracts/ && \
-    cp libs/contracts/package.json node_modules/@bassnotion/contracts/
+# Ensure contracts are available in node_modules by installing workspace
+RUN cd libs/contracts && rm -rf dist tsconfig.tsbuildinfo && npm run build
 
 # Build backend
 RUN pnpm nx build @bassnotion/backend --prod

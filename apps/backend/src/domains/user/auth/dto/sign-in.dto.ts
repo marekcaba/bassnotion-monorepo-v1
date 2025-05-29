@@ -1,4 +1,5 @@
 import { signInSchema, SignInData } from '@bassnotion/contracts';
+import { z } from 'zod';
 
 export class SignInDto implements SignInData {
   email: string;
@@ -23,7 +24,7 @@ export class SignInDto implements SignInData {
   /**
    * Get the Zod schema for this DTO
    */
-  static getSchema() {
+  static getSchema(): z.ZodSchema<SignInData> {
     return signInSchema;
   }
 }

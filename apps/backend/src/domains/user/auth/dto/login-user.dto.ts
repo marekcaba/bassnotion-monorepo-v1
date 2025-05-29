@@ -1,5 +1,6 @@
 import { loginSchema, LoginData } from '@bassnotion/contracts';
 import { AuthCredentials } from '../types/auth.types.js';
+import { z } from 'zod';
 
 export class LoginUserDto implements AuthCredentials, LoginData {
   email: string;
@@ -24,7 +25,7 @@ export class LoginUserDto implements AuthCredentials, LoginData {
   /**
    * Get the Zod schema for this DTO
    */
-  static getSchema() {
+  static getSchema(): z.ZodSchema<LoginData> {
     return loginSchema;
   }
 }
