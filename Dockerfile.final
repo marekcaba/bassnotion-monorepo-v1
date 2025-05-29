@@ -17,6 +17,10 @@ COPY . .
 # Build contracts library first
 RUN pnpm nx build @bassnotion/contracts
 
+# Create symlink for contracts library so backend can find it during build
+RUN mkdir -p node_modules/@bassnotion && \
+    ln -sf ../../libs/contracts node_modules/@bassnotion/contracts
+
 # Build backend
 ENV NX_DAEMON=false
 RUN pnpm nx build @bassnotion/backend --prod
