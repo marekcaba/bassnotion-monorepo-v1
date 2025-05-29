@@ -28,14 +28,20 @@ RUN pnpm nx build @bassnotion/contracts
 # Make sure contracts are freshly built with correct structure
 RUN cd libs/contracts && rm -rf dist tsconfig.tsbuildinfo && npm run build
 
-# Debug: Check what hoisting created and manually ensure contracts are available
-RUN echo "=== Checking hoisted node_modules ===" && \
+# Debug and ensure contracts are available in ALL expected locations
+RUN echo "=== Checking contracts build output ===" && \
+    ls -la libs/contracts/dist/ && \
+    echo "=== Checking hoisted node_modules ===" && \
     ls -la node_modules/@bassnotion/ || echo "No @bassnotion in hoisted node_modules" && \
-    echo "=== Ensuring contracts are available for TypeScript ===" && \
+    echo "=== Ensuring contracts are available for TypeScript path mapping ===" && \
+    ls -la libs/contracts/dist/index.d.ts && \
+    echo "=== Ensuring contracts are available in node_modules ===" && \
     mkdir -p node_modules/@bassnotion/contracts && \
-    cp -r libs/contracts/dist/* node_modules/@bassnotion/contracts/ 2>/dev/null || true && \
-    cp libs/contracts/package.json node_modules/@bassnotion/contracts/ 2>/dev/null || true && \
-    ls -la node_modules/@bassnotion/contracts/
+    cp -r libs/contracts/dist/* node_modules/@bassnotion/contracts/ && \
+    cp libs/contracts/package.json node_modules/@bassnotion/contracts/ && \
+    ls -la node_modules/@bassnotion/contracts/ && \
+    echo "=== Verifying TypeScript can resolve module ===" && \
+    cd apps/backend && node -e "console.log('TypeScript should find contracts at:', require('path').resolve('../../libs/contracts/dist/index.d.ts'))"
 
 # Build backend (hoisting already handled contracts placement)
 RUN pnpm nx build @bassnotion/backend --prod
