@@ -26,7 +26,7 @@
         "PORT": "3000",
         "SUPABASE_URL": "https://placeholder.supabase.co",
         "SUPABASE_KEY": "placeholder-key-replace-with-real-values",
-        "DEPLOYMENT_TRIGGER": "BACKEND-contracts-path-fix-2025-05-29"
+        "DEPLOYMENT_TRIGGER": "BACKEND-contracts-module-resolution-fix-2025-05-29"
       }
     }
   }

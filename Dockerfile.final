@@ -14,16 +14,20 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
+# Disable Nx Cloud and daemon to avoid authentication issues
+ENV NX_CLOUD_NO_TIMEOUTS=true
+ENV NX_CLOUD_AUTH=false
+ENV NX_DAEMON=false
+
 # Build contracts library first
 RUN pnpm nx build @bassnotion/contracts
 
-# Make contracts available for backend build
+# Make contracts available for backend build - copy entire dist to match expected structure
 RUN mkdir -p node_modules/@bassnotion/contracts && \
     cp -r libs/contracts/dist/* node_modules/@bassnotion/contracts/ && \
     cp libs/contracts/package.json node_modules/@bassnotion/contracts/
 
 # Build backend
-ENV NX_DAEMON=false
 RUN pnpm nx build @bassnotion/backend --prod
 
 # Production stage
