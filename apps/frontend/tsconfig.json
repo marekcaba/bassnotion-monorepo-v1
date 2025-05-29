@@ -34,7 +34,7 @@
       "@/domains/*": ["./src/domains/*"],
       "@/shared/*": ["./src/shared/*"],
       "@/infrastructure/*": ["./src/infrastructure/*"],
-
+      "@bassnotion/contracts": ["../../libs/contracts/dist/index.d.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
