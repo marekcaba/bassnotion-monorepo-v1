@@ -1,4 +1,4 @@
-const http = require('http');
+import { createServer } from 'http';
 
 console.log('=== BassNotion Health Server Starting ===');
 console.log('Node.js version:', process.version);
@@ -7,7 +7,7 @@ console.log('Architecture:', process.arch);
 console.log('Environment:', process.env.NODE_ENV || 'development');
 console.log('Port from env:', process.env.PORT);
 
-const server = http.createServer((req, res) => {
+const server = createServer((req, res) => {
   console.log(`Request received: ${req.method} ${req.url}`);
   
   if (req.url === '/api/health') {
