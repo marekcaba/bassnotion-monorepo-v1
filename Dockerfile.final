@@ -32,7 +32,8 @@ RUN mkdir -p node_modules/@bassnotion/contracts && \
     cp libs/contracts/tsconfig.json node_modules/@bassnotion/contracts/
 
 # Also ensure it's available in the backend's node_modules
-RUN mkdir -p apps/backend/node_modules/@bassnotion/contracts && \
+RUN rm -rf apps/backend/node_modules/@bassnotion && \
+    mkdir -p apps/backend/node_modules/@bassnotion/contracts && \
     cp -r libs/contracts/dist apps/backend/node_modules/@bassnotion/contracts/ && \
     cp libs/contracts/package.json apps/backend/node_modules/@bassnotion/contracts/ && \
     cp libs/contracts/tsconfig.json apps/backend/node_modules/@bassnotion/contracts/

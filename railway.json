@@ -26,7 +26,7 @@
         "PORT": "3000",
         "SUPABASE_URL": "https://placeholder.supabase.co",
         "SUPABASE_KEY": "placeholder-key-replace-with-real-values",
-        "DEPLOYMENT_TRIGGER": "BACKEND-dual-location-contracts-copy-2025-05-29"
+        "DEPLOYMENT_TRIGGER": "BACKEND-remove-symlinks-before-copy-2025-05-29"
       }
     }
   }
