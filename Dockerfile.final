@@ -22,8 +22,28 @@ ENV NX_DAEMON=false
 # Build contracts library first
 RUN pnpm nx build @bassnotion/contracts
 
-# Ensure contracts are available in node_modules by installing workspace
+# Make sure contracts are freshly built with correct structure
 RUN cd libs/contracts && rm -rf dist tsconfig.tsbuildinfo && npm run build
+
+# Make contracts available for backend build by copying to both locations
+RUN mkdir -p node_modules/@bassnotion/contracts && \
+    cp -r libs/contracts/dist node_modules/@bassnotion/contracts/ && \
+    cp libs/contracts/package.json node_modules/@bassnotion/contracts/ && \
+    cp libs/contracts/tsconfig.json node_modules/@bassnotion/contracts/
+
+# Also ensure it's available in the backend's node_modules
+RUN mkdir -p apps/backend/node_modules/@bassnotion/contracts && \
+    cp -r libs/contracts/dist apps/backend/node_modules/@bassnotion/contracts/ && \
+    cp libs/contracts/package.json apps/backend/node_modules/@bassnotion/contracts/ && \
+    cp libs/contracts/tsconfig.json apps/backend/node_modules/@bassnotion/contracts/
+
+# Debug: Verify the structure
+RUN echo "=== Root node_modules contracts ===" && \
+    ls -la node_modules/@bassnotion/contracts/ && \
+    echo "=== Backend node_modules contracts ===" && \
+    ls -la apps/backend/node_modules/@bassnotion/contracts/ && \
+    echo "=== Testing module resolution ===" && \
+    cd apps/backend && node -e "console.log('Contracts resolved to:', require.resolve('@bassnotion/contracts'))"
 
 # Build backend
 RUN pnpm nx build @bassnotion/backend --prod
