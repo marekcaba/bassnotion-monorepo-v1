@@ -54,7 +54,8 @@ COPY --from=builder /app/package.json ./package.json
 
 # Ensure contracts are available for runtime - copy built contracts directly
 COPY --from=builder /app/libs/contracts ./libs/contracts
-RUN mkdir -p node_modules/@bassnotion/contracts && \
+RUN rm -rf node_modules/@bassnotion/contracts && \
+    mkdir -p node_modules/@bassnotion/contracts && \
     cp -r libs/contracts/dist node_modules/@bassnotion/contracts/ && \
     cp libs/contracts/package.json node_modules/@bassnotion/contracts/
 
