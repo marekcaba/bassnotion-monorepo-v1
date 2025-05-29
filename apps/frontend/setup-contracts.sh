@@ -26,15 +26,25 @@ cat package.json
 echo "Installing contracts dependencies..."
 npm install --no-optional --no-audit --no-fund --verbose
 
-# Check if zod was installed
-echo "Checking installed packages:"
-npm list
+# Check if dependencies were installed (use ls instead of npm list to avoid version conflicts)
+echo "Checking if node_modules directory exists:"
+ls -la node_modules/ || echo "node_modules not found"
 
-# Verify zod is available
+# Verify zod is available by checking the directory
 if [ ! -d "node_modules/zod" ]; then
   echo "WARNING: zod not found in node_modules, installing explicitly..."
   npm install zod@^3.25.32 --no-optional --no-audit --no-fund
 fi
+
+# Verify typescript is available
+if [ ! -d "node_modules/typescript" ]; then
+  echo "WARNING: typescript not found in node_modules, installing explicitly..."
+  npm install typescript@5.3.3 --no-optional --no-audit --no-fund
+fi
+
+echo "Key dependencies check:"
+echo "Zod: $([ -d "node_modules/zod" ] && echo "✓ Found" || echo "✗ Missing")"
+echo "TypeScript: $([ -d "node_modules/typescript" ] && echo "✓ Found" || echo "✗ Missing")"
 
 echo "Building contracts..."
 npm run build
