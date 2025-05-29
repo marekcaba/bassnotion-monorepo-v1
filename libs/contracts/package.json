@@ -11,8 +11,8 @@
     }
   },
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "build": "npx tsc",
+    "typecheck": "npx tsc --noEmit"
   },
   "dependencies": {
     "zod": "^3.25.32"
