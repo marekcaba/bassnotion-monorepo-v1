@@ -11,6 +11,9 @@ COPY libs/contracts/package.json ./libs/contracts/package.json
 RUN npm install -g pnpm
 RUN pnpm install --frozen-lockfile
 
+# Install backend-specific dependencies explicitly
+RUN cd apps/backend && pnpm install --frozen-lockfile
+
 # Copy source code
 COPY . .
 
@@ -44,7 +47,13 @@ RUN echo "=== Root node_modules contracts ===" && \
     echo "=== Backend node_modules contracts ===" && \
     ls -la apps/backend/node_modules/@bassnotion/contracts/ && \
     echo "=== Testing module resolution ===" && \
-    cd apps/backend && node -e "console.log('Contracts resolved to:', require.resolve('@bassnotion/contracts'))"
+    cd apps/backend && node -e "console.log('Contracts resolved to:', require.resolve('@bassnotion/contracts'))" && \
+    echo "=== Checking what's in root node_modules ===" && \
+    ls -la node_modules/ | head -20 && \
+    echo "=== Checking for NestJS in builder stage ===" && \
+    ls -la node_modules/@nestjs/ || echo "No @nestjs in root node_modules" && \
+    echo "=== Checking backend node_modules ===" && \
+    ls -la apps/backend/node_modules/ | head -10
 
 # Build backend
 RUN pnpm nx build @bassnotion/backend --prod
