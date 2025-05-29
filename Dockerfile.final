@@ -35,10 +35,7 @@ RUN echo "=== Checking contracts build output ===" && \
     ls -la node_modules/@bassnotion/ || echo "No @bassnotion in hoisted node_modules" && \
     echo "=== Ensuring contracts are available for TypeScript path mapping ===" && \
     ls -la libs/contracts/dist/src/index.d.ts && \
-    echo "=== Ensuring contracts are available in node_modules ===" && \
-    mkdir -p node_modules/@bassnotion/contracts && \
-    cp -r libs/contracts/dist/* node_modules/@bassnotion/contracts/ && \
-    cp libs/contracts/package.json node_modules/@bassnotion/contracts/ && \
+    echo "=== Checking hoisted contracts symlink ===" && \
     ls -la node_modules/@bassnotion/contracts/ && \
     echo "=== Verifying TypeScript can resolve module ===" && \
     cd apps/backend && node -e "console.log('TypeScript should find contracts at:', require('path').resolve('../../libs/contracts/dist/src/index.d.ts'))"
