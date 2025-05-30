@@ -50,8 +50,8 @@ echo "Building contracts..."
 npm run build
 
 # Verify build output
-if [ ! -f "dist/index.js" ]; then
-  echo "ERROR: Contracts build failed - dist/index.js not found"
+if [ ! -f "dist/src/index.js" ]; then
+  echo "ERROR: Contracts build failed - dist/src/index.js not found"
   echo "Contents of dist directory:"
   ls -la dist/ || echo "dist directory does not exist"
   exit 1
@@ -70,8 +70,8 @@ mkdir -p node_modules/@bassnotion/contracts
 cp -r ../../libs/contracts/* node_modules/@bassnotion/contracts/
 
 # Verify the copy worked
-if [ ! -f "node_modules/@bassnotion/contracts/dist/index.js" ]; then
-  echo "ERROR: Contracts copy failed - dist/index.js not found in node_modules"
+if [ ! -f "node_modules/@bassnotion/contracts/dist/src/index.js" ]; then
+  echo "ERROR: Contracts copy failed - dist/src/index.js not found in node_modules"
   exit 1
 fi
 
