@@ -6,6 +6,7 @@ import {
   User as SupabaseUser,
 } from '@supabase/supabase-js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { Logger } from '@nestjs/common';
 
 import {
   ApiErrorResponse,
@@ -15,6 +16,7 @@ import {
 } from '../../../shared/types/api.types.js';
 
 import { DatabaseService } from '../../../infrastructure/database/database.service.js';
+import { AuthSecurityService } from './services/auth-security.service.js';
 
 import { AuthService } from './auth.service.js';
 import { SignInDto } from './dto/sign-in.dto.js';
@@ -77,7 +79,35 @@ describe('AuthService', () => {
       supabase: mockSupabaseClient as unknown as SupabaseClient,
     } as DatabaseService;
 
-    authService = new AuthService(mockDatabaseService);
+    const mockAuthSecurityService = {
+      getSecurityInfo: vi.fn().mockResolvedValue({
+        rateLimitInfo: { isRateLimited: false, attemptsRemaining: 5 },
+        lockoutInfo: { isLocked: false, failedAttempts: 0 },
+      }),
+      getSecurityErrorMessage: vi.fn(),
+      recordLoginAttempt: vi.fn(),
+      resetFailedAttempts: vi.fn(),
+      logger: new Logger('MockAuthSecurityService'),
+      RATE_LIMIT_WINDOW: 15 * 60 * 1000,
+      MAX_ATTEMPTS_PER_IP: 20,
+      MAX_ATTEMPTS_PER_EMAIL: 5,
+      LOCKOUT_THRESHOLDS: [
+        { attempts: 3, duration: 2 * 60 * 1000 },
+        { attempts: 5, duration: 15 * 60 * 1000 },
+        { attempts: 8, duration: 60 * 60 * 1000 },
+        { attempts: 10, duration: 24 * 60 * 60 * 1000 },
+      ],
+      db: mockDatabaseService,
+      checkRateLimit: vi
+        .fn()
+        .mockResolvedValue({ isRateLimited: false, attemptsRemaining: 5 }),
+      checkAccountLockout: vi
+        .fn()
+        .mockResolvedValue({ isLocked: false, failedAttempts: 0 }),
+      cleanupOldAttempts: vi.fn(),
+    } as unknown as AuthSecurityService;
+
+    authService = new AuthService(mockDatabaseService, mockAuthSecurityService);
   });
 
   describe('authenticateUser', () => {

@@ -20,9 +20,16 @@ export class AuthService {
 
   constructor(
     private readonly db: DatabaseService,
-    private readonly authSecurity: AuthSecurityService,
+    private readonly authSecurity?: AuthSecurityService,
   ) {
     this.logger.debug('AuthService constructor called');
+    
+    // Defensive check for AuthSecurityService availability
+    if (!this.authSecurity) {
+      this.logger.warn(
+        'AuthSecurityService not available - running without security features',
+      );
+    }
   }
 
   private normalizeError(error: unknown): AuthError {
@@ -194,21 +201,28 @@ export class AuthService {
     try {
       // Check rate limiting and account lockout BEFORE attempting authentication
       const { rateLimitInfo, lockoutInfo } =
-        await this.authSecurity.getSecurityInfo(signInDto.email, clientIp);
+        (await this.authSecurity?.getSecurityInfo(
+          signInDto.email,
+          clientIp,
+        )) || {
+          rateLimitInfo: { isRateLimited: false, attemptsRemaining: 999 },
+          lockoutInfo: { isLocked: false, failedAttempts: 0 },
+        };
 
       // Block if rate limited or account locked
       if (rateLimitInfo.isRateLimited || lockoutInfo.isLocked) {
-        const errorMessage = this.authSecurity.getSecurityErrorMessage(
-          rateLimitInfo,
-          lockoutInfo,
-        );
+        const errorMessage =
+          this.authSecurity?.getSecurityErrorMessage(
+            rateLimitInfo,
+            lockoutInfo,
+          ) || 'Login blocked due to security measures';
 
         this.logger.warn(
           `Login blocked for ${signInDto.email} from IP ${clientIp}: ${errorMessage}`,
         );
 
         // Still record the attempt for tracking
-        await this.authSecurity.recordLoginAttempt(
+        await this.authSecurity?.recordLoginAttempt(
           signInDto.email,
           clientIp,
           false,
@@ -235,7 +249,7 @@ export class AuthService {
 
       // Record failed attempt if authentication failed
       if (error || !auth.user) {
-        await this.authSecurity.recordLoginAttempt(
+        await this.authSecurity?.recordLoginAttempt(
           signInDto.email,
           clientIp,
           false,
@@ -275,7 +289,7 @@ export class AuthService {
 
       if (profileError) {
         // Record failed attempt for profile fetch failure
-        await this.authSecurity.recordLoginAttempt(
+        await this.authSecurity?.recordLoginAttempt(
           signInDto.email,
           clientIp,
           false,
@@ -299,7 +313,7 @@ export class AuthService {
 
       if (!profile) {
         // Record failed attempt for missing profile
-        await this.authSecurity.recordLoginAttempt(
+        await this.authSecurity?.recordLoginAttempt(
           signInDto.email,
           clientIp,
           false,
@@ -321,7 +335,7 @@ export class AuthService {
       }
 
       // SUCCESS: Record successful login attempt
-      await this.authSecurity.recordLoginAttempt(
+      await this.authSecurity?.recordLoginAttempt(
         signInDto.email,
         clientIp,
         true,
@@ -356,7 +370,7 @@ export class AuthService {
       return successResponse;
     } catch (error) {
       // Record failed attempt for unexpected errors
-      await this.authSecurity.recordLoginAttempt(
+      await this.authSecurity?.recordLoginAttempt(
         signInDto.email,
         clientIp,
         false,
