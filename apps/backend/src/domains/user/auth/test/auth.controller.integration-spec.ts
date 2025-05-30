@@ -1,21 +1,23 @@
-import { INestApplication } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
 import {
-  User as SupabaseUser,
-  Session,
   AuthResponse,
   AuthTokenResponse,
+  Session,
+  User as SupabaseUser,
 } from '@supabase/supabase-js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { FastifyRequest } from 'fastify';
+import { INestApplication, Logger } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { Test, TestingModule } from '@nestjs/testing';
 
 import { isApiSuccessResponse } from '../../../../shared/types/api.types.js';
-import { SupabaseService } from '../../../../infrastructure/supabase/supabase.service.js';
 import { DatabaseService } from '../../../../infrastructure/database/database.service.js';
+import { SupabaseService } from '../../../../infrastructure/supabase/supabase.service.js';
 
 import { AuthController } from '../auth.controller.js';
 import { AuthService } from '../auth.service.js';
 import { AuthData } from '../types/auth.types.js';
+import { AuthSecurityService } from '../services/auth-security.service.js';
 
 describe('AuthController (Integration)', () => {
   let app: INestApplication;
@@ -64,6 +66,37 @@ describe('AuthController (Integration)', () => {
           useValue: {
             getClient: () => mockDatabaseService.supabase,
           },
+        },
+        {
+          provide: AuthSecurityService,
+          useValue: {
+            getSecurityInfo: vi.fn().mockResolvedValue({
+              rateLimitInfo: { isRateLimited: false, attemptsRemaining: 5 },
+              lockoutInfo: { isLocked: false, failedAttempts: 0 },
+            }),
+            getSecurityErrorMessage: vi.fn(),
+            recordLoginAttempt: vi.fn(),
+            resetFailedAttempts: vi.fn(),
+            logger: new Logger('MockAuthSecurityService'),
+            RATE_LIMIT_WINDOW: 15 * 60 * 1000,
+            MAX_ATTEMPTS_PER_IP: 20,
+            MAX_ATTEMPTS_PER_EMAIL: 5,
+            LOCKOUT_THRESHOLDS: [
+              { attempts: 3, duration: 2 * 60 * 1000 },
+              { attempts: 5, duration: 15 * 60 * 1000 },
+              { attempts: 8, duration: 60 * 60 * 1000 },
+              { attempts: 10, duration: 24 * 60 * 60 * 1000 },
+            ],
+            db: mockDatabaseService,
+            checkRateLimit: vi.fn().mockResolvedValue({
+              isRateLimited: false,
+              attemptsRemaining: 5,
+            }),
+            checkAccountLockout: vi
+              .fn()
+              .mockResolvedValue({ isLocked: false, failedAttempts: 0 }),
+            cleanupOldAttempts: vi.fn(),
+          } as unknown as AuthSecurityService,
         },
       ],
     }).compile();
@@ -216,10 +249,17 @@ describe('AuthController (Integration)', () => {
         error: null,
       });
 
-      const result = await authController.signin({
-        email: 'test@example.com',
-        password: 'Password123!',
-      });
+      const result = await authController.signin(
+        {
+          email: 'test@example.com',
+          password: 'Password123!',
+        },
+        {
+          headers: { 'user-agent': 'test-agent' },
+          ip: '127.0.0.1',
+          socket: { remoteAddress: '127.0.0.1' },
+        } as FastifyRequest,
+      );
 
       expect(isApiSuccessResponse(result)).toBe(true);
       if (isApiSuccessResponse<AuthData>(result)) {
