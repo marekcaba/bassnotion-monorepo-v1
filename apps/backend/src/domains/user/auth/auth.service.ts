@@ -12,12 +12,16 @@ import { DatabaseService } from '../../../infrastructure/database/database.servi
 import { SignInDto } from './dto/sign-in.dto.js';
 import { SignUpDto } from './dto/sign-up.dto.js';
 import { AuthResponse, AuthError, AuthData } from './types/auth.types.js';
+import { AuthSecurityService } from './services/auth-security.service.js';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
-  constructor(private readonly db: DatabaseService) {
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly authSecurity: AuthSecurityService,
+  ) {
     this.logger.debug('AuthService constructor called');
   }
 
@@ -52,26 +56,45 @@ export class AuthService {
     this.logger.debug(`Registering user with email: ${signUpDto.email}`);
 
     try {
-      const { data: auth, error } = await this.db.supabase.auth.signUp({
-        email: signUpDto.email,
-        password: signUpDto.password,
-      });
+      // First, check if user already exists
+      const { data: existingUser } = await this.db.supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', signUpDto.email)
+        .single();
 
-      if (error) {
-        this.logger.error(`Error registering user: ${error.message}`);
-        const errorResponse: ApiErrorResponse = {
+      if (existingUser) {
+        return {
           success: false,
-          message: error.message,
+          message: 'User already exists',
           error: {
-            code: String(error.status || 'AUTH_ERROR'),
-            details: error.message,
+            code: 'USER_EXISTS',
+            details: 'A user with this email already exists.',
           },
         };
-        return errorResponse;
+      }
+
+      // Create auth user
+      const { data: auth, error: authError } =
+        await this.db.supabase.auth.signUp({
+          email: signUpDto.email,
+          password: signUpDto.password,
+        });
+
+      if (authError) {
+        this.logger.error(`Error registering user: ${authError.message}`);
+        return {
+          success: false,
+          message: authError.message,
+          error: {
+            code: String(authError.status || 'AUTH_ERROR'),
+            details: authError.message,
+          },
+        };
       }
 
       if (!auth.user) {
-        const errorResponse: ApiErrorResponse = {
+        return {
           success: false,
           message: 'User registration failed',
           error: {
@@ -79,61 +102,48 @@ export class AuthService {
             details: 'User registration failed',
           },
         };
-        return errorResponse;
       }
 
-      console.log('Before Supabase profile creation (registerUser):', {
-        userId: auth.user.id,
-        email: auth.user.email,
-        displayName: signUpDto.displayName,
-      });
+      // Create user profile with retry logic
+      let profile;
+      let profileError;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const result = await this.db.supabase
+          .from('profiles')
+          .insert({
+            id: auth.user.id,
+            email: auth.user.email,
+            display_name: signUpDto.displayName,
+            bio: signUpDto.bio,
+          })
+          .select()
+          .single();
 
-      // Create user profile
-      const { data: profile, error: profileError } = await this.db.supabase
-        .from('profiles')
-        .insert({
-          id: auth.user.id,
-          email: auth.user.email,
-          display_name: signUpDto.displayName,
-          bio: signUpDto.bio,
-        })
-        .select()
-        .single();
+        if (!result.error) {
+          profile = result.data;
+          break;
+        }
 
-      console.log('Result from Supabase single() call (registerUser):', {
-        data: profile,
-        error: profileError,
-      });
+        profileError = result.error;
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+      }
 
-      if (profileError) {
+      if (profileError || !profile) {
+        // Clean up auth user if profile creation failed
+        await this.db.supabase.auth.admin.deleteUser(auth.user.id);
+
         this.logger.error(
-          `Error creating user profile: ${profileError.message}`,
-          profileError.stack,
+          `Error creating user profile after 3 attempts: ${profileError?.message}`,
+          profileError?.stack,
         );
-        const errorResponse: ApiErrorResponse = {
+        return {
           success: false,
-          message: profileError.message,
+          message: profileError?.message || 'Failed to create user profile',
           error: {
             code: 'PROFILE_CREATION_FAILED',
-            details: 'Failed to create user profile.',
+            details: 'Failed to create user profile after multiple attempts.',
           },
         };
-        return errorResponse;
-      }
-
-      if (!profile) {
-        this.logger.error(
-          'User profile data is null after successful registration.',
-        );
-        const errorResponse: ApiErrorResponse = {
-          success: false,
-          message: 'User profile data missing',
-          error: {
-            code: 'PROFILE_DATA_MISSING',
-            details: 'User profile data missing.',
-          },
-        };
-        return errorResponse;
       }
 
       const authData: AuthData = {
@@ -151,18 +161,16 @@ export class AuthService {
         },
       };
 
-      const successResponse: ApiSuccessResponse<AuthData> = {
+      return {
         success: true,
         message: 'User registered successfully',
         data: authData,
       };
-
-      return successResponse;
     } catch (error) {
       const authError = this.normalizeError(error);
       this.logger.error(`Error in registerUser: ${authError.message}`);
 
-      const errorResponse: ApiErrorResponse = {
+      return {
         success: false,
         message: authError.message,
         error: {
@@ -170,41 +178,79 @@ export class AuthService {
           details: authError.message,
         },
       };
-
-      return errorResponse;
     }
   }
 
-  async authenticateUser(signInDto: SignInDto): Promise<AuthResponse> {
+  async authenticateUser(
+    signInDto: SignInDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<AuthResponse> {
+    // Force rebuild v2.0 - ensure Railway uses latest method signature
     this.logger.debug(`Authenticating user with email: ${signInDto.email}`);
 
+    const clientIp = ipAddress || 'unknown';
+
     try {
+      // Check rate limiting and account lockout BEFORE attempting authentication
+      const { rateLimitInfo, lockoutInfo } =
+        await this.authSecurity.getSecurityInfo(signInDto.email, clientIp);
+
+      // Block if rate limited or account locked
+      if (rateLimitInfo.isRateLimited || lockoutInfo.isLocked) {
+        const errorMessage = this.authSecurity.getSecurityErrorMessage(
+          rateLimitInfo,
+          lockoutInfo,
+        );
+
+        this.logger.warn(
+          `Login blocked for ${signInDto.email} from IP ${clientIp}: ${errorMessage}`,
+        );
+
+        // Still record the attempt for tracking
+        await this.authSecurity.recordLoginAttempt(
+          signInDto.email,
+          clientIp,
+          false,
+          userAgent,
+        );
+
+        const errorResponse: ApiErrorResponse = {
+          success: false,
+          message: errorMessage,
+          error: {
+            code: lockoutInfo.isLocked ? 'ACCOUNT_LOCKED' : 'RATE_LIMITED',
+            details: errorMessage,
+          },
+        };
+        return errorResponse;
+      }
+
+      // Attempt authentication with Supabase
       const { data: auth, error } =
         await this.db.supabase.auth.signInWithPassword({
           email: signInDto.email,
           password: signInDto.password,
         });
 
-      if (error) {
-        this.logger.error(`Error authenticating user: ${error.message}`);
-        const errorResponse: ApiErrorResponse = {
-          success: false,
-          message: error.message,
-          error: {
-            code: String(error.status || 'AUTH_ERROR'),
-            details: error.message,
-          },
-        };
-        return errorResponse;
-      }
+      // Record failed attempt if authentication failed
+      if (error || !auth.user) {
+        await this.authSecurity.recordLoginAttempt(
+          signInDto.email,
+          clientIp,
+          false,
+          userAgent,
+        );
 
-      if (!auth.user) {
+        this.logger.error(
+          `Error authenticating user: ${error?.message || 'Unknown error'}`,
+        );
         const errorResponse: ApiErrorResponse = {
           success: false,
-          message: 'Authentication failed',
+          message: 'Invalid credentials',
           error: {
-            code: 'AUTH_FAILED',
-            details: 'Authentication failed',
+            code: 'INVALID_CREDENTIALS',
+            details: 'Invalid email or password',
           },
         };
         return errorResponse;
@@ -228,13 +274,21 @@ export class AuthService {
       });
 
       if (profileError) {
+        // Record failed attempt for profile fetch failure
+        await this.authSecurity.recordLoginAttempt(
+          signInDto.email,
+          clientIp,
+          false,
+          userAgent,
+        );
+
         this.logger.error(
           `Error fetching user profile: ${profileError.message}`,
           profileError.stack,
         );
         const errorResponse: ApiErrorResponse = {
           success: false,
-          message: profileError.message,
+          message: 'Authentication failed',
           error: {
             code: 'PROFILE_FETCH_FAILED',
             details: 'Failed to fetch user profile.',
@@ -244,12 +298,20 @@ export class AuthService {
       }
 
       if (!profile) {
+        // Record failed attempt for missing profile
+        await this.authSecurity.recordLoginAttempt(
+          signInDto.email,
+          clientIp,
+          false,
+          userAgent,
+        );
+
         this.logger.error(
           'User profile data is null after successful authentication.',
         );
         const errorResponse: ApiErrorResponse = {
           success: false,
-          message: 'User profile data missing',
+          message: 'Authentication failed',
           error: {
             code: 'PROFILE_DATA_MISSING',
             details: 'User profile data missing.',
@@ -257,6 +319,18 @@ export class AuthService {
         };
         return errorResponse;
       }
+
+      // SUCCESS: Record successful login attempt
+      await this.authSecurity.recordLoginAttempt(
+        signInDto.email,
+        clientIp,
+        true,
+        userAgent,
+      );
+
+      this.logger.log(
+        `Successful login for ${signInDto.email} from IP ${clientIp}`,
+      );
 
       const authData: AuthData = {
         user: {
@@ -281,12 +355,20 @@ export class AuthService {
 
       return successResponse;
     } catch (error) {
+      // Record failed attempt for unexpected errors
+      await this.authSecurity.recordLoginAttempt(
+        signInDto.email,
+        clientIp,
+        false,
+        userAgent,
+      );
+
       const authError = this.normalizeError(error);
       this.logger.error(`Error in authenticateUser: ${authError.message}`);
 
       const errorResponse: ApiErrorResponse = {
         success: false,
-        message: authError.message,
+        message: 'Authentication failed',
         error: {
           code: authError.code,
           details: authError.message,
