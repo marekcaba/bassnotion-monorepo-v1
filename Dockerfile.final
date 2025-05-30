@@ -34,11 +34,11 @@ RUN echo "=== Checking contracts build output ===" && \
     echo "=== Checking hoisted node_modules ===" && \
     ls -la node_modules/@bassnotion/ || echo "No @bassnotion in hoisted node_modules" && \
     echo "=== Ensuring contracts are available for TypeScript path mapping ===" && \
-    ls -la libs/contracts/dist/src/index.d.ts && \
+    ls -la libs/contracts/dist/index.d.ts && \
     echo "=== Checking hoisted contracts symlink ===" && \
     ls -la node_modules/@bassnotion/contracts/ && \
     echo "=== Verifying TypeScript can resolve module ===" && \
-    cd apps/backend && node -e "console.log('TypeScript should find contracts at:', require('path').resolve('../../libs/contracts/dist/src/index.d.ts'))"
+    cd apps/backend && node -e "console.log('TypeScript should find contracts at:', require('path').resolve('../../libs/contracts/dist/index.d.ts'))"
 
 # Build backend (hoisting already handled contracts placement)
 RUN pnpm nx build @bassnotion/backend --prod
