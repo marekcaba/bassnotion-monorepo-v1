@@ -58,3 +58,19 @@ export type SignUpData = z.infer<typeof signUpSchema>;
  */
 export const signInSchema = loginSchema;
 export type SignInData = LoginData;
+
+/**
+ * Change password schema - for updating user password
+ */
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, ValidationMessages.password.required),
+    newPassword: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: ValidationMessages.password.mismatch,
+    path: ['confirmPassword'],
+  });
+
+export type ChangePasswordData = z.infer<typeof changePasswordSchema>;

@@ -14,6 +14,19 @@ const nextConfig = {
     // Disable TypeScript checking during builds since we handle it separately with Nx
     ignoreBuildErrors: true,
   },
+  // Explicitly set the port
+  devServer: {
+    port: 3001,
+  },
+  // Configure API routes
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:3000/api/:path*',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

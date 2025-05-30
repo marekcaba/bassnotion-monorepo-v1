@@ -34,10 +34,14 @@
       "@/domains/*": ["./src/domains/*"],
       "@/shared/*": ["./src/shared/*"],
       "@/infrastructure/*": ["./src/infrastructure/*"],
-      "@bassnotion/contracts": ["../../libs/contracts/dist/index.d.ts"]
+      "@bassnotion/contracts": ["../../libs/contracts/dist/src"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"],
-
+  "references": [
+    {
+      "path": "../../libs/contracts"
+    }
+  ]
 }
