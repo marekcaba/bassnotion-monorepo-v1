@@ -1,28 +1,25 @@
-import type { User } from '@bassnotion/contracts';
 import {
-  AuthError,
+  AuthResponse,
+  AuthTokenResponse,
   Session,
-  SupabaseClient,
   User as SupabaseUser,
+  AuthError,
 } from '@supabase/supabase-js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Logger } from '@nestjs/common';
 
-import {
-  ApiErrorResponse,
-  ApiSuccessResponse,
-  isApiErrorResponse,
-  isApiSuccessResponse,
-} from '../../../shared/types/api.types.js';
+import type { User } from '@bassnotion/contracts';
 
 import { DatabaseService } from '../../../infrastructure/database/database.service.js';
-// Temporarily commented out for Railway deployment - module resolution issue  
-// import { AuthSecurityService } from './services/auth-security.service.js';
 
 import { AuthService } from './auth.service.js';
 import { SignInDto } from './dto/sign-in.dto.js';
-import { SignUpDto } from './dto/sign-up.dto.js';
 import { AuthData } from './types/auth.types.js';
+import {
+  isApiSuccessResponse,
+  isApiErrorResponse,
+  ApiSuccessResponse,
+  ApiErrorResponse,
+} from '../../../shared/types/api.types.js';
 
 interface MockSupabaseClient {
   auth: {
@@ -87,25 +84,16 @@ describe('AuthService', () => {
       supabase: mockSupabaseClient as unknown as SupabaseClient,
     } as DatabaseService;
 
+    // Mock AuthSecurityService that matches the real class structure
     const mockAuthSecurityService = {
-      getSecurityInfo: vi.fn().mockResolvedValue({
-        rateLimitInfo: { isRateLimited: false, attemptsRemaining: 5 },
-        lockoutInfo: { isLocked: false, failedAttempts: 0 },
-      }),
-      getSecurityErrorMessage: vi.fn(),
-      recordLoginAttempt: vi.fn(),
-      resetFailedAttempts: vi.fn(),
-      logger: new Logger('MockAuthSecurityService'),
-      RATE_LIMIT_WINDOW: 15 * 60 * 1000,
-      MAX_ATTEMPTS_PER_IP: 20,
-      MAX_ATTEMPTS_PER_EMAIL: 5,
-      LOCKOUT_THRESHOLDS: [
-        { attempts: 3, duration: 2 * 60 * 1000 },
-        { attempts: 5, duration: 15 * 60 * 1000 },
-        { attempts: 8, duration: 60 * 60 * 1000 },
-        { attempts: 10, duration: 24 * 60 * 60 * 1000 },
-      ],
-      db: mockDatabaseService,
+      getSecurityInfo: vi
+        .fn()
+        .mockResolvedValue({
+          rateLimitInfo: { isRateLimited: false, attemptsRemaining: 5 },
+          lockoutInfo: { isLocked: false, failedAttempts: 0 },
+        }),
+      getSecurityErrorMessage: vi.fn().mockReturnValue('Security error'),
+      recordLoginAttempt: vi.fn().mockResolvedValue(undefined),
       checkRateLimit: vi
         .fn()
         .mockResolvedValue({ isRateLimited: false, attemptsRemaining: 5 }),
@@ -113,7 +101,8 @@ describe('AuthService', () => {
         .fn()
         .mockResolvedValue({ isLocked: false, failedAttempts: 0 }),
       cleanupOldAttempts: vi.fn(),
-    } as unknown as AuthSecurityService;
+      resetFailedAttempts: vi.fn().mockResolvedValue(undefined),
+    } as any;
 
     authService = new AuthService(mockDatabaseService, mockAuthSecurityService);
   });
