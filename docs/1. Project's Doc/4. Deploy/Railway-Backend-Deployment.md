@@ -1,14 +1,18 @@
 # Railway Deployment Guide for BassNotion Backend
 
 ## Overview
+
 This guide documents the complete Railway deployment process for the BassNotion monorepo backend, including all critical configuration, common issues, and solutions learned through extensive debugging.
 
 ## Prerequisites
 
 ### Project Structure Requirements
+
 ```
 bassnotion-monorepo-v1/
 ├── apps/backend/          # Main backend application
+│   └── supabase/         # Database migrations
+│       └── migrations/   # SQL migration files
 ├── libs/contracts/        # Shared TypeScript contracts
 ├── Dockerfile.final       # Multi-stage Docker build
 └── railway.json          # Railway configuration
@@ -17,6 +21,7 @@ bassnotion-monorepo-v1/
 ### Key Configuration Files
 
 #### 1. `railway.json`
+
 ```json
 {
   "$schema": "https://railway.app/railway.schema.json",
@@ -34,6 +39,7 @@ bassnotion-monorepo-v1/
 ```
 
 #### 2. `tsconfig.base.json` - Path Mappings
+
 ```json
 {
   "compilerOptions": {
@@ -48,6 +54,7 @@ bassnotion-monorepo-v1/
 ```
 
 #### 3. `libs/contracts/package.json` - Package Exports
+
 ```json
 {
   "name": "@bassnotion/contracts",
@@ -57,7 +64,7 @@ bassnotion-monorepo-v1/
   "exports": {
     ".": {
       "import": "./dist/src/index.js",
-      "require": "./dist/src/index.js", 
+      "require": "./dist/src/index.js",
       "types": "./dist/src/index.d.ts"
     }
   }
@@ -124,11 +131,13 @@ CMD ["node", "dist/apps/backend/src/main.js"]
 **Problem**: `Cannot find module '@bassnotion/contracts'`
 
 **Root Causes**:
+
 - TypeScript path mappings pointing to wrong location
 - Runtime vs build-time resolution differences
 - Symlink issues in Docker containers
 
 **Solutions**:
+
 - Align path mappings with actual build output: `libs/contracts/dist/src/index.d.ts`
 - Use `--shamefully-hoist` to flatten dependencies
 - Copy contracts directly to production `node_modules`
@@ -140,11 +149,12 @@ CMD ["node", "dist/apps/backend/src/main.js"]
 **Root Cause**: Project has `"type": "module"` but using CommonJS syntax
 
 **Solution**: Use ES import syntax:
+
 ```javascript
 // ❌ Wrong
 const { createServer } = require('http');
 
-// ✅ Correct  
+// ✅ Correct
 import { createServer } from 'http';
 ```
 
@@ -155,6 +165,7 @@ import { createServer } from 'http';
 **Root Cause**: TypeScript preserves directory structure from source
 
 **Solution**: Update all configurations to use `dist/src/` structure:
+
 - Package.json exports: `./dist/src/index.js`
 - TypeScript paths: `libs/contracts/dist/src/index.d.ts`
 - Setup scripts: Check for `dist/src/index.js`
@@ -166,20 +177,48 @@ import { createServer } from 'http';
 **Root Cause**: pnpm creates symlinks that can't be copied in multi-stage builds
 
 **Solutions**:
+
 - Use `--shamefully-hoist` flag to create real files instead of symlinks
 - Remove symlinks before copying: `rm -rf node_modules/@bassnotion/contracts`
 - Copy source files directly rather than trying to copy symlinks
 
 ## Deployment Process
 
-### 1. Pre-deployment Checklist
+### 1. Pre-deployment Database Migration
+
+⚠️ **IMPORTANT**: Always apply database migrations BEFORE deploying new code.
+
+1. **Check Migration Status**
+
+   ```typescript
+   // Using MCP tools
+   const tables = await supabase.listTables({
+     projectId: 'your-project-id',
+   });
+   ```
+
+2. **Apply Pending Migrations**
+
+   - Follow [Supabase Migration Guide](./Supabase-Migration-Guide.md)
+   - Verify migration success before proceeding
+
+3. **Verify Database State**
+   - All required tables exist
+   - Indexes are created
+   - RLS policies are applied
+
+### 2. Pre-deployment Checklist
+
 - [ ] All tests pass locally
 - [ ] Local build succeeds: `pnpm nx build @bassnotion/backend`
 - [ ] Contracts build correctly: `ls libs/contracts/dist/src/index.d.ts`
 - [ ] No TypeScript errors: `cd apps/backend && npx tsc --noEmit`
+- [ ] Database migrations applied and verified
 
 ### 2. Environment Variables
+
 Required in Railway dashboard:
+
 ```
 SUPABASE_URL=your_supabase_url
 SUPABASE_KEY=your_supabase_anon_key
@@ -188,6 +227,7 @@ PORT=8080
 ```
 
 ### 3. Build Process
+
 1. Railway pulls from GitHub main branch
 2. Docker build runs with multi-stage process
 3. Contracts library built first
@@ -196,7 +236,9 @@ PORT=8080
 6. Health check validates deployment
 
 ### 4. Health Check Verification
+
 Railway will ping `/api/health` endpoint:
+
 - Timeout: 180 seconds
 - Expected: HTTP 200 response
 - Retry policy: 3 attempts on failure
@@ -206,11 +248,13 @@ Railway will ping `/api/health` endpoint:
 ### Build Failures
 
 **"Cannot find module" during TypeScript compilation**
+
 1. Check path mappings in `tsconfig.base.json`
 2. Verify contracts build output: `libs/contracts/dist/src/index.d.ts`
 3. Ensure contracts package.json exports are correct
 
 **"same file" errors during Docker build**
+
 1. Add `rm -rf` commands before copying
 2. Verify `--shamefully-hoist` is used
 3. Check for conflicting symlinks
@@ -218,31 +262,60 @@ Railway will ping `/api/health` endpoint:
 ### Runtime Failures
 
 **Module resolution errors in production**
+
 1. Verify contracts are copied to production `node_modules`
 2. Check package.json exports syntax
 3. Ensure ES module compatibility
 
 **Health check failures**
+
 1. Test health endpoint locally: `curl http://localhost:8080/api/health`
 2. Check application logs for startup errors
 3. Verify environment variables are set
 
+### Database Migration Issues
+
+**"Table doesn't exist" in Production**
+
+1. Check if migration was applied: `supabase.listTables()`
+2. Verify migration file exists in correct location
+3. Apply missing migration using MCP tools
+4. Restart Railway deployment
+
+**"Column doesn't exist" Errors**
+
+1. Compare local and production schema
+2. Check migration order and dependencies
+3. Apply any missing migrations
+4. Update code to match schema
+
 ## Best Practices
 
 ### Dependency Management
+
 - Always use `--shamefully-hoist` for Docker builds
 - Keep package-lock.yaml in sync
 - Explicitly copy shared libraries to production
 
 ### Build Optimization
+
 - Build contracts before backend
 - Clean build artifacts between builds
 - Use multi-stage Docker for smaller production images
 
 ### Monitoring
+
 - Enable detailed logging for debugging
 - Monitor health check endpoint
 - Set appropriate timeout values
+
+### Database Changes
+
+- Always apply migrations before code deployment
+- Test migrations locally first
+- Use transaction blocks for testing
+- Include rollback procedures
+- Document schema changes
 
 ## Common Commands
 
@@ -251,6 +324,10 @@ Railway will ping `/api/health` endpoint:
 pnpm nx build @bassnotion/contracts
 pnpm nx build @bassnotion/backend
 cd apps/backend && npx tsc --noEmit
+
+# Migration verification
+supabase.listTables()
+supabase.listMigrations()
 
 # Docker testing
 docker build -f Dockerfile.final -t bassnotion-backend .
@@ -263,6 +340,7 @@ git push origin main  # Triggers Railway deployment
 ## File Structure Reference
 
 ### Required Build Output
+
 ```
 dist/
 ├── apps/backend/src/main.js     # Application entrypoint
@@ -279,10 +357,11 @@ node_modules/@bassnotion/contracts/
 ```
 
 ## Version History
+
 - **v1.0**: Initial working configuration after 3-day debugging session
 - Resolved module resolution, ES module compatibility, and Docker symlink issues
 - Established stable build and deployment process
 
 ---
 
-*This guide represents hard-won knowledge from extensive debugging. Follow these patterns to avoid deployment hell.* 
+_This guide represents hard-won knowledge from extensive debugging. Follow these patterns to avoid deployment hell._

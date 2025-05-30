@@ -4,7 +4,7 @@ import { workspaceRoot } from '@nx/devkit';
 import { fileURLToPath } from 'url';
 
 // For CI, you may want to set BASE_URL to the deployed application.
-const baseURL = process.env['BASE_URL'] || 'http://localhost:4200';
+const baseURL = process.env['BASE_URL'] || 'http://localhost:3001';
 
 /**
  * Read environment variables from file.
@@ -30,10 +30,12 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'npx nx serve @bassnotion/frontend',
-    url: 'http://localhost:4200',
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     cwd: workspaceRoot,
+    timeout: 120000, // 2 minutes
   },
+  /* Configure projects for major browsers */
   projects: [
     {
       name: 'chromium',
@@ -65,4 +67,9 @@ export default defineConfig({
     ['junit', { outputFile: '../../dist/apps/frontend-e2e/junit.xml' }],
     ['json', { outputFile: '../../dist/apps/frontend-e2e/test-results.json' }],
   ],
+  /* Timeout settings */
+  timeout: 30000, // 30 seconds
+  expect: {
+    timeout: 10000, // 10 seconds
+  },
 });

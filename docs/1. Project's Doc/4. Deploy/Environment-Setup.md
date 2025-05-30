@@ -50,6 +50,7 @@ NODE_ENV=production
 ### Railway Configuration
 
 1. **Access Railway dashboard:**
+
    - Go to [Railway](https://railway.app)
    - Select your backend project
    - Go to Variables tab
@@ -65,6 +66,7 @@ NODE_ENV=production
 ### Vercel Configuration
 
 1. **Access Vercel dashboard:**
+
    - Go to [Vercel](https://vercel.com)
    - Select your frontend project
    - Go to Settings → Environment Variables
@@ -79,11 +81,13 @@ NODE_ENV=production
 ## ⚠️ Security Best Practices
 
 ### Do NOT commit sensitive variables to Git:
+
 - Never add `.env` files with real credentials
 - Use platform-specific environment configuration
 - Keep anon keys separate from service role keys
 
 ### Variable Types:
+
 - **Frontend**: Use `NEXT_PUBLIC_` prefix for client-accessible variables
 - **Backend**: Regular environment variables (no prefix needed)
 
@@ -92,6 +96,7 @@ NODE_ENV=production
 For local development, create these files (NOT committed to Git):
 
 ### `apps/backend/.env.local`
+
 ```bash
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your_supabase_anon_key
@@ -100,6 +105,7 @@ PORT=3001
 ```
 
 ### `apps/frontend/.env.local`
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -109,6 +115,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 ## 🔍 Verification
 
 ### Check Backend Variables
+
 ```bash
 # In Railway logs, you should see:
 DEBUG: Loaded SUPABASE_URL: https://your-project.supabase.co
@@ -116,6 +123,7 @@ DEBUG: Loaded SUPABASE_KEY: your_key...
 ```
 
 ### Check Frontend Variables
+
 ```javascript
 // In browser console:
 console.log(process.env.NEXT_PUBLIC_SUPABASE_URL);
@@ -123,4 +131,5 @@ console.log(process.env.NEXT_PUBLIC_API_URL);
 ```
 
 ---
-*Keep this guide updated as new environment variables are added.* 
+
+_Keep this guide updated as new environment variables are added._

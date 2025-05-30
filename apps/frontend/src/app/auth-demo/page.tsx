@@ -54,6 +54,23 @@ export default function AuthDemoPage() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      // Simulate Google OAuth flow
+      setRegistrationResult('🚀 Redirecting to Google OAuth...');
+      setLoginResult('🚀 Redirecting to Google OAuth...');
+
+      // In a real app, this would redirect to the backend Google OAuth endpoint
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      setRegistrationResult('✅ Google OAuth successful! (Demo)');
+      setLoginResult('✅ Google OAuth successful! (Demo)');
+    } catch (error) {
+      setRegistrationResult(`❌ Google OAuth failed: ${error}`);
+      setLoginResult(`❌ Google OAuth failed: ${error}`);
+    }
+  };
+
   const clearResults = () => {
     setRegistrationResult('');
     setLoginResult('');
@@ -85,6 +102,7 @@ export default function AuthDemoPage() {
                 <div className="border rounded-lg p-6">
                   <RegistrationForm
                     onSubmit={handleRegistration}
+                    onGoogleSignIn={handleGoogleSignIn}
                     isLoading={isRegistrationLoading}
                   />
                 </div>
@@ -94,6 +112,7 @@ export default function AuthDemoPage() {
                 <div className="border rounded-lg p-6">
                   <LoginForm
                     onSubmit={handleLogin}
+                    onGoogleSignIn={handleGoogleSignIn}
                     isLoading={isLoginLoading}
                   />
                 </div>

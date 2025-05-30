@@ -150,11 +150,11 @@ test.describe('Authentication Security', () => {
       route.fulfill({
         status: 401,
         body: JSON.stringify({
-          success: false,
-          error: {
-            message: 'Invalid session',
-            code: 'AUTH_INVALID_SESSION',
-          },
+      success: false,
+      error: {
+        message: 'Invalid session',
+        code: 'AUTH_INVALID_SESSION',
+      },
         }),
         headers: {
           'Content-Type': 'application/json',

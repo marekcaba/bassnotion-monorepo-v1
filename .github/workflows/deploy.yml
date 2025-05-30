@@ -85,4 +85,4 @@ jobs:
           echo "- **Frontend**: Deployed to Vercel" >> $GITHUB_STEP_SUMMARY
           echo "- **Backend**: Ready for deployment" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY 
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

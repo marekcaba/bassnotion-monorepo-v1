@@ -24,6 +24,7 @@ npx nx e2e frontend-e2e
 This template provides a **production-ready monorepo** with:
 
 ### ✅ **Complete Tech Stack**
+
 - **Frontend**: Next.js 15.3.2 + React 19.1.0 + TypeScript 5.7.2
 - **Backend**: NestJS + TypeScript 5.7.2
 - **UI**: shadcn/ui + Radix UI + Tailwind CSS
@@ -32,6 +33,7 @@ This template provides a **production-ready monorepo** with:
 - **Monorepo**: Nx + pnpm + ES modules
 
 ### ✅ **Fully Functional**
+
 - All projects build successfully
 - TypeScript type checking passes
 - Comprehensive test coverage
@@ -39,6 +41,7 @@ This template provides a **production-ready monorepo** with:
 - Production builds optimized
 
 ### ✅ **Developer Experience**
+
 - Hot reload and fast refresh
 - Consistent code formatting (Prettier)
 - Linting with ESLint
@@ -51,7 +54,7 @@ This template provides a **production-ready monorepo** with:
 bassnotion-monorepo-v1/
 ├── apps/
 │   ├── backend/          # NestJS API server
-│   ├── frontend/         # Next.js web application  
+│   ├── frontend/         # Next.js web application
 │   └── frontend-e2e/     # Playwright e2e tests
 ├── libs/
 │   └── contracts/        # Shared TypeScript types
@@ -62,11 +65,12 @@ bassnotion-monorepo-v1/
 ## 🛠️ Available Commands
 
 ### Development
+
 ```bash
 # Start frontend development server
 npx nx serve @bassnotion/frontend
 
-# Start backend development server  
+# Start backend development server
 npx nx serve @bassnotion/backend
 
 # Start both frontend and backend
@@ -74,6 +78,7 @@ npx nx run-many --target=serve --projects=@bassnotion/frontend,@bassnotion/backe
 ```
 
 ### Building
+
 ```bash
 # Build all projects
 npx nx run-many --target=build --all
@@ -85,6 +90,7 @@ npx nx build @bassnotion/contracts
 ```
 
 ### Testing
+
 ```bash
 # Run unit tests
 npx nx run-many --target=test --all
@@ -100,6 +106,7 @@ npx nx run-many --target=typecheck --all
 ```
 
 ### Code Quality
+
 ```bash
 # Lint all projects
 npx nx run-many --target=lint --all
@@ -114,11 +121,13 @@ npx prettier --write .
 ## 🧪 Testing Coverage
 
 ### Unit & Integration Testing
+
 - **Framework**: Vitest with React Testing Library
 - **Coverage**: All components and utilities
 - **Environment**: jsdom for DOM testing
 
-### End-to-End Testing  
+### End-to-End Testing
+
 - **Framework**: Playwright
 - **Browsers**: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
 - **Features**: Cross-browser, responsive, accessibility testing
@@ -136,6 +145,7 @@ Comprehensive documentation available in `/docs`:
 ## 🎯 Key Features
 
 ### Frontend
+
 - **Next.js 15.3.2** with App Router
 - **React 19.1.0** with concurrent features
 - **shadcn/ui** component library
@@ -145,12 +155,14 @@ Comprehensive documentation available in `/docs`:
 - **React Hook Form** for forms
 
 ### Backend
+
 - **NestJS** framework
 - **TypeScript** with strict configuration
 - **ES Modules** throughout
 - **Modular architecture**
 
 ### Shared
+
 - **TypeScript contracts** for type safety
 - **Nx monorepo** for scalability
 - **pnpm** for efficient package management
@@ -159,11 +171,13 @@ Comprehensive documentation available in `/docs`:
 ## 🔧 Configuration
 
 ### Environment Setup
+
 - **Node.js**: 18+ (20+ recommended)
 - **pnpm**: 8+ (10+ recommended)
 - **TypeScript**: 5.7.2
 
 ### IDE Setup
+
 - **VSCode**: Recommended with TypeScript, ESLint, Prettier extensions
 - **Type checking**: Enabled in all projects
 - **Auto-formatting**: Configured for save actions
@@ -184,7 +198,9 @@ This template is production-ready with:
 ## 🔄 CI/CD Pipeline
 
 ### Automated Workflows
+
 - **CI Pipeline** (`ci.yml`): Runs on every PR and push to main
+
   - Linting and code formatting checks
   - TypeScript type checking
   - Unit tests with Vitest
@@ -193,6 +209,7 @@ This template is production-ready with:
   - Test artifact uploads (reports, screenshots, videos)
 
 - **Deployment** (`deploy.yml`): Automated production deployments
+
   - Triggered on main branch pushes and version tags
   - Full test suite execution
   - Frontend deployment to Vercel (configurable)
@@ -217,6 +234,7 @@ From this baseline, you can:
 ## 🤝 Contributing
 
 This template follows best practices for:
+
 - Code organization and structure
 - Testing strategies and coverage
 - Documentation and maintainability

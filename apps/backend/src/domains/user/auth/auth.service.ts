@@ -12,7 +12,26 @@ import { DatabaseService } from '../../../infrastructure/database/database.servi
 import { SignInDto } from './dto/sign-in.dto.js';
 import { SignUpDto } from './dto/sign-up.dto.js';
 import { AuthResponse, AuthError, AuthData } from './types/auth.types.js';
-import { AuthSecurityService } from './services/auth-security.service.js';
+// Temporarily commented out for Railway deployment - module resolution issue
+// import { AuthSecurityService } from './services/auth-security.service.js';
+
+// Type definition for optional AuthSecurityService
+interface AuthSecurityService {
+  getSecurityInfo(
+    email: string,
+    ipAddress: string,
+  ): Promise<{
+    rateLimitInfo: { isRateLimited: boolean; attemptsRemaining: number };
+    lockoutInfo: { isLocked: boolean; failedAttempts: number };
+  }>;
+  getSecurityErrorMessage(rateLimitInfo: any, lockoutInfo: any): string;
+  recordLoginAttempt(
+    email: string,
+    ipAddress: string,
+    success: boolean,
+    userAgent?: string,
+  ): Promise<void>;
+}
 
 @Injectable()
 export class AuthService {

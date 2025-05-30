@@ -1,1 +1,6 @@
 .vercel
+
+# Environment files
+.env.local
+.env.*.local
+.env

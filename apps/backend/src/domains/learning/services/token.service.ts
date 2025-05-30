@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../../../infrastructure/database/database.service.js';
 
@@ -14,9 +14,30 @@ export interface TokenBalance {
 
 @Injectable()
 export class TokenService {
-  constructor(private readonly db: DatabaseService) {}
+  private readonly logger = new Logger(TokenService.name);
+
+  constructor(private readonly db: DatabaseService) {
+    // Defensive check for DatabaseService
+    if (!this.db) {
+      this.logger.error(
+        'DatabaseService is undefined in TokenService constructor!',
+      );
+    }
+  }
 
   async getTokenBalance(userId: string): Promise<TokenBalance> {
+    // Defensive check for DatabaseService
+    if (!this.db || !this.db.supabase) {
+      this.logger.warn(
+        'DatabaseService unavailable - returning zero token balance',
+      );
+      return {
+        available: 0,
+        consumed: 0,
+        total: 0,
+      };
+    }
+
     const { data: tokens, error } = await this.db.supabase
       .from('tokens')
       .select('status')
@@ -41,6 +62,12 @@ export class TokenService {
   }
 
   async consumeAllTokens(userId: string): Promise<void> {
+    // Defensive check for DatabaseService
+    if (!this.db || !this.db.supabase) {
+      this.logger.warn('DatabaseService unavailable - cannot consume tokens');
+      return;
+    }
+
     const { error } = await this.db.supabase
       .from('tokens')
       .update({ status: 'consumed' })

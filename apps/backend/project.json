@@ -29,7 +29,8 @@
       "options": {
         "buildTarget": "@bassnotion/backend:build",
         "watch": true,
-        "port": 3000
+        "port": 3000,
+        "inspect": false
       },
       "configurations": {
         "development": {

@@ -9,7 +9,7 @@ console.log('Port from env:', process.env.PORT);
 
 const server = createServer((req, res) => {
   console.log(`Request received: ${req.method} ${req.url}`);
-  
+
   if (req.url === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(

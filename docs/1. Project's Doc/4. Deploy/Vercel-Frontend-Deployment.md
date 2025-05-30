@@ -1,11 +1,13 @@
 # Vercel Deployment Guide for AI Assistants
 
 ## 🎯 Purpose
+
 This guide provides step-by-step instructions for AI assistants to successfully deploy the BassNotion monorepo to Vercel. Follow this checklist to avoid common pitfalls and ensure successful deployment.
 
 ## ✅ Pre-Deployment Checklist
 
 ### 1. **Verify Monorepo Structure**
+
 Before attempting deployment, confirm the following structure exists:
 
 ```
@@ -29,6 +31,7 @@ bassnotion-monorepo-v1/
 ### 2. **Check TypeScript Configuration Alignment**
 
 #### A. Verify contracts tsconfig.json
+
 ```json
 {
   "compilerOptions": {
@@ -39,10 +42,11 @@ bassnotion-monorepo-v1/
 ```
 
 #### B. Verify contracts package.json exports
+
 ```json
 {
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts", 
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -53,6 +57,7 @@ bassnotion-monorepo-v1/
 ```
 
 #### C. Verify tsconfig.base.json path mapping
+
 ```json
 {
   "paths": {
@@ -62,6 +67,7 @@ bassnotion-monorepo-v1/
 ```
 
 **🚨 CRITICAL**: These three configurations MUST align:
+
 - TypeScript compiles: `src/index.ts` → `dist/index.js`
 - Package exports: Points to `./dist/index.js`
 - Path mapping: Points to `libs/contracts/dist/index.d.ts`
@@ -71,7 +77,9 @@ bassnotion-monorepo-v1/
 ### 3. **Verify Dependencies**
 
 #### A. Check contracts dependencies
+
 The `libs/contracts/package.json` must include:
+
 ```json
 {
   "dependencies": {
@@ -82,6 +90,7 @@ The `libs/contracts/package.json` must include:
 ```
 
 #### B. Check frontend dependencies
+
 The `apps/frontend/package.json` should NOT include `@bassnotion/contracts` as a dependency (it's copied manually).
 
 **AI Action**: Use `read_file` to verify dependencies are correctly configured.
@@ -91,6 +100,7 @@ The `apps/frontend/package.json` should NOT include `@bassnotion/contracts` as a
 Check that `apps/frontend/setup-contracts.sh` contains:
 
 ✅ **Required Elements**:
+
 - Executable permissions handling: `chmod +x setup-contracts.sh`
 - File system checks instead of `npm list`
 - Explicit fallback dependency installation
@@ -98,6 +108,7 @@ Check that `apps/frontend/setup-contracts.sh` contains:
 - Copy verification
 
 ✅ **Must NOT contain**:
+
 - `npm list` commands (they fail in CI)
 - Hardcoded version numbers that might become outdated
 - Paths that assume specific working directories
@@ -120,10 +131,11 @@ ls -la dist/  # Should show index.js and index.d.ts
 ### 6. **Verify Vercel Configuration**
 
 Check `vercel.json` contains:
+
 ```json
 {
   "installCommand": "chmod +x setup-contracts.sh && ./setup-contracts.sh",
-  "buildCommand": "npm run build", 
+  "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs"
 }
@@ -134,6 +146,7 @@ Check `vercel.json` contains:
 ## 🚀 Deployment Process
 
 ### Step 1: Pre-flight Check
+
 Run this automated check before deployment:
 
 ```bash
@@ -149,7 +162,9 @@ cat ../../libs/contracts/package.json | grep -A 10 '"exports"'
 ```
 
 ### Step 2: Deploy
+
 Once all checks pass:
+
 ```bash
 git add -A
 git commit -m "Pre-deployment verification complete"
@@ -161,18 +176,22 @@ Vercel will automatically deploy via GitHub integration.
 ## 🔍 Common Issues & Solutions
 
 ### Issue: "Cannot find module 'zod'"
+
 **Check**: Are dependencies properly listed in `libs/contracts/package.json`?
 **Fix**: Add missing dependencies to the contracts package.json
 
 ### Issue: "Cannot find module '@bassnotion/contracts'"
+
 **Check**: Do the package.json exports match the actual build output?
 **Fix**: Align exports, path mappings, and build output structure
 
 ### Issue: "npm list failed with ELSPROBLEMS"
+
 **Check**: Is the setup script using `npm list`?
 **Fix**: Replace with file system checks (`ls -la node_modules/`)
 
 ### Issue: Build fails silently
+
 **Check**: Does the setup script have proper error handling?
 **Fix**: Add explicit checks and verbose logging
 
@@ -232,11 +251,12 @@ Before declaring deployment ready, verify:
 ✅ Path mappings align with exports  
 ✅ Dependencies are correctly specified  
 ✅ Setup script uses reliable patterns  
-✅ No hardcoded assumptions about environment  
+✅ No hardcoded assumptions about environment
 
 ## 📚 Reference: Working Configuration
 
 ### Contracts Package.json (Template)
+
 ```json
 {
   "name": "@bassnotion/contracts",
@@ -262,6 +282,7 @@ Before declaring deployment ready, verify:
 ```
 
 ### Setup Script Template
+
 ```bash
 #!/bin/bash
 set -e
@@ -307,10 +328,10 @@ echo "Setup complete!"
 ❌ **Missing dependencies in contracts package.json**  
 ❌ **Misaligned TypeScript path mappings**  
 ❌ **Setup script without error handling**  
-❌ **Hardcoded paths that assume specific environments**  
+❌ **Hardcoded paths that assume specific environments**
 
 ---
 
 **Last Updated**: May 2025  
 **For**: AI Assistants & Development Team  
-**Status**: Production Ready Guide 
+**Status**: Production Ready Guide

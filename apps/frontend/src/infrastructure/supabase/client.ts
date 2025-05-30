@@ -18,6 +18,13 @@ export const supabase = createClient(
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
+      flowType: 'pkce',
+      debug: true,
+    },
+    global: {
+      headers: {
+        'x-client-info': '@supabase/auth-ui-react@latest',
+      },
     },
   },
 );

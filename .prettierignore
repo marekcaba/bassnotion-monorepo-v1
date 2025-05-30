@@ -2,7 +2,7 @@
 /dist
 /coverage
 /.nx/cache
-/.nx/workspace-data
+/.nx/workspace-data 
 
 # Next.js build artifacts
 apps/frontend/.next

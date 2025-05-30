@@ -28,6 +28,12 @@
       "namedRegex": "^/_not\\-found(?:/)?$"
     },
     {
+      "page": "/auth/callback",
+      "regex": "^/auth/callback(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/callback(?:/)?$"
+    },
+    {
       "page": "/auth-demo",
       "regex": "^/auth\\-demo(?:/)?$",
       "routeKeys": {},
@@ -69,5 +75,16 @@
     "pathHeader": "x-nextjs-rewritten-path",
     "queryHeader": "x-nextjs-rewritten-query"
   },
-  "rewrites": []
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://localhost:3000/api/:path*",
+      "regex": "^/api(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "http://localhost:3000/auth/:path*",
+      "regex": "^/auth(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    }
+  ]
 }

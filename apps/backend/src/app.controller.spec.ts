@@ -35,4 +35,4 @@ describe('AppController', () => {
       expect(result.timestamp).toBeDefined();
     });
   });
-}); 
+});

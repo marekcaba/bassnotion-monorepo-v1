@@ -129,40 +129,7 @@ export class TestDatabase {
     }
   }
 
-  private async createGetTablesFunction() {
-    if (!this.client) {
-      throw new Error('Database client not initialized');
-    }
-
-    const sql = `
-      CREATE OR REPLACE FUNCTION get_all_tables(schema_name text)
-      RETURNS TABLE (table_name text)
-      LANGUAGE plpgsql
-      AS $$
-      BEGIN
-          RETURN QUERY
-          SELECT c.relname::text
-          FROM pg_catalog.pg_class c
-          JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-          WHERE n.nspname = schema_name
-          AND c.relkind = 'r';  -- 'r' means regular table
-      END;
-      $$;
-    `;
-
-    const { error } = await this.client.rpc('create_get_tables_function', {
-      sql_command: sql,
-    });
-
-    if (error) {
-      logger.error('Error creating get_all_tables function:', error);
-      return false;
-    }
-
-    return true;
-  }
-
-  async cleanDatabase() {
+  private async cleanDatabase() {
     await this.ensureInitialized();
     if (!this.client) {
       throw new Error('Database client not initialized');
@@ -170,64 +137,79 @@ export class TestDatabase {
 
     logger.debug('Cleaning test database...');
     try {
-      // Get list of existing tables using a raw query
-      let existingTables = null;
-      const { data: initialTables, error: tablesError } = await this.client.rpc(
-        'get_all_tables',
-        { schema_name: 'public' },
-      );
-
-      if (tablesError) {
-        // If the function doesn't exist, create it
-        const created = await this.createGetTablesFunction();
-        if (!created) {
-          logger.warn(
-            'Could not create get_all_tables function, assuming no tables exist',
-          );
-          return;
-        }
-
-        const { data: retryTables, error: retryError } = await this.client.rpc(
-          'get_all_tables',
-          { schema_name: 'public' },
-        );
-
-        if (retryError) {
-          logger.warn('Could not fetch table list, assuming no tables exist');
-          return;
-        }
-
-        existingTables = retryTables;
-      } else {
-        existingTables = initialTables;
-      }
-
-      const existingTableNames =
-        existingTables?.map((t: any) => t.table_name) || [];
-      logger.debug(`Found existing tables: ${existingTableNames.join(', ')}`);
-
-      // Clean each table in reverse order to handle foreign key constraints
+      // First, clean public schema tables in reverse order to handle foreign key constraints
       for (const table of [...this.tables].reverse()) {
-        const tableName = table.includes('.') ? table.split('.')[1] : table;
-
-        if (existingTableNames.includes(tableName)) {
+        if (!table.includes('auth.')) {
           logger.debug(`Cleaning table: ${table}`);
-          const { error } = await this.client.from(table).delete();
+          const { error } = await this.client
+            .from(table)
+            .delete()
+            .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows except system rows
+
           if (error && error.code !== '42P01') {
             // Ignore table not found errors
             logger.error(`Error cleaning table ${table}:`, error);
           }
-        } else {
-          logger.debug(`Skipping non-existent table: ${table}`);
         }
       }
 
-      logger.debug('Database cleaned successfully');
+      // Then, delete all auth.users which will cascade delete profiles
+      const { data: users, error: listError } =
+        await this.client.auth.admin.listUsers();
+
+      if (listError) {
+        logger.error('Error listing auth users:', listError);
+      } else if (users) {
+        // Delete users one by one and wait for each deletion to complete
+        for (const user of users.users) {
+          logger.debug(`Deleting auth user: ${user.id}`);
+          const { error: deleteError } =
+            await this.client.auth.admin.deleteUser(user.id);
+
+          if (deleteError) {
+            logger.error(`Error deleting user ${user.id}:`, deleteError);
+          }
+        }
+
+        // Wait for cascade deletion to complete
+        let retries = 5;
+        while (retries > 0) {
+          const { data: remainingProfiles, error: profileError } =
+            await this.client.from('profiles').select('id');
+
+          if (profileError) {
+            logger.error('Error checking remaining profiles:', profileError);
+            break;
+          }
+
+          if (!remainingProfiles || remainingProfiles.length === 0) {
+            logger.debug('All profiles deleted successfully');
+            break;
+          }
+
+          logger.debug(
+            `Waiting for ${remainingProfiles.length} profiles to be deleted...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          retries--;
+        }
+
+        // Force delete any remaining profiles
+        if (retries === 0) {
+          logger.warn('Force deleting remaining profiles...');
+          const { error: forceError } = await this.client
+            .from('profiles')
+            .delete()
+            .neq('id', '00000000-0000-0000-0000-000000000000');
+
+          if (forceError) {
+            logger.error('Error force deleting profiles:', forceError);
+          }
+        }
+      }
     } catch (error) {
-      logger.error('Failed to clean database:', error);
-      // Don't throw the error, just log it and continue
-      // This allows tests to proceed even if cleanup fails
-      logger.warn('Continuing with tests despite cleanup failure');
+      logger.error('Error cleaning database:', error);
+      throw error;
     }
   }
 
@@ -239,9 +221,11 @@ export class TestDatabase {
 
     logger.debug('Seeding test database...');
     try {
-      // Create test users
+      // Create test users sequentially
       const userFactory = new UserFactory(this.client);
-      await userFactory.createMany(3); // Create 3 test users
+      for (let i = 0; i < 3; i++) {
+        await userFactory.create(); // Create users one by one
+      }
 
       // Seed other necessary test data
       await this.seedExerciseData();

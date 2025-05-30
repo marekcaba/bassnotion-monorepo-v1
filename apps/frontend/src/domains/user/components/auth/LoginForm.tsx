@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Button } from '@/shared/components/ui/button';
+import { GoogleSignInButton } from '@/shared/components/ui/google-sign-in-button';
 import {
   Form,
   FormControl,
@@ -19,13 +20,17 @@ import { Input } from '@/shared/components/ui/input';
 
 interface LoginFormProps {
   onSubmit: (data: LoginData) => Promise<void>;
+  onGoogleSignIn: () => Promise<void>;
   isLoading?: boolean;
+  isGoogleLoading?: boolean;
   className?: string;
 }
 
 export function LoginForm({
   onSubmit,
+  onGoogleSignIn,
   isLoading = false,
+  isGoogleLoading = false,
   className,
 }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
@@ -140,6 +145,22 @@ export function LoginForm({
               'Sign In'
             )}
           </Button>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <GoogleSignInButton
+            onClick={onGoogleSignIn}
+            isLoading={isGoogleLoading}
+          />
         </form>
       </Form>
 

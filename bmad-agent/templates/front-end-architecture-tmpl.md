@@ -49,7 +49,7 @@
 
 { Describe the core architectural decisions and patterns chosen for the frontend. This should align with the "Definitive Tech Stack Selections" in the main architecture document and consider implications from the overall system architecture (e.g., monorepo vs. polyrepo, backend service structure). }
 
-- **Framework & Core Libraries:** {e.g., React 18.x with Next.js 13.x, Angular 16.x, Vue 3.x with Nuxt.js}. **These are derived from the 'Definitive Tech Stack Selections' in the main Architecture Document.** This section elaborates on *how* these choices are applied specifically to the frontend.
+- **Framework & Core Libraries:** {e.g., React 18.x with Next.js 13.x, Angular 16.x, Vue 3.x with Nuxt.js}. **These are derived from the 'Definitive Tech Stack Selections' in the main Architecture Document.** This section elaborates on _how_ these choices are applied specifically to the frontend.
 - **Component Architecture:** {e.g., Atomic Design principles, Presentational vs. Container components, use of specific component libraries like Material UI, Tailwind CSS for styling approach. Specify chosen approach and any key libraries.}
 - **State Management Strategy:** {e.g., Redux Toolkit, Zustand, Vuex, NgRx. Briefly describe the overall approach – global store, feature stores, context API usage. **Referenced from main Architecture Document and detailed further in "State Management In-Depth" section.**}
 - **Data Flow:** {e.g., Unidirectional data flow (Flux/Redux pattern), React Query/SWR for server state. Describe how data is fetched, cached, passed to components, and updated.}
@@ -127,27 +127,35 @@ src/
 - **Visual Reference:** {Link to specific Figma frame/component, or Storybook page. REQUIRED.}
 - **Props (Properties):**
   { List each prop the component accepts. For each prop, all columns in the table MUST be filled. }
-  | Prop Name | Type                                      | Required? | Default Value | Description                                                                                                |
+  | Prop Name | Type | Required? | Default Value | Description |
   | :-------------- | :---------------------------------------- | :-------- | :------------ | :--------------------------------------------------------------------------------------------------------- |
-  | `userId`        | `string`                                  | Yes       | N/A           | The ID of the user to display. MUST be a valid UUID.                                                     |
-  | `avatarUrl`     | `string \| null`                          | No        | `null`        | URL for the user\'s avatar image. MUST be a valid HTTPS URL if provided.                                    |
-  | `onEdit`        | `() => void`                              | No        | N/A           | Callback function when an edit action is triggered.                                                        |
-  | `variant`       | `\'compact\' \| \'full\'`                     | No        | `\'full\'`        | Controls the display mode of the card.                                                                   |
-  | `{anotherProp}` | `{Specific primitive, imported type, or inline interface/type definition}` | {Yes/No}  | {If any}    | {MUST clearly state the prop\'s purpose and any constraints, e.g., \'Must be a positive integer.\'}         |
+  | `userId` | `string` | Yes | N/A | The ID of the user to display. MUST be a valid UUID. |
+  | `avatarUrl` | `string \| null` | No | `null` | URL for the user\'s avatar image. MUST be a valid HTTPS URL if provided. |
+  | `onEdit` | `() => void` | No | N/A | Callback function when an edit action is triggered. |
+  | `variant` | `\'compact\' \| \'full\'` | No | `\'full\'` | Controls the display mode of the card. |
+  | `{anotherProp}` | `{Specific primitive, imported type, or inline interface/type definition}` | {Yes/No} | {If any} | {MUST clearly state the prop\'s purpose and any constraints, e.g., \'Must be a positive integer.\'} |
 - **Internal State (if any):**
-  { Describe any significant internal state the component manages. Only list state that is *not* derived from props or global state. If state is complex, consider if it should be managed by a custom hook or global state solution instead. }
-  | State Variable | Type      | Initial Value | Description                                                                    |
+  { Describe any significant internal state the component manages. Only list state that is _not_ derived from props or global state. If state is complex, consider if it should be managed by a custom hook or global state solution instead. }
+  | State Variable | Type | Initial Value | Description |
   | :-------------- | :-------- | :------------ | :----------------------------------------------------------------------------- |
-  | `isLoading`     | `boolean` | `false`       | Tracks if data for the component is loading.                                   |
-  | `{anotherState}`| `{type}`  | `{value}`     | {Description of state variable and its purpose.}                               |
+  | `isLoading` | `boolean` | `false` | Tracks if data for the component is loading. |
+  | `{anotherState}`| `{type}` | `{value}` | {Description of state variable and its purpose.} |
 - **Key UI Elements / Structure:**
   { Provide a pseudo-HTML or JSX-like structure representing the component\'s DOM. Include key conditional rendering logic if applicable. **This structure dictates the primary output for the AI agent.** }
   ```html
-  <div> <!-- Main card container with specific class e.g., styles.cardFull or styles.cardCompact based on variant prop -->
-    <img src="{avatarUrl || defaultAvatar}" alt="User Avatar" class="{styles.avatar}" />
+  <div>
+    <!-- Main card container with specific class e.g., styles.cardFull or styles.cardCompact based on variant prop -->
+    <img
+      src="{avatarUrl || defaultAvatar}"
+      alt="User Avatar"
+      class="{styles.avatar}"
+    />
     <h2>{userName}</h2>
-    <p class="{variant === 'full' ? styles.emailFull : styles.emailCompact}">{userEmail}</p>
-    {variant === 'full' && onEdit && <button onClick={onEdit} class="{styles.editButton}">Edit</button>}
+    <p class="{variant === 'full' ? styles.emailFull : styles.emailCompact}">
+      {userEmail}
+    </p>
+    {variant === 'full' && onEdit &&
+    <button onClick="{onEdit}" class="{styles.editButton}">Edit</button>}
   </div>
   ```
 - **Events Handled / Emitted:**
@@ -173,9 +181,9 @@ _Repeat the above template for each significant component._
 
 - **Chosen Solution:** {e.g., Redux Toolkit, Zustand, Vuex, NgRx - As defined in main arch doc.}
 - **Decision Guide for State Location:**
-    - **Global State (e.g., Redux/Zustand):** Data shared across many unrelated components; data persisting across routes; complex state logic managed via reducers/thunks. **MUST be used for session data, user preferences, application-wide notifications.**
-    - **React Context API:** State primarily passed down a specific component subtree (e.g., theme, form context). Simpler state, fewer updates compared to global state. **MUST be used for localized state not suitable for prop drilling but not needed globally.**
-    - **Local Component State (`useState`, `useReducer`):** UI-specific state, not needed outside the component or its direct children (e.g., form input values, dropdown open/close status). **MUST be the default choice unless criteria for Context or Global State are met.**
+  - **Global State (e.g., Redux/Zustand):** Data shared across many unrelated components; data persisting across routes; complex state logic managed via reducers/thunks. **MUST be used for session data, user preferences, application-wide notifications.**
+  - **React Context API:** State primarily passed down a specific component subtree (e.g., theme, form context). Simpler state, fewer updates compared to global state. **MUST be used for localized state not suitable for prop drilling but not needed globally.**
+  - **Local Component State (`useState`, `useReducer`):** UI-specific state, not needed outside the component or its direct children (e.g., form input values, dropdown open/close status). **MUST be the default choice unless criteria for Context or Global State are met.**
 
 ### Store Structure / Slices
 
@@ -186,10 +194,15 @@ _Repeat the above template for each significant component._
   - **State Shape (Interface/Type):**
     ```typescript
     interface SessionState {
-      currentUser: { id: string; name: string; email: string; roles: string[]; } | null;
+      currentUser: {
+        id: string;
+        name: string;
+        email: string;
+        roles: string[];
+      } | null;
       isAuthenticated: boolean;
       token: string | null;
-      status: "idle" | "loading" | "succeeded" | "failed";
+      status: 'idle' | 'loading' | 'succeeded' | 'failed';
       error: string | null;
     }
     ```
@@ -262,15 +275,15 @@ _Repeat the above template for each significant component._
 
 { List the main routes of the application and the primary component/page rendered for each. }
 
-| Path Pattern           | Component/Page (`src/app/...` or `src/pages/...`) | Protection                      | Notes                                                 |
-| :--------------------- | :-------------------------------------------------- | :------------------------------ | :---------------------------------------------------- |
-| `/`                    | `app/page.tsx` or `pages/HomePage.tsx`              | `Public`                        |                                                       |
-| `/login`               | `app/login/page.tsx` or `pages/LoginPage.tsx`       | `Public` (redirect if auth)     | Redirects to `/dashboard` if already authenticated.   |
-| `/dashboard`           | `app/dashboard/page.tsx` or `pages/DashboardPage.tsx` | `Authenticated`                 |                                                       |
-| `/products`            | `app/products/page.tsx`                             | `Public`                        |                                                       |
-| `/products/:productId` | `app/products/[productId]/page.tsx`                 | `Public`                        | Parameter: `productId` (string)                       |
-| `/settings/profile`    | `app/settings/profile/page.tsx`                     | `Authenticated`, `Role:[USER]`  | Example of role-based protection.                   |
-| `{anotherRoute}`       | `{ComponentPath}`                                   | `{Public/Authenticated/Role:[ROLE_NAME]}` | {Notes, parameter names and types}                    |
+| Path Pattern           | Component/Page (`src/app/...` or `src/pages/...`)     | Protection                                | Notes                                               |
+| :--------------------- | :---------------------------------------------------- | :---------------------------------------- | :-------------------------------------------------- |
+| `/`                    | `app/page.tsx` or `pages/HomePage.tsx`                | `Public`                                  |                                                     |
+| `/login`               | `app/login/page.tsx` or `pages/LoginPage.tsx`         | `Public` (redirect if auth)               | Redirects to `/dashboard` if already authenticated. |
+| `/dashboard`           | `app/dashboard/page.tsx` or `pages/DashboardPage.tsx` | `Authenticated`                           |                                                     |
+| `/products`            | `app/products/page.tsx`                               | `Public`                                  |                                                     |
+| `/products/:productId` | `app/products/[productId]/page.tsx`                   | `Public`                                  | Parameter: `productId` (string)                     |
+| `/settings/profile`    | `app/settings/profile/page.tsx`                       | `Authenticated`, `Role:[USER]`            | Example of role-based protection.                   |
+| `{anotherRoute}`       | `{ComponentPath}`                                     | `{Public/Authenticated/Role:[ROLE_NAME]}` | {Notes, parameter names and types}                  |
 
 ### Route Guards / Protection
 
@@ -330,7 +343,7 @@ _Repeat the above template for each significant component._
 
 - **Semantic HTML:** {Emphasis on using correct HTML5 elements. **AI Agent MUST prioritize semantic elements (e.g., `<nav>`, `<button>`, `<article>`) over generic `<div>`/`<span>` with ARIA roles where a native element with the correct semantics exists.**}
 - **ARIA Implementation:** {Specify common custom components and their required ARIA patterns (e.g., "Custom select dropdown MUST follow ARIA Combobox pattern including `aria-expanded`, `aria-controls`, `role='combobox'`, etc. Custom Tabs MUST follow ARIA Tabbed Interface pattern."). Link to ARIA Authoring Practices Guide (APG) for reference.}
-- **Keyboard Navigation:** {Ensuring all interactive elements are focusable and operable via keyboard. Focus order MUST be logical. Custom components MUST implement keyboard interaction patterns as per ARIA APG (e.g., arrow keys for radio groups/sliders).**}
+- **Keyboard Navigation:** {Ensuring all interactive elements are focusable and operable via keyboard. Focus order MUST be logical. Custom components MUST implement keyboard interaction patterns as per ARIA APG (e.g., arrow keys for radio groups/sliders).\*\*}
 - **Focus Management:** {How is focus managed in modals, dynamic content changes, route transitions? (e.g., "Modals MUST trap focus. On modal open, focus moves to the first focusable element or the modal container. On close, focus returns to the trigger element. Route changes SHOULD move focus to the main content area or H1 of the new page.")}
 - **Testing Tools for AX:** {e.g., Axe DevTools browser extension, Lighthouse accessibility audit. **Automated Axe scans (e.g., using `jest-axe` for component tests, or Playwright/Cypress Axe integration for E2E tests) MUST be integrated into the CI pipeline and fail the build on new violations of WCAG AA (or specified level).** Manual testing procedures: {List key manual checks, e.g., keyboard-only navigation for all interactive elements, screen reader testing (e.g., NVDA/JAWS/VoiceOver) for critical user flows.}}
 

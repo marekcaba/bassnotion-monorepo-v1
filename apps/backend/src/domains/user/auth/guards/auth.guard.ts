@@ -3,6 +3,7 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 
@@ -10,9 +11,24 @@ import { AuthService } from '../auth.service.js';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly authService: AuthService) {}
+  private readonly logger = new Logger(AuthGuard.name);
+
+  constructor(private readonly authService: AuthService) {
+    // Defensive check for AuthService
+    if (!this.authService) {
+      this.logger.error('AuthService is undefined in AuthGuard constructor!');
+    }
+  }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Defensive check for AuthService - fail closed for security
+    if (!this.authService) {
+      this.logger.error(
+        'AuthService is undefined - denying access for security',
+      );
+      throw new UnauthorizedException('Authentication service unavailable');
+    }
+
     const request = context.switchToHttp().getRequest<FastifyRequest>();
     const token = this.extractTokenFromHeader(request);
 

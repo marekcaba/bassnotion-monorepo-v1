@@ -1,0 +1,156 @@
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+[auth.external]
+enable_apple = false
+enable_azure = false
+enable_bitbucket = false
+enable_discord = false
+enable_facebook = false
+enable_github = false
+enable_gitlab = false
+enable_google = false
+enable_keycloak = false
+enable_linkedin = false
+enable_notion = false
+enable_twitch = false
+enable_twitter = false
+enable_slack = false
+enable_spotify = false
+
+[auth.external.apple]
+client_id = ""
+secret = ""
+redirect_uri = ""
+url = ""
+
+[auth.external.azure]
+client_id = ""
+secret = ""
+redirect_uri = ""
+url = ""
+
+[auth.external.bitbucket]
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[auth.external.discord]
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[auth.external.facebook]
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[auth.external.github]
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[auth.external.gitlab]
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[auth.external.google]
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[auth.external.keycloak]
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[auth.external.linkedin]
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[auth.external.notion]
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[auth.external.twitch]
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[auth.external.twitter]
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[auth.external.slack]
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[auth.external.spotify]
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[analytics]
+enabled = false
+port = 54327
+vector_port = 54328
+backend = "postgres"
+
+# Enable this to use Supabase's postgres-meta API
+[postgres_meta]
+port = 54325
+db_name = "postgres"
+db_host = "localhost"
+db_port = 54322
+db_user = "supabase_admin"
+db_password = "postgres"
+
+[realtime]
+enabled = true
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost:54321"
+
+[inbucket]
+enabled = true
+port = 54324
+
+[jwt]
+secret = "super-secret-jwt-token-with-at-least-32-characters-long"
+anon_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
+service_role_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[api.static]
+enabled = true
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15 

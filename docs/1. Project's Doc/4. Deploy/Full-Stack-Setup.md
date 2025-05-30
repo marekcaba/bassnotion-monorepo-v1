@@ -7,12 +7,14 @@ This document provides a complete guide for deploying the BassNotion monorepo, i
 ## 🏗️ Architecture
 
 ### Current Deployment Stack
+
 - **Frontend**: Next.js 15.3.2 deployed on Vercel
 - **Backend**: NestJS deployed on Railway using Docker
 - **Database**: Supabase (PostgreSQL)
 - **Package Manager**: pnpm (development), npm (production builds)
 
 ### Live URLs
+
 - **Frontend**: https://bassnotion-frontend.vercel.app
 - **Backend**: https://backend-production-612c.up.railway.app
 - **Database**: Supabase project (configured via environment variables)
@@ -24,11 +26,13 @@ This document provides a complete guide for deploying the BassNotion monorepo, i
 **Vercel automatically detects monorepo structure and sets the working directory to `apps/frontend/`**. This is crucial to understand for proper configuration.
 
 When Vercel runs:
+
 - It automatically changes to the `apps/frontend/` directory
 - All commands run from this directory, NOT from the repository root
 - File paths are relative to `apps/frontend/`, not the monorepo root
 
 ### Prerequisites
+
 - Vercel account with access to the project
 - Repository access
 - Environment variables configured in Vercel dashboard
@@ -36,6 +40,7 @@ When Vercel runs:
 ### Configuration Files
 
 #### 1. Root `vercel.json` (FINAL WORKING VERSION)
+
 ```json
 {
   "installCommand": "chmod +x setup-contracts.sh && ./setup-contracts.sh",
@@ -70,6 +75,7 @@ When Vercel runs:
 ```
 
 #### 2. `apps/frontend/setup-contracts.sh` (CRITICAL FOR MONOREPO)
+
 ```bash
 #!/bin/bash
 set -e
@@ -91,6 +97,7 @@ echo "Contracts library setup complete!"
 ```
 
 #### 3. `apps/frontend/package.json` Dependencies
+
 ```json
 {
   "dependencies": {
@@ -127,6 +134,7 @@ echo "Contracts library setup complete!"
 **CRITICAL**: `@bassnotion/contracts` is NOT listed in package.json dependencies because it's copied manually during the install phase.
 
 #### 4. `libs/contracts/package.json` (FIXED EXPORTS)
+
 ```json
 {
   "name": "@bassnotion/contracts",
@@ -146,6 +154,7 @@ echo "Contracts library setup complete!"
 ### Vercel Project Settings
 
 #### Critical Settings in Vercel Dashboard:
+
 1. **Root Directory**: Leave EMPTY (Vercel auto-detects `apps/frontend`)
 2. **Framework**: Next.js (auto-detected)
 3. **Build Command**: `npm run build` (from vercel.json)
@@ -153,7 +162,9 @@ echo "Contracts library setup complete!"
 5. **Output Directory**: `.next` (Next.js default)
 
 ### Environment Variables (Frontend)
+
 Configure these in Vercel Dashboard (NOT in .env files):
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -163,14 +174,17 @@ NEXT_PUBLIC_API_URL=your_backend_url
 ### 🚫 What DIDN'T Work (Troubleshooting History)
 
 #### ❌ Attempt 1: Direct Nx Commands
+
 ```json
 {
   "buildCommand": "npx nx build @bassnotion/contracts && npx nx build @bassnotion/frontend"
 }
 ```
+
 **Failed**: Nx not installed in Vercel's npm environment
 
 #### ❌ Attempt 2: Workspace Dependencies
+
 ```json
 {
   "dependencies": {
@@ -178,9 +192,11 @@ NEXT_PUBLIC_API_URL=your_backend_url
   }
 }
 ```
+
 **Failed**: npm doesn't understand pnpm workspace syntax
 
 #### ❌ Attempt 3: File Path Dependencies
+
 ```json
 {
   "dependencies": {
@@ -188,9 +204,11 @@ NEXT_PUBLIC_API_URL=your_backend_url
   }
 }
 ```
+
 **Failed**: Path resolution issues when Vercel runs from frontend directory
 
 #### ❌ Attempt 4: Registry Dependencies
+
 ```json
 {
   "dependencies": {
@@ -198,23 +216,28 @@ NEXT_PUBLIC_API_URL=your_backend_url
   }
 }
 ```
+
 **Failed**: Package doesn't exist in npm registry
 
 #### ❌ Attempt 5: Long Install Commands
+
 ```json
 {
   "installCommand": "npm install && mkdir -p node_modules/@bassnotion && cp -r ../../libs/contracts node_modules/@bassnotion/ && echo 'debug...' && ls -la..."
 }
 ```
+
 **Failed**: Vercel has 256 character limit for installCommand
 
 #### ❌ Attempt 6: Wrong Package.json Exports
+
 ```json
 {
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts"
 }
 ```
+
 **Failed**: TypeScript compiler outputs to `./dist/index.js`, not `./dist/src/index.js`
 
 ### ✅ Final Working Solution
@@ -228,11 +251,13 @@ NEXT_PUBLIC_API_URL=your_backend_url
 ### Deployment Process
 
 #### Method 1: Git-based Deployment (Recommended)
+
 - Push changes to main branch
 - Vercel automatically deploys via GitHub integration
 - Uses configuration from `vercel.json`
 
 #### Method 2: CLI Deployment
+
 ```bash
 # From monorepo root
 npx vercel --prod
@@ -241,6 +266,7 @@ npx vercel --prod
 ### Next.js 15 Compatibility Issues
 
 #### Suspense Boundary Requirements
+
 Next.js 15 requires Suspense boundaries for components using `useSearchParams()`:
 
 ```jsx
@@ -263,27 +289,33 @@ export default function LoginPage() {
 ### Common Issues & Solutions
 
 #### Issue: "Module not found: Can't resolve '@bassnotion/contracts'"
+
 **Cause**: Contracts library not properly built or copied
 **Solution**:
+
 1. Ensure `setup-contracts.sh` builds the library
 2. Check package.json exports match actual file structure
 3. Verify script has execute permissions
 
 #### Issue: "installCommand should NOT be longer than 256 characters"
+
 **Cause**: Vercel schema validation limit
 **Solution**: Use external script file instead of inline commands
 
 #### Issue: "No such file or directory: dist/src/"
+
 **Cause**: Package.json exports pointing to wrong paths
 **Solution**: Update exports to match actual TypeScript build output
 
 #### Issue: Suspense boundary errors
+
 **Cause**: Next.js 15 requirements
 **Solution**: Wrap components using `useSearchParams()` in Suspense boundaries
 
 ## 🛠️ Backend Deployment (Railway)
 
 ### Prerequisites
+
 - Railway account with project access
 - Docker support enabled
 - Environment variables configured
@@ -291,6 +323,7 @@ export default function LoginPage() {
 ### Configuration Files
 
 #### 1. `Dockerfile.final` (Multi-stage build)
+
 ```dockerfile
 # Build stage
 FROM node:20-alpine AS builder
@@ -328,6 +361,7 @@ CMD ["node", "dist/apps/backend/main.js"]
 ```
 
 #### 2. `.dockerignore`
+
 ```
 node_modules
 .git
@@ -343,6 +377,7 @@ tmp
 ```
 
 #### 3. `railway.json`
+
 ```json
 {
   "$schema": "https://railway.app/railway.schema.json",
@@ -368,6 +403,7 @@ tmp
 ```
 
 ### Environment Variables (Backend)
+
 ```bash
 NODE_ENV=production
 PORT=3000
@@ -378,27 +414,32 @@ SUPABASE_KEY=your_supabase_service_role_key
 ### Deployment Process
 
 #### Automatic Deployment
+
 - Push changes to main branch
 - Railway automatically builds and deploys using Docker
 - Health check endpoint: `/api/health`
 
 #### Manual Deployment
+
 ```bash
 # Using Railway CLI
 railway deploy
 ```
 
 ### Health Check
+
 The backend includes a health check endpoint at `/api/health` that Railway uses to verify deployment success.
 
 ## 🗄️ Database Setup (Supabase)
 
 ### Configuration
+
 - **Provider**: Supabase (PostgreSQL)
 - **Connection**: Via Supabase JavaScript client
 - **Authentication**: Service role key for backend, anon key for frontend
 
 ### Environment Variables
+
 ```bash
 # Backend (Service Role - Full Access)
 SUPABASE_URL=https://your-project.supabase.co
@@ -412,11 +453,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 ## 🔄 CI/CD Pipeline
 
 ### GitHub Actions
+
 - **Trigger**: Push to main branch
 - **Frontend**: Automatic deployment via Vercel GitHub integration
 - **Backend**: Automatic deployment via Railway GitHub integration
 
 ### Deployment Flow
+
 1. Code pushed to main branch
 2. Vercel builds and deploys frontend
 3. Railway builds Docker image and deploys backend
@@ -425,16 +468,19 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 ## 🚨 Troubleshooting
 
 ### Frontend Issues
+
 - **Build failures**: Check Next.js configuration and dependencies
 - **Environment variables**: Verify `NEXT_PUBLIC_` prefix for client-side variables
 - **Contracts library**: Ensure setup script builds and copies correctly
 
 ### Backend Issues
+
 - **Docker build failures**: Check Dockerfile and dependency installation
 - **Health check failures**: Verify `/api/health` endpoint is accessible
 - **Database connection**: Verify Supabase credentials and network access
 
 ### Common Solutions
+
 1. **Clear deployment cache**: Redeploy from scratch
 2. **Check logs**: Use Vercel/Railway dashboards for detailed logs
 3. **Environment variables**: Verify all required variables are set
@@ -443,11 +489,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 ## 📊 Monitoring
 
 ### Health Checks
+
 - **Frontend**: Vercel automatic monitoring
 - **Backend**: Railway health check at `/api/health`
 - **Database**: Supabase dashboard monitoring
 
 ### Logs
+
 - **Frontend**: Vercel dashboard
 - **Backend**: Railway dashboard
 - **Database**: Supabase logs
@@ -455,11 +503,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 ## 🔐 Security
 
 ### Environment Variables
+
 - Never commit sensitive keys to repository
 - Use different keys for development/production
 - Rotate keys regularly
 
 ### CORS Configuration
+
 - Frontend and backend properly configured for cross-origin requests
 - Supabase RLS (Row Level Security) policies in place
 
@@ -467,6 +517,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 
 **Last Updated**: May 2025
 **Status**: ✅ Production Ready
-**Deployment URLs**: 
+**Deployment URLs**:
+
 - Frontend: https://bassnotion-frontend.vercel.app
-- Backend: https://backend-production-612c.up.railway.app 
+- Backend: https://backend-production-612c.up.railway.app

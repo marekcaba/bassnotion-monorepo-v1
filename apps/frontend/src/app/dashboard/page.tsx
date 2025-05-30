@@ -1,17 +1,19 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Home } from 'lucide-react';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { authService } from '@/domains/user/api/auth';
 import { Button } from '@/shared/components/ui/button';
 import { useToast } from '@/shared/hooks/use-toast';
+import { ChangePasswordForm } from '@/domains/user/components/auth/ChangePasswordForm';
 
 export default function DashboardPage() {
   const { user, session, isAuthenticated, isReady, reset } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   useEffect(() => {
     // Redirect to login if not authenticated and auth is ready
@@ -147,6 +149,27 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Account Settings */}
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold mb-4">Account Settings</h2>
+            {showPasswordForm ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPasswordForm(false)}
+                  className="mb-4"
+                >
+                  Cancel
+                </Button>
+                <ChangePasswordForm />
+              </>
+            ) : (
+              <Button onClick={() => setShowPasswordForm(true)}>
+                Change Password
+              </Button>
+            )}
+          </div>
+
           {/* Debug Info */}
           <div className="mt-8 bg-muted rounded-lg p-4">
             <h3 className="font-semibold mb-2">Debug Information</h3>
@@ -165,4 +188,3 @@ export default function DashboardPage() {
     </div>
   );
 }
- 

@@ -1,19 +1,29 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { LoginData } from '@bassnotion/contracts';
 
 import { LoginForm } from '@/domains/user/components/auth';
-import { authService, AuthError } from '@/domains/user/api/auth';
+import { MagicLinkSignIn } from '@/domains/user/components/auth/MagicLinkSignIn';
+import { authService } from '@/domains/user/api/auth';
+import { AuthError } from '@supabase/supabase-js';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { Button } from '@/shared/components/ui/button';
 import { useToast } from '@/shared/hooks/use-toast';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/shared/components/ui/tabs';
 
 function LoginPageContent() {
+  const _router = useRouter(); // Prefix with _ to indicate intentionally unused
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const searchParams = useSearchParams();
   const returnTo = searchParams.get('returnTo');
   const message = searchParams.get('message');
@@ -33,10 +43,30 @@ function LoginPageContent() {
     }
   }, [message, toast]);
 
-  const handleLogin = async (data: LoginData) => {
-    setIsLoading(true);
+  // Check if we should use backend API for testing
+  const useBackendAuth = process.env.NEXT_PUBLIC_USE_BACKEND_AUTH === 'true';
 
+  const handleSubmit = async (data: LoginData) => {
     try {
+      setIsLoading(true);
+
+      if (useBackendAuth) {
+        // Use backend API for E2E testing
+        const result = await authService.signInWithBackend(data);
+
+        if (result.success) {
+          toast({
+            title: 'Welcome back!',
+            description: 'You have been signed in successfully.',
+          });
+
+          // Redirect to dashboard for testing
+          _router.push('/dashboard');
+        } else {
+          throw new Error(result.error?.message || 'Login failed');
+        }
+      } else {
+        // Use Supabase for production
       const authData = await authService.signIn(data);
 
       if (authData.user && authData.session) {
@@ -49,6 +79,7 @@ function LoginPageContent() {
         });
 
         redirectAfterAuth(authData.user, returnTo || undefined);
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -56,16 +87,18 @@ function LoginPageContent() {
       let errorMessage =
         'Failed to sign in. Please check your credentials and try again.';
 
-      if (error instanceof AuthError) {
+      if (error instanceof Error) {
         errorMessage = error.message;
 
         // Provide more specific error messages for common cases
-        if (error.message.includes('Invalid login credentials')) {
-          errorMessage =
-            'Invalid email or password. Please check your credentials and try again.';
-        } else if (error.message.includes('Email not confirmed')) {
-          errorMessage =
-            'Please check your email and click the confirmation link before signing in.';
+        if (error instanceof AuthError) {
+          if (error.message.includes('Invalid login credentials')) {
+            errorMessage =
+              'Invalid email or password. Please check your credentials and try again.';
+          } else if (error.message.includes('Email not confirmed')) {
+            errorMessage =
+              'Please check your email and click the confirmation link before signing in.';
+          }
         }
       }
 
@@ -79,20 +112,48 @@ function LoginPageContent() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsGoogleLoading(true);
+      await authService.signInWithGoogle();
+      // The page will be redirected by Supabase
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Failed to sign in with Google',
+        variant: 'destructive',
+      });
+      setIsGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight">Welcome Back</h1>
-          <p className="mt-2 text-muted-foreground">
-            Sign in to your BassNotion account
-          </p>
-        </div>
-
-        {/* Login Form */}
+        {/* Login Options */}
         <div className="bg-card rounded-lg border p-6 shadow-sm">
-          <LoginForm onSubmit={handleLogin} isLoading={isLoading} />
+          <Tabs defaultValue="password" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="password">Password</TabsTrigger>
+              <TabsTrigger value="magic-link">Magic Link</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="password">
+              <LoginForm
+                onSubmit={handleSubmit}
+                onGoogleSignIn={handleGoogleSignIn}
+                isLoading={isLoading}
+                isGoogleLoading={isGoogleLoading}
+              />
+            </TabsContent>
+
+            <TabsContent value="magic-link">
+              <MagicLinkSignIn />
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Register Link */}
@@ -101,7 +162,9 @@ function LoginPageContent() {
             Don't have an account?{' '}
             <Button variant="link" asChild className="p-0 h-auto">
               <Link
-                href={`/register${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`}
+                href={`/register${
+                  returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''
+                }`}
               >
                 Create account
               </Link>
@@ -133,4 +196,3 @@ export default function LoginPage() {
     </Suspense>
   );
 }
- 

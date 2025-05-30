@@ -32,4 +32,4 @@ module.exports = composePlugins(withNx(), (config) => {
   config.devtool = 'source-map';
 
   return config;
-}); 
+});

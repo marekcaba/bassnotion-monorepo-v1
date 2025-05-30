@@ -16,7 +16,8 @@ import {
 } from '../../../shared/types/api.types.js';
 
 import { DatabaseService } from '../../../infrastructure/database/database.service.js';
-import { AuthSecurityService } from './services/auth-security.service.js';
+// Temporarily commented out for Railway deployment - module resolution issue  
+// import { AuthSecurityService } from './services/auth-security.service.js';
 
 import { AuthService } from './auth.service.js';
 import { SignInDto } from './dto/sign-in.dto.js';
@@ -44,6 +45,13 @@ interface MockPostgrestQueryBuilder {
 interface MockDatabaseResponse<T> {
   data: T | null;
   error: Error | null;
+}
+
+// Type definition for tests
+interface AuthSecurityService {
+  getSecurityInfo(email: string, ipAddress: string): Promise<any>;
+  getSecurityErrorMessage(rateLimitInfo: any, lockoutInfo: any): string;
+  recordLoginAttempt(email: string, ipAddress: string, success: boolean, userAgent?: string): Promise<void>;
 }
 
 describe('AuthService', () => {

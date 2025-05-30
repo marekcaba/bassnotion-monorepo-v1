@@ -8,7 +8,10 @@
     "start": "node dist/apps/backend/main.js",
     "build:backend": "NX_CLOUD_ACCESS_TOKEN= npx nx build @bassnotion/backend --prod --skip-nx-cache --verbose --force",
     "start:backend": "node dist/apps/backend/main.js",
-    "build:frontend": "npx nx build @bassnotion/contracts && npx nx build @bassnotion/frontend"
+    "build:frontend": "npx nx build @bassnotion/contracts && npx nx build @bassnotion/frontend",
+    "dev:backend": "npx nx serve @bassnotion/backend",
+    "dev:frontend": "npx nx serve @bassnotion/frontend",
+    "dev": "npx nx run-many --target=serve --projects=@bassnotion/backend,@bassnotion/frontend --parallel=true"
   },
   "private": true,
   "devDependencies": {
@@ -34,6 +37,7 @@
     "@types/react-dom": "^19.0.0",
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.32.1",
+    "@vitejs/plugin-react": "^4.5.0",
     "@vitest/ui": "^3.1.4",
     "autoprefixer": "^10.4.16",
     "esbuild": "^0.25.4",
@@ -50,7 +54,9 @@
     "tslib": "^2.3.0",
     "typescript": "~5.7.2",
     "unplugin-swc": "^1.5.3",
+    "vite": "^6.3.5",
     "vite-plugin-dts": "^4.3.0",
+    "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.1.4"
   },
   "dependencies": {

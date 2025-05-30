@@ -9,24 +9,46 @@ export class DatabaseService implements OnModuleInit {
   private isInitialized = false;
 
   constructor(private readonly configService: ConfigService) {
-    if (!configService) {
-      this.logger.error('ConfigService not injected properly');
-      throw new Error('ConfigService not injected properly');
-    }
     this.logger.debug('DatabaseService constructor called');
+    this.logger.debug('ConfigService injected:', !!this.configService);
+    if (!this.configService) {
+      this.logger.error('ConfigService is undefined in constructor!');
+    }
   }
 
   async onModuleInit() {
     try {
       this.logger.debug('Initializing Supabase client');
+      this.logger.debug('ConfigService available:', !!this.configService);
 
       if (!this.configService) {
-        this.logger.error('ConfigService is undefined in onModuleInit');
+        this.logger.error(
+          'ConfigService is undefined in onModuleInit - using environment variables directly',
+        );
+        const supabaseUrl = process.env['SUPABASE_URL'];
+        const supabaseKey = process.env['SUPABASE_SERVICE_ROLE_KEY'];
+
+        if (!supabaseUrl || !supabaseKey) {
+          this.logger.warn(
+            'Missing Supabase configuration from env vars - running in limited mode',
+            {
+              hasUrl: !!supabaseUrl,
+              hasKey: !!supabaseKey,
+            },
+          );
+          return;
+        }
+
+        this.supabase = createClient(supabaseUrl, supabaseKey);
+        this.logger.debug('Supabase client initialized from env vars');
+        this.isInitialized = true;
         return;
       }
 
       const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
-      const supabaseKey = this.configService.get<string>('SUPABASE_KEY');
+      const supabaseKey = this.configService.get<string>(
+        'SUPABASE_SERVICE_ROLE_KEY',
+      );
 
       if (!supabaseUrl || !supabaseKey) {
         this.logger.warn(

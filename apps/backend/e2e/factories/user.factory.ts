@@ -46,9 +46,11 @@ export interface UserProfile {
 
 export interface UserPreferences {
   theme: 'light' | 'dark';
-  emailNotifications: boolean;
-  metronomeEnabled: boolean;
-  defaultPlaybackSpeed: number;
+  language: string;
+  notifications_enabled: boolean;
+  email_notifications_enabled: boolean;
+  practice_reminder_time?: string;
+  weekly_goal_minutes: number;
 }
 
 export interface CreateUserOptions {
@@ -117,9 +119,13 @@ export class UserFactory {
       },
       preferences: {
         theme: options.preferences?.theme || 'dark',
-        emailNotifications: options.preferences?.emailNotifications ?? true,
-        metronomeEnabled: options.preferences?.metronomeEnabled ?? true,
-        defaultPlaybackSpeed: options.preferences?.defaultPlaybackSpeed || 1.0,
+        language: options.preferences?.language || 'en',
+        notifications_enabled:
+          options.preferences?.notifications_enabled ?? true,
+        email_notifications_enabled:
+          options.preferences?.email_notifications_enabled ?? true,
+        practice_reminder_time: options.preferences?.practice_reminder_time,
+        weekly_goal_minutes: options.preferences?.weekly_goal_minutes || 0,
         ...options.preferences,
       },
       metadata: {
@@ -158,87 +164,134 @@ export class UserFactory {
 
       const userId = authData.user.id;
 
-      // Create user profile with retry logic
-      const profileResult = await this.retryOperation(async () => {
-        const { data, error } = await this.supabase
+      try {
+        // Check if profile exists and delete it if it does
+        const { data: existingProfile } = await this.supabase
           .from('profiles')
-          .insert({
-            id: userId,
-            ...userData.profile,
-          })
-          .select()
+          .select('id')
+          .eq('id', userId)
           .single();
 
-        if (error) throw error;
-        return data;
-      }, 3);
+        if (existingProfile) {
+          logger.debug(`Profile ${userId} already exists, deleting it...`);
+          const { error: deleteError } = await this.supabase
+            .from('profiles')
+            .delete()
+            .eq('id', userId);
 
-      if (!profileResult) {
-        // Cleanup auth user if profile creation fails
+          if (deleteError) {
+            logger.error('Failed to delete existing profile:', deleteError);
+            throw deleteError;
+          }
+        }
+
+        // Check if preferences exist and delete them if they do
+        const { data: existingPreferences } = await this.supabase
+          .from('user_preferences')
+          .select('user_id')
+          .eq('user_id', userId)
+          .single();
+
+        if (existingPreferences) {
+          logger.debug(
+            `Preferences for user ${userId} already exist, deleting them...`,
+          );
+          const { error: deleteError } = await this.supabase
+            .from('user_preferences')
+            .delete()
+            .eq('user_id', userId);
+
+          if (deleteError) {
+            logger.error('Failed to delete existing preferences:', deleteError);
+            throw deleteError;
+          }
+        }
+
+        // Create user profile with retry logic
+        const profileResult = await this.retryOperation(async () => {
+          const { data, error } = await this.supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              email: userData.email,
+              full_name: userData.profile.displayName,
+              avatar_url: userData.profile.avatarUrl,
+              bio: userData.profile.bio,
+              skill_level: userData.profile.skillLevel,
+              social_links: userData.profile.socialLinks,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              zero_mission_completed: false,
+              practice_streak_days: 0,
+            })
+            .select()
+            .single();
+
+          if (error) {
+            logger.error('Failed to create profile:', error);
+            throw error;
+          }
+          return data;
+        }, 3);
+
+        if (!profileResult) {
+          throw new Error('Profile creation returned no data');
+        }
+
+        // Create user preferences with retry logic
+        const preferencesResult = await this.retryOperation(async () => {
+          const { error } = await this.supabase
+            .from('user_preferences')
+            .insert({
+              user_id: userId,
+              theme: userData.preferences.theme,
+              language: userData.preferences.language || 'en',
+              notifications_enabled:
+                userData.preferences.notifications_enabled ?? true,
+              email_notifications_enabled:
+                userData.preferences.email_notifications_enabled ?? true,
+              weekly_goal_minutes:
+                userData.preferences.weekly_goal_minutes || 0,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+
+          if (error) {
+            logger.error('Failed to create preferences:', error);
+            throw error;
+          }
+          return true;
+        }, 3);
+
+        if (!preferencesResult) {
+          throw new Error('Preferences creation failed');
+        }
+
+        return {
+          id: userId,
+          email: userData.email,
+          displayName: userData.profile.displayName,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          isConfirmed: options.isConfirmed ?? true,
+          lastLoginAt: authData.user.last_sign_in_at
+            ? new Date(authData.user.last_sign_in_at).toISOString()
+            : undefined,
+          session: authData.session
+            ? {
+                accessToken: authData.session.access_token,
+                refreshToken: authData.session.refresh_token,
+                expiresIn: authData.session.expires_in,
+              }
+            : undefined,
+        };
+      } catch (error) {
+        // If anything fails after auth user creation, clean up the auth user
+        logger.error('Error during user creation, cleaning up:', error);
         await this.supabase.auth.admin.deleteUser(userId);
-        throw new UserFactoryError('Failed to create user profile');
+        throw error;
       }
-
-      // Create user preferences with retry logic
-      const preferencesResult = await this.retryOperation(async () => {
-        const { error } = await this.supabase.from('user_preferences').insert({
-          user_id: userId,
-          ...userData.preferences,
-        });
-
-        if (error) throw error;
-        return true;
-      }, 3);
-
-      if (!preferencesResult) {
-        // Cleanup auth user and profile if preferences creation fails
-        await this.supabase.auth.admin.deleteUser(userId);
-        throw new UserFactoryError('Failed to create user preferences');
-      }
-
-      // Create initial free tokens with retry logic
-      const tokensResult = await this.retryOperation(async () => {
-        const { error } = await this.supabase.from('tokens').insert([
-          {
-            user_id: userId,
-            type: 'free',
-            amount: 5,
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-          },
-        ]);
-
-        if (error) throw error;
-        return true;
-      }, 3);
-
-      if (!tokensResult) {
-        // Cleanup auth user, profile, and preferences if tokens creation fails
-        await this.supabase.auth.admin.deleteUser(userId);
-        throw new UserFactoryError('Failed to create initial tokens');
-      }
-
-      // Convert to AuthUser with proper type checking
-      const authUser: AuthUser = {
-        id: userId,
-        email: userData.email,
-        displayName: userData.profile.displayName,
-        createdAt: new Date().toISOString(), // We don't have access to profile.created_at yet
-        updatedAt: new Date().toISOString(), // We don't have access to profile.updated_at yet
-        isConfirmed: options.isConfirmed ?? true,
-        lastLoginAt: authData.user.last_sign_in_at
-          ? new Date(authData.user.last_sign_in_at).toISOString()
-          : undefined,
-        session: authData.session
-          ? {
-              accessToken: authData.session.access_token,
-              refreshToken: authData.session.refresh_token,
-              expiresIn: authData.session.expires_in,
-            }
-          : undefined,
-      };
-
-      return authUser;
-    } catch (error: unknown) {
+    } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       logger.error('Failed to create user:', error);

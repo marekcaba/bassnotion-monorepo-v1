@@ -28,6 +28,7 @@
 ### Agent Model Used: `<Agent Model Name/Version>`
 
 ### Completion Notes List
+
 {Any notes about implementation choices, difficulties, or follow-up needed}
 
 ### Change Log

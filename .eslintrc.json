@@ -4,7 +4,9 @@
     "**/node_modules/*",
     "**/dist/*",
     "**/coverage/*",
-    "**/.nx/*"
+    "**/.nx/*",
+    "**/*.d.ts",
+    "!**/*.manual.d.ts"
   ],
   "plugins": ["@nx", "@typescript-eslint", "prettier"],
   "overrides": [
@@ -36,8 +38,8 @@
       ],
       "parserOptions": {
         "project": [
-          "./tsconfig.json", 
-          "./apps/*/tsconfig.json", 
+          "./tsconfig.json",
+          "./apps/*/tsconfig.json",
           "./apps/*/tsconfig.node.json",
           "./libs/*/tsconfig.json"
         ]
