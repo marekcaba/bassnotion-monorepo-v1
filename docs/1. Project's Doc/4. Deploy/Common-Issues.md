@@ -100,6 +100,45 @@ RUN rm -rf node_modules/@bassnotion/contracts && \
 - TypeScript paths: `libs/contracts/dist/src/index.d.ts`
 - Setup scripts: Check for `dist/src/index.js`
 
+### 5. **NestJS Dependency Injection Failures** 🚨 **CRITICAL**
+
+**Error**:
+
+```
+Nest can't resolve dependencies of the AuthService (DatabaseService, ?)
+```
+
+**Root Cause**: AuthSecurityService not included in module providers array.
+
+**❌ WRONG Solution** (Don't do this):
+```typescript
+// This removes security features!
+constructor(
+  private readonly db: DatabaseService,
+  @Optional() private readonly authSecurity?: AuthSecurityService,
+) {}
+```
+
+**✅ CORRECT Solution**:
+```typescript
+// 1. Add AuthSecurityService to providers in auth.module.ts
+@Module({
+  providers: [AuthService, AuthGuard, AuthSecurityService],  // ← Include AuthSecurityService
+})
+
+// 2. Use normal dependency injection in auth.service.ts
+constructor(
+  private readonly db: DatabaseService,
+  private readonly authSecurity: AuthSecurityService,  // ← Required, not optional
+) {}
+```
+
+**Why This Matters**: AuthSecurityService provides:
+- Rate limiting to prevent brute force attacks
+- Account lockout with progressive timeouts
+- Login attempt tracking and security monitoring
+- Essential security features that should NEVER be optional
+
 ## 🚀 Railway Backend Issues
 
 ### Build Failures
@@ -237,6 +276,7 @@ pnpm install
 
 ## 🏷️ Version History
 
+- **v1.2.0** (May 30, 2025): Added NestJS dependency injection section - Critical lesson about preserving security features
 - **v1.1.0** (May 29, 2025): All critical issues resolved, production deployments working
 - **v1.0.0**: Initial deployment with basic troubleshooting
 
