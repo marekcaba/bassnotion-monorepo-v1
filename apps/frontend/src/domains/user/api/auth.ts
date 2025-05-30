@@ -21,7 +21,7 @@ export interface BackendAuthResponse {
 
 export class AuthService {
   private get backendUrl() {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    return process.env.NEXT_PUBLIC_API_URL || 'https://backend-production-612c.up.railway.app';
   }
 
   /**

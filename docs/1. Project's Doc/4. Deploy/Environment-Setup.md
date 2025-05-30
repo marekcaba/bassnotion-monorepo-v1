@@ -15,6 +15,9 @@ Configure these in Railway project dashboard:
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your_supabase_anon_key
 
+# Frontend URL for OAuth callbacks (CRITICAL for Google OAuth)
+FRONTEND_URL=https://bassnotion-frontend.vercel.app
+
 # Application
 NODE_ENV=production
 PORT=8080
@@ -59,6 +62,7 @@ NODE_ENV=production
    ```
    SUPABASE_URL → https://your-project.supabase.co
    SUPABASE_KEY → your_supabase_anon_key
+   FRONTEND_URL → https://bassnotion-frontend.vercel.app
    NODE_ENV → production
    PORT → 8080
    ```

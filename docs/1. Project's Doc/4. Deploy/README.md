@@ -22,12 +22,13 @@ This folder contains all deployment guides for the BassNotion full-stack applica
 #### 🔧 **Troubleshooting & Advanced**
 
 5. **[Common Issues & Solutions](./Common-Issues.md)** ⚠️ **READ FIRST** - Frequently encountered problems and fixes
-6. **[Environment Configuration](./Environment-Setup.md)** - Environment variables and configuration
+6. **[OAuth Production Configuration](./OAuth-Production-Configuration.md)** 🚨 **CRITICAL** - Fix OAuth localhost redirect issues
+7. **[Environment Configuration](./Environment-Setup.md)** - Environment variables and configuration
 
 #### 🏗️ **Development Support**
 
-7. **[AI Assistant Deployment Guide](./AI-Assistant-Deployment-Guide.md)** 🤖 - Specific instructions for AI assistants helping with deployment
-8. **[Emergency Rollback Procedures](./Emergency-Rollback-Procedures.md)** 🚨 - How to quickly rollback failed deployments
+8. **[AI Assistant Deployment Guide](./AI-Assistant-Deployment-Guide.md)** 🤖 - Specific instructions for AI assistants helping with deployment
+9. **[Emergency Rollback Procedures](./Emergency-Rollback-Procedures.md)** 🚨 - How to quickly rollback failed deployments
 
 ### 🎯 Quick Start
 

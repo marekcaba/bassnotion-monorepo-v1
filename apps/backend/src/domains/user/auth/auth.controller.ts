@@ -110,7 +110,7 @@ export class AuthController {
       const { data, error } = await this.db.supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/auth/callback`,
+          redirectTo: `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/auth/callback`,
         },
       });
 
@@ -158,7 +158,7 @@ export class AuthController {
       if (error || !data.session) {
         this.logger.error('Error exchanging code for session:', error);
         res.redirect(
-          `${process.env.FRONTEND_URL || 'http://localhost:3001'}/login?error=oauth_failed`,
+          `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/login?error=oauth_failed`,
         );
         return;
       }
@@ -168,12 +168,12 @@ export class AuthController {
 
       // Redirect to frontend with success
       res.redirect(
-        `${process.env.FRONTEND_URL || 'http://localhost:3001'}/dashboard?oauth=success`,
+        `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/dashboard?oauth=success`,
       );
     } catch (error) {
       this.logger.error('Unexpected error in Google OAuth callback:', error);
       res.redirect(
-        `${process.env.FRONTEND_URL || 'http://localhost:3001'}/login?error=oauth_error`,
+        `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/login?error=oauth_error`,
       );
     }
   }
@@ -189,7 +189,7 @@ export class AuthController {
       const { error } = await this.db.supabase.auth.signInWithOtp({
         email: body.email,
         options: {
-          emailRedirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/auth/callback`,
+          emailRedirectTo: `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/auth/callback`,
         },
       });
 
@@ -234,7 +234,7 @@ export class AuthController {
       const { error } = await this.db.supabase.auth.resetPasswordForEmail(
         body.email,
         {
-          redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/reset-password`,
+          redirectTo: `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/reset-password`,
         },
       );
 
