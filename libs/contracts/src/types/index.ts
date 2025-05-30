@@ -2,6 +2,7 @@
 export type { MetronomeSettings, TokenInfo, TokenStatus } from './common.js';
 export type {
   User,
+  AuthUser,
   UserProfile,
   UserPreferences,
   AuthCredentials,
