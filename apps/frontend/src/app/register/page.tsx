@@ -19,6 +19,16 @@ function RegisterPageContent() {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get('returnTo');
 
+  // Get pre-filled values from URL parameters (from failed login)
+  const prefilledEmail = searchParams.get('email');
+  const prefilledPassword = searchParams.get('password');
+  
+  const initialValues = {
+    email: prefilledEmail || '',
+    password: prefilledPassword || '',
+    confirmPassword: prefilledPassword || '',
+  };
+
   const { setUser, setSession } = useAuth();
   const { redirectAfterAuth } = useAuthRedirect();
   const { toast } = useToast();
@@ -116,7 +126,9 @@ function RegisterPageContent() {
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight">Join BassNotion</h1>
           <p className="mt-2 text-muted-foreground">
-            Create your account to start your bass learning journey
+            {prefilledEmail
+              ? 'Complete your account creation'
+              : 'Create your account to start your bass learning journey'}
           </p>
         </div>
 
@@ -127,6 +139,7 @@ function RegisterPageContent() {
             onGoogleSignIn={handleGoogleSignIn}
             isLoading={isLoading}
             isGoogleLoading={isGoogleLoading}
+            initialValues={initialValues}
           />
         </div>
 

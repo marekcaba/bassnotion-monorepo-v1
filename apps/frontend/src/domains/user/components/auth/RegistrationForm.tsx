@@ -6,7 +6,7 @@ import {
   type RegistrationData,
 } from '@bassnotion/contracts';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Button } from '@/shared/components/ui/button';
@@ -26,6 +26,7 @@ interface RegistrationFormProps {
   onGoogleSignIn: () => Promise<void>;
   isLoading?: boolean;
   isGoogleLoading?: boolean;
+  initialValues?: Partial<RegistrationData>;
   className?: string;
 }
 
@@ -34,6 +35,7 @@ export function RegistrationForm({
   onGoogleSignIn,
   isLoading = false,
   isGoogleLoading = false,
+  initialValues,
   className,
 }: RegistrationFormProps) {
   const [showPassword, setShowPassword] = useState(false);
@@ -46,8 +48,20 @@ export function RegistrationForm({
       email: '',
       password: '',
       confirmPassword: '',
+      ...initialValues,
     },
   });
+
+  // Update form values when initialValues changes
+  useEffect(() => {
+    if (initialValues) {
+      Object.entries(initialValues).forEach(([key, value]) => {
+        if (value) {
+          form.setValue(key as keyof RegistrationData, value);
+        }
+      });
+    }
+  }, [initialValues, form]);
 
   const handleSubmit = async (data: RegistrationData) => {
     try {
@@ -67,7 +81,9 @@ export function RegistrationForm({
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-center">Create Account</h2>
         <p className="text-muted-foreground text-center mt-2">
-          Join BassNotion to start your bass learning journey
+          {initialValues?.email
+            ? `Create account for ${initialValues.email}`
+            : 'Join BassNotion to start your bass learning journey'}
         </p>
       </div>
 

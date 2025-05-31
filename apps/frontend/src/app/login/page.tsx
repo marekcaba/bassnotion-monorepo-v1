@@ -21,9 +21,10 @@ import {
 } from '@/shared/components/ui/tabs';
 
 function LoginPageContent() {
-  const _router = useRouter(); // Prefix with _ to indicate intentionally unused
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [showCreateAccountButton, setShowCreateAccountButton] = useState(false);
   const searchParams = useSearchParams();
   const returnTo = searchParams.get('returnTo');
   const message = searchParams.get('message');
@@ -49,6 +50,7 @@ function LoginPageContent() {
   const handleSubmit = async (data: LoginData) => {
     try {
       setIsLoading(true);
+      setShowCreateAccountButton(false); // Hide button on new attempt
 
       if (useBackendAuth) {
         // Use backend API for E2E testing
@@ -61,24 +63,24 @@ function LoginPageContent() {
           });
 
           // Redirect to dashboard for testing
-          _router.push('/dashboard');
+          router.push('/dashboard');
         } else {
           throw new Error(result.error?.message || 'Login failed');
         }
       } else {
         // Use Supabase for production
-      const authData = await authService.signIn(data);
+        const authData = await authService.signIn(data);
 
-      if (authData.user && authData.session) {
-        setUser(authData.user);
-        setSession(authData.session);
+        if (authData.user && authData.session) {
+          setUser(authData.user);
+          setSession(authData.session);
 
-        toast({
-          title: 'Welcome back!',
-          description: 'You have been signed in successfully.',
-        });
+          toast({
+            title: 'Welcome back!',
+            description: 'You have been signed in successfully.',
+          });
 
-        redirectAfterAuth(authData.user, returnTo || undefined);
+          redirectAfterAuth(authData.user, returnTo || undefined);
         }
       }
     } catch (error) {
@@ -86,6 +88,7 @@ function LoginPageContent() {
 
       let errorMessage =
         'Failed to sign in. Please check your credentials and try again.';
+      let isInvalidCredentials = false;
 
       if (error instanceof Error) {
         errorMessage = error.message;
@@ -95,11 +98,17 @@ function LoginPageContent() {
           if (error.message.includes('Invalid login credentials')) {
             errorMessage =
               'Invalid email or password. Please check your credentials and try again.';
+            isInvalidCredentials = true;
           } else if (error.message.includes('Email not confirmed')) {
             errorMessage =
               'Please check your email and click the confirmation link before signing in.';
           }
         }
+      }
+
+      // Show create account button only for invalid credentials
+      if (isInvalidCredentials) {
+        setShowCreateAccountButton(true);
       }
 
       toast({
@@ -110,6 +119,20 @@ function LoginPageContent() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCreateAccount = (data: LoginData) => {
+    // Redirect to registration with pre-filled email and password
+    const params = new URLSearchParams({
+      email: data.email,
+      password: data.password,
+    });
+
+    if (returnTo) {
+      params.set('returnTo', returnTo);
+    }
+
+    router.push(`/register?${params.toString()}`);
   };
 
   const handleGoogleSignIn = async () => {
@@ -145,8 +168,10 @@ function LoginPageContent() {
               <LoginForm
                 onSubmit={handleSubmit}
                 onGoogleSignIn={handleGoogleSignIn}
+                onCreateAccount={handleCreateAccount}
                 isLoading={isLoading}
                 isGoogleLoading={isGoogleLoading}
+                showCreateAccountButton={showCreateAccountButton}
               />
             </TabsContent>
 
