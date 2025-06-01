@@ -19,7 +19,8 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "incremental": true,
-    "composite": true
+    "composite": false,
+    "declarationMap": false
   },
   "include": ["src/**/*", "test/**/*", "e2e/**/*"],
   "exclude": ["node_modules", "dist", "vitest.*.config.ts"],

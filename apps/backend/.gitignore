@@ -5,3 +5,15 @@
 .env.*.local
 .env
 .env.test
+
+# TypeScript compilation artifacts
+*.d.ts
+*.d.ts.map
+
+# Build outputs
+dist/
+build/
+
+# Logs
+logs
+*.log
