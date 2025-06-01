@@ -46,13 +46,7 @@ function RegisterPageContent() {
         console.log('[Register Debug] Backend result:', result);
 
         if (result.success) {
-          toast({
-            title: 'Account created successfully!',
-            description:
-              'Welcome to BassNotion. Your account has been created.',
-          });
-
-          // Redirect to dashboard for testing
+          // Redirect to dashboard for testing - no need for success toast
           router.push('/dashboard');
         } else {
           throw new Error(
@@ -68,14 +62,10 @@ function RegisterPageContent() {
           setUser(authData.user);
           setSession(authData.session);
 
-          toast({
-            title: 'Account created successfully!',
-            description: 'Welcome to BassNotion. You are now signed in.',
-          });
-
+          // Redirect without success toast - user will see they're logged in
           redirectAfterAuth(authData.user);
         } else if (authData.user && !authData.session) {
-          // User needs to confirm email
+          // User needs to confirm email - this toast is helpful
           toast({
             title: 'Account created!',
             description:

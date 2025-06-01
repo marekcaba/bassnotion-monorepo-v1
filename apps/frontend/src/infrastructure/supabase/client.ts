@@ -114,25 +114,23 @@ const createSupabaseClient = () => {
         headers: {
           'x-client-info': '@supabase/auth-ui-react@latest',
         },
-      },
-      // Webkit-specific database configuration
-      db: {
-        schema: 'public',
-      },
-      // Reduce timeout for webkit browsers to prevent hanging
-      ...(isWebkit && {
-        fetch: (url: string, options: any = {}) => {
+        fetch: (input: RequestInfo | URL, init?: RequestInit) => {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000); // Reduced to 5s for webkit
+          // Reduce timeout globally to 3 seconds for faster UX
+          const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-          return fetch(url, {
-            ...options,
+          return fetch(input, {
+            ...init,
             signal: controller.signal,
           }).finally(() => {
             clearTimeout(timeoutId);
           });
         },
-      }),
+      },
+      // Webkit-specific database configuration
+      db: {
+        schema: 'public',
+      },
     },
   );
 };

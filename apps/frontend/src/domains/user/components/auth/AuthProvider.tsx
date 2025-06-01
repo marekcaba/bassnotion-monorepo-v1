@@ -100,8 +100,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         setLoading(true);
 
-        // Add timeout protection to prevent infinite loading
-        const timeoutDuration = 10000;
+        // Reduced timeout protection - from 10s to 5s for faster UX
+        const timeoutDuration = 5000;
         const timeoutPromise = new Promise<never>((_, reject) => {
           initTimeoutId = setTimeout(() => {
             reject(new Error('Auth initialization timeout'));
@@ -148,12 +148,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             errorMessage.includes('network') ||
             errorMessage.includes('fetch')
           ) {
-            toast({
-              title: 'Connection Issue',
-              description:
-                'Unable to connect to authentication service. You can still use the app, but some features may be limited.',
-              variant: 'default',
-            });
+            // Don't show error toast for timeouts - just continue with app
+            console.log('Auth timeout detected - continuing without session');
           }
         }
       } finally {
@@ -226,17 +222,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []); // Empty dependency array since we're handling cleanup properly
 
-  // Don't render children until auth is initialized
+  // Don't render children until auth is initialized - CHANGE THIS to non-blocking
   if (!isReady) {
+    // Instead of blocking, render children immediately with auth state loading in background
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-lg font-semibold">Loading...</h2>
-          <p className="text-muted-foreground mt-2">
-            Please wait while we initialize your session.
-          </p>
-        </div>
-      </div>
+      <>
+        {children}
+        <IdleWarningDialog
+          isOpen={showIdleWarning}
+          onExtendSession={handleExtendSession}
+          onLogout={handleIdleLogout}
+          countdownSeconds={300} // 5 minutes
+        />
+      </>
     );
   }
 

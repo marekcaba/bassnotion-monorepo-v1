@@ -81,7 +81,10 @@ export const useAuth = () => {
 
   return {
     ...state,
-    isAuthenticated: !!(state.user && state.session),
-    isReady: state.isInitialized && !state.isLoading,
+    // Computed properties for easier usage
+    isAuthenticated: !!state.user && !!state.session,
+    isReady: state.isInitialized,
+    // Quick check - don't block if auth is still loading, assume not authenticated
+    isAuthenticatedSync: !!state.user && !!state.session && state.isInitialized,
   };
 };

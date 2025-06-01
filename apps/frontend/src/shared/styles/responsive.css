@@ -1,0 +1,202 @@
+/* Responsive Design Utilities for BassNotion */
+
+/* Enhanced responsive containers */
+.responsive-container {
+  @apply w-full mx-auto px-4;
+}
+
+.responsive-container-sm {
+  @apply responsive-container max-w-sm;
+}
+
+.responsive-container-md {
+  @apply responsive-container max-w-md sm:px-6;
+}
+
+.responsive-container-lg {
+  @apply responsive-container max-w-4xl sm:px-6 lg:px-8;
+}
+
+.responsive-container-xl {
+  @apply responsive-container max-w-6xl sm:px-6 lg:px-8 xl:px-10;
+}
+
+/* Responsive text utilities */
+.text-responsive-xs {
+  @apply text-xs sm:text-sm;
+}
+
+.text-responsive-sm {
+  @apply text-sm sm:text-base;
+}
+
+.text-responsive-base {
+  @apply text-sm sm:text-base lg:text-lg;
+}
+
+.text-responsive-lg {
+  @apply text-base sm:text-lg lg:text-xl;
+}
+
+.text-responsive-xl {
+  @apply text-lg sm:text-xl lg:text-2xl;
+}
+
+.text-responsive-2xl {
+  @apply text-xl sm:text-2xl lg:text-3xl;
+}
+
+/* Responsive spacing utilities */
+.space-responsive-sm {
+  @apply space-y-4 sm:space-y-6;
+}
+
+.space-responsive-md {
+  @apply space-y-6 sm:space-y-8;
+}
+
+.space-responsive-lg {
+  @apply space-y-8 sm:space-y-10 lg:space-y-12;
+}
+
+/* Responsive padding utilities */
+.p-responsive-sm {
+  @apply p-4 sm:p-6;
+}
+
+.p-responsive-md {
+  @apply p-4 sm:p-6 lg:p-8;
+}
+
+.p-responsive-lg {
+  @apply p-6 sm:p-8 lg:p-10;
+}
+
+/* Responsive grid utilities */
+.grid-responsive-cards {
+  @apply grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+.grid-responsive-2col {
+  @apply grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2;
+}
+
+.grid-responsive-3col {
+  @apply grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3;
+}
+
+/* Button responsive utilities */
+.btn-responsive {
+  @apply w-full sm:w-auto;
+}
+
+.btn-responsive-group {
+  @apply flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2;
+}
+
+/* Form responsive utilities */
+.form-responsive {
+  @apply space-y-4 sm:space-y-6;
+}
+
+.form-group-responsive {
+  @apply space-y-2 sm:space-y-3;
+}
+
+/* Header responsive utilities */
+.header-responsive {
+  @apply flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0;
+}
+
+/* Card responsive utilities */
+.card-responsive {
+  @apply bg-card rounded-lg border p-4 sm:p-6 shadow-sm;
+}
+
+.card-responsive-lg {
+  @apply bg-card rounded-lg border p-6 sm:p-8 lg:p-10 shadow-sm;
+}
+
+/* Navigation responsive utilities */
+.nav-responsive {
+  @apply flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-4;
+}
+
+/* Mobile-specific utilities */
+@media (max-width: 639px) {
+  .mobile-full-width {
+    @apply w-full;
+  }
+  
+  .mobile-text-center {
+    @apply text-center;
+  }
+  
+  .mobile-hidden {
+    @apply hidden;
+  }
+  
+  .mobile-stack {
+    @apply flex-col space-y-2;
+  }
+}
+
+/* Tablet-specific utilities */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .tablet-2col {
+    @apply grid-cols-2;
+  }
+  
+  .tablet-hidden {
+    @apply hidden;
+  }
+}
+
+/* Desktop-specific utilities */
+@media (min-width: 1024px) {
+  .desktop-3col {
+    @apply grid-cols-3;
+  }
+  
+  .desktop-4col {
+    @apply grid-cols-4;
+  }
+  
+  .desktop-sidebar {
+    @apply grid grid-cols-[250px_1fr];
+  }
+}
+
+/* Touch-friendly utilities for mobile */
+.touch-target {
+  @apply min-h-[44px] min-w-[44px];
+}
+
+.touch-friendly {
+  @apply p-3 sm:p-2;
+}
+
+/* Responsive image utilities */
+.img-responsive {
+  @apply w-full h-auto;
+}
+
+.img-responsive-rounded {
+  @apply img-responsive rounded-lg;
+}
+
+/* Responsive overflow utilities */
+.overflow-responsive {
+  @apply overflow-x-auto sm:overflow-x-visible;
+}
+
+/* Print-friendly utilities */
+@media print {
+  .print-hidden {
+    @apply hidden;
+  }
+  
+  .print-block {
+    @apply block;
+  }
+} 

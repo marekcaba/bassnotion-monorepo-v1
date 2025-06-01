@@ -40,10 +40,7 @@ export default function AuthCallbackPage() {
           // We already have a session, use it
           setUser(session.user);
           setSession(session);
-          toast({
-            title: 'Success',
-            description: 'You have been signed in successfully.',
-          });
+          // Redirect without success toast - user will see they're logged in
           redirectAfterAuth(session.user);
           return;
         }
@@ -94,11 +91,7 @@ export default function AuthCallbackPage() {
 
         setUser(data.user);
         setSession(data.session);
-        toast({
-          title: 'Success',
-          description: 'You have been signed in successfully.',
-          variant: 'default',
-        });
+        // Redirect without success toast - user will see they're logged in
         redirectAfterAuth(data.user);
       } catch (error) {
         console.error('[Auth Debug] Callback handling error:', error);

@@ -2,6 +2,9 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+/* Import responsive utilities */
+@import './shared/styles/responsive.css';
+
 @layer base {
   :root {
     --radius: 0.625rem;

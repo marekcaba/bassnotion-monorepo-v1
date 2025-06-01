@@ -65,12 +65,7 @@ function LoginPageContent() {
         const result = await authService.signInWithBackend(data);
 
         if (result.success) {
-          toast({
-            title: 'Welcome back!',
-            description: 'You have been signed in successfully.',
-          });
-
-          // Redirect to dashboard for testing
+          // Redirect to dashboard for testing - no need for success toast
           router.push('/dashboard');
         } else {
           throw new Error(
@@ -86,11 +81,7 @@ function LoginPageContent() {
           setUser(authData.user);
           setSession(authData.session);
 
-          toast({
-            title: 'Welcome back!',
-            description: 'You have been signed in successfully.',
-          });
-
+          // Redirect to dashboard - no need for success toast
           redirectAfterAuth(authData.user);
         } else {
           throw new Error('Authentication failed - no user data received');
@@ -148,14 +139,18 @@ function LoginPageContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md space-y-6 sm:space-y-8">
         {/* Login Options */}
-        <div className="bg-card rounded-lg border p-6 shadow-sm">
-          <Tabs defaultValue="password" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="password">Password</TabsTrigger>
-              <TabsTrigger value="magic-link">Magic Link</TabsTrigger>
+        <div className="bg-card rounded-lg border p-4 sm:p-6 shadow-sm">
+          <Tabs defaultValue="password" className="space-y-4 sm:space-y-6">
+            <TabsList className="grid w-full grid-cols-2 h-10">
+              <TabsTrigger value="password" className="text-sm">
+                Password
+              </TabsTrigger>
+              <TabsTrigger value="magic-link" className="text-sm">
+                Magic Link
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="password">
@@ -175,9 +170,13 @@ function LoginPageContent() {
 
         {/* Register Link */}
         <div className="text-center">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Don't have an account?{' '}
-            <Button variant="link" asChild className="p-0 h-auto">
+            <Button
+              variant="link"
+              asChild
+              className="p-0 h-auto text-xs sm:text-sm"
+            >
               <Link href="/register">Create account</Link>
             </Button>
           </p>
@@ -185,7 +184,7 @@ function LoginPageContent() {
 
         {/* Back to Home */}
         <div className="text-center">
-          <Button variant="ghost" asChild>
+          <Button variant="ghost" asChild className="text-xs sm:text-sm">
             <Link href="/">← Back to Home</Link>
           </Button>
         </div>
