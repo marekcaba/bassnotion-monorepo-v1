@@ -103,15 +103,6 @@ export function MagicLinkSignIn() {
       const errorMessage = error?.message || '';
       const errorStatus = error?.status;
 
-      console.log('[Magic Link Debug] Error details:', {
-        message: errorMessage,
-        status: errorStatus,
-        name: error?.name,
-        type: typeof error,
-        isAuthError: error instanceof AuthError,
-        constructor: error?.constructor?.name,
-      });
-
       // Check for rate limit errors first (most specific)
       if (
         errorMessage.includes('email rate limit exceeded') ||
@@ -131,8 +122,6 @@ export function MagicLinkSignIn() {
       } else if (error instanceof Error) {
         userFriendlyMessage = error.message;
       }
-
-      console.log('[Magic Link Debug] Final message:', userFriendlyMessage);
 
       toast({
         title: 'Error',
