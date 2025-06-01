@@ -4,7 +4,71 @@ import { useState } from 'react';
 import { useToast } from '@/shared/hooks/use-toast';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
-import { authService } from '../../api/auth';
+import { authService, AuthError } from '../../api/auth';
+
+// Import the same error handling function used by other auth methods
+function getAuthErrorMessage(error: AuthError): string {
+  console.error('[Auth Debug] Original error:', {
+    message: error.message,
+    status: error.status,
+    name: error.name,
+  });
+
+  // Handle specific error codes
+  if (error.message?.includes('over_email_send_rate_limit')) {
+    return 'Too many emails sent. Please wait a few minutes before trying again.';
+  }
+
+  if (error.message?.includes('email rate limit exceeded')) {
+    return 'Email rate limit exceeded. Please try again in a few minutes.';
+  }
+
+  if (error.message?.includes('Invalid login credentials')) {
+    return 'Invalid email or password. Please check your credentials and try again.';
+  }
+
+  if (error.message?.includes('Invalid email or password')) {
+    return 'Invalid email or password. Please check your credentials and try again.';
+  }
+
+  if (error.message?.includes('Email not confirmed')) {
+    return 'Please check your email and click the confirmation link before signing in.';
+  }
+
+  if (error.message?.includes('User not found')) {
+    return 'No account found with this email address. Please sign up first.';
+  }
+
+  if (
+    error.message?.includes('Email already registered') ||
+    error.message?.includes('User already registered')
+  ) {
+    return 'An account with this email already exists. Please sign in instead.';
+  }
+
+  if (error.message?.includes('Password should be at least')) {
+    return 'Password must be at least 6 characters long.';
+  }
+
+  if (error.message?.includes('signup disabled')) {
+    return 'New account registration is currently disabled. Please contact support.';
+  }
+
+  if (error.status === 429) {
+    return 'Too many requests. Please wait a moment and try again.';
+  }
+
+  if (error.status === 422) {
+    return 'Invalid input. Please check your email and password format.';
+  }
+
+  if (error.status === 400) {
+    return 'Bad request. Please check your input and try again.';
+  }
+
+  // Return the original message for unknown errors
+  return error.message || 'An unexpected error occurred. Please try again.';
+}
 
 export function MagicLinkSignIn() {
   const [email, setEmail] = useState('');
@@ -32,10 +96,27 @@ export function MagicLinkSignIn() {
 
       setNoAccountFound(false);
     } catch (error) {
+      // Use the same error handling as other auth methods
+      let userFriendlyMessage = 'Failed to send magic link';
+
+      if (error instanceof AuthError) {
+        userFriendlyMessage = getAuthErrorMessage(error);
+      } else if (error instanceof Error) {
+        // For non-AuthError instances, check if it's a rate limit error
+        if (error.message.includes('email rate limit exceeded')) {
+          userFriendlyMessage =
+            'Email rate limit exceeded. Please try again in a few minutes.';
+        } else if (error.message.includes('rate limit')) {
+          userFriendlyMessage =
+            'Too many requests. Please wait a moment and try again.';
+        } else {
+          userFriendlyMessage = error.message;
+        }
+      }
+
       toast({
         title: 'Error',
-        description:
-          error instanceof Error ? error.message : 'Failed to send magic link',
+        description: userFriendlyMessage,
         variant: 'destructive',
       });
     } finally {
@@ -65,10 +146,18 @@ export function MagicLinkSignIn() {
       // Existing user - send magic link
       await handleMagicLink(false);
     } catch (error) {
+      // Use the same error handling as other auth methods
+      let userFriendlyMessage = 'Failed to check email';
+
+      if (error instanceof AuthError) {
+        userFriendlyMessage = getAuthErrorMessage(error);
+      } else if (error instanceof Error) {
+        userFriendlyMessage = error.message;
+      }
+
       toast({
         title: 'Error',
-        description:
-          error instanceof Error ? error.message : 'Failed to check email',
+        description: userFriendlyMessage,
         variant: 'destructive',
       });
     } finally {
