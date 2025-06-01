@@ -95,24 +95,44 @@ export function MagicLinkSignIn() {
       });
 
       setNoAccountFound(false);
-    } catch (error) {
+    } catch (error: any) {
       // Use the same error handling as other auth methods
       let userFriendlyMessage = 'Failed to send magic link';
 
-      if (error instanceof AuthError) {
+      // More robust error handling for production builds
+      const errorMessage = error?.message || '';
+      const errorStatus = error?.status;
+
+      console.log('[Magic Link Debug] Error details:', {
+        message: errorMessage,
+        status: errorStatus,
+        name: error?.name,
+        type: typeof error,
+        isAuthError: error instanceof AuthError,
+        constructor: error?.constructor?.name,
+      });
+
+      // Check for rate limit errors first (most specific)
+      if (
+        errorMessage.includes('email rate limit exceeded') ||
+        errorMessage.includes('over_email_send_rate_limit') ||
+        errorStatus === 429
+      ) {
+        userFriendlyMessage =
+          'Email rate limit exceeded. Please try again in a few minutes.';
+      } else if (
+        errorMessage.includes('rate limit') ||
+        errorMessage.includes('too many')
+      ) {
+        userFriendlyMessage =
+          'Too many requests. Please wait a moment and try again.';
+      } else if (error instanceof AuthError) {
         userFriendlyMessage = getAuthErrorMessage(error);
       } else if (error instanceof Error) {
-        // For non-AuthError instances, check if it's a rate limit error
-        if (error.message.includes('email rate limit exceeded')) {
-          userFriendlyMessage =
-            'Email rate limit exceeded. Please try again in a few minutes.';
-        } else if (error.message.includes('rate limit')) {
-          userFriendlyMessage =
-            'Too many requests. Please wait a moment and try again.';
-        } else {
-          userFriendlyMessage = error.message;
-        }
+        userFriendlyMessage = error.message;
       }
+
+      console.log('[Magic Link Debug] Final message:', userFriendlyMessage);
 
       toast({
         title: 'Error',
