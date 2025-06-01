@@ -214,7 +214,7 @@ export class UserFactory {
             .insert({
               id: userId,
               email: userData.email,
-              full_name: userData.profile.displayName,
+              display_name: userData.profile.displayName,
               avatar_url: userData.profile.avatarUrl,
               bio: userData.profile.bio,
               skill_level: userData.profile.skillLevel,

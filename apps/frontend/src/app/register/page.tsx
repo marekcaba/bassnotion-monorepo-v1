@@ -17,12 +17,11 @@ function RegisterPageContent() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get('returnTo');
 
   // Get pre-filled values from URL parameters (from failed login)
   const prefilledEmail = searchParams.get('email');
   const prefilledPassword = searchParams.get('password');
-  
+
   const initialValues = {
     email: prefilledEmail || '',
     password: prefilledPassword || '',
@@ -42,7 +41,9 @@ function RegisterPageContent() {
     try {
       if (useBackendAuth) {
         // Use backend API for E2E testing
+        console.log('[Register Debug] Using backend registration');
         const result = await authService.signUpWithBackend(data);
+        console.log('[Register Debug] Backend result:', result);
 
         if (result.success) {
           toast({
@@ -54,7 +55,9 @@ function RegisterPageContent() {
           // Redirect to dashboard for testing
           router.push('/dashboard');
         } else {
-          throw new Error(result.error?.message || 'Registration failed');
+          throw new Error(
+            result.message || result.error?.message || 'Registration failed',
+          );
         }
       } else {
         // Use Supabase for production
@@ -70,7 +73,7 @@ function RegisterPageContent() {
             description: 'Welcome to BassNotion. You are now signed in.',
           });
 
-          redirectAfterAuth(authData.user, returnTo || undefined);
+          redirectAfterAuth(authData.user);
         } else if (authData.user && !authData.session) {
           // User needs to confirm email
           toast({
@@ -141,22 +144,6 @@ function RegisterPageContent() {
             isGoogleLoading={isGoogleLoading}
             initialValues={initialValues}
           />
-        </div>
-
-        {/* Login Link */}
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Button variant="link" asChild className="p-0 h-auto">
-              <Link
-                href={`/login${
-                  returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''
-                }`}
-              >
-                Sign in
-              </Link>
-            </Button>
-          </p>
         </div>
 
         {/* Back to Home */}

@@ -1,6 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-Our project is monorepo. We are using pnpm, npx, nx

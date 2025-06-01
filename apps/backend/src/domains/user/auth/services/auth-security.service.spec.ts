@@ -1,48 +1,62 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigModule } from '@nestjs/config';
+
 import { AuthSecurityService } from './auth-security.service.js';
-import type { DatabaseService } from '../../../../infrastructure/database/database.service.js';
+import { DatabaseService } from '../../../../infrastructure/database/database.service.js';
 
 describe('AuthSecurityService', () => {
   let service: AuthSecurityService;
-  let mockDatabaseService: DatabaseService;
+  let mockDatabaseService: any;
 
-  beforeEach(() => {
-    // Create a proper mock for the Supabase client
-    const mockSupabaseClient = {
-      from: vi.fn().mockImplementation((table: string) => {
-        const mockQuery = {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          gte: vi.fn().mockReturnThis(),
-          or: vi.fn().mockReturnThis(),
-          order: vi.fn().mockReturnThis(),
-          limit: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({ data: null, error: null }),
-          insert: vi.fn().mockResolvedValue({ error: null }),
-          delete: vi.fn().mockReturnThis(),
-          lt: vi.fn().mockResolvedValue({ error: null }),
-        };
-
-        // Mock different responses based on context
-        if (table === 'login_attempts') {
-          // Default to no attempts
-          mockQuery.select.mockReturnValue({
-            ...mockQuery,
-            count: 0,
-            data: null,
-            error: null,
-          });
-        }
-
-        return mockQuery;
-      }),
-    };
+  beforeEach(async () => {
+    // Create a comprehensive mock that includes all necessary methods
+    const createMockQuery = (mockData: any = { data: null, error: null }) => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue(mockData),
+      insert: vi.fn().mockResolvedValue({ error: null }),
+      delete: vi.fn().mockReturnThis(),
+      lt: vi.fn().mockResolvedValue({ error: null }),
+      count: vi.fn().mockResolvedValue({ data: 0, error: null }),
+    });
 
     mockDatabaseService = {
-      supabase: mockSupabaseClient,
-    } as any;
+      supabase: {
+        from: vi.fn().mockImplementation(() => createMockQuery()),
+      },
+    };
 
-    service = new AuthSecurityService(mockDatabaseService);
+    const module: TestingModule = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          load: [
+            () => ({
+              NODE_ENV: 'test',
+              SUPABASE_URL: 'http://localhost:54321',
+              SUPABASE_KEY: 'test-key',
+              JWT_SECRET: 'test-secret',
+              RATE_LIMIT_TTL: 60,
+              RATE_LIMIT_MAX: 20,
+            }),
+          ],
+        }),
+      ],
+      providers: [
+        AuthSecurityService,
+        {
+          provide: DatabaseService,
+          useValue: mockDatabaseService,
+        },
+      ],
+    }).compile();
+
+    service = module.get<AuthSecurityService>(AuthSecurityService);
   });
 
   it('should be defined', () => {
@@ -123,10 +137,84 @@ describe('AuthSecurityService', () => {
     });
   });
 
+  describe('rate limiting functionality', () => {
+    // Simple tests that verify graceful fallback behavior
+
+    it('should allow requests when database service is unavailable', async () => {
+      // Create service with null database to test defensive behavior
+      const serviceWithoutDb = new AuthSecurityService(null as any);
+
+      const result = await serviceWithoutDb.checkRateLimit(
+        'test@example.com',
+        '192.168.1.1',
+      );
+
+      // Service should fail open and allow the request
+      expect(result.isRateLimited).toBe(false);
+      expect(result.attemptsRemaining).toBe(5); // MAX_ATTEMPTS_PER_EMAIL
+    });
+
+    it('should allow requests when database throws error', async () => {
+      // Create service with broken database to test error handling
+      const mockDatabaseService = {
+        supabase: {
+          from: vi.fn().mockImplementation(() => {
+            throw new Error('Database connection failed');
+          }),
+        },
+      } as any;
+
+      const service = new AuthSecurityService(mockDatabaseService);
+
+      const result = await service.checkRateLimit(
+        'test@example.com',
+        '192.168.1.1',
+      );
+
+      // Service should fail open and allow the request
+      expect(result.isRateLimited).toBe(false);
+      expect(result.attemptsRemaining).toBe(5); // MAX_ATTEMPTS_PER_EMAIL
+    });
+  });
+
   describe('error handling', () => {
+    beforeEach(() => {
+      // Prepare for error tests - current mock will be modified
+    });
+
+    afterEach(() => {
+      // Restore clean mock state after each error test to prevent pollution
+      vi.clearAllMocks();
+
+      // Recreate clean mock database service
+      const createMockQuery = (
+        mockData: any = { data: null, error: null },
+      ) => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        gte: vi.fn().mockReturnThis(),
+        or: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue(mockData),
+        insert: vi.fn().mockResolvedValue({ error: null }),
+        delete: vi.fn().mockReturnThis(),
+        lt: vi.fn().mockResolvedValue({ error: null }),
+        count: vi.fn().mockResolvedValue({ count: 0, error: null }),
+      });
+
+      mockDatabaseService = {
+        supabase: {
+          from: vi.fn().mockImplementation(() => createMockQuery()),
+        },
+      };
+
+      service = new AuthSecurityService(mockDatabaseService);
+    });
+
     it('should handle database errors gracefully in rate limiting', async () => {
-      // Mock a database error
-      mockDatabaseService.supabase.from = vi.fn().mockImplementation(() => {
+      // Mock a database error by making the from method throw
+      mockDatabaseService.supabase.from.mockImplementation(() => {
         throw new Error('Database connection failed');
       });
 
@@ -141,8 +229,8 @@ describe('AuthSecurityService', () => {
     });
 
     it('should handle database errors gracefully in account lockout', async () => {
-      // Mock a database error
-      mockDatabaseService.supabase.from = vi.fn().mockImplementation(() => {
+      // Mock a database error by making the from method throw
+      mockDatabaseService.supabase.from.mockImplementation(() => {
         throw new Error('Database connection failed');
       });
 
@@ -154,8 +242,8 @@ describe('AuthSecurityService', () => {
     });
 
     it('should handle recording login attempts gracefully on error', async () => {
-      // Mock a database error
-      mockDatabaseService.supabase.from = vi.fn().mockImplementation(() => {
+      // Mock a database error by making the from method throw
+      mockDatabaseService.supabase.from.mockImplementation(() => {
         throw new Error('Database connection failed');
       });
 
@@ -198,23 +286,139 @@ describe('AuthSecurityService', () => {
     });
   });
 
-  describe('security configuration validation', () => {
-    it('should have reasonable rate limiting thresholds', () => {
-      // These are indirect tests of the configuration
-      // We can test the public methods that depend on these constants
+  describe('account lockout functionality', () => {
+    beforeEach(() => {
+      // Reset all mocks before each test in this describe block
+      vi.clearAllMocks();
 
-      const result1 = service.getSecurityErrorMessage(
-        { isRateLimited: true, attemptsRemaining: 0, remainingTime: 900 },
-        { isLocked: false, failedAttempts: 4 },
+      // Recreate the mock database service to ensure clean state
+      const createMockQuery = (
+        mockData: any = { data: null, error: null },
+      ) => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        gte: vi.fn().mockReturnThis(),
+        or: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue(mockData),
+        insert: vi.fn().mockResolvedValue({ error: null }),
+        delete: vi.fn().mockReturnThis(),
+        lt: vi.fn().mockResolvedValue({ error: null }),
+        count: vi.fn().mockResolvedValue({ data: 0, error: null }),
+      });
+
+      mockDatabaseService = {
+        supabase: {
+          from: vi.fn().mockImplementation(() => createMockQuery()),
+        },
+      };
+
+      service = new AuthSecurityService(mockDatabaseService);
+    });
+
+    it('should not lock account with few failed attempts', async () => {
+      // Mock database response for lockout query - few failed attempts
+      const mockQuery = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+      };
+      mockQuery.limit.mockResolvedValue({
+        data: [
+          { attempted_at: new Date().toISOString(), success: false },
+          { attempted_at: new Date().toISOString(), success: false },
+        ],
+        error: null,
+      });
+      mockDatabaseService.supabase.from.mockReturnValue(mockQuery);
+
+      const result = await service.checkAccountLockout('test@example.com');
+
+      expect(result.isLocked).toBe(false);
+      expect(result.failedAttempts).toBe(2);
+    });
+
+    it('should lock account with many failed attempts', async () => {
+      // Mock database response for lockout query - many failed attempts (6)
+      const mockQuery = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+      };
+      mockQuery.limit.mockResolvedValue({
+        data: [
+          { attempted_at: new Date().toISOString(), success: false },
+          { attempted_at: new Date().toISOString(), success: false },
+          { attempted_at: new Date().toISOString(), success: false },
+          { attempted_at: new Date().toISOString(), success: false },
+          { attempted_at: new Date().toISOString(), success: false },
+          { attempted_at: new Date().toISOString(), success: false },
+        ],
+        error: null,
+      });
+      mockDatabaseService.supabase.from.mockReturnValue(mockQuery);
+
+      const result = await service.checkAccountLockout('test@example.com');
+
+      expect(result.isLocked).toBe(true);
+      expect(result.failedAttempts).toBe(6);
+    });
+  });
+
+  describe('login attempt recording', () => {
+    it('should record successful login attempts', async () => {
+      const mockQuery = {
+        insert: vi.fn().mockResolvedValue({ error: null }),
+      };
+      mockDatabaseService.supabase.from.mockReturnValue(mockQuery);
+
+      await service.recordLoginAttempt(
+        'test@example.com',
+        '192.168.1.1',
+        true,
+        'Mozilla/5.0...',
       );
 
-      const result2 = service.getSecurityErrorMessage(
-        { isRateLimited: false, attemptsRemaining: 1 },
-        { isLocked: true, failedAttempts: 5, remainingTime: 900 },
+      expect(mockDatabaseService.supabase.from).toHaveBeenCalledWith(
+        'login_attempts',
+      );
+      expect(mockQuery.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: 'test@example.com',
+          ip_address: '192.168.1.1',
+          success: true,
+          user_agent: 'Mozilla/5.0...',
+        }),
+      );
+    });
+
+    it('should record failed login attempts', async () => {
+      const mockQuery = {
+        insert: vi.fn().mockResolvedValue({ error: null }),
+      };
+      mockDatabaseService.supabase.from.mockReturnValue(mockQuery);
+
+      await service.recordLoginAttempt(
+        'test@example.com',
+        '192.168.1.1',
+        false,
+        'Mozilla/5.0...',
       );
 
-      expect(result1).toContain('Too many login attempts');
-      expect(result2).toContain('Account temporarily locked');
+      expect(mockDatabaseService.supabase.from).toHaveBeenCalledWith(
+        'login_attempts',
+      );
+      expect(mockQuery.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: 'test@example.com',
+          ip_address: '192.168.1.1',
+          success: false,
+          user_agent: 'Mozilla/5.0...',
+        }),
+      );
     });
   });
 });

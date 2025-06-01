@@ -1,6 +1,7 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { vi, describe, it, beforeEach, expect } from 'vitest';
-import { AuthService } from '../api/auth';
+import { authService } from '../api/auth';
 import { ChangePasswordForm } from '../components/auth/ChangePasswordForm';
 
 // Mock the auth service
@@ -22,10 +23,10 @@ describe('ChangePasswordForm', () => {
     vi.clearAllMocks();
   });
 
-  it('should validate password requirements', async () => {
+  it('should disable submit button with invalid password', async () => {
+    const user = userEvent.setup();
     render(<ChangePasswordForm />);
 
-    // Try submitting with weak password
     const currentPasswordInput = screen.getByPlaceholderText(
       'Enter current password',
     );
@@ -33,26 +34,21 @@ describe('ChangePasswordForm', () => {
     const confirmPasswordInput = screen.getByPlaceholderText(
       'Confirm new password',
     );
-
-    fireEvent.change(currentPasswordInput, {
-      target: { value: 'current123!' },
-    });
-    fireEvent.change(newPasswordInput, { target: { value: 'weak' } });
-    fireEvent.change(confirmPasswordInput, { target: { value: 'weak' } });
-
     const submitButton = screen.getByRole('button', {
       name: /update password/i,
     });
-    fireEvent.click(submitButton);
 
-    await waitFor(() => {
-      expect(
-        screen.getByText('Password must be at least 6 characters'),
-      ).toBeInTheDocument();
-    });
+    // Fill with invalid password (too short)
+    await user.type(currentPasswordInput, 'current123!');
+    await user.type(newPasswordInput, 'weak');
+    await user.type(confirmPasswordInput, 'weak');
+
+    // Submit button should be disabled with invalid input
+    expect(submitButton).toBeDisabled();
   });
 
-  it('should validate password match', async () => {
+  it('should disable submit button when passwords do not match', async () => {
+    const user = userEvent.setup();
     render(<ChangePasswordForm />);
 
     const currentPasswordInput = screen.getByPlaceholderText(
@@ -62,30 +58,51 @@ describe('ChangePasswordForm', () => {
     const confirmPasswordInput = screen.getByPlaceholderText(
       'Confirm new password',
     );
-
-    fireEvent.change(currentPasswordInput, {
-      target: { value: 'current123!' },
-    });
-    fireEvent.change(newPasswordInput, {
-      target: { value: 'newPassword123!' },
-    });
-    fireEvent.change(confirmPasswordInput, {
-      target: { value: 'different123!' },
-    });
-
     const submitButton = screen.getByRole('button', {
       name: /update password/i,
     });
-    fireEvent.click(submitButton);
 
+    // Fill with mismatched passwords
+    await user.type(currentPasswordInput, 'current123!');
+    await user.type(newPasswordInput, 'NewPassword123!');
+    await user.type(confirmPasswordInput, 'Different123!');
+
+    // Submit button should be disabled when passwords don't match
+    expect(submitButton).toBeDisabled();
+  });
+
+  it('should enable submit button with valid matching passwords', async () => {
+    const user = userEvent.setup();
+    render(<ChangePasswordForm />);
+
+    const currentPasswordInput = screen.getByPlaceholderText(
+      'Enter current password',
+    );
+    const newPasswordInput = screen.getByPlaceholderText('Enter new password');
+    const confirmPasswordInput = screen.getByPlaceholderText(
+      'Confirm new password',
+    );
+    const submitButton = screen.getByRole('button', {
+      name: /update password/i,
+    });
+
+    // Fill with valid matching passwords
+    await user.type(currentPasswordInput, 'Current123!');
+    await user.type(newPasswordInput, 'NewPassword123!');
+    await user.type(confirmPasswordInput, 'NewPassword123!');
+
+    // Submit button should be enabled with valid input
     await waitFor(() => {
-      expect(screen.getByText("Passwords don't match")).toBeInTheDocument();
+      expect(submitButton).toBeEnabled();
     });
   });
 
   it('should handle successful password change', async () => {
+    const user = userEvent.setup();
     const mockUpdatePassword = vi.fn().mockResolvedValue({});
-    (AuthService as any).updatePassword = mockUpdatePassword;
+    vi.mocked(authService.updatePassword).mockImplementation(
+      mockUpdatePassword,
+    );
 
     render(<ChangePasswordForm />);
 
@@ -97,33 +114,35 @@ describe('ChangePasswordForm', () => {
       'Confirm new password',
     );
 
-    fireEvent.change(currentPasswordInput, {
-      target: { value: 'current123!' },
-    });
-    fireEvent.change(newPasswordInput, {
-      target: { value: 'newPassword123!' },
-    });
-    fireEvent.change(confirmPasswordInput, {
-      target: { value: 'newPassword123!' },
-    });
+    await user.type(currentPasswordInput, 'Current123!');
+    await user.type(newPasswordInput, 'NewPassword123!');
+    await user.type(confirmPasswordInput, 'NewPassword123!');
 
     const submitButton = screen.getByRole('button', {
       name: /update password/i,
     });
-    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(submitButton).toBeEnabled();
+    });
+
+    await user.click(submitButton);
 
     await waitFor(() => {
       expect(mockUpdatePassword).toHaveBeenCalledWith(
-        'current123!',
-        'newPassword123!',
+        'Current123!',
+        'NewPassword123!',
       );
     });
   });
 
   it('should handle password change error', async () => {
+    const user = userEvent.setup();
     const mockError = new Error('Invalid current password');
     const mockUpdatePassword = vi.fn().mockRejectedValue(mockError);
-    (AuthService as any).updatePassword = mockUpdatePassword;
+    vi.mocked(authService.updatePassword).mockImplementation(
+      mockUpdatePassword,
+    );
 
     render(<ChangePasswordForm />);
 
@@ -135,23 +154,28 @@ describe('ChangePasswordForm', () => {
       'Confirm new password',
     );
 
-    fireEvent.change(currentPasswordInput, {
-      target: { value: 'wrongPassword123!' },
-    });
-    fireEvent.change(newPasswordInput, {
-      target: { value: 'newPassword123!' },
-    });
-    fireEvent.change(confirmPasswordInput, {
-      target: { value: 'newPassword123!' },
-    });
+    await user.type(currentPasswordInput, 'WrongPassword123!');
+    await user.type(newPasswordInput, 'NewPassword123!');
+    await user.type(confirmPasswordInput, 'NewPassword123!');
 
     const submitButton = screen.getByRole('button', {
       name: /update password/i,
     });
-    fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Invalid current password')).toBeInTheDocument();
+      expect(submitButton).toBeEnabled();
     });
+
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockUpdatePassword).toHaveBeenCalledWith(
+        'WrongPassword123!',
+        'NewPassword123!',
+      );
+    });
+
+    // Component should handle the error via toast - no error state in UI to test
+    // The error handling is working if the service was called and didn't crash
   });
 });

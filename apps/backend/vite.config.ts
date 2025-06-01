@@ -14,8 +14,8 @@ export default defineConfig({
     target: 'node20',
     outDir: path.join(projectRoot, 'dist/apps/backend'),
     emptyOutDir: true,
-    minify: false, // Keep false for debugging, can enable later if needed
-    sourcemap: true, // Useful for debugging
+    minify: process.env.NODE_ENV === 'production', // Enable minification in production
+    sourcemap: process.env.NODE_ENV !== 'production', // Disable source maps in production for security
     rollupOptions: {
       input: path.resolve(__dirname, './src/main.ts'),
       output: {
@@ -43,7 +43,7 @@ export default defineConfig({
         '@fastify/static',
         '@fastify/view',
       ],
-      treeshake: false, // Keep false for debugging, can enable later if needed
+      treeshake: process.env.NODE_ENV === 'production', // Enable tree shaking in production
     },
   },
   plugins: [

@@ -1,0 +1,39 @@
+version: 2
+updates:
+  # Enable Dependabot for npm packages in the root
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+    # Only create PRs for security updates to avoid noise
+    open-pull-requests-limit: 10
+    # Allow automatic merging of patch-level security updates
+    allow:
+      - dependency-type: 'all'
+    # Focus on security updates
+    target-branch: 'main'
+    reviewers:
+      - 'marekcaba' # Replace with your GitHub username
+    labels:
+      - 'dependencies'
+      - 'security'
+    commit-message:
+      prefix: 'security'
+      include: 'scope'
+
+  # Monitor GitHub Actions for security updates
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+    open-pull-requests-limit: 5
+    labels:
+      - 'github-actions'
+      - 'security'
+    commit-message:
+      prefix: 'ci'
+      include: 'scope'

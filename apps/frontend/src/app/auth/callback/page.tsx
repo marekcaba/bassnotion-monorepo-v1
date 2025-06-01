@@ -13,7 +13,6 @@ export default function AuthCallbackPage() {
   const { toast } = useToast();
   const { setUser, setSession } = useAuth();
   const { redirectAfterAuth } = useAuthRedirect();
-  const returnTo = searchParams.get('returnTo');
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -45,7 +44,7 @@ export default function AuthCallbackPage() {
             title: 'Success',
             description: 'You have been signed in successfully.',
           });
-          redirectAfterAuth(session.user, returnTo || undefined);
+          redirectAfterAuth(session.user);
           return;
         }
 
@@ -100,7 +99,7 @@ export default function AuthCallbackPage() {
           description: 'You have been signed in successfully.',
           variant: 'default',
         });
-        redirectAfterAuth(data.user, returnTo || undefined);
+        redirectAfterAuth(data.user);
       } catch (error) {
         console.error('[Auth Debug] Callback handling error:', error);
         toast({
@@ -114,15 +113,7 @@ export default function AuthCallbackPage() {
     };
 
     handleAuthCallback();
-  }, [
-    router,
-    searchParams,
-    toast,
-    setUser,
-    setSession,
-    redirectAfterAuth,
-    returnTo,
-  ]);
+  }, [router, searchParams, toast, setUser, setSession, redirectAfterAuth]);
 
   return (
     <div className="flex h-screen w-screen items-center justify-center">

@@ -265,4 +265,3 @@ describe('BassNotion E2E Tests (Simple Running Server)', () => {
     expect(response.status).toBe(401);
   });
 });
- 

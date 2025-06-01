@@ -6,7 +6,7 @@ pnpm-workspace.yaml
 apps/backend/
 bmad-agent/
 deploy/
-docs/
+.docs/
 tmp/
 .nx/
 *.log

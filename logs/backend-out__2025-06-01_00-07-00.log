@@ -1,0 +1,41 @@
+2025-05-31 13:51:52 +02:00: 
+2025-05-31 13:51:52 +02:00: > nx run @bassnotion/backend:serve
+2025-05-31 13:51:52 +02:00: 
+2025-05-31 13:51:53 +02:00: [2J[3J[H
+2025-05-31 13:51:53 +02:00: 1:51:53 PM - Starting compilation in watch mode...
+2025-05-31 13:51:56 +02:00: 1:51:56 PM - Found 0 errors. Watching for file changes.
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +6ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-05-31 13:51:57 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-05-31 13:51:57 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-05-31 13:51:57 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-05-31 13:51:57 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-05-31 13:51:57 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +4ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +1ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +0ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +1ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +1ms[39m
+2025-05-31 13:51:57 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-05-31 13:51:57 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-05-31 13:51:57 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-05-31 13:51:57 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-05-31 13:51:57 +02:00: [32m[Nest] 1883  - [39m05/31/2025, 1:51:57 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-05-31 13:54:27 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 1:54:27 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: marekcaba@seznam.cz[39m
+2025-05-31 13:54:27 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 1:54:27 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-05-31 13:54:27 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 1:54:27 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: marekcaba@seznam.cz[39m
+2025-05-31 14:21:56 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 2:21:56 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: marekcaba@seznam.cz[39m
+2025-05-31 14:21:56 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 2:21:56 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-05-31 14:21:56 +02:00: [95m[Nest] 1883  - [39m05/31/2025, 2:21:56 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: marekcaba@seznam.cz[39m

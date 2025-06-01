@@ -8,6 +8,7 @@ import {
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import Link from 'next/link';
 
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -43,7 +44,7 @@ export function RegistrationForm({
 
   const form = useForm<RegistrationData>({
     resolver: zodResolver(registrationSchema),
-    mode: 'onChange',
+    mode: 'onSubmit',
     defaultValues: {
       email: '',
       password: '',
@@ -88,7 +89,11 @@ export function RegistrationForm({
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <form
+          onSubmit={form.handleSubmit(handleSubmit)}
+          className="space-y-4"
+          noValidate
+        >
           <FormField
             control={form.control}
             name="email"
@@ -189,11 +194,7 @@ export function RegistrationForm({
             )}
           />
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading || !form.formState.isValid}
-          >
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -225,8 +226,8 @@ export function RegistrationForm({
       <div className="mt-6 text-center">
         <p className="text-sm text-muted-foreground">
           Already have an account?{' '}
-          <Button variant="link" className="p-0 h-auto">
-            Sign in
+          <Button variant="link" asChild className="p-0 h-auto">
+            <Link href="/login">Sign in</Link>
           </Button>
         </p>
       </div>

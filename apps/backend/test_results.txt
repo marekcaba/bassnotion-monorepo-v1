@@ -1,0 +1,126 @@
+
+> nx run @bassnotion/backend:test --run
+
+[1m[46m RUN [49m[22m [36mv3.1.4 [39m[90m/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend[39m
+[90mstdout[2m | src/app.controller.spec.ts
+[22m[39m✅ Test environment configured with comprehensive mocks
+[90mstdout[2m | src/domains/user/test/unit/entities/user.entity.spec.ts
+[22m[39m✅ Test environment configured with comprehensive mocks
+[90mstdout[2m | src/domains/user/auth/services/auth-security.service.spec.ts
+[22m[39m✅ Test environment configured with comprehensive mocks
+[90mstdout[2m | src/app.controller.spec.ts
+[22m[39m✅ Infrastructure test environment setup completed
+[90mstdout[2m | src/domains/user/auth/services/auth-security.service.spec.ts
+[22m[39m✅ Infrastructure test environment setup completed
+ [32m✓[39m src/app.controller.spec.ts[2m > [22mAppController[2m > [22mroot[2m > [22mshould return "Hello World!"[32m 1[2mms[22m[39m
+ [32m✓[39m src/app.controller.spec.ts[2m > [22mAppController[2m > [22mhealth[2m > [22mshould return health status[32m 0[2mms[22m[39m
+[31m[Nest] 60848  - [39m06/01/2025, 2:34:50 PM [31m  ERROR[39m [38;5;3m[AuthSecurityService] [39m[31mError checking rate limit:[39m
+[90mstdout[2m | src/domains/user/test/unit/entities/user.entity.spec.ts
+[22m[39m✅ Infrastructure test environment setup completed
+[31m[Nest] 60848  - [39m06/01/2025, 2:34:50 PM [31m  ERROR[39m [38;5;3m[AuthSecurityService] [39mError: Database connection failed
+    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/[39msrc/domains/user/auth/services/auth-security.service.spec.ts:144:15[90m)[39m
+    at Object.mockCall (file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+spy@3.1.4/node_modules/[4m@vitest[24m/spy/dist/index.js:66:15)
+    at Object.from (file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/tinyspy@3.0.2/node_modules/[4mtinyspy[24m/dist/index.js:45:80)
+    at AuthSecurityService.checkRateLimit [90m(/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/[39msrc/domains/user/auth/services/auth-security.service.ts:77:10[90m)[39m
+    at [90m/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/[39msrc/domains/user/auth/services/auth-security.service.spec.ts:147:36
+    at file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+runner@3.1.4/node_modules/[4m@vitest[24m/runner/dist/index.js:103:11
+    at file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+runner@3.1.4/node_modules/[4m@vitest[24m/runner/dist/index.js:596:26
+    at file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+runner@3.1.4/node_modules/[4m@vitest[24m/runner/dist/index.js:879:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+runner@3.1.4/node_modules/[4m@vitest[24m/runner/dist/index.js:852:10)
+ [32m✓[39m src/domains/user/test/unit/entities/user.entity.spec.ts[2m > [22mUser Entity[2m > [22mcreate[2m > [22mshould create a valid user[32m 1[2mms[22m[39m
+ [32m✓[39m src/domains/user/test/unit/entities/user.entity.spec.ts[2m > [22mUser Entity[2m > [22mcreate[2m > [22mshould create a user with custom role[32m 0[2mms[22m[39m
+ [32m✓[39m src/domains/user/test/unit/entities/user.entity.spec.ts[2m > [22mUser Entity[2m > [22mupdateProfile[2m > [22mshould update display name and avatar[32m 0[2mms[22m[39m
+ [32m✓[39m src/domains/user/test/unit/entities/user.entity.spec.ts[2m > [22mUser Entity[2m > [22mupdateEmail[2m > [22mshould update email[32m 0[2mms[22m[39m
+ [32m✓[39m src/domains/user/test/unit/entities/user.entity.spec.ts[2m > [22mUser Entity[2m > [22mupdateRole[2m > [22mshould update role[32m 0[2mms[22m[39m
+ [32m✓[39m src/domains/user/test/unit/entities/user.entity.spec.ts[2m > [22mUser Entity[2m > [22mrecordLogin[2m > [22mshould update last login timestamp[32m 0[2mms[22m[39m
+[31m[Nest] 60848  - [39m06/01/2025, 2:34:50 PM [31m  ERROR[39m [38;5;3m[AuthSecurityService] [39m[31mError checking account lockout:[39m
+[31m[Nest] 60848  - [39m06/01/2025, 2:34:50 PM [31m  ERROR[39m [38;5;3m[AuthSecurityService] [39mError: Database connection failed
+    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/[39msrc/domains/user/auth/services/auth-security.service.spec.ts:160:15[90m)[39m
+    at Object.mockCall (file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+spy@3.1.4/node_modules/[4m@vitest[24m/spy/dist/index.js:66:15)
+    at Object.from (file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/tinyspy@3.0.2/node_modules/[4mtinyspy[24m/dist/index.js:45:80)
+    at AuthSecurityService.checkAccountLockout [90m(/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/[39msrc/domains/user/auth/services/auth-security.service.ts:163:10[90m)[39m
+    at [90m/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/[39msrc/domains/user/auth/services/auth-security.service.spec.ts:163:36
+    at file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+runner@3.1.4/node_modules/[4m@vitest[24m/runner/dist/index.js:103:11
+    at file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+runner@3.1.4/node_modules/[4m@vitest[24m/runner/dist/index.js:596:26
+    at file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+runner@3.1.4/node_modules/[4m@vitest[24m/runner/dist/index.js:879:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+runner@3.1.4/node_modules/[4m@vitest[24m/runner/dist/index.js:852:10)
+[31m[Nest] 60848  - [39m06/01/2025, 2:34:50 PM [31m  ERROR[39m [38;5;3m[AuthSecurityService] [39m[31mError recording login attempt:[39m
+[31m[Nest] 60848  - [39m06/01/2025, 2:34:50 PM [31m  ERROR[39m [38;5;3m[AuthSecurityService] [39mError: Database connection failed
+    at Object.<anonymous> [90m(/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/[39msrc/domains/user/auth/services/auth-security.service.spec.ts:173:15[90m)[39m
+    at Object.mockCall (file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+spy@3.1.4/node_modules/[4m@vitest[24m/spy/dist/index.js:66:15)
+    at Object.from (file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/tinyspy@3.0.2/node_modules/[4mtinyspy[24m/dist/index.js:45:80)
+    at AuthSecurityService.recordLoginAttempt [90m(/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/[39msrc/domains/user/auth/services/auth-security.service.ts:254:48[90m)[39m
+    at [90m/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/[39msrc/domains/user/auth/services/auth-security.service.spec.ts:178:17
+    at file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+runner@3.1.4/node_modules/[4m@vitest[24m/runner/dist/index.js:103:11
+    at file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+runner@3.1.4/node_modules/[4m@vitest[24m/runner/dist/index.js:596:26
+    at file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+runner@3.1.4/node_modules/[4m@vitest[24m/runner/dist/index.js:879:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/marekcaba/Documents/Projekty%202024/BassNotion/4.%20Cursor%20Project%20Folder/bassnotion-monorepo-v1/node_modules/[4m.pnpm[24m/@vitest+runner@3.1.4/node_modules/[4m@vitest[24m/runner/dist/index.js:852:10)
+ [32m✓[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22mshould be defined[32m 7[2mms[22m[39m
+ [32m✓[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22mgetSecurityErrorMessage[2m > [22mshould return account locked message[32m 2[2mms[22m[39m
+ [32m✓[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22mgetSecurityErrorMessage[2m > [22mshould return rate limit message[32m 2[2mms[22m[39m
+ [32m✓[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22mgetSecurityErrorMessage[2m > [22mshould prioritize account lockout over rate limiting[32m 1[2mms[22m[39m
+ [32m✓[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22mgetSecurityErrorMessage[2m > [22mshould handle plural vs singular time units correctly[32m 2[2mms[22m[39m
+ [32m✓[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22merror handling[2m > [22mshould handle database errors gracefully in rate limiting[32m 5[2mms[22m[39m
+ [32m✓[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22merror handling[2m > [22mshould handle database errors gracefully in account lockout[32m 2[2mms[22m[39m
+ [32m✓[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22merror handling[2m > [22mshould handle recording login attempts gracefully on error[32m 1[2mms[22m[39m
+ [32m✓[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22mprogressive lockout logic[2m > [22mshould calculate correct lockout duration for different attempt counts[32m 2[2mms[22m[39m
+ [31m×[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22mrate limiting functionality[2m > [22mshould allow requests when under rate limit[32m 4[2mms[22m[39m
+[31m   → expected NaN to be 3 // Object.is equality[39m
+ [31m×[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22mrate limiting functionality[2m > [22mshould enforce rate limit when over threshold[32m 2[2mms[22m[39m
+[31m   → expected false to be true // Object.is equality[39m
+ [32m✓[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22maccount lockout functionality[2m > [22mshould not lock account with few failed attempts[32m 1[2mms[22m[39m
+ [32m✓[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22maccount lockout functionality[2m > [22mshould lock account with many failed attempts[32m 1[2mms[22m[39m
+ [32m✓[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22mlogin attempt recording[2m > [22mshould record successful login attempts[32m 2[2mms[22m[39m
+ [32m✓[39m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22mlogin attempt recording[2m > [22mshould record failed login attempts[32m 1[2mms[22m[39m
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+[41m[1m FAIL [22m[49m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22mrate limiting functionality[2m > [22mshould allow requests when under rate limit
+[31m[1mAssertionError[22m: expected NaN to be 3 // Object.is equality[39m
+[32m- Expected[39m
+[31m+ Received[39m
+[32m- 3[39m
+[31m+ NaN[39m
+[36m [2m❯[22m src/domains/user/auth/services/auth-security.service.spec.ts:[2m271:40[22m[39m
+    [90m269| [39m
+    [90m270| [39m      [34mexpect[39m(result[33m.[39misRateLimited)[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m271| [39m      expect(result.attemptsRemaining).toBe(3); // min(20-3, 5-2) = mi…
+    [90m   | [39m                                       [31m^[39m
+    [90m272| [39m    })[33m;[39m
+    [90m273| [39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+[41m[1m FAIL [22m[49m src/domains/user/auth/services/auth-security.service.spec.ts[2m > [22mAuthSecurityService[2m > [22mrate limiting functionality[2m > [22mshould enforce rate limit when over threshold
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+[32m- Expected[39m
+[31m+ Received[39m
+[32m- true[39m
+[31m+ false[39m
+[36m [2m❯[22m src/domains/user/auth/services/auth-security.service.spec.ts:[2m308:36[22m[39m
+    [90m306| [39m      )[33m;[39m
+    [90m307| [39m
+    [90m308| [39m      [34mexpect[39m(result[33m.[39misRateLimited)[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   | [39m                                   [31m^[39m
+    [90m309| [39m      [34mexpect[39m(result[33m.[39mattemptsRemaining)[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m310| [39m      [34mexpect[39m(result[33m.[39mremainingTime)[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m21 passed[39m[22m[90m (23)[39m
+[2m   Start at [22m 14:34:50
+[2m   Duration [22m 711ms[2m (transform 150ms, setup 1.10s, collect 194ms, tests 42ms, environment 0ms, prepare 180ms)[22m
+
+
+
+ NX   Running target test for project @bassnotion/backend failed
+
+Failed tasks:
+
+- @bassnotion/backend:test
+
+Hint: run the command with --verbose for more details.
+
+
+ NX   Nx Cloud Problems
+
+This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+

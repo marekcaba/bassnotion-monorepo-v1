@@ -1,0 +1,1061 @@
+2025-06-01 01:37:06 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:37:06 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignup request received for email: marekcaba@seznam.cz[39m
+2025-06-01 01:37:06 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:37:06 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mRegistering user with email: marekcaba@seznam.cz[39m
+2025-06-01 01:41:20 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:41:20 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignup request received for email: user+valid1748734880648@gmail.com[39m
+2025-06-01 01:41:20 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:41:20 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mRegistering user with email: user+valid1748734880648@gmail.com[39m
+2025-06-01 01:41:21 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:41:21 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: user+ratelimit1748734881843@gmail.com[39m
+2025-06-01 01:41:21 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:41:21 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/136.0.7103.25 Safari/537.36[39m
+2025-06-01 01:41:21 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:41:21 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: user+ratelimit1748734881843@gmail.com[39m
+2025-06-01 01:41:22 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:41:22 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: user+ratelimit1748734881843@gmail.com[39m
+2025-06-01 01:41:22 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:41:22 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/136.0.7103.25 Safari/537.36[39m
+2025-06-01 01:41:22 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:41:22 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: user+ratelimit1748734881843@gmail.com[39m
+2025-06-01 01:41:23 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:41:23 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: user+ratelimit1748734881843@gmail.com[39m
+2025-06-01 01:41:23 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:41:23 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/136.0.7103.25 Safari/537.36[39m
+2025-06-01 01:41:23 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:41:23 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: user+ratelimit1748734881843@gmail.com[39m
+2025-06-01 01:41:45 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:41:45 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignup request received for email: user+sqltest1748734904948@gmail.com[39m
+2025-06-01 01:41:45 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:41:45 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mRegistering user with email: user+sqltest1748734904948@gmail.com[39m
+2025-06-01 01:42:26 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:42:26 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignup request received for email: test@example.com[39m
+2025-06-01 01:42:26 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:42:26 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mRegistering user with email: test@example.com[39m
+2025-06-01 01:42:58 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:42:58 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignup request received for email: test2@example.com[39m
+2025-06-01 01:42:58 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:42:58 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mRegistering user with email: test2@example.com[39m
+2025-06-01 01:44:26 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:44:26 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignup request received for email: debug@example.com[39m
+2025-06-01 01:44:26 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:44:26 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mRegistering user with email: debug@example.com[39m
+2025-06-01 01:52:41 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:52:41 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: marekcaba@seznam.cz[39m
+2025-06-01 01:52:41 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:52:41 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 01:52:41 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:52:41 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: marekcaba@seznam.cz[39m
+2025-06-01 01:53:01 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:53:01 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignup request received for email: marekcaba@seznam.cz[39m
+2025-06-01 01:53:01 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:53:01 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mRegistering user with email: marekcaba@seznam.cz[39m
+2025-06-01 01:57:24 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:57:24 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: marekcaba@seznam.cz[39m
+2025-06-01 01:57:24 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:57:24 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 01:57:24 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:57:24 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: marekcaba@seznam.cz[39m
+2025-06-01 01:57:47 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:57:47 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: marekcaba@seznam.cz[39m
+2025-06-01 01:57:47 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:57:47 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 01:57:47 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 1:57:47 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: marekcaba@seznam.cz[39m
+2025-06-01 01:57:47 +02:00: [33m[Nest] 1883  - [39m06/01/2025, 1:57:47 AM [33m   WARN[39m [38;5;3m[AuthService] [39m[33mLogin blocked for marekcaba@seznam.cz from IP 127.0.0.1: Account temporarily locked due to multiple failed login attempts. Please try again in 2 minutes.[39m
+2025-06-01 02:02:52 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 2:02:52 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignup request received for email: marekcaba@seznam.cz[39m
+2025-06-01 02:02:52 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 2:02:52 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mRegistering user with email: marekcaba@seznam.cz[39m
+2025-06-01 02:04:27 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 2:04:27 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignup request received for email: debug2@example.com[39m
+2025-06-01 02:04:27 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 2:04:27 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mRegistering user with email: debug2@example.com[39m
+2025-06-01 02:04:33 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 2:04:33 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignup request received for email: debug3@example.com[39m
+2025-06-01 02:04:33 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 2:04:33 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mRegistering user with email: debug3@example.com[39m
+2025-06-01 09:57:38 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 9:57:38 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: dsdasdsdsfsd@dsasd.com[39m
+2025-06-01 09:57:38 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 9:57:38 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 09:57:38 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 9:57:38 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: dsdasdsdsfsd@dsasd.com[39m
+2025-06-01 10:02:27 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:02:27 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: dsdas@dsafd.com[39m
+2025-06-01 10:02:27 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:02:27 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 10:02:27 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:02:27 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: dsdas@dsafd.com[39m
+2025-06-01 10:05:36 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:05:36 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: sdssdsdf@dfdsf.com[39m
+2025-06-01 10:05:36 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:05:36 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 10:05:36 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:05:36 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: sdssdsdf@dfdsf.com[39m
+2025-06-01 10:07:05 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:07:05 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: test@example.com[39m
+2025-06-01 10:07:05 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:07:05 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: curl/8.7.1[39m
+2025-06-01 10:07:05 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:07:05 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: test@example.com[39m
+2025-06-01 10:08:42 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:08:42 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: ddsdfs@dkuhdsf.com[39m
+2025-06-01 10:08:42 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:08:42 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 10:08:42 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:08:42 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: ddsdfs@dkuhdsf.com[39m
+2025-06-01 10:10:18 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:10:18 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: fdsfdfs@sfdsfssd.com[39m
+2025-06-01 10:10:18 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:10:18 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 10:10:18 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:10:18 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: fdsfdfs@sfdsfssd.com[39m
+2025-06-01 10:11:29 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:11:29 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: fsdfds@ddfsdf.com[39m
+2025-06-01 10:11:29 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:11:29 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 10:11:29 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:11:29 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: fsdfds@ddfsdf.com[39m
+2025-06-01 10:11:43 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:11:43 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: fsdfds@ddfsdf.com[39m
+2025-06-01 10:11:43 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:11:43 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 10:11:43 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:11:43 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: fsdfds@ddfsdf.com[39m
+2025-06-01 10:13:22 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:13:22 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignup request received for email: latinsalsa@seznam.cz[39m
+2025-06-01 10:13:22 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:13:22 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mRegistering user with email: latinsalsa@seznam.cz[39m
+2025-06-01 10:15:03 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:15:03 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignup request received for email: newuser@example.com[39m
+2025-06-01 10:15:03 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:15:03 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mRegistering user with email: newuser@example.com[39m
+2025-06-01 10:15:40 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:15:40 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignup request received for email: latinsalsa@seznam.cz[39m
+2025-06-01 10:15:40 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:15:40 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mRegistering user with email: latinsalsa@seznam.cz[39m
+2025-06-01 10:21:20 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:21:20 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: fsdfsdfkjd@djdhfs.com[39m
+2025-06-01 10:21:20 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:21:20 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 10:21:20 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:21:20 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: fsdfsdfkjd@djdhfs.com[39m
+2025-06-01 10:22:06 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:22:06 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: fsdfsdfkjd@djdhfs.com[39m
+2025-06-01 10:22:06 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:22:06 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 10:22:06 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:22:06 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: fsdfsdfkjd@djdhfs.com[39m
+2025-06-01 10:28:25 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:28:25 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: fsdffgdf@ddfksjdf.com[39m
+2025-06-01 10:28:25 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:28:25 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 10:28:25 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:28:25 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: fsdffgdf@ddfksjdf.com[39m
+2025-06-01 10:30:34 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:30:34 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: marekcaba@seznam.cz[39m
+2025-06-01 10:30:34 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:30:34 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 10:30:34 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:30:34 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: marekcaba@seznam.cz[39m
+2025-06-01 10:30:54 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:30:54 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignup request received for email: marekcaba@seznam.cz[39m
+2025-06-01 10:30:54 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:30:54 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mRegistering user with email: marekcaba@seznam.cz[39m
+2025-06-01 10:33:41 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:33:41 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: fsdfsdfsdf@fsdfs.cz[39m
+2025-06-01 10:33:41 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:33:41 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 10:33:41 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:33:41 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: fsdfsdfsdf@fsdfs.cz[39m
+2025-06-01 10:58:47 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:58:47 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mSignin request received for email: marekcaba@seznam.cz[39m
+2025-06-01 10:58:47 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:58:47 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mLogin attempt from IP: 127.0.0.1, User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36[39m
+2025-06-01 10:58:47 +02:00: [95m[Nest] 1883  - [39m06/01/2025, 10:58:47 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthenticating user with email: marekcaba@seznam.cz[39m
+2025-06-01 11:43:31 +02:00: 
+2025-06-01 11:43:31 +02:00:  NX   Daemon process terminated and closed the connection
+2025-06-01 11:43:31 +02:00: 
+2025-06-01 11:43:31 +02:00: Please rerun the command, which will restart the daemon.
+2025-06-01 11:43:31 +02:00: If you get this error again, check for any errors in the daemon process logs found in: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/.nx/workspace-data/d/daemon.log
+2025-06-01 11:43:31 +02:00: 
+2025-06-01 11:43:39 +02:00: 
+2025-06-01 11:43:39 +02:00: > nx run @bassnotion/backend:serve
+2025-06-01 11:43:39 +02:00: 
+2025-06-01 11:43:39 +02:00: [2J[3J[H
+2025-06-01 11:43:39 +02:00: 11:43:39 AM - Starting compilation in watch mode...
+2025-06-01 11:43:42 +02:00: 11:43:42 AM - Found 0 errors. Watching for file changes.
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +6ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 11:43:43 +02:00: [95m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-01 11:43:43 +02:00: [95m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-01 11:43:43 +02:00: [95m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 11:43:43 +02:00: [95m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-01 11:43:43 +02:00: [95m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +3ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:43:43 +02:00: [95m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-01 11:43:43 +02:00: [95m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-01 11:43:43 +02:00: [95m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 11:43:43 +02:00: [95m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-01 11:43:43 +02:00: [32m[Nest] 39554  - [39m06/01/2025, 11:43:43 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-01 11:43:43 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-01 11:44:21 +02:00: [2J[3J[H11:44:21 AM - File change detected. Starting incremental compilation...
+2025-06-01 11:44:21 +02:00: 11:44:21 AM - Found 0 errors. Watching for file changes.
+2025-06-01 11:44:21 +02:00: 
+2025-06-01 11:44:21 +02:00: 
+2025-06-01 11:44:21 +02:00: 
+2025-06-01 11:44:21 +02:00:  NX   Running target serve for project @bassnotion/backend failed
+2025-06-01 11:44:21 +02:00: 
+2025-06-01 11:44:21 +02:00: Failed tasks:
+2025-06-01 11:44:21 +02:00: 
+2025-06-01 11:44:21 +02:00: - @bassnotion/backend:serve
+2025-06-01 11:44:21 +02:00: 
+2025-06-01 11:44:21 +02:00: Hint: run the command with --verbose for more details.
+2025-06-01 11:44:21 +02:00: 
+2025-06-01 11:44:22 +02:00: 
+2025-06-01 11:44:22 +02:00:  NX   Nx Cloud Problems
+2025-06-01 11:44:22 +02:00: 
+2025-06-01 11:44:22 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+2025-06-01 11:44:22 +02:00: 
+2025-06-01 11:44:27 +02:00: 
+2025-06-01 11:44:27 +02:00: > nx run @bassnotion/backend:serve
+2025-06-01 11:44:27 +02:00: 
+2025-06-01 11:44:27 +02:00: [2J[3J[H
+2025-06-01 11:44:27 +02:00: 11:44:27 AM - Starting compilation in watch mode...
+2025-06-01 11:44:30 +02:00: 11:44:30 AM - Found 0 errors. Watching for file changes.
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +6ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 11:44:32 +02:00: [95m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-01 11:44:32 +02:00: [95m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-01 11:44:32 +02:00: [95m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 11:44:32 +02:00: [95m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-01 11:44:32 +02:00: [95m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +3ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +1ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:44:32 +02:00: [95m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-01 11:44:32 +02:00: [95m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-01 11:44:32 +02:00: [95m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 11:44:32 +02:00: [95m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-01 11:44:32 +02:00: [32m[Nest] 40133  - [39m06/01/2025, 11:44:32 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +0ms[39m
+2025-06-01 11:44:32 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-01 11:45:11 +02:00: 
+2025-06-01 11:45:11 +02:00: 
+2025-06-01 11:45:11 +02:00: 
+2025-06-01 11:45:11 +02:00:  NX   Running target serve for project @bassnotion/backend failed
+2025-06-01 11:45:11 +02:00: 
+2025-06-01 11:45:11 +02:00: Failed tasks:
+2025-06-01 11:45:11 +02:00: 
+2025-06-01 11:45:11 +02:00: - @bassnotion/backend:serve
+2025-06-01 11:45:11 +02:00: 
+2025-06-01 11:45:11 +02:00: Hint: run the command with --verbose for more details.
+2025-06-01 11:45:11 +02:00: 
+2025-06-01 11:45:11 +02:00: 
+2025-06-01 11:45:11 +02:00:  NX   Nx Cloud Problems
+2025-06-01 11:45:11 +02:00: 
+2025-06-01 11:45:11 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+2025-06-01 11:45:11 +02:00: 
+2025-06-01 11:45:17 +02:00: 
+2025-06-01 11:45:17 +02:00: > nx run @bassnotion/backend:serve
+2025-06-01 11:45:17 +02:00: 
+2025-06-01 11:45:17 +02:00: [2J[3J[H
+2025-06-01 11:45:17 +02:00: 11:45:17 AM - Starting compilation in watch mode...
+2025-06-01 11:45:20 +02:00: 11:45:20 AM - Found 0 errors. Watching for file changes.
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +7ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 11:45:21 +02:00: [95m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-01 11:45:21 +02:00: [95m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-01 11:45:21 +02:00: [95m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-01 11:45:21 +02:00: [95m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-01 11:45:21 +02:00: [95m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +3ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 11:45:21 +02:00: [95m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-01 11:45:21 +02:00: [95m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-01 11:45:21 +02:00: [95m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 11:45:21 +02:00: [95m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-01 11:45:21 +02:00: [32m[Nest] 40315  - [39m06/01/2025, 11:45:21 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +0ms[39m
+2025-06-01 11:45:21 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-01 11:53:45 +02:00: 
+2025-06-01 11:53:45 +02:00: 
+2025-06-01 11:53:45 +02:00: 
+2025-06-01 11:53:45 +02:00:  NX   Successfully ran target serve for project @bassnotion/backend
+2025-06-01 11:53:45 +02:00: 
+2025-06-01 11:53:45 +02:00: 
+2025-06-01 12:05:23 +02:00: 
+2025-06-01 12:05:23 +02:00: > nx run @bassnotion/backend:serve
+2025-06-01 12:05:23 +02:00: 
+2025-06-01 12:05:23 +02:00: [2J[3J[H
+2025-06-01 12:05:23 +02:00: 12:05:23 PM - Starting compilation in watch mode...
+2025-06-01 12:05:25 +02:00: apps/backend/src/domains/user/auth/services/password-security.service.ts(67,11): error TS6133: 'hashPasswordForLogging' is declared but its value is never read.
+2025-06-01 12:05:25 +02:00: 12:05:25 PM - Found 1 error. Watching for file changes.
+2025-06-01 12:05:34 +02:00: [2J[3J[H12:05:34 PM - File change detected. Starting incremental compilation...
+2025-06-01 12:05:36 +02:00: apps/backend/src/domains/user/auth/services/password-security.service.ts(3,1): error TS6133: 'crypto' is declared but its value is never read.
+2025-06-01 12:05:36 +02:00: 12:05:36 PM - Found 1 error. Watching for file changes.
+2025-06-01 12:05:40 +02:00: [2J[3J[H
+2025-06-01 12:05:40 +02:00: 12:05:40 PM - File change detected. Starting incremental compilation...
+2025-06-01 12:05:41 +02:00: 12:05:41 PM - Found 0 errors. Watching for file changes.
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +5ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 12:05:42 +02:00: [95m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-01 12:05:42 +02:00: [95m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-01 12:05:42 +02:00: [95m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 12:05:42 +02:00: [95m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-01 12:05:42 +02:00: [95m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +3ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 12:05:42 +02:00: [95m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-01 12:05:42 +02:00: [95m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-01 12:05:42 +02:00: [95m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 12:05:42 +02:00: [95m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-01 12:05:42 +02:00: [32m[Nest] 42938  - [39m06/01/2025, 12:05:42 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-01 12:05:42 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-01 12:07:09 +02:00: [2J[3J[H12:07:09 PM - File change detected. Starting incremental compilation...
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/factories/user.factory.ts(271,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-01 12:07:10 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-01 12:07:10 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-01 12:07:10 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-01 12:07:10 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-01 12:07:10 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-01 12:07:10 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-01 12:07:10 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-01 12:07:10 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-01 12:07:10 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-01 12:07:10 +02:00: 12:07:10 PM - Found 28 errors. Watching for file changes.
+2025-06-01 12:07:10 +02:00: [2J[3J[H12:07:10 PM - File change detected. Starting incremental compilation...
+2025-06-01 12:07:11 +02:00: 12:07:11 PM - Found 0 errors. Watching for file changes.
+2025-06-01 12:07:12 +02:00: 
+2025-06-01 12:07:12 +02:00: 
+2025-06-01 12:07:12 +02:00: 
+2025-06-01 12:07:12 +02:00:  NX   Running target serve for project @bassnotion/backend failed
+2025-06-01 12:07:12 +02:00: 
+2025-06-01 12:07:12 +02:00: Failed tasks:
+2025-06-01 12:07:12 +02:00: 
+2025-06-01 12:07:12 +02:00: - @bassnotion/backend:serve
+2025-06-01 12:07:12 +02:00: 
+2025-06-01 12:07:12 +02:00: Hint: run the command with --verbose for more details.
+2025-06-01 12:07:12 +02:00: 
+2025-06-01 12:07:12 +02:00: 
+2025-06-01 12:07:12 +02:00:  NX   Nx Cloud Problems
+2025-06-01 12:07:12 +02:00: 
+2025-06-01 12:07:12 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+2025-06-01 12:07:12 +02:00: 
+2025-06-01 12:07:17 +02:00: 
+2025-06-01 12:07:17 +02:00: > nx run @bassnotion/backend:serve
+2025-06-01 12:07:17 +02:00: 
+2025-06-01 12:07:18 +02:00: [2J[3J[H
+2025-06-01 12:07:18 +02:00: 12:07:18 PM - Starting compilation in watch mode...
+2025-06-01 12:07:20 +02:00: 12:07:20 PM - Found 0 errors. Watching for file changes.
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +6ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 12:07:22 +02:00: [95m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-01 12:07:22 +02:00: [95m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-01 12:07:22 +02:00: [95m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-01 12:07:22 +02:00: [95m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-01 12:07:22 +02:00: [95m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +4ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 12:07:22 +02:00: [95m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-01 12:07:22 +02:00: [95m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-01 12:07:22 +02:00: [95m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 12:07:22 +02:00: [95m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-01 12:07:22 +02:00: [32m[Nest] 43311  - [39m06/01/2025, 12:07:22 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-01 12:07:22 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-01 12:48:49 +02:00: 
+2025-06-01 12:48:49 +02:00: 
+2025-06-01 12:48:49 +02:00: 
+2025-06-01 12:48:49 +02:00:  NX   Running target serve for project @bassnotion/backend failed
+2025-06-01 12:48:49 +02:00: 
+2025-06-01 12:48:49 +02:00: Failed tasks:
+2025-06-01 12:48:49 +02:00: 
+2025-06-01 12:48:49 +02:00: - @bassnotion/backend:serve
+2025-06-01 12:48:49 +02:00: 
+2025-06-01 12:48:49 +02:00: Hint: run the command with --verbose for more details.
+2025-06-01 12:48:49 +02:00: 
+2025-06-01 12:48:50 +02:00: 
+2025-06-01 12:48:51 +02:00:  NX   Nx Cloud Problems
+2025-06-01 12:48:51 +02:00: 
+2025-06-01 12:48:51 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+2025-06-01 12:48:51 +02:00: 
+2025-06-01 12:48:57 +02:00: 
+2025-06-01 12:48:57 +02:00: > nx run @bassnotion/backend:serve
+2025-06-01 12:48:57 +02:00: 
+2025-06-01 12:48:58 +02:00: [2J[3J[H
+2025-06-01 12:48:58 +02:00: 12:48:58 PM - Starting compilation in watch mode...
+2025-06-01 12:49:01 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 12:49:01 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 12:49:01 +02:00: 12:49:01 PM - Found 2 errors. Watching for file changes.
+2025-06-01 12:53:27 +02:00: [2J[3J[H12:53:27 PM - File change detected. Starting incremental compilation...
+2025-06-01 12:53:27 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(174,19): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'never[]'.
+2025-06-01 12:53:27 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(235,9): error TS2353: Object literal may only specify known properties, and 'count' does not exist in type '{ data: never[]; error: null; }'.
+2025-06-01 12:53:27 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 12:53:27 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 12:53:27 +02:00: 12:53:27 PM - Found 4 errors. Watching for file changes.
+2025-06-01 12:53:40 +02:00: [2J[3J[H12:53:40 PM - File change detected. Starting incremental compilation...
+2025-06-01 12:53:40 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(174,19): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'never[]'.
+2025-06-01 12:53:40 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(238,9): error TS2353: Object literal may only specify known properties, and 'count' does not exist in type '{ data: never[]; error: null; }'.
+2025-06-01 12:53:40 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 12:53:40 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 12:53:40 +02:00: 12:53:40 PM - Found 4 errors. Watching for file changes.
+2025-06-01 12:56:27 +02:00: [2J[3J[H12:56:27 PM - File change detected. Starting incremental compilation...
+2025-06-01 12:56:27 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 12:56:27 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 12:56:27 +02:00: 12:56:27 PM - Found 2 errors. Watching for file changes.
+2025-06-01 12:57:46 +02:00: [2J[3J[H
+2025-06-01 12:57:46 +02:00: 12:57:46 PM - File change detected. Starting incremental compilation...
+2025-06-01 12:57:46 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(549,40): error TS2339: Property 'signup' does not exist on type 'AuthService'.
+2025-06-01 12:57:46 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(571,40): error TS2339: Property 'signup' does not exist on type 'AuthService'.
+2025-06-01 12:57:46 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 12:57:46 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 12:57:46 +02:00: 12:57:46 PM - Found 4 errors. Watching for file changes.
+2025-06-01 12:58:05 +02:00: [2J[3J[H
+2025-06-01 12:58:05 +02:00: 12:58:05 PM - File change detected. Starting incremental compilation...
+2025-06-01 12:58:05 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(524,21): error TS2339: Property 'error' does not exist on type 'AuthResponse'.
+2025-06-01 12:58:05 +02:00:   Property 'error' does not exist on type 'ApiSuccessResponse<AuthData>'.
+2025-06-01 12:58:05 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(546,21): error TS2339: Property 'data' does not exist on type 'AuthResponse'.
+2025-06-01 12:58:05 +02:00:   Property 'data' does not exist on type 'ApiErrorResponse'.
+2025-06-01 12:58:05 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 12:58:05 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 12:58:05 +02:00: 12:58:05 PM - Found 4 errors. Watching for file changes.
+2025-06-01 13:10:18 +02:00: [2J[3J[H1:10:18 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:10:18 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(524,21): error TS2339: Property 'error' does not exist on type 'AuthResponse'.
+2025-06-01 13:10:18 +02:00:   Property 'error' does not exist on type 'ApiSuccessResponse<AuthData>'.
+2025-06-01 13:10:18 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(546,21): error TS2339: Property 'data' does not exist on type 'AuthResponse'.
+2025-06-01 13:10:18 +02:00:   Property 'data' does not exist on type 'ApiErrorResponse'.
+2025-06-01 13:10:18 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 13:10:18 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 13:10:18 +02:00: 1:10:18 PM - Found 4 errors. Watching for file changes.
+2025-06-01 13:11:01 +02:00: [2J[3J[H1:11:01 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:11:01 +02:00: apps/backend/src/domains/user/auth/services/auth-security.service.spec.ts(7,37): error TS6133: 'createMockConfigService' is declared but its value is never read.
+2025-06-01 13:11:01 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(524,21): error TS2339: Property 'error' does not exist on type 'AuthResponse'.
+2025-06-01 13:11:01 +02:00:   Property 'error' does not exist on type 'ApiSuccessResponse<AuthData>'.
+2025-06-01 13:11:01 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(546,21): error TS2339: Property 'data' does not exist on type 'AuthResponse'.
+2025-06-01 13:11:01 +02:00:   Property 'data' does not exist on type 'ApiErrorResponse'.
+2025-06-01 13:11:01 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 13:11:01 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 13:11:01 +02:00: 1:11:01 PM - Found 5 errors. Watching for file changes.
+2025-06-01 13:12:22 +02:00: [2J[3J[H1:12:22 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:12:23 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(524,21): error TS2339: Property 'error' does not exist on type 'AuthResponse'.
+2025-06-01 13:12:23 +02:00:   Property 'error' does not exist on type 'ApiSuccessResponse<AuthData>'.
+2025-06-01 13:12:23 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(546,21): error TS2339: Property 'data' does not exist on type 'AuthResponse'.
+2025-06-01 13:12:23 +02:00:   Property 'data' does not exist on type 'ApiErrorResponse'.
+2025-06-01 13:12:23 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 13:12:23 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 13:12:23 +02:00: 1:12:23 PM - Found 4 errors. Watching for file changes.
+2025-06-01 13:14:35 +02:00: [2J[3J[H1:14:35 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:14:35 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(524,21): error TS2339: Property 'error' does not exist on type 'AuthResponse'.
+2025-06-01 13:14:35 +02:00:   Property 'error' does not exist on type 'ApiSuccessResponse<AuthData>'.
+2025-06-01 13:14:35 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(546,21): error TS2339: Property 'data' does not exist on type 'AuthResponse'.
+2025-06-01 13:14:35 +02:00:   Property 'data' does not exist on type 'ApiErrorResponse'.
+2025-06-01 13:14:35 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 13:14:35 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 13:14:35 +02:00: 1:14:35 PM - Found 4 errors. Watching for file changes.
+2025-06-01 13:14:45 +02:00: [2J[3J[H1:14:45 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:14:45 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(524,21): error TS2339: Property 'error' does not exist on type 'AuthResponse'.
+2025-06-01 13:14:45 +02:00:   Property 'error' does not exist on type 'ApiSuccessResponse<AuthData>'.
+2025-06-01 13:14:45 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(546,21): error TS2339: Property 'data' does not exist on type 'AuthResponse'.
+2025-06-01 13:14:45 +02:00:   Property 'data' does not exist on type 'ApiErrorResponse'.
+2025-06-01 13:14:45 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 13:14:45 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 13:14:45 +02:00: 1:14:45 PM - Found 4 errors. Watching for file changes.
+2025-06-01 13:15:19 +02:00: [2J[3J[H1:15:19 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:15:19 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(528,21): error TS2339: Property 'error' does not exist on type 'AuthResponse'.
+2025-06-01 13:15:19 +02:00:   Property 'error' does not exist on type 'ApiSuccessResponse<AuthData>'.
+2025-06-01 13:15:19 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(550,21): error TS2339: Property 'data' does not exist on type 'AuthResponse'.
+2025-06-01 13:15:19 +02:00:   Property 'data' does not exist on type 'ApiErrorResponse'.
+2025-06-01 13:15:19 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 13:15:19 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 13:15:19 +02:00: 1:15:19 PM - Found 4 errors. Watching for file changes.
+2025-06-01 13:15:47 +02:00: [2J[3J[H1:15:47 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:15:47 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(527,21): error TS2339: Property 'error' does not exist on type 'AuthResponse'.
+2025-06-01 13:15:47 +02:00:   Property 'error' does not exist on type 'ApiSuccessResponse<AuthData>'.
+2025-06-01 13:15:47 +02:00: apps/backend/src/domains/user/test/integration/auth-security-mocked.integration.spec.ts(549,21): error TS2339: Property 'data' does not exist on type 'AuthResponse'.
+2025-06-01 13:15:47 +02:00:   Property 'data' does not exist on type 'ApiErrorResponse'.
+2025-06-01 13:15:47 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 13:15:47 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 13:15:47 +02:00: 1:15:47 PM - Found 4 errors. Watching for file changes.
+2025-06-01 13:19:24 +02:00: [2J[3J[H
+2025-06-01 13:19:24 +02:00: 1:19:24 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:19:24 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 13:19:24 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 13:19:24 +02:00: 1:19:24 PM - Found 2 errors. Watching for file changes.
+2025-06-01 13:20:12 +02:00: [2J[3J[H1:20:12 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:20:12 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 13:20:12 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 13:20:12 +02:00: 1:20:12 PM - Found 2 errors. Watching for file changes.
+2025-06-01 13:20:13 +02:00: [2J[3J[H1:20:13 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:20:14 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(16,7): error TS6133: '_passwordSecurityService' is declared but its value is never read.
+2025-06-01 13:20:14 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(17,7): error TS6133: '_authSecurityService' is declared but its value is never read.
+2025-06-01 13:20:14 +02:00: 1:20:14 PM - Found 2 errors. Watching for file changes.
+2025-06-01 13:20:35 +02:00: [2J[3J[H
+2025-06-01 13:20:35 +02:00: 1:20:35 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:20:35 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(10,1): error TS6133: 'PasswordSecurityService' is declared but its value is never read.
+2025-06-01 13:20:35 +02:00: apps/backend/src/domains/user/test/integration/auth-security.integration.spec.ts(11,1): error TS6133: 'AuthSecurityService' is declared but its value is never read.
+2025-06-01 13:20:35 +02:00: 1:20:35 PM - Found 2 errors. Watching for file changes.
+2025-06-01 13:20:43 +02:00: [2J[3J[H1:20:43 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:20:44 +02:00: 1:20:44 PM - Found 0 errors. Watching for file changes.
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +13ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:20:47 +02:00: [95m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-01 13:20:47 +02:00: [95m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-01 13:20:47 +02:00: [95m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:20:47 +02:00: [95m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-01 13:20:47 +02:00: [95m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +5ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +4ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +2ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:20:47 +02:00: [95m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-01 13:20:47 +02:00: [95m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-01 13:20:47 +02:00: [95m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 13:20:47 +02:00: [95m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-01 13:20:47 +02:00: [32m[Nest] 54024  - [39m06/01/2025, 1:20:47 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-01 13:22:04 +02:00: [2J[3J[H1:22:04 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:22:05 +02:00: 1:22:05 PM - Found 0 errors. Watching for file changes.
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +9ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:07 +02:00: [95m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-01 13:22:07 +02:00: [95m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-01 13:22:07 +02:00: [95m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:07 +02:00: [95m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-01 13:22:07 +02:00: [95m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +5ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +3ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:22:07 +02:00: [95m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-01 13:22:07 +02:00: [95m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-01 13:22:07 +02:00: [95m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 13:22:07 +02:00: [95m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-01 13:22:07 +02:00: [32m[Nest] 54374  - [39m06/01/2025, 1:22:07 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:11 +02:00: [2J[3J[H
+2025-06-01 13:22:11 +02:00: 1:22:11 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:22:12 +02:00: 1:22:12 PM - Found 0 errors. Watching for file changes.
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +10ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:13 +02:00: [95m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-01 13:22:13 +02:00: [95m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-01 13:22:13 +02:00: [95m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:13 +02:00: [95m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-01 13:22:13 +02:00: [95m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +4ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:22:13 +02:00: [95m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-01 13:22:13 +02:00: [95m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-01 13:22:13 +02:00: [95m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 13:22:13 +02:00: [95m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-01 13:22:13 +02:00: [32m[Nest] 54416  - [39m06/01/2025, 1:22:13 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +0ms[39m
+2025-06-01 13:24:13 +02:00: 
+2025-06-01 13:24:13 +02:00: 
+2025-06-01 13:24:13 +02:00: 
+2025-06-01 13:24:13 +02:00:  NX   Running target serve for project @bassnotion/backend failed
+2025-06-01 13:24:13 +02:00: 
+2025-06-01 13:24:13 +02:00: Failed tasks:
+2025-06-01 13:24:13 +02:00: 
+2025-06-01 13:24:13 +02:00: - @bassnotion/backend:serve
+2025-06-01 13:24:13 +02:00: 
+2025-06-01 13:24:13 +02:00: Hint: run the command with --verbose for more details.
+2025-06-01 13:24:13 +02:00: 
+2025-06-01 13:24:13 +02:00: 
+2025-06-01 13:24:13 +02:00:  NX   Nx Cloud Problems
+2025-06-01 13:24:13 +02:00: 
+2025-06-01 13:24:13 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+2025-06-01 13:24:13 +02:00: 
+2025-06-01 13:24:19 +02:00: 
+2025-06-01 13:24:19 +02:00: > nx run @bassnotion/backend:serve
+2025-06-01 13:24:19 +02:00: 
+2025-06-01 13:24:19 +02:00: [2J[3J[H
+2025-06-01 13:24:19 +02:00: 1:24:19 PM - Starting compilation in watch mode...
+2025-06-01 13:24:23 +02:00: 1:24:23 PM - Found 0 errors. Watching for file changes.
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +8ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:24:25 +02:00: [95m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-01 13:24:25 +02:00: [95m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-01 13:24:25 +02:00: [95m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:24:25 +02:00: [95m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-01 13:24:25 +02:00: [95m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +4ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:24:25 +02:00: [95m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-01 13:24:25 +02:00: [95m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-01 13:24:25 +02:00: [95m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 13:24:25 +02:00: [95m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-01 13:24:25 +02:00: [32m[Nest] 54881  - [39m06/01/2025, 1:24:25 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-01 13:24:25 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-01 13:37:29 +02:00: 
+2025-06-01 13:37:29 +02:00: 
+2025-06-01 13:37:29 +02:00: 
+2025-06-01 13:37:29 +02:00:  NX   Running target serve for project @bassnotion/backend failed
+2025-06-01 13:37:29 +02:00: 
+2025-06-01 13:37:29 +02:00: Failed tasks:
+2025-06-01 13:37:29 +02:00: 
+2025-06-01 13:37:29 +02:00: - @bassnotion/backend:serve
+2025-06-01 13:37:29 +02:00: 
+2025-06-01 13:37:29 +02:00: Hint: run the command with --verbose for more details.
+2025-06-01 13:37:29 +02:00: 
+2025-06-01 13:37:29 +02:00: 
+2025-06-01 13:37:29 +02:00:  NX   Nx Cloud Problems
+2025-06-01 13:37:29 +02:00: 
+2025-06-01 13:37:29 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+2025-06-01 13:37:29 +02:00: 
+2025-06-01 13:37:35 +02:00: 
+2025-06-01 13:37:35 +02:00: > nx run @bassnotion/backend:serve
+2025-06-01 13:37:35 +02:00: 
+2025-06-01 13:37:35 +02:00: [2J[3J[H
+2025-06-01 13:37:35 +02:00: 1:37:35 PM - Starting compilation in watch mode...
+2025-06-01 13:37:38 +02:00: 1:37:38 PM - Found 0 errors. Watching for file changes.
+2025-06-01 13:37:38 +02:00: 
+2025-06-01 13:37:38 +02:00: 
+2025-06-01 13:37:38 +02:00: 
+2025-06-01 13:37:38 +02:00:  NX   Running target serve for project @bassnotion/backend failed
+2025-06-01 13:37:38 +02:00: 
+2025-06-01 13:37:38 +02:00: Failed tasks:
+2025-06-01 13:37:38 +02:00: 
+2025-06-01 13:37:38 +02:00: - @bassnotion/backend:serve
+2025-06-01 13:37:38 +02:00: 
+2025-06-01 13:37:38 +02:00: Hint: run the command with --verbose for more details.
+2025-06-01 13:37:38 +02:00: 
+2025-06-01 13:37:38 +02:00: 
+2025-06-01 13:37:38 +02:00:  NX   Nx Cloud Problems
+2025-06-01 13:37:38 +02:00: 
+2025-06-01 13:37:38 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+2025-06-01 13:37:38 +02:00: 
+2025-06-01 13:37:44 +02:00: 
+2025-06-01 13:37:44 +02:00: > nx run @bassnotion/backend:serve
+2025-06-01 13:37:44 +02:00: 
+2025-06-01 13:37:44 +02:00: [2J[3J[H
+2025-06-01 13:37:44 +02:00: 1:37:44 PM - Starting compilation in watch mode...
+2025-06-01 13:37:47 +02:00: 1:37:47 PM - Found 0 errors. Watching for file changes.
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +5ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:37:48 +02:00: [95m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-01 13:37:48 +02:00: [95m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-01 13:37:48 +02:00: [95m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:37:48 +02:00: [95m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-01 13:37:48 +02:00: [95m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +2ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 13:37:48 +02:00: [95m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-01 13:37:48 +02:00: [95m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-01 13:37:48 +02:00: [95m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 13:37:48 +02:00: [95m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-01 13:37:48 +02:00: [32m[Nest] 57613  - [39m06/01/2025, 1:37:48 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +0ms[39m
+2025-06-01 13:39:28 +02:00: [2J[3J[H1:39:28 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:39:28 +02:00: apps/backend/test/setup.ts(6,29): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 13:39:28 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 13:39:28 +02:00: 1:39:28 PM - Found 1 error. Watching for file changes.
+2025-06-01 13:41:04 +02:00: [2J[3J[H1:41:04 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:41:04 +02:00: apps/backend/test/setup.ts(6,29): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 13:41:04 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 13:41:04 +02:00: 1:41:04 PM - Found 1 error. Watching for file changes.
+2025-06-01 13:41:13 +02:00: [2J[3J[H1:41:13 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:41:14 +02:00: apps/backend/e2e/setup.ts(8,42): error TS6133: 'vi' is declared but its value is never read.
+2025-06-01 13:41:14 +02:00: apps/backend/test/setup.ts(6,29): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 13:41:14 +02:00:   The file is in the program because:
+2025-06-01 13:41:14 +02:00:     Imported via './mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/setup.ts'
+2025-06-01 13:41:14 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 13:41:14 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 13:41:14 +02:00: 1:41:14 PM - Found 2 errors. Watching for file changes.
+2025-06-01 13:41:20 +02:00: [2J[3J[H1:41:20 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:41:20 +02:00: apps/backend/test/setup.ts(6,29): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 13:41:20 +02:00:   The file is in the program because:
+2025-06-01 13:41:20 +02:00:     Imported via './mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/setup.ts'
+2025-06-01 13:41:20 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 13:41:20 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 13:41:20 +02:00: 1:41:20 PM - Found 1 error. Watching for file changes.
+2025-06-01 13:41:39 +02:00: [2J[3J[H1:41:39 PM - File change detected. Starting incremental compilation...
+2025-06-01 13:41:40 +02:00: apps/backend/test/setup.ts(6,29): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 13:41:40 +02:00:   The file is in the program because:
+2025-06-01 13:41:40 +02:00:     Imported via './mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/setup.ts'
+2025-06-01 13:41:40 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 13:41:40 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 13:41:40 +02:00: 1:41:40 PM - Found 1 error. Watching for file changes.
+2025-06-01 14:24:24 +02:00: [2J[3J[H
+2025-06-01 14:24:24 +02:00: 2:24:24 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:24:25 +02:00: apps/backend/test/setup.ts(6,29): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:24:25 +02:00:   The file is in the program because:
+2025-06-01 14:24:25 +02:00:     Imported via './mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/setup.ts'
+2025-06-01 14:24:25 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:24:25 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:24:25 +02:00: 2:24:25 PM - Found 1 error. Watching for file changes.
+2025-06-01 14:25:00 +02:00: [2J[3J[H2:25:00 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:25:01 +02:00: apps/backend/test/setup.ts(6,29): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:25:01 +02:00:   The file is in the program because:
+2025-06-01 14:25:01 +02:00:     Imported via './mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/setup.ts'
+2025-06-01 14:25:01 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:25:01 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:25:01 +02:00: 2:25:01 PM - Found 1 error. Watching for file changes.
+2025-06-01 14:25:55 +02:00: [2J[3J[H2:25:55 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:25:55 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:25:55 +02:00:   The file is in the program because:
+2025-06-01 14:25:55 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:25:55 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:25:55 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:25:55 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:25:55 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:25:55 +02:00: 2:25:55 PM - Found 2 errors. Watching for file changes.
+2025-06-01 14:28:09 +02:00: [2J[3J[H2:28:09 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:28:09 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:28:09 +02:00:   The file is in the program because:
+2025-06-01 14:28:09 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:28:09 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:28:09 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:28:09 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:28:09 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:28:09 +02:00: 2:28:09 PM - Found 2 errors. Watching for file changes.
+2025-06-01 14:29:04 +02:00: [2J[3J[H2:29:04 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:29:04 +02:00: apps/backend/src/domains/user/auth/services/auth-security.service.spec.ts(220,29): error TS2552: Cannot find name 'createMockDatabaseService'. Did you mean 'mockDatabaseService'?
+2025-06-01 14:29:04 +02:00: apps/backend/src/domains/user/auth/services/auth-security.service.spec.ts(294,29): error TS2552: Cannot find name 'createMockDatabaseService'. Did you mean 'mockDatabaseService'?
+2025-06-01 14:29:04 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:29:04 +02:00:   The file is in the program because:
+2025-06-01 14:29:04 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:29:04 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:29:04 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:29:04 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:29:04 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:29:04 +02:00: 2:29:04 PM - Found 4 errors. Watching for file changes.
+2025-06-01 14:29:48 +02:00: [2J[3J[H2:29:48 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:29:48 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:29:48 +02:00:   The file is in the program because:
+2025-06-01 14:29:48 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:29:48 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:29:48 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:29:48 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:29:48 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:29:48 +02:00: 2:29:48 PM - Found 2 errors. Watching for file changes.
+2025-06-01 14:30:46 +02:00: [2J[3J[H2:30:46 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:30:46 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:30:46 +02:00:   The file is in the program because:
+2025-06-01 14:30:46 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:30:46 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:30:46 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:30:46 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:30:46 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:30:46 +02:00: 2:30:46 PM - Found 2 errors. Watching for file changes.
+2025-06-01 14:31:56 +02:00: [2J[3J[H2:31:56 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:31:57 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:31:57 +02:00:   The file is in the program because:
+2025-06-01 14:31:57 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:31:57 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:31:57 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:31:57 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:31:57 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:31:57 +02:00: 2:31:57 PM - Found 2 errors. Watching for file changes.
+2025-06-01 14:32:21 +02:00: [2J[3J[H
+2025-06-01 14:32:21 +02:00: 2:32:21 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:32:21 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:32:21 +02:00:   The file is in the program because:
+2025-06-01 14:32:21 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:32:21 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:32:21 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:32:21 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:32:21 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:32:21 +02:00: 2:32:21 PM - Found 2 errors. Watching for file changes.
+2025-06-01 14:35:55 +02:00: [2J[3J[H2:35:55 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:35:55 +02:00: apps/backend/src/domains/user/auth/services/auth-security.service.spec.ts(239,51): error TS2345: Argument of type '{ supabase: { from: Mock<Procedure>; }; }' is not assignable to parameter of type 'DatabaseService'.
+2025-06-01 14:35:55 +02:00:   Type '{ supabase: { from: Mock<Procedure>; }; }' is missing the following properties from type 'DatabaseService': logger, isInitialized, configService, onModuleInit, isReady
+2025-06-01 14:35:55 +02:00: apps/backend/src/domains/user/auth/services/auth-security.service.spec.ts(283,51): error TS2345: Argument of type '{ supabase: { from: Mock<Procedure>; }; }' is not assignable to parameter of type 'DatabaseService'.
+2025-06-01 14:35:55 +02:00:   Type '{ supabase: { from: Mock<Procedure>; }; }' is missing the following properties from type 'DatabaseService': logger, isInitialized, configService, onModuleInit, isReady
+2025-06-01 14:35:55 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:35:55 +02:00:   The file is in the program because:
+2025-06-01 14:35:55 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:35:55 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:35:55 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:35:55 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:35:55 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:35:55 +02:00: 2:35:55 PM - Found 4 errors. Watching for file changes.
+2025-06-01 14:36:03 +02:00: [2J[3J[H2:36:03 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:36:03 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:36:03 +02:00:   The file is in the program because:
+2025-06-01 14:36:03 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:36:03 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:36:03 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:36:03 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:36:03 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:36:03 +02:00: 2:36:03 PM - Found 2 errors. Watching for file changes.
+2025-06-01 14:37:47 +02:00: [2J[3J[H2:37:47 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:37:47 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:37:47 +02:00:   The file is in the program because:
+2025-06-01 14:37:47 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:37:47 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:37:47 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:37:47 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:37:47 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:37:47 +02:00: 2:37:47 PM - Found 2 errors. Watching for file changes.
+2025-06-01 14:38:50 +02:00: [2J[3J[H2:38:50 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:38:50 +02:00: apps/backend/src/domains/user/auth/services/auth-security.service.spec.ts(141,9): error TS6133: 'originalMockDatabaseService' is declared but its value is never read.
+2025-06-01 14:38:50 +02:00: apps/backend/src/domains/user/auth/services/auth-security.service.spec.ts(148,5): error TS2304: Cannot find name 'afterEach'.
+2025-06-01 14:38:50 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:38:50 +02:00:   The file is in the program because:
+2025-06-01 14:38:50 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:38:50 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:38:50 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:38:50 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:38:50 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:38:50 +02:00: 2:38:50 PM - Found 4 errors. Watching for file changes.
+2025-06-01 14:39:11 +02:00: [2J[3J[H2:39:11 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:39:11 +02:00: apps/backend/src/domains/user/auth/services/auth-security.service.spec.ts(7,1): error TS6133: 'createMockDatabaseService' is declared but its value is never read.
+2025-06-01 14:39:11 +02:00: apps/backend/src/domains/user/auth/services/auth-security.service.spec.ts(7,43): error TS2307: Cannot find module '../../../test/mocks/global-test-mocks.js' or its corresponding type declarations.
+2025-06-01 14:39:11 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:39:11 +02:00:   The file is in the program because:
+2025-06-01 14:39:11 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:39:11 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:39:11 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:39:11 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:39:11 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:39:11 +02:00: 2:39:11 PM - Found 4 errors. Watching for file changes.
+2025-06-01 14:41:06 +02:00: [2J[3J[H2:41:06 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:41:06 +02:00: apps/backend/src/domains/user/auth/services/auth-security.service.spec.ts(7,1): error TS6133: 'createMockDatabaseService' is declared but its value is never read.
+2025-06-01 14:41:06 +02:00: apps/backend/src/domains/user/auth/services/auth-security.service.spec.ts(7,43): error TS2307: Cannot find module '../../../test/mocks/global-test-mocks.js' or its corresponding type declarations.
+2025-06-01 14:41:06 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:41:06 +02:00:   The file is in the program because:
+2025-06-01 14:41:06 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:41:06 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:41:06 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:41:06 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:41:06 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:41:06 +02:00: 2:41:06 PM - Found 4 errors. Watching for file changes.
+2025-06-01 14:41:34 +02:00: [2J[3J[H
+2025-06-01 14:41:34 +02:00: 2:41:34 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:41:34 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:41:34 +02:00:   The file is in the program because:
+2025-06-01 14:41:34 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:41:34 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:41:34 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:41:34 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:41:34 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:41:34 +02:00: 2:41:34 PM - Found 2 errors. Watching for file changes.
+2025-06-01 14:42:10 +02:00: [2J[3J[H2:42:10 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:42:10 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:42:10 +02:00:   The file is in the program because:
+2025-06-01 14:42:10 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:42:10 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:42:10 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:42:10 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:42:10 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:42:10 +02:00: 2:42:10 PM - Found 2 errors. Watching for file changes.
+2025-06-01 14:46:09 +02:00: [2J[3J[H2:46:09 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:46:09 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:46:09 +02:00:   The file is in the program because:
+2025-06-01 14:46:09 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:46:09 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:46:09 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:46:09 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:46:09 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:46:09 +02:00: 2:46:09 PM - Found 2 errors. Watching for file changes.
+2025-06-01 14:52:17 +02:00: [2J[3J[H2:52:17 PM - File change detected. Starting incremental compilation...
+2025-06-01 14:52:17 +02:00: apps/backend/test/mocks/test-module.factory.ts(10,8): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/global-test-mocks.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:52:17 +02:00:   The file is in the program because:
+2025-06-01 14:52:17 +02:00:     Imported via './global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts'
+2025-06-01 14:52:17 +02:00:     Imported via '../test/mocks/global-test-mocks.js' from file '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/e2e/setup.ts'
+2025-06-01 14:52:17 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:52:17 +02:00: apps/backend/test/setup.ts(5,38): error TS6307: File '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/test/mocks/test-module.factory.ts' is not listed within the file list of project ''. Projects must list all files or use an 'include' pattern.
+2025-06-01 14:52:17 +02:00:   File is ECMAScript module because '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/backend/package.json' has field "type" with value "module"
+2025-06-01 14:52:17 +02:00: 2:52:17 PM - Found 2 errors. Watching for file changes.
+2025-06-01 17:56:44 +02:00: 
+2025-06-01 17:56:44 +02:00: > nx run @bassnotion/backend:serve
+2025-06-01 17:56:44 +02:00: 
+2025-06-01 17:56:44 +02:00: [2J[3J[H
+2025-06-01 17:56:44 +02:00: 5:56:44 PM - Starting compilation in watch mode...
+2025-06-01 17:56:47 +02:00: 5:56:47 PM - Found 0 errors. Watching for file changes.
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +6ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 17:56:48 +02:00: [95m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-01 17:56:48 +02:00: [95m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-01 17:56:48 +02:00: [95m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 17:56:48 +02:00: [95m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-01 17:56:48 +02:00: [95m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +3ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 17:56:48 +02:00: [95m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-01 17:56:48 +02:00: [95m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-01 17:56:48 +02:00: [95m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 17:56:48 +02:00: [95m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-01 17:56:48 +02:00: [32m[Nest] 21642  - [39m06/01/2025, 5:56:48 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +2ms[39m
+2025-06-01 18:14:41 +02:00: 
+2025-06-01 18:14:41 +02:00: 
+2025-06-01 18:14:41 +02:00: 
+2025-06-01 18:14:41 +02:00:  NX   Running target serve for project @bassnotion/backend failed
+2025-06-01 18:14:41 +02:00: 
+2025-06-01 18:14:41 +02:00: Failed tasks:
+2025-06-01 18:14:41 +02:00: 
+2025-06-01 18:14:41 +02:00: - @bassnotion/backend:serve
+2025-06-01 18:14:41 +02:00: 
+2025-06-01 18:14:41 +02:00: Hint: run the command with --verbose for more details.
+2025-06-01 18:14:41 +02:00: 
+2025-06-01 18:14:41 +02:00: 
+2025-06-01 18:14:41 +02:00:  NX   Nx Cloud Problems
+2025-06-01 18:14:41 +02:00: 
+2025-06-01 18:14:41 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+2025-06-01 18:14:41 +02:00: 
+2025-06-01 18:14:46 +02:00: 
+2025-06-01 18:14:46 +02:00: > nx run @bassnotion/backend:serve
+2025-06-01 18:14:46 +02:00: 
+2025-06-01 18:14:47 +02:00: [2J[3J[H
+2025-06-01 18:14:47 +02:00: 6:14:47 PM - Starting compilation in watch mode...
+2025-06-01 18:14:49 +02:00: 6:14:49 PM - Found 0 errors. Watching for file changes.
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +6ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 18:14:50 +02:00: [95m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-01 18:14:50 +02:00: [95m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-01 18:14:50 +02:00: [95m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 18:14:50 +02:00: [95m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-01 18:14:50 +02:00: [95m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +3ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 18:14:50 +02:00: [95m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-01 18:14:50 +02:00: [95m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-01 18:14:50 +02:00: [95m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 18:14:50 +02:00: [95m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-01 18:14:50 +02:00: [32m[Nest] 23646  - [39m06/01/2025, 6:14:50 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-01 18:14:50 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-01 18:30:40 +02:00: [2J[3J[H6:30:40 PM - File change detected. Starting incremental compilation...
+2025-06-01 18:30:40 +02:00: 6:30:40 PM - Found 0 errors. Watching for file changes.
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +6ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 18:30:42 +02:00: [95m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-01 18:30:42 +02:00: [95m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-01 18:30:42 +02:00: [95m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 18:30:42 +02:00: [95m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-01 18:30:42 +02:00: [95m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +4ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +1ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +1ms[39m
+2025-06-01 18:30:42 +02:00: [95m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-01 18:30:42 +02:00: [95m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-01 18:30:42 +02:00: [95m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-01 18:30:42 +02:00: [95m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-01 18:30:42 +02:00: [32m[Nest] 25225  - [39m06/01/2025, 6:30:42 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-01 18:30:42 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m

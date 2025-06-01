@@ -134,7 +134,7 @@ describe('Direct Authentication Tests (Supabase)', () => {
       const { data, error } = await supabase.auth.resetPasswordForEmail(
         'auth-test@example.com',
         {
-          redirectTo: 'http://localhost:3000/auth/reset-password',
+          redirectTo: 'http://localhost:3001/auth/reset-password',
         },
       );
 
@@ -192,7 +192,7 @@ describe('Direct Authentication Tests (Supabase)', () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'http://localhost:3000/auth/callback',
+          redirectTo: 'http://localhost:3001/auth/callback',
         },
       });
 

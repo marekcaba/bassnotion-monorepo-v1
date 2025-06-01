@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('BassNotion Frontend', () => {
   test('should display the homepage', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('http://localhost:3001/');
     await page.waitForLoadState('networkidle');
 
     // Test visible content instead of title
@@ -23,7 +23,7 @@ test.describe('BassNotion Frontend', () => {
   });
 
   test('should have working navigation', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('http://localhost:3001/');
 
     // Wait for the page to load
     await page.waitForLoadState('networkidle');
@@ -40,7 +40,7 @@ test.describe('BassNotion Frontend', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
 
-    await page.goto('/');
+    await page.goto('http://localhost:3001/');
     await page.waitForLoadState('networkidle');
 
     // Take a screenshot for mobile view

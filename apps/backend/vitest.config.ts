@@ -1,34 +1,49 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vitest/config';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { defineConfig } from 'vite';
+import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
+import swc from 'unplugin-swc';
 
 export default defineConfig({
-  plugins: [tsconfigPaths() as any],
+  root: __dirname,
+  cacheDir: '../../node_modules/.vite/apps/backend',
+  plugins: [nxViteTsPaths(), swc.vite()],
   test: {
     globals: true,
     environment: 'node',
     setupFiles: ['./test/setup.ts'],
-    include: ['**/*.spec.ts', '**/*.integration-spec.ts', '**/*.e2e-spec.ts'],
-    exclude: ['node_modules', 'dist'],
+    include: [
+      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'src/**/*.spec.ts',
+    ],
+    exclude: [
+      'src/**/*.e2e-spec.ts', // Exclude E2E tests from unit test runs
+      'src/**/*.integration.spec.ts', // Run integration tests separately
+      'e2e/**/*',
+      'node_modules/**/*',
+      'dist/**/*',
+    ],
+    reporters: ['verbose'],
     coverage: {
-      provider: 'v8',
       reporter: ['text', 'json', 'html'],
       exclude: [
         'node_modules/',
-        'test/',
+        'src/test/',
         '**/*.d.ts',
-        '**/*.config.*',
-        '**/index.ts',
+        '**/*.config.ts',
+        '**/test/**',
+        '**/e2e/**',
       ],
     },
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+    testTimeout: 10000,
+    hookTimeout: 10000,
+    // Improve test isolation and mock handling
+    clearMocks: true,
+    mockReset: true,
+    restoreMocks: true,
+    // Ensure proper environment variable handling
+    env: {
+      NODE_ENV: 'test',
     },
   },
 });

@@ -25,17 +25,20 @@ export default defineConfig({
       ],
     },
     env: {
-      SUPABASE_URL: 'http://localhost:54321',
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:54322/postgres',
+      SUPABASE_URL: 'http://127.0.0.1:54321',
       SUPABASE_ANON_KEY:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
       SUPABASE_SERVICE_ROLE_KEY:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
-      DATABASE_URL: 'postgresql://postgres:postgres@localhost:54322/postgres',
-      PORT: '3001',
-      API_PREFIX: 'api',
-      TEST_USER_EMAIL: 'test@example.com',
-      TEST_USER_PASSWORD: 'Password123!',
       JWT_SECRET: 'super-secret-jwt-token-with-at-least-32-characters-long',
+      JWT_EXPIRY: '1h',
+      PORT: '3000',
+      API_PORT: '3000',
+      API_PREFIX: 'api',
+      RATE_LIMIT_TTL: '60',
+      RATE_LIMIT_MAX: '100',
     },
   },
   resolve: {

@@ -1,9 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 import { nxE2EPreset } from '@nx/playwright/preset';
-import { workspaceRoot } from '@nx/devkit';
+// import { workspaceRoot } from '@nx/devkit';
 import { fileURLToPath } from 'url';
 
-// For CI, you may want to set BASE_URL to the deployed application.
+// For CI, you may want to set BASE_URL to the deployed app URL
+// For local testing, use the dev server
 const baseURL = process.env['BASE_URL'] || 'http://localhost:3001';
 
 /**
@@ -28,14 +29,14 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npx nx serve @bassnotion/frontend',
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    cwd: workspaceRoot,
-    timeout: 120000, // 2 minutes
-  },
-  /* Configure projects for major browsers */
+  // webServer: {
+  //   command: 'pnpm nx serve @bassnotion/frontend',
+  //   url: baseURL,
+  //   reuseExistingServer: !process.env.CI,
+  //   cwd: workspaceRoot,
+  //   timeout: 120000, // 2 minutes
+  // },
+  /* Configure projects for major browsers - this overrides NX preset projects */
   projects: [
     {
       name: 'chromium',
@@ -47,7 +48,31 @@ export default defineConfig({
     },
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      use: {
+        ...devices['Desktop Safari'],
+        // Webkit-specific settings for stability
+        launchOptions: {
+          slowMo: 200, // Increased slow motion for webkit stability
+          args: [
+            '--disable-web-security',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--disable-features=TranslateUI',
+            '--disable-ipc-flooding-protection',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--single-process', // Force single process for stability
+          ],
+          timeout: 60000, // Increase browser launch timeout
+        },
+        // Additional test-specific settings for webkit
+        actionTimeout: 15000,
+        navigationTimeout: 30000,
+        video: 'off', // Disable video recording for webkit to reduce overhead
+        screenshot: 'off', // Disable screenshots for webkit to reduce overhead
+      },
     },
     // Test against mobile viewports.
     {
@@ -56,7 +81,31 @@ export default defineConfig({
     },
     {
       name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
+      use: {
+        ...devices['iPhone 12'],
+        // Mobile webkit-specific settings
+        launchOptions: {
+          slowMo: 200, // Increased slow motion for mobile webkit
+          args: [
+            '--disable-web-security',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--disable-features=TranslateUI',
+            '--disable-ipc-flooding-protection',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--single-process', // Force single process for stability
+          ],
+          timeout: 60000, // Increase browser launch timeout
+        },
+        // Additional test-specific settings for mobile webkit
+        actionTimeout: 15000,
+        navigationTimeout: 30000,
+        video: 'off', // Disable video recording for mobile webkit
+        screenshot: 'off', // Disable screenshots for mobile webkit
+      },
     },
   ],
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */

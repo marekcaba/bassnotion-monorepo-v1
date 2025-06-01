@@ -1,0 +1,12 @@
+2025-05-31 13:51:56 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-05-31 13:51:57 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-05-31 13:51:57 +02:00: [1m[31m[39m[22m
+2025-05-31 13:51:57 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-05-31 13:51:57 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-05-31 13:51:57 +02:00: [1m[31m[39m[22m
+2025-05-31 13:51:57 +02:00: [1m[31mApplication is running on: http://localhost:3000[39m[22m
+2025-05-31 13:51:57 +02:00: [1m[31m[39m[22m
+2025-05-31 13:54:28 +02:00: [1m[31m[31m[Nest] 1883  - [39m[31m05/31/2025, 1:54:28 PM [31m  ERROR[39m[31m [38;5;3m[AuthService] [39m[31m[31mError authenticating user: Invalid login credentials[39m[31m[39m[22m
+2025-05-31 13:54:28 +02:00: [1m[31m[39m[22m
+2025-05-31 14:21:57 +02:00: [1m[31m[31m[Nest] 1883  - [39m[31m05/31/2025, 2:21:57 PM [31m  ERROR[39m[31m [38;5;3m[AuthService] [39m[31m[31mError authenticating user: Invalid login credentials[39m[31m[39m[22m
+2025-05-31 14:21:57 +02:00: [1m[31m[39m[22m

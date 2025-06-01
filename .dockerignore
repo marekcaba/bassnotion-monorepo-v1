@@ -66,6 +66,7 @@ temp
 
 # Documentation
 docs
+.docs/
 *.md
 
 # Development tools

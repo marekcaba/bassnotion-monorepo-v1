@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('User Journey Tests', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the homepage before each test
-    await page.goto('/');
+    await page.goto('http://localhost:3001/');
     await page.waitForLoadState('networkidle');
   });
 

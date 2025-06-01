@@ -22,6 +22,7 @@ import { AuthResponse } from './types/auth.types.js';
 import { DatabaseService } from '../../../infrastructure/database/database.service.js';
 import { ApiResponse } from '../../../shared/types/api.types.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
+import { PasswordSecurityService } from './services/password-security.service.js';
 
 @Controller('auth')
 export class AuthController {
@@ -30,6 +31,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly db: DatabaseService,
+    private readonly passwordSecurity: PasswordSecurityService,
   ) {
     this.logger.debug('AuthController constructor called');
 
@@ -327,6 +329,54 @@ export class AuthController {
         error: {
           code: 'INTERNAL_ERROR',
           details: 'Failed to change password',
+        },
+      };
+    }
+  }
+
+  @Post('check-password-security')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async checkPasswordSecurity(
+    @Body() body: { password: string },
+    @Req() _request: FastifyRequest & { user: any },
+  ): Promise<
+    ApiResponse<{
+      isCompromised: boolean;
+      breachCount?: number;
+      recommendation?: string;
+      strengthRecommendations: string[];
+    }>
+  > {
+    this.logger.debug('Password security check request received');
+
+    try {
+      const passwordCheck = await this.passwordSecurity.checkPasswordSecurity(
+        body.password,
+      );
+      const strengthRecommendations =
+        this.passwordSecurity.getPasswordStrengthRecommendations(body.password);
+
+      return {
+        success: true,
+        message: passwordCheck.isCompromised
+          ? 'Password security check completed - issues found'
+          : 'Password security check completed - no issues found',
+        data: {
+          isCompromised: passwordCheck.isCompromised,
+          breachCount: passwordCheck.breachCount,
+          recommendation: passwordCheck.recommendation,
+          strengthRecommendations,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Error checking password security:', error);
+      return {
+        success: false,
+        message: 'Failed to check password security',
+        error: {
+          code: 'PASSWORD_CHECK_FAILED',
+          details: 'Unable to verify password security',
         },
       };
     }

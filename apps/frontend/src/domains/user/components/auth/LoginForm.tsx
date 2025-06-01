@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginData } from '@bassnotion/contracts';
-import { Eye, EyeOff, Loader2, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -21,27 +21,23 @@ import { Input } from '@/shared/components/ui/input';
 interface LoginFormProps {
   onSubmit: (data: LoginData) => Promise<void>;
   onGoogleSignIn: () => Promise<void>;
-  onCreateAccount?: (data: LoginData) => void;
   isLoading?: boolean;
   isGoogleLoading?: boolean;
-  showCreateAccountButton?: boolean;
   className?: string;
 }
 
 export function LoginForm({
   onSubmit,
   onGoogleSignIn,
-  onCreateAccount,
   isLoading = false,
   isGoogleLoading = false,
-  showCreateAccountButton = false,
   className,
 }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
-    mode: 'onChange',
+    mode: 'onSubmit',
     defaultValues: {
       email: '',
       password: '',
@@ -57,11 +53,6 @@ export function LoginForm({
     }
   };
 
-  const handleCreateAccount = () => {
-    const currentData = form.getValues();
-    onCreateAccount?.(currentData);
-  };
-
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   return (
@@ -74,7 +65,11 @@ export function LoginForm({
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <form
+          onSubmit={form.handleSubmit(handleSubmit)}
+          className="space-y-4"
+          noValidate
+        >
           <FormField
             control={form.control}
             name="email"
@@ -140,11 +135,7 @@ export function LoginForm({
             </Button>
           </div>
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading || !form.formState.isValid}
-          >
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -154,25 +145,6 @@ export function LoginForm({
               'Sign In'
             )}
           </Button>
-
-          {/* Show Create Account button when login fails */}
-          {showCreateAccountButton && (
-            <div className="mt-4 p-4 bg-muted/50 border rounded-lg">
-              <p className="text-sm text-muted-foreground text-center mb-3">
-                Don't have an account with this email?
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handleCreateAccount}
-                disabled={!form.formState.isValid}
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                Create Account with These Credentials
-              </Button>
-            </div>
-          )}
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
@@ -191,15 +163,6 @@ export function LoginForm({
           />
         </form>
       </Form>
-
-      <div className="mt-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          Don't have an account?{' '}
-          <Button variant="link" className="p-0 h-auto">
-            Create account
-          </Button>
-        </p>
-      </div>
     </div>
   );
 }

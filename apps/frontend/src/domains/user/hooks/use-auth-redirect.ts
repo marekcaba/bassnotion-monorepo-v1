@@ -15,7 +15,7 @@ export const useAuthRedirect = (options: UseAuthRedirectOptions = {}) => {
     options;
 
   const redirectAfterAuth = useCallback(
-    (user: User | null, returnTo?: string) => {
+    (user: User | null) => {
       if (!user) {
         router.push('/login');
         return;
@@ -27,22 +27,15 @@ export const useAuthRedirect = (options: UseAuthRedirectOptions = {}) => {
         return;
       }
 
-      // Redirect to intended destination or default
-      const destination = returnTo || defaultRedirect;
-      router.push(destination);
+      // Always redirect to dashboard for simplicity
+      router.push(defaultRedirect);
     },
     [router, defaultRedirect, requireEmailConfirmation],
   );
 
-  const redirectToLogin = useCallback(
-    (returnTo?: string) => {
-      const loginUrl = returnTo
-        ? `/login?returnTo=${encodeURIComponent(returnTo)}`
-        : '/login';
-      router.push(loginUrl);
-    },
-    [router],
-  );
+  const redirectToLogin = useCallback(() => {
+    router.push('/login');
+  }, [router]);
 
   const redirectToDashboard = useCallback(() => {
     router.push(defaultRedirect);

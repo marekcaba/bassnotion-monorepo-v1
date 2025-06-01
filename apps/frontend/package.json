@@ -21,6 +21,10 @@
     "@supabase/supabase-js": "^2.49.8",
     "@tanstack/react-query": "^5.62.7",
     "@tanstack/react-query-devtools": "^5.62.7",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@vitejs/plugin-react": "^4.5.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "lucide-react": "^0.263.1",
@@ -29,14 +33,10 @@
     "react-dom": "19.1.0",
     "react-hook-form": "^7.53.0",
     "tailwind-merge": "^2.2.0",
-    "zod": "^3.25.32",
-    "zustand": "^5.0.0",
-    "@testing-library/react": "^16.1.0",
-    "@testing-library/user-event": "^14.5.2",
+    "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.1.4",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@vitejs/plugin-react": "^4.5.0",
-    "vite-tsconfig-paths": "^5.1.4"
+    "zod": "^3.25.32",
+    "zustand": "^5.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",

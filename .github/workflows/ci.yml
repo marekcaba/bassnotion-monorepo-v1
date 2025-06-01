@@ -53,6 +53,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Security: Check for dependency vulnerabilities
+      - name: Security audit
+        run: pnpm audit
+
       - name: Set up Nx SHAs
         uses: nrwl/nx-set-shas@v4
 

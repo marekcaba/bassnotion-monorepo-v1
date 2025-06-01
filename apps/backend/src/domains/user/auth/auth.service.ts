@@ -13,6 +13,7 @@ import { SignInDto } from './dto/sign-in.dto.js';
 import { SignUpDto } from './dto/sign-up.dto.js';
 import { AuthResponse, AuthError, AuthData } from './types/auth.types.js';
 import { AuthSecurityService } from './services/auth-security.service.js';
+import { PasswordSecurityService } from './services/password-security.service.js';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +22,7 @@ export class AuthService {
   constructor(
     private readonly db: DatabaseService,
     private readonly authSecurity: AuthSecurityService,
+    private readonly passwordSecurity: PasswordSecurityService,
   ) {
     this.logger.debug('AuthService constructor called');
   }
@@ -56,6 +58,43 @@ export class AuthService {
     this.logger.debug(`Registering user with email: ${signUpDto.email}`);
 
     try {
+      // Check password security before proceeding with registration
+      const passwordCheck = await this.passwordSecurity.checkPasswordSecurity(
+        signUpDto.password,
+      );
+
+      if (passwordCheck.isCompromised) {
+        this.logger.warn(
+          `Registration blocked: password found in ${passwordCheck.breachCount} breaches for ${signUpDto.email}`,
+        );
+        return {
+          success: false,
+          message:
+            passwordCheck.recommendation ||
+            'Please choose a different password for your security.',
+          error: {
+            code: 'COMPROMISED_PASSWORD',
+            details: `Password has been found in ${passwordCheck.breachCount} data breaches`,
+          },
+        };
+      }
+
+      // Get password strength recommendations
+      const strengthRecommendations =
+        this.passwordSecurity.getPasswordStrengthRecommendations(
+          signUpDto.password,
+        );
+      if (strengthRecommendations.length > 2) {
+        return {
+          success: false,
+          message: 'Password does not meet security requirements',
+          error: {
+            code: 'WEAK_PASSWORD',
+            details: strengthRecommendations.join(', '),
+          },
+        };
+      }
+
       // First, check if user already exists
       const { data: existingUser } = await this.db.supabase
         .from('profiles')
@@ -339,6 +378,32 @@ export class AuthService {
         `Successful login for ${signInDto.email} from IP ${clientIp}`,
       );
 
+      // Check if user's password has been compromised (after successful login)
+      let passwordWarning = '';
+      try {
+        const passwordCheck = await this.passwordSecurity.checkPasswordSecurity(
+          signInDto.password,
+        );
+        if (
+          passwordCheck.isCompromised &&
+          passwordCheck.breachCount &&
+          passwordCheck.breachCount > 0
+        ) {
+          passwordWarning =
+            passwordCheck.recommendation ||
+            'Your password may have been compromised. Please consider changing it.';
+          this.logger.warn(
+            `User ${signInDto.email} logged in with compromised password (${passwordCheck.breachCount} breaches)`,
+          );
+        }
+      } catch (error) {
+        this.logger.error(
+          'Error checking password security during login:',
+          error,
+        );
+        // Continue with login - don't block user if security check fails
+      }
+
       const authData: AuthData = {
         user: {
           id: profile.id,
@@ -356,7 +421,9 @@ export class AuthService {
 
       const successResponse: ApiSuccessResponse<AuthData> = {
         success: true,
-        message: 'Successfully authenticated',
+        message: passwordWarning
+          ? `Successfully authenticated. Security Notice: ${passwordWarning}`
+          : 'Successfully authenticated',
         data: authData,
       };
 

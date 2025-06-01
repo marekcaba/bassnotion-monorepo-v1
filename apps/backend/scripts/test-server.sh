@@ -1,8 +1,24 @@
 #!/bin/bash
 
-# Script to start backend server for E2E testing
+# Simple test script to check if the server is running
 
-echo "🚀 Starting BassNotion Backend for E2E Testing..."
+# Exit on any error
+set -e
+
+# Colors for output
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Server configuration
+export PORT=3000
+export NODE_ENV=development
+
+echo "📡 Starting server on http://localhost:3000"
+
+# Start the server in the background
+npm run start:dev &
+SERVER_PID=$!
 
 # Check if .env.local exists
 if [ ! -f ".env.local" ]; then

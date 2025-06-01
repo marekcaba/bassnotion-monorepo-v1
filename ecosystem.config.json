@@ -1,0 +1,42 @@
+{
+  "apps": [
+    {
+      "name": "bassnotion-backend",
+      "script": "npx",
+      "args": "nx serve @bassnotion/backend",
+      "cwd": "/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1",
+      "env": {
+        "NODE_ENV": "development",
+        "PORT": "3000"
+      },
+      "watch": false,
+      "autorestart": true,
+      "max_restarts": 10,
+      "min_uptime": "10s",
+      "restart_delay": 4000,
+      "log_date_format": "YYYY-MM-DD HH:mm:ss Z",
+      "out_file": "./logs/backend-out.log",
+      "error_file": "./logs/backend-error.log",
+      "combine_logs": true
+    },
+    {
+      "name": "bassnotion-frontend",
+      "script": "npx",
+      "args": "nx serve @bassnotion/frontend",
+      "cwd": "/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1",
+      "env": {
+        "NODE_ENV": "development",
+        "PORT": "3001"
+      },
+      "watch": false,
+      "autorestart": true,
+      "max_restarts": 10,
+      "min_uptime": "10s",
+      "restart_delay": 4000,
+      "log_date_format": "YYYY-MM-DD HH:mm:ss Z",
+      "out_file": "./logs/frontend-out.log",
+      "error_file": "./logs/frontend-error.log",
+      "combine_logs": true
+    }
+  ]
+}

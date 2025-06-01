@@ -8,7 +8,6 @@ import { LoginData } from '@bassnotion/contracts';
 import { LoginForm } from '@/domains/user/components/auth';
 import { MagicLinkSignIn } from '@/domains/user/components/auth/MagicLinkSignIn';
 import { authService } from '@/domains/user/api/auth';
-import { AuthError } from '@supabase/supabase-js';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { Button } from '@/shared/components/ui/button';
@@ -24,9 +23,7 @@ function LoginPageContent() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [showCreateAccountButton, setShowCreateAccountButton] = useState(false);
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get('returnTo');
   const message = searchParams.get('message');
 
   const { setUser, setSession } = useAuth();
@@ -50,10 +47,21 @@ function LoginPageContent() {
   const handleSubmit = async (data: LoginData) => {
     try {
       setIsLoading(true);
-      setShowCreateAccountButton(false); // Hide button on new attempt
+
+      // Validate input data before sending
+      if (!data.email || !data.password) {
+        throw new Error('Email and password are required');
+      }
+
+      console.log('[Login Debug] Using backend auth:', useBackendAuth);
+      console.log(
+        '[Login Debug] Environment variable:',
+        process.env.NEXT_PUBLIC_USE_BACKEND_AUTH,
+      );
 
       if (useBackendAuth) {
         // Use backend API for E2E testing
+        console.log('[Login Debug] Using backend authentication');
         const result = await authService.signInWithBackend(data);
 
         if (result.success) {
@@ -65,10 +73,13 @@ function LoginPageContent() {
           // Redirect to dashboard for testing
           router.push('/dashboard');
         } else {
-          throw new Error(result.error?.message || 'Login failed');
+          throw new Error(
+            result.message || result.error?.message || 'Login failed',
+          );
         }
       } else {
         // Use Supabase for production
+        console.log('[Login Debug] Using Supabase authentication');
         const authData = await authService.signIn(data);
 
         if (authData.user && authData.session) {
@@ -80,36 +91,33 @@ function LoginPageContent() {
             description: 'You have been signed in successfully.',
           });
 
-          redirectAfterAuth(authData.user, returnTo || undefined);
+          redirectAfterAuth(authData.user);
+        } else {
+          throw new Error('Authentication failed - no user data received');
         }
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[Login Debug] Full error object:', error);
+      console.error(
+        '[Login Debug] Error message:',
+        error instanceof Error ? error.message : 'Unknown',
+      );
+      console.error(
+        '[Login Debug] Error name:',
+        error instanceof Error ? error.name : 'Unknown',
+      );
 
-      let errorMessage =
-        'Failed to sign in. Please check your credentials and try again.';
-      let isInvalidCredentials = false;
+      let errorMessage = 'Failed to sign in. Please try again.';
 
       if (error instanceof Error) {
+        // Use the enhanced error message from auth service
         errorMessage = error.message;
-
-        // Provide more specific error messages for common cases
-        if (error instanceof AuthError) {
-          if (error.message.includes('Invalid login credentials')) {
-            errorMessage =
-              'Invalid email or password. Please check your credentials and try again.';
-            isInvalidCredentials = true;
-          } else if (error.message.includes('Email not confirmed')) {
-            errorMessage =
-              'Please check your email and click the confirmation link before signing in.';
-          }
-        }
       }
 
-      // Show create account button only for invalid credentials
-      if (isInvalidCredentials) {
-        setShowCreateAccountButton(true);
-      }
+      console.log(
+        '[Login Debug] Final error message shown to user:',
+        errorMessage,
+      );
 
       toast({
         title: 'Sign in failed',
@@ -119,20 +127,6 @@ function LoginPageContent() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleCreateAccount = (data: LoginData) => {
-    // Redirect to registration with pre-filled email and password
-    const params = new URLSearchParams({
-      email: data.email,
-      password: data.password,
-    });
-
-    if (returnTo) {
-      params.set('returnTo', returnTo);
-    }
-
-    router.push(`/register?${params.toString()}`);
   };
 
   const handleGoogleSignIn = async () => {
@@ -168,10 +162,8 @@ function LoginPageContent() {
               <LoginForm
                 onSubmit={handleSubmit}
                 onGoogleSignIn={handleGoogleSignIn}
-                onCreateAccount={handleCreateAccount}
                 isLoading={isLoading}
                 isGoogleLoading={isGoogleLoading}
-                showCreateAccountButton={showCreateAccountButton}
               />
             </TabsContent>
 
@@ -186,13 +178,7 @@ function LoginPageContent() {
           <p className="text-sm text-muted-foreground">
             Don't have an account?{' '}
             <Button variant="link" asChild className="p-0 h-auto">
-              <Link
-                href={`/register${
-                  returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''
-                }`}
-              >
-                Create account
-              </Link>
+              <Link href="/register">Create account</Link>
             </Button>
           </p>
         </div>

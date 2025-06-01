@@ -6,11 +6,17 @@ import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { AuthGuard } from './guards/auth.guard.js';
 import { AuthSecurityService } from './services/auth-security.service.js';
+import { PasswordSecurityService } from './services/password-security.service.js';
 
 @Module({
   imports: [DatabaseModule],
   controllers: [AuthController],
-  providers: [AuthService, AuthGuard, AuthSecurityService],
-  exports: [AuthService, AuthGuard],
+  providers: [
+    AuthService,
+    AuthGuard,
+    AuthSecurityService,
+    PasswordSecurityService,
+  ],
+  exports: [AuthService, AuthGuard, PasswordSecurityService],
 })
 export class AuthModule {}

@@ -8,6 +8,7 @@ import * as dotenv from 'dotenv';
 import { beforeAll, afterAll, afterEach } from 'vitest';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { mockEnvVars } from '../test/mocks/global-test-mocks.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -99,6 +100,21 @@ async function retryOperation<T>(
 
   throw lastError || new Error('Operation failed after all retries');
 }
+
+// Mock all environment variables for E2E testing
+beforeAll(() => {
+  // Override process.env with safe mock values
+  Object.entries(mockEnvVars).forEach(([key, value]) => {
+    process.env[key] = value;
+  });
+
+  // Ensure NODE_ENV is set to test
+  process.env.NODE_ENV = 'test';
+
+  console.log(
+    '✅ E2E test environment setup completed with mocked configuration',
+  );
+});
 
 beforeAll(async () => {
   logger.debug('Setting up E2E test application');
@@ -363,8 +379,8 @@ beforeAll(async () => {
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
-            }),
-          ],
+        }),
+      ],
       controllers: [AuthController],
       providers: [
         {
