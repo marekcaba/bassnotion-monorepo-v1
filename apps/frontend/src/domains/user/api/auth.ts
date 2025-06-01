@@ -403,11 +403,6 @@ export class AuthService {
 
   async signInWithMagicLink(email: string, isNewUser = false) {
     try {
-      console.debug('[Auth Debug] Sending magic link:', {
-        email,
-        isNewUser,
-      });
-
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -422,7 +417,6 @@ export class AuthService {
 
       return { data, error: null };
     } catch (error) {
-      console.error('[Auth Debug] Magic link error:', error);
       if (error instanceof AuthError) {
         return { data: null, error };
       }
