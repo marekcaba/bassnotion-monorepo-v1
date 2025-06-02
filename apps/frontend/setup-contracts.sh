@@ -11,10 +11,10 @@ npm install --no-optional --no-audit --no-fund
 
 # Verify critical frontend dependencies
 echo "Verifying critical dependencies..."
-if [ ! -d "node_modules/@formkit" ]; then
-  echo "Installing @formkit/auto-animate explicitly..."
-  npm install @formkit/auto-animate@^0.8.2 --no-optional --no-audit --no-fund
-fi
+
+# Always install @formkit/auto-animate explicitly to ensure it's available
+echo "Installing @formkit/auto-animate explicitly..."
+npm install @formkit/auto-animate@^0.8.2 --no-optional --no-audit --no-fund
 
 if [ ! -d "node_modules/@radix-ui" ]; then
   echo "Installing Radix UI components explicitly..."
@@ -100,7 +100,8 @@ echo "Contracts dist files:"
 ls -la node_modules/@bassnotion/contracts/dist/
 
 echo "Final dependency verification:"
-echo "@formkit/auto-animate: $([ -d "node_modules/@formkit" ] && echo "✓ Found" || echo "✗ Missing")"
+echo "@formkit/auto-animate: $([ -d "node_modules/@formkit/auto-animate" ] && echo "✓ Found" || echo "✗ Missing")"
+echo "@formkit/auto-animate/react: $([ -f "node_modules/@formkit/auto-animate/react/index.js" ] && echo "✓ Found" || echo "✗ Missing")"
 echo "@radix-ui: $([ -d "node_modules/@radix-ui" ] && echo "✓ Found" || echo "✗ Missing")"
 echo "motion: $([ -d "node_modules/motion" ] && echo "✓ Found" || echo "✗ Missing")"
 
