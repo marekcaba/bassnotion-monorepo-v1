@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Camera, User, Loader2 } from 'lucide-react';
 import { supabase } from '@/infrastructure/supabase/client';
 import { useToast } from '@/shared/hooks/use-toast';
@@ -22,8 +22,40 @@ export function AvatarUpload({
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     currentAvatarUrl || null,
   );
+  const [imageError, setImageError] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Detect mobile device and log avatar info for debugging
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setIsMobile(mobile);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    // Debug logging for mobile avatar issues
+    if (currentAvatarUrl) {
+      console.log('[AvatarUpload] Mobile Debug:', {
+        isMobile: window.innerWidth <= 768,
+        userAgent: navigator.userAgent,
+        currentAvatarUrl,
+        userId,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [currentAvatarUrl, userId]);
+
+  // Reset image error when URL changes
+  useEffect(() => {
+    setImageError(false);
+    setPreviewUrl(currentAvatarUrl || null);
+  }, [currentAvatarUrl]);
 
   const handleFileSelect = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -120,6 +152,7 @@ export function AvatarUpload({
 
       // Set preview and notify parent
       setPreviewUrl(urlData.publicUrl);
+      setImageError(false);
       onAvatarChange(urlData.publicUrl);
 
       toast({
@@ -152,8 +185,31 @@ export function AvatarUpload({
     fileInputRef.current?.click();
   };
 
+  const handleImageError = () => {
+    console.error('[AvatarUpload] Image failed to load:', {
+      previewUrl,
+      isMobile,
+      userAgent: navigator.userAgent,
+      userId,
+      timestamp: new Date().toISOString()
+    });
+    setImageError(true);
+    setPreviewUrl(null);
+  };
+
+  const handleImageLoad = () => {
+    console.log('[AvatarUpload] Image loaded successfully:', {
+      previewUrl,
+      isMobile,
+      userId,
+      timestamp: new Date().toISOString()
+    });
+    setImageError(false);
+  };
+
   const _handleRemoveAvatar = useCallback(async () => {
     setPreviewUrl(null);
+    setImageError(false);
     onAvatarChange(null);
   }, [onAvatarChange]);
 
@@ -161,26 +217,37 @@ export function AvatarUpload({
     <div className="flex flex-col">
       {/* Avatar Display */}
       <div
-        className={`relative w-20 h-20 rounded-full overflow-hidden border-4 border-gray-200 dark:border-gray-700 shadow-lg transition-all ${
+        className={`relative w-20 h-20 rounded-full overflow-hidden border-4 border-gray-200 dark:border-gray-700 shadow-lg transition-all touch-target ${
           disabled || isUploading
             ? 'cursor-not-allowed opacity-50'
             : 'cursor-pointer hover:border-green-400 hover:shadow-xl'
         }`}
         onClick={handleClick}
       >
-        {previewUrl ? (
+        {previewUrl && !imageError ? (
           <img
             src={previewUrl}
             alt="Profile Avatar"
             className="w-full h-full object-cover"
-            onError={() => {
-              // Fallback if image fails to load
-              setPreviewUrl(null);
+            onError={handleImageError}
+            onLoad={handleImageLoad}
+            crossOrigin="anonymous"
+            loading="eager"
+            style={{
+              // Force image to load properly on mobile
+              maxWidth: '100%',
+              height: '100%',
+              objectFit: 'cover',
             }}
           />
         ) : (
           <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
             <User className="w-8 h-8 text-gray-400" />
+            {imageError && isMobile && (
+              <div className="absolute inset-0 flex items-center justify-center text-xs text-red-500 bg-red-50 dark:bg-red-900/20">
+                {/* Small error indicator for mobile debugging */}
+              </div>
+            )}
           </div>
         )}
 
@@ -207,6 +274,15 @@ export function AvatarUpload({
         className="hidden"
         disabled={disabled || isUploading}
       />
+      
+      {/* Mobile Debug Info (only in development) */}
+      {process.env.NODE_ENV === 'development' && isMobile && (
+        <div className="mt-2 text-xs text-gray-500">
+          <div>Mobile: {isMobile ? 'Yes' : 'No'}</div>
+          <div>URL: {previewUrl ? 'Set' : 'None'}</div>
+          <div>Error: {imageError ? 'Yes' : 'No'}</div>
+        </div>
+      )}
     </div>
   );
 }
