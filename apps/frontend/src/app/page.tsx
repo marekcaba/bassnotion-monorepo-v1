@@ -1,9 +1,12 @@
-import Link from 'next/link';
+'use client';
 
 import { Button } from '@/shared/components/ui/button';
 import { ResponsiveDebug } from '@/shared/components/ui/responsive-debug';
+import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 
 export default function HomePage() {
+  const { navigateWithTransition } = useViewTransitionRouter();
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4 py-8 sm:p-24">
       {/* Add debug component for responsive testing */}
@@ -24,11 +27,12 @@ export default function HomePage() {
 
           {/* Right side: Button group */}
           <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 sm:flex-shrink-0">
-            <Link href="/dashboard">
-              <Button className="w-full sm:w-auto min-w-[160px]">
-                Go to Dashboard
-              </Button>
-            </Link>
+            <Button 
+              className="w-full sm:w-auto min-w-[160px]"
+              onClick={() => navigateWithTransition('/dashboard')}
+            >
+              Go to Dashboard
+            </Button>
             <Button
               variant="outline"
               className="w-full sm:w-auto min-w-[160px]"

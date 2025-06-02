@@ -57,3 +57,64 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ===== VIEW TRANSITIONS API - Page Transition Animations ===== */
+/* Exact implementation based on commerce.framer.media code analysis */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* Base properties for all transitions */
+::view-transition-old(*),
+::view-transition-new(*) {
+  mix-blend-mode: normal;
+  backface-visibility: hidden;
+}
+
+/* Exit animation (old page) */
+::view-transition-old(*),
+::view-transition-old(root) {
+  animation-name: view-transition-exit;
+  animation-duration: 0.2s;
+  animation-delay: 0s;
+  animation-timing-function: cubic-bezier(0.27, 0, 0.51, 1);
+  animation-fill-mode: both;
+}
+
+/* Enter animation (new page) */
+::view-transition-new(*),
+::view-transition-new(root) {
+  animation-name: view-transition-enter;
+  animation-duration: 0.2s;
+  animation-delay: 0s;
+  animation-timing-function: cubic-bezier(0.27, 0, 0.51, 1);
+  animation-fill-mode: both;
+}
+
+@keyframes view-transition-exit {
+  0% {
+    opacity: 1;
+    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg) rotateX(0deg) rotateY(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg) rotateX(0deg) rotateY(0deg);
+  }
+}
+
+@keyframes view-transition-enter {
+  0% {
+    opacity: 0;
+    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg) rotateX(0deg) rotateY(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg) rotateX(0deg) rotateY(0deg);
+  }
+}

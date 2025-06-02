@@ -23,12 +23,6 @@ export interface BackendAuthResponse {
  * Convert Supabase AuthError into user-friendly messages
  */
 function getAuthErrorMessage(error: AuthError): string {
-  console.error('[Auth Debug] Original error:', {
-    message: error.message,
-    status: error.status,
-    name: error.name,
-  });
-
   // Handle specific error codes
   if (error.message?.includes('over_email_send_rate_limit')) {
     return 'Too many emails sent. Please wait a few minutes before trying again.';

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { LoginData } from '@bassnotion/contracts';
 
 import { LoginForm } from '@/domains/user/components/auth';
@@ -18,9 +17,11 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/shared/components/ui/tabs';
+import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 
 function LoginPageContent() {
   const router = useRouter();
+  const { navigateWithTransition } = useViewTransitionRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const searchParams = useSearchParams();
@@ -88,27 +89,12 @@ function LoginPageContent() {
         }
       }
     } catch (error) {
-      console.error('[Login Debug] Full error object:', error);
-      console.error(
-        '[Login Debug] Error message:',
-        error instanceof Error ? error.message : 'Unknown',
-      );
-      console.error(
-        '[Login Debug] Error name:',
-        error instanceof Error ? error.name : 'Unknown',
-      );
-
       let errorMessage = 'Failed to sign in. Please try again.';
 
       if (error instanceof Error) {
         // Use the enhanced error message from auth service
         errorMessage = error.message;
       }
-
-      console.log(
-        '[Login Debug] Final error message shown to user:',
-        errorMessage,
-      );
 
       toast({
         title: 'Sign in failed',
@@ -174,18 +160,22 @@ function LoginPageContent() {
             Don't have an account?{' '}
             <Button
               variant="link"
-              asChild
               className="p-0 h-auto text-xs sm:text-sm"
+              onClick={() => navigateWithTransition('/register')}
             >
-              <Link href="/register">Create account</Link>
+              Create account
             </Button>
           </p>
         </div>
 
         {/* Back to Home */}
         <div className="text-center">
-          <Button variant="ghost" asChild className="text-xs sm:text-sm">
-            <Link href="/">← Back to Home</Link>
+          <Button 
+            variant="ghost" 
+            className="text-xs sm:text-sm"
+            onClick={() => navigateWithTransition('/')}
+          >
+            ← Back to Home
           </Button>
         </div>
       </div>

@@ -2,19 +2,36 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Home } from 'lucide-react';
+import { Home, Edit, Trash2, User } from 'lucide-react';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { authService } from '@/domains/user/api/auth';
+import { profileService } from '@/domains/user/api/profile';
 import { Button } from '@/shared/components/ui/button';
 import { useToast } from '@/shared/hooks/use-toast';
-import { ChangePasswordForm } from '@/domains/user/components/auth/ChangePasswordForm';
+import { ChangePasswordDialog } from '@/domains/user/components/auth/ChangePasswordDialog';
+import { ProfileEditDialog } from '@/domains/user/components/ProfileEditDialog';
+import { DeleteAccountDialog } from '@/domains/user/components/DeleteAccountDialog';
+import { AvatarUpload } from '@/domains/user/components/AvatarUpload';
 import { ResponsiveDebug } from '@/shared/components/ui/responsive-debug';
+import { DashboardContent } from '@/domains/user/components/DashboardContent/index';
+import type { UserProfileData } from '@bassnotion/contracts';
+import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 
 export default function DashboardPage() {
   const { user, session, isAuthenticated, isReady, reset } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const { navigateWithTransition } = useViewTransitionRouter();
+  
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const [profileData, setProfileData] = useState<{
+    displayName: string;
+    bio?: string;
+    avatarUrl?: string;
+  } | null>(null);
 
   useEffect(() => {
     // Redirect to login if not authenticated and auth is ready
@@ -22,6 +39,54 @@ export default function DashboardPage() {
       router.push('/login');
     }
   }, [isAuthenticated, isReady, router]);
+
+  useEffect(() => {
+    // Load profile data when user is available
+    if (user && isAuthenticated) {
+      loadProfileData();
+    }
+  }, [user, isAuthenticated]);
+
+  const loadProfileData = async () => {
+    try {
+      const profile = await profileService.getCurrentProfile();
+      console.log('[Dashboard] Loaded profile:', profile);
+      setProfileData({
+        displayName: profile.displayName,
+        bio: profile.bio,
+        avatarUrl: profile.avatarUrl,
+      });
+      console.log('[Dashboard] Set profile data:', {
+        displayName: profile.displayName,
+        bio: profile.bio,
+        avatarUrl: profile.avatarUrl,
+      });
+    } catch (error) {
+      console.error('Failed to load profile:', error);
+      // Use user data as fallback
+      if (user) {
+        const fallbackDisplayName = 
+          user.user_metadata?.display_name || 
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          user.email?.split('@')[0] || 
+          'User';
+          
+        setProfileData({
+          displayName: fallbackDisplayName,
+          bio: '',
+          avatarUrl: '',
+        });
+        
+        // Show a toast to inform the user
+        toast({
+          title: 'Profile loading issue',
+          description: 'Using fallback profile data. You can edit your profile below.',
+          variant: 'default',
+        });
+      }
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -41,7 +106,99 @@ export default function DashboardPage() {
   };
 
   const handleGoHome = () => {
-    router.push('/');
+    navigateWithTransition('/');
+  };
+
+  const handleProfileUpdate = async (data: UserProfileData) => {
+    try {
+      const updatedUser = await profileService.updateProfile(data);
+      setProfileData({
+        displayName: data.displayName,
+        bio: data.bio,
+        avatarUrl: data.avatarUrl,
+      });
+      setShowProfileDialog(false);
+      toast({
+        title: 'Profile updated',
+        description: 'Your profile has been updated successfully.',
+        variant: 'success',
+      });
+    } catch (error) {
+      console.error('Profile update error:', error);
+      toast({
+        title: 'Failed to update profile',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAvatarChange = async (newAvatarUrl: string | null) => {
+    if (!profileData) return;
+    
+    try {
+      const updatedData: UserProfileData = {
+        displayName: profileData.displayName,
+        bio: profileData.bio,
+        avatarUrl: newAvatarUrl || undefined,
+      };
+      
+      await profileService.updateProfile(updatedData);
+      setProfileData({
+        ...profileData,
+        avatarUrl: newAvatarUrl || undefined,
+      });
+      
+      toast({
+        title: 'Avatar updated',
+        description: 'Your profile picture has been updated successfully.',
+        variant: 'success',
+      });
+    } catch (error) {
+      console.error('Avatar update error:', error);
+      toast({
+        title: 'Failed to update avatar',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAccountDeletion = async (password: string) => {
+    setIsDeleteLoading(true);
+    try {
+      await profileService.deleteAccount(password);
+      
+      // Sign out and redirect to home
+      await authService.signOut();
+      reset();
+      
+      toast({
+        title: 'Account deleted',
+        description: 'Your account has been permanently deleted.',
+        variant: 'success',
+      });
+      
+      router.push('/');
+    } catch (error) {
+      console.error('Account deletion error:', error);
+      toast({
+        title: 'Failed to delete account',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleteLoading(false);
+    }
   };
 
   // Show loading state while auth is initializing
@@ -98,75 +255,105 @@ export default function DashboardPage() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 sm:py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Welcome Section */}
+          {/* Welcome Section with Profile Information */}
           <div className="bg-card rounded-lg border p-4 sm:p-6 mb-6 sm:mb-8">
-            <h2 className="text-lg sm:text-xl font-semibold mb-2">
-              Welcome back!
-            </h2>
-            <p className="text-muted-foreground mb-4 text-sm sm:text-base">
-              You're successfully signed in to BassNotion.
-            </p>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                  Welcome back!
+                </h2>
+                <p className="text-muted-foreground text-sm sm:text-base">
+                  You're successfully signed in to BassNotion.
+                </p>
+              </div>
+              {!showProfileDialog && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowProfileDialog(true)}
+                  className="flex-shrink-0"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Profile
+                </Button>
+              )}
+            </div>
 
             {user && (
-              <div className="space-y-2 text-xs sm:text-sm">
-                <p className="break-all">
-                  <strong>Email:</strong> {user.email}
-                </p>
-                <p className="break-all font-mono text-xs">
-                  <strong>User ID:</strong> {user.id}
-                </p>
-                <p>
-                  <strong>Email Confirmed:</strong>{' '}
-                  {user.email_confirmed_at ? (
-                    <span className="text-green-600">✓ Confirmed</span>
-                  ) : (
-                    <span className="text-amber-600">⏳ Pending</span>
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Left Column - Account Info */}
+                <div className="space-y-3 text-sm">
+                  <h3 className="font-semibold text-base mb-3">Account Information</h3>
+                  <div>
+                    <span className="font-medium text-muted-foreground">Email:</span>
+                    <p className="mt-1 break-all">{user.email}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground">Email Status:</span>
+                    <p className="mt-1">
+                      {user.email_confirmed_at ? (
+                        <span className="text-green-600">✓ Confirmed</span>
+                      ) : (
+                        <span className="text-amber-600">⏳ Pending</span>
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground">Member Since:</span>
+                    <p className="mt-1">{new Date(user.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground">User ID:</span>
+                    <p className="mt-1 font-mono text-xs break-all text-muted-foreground">{user.id}</p>
+                  </div>
+                </div>
+
+                {/* Right Column - Profile Info */}
+                <div className="space-y-3 text-sm">
+                  <h3 className="font-semibold text-base mb-3">Profile Information</h3>
+                  {profileData && (
+                    <>
+                      <div>
+                        <span className="font-medium text-muted-foreground">Display Name:</span>
+                        <p className="mt-1">{profileData.displayName}</p>
+                      </div>
+                      
+                      <div>
+                        <span className="font-medium text-muted-foreground">Bio:</span>
+                        <p className="mt-1 text-muted-foreground">
+                          {profileData.bio || 'No bio added yet'}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <span className="font-medium text-muted-foreground">Profile Picture:</span>
+                        <div className="mt-2">
+                          {user?.id && (
+                            <AvatarUpload
+                              currentAvatarUrl={profileData.avatarUrl}
+                              userId={user.id}
+                              onAvatarChange={handleAvatarChange}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </>
                   )}
-                </p>
-                <p>
-                  <strong>Account Created:</strong>{' '}
-                  {new Date(user.created_at).toLocaleDateString()}
-                </p>
+                </div>
               </div>
             )}
           </div>
 
-          {/* Features Preview */}
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Interactive Features with AutoAnimate Demo */}
+          <div className="mt-6 sm:mt-8">
+            <h2 className="text-lg sm:text-xl font-semibold mb-4">
+              🎸 Features & Animation Demo
+            </h2>
             <div className="bg-card rounded-lg border p-4 sm:p-6">
-              <h3 className="font-semibold mb-2 text-sm sm:text-base">
-                Bass Exercises
-              </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-4">
-                Practice with interactive bass exercises
+              <p className="text-sm text-muted-foreground mb-4">
+                Interactive BassNotion features with smooth layout animations powered by AutoAnimate
               </p>
-              <Button size="sm" disabled className="w-full sm:w-auto">
-                Coming Soon
-              </Button>
-            </div>
-
-            <div className="bg-card rounded-lg border p-4 sm:p-6">
-              <h3 className="font-semibold mb-2 text-sm sm:text-base">
-                Learning Progress
-              </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-4">
-                Track your bass learning journey
-              </p>
-              <Button size="sm" disabled className="w-full sm:w-auto">
-                Coming Soon
-              </Button>
-            </div>
-
-            <div className="bg-card rounded-lg border p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
-              <h3 className="font-semibold mb-2 text-sm sm:text-base">
-                Community
-              </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-4">
-                Connect with other bass players
-              </p>
-              <Button size="sm" disabled className="w-full sm:w-auto">
-                Coming Soon
-              </Button>
+              <DashboardContent />
             </div>
           </div>
 
@@ -175,25 +362,33 @@ export default function DashboardPage() {
             <h2 className="text-lg sm:text-xl font-semibold mb-4">
               Account Settings
             </h2>
-            {showPasswordForm ? (
-              <div className="space-y-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowPasswordForm(false)}
-                  className="w-full sm:w-auto"
-                >
-                  Cancel
-                </Button>
-                <ChangePasswordForm />
-              </div>
-            ) : (
+            
+            {/* Password Section */}
+            <div className="bg-card rounded-lg border p-4 sm:p-6 mb-4">
+              <h3 className="font-semibold mb-4">Password & Security</h3>
               <Button
-                onClick={() => setShowPasswordForm(true)}
+                onClick={() => setShowPasswordDialog(true)}
                 className="w-full sm:w-auto"
               >
                 Change Password
               </Button>
-            )}
+            </div>
+
+            {/* Danger Zone */}
+            <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-4 sm:p-6">
+              <h3 className="font-semibold text-destructive mb-2">Danger Zone</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Once you delete your account, there is no going back. Please be certain.
+              </p>
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteDialog(true)}
+                className="w-full sm:w-auto"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Account
+              </Button>
+            </div>
           </div>
 
           {/* Debug Info */}
@@ -213,6 +408,28 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* Change Password Dialog */}
+      <ChangePasswordDialog
+        isOpen={showPasswordDialog}
+        onClose={() => setShowPasswordDialog(false)}
+      />
+
+      {/* Delete Account Dialog */}
+      <DeleteAccountDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleAccountDeletion}
+        isLoading={isDeleteLoading}
+      />
+
+      {/* Profile Edit Dialog */}
+      <ProfileEditDialog
+        isOpen={showProfileDialog}
+        onClose={() => setShowProfileDialog(false)}
+        initialData={profileData || { displayName: '', bio: '', avatarUrl: '' }}
+        onSubmit={handleProfileUpdate}
+      />
     </div>
   );
 }
