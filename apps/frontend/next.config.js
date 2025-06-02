@@ -40,6 +40,25 @@ const nextConfig = {
 
   // Enhanced security headers with CSP
   async headers() {
+    // Determine if we're in development mode
+    const isDev = process.env.NODE_ENV === 'development';
+    
+    // Build connect-src CSP directive with localhost for development
+    const connectSrc = [
+      "'self'",
+      "https://*.supabase.co",
+      "https://api.supabase.co", 
+      "wss://*.supabase.co"
+    ];
+    
+    // Add localhost URLs for development
+    if (isDev) {
+      connectSrc.push("http://localhost:3000", "http://localhost:3001");
+    } else {
+      // Add production backend URL
+      connectSrc.push("https://backend-production-612c.up.railway.app");
+    }
+    
     return [
       {
         source: '/(.*)',
@@ -76,7 +95,7 @@ const nextConfig = {
               "font-src 'self' data: https://fonts.gstatic.com",
               "img-src 'self' data: https: blob:",
               "media-src 'self' https:",
-              "connect-src 'self' https://*.supabase.co https://api.supabase.co wss://*.supabase.co",
+              `connect-src ${connectSrc.join(' ')}`,
               "frame-src 'none'",
               "object-src 'none'",
               "base-uri 'self'",
