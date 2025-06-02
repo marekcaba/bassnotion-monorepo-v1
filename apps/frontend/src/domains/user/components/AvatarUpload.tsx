@@ -37,19 +37,8 @@ export function AvatarUpload({
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
-    // Debug logging for mobile avatar issues
-    if (currentAvatarUrl) {
-      console.log('[AvatarUpload] Mobile Debug:', {
-        isMobile: window.innerWidth <= 768,
-        userAgent: navigator.userAgent,
-        currentAvatarUrl,
-        userId,
-        timestamp: new Date().toISOString()
-      });
-    }
-    
     return () => window.removeEventListener('resize', checkMobile);
-  }, [currentAvatarUrl, userId]);
+  }, []);
 
   // Reset image error when URL changes
   useEffect(() => {
@@ -198,12 +187,6 @@ export function AvatarUpload({
   };
 
   const handleImageLoad = () => {
-    console.log('[AvatarUpload] Image loaded successfully:', {
-      previewUrl,
-      isMobile,
-      userId,
-      timestamp: new Date().toISOString()
-    });
     setImageError(false);
   };
 
@@ -274,15 +257,6 @@ export function AvatarUpload({
         className="hidden"
         disabled={disabled || isUploading}
       />
-      
-      {/* Mobile Debug Info (only in development) */}
-      {process.env.NODE_ENV === 'development' && isMobile && (
-        <div className="mt-2 text-xs text-gray-500">
-          <div>Mobile: {isMobile ? 'Yes' : 'No'}</div>
-          <div>URL: {previewUrl ? 'Set' : 'None'}</div>
-          <div>Error: {imageError ? 'Yes' : 'No'}</div>
-        </div>
-      )}
     </div>
   );
 }

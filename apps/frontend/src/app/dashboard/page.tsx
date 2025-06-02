@@ -50,13 +50,7 @@ export default function DashboardPage() {
   const loadProfileData = async () => {
     try {
       const profile = await profileService.getCurrentProfile();
-      console.log('[Dashboard] Loaded profile:', profile);
       setProfileData({
-        displayName: profile.displayName,
-        bio: profile.bio,
-        avatarUrl: profile.avatarUrl,
-      });
-      console.log('[Dashboard] Set profile data:', {
         displayName: profile.displayName,
         bio: profile.bio,
         avatarUrl: profile.avatarUrl,

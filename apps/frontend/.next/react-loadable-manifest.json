@@ -1,32 +1,36 @@
 {
   "../../../node_modules/.pnpm/@supabase+auth-js@2.69.1/node_modules/@supabase/auth-js/dist/module/lib/helpers.js -> @supabase/node-fetch": {
-    "id": 3531,
+    "id": "../../../node_modules/.pnpm/@supabase+auth-js@2.69.1/node_modules/@supabase/auth-js/dist/module/lib/helpers.js -> @supabase/node-fetch",
     "files": []
   },
   "../../../node_modules/.pnpm/@supabase+functions-js@2.4.4/node_modules/@supabase/functions-js/dist/module/helper.js -> @supabase/node-fetch": {
-    "id": 3531,
+    "id": "../../../node_modules/.pnpm/@supabase+functions-js@2.4.4/node_modules/@supabase/functions-js/dist/module/helper.js -> @supabase/node-fetch",
     "files": []
   },
   "../../../node_modules/.pnpm/@supabase+realtime-js@2.11.2/node_modules/@supabase/realtime-js/dist/module/RealtimeClient.js -> @supabase/node-fetch": {
-    "id": 3531,
+    "id": "../../../node_modules/.pnpm/@supabase+realtime-js@2.11.2/node_modules/@supabase/realtime-js/dist/module/RealtimeClient.js -> @supabase/node-fetch",
     "files": []
   },
   "../../../node_modules/.pnpm/@supabase+realtime-js@2.11.2/node_modules/@supabase/realtime-js/dist/module/RealtimeClient.js -> ws": {
-    "id": 5426,
+    "id": "../../../node_modules/.pnpm/@supabase+realtime-js@2.11.2/node_modules/@supabase/realtime-js/dist/module/RealtimeClient.js -> ws",
     "files": [
-      "static/chunks/426.46abd0305c7db8fd.js"
+      "static/chunks/_app-pages-browser_node_modules_pnpm_ws_8_18_2_node_modules_ws_browser_js.js"
     ]
   },
   "../../../node_modules/.pnpm/@supabase+storage-js@2.7.1/node_modules/@supabase/storage-js/dist/module/lib/helpers.js -> @supabase/node-fetch": {
-    "id": 3531,
+    "id": "../../../node_modules/.pnpm/@supabase+storage-js@2.7.1/node_modules/@supabase/storage-js/dist/module/lib/helpers.js -> @supabase/node-fetch",
     "files": []
   },
-  "../../../node_modules/.pnpm/@tanstack+query-devtools@5.76.0/node_modules/@tanstack/query-devtools/build/index.js -> ./DevtoolsComponent/2ZEF3XTO.js": {
-    "id": null,
-    "files": []
+  "../../../node_modules/.pnpm/@tanstack+query-devtools@5.76.0/node_modules/@tanstack/query-devtools/build/dev.js -> ./DevtoolsComponent/6BZD2SY2.js": {
+    "id": "../../../node_modules/.pnpm/@tanstack+query-devtools@5.76.0/node_modules/@tanstack/query-devtools/build/dev.js -> ./DevtoolsComponent/6BZD2SY2.js",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_pnpm_tanstack_query-devtools_5_76_0_node_modules_tanstack_que-fef58b.js"
+    ]
   },
-  "../../../node_modules/.pnpm/@tanstack+query-devtools@5.76.0/node_modules/@tanstack/query-devtools/build/index.js -> ./DevtoolsPanelComponent/4GTSBKBA.js": {
-    "id": null,
-    "files": []
+  "../../../node_modules/.pnpm/@tanstack+query-devtools@5.76.0/node_modules/@tanstack/query-devtools/build/dev.js -> ./DevtoolsPanelComponent/G73NX4V5.js": {
+    "id": "../../../node_modules/.pnpm/@tanstack+query-devtools@5.76.0/node_modules/@tanstack/query-devtools/build/dev.js -> ./DevtoolsPanelComponent/G73NX4V5.js",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_pnpm_tanstack_query-devtools_5_76_0_node_modules_tanstack_que-3f626e.js"
+    ]
   }
 }
