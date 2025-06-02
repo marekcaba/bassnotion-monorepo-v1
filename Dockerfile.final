@@ -43,6 +43,16 @@ RUN echo "=== Checking contracts build output ===" && \
 # Build backend (hoisting already handled contracts placement)
 RUN pnpm nx build @bassnotion/backend --prod
 
+# Debug: Check what was built
+RUN echo "=== Checking built backend files ===" && \
+    find dist/apps/backend -name "*.js" | head -20 && \
+    echo "=== Looking for UserController ===" && \
+    find dist/apps/backend -name "*user*" -o -name "*User*" && \
+    echo "=== Checking domains structure ===" && \
+    ls -la dist/apps/backend/src/domains/ && \
+    echo "=== Checking user domain ===" && \
+    ls -la dist/apps/backend/src/domains/user/ || echo "User domain not found"
+
 # Production stage
 FROM node:20-alpine AS production
 WORKDIR /app
