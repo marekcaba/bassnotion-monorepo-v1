@@ -28,9 +28,12 @@ async function bootstrap() {
     new FastifyAdapter(),
   );
 
+  // Normalize frontend URL by removing trailing slash for CORS
+  const frontendUrl = process.env['FRONTEND_URL']?.replace(/\/$/, '') || '*';
+
   // Enable CORS
   await app.enableCors({
-    origin: process.env['FRONTEND_URL'] || '*',
+    origin: frontendUrl,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
