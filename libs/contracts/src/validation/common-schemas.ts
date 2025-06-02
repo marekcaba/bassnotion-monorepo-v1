@@ -55,6 +55,6 @@ export const displayNameSchema = z
   .min(2, ValidationMessages.displayName.minLength);
 
 /**
- * Optional bio schema
+ * Optional bio schema - allows string, null, or undefined
  */
-export const bioSchema = z.string().optional();
+export const bioSchema = z.string().nullable().optional();

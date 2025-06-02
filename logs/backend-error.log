@@ -623,3 +623,52 @@
 2025-06-02 18:44:43 +02:00: [1m[31m- DELETE /user/account (UserController)[39m[22m
 2025-06-02 18:44:43 +02:00: [1m[31mDEBUG: If UserController routes are missing, check module imports[39m[22m
 2025-06-02 18:44:43 +02:00: [1m[31m[39m[22m
+2025-06-02 18:52:16 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 18:52:16 +02:00: [1m[31mBuild failed, waiting for changes to restart...[39m[22m
+2025-06-02 18:52:17 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31m[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31m[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31mApplication is running on: http://localhost:3000[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31m[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31mDEBUG: Registered routes:[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31m- GET /api/health (AppController)[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31m- POST /auth/signin (AuthController)[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31m- POST /auth/signup (AuthController)[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31m- GET /auth/me (AuthController)[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31m- PUT /user/profile (UserController)[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31m- DELETE /user/account (UserController)[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31mDEBUG: If UserController routes are missing, check module imports[39m[22m
+2025-06-02 18:52:18 +02:00: [1m[31m[39m[22m
+2025-06-02 18:52:22 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 18:52:23 +02:00: [1m[31mBuild failed, waiting for changes to restart...[39m[22m
+2025-06-02 18:52:23 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 18:52:24 +02:00: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/@nx+js@21.1.2_@babel+traverse@7.27.4_@swc-node+register@1.9.2_@swc+core@1.5.29_@swc+hel_87f6e2acea8bcfc63be5f8f445777e76/node_modules/@nx/js/src/executors/node/node.impl.js:331
+2025-06-02 18:52:24 +02:00:     throw new Error(`Could not find ${fileToRun}. Make sure your build succeeded.`);
+2025-06-02 18:52:24 +02:00:           ^
+2025-06-02 18:52:24 +02:00: Error: Could not find /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/dist/apps/backend/src/main.js. Make sure your build succeeded.
+2025-06-02 18:52:24 +02:00:     at fileToRunCorrectPath [90m(/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39mnode_modules/[4m.pnpm[24m/@nx+js@21.1.2_@babel+traverse@7.27.4_@swc-node+register@1.9.2_@swc+core@1.5.29_@swc+hel_87f6e2acea8bcfc63be5f8f445777e76/node_modules/[4m@nx[24m/js/src/executors/node/node.impl.js:331:11[90m)[39m
+2025-06-02 18:52:24 +02:00:     at [90m/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39mnode_modules/[4m.pnpm[24m/@nx+js@21.1.2_@babel+traverse@7.27.4_@swc-node+register@1.9.2_@swc+core@1.5.29_@swc+hel_87f6e2acea8bcfc63be5f8f445777e76/node_modules/[4m@nx[24m/js/src/executors/node/node.impl.js:114:49
+2025-06-02 18:52:24 +02:00:     at new Promise (<anonymous>)
+2025-06-02 18:52:24 +02:00:     at Object.start [90m(/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39mnode_modules/[4m.pnpm[24m/@nx+js@21.1.2_@babel+traverse@7.27.4_@swc-node+register@1.9.2_@swc+core@1.5.29_@swc+hel_87f6e2acea8bcfc63be5f8f445777e76/node_modules/[4m@nx[24m/js/src/executors/node/node.impl.js:108:36[90m)[39m
+2025-06-02 18:52:24 +02:00:     at async processQueue [90m(/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39mnode_modules/[4m.pnpm[24m/@nx+js@21.1.2_@babel+traverse@7.27.4_@swc-node+register@1.9.2_@swc+core@1.5.29_@swc+hel_87f6e2acea8bcfc63be5f8f445777e76/node_modules/[4m@nx[24m/js/src/executors/node/node.impl.js:79:13[90m)[39m
+2025-06-02 18:52:24 +02:00: Node.js v20.19.2
+2025-06-02 18:52:32 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31m[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31m[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31mApplication is running on: http://localhost:3000[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31m[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31mDEBUG: Registered routes:[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31m- GET /api/health (AppController)[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31m- POST /auth/signin (AuthController)[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31m- POST /auth/signup (AuthController)[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31m- GET /auth/me (AuthController)[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31m- PUT /user/profile (UserController)[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31m- DELETE /user/account (UserController)[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31mDEBUG: If UserController routes are missing, check module imports[39m[22m
+2025-06-02 18:52:33 +02:00: [1m[31m[39m[22m
