@@ -59,7 +59,7 @@
 }
 
 /* ===== VIEW TRANSITIONS API - Page Transition Animations ===== */
-/* Simple and fast transitions that work naturally with the browser */
+/* Implementation based on commerce.framer.media for professional transitions */
 
 /* Reduced motion support */
 @media (prefers-reduced-motion) {
@@ -77,23 +77,23 @@
   backface-visibility: hidden;
 }
 
-/* Exit animation (old page) - fast and smooth */
+/* Exit animation (old page) - Framer Commerce style */
 ::view-transition-old(*),
 ::view-transition-old(root) {
   animation-name: view-transition-exit;
-  animation-duration: 0.15s;
+  animation-duration: 0.2s;
   animation-delay: 0s;
-  animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+  animation-timing-function: cubic-bezier(0.27, 0, 0.51, 1);
   animation-fill-mode: both;
 }
 
-/* Enter animation (new page) - fast and smooth */
+/* Enter animation (new page) - Framer Commerce style */
 ::view-transition-new(*),
 ::view-transition-new(root) {
   animation-name: view-transition-enter;
-  animation-duration: 0.15s;
+  animation-duration: 0.2s;
   animation-delay: 0s;
-  animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  animation-timing-function: cubic-bezier(0.27, 0, 0.51, 1);
   animation-fill-mode: both;
 }
 
@@ -105,7 +105,7 @@
   }
   100% {
     opacity: 0;
-    transform: translateX(0px) translateY(0px) scale(0.98) rotate(0deg)
+    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg)
       rotateX(0deg) rotateY(0deg);
   }
 }
@@ -113,7 +113,7 @@
 @keyframes view-transition-enter {
   0% {
     opacity: 0;
-    transform: translateX(0px) translateY(0px) scale(1.02) rotate(0deg)
+    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg)
       rotateX(0deg) rotateY(0deg);
   }
   100% {

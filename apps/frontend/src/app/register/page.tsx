@@ -11,11 +11,13 @@ import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { Button } from '@/shared/components/ui/button';
 import { useToast } from '@/shared/hooks/use-toast';
+import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 
 function RegisterPageContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
+  const { navigateWithTransition } = useViewTransitionRouter();
   const searchParams = useSearchParams();
 
   // Get pre-filled values from URL parameters (from failed login)
@@ -47,7 +49,7 @@ function RegisterPageContent() {
 
         if (result.success) {
           // Redirect to dashboard for testing - no need for success toast
-          router.push('/dashboard');
+          navigateWithTransition('/dashboard');
         } else {
           throw new Error(
             result.message || result.error?.message || 'Registration failed',
@@ -72,7 +74,7 @@ function RegisterPageContent() {
               'Please check your email to confirm your account before signing in.',
           });
 
-          router.push('/login?message=check-email');
+          navigateWithTransition('/login?message=check-email');
         }
       }
     } catch (error) {
@@ -138,8 +140,8 @@ function RegisterPageContent() {
 
         {/* Back to Home */}
         <div className="text-center">
-          <Button variant="ghost" asChild>
-            <Link href="/">← Back to Home</Link>
+          <Button variant="ghost" onClick={() => navigateWithTransition('/')}>
+            ← Back to Home
           </Button>
         </div>
       </div>

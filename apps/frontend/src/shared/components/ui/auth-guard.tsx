@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/domains/user/hooks/use-auth';
+import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -17,13 +18,14 @@ export function AuthGuard({
 }: AuthGuardProps) {
   const { isAuthenticated, isReady } = useAuth();
   const router = useRouter();
+  const { navigateWithTransition } = useViewTransitionRouter();
 
   useEffect(() => {
     // Only redirect when auth is ready and user is definitely not authenticated
     if (isReady && !isAuthenticated) {
-      router.push(redirectTo);
+      navigateWithTransition(redirectTo);
     }
-  }, [isReady, isAuthenticated, router, redirectTo]);
+  }, [isReady, isAuthenticated, navigateWithTransition, redirectTo]);
 
   // If auth is still loading, show fallback or children
   if (!isReady) {

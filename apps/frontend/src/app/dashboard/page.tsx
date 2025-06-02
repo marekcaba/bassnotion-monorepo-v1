@@ -36,9 +36,9 @@ export default function DashboardPage() {
   useEffect(() => {
     // Redirect to login if not authenticated and auth is ready
     if (isReady && !isAuthenticated) {
-      router.push('/login');
+      navigateWithTransition('/login');
     }
-  }, [isAuthenticated, isReady, router]);
+  }, [isAuthenticated, isReady, navigateWithTransition]);
 
   useEffect(() => {
     // Load profile data when user is available
@@ -89,7 +89,7 @@ export default function DashboardPage() {
       reset();
 
       // Redirect to home - no need for success toast since it's obvious
-      router.push('/');
+      navigateWithTransition('/');
     } catch (error) {
       console.error('Sign out error:', error);
       toast({
@@ -180,7 +180,7 @@ export default function DashboardPage() {
         variant: 'success',
       });
 
-      router.push('/');
+      navigateWithTransition('/');
     } catch (error) {
       console.error('Account deletion error:', error);
       toast({

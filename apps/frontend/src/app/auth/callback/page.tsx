@@ -6,9 +6,11 @@ import { supabase } from '@/infrastructure/supabase/client';
 import { useToast } from '@/shared/hooks/use-toast';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
+import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 
 function AuthCallbackContent() {
   const router = useRouter();
+  const { navigateWithTransition } = useViewTransitionRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { setUser, setSession } = useAuth();
@@ -61,7 +63,7 @@ function AuthCallbackContent() {
             description: errorDescription || error,
             variant: 'destructive',
           });
-          router.push('/login');
+          navigateWithTransition('/login');
           return;
         }
 
@@ -72,7 +74,7 @@ function AuthCallbackContent() {
             description: 'Authentication failed. Please try again.',
             variant: 'destructive',
           });
-          router.push('/login');
+          navigateWithTransition('/login');
           return;
         }
 
@@ -101,12 +103,12 @@ function AuthCallbackContent() {
             error instanceof Error ? error.message : 'Authentication failed',
           variant: 'destructive',
         });
-        router.push('/login');
+        navigateWithTransition('/login');
       }
     };
 
     handleAuthCallback();
-  }, [router, searchParams, toast, setUser, setSession, redirectAfterAuth]);
+  }, [navigateWithTransition, searchParams, toast, setUser, setSession, redirectAfterAuth]);
 
   return (
     <div className="flex h-screen w-screen items-center justify-center">

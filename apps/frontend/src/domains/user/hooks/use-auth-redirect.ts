@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
 import type { User } from '@supabase/supabase-js';
+import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 
 interface UseAuthRedirectOptions {
   defaultRedirect?: string;
@@ -11,35 +12,36 @@ interface UseAuthRedirectOptions {
 
 export const useAuthRedirect = (options: UseAuthRedirectOptions = {}) => {
   const router = useRouter();
+  const { navigateWithTransition } = useViewTransitionRouter();
   const { defaultRedirect = '/dashboard', requireEmailConfirmation = true } =
     options;
 
   const redirectAfterAuth = useCallback(
     (user: User | null) => {
       if (!user) {
-        router.push('/login');
+        navigateWithTransition('/login');
         return;
       }
 
       // Check if email confirmation is required and user hasn't confirmed
       if (requireEmailConfirmation && !user.email_confirmed_at) {
-        router.push('/verify-email');
+        navigateWithTransition('/verify-email');
         return;
       }
 
-      // Always redirect to dashboard for simplicity
-      router.push(defaultRedirect);
+      // Always redirect to dashboard for simplicity with smooth transition
+      navigateWithTransition(defaultRedirect);
     },
-    [router, defaultRedirect, requireEmailConfirmation],
+    [navigateWithTransition, defaultRedirect, requireEmailConfirmation],
   );
 
   const redirectToLogin = useCallback(() => {
-    router.push('/login');
-  }, [router]);
+    navigateWithTransition('/login');
+  }, [navigateWithTransition]);
 
   const redirectToDashboard = useCallback(() => {
-    router.push(defaultRedirect);
-  }, [router, defaultRedirect]);
+    navigateWithTransition(defaultRedirect);
+  }, [navigateWithTransition, defaultRedirect]);
 
   return {
     redirectAfterAuth,

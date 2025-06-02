@@ -6,17 +6,12 @@ import { LoginData } from '@bassnotion/contracts';
 
 import { LoginForm } from '@/domains/user/components/auth';
 import { MagicLinkSignIn } from '@/domains/user/components/auth/MagicLinkSignIn';
+import { AnimatedLoginSwitcher } from '@/domains/user/components/auth/AnimatedLoginSwitcher';
 import { authService } from '@/domains/user/api/auth';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { Button } from '@/shared/components/ui/button';
 import { useToast } from '@/shared/hooks/use-toast';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/components/ui/tabs';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 
 function LoginPageContent() {
@@ -67,7 +62,7 @@ function LoginPageContent() {
 
         if (result.success) {
           // Redirect to dashboard for testing - no need for success toast
-          router.push('/dashboard');
+          navigateWithTransition('/dashboard');
         } else {
           throw new Error(
             result.message || result.error?.message || 'Login failed',
@@ -129,29 +124,19 @@ function LoginPageContent() {
       <div className="w-full max-w-md space-y-6 sm:space-y-8">
         {/* Login Options */}
         <div className="bg-card rounded-lg border p-4 sm:p-6 shadow-sm">
-          <Tabs defaultValue="password" className="space-y-4 sm:space-y-6">
-            <TabsList className="grid w-full grid-cols-2 h-10">
-              <TabsTrigger value="password" className="text-sm">
-                Password
-              </TabsTrigger>
-              <TabsTrigger value="magic-link" className="text-sm">
-                Magic Link
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="password">
-              <LoginForm
-                onSubmit={handleSubmit}
-                onGoogleSignIn={handleGoogleSignIn}
-                isLoading={isLoading}
-                isGoogleLoading={isGoogleLoading}
-              />
-            </TabsContent>
-
-            <TabsContent value="magic-link">
-              <MagicLinkSignIn />
-            </TabsContent>
-          </Tabs>
+          <AnimatedLoginSwitcher>
+            {{
+              password: (
+                <LoginForm
+                  onSubmit={handleSubmit}
+                  onGoogleSignIn={handleGoogleSignIn}
+                  isLoading={isLoading}
+                  isGoogleLoading={isGoogleLoading}
+                />
+              ),
+              magicLink: <MagicLinkSignIn />
+            }}
+          </AnimatedLoginSwitcher>
         </div>
 
         {/* Register Link */}

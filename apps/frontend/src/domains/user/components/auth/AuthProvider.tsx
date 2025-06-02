@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
-import { authService } from '../../api/auth';
-import { useAuth } from '../../hooks/use-auth';
-import { useIdleTimeout } from '../../hooks/use-idle-timeout';
+import { authService } from '@/domains/user/api/auth';
+import { useAuth } from '@/domains/user/hooks/use-auth';
+import { useIdleTimeout } from '@/domains/user/hooks/use-idle-timeout';
 import { IdleWarningDialog } from './IdleWarningDialog';
 import { useToast } from '@/shared/hooks/use-toast';
 import { supabase } from '@/infrastructure/supabase/client';
+import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -25,13 +26,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isReady,
   } = useAuth();
   const router = useRouter();
+  const { navigateWithTransition } = useViewTransitionRouter();
   const { toast } = useToast();
   const [showIdleWarning, setShowIdleWarning] = useState(false);
 
   const handleIdleLogout = async () => {
     setShowIdleWarning(false);
     await authService.signOut();
-    router.push('/login?reason=idle');
+    navigateWithTransition('/login?reason=idle');
     toast({
       title: 'Session Expired',
       description: 'You were logged out due to inactivity.',
