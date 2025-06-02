@@ -1,621 +1,936 @@
-2025-06-01 10:01:45 +02:00: Waiting for @bassnotion/frontend:serve in another nx process
-2025-06-01 10:05:01 +02:00: Waiting for @bassnotion/frontend:serve in another nx process
-2025-06-01 10:08:08 +02:00: Waiting for @bassnotion/frontend:serve in another nx process
-2025-06-01 10:09:52 +02:00: Waiting for @bassnotion/frontend:serve in another nx process
-2025-06-01 10:11:05 +02:00: Waiting for @bassnotion/frontend:serve in another nx process
-2025-06-01 10:14:58 +02:00: Waiting for @bassnotion/frontend:serve in another nx process
-2025-06-01 10:20:57 +02:00: Waiting for @bassnotion/frontend:serve in another nx process
-2025-06-01 10:24:33 +02:00: Waiting for @bassnotion/frontend:serve in another nx process
-2025-06-01 10:29:56 +02:00: Waiting for @bassnotion/frontend:serve in another nx process
-2025-06-01 10:32:15 +02:00: Waiting for @bassnotion/frontend:serve in another nx process
-2025-06-01 10:40:18 +02:00: Waiting for @bassnotion/frontend:serve in another nx process
-2025-06-01 10:56:32 +02:00: Waiting for @bassnotion/frontend:serve in another nx process
-2025-06-01 10:57:59 +02:00: Waiting for @bassnotion/frontend:serve in another nx process
-2025-06-01 15:27:32 +02:00: 
-2025-06-01 15:27:32 +02:00: 
-2025-06-01 15:27:32 +02:00: 
-2025-06-01 15:27:32 +02:00:  NX   Successfully ran target serve for project @bassnotion/frontend
-2025-06-01 15:27:32 +02:00: 
-2025-06-01 15:27:32 +02:00: 
-2025-06-01 15:27:33 +02:00: 
-2025-06-01 15:27:33 +02:00:  NX   Nx Cloud Problems
-2025-06-01 15:27:33 +02:00: 
-2025-06-01 15:27:33 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
-2025-06-01 15:27:33 +02:00: 
-2025-06-01 15:27:47 +02:00: 
-2025-06-01 15:27:47 +02:00: > nx run @bassnotion/frontend:serve
-2025-06-01 15:27:47 +02:00: 
-2025-06-01 15:27:52 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-06-01 15:27:52 +02:00:    - Local:        http://localhost:3001
-2025-06-01 15:27:52 +02:00:    - Network:      http://10.0.0.6:3001
-2025-06-01 15:27:52 +02:00:    - Environments: .env.local, .env
-2025-06-01 15:27:52 +02:00:  [32m[1m✓[22m[39m Starting...
-2025-06-01 15:27:56 +02:00:  [32m[1m✓[22m[39m Ready in 4.7s
-2025-06-01 15:31:51 +02:00: [?25h
-2025-06-01 15:31:51 +02:00: 
-2025-06-01 15:31:51 +02:00: 
-2025-06-01 15:31:51 +02:00: 
-2025-06-01 15:31:51 +02:00:  NX   Successfully ran target serve for project @bassnotion/frontend
-2025-06-01 15:31:51 +02:00: 
-2025-06-01 15:31:51 +02:00: 
-2025-06-01 17:56:44 +02:00: 
-2025-06-01 17:56:44 +02:00: > nx run @bassnotion/frontend:serve
-2025-06-01 17:56:44 +02:00: 
-2025-06-01 17:56:45 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-06-01 17:56:45 +02:00:    - Local:        http://localhost:3001
-2025-06-01 17:56:45 +02:00:    - Network:      http://172.20.10.11:3001
-2025-06-01 17:56:45 +02:00:    - Environments: .env.local, .env
-2025-06-01 17:56:45 +02:00:  [32m[1m✓[22m[39m Starting...
-2025-06-01 17:56:46 +02:00:  [32m[1m✓[22m[39m Ready in 1675ms
-2025-06-01 17:56:58 +02:00:  [37m[1m○[22m[39m Compiling / ...
-2025-06-01 17:57:00 +02:00:  [32m[1m✓[22m[39m Compiled / in 1686ms (1229 modules)
-2025-06-01 17:57:00 +02:00:  GET / [32m200[39m in 2239ms
-2025-06-01 17:57:00 +02:00:  [32m[1m✓[22m[39m Compiled in 568ms (544 modules)
-2025-06-01 17:57:01 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 301ms (1230 modules)
-2025-06-01 17:57:01 +02:00:  GET /meta.json [33m404[39m in 425ms
-2025-06-01 17:57:01 +02:00:  GET /meta.json [33m404[39m in 421ms
-2025-06-01 17:57:01 +02:00:  GET /meta.json [33m404[39m in 16ms
-2025-06-01 17:57:02 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
-2025-06-01 17:57:02 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 681ms (1243 modules)
-2025-06-01 17:57:03 +02:00:  GET /dashboard [32m200[39m in 744ms
-2025-06-01 17:57:03 +02:00:  [37m[1m○[22m[39m Compiling /login ...
-2025-06-01 17:57:03 +02:00:  [32m[1m✓[22m[39m Compiled /login in 752ms (1273 modules)
-2025-06-01 17:57:03 +02:00:  GET /login [32m200[39m in 818ms
-2025-06-01 17:57:03 +02:00:  GET /login [32m200[39m in 9ms
-2025-06-01 17:57:40 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 166ms
-2025-06-01 18:00:44 +02:00:  [32m[1m✓[22m[39m Compiled in 1156ms (1265 modules)
-2025-06-01 18:00:44 +02:00:  GET /login [32m200[39m in 97ms
-2025-06-01 18:00:44 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 129ms (686 modules)
-2025-06-01 18:00:44 +02:00:  GET /meta.json [33m404[39m in 253ms
-2025-06-01 18:00:44 +02:00:  GET /meta.json [33m404[39m in 17ms
-2025-06-01 18:00:44 +02:00:  GET /meta.json [33m404[39m in 20ms
-2025-06-01 18:00:53 +02:00:  [32m[1m✓[22m[39m Compiled in 365ms (1266 modules)
-2025-06-01 18:00:53 +02:00:  GET /login [32m200[39m in 29ms
-2025-06-01 18:04:29 +02:00:  [32m[1m✓[22m[39m Compiled in 630ms (1265 modules)
-2025-06-01 18:04:29 +02:00:  GET /login [32m200[39m in 53ms
-2025-06-01 18:04:34 +02:00:  [32m[1m✓[22m[39m Compiled in 224ms (1265 modules)
-2025-06-01 18:04:34 +02:00:  GET /login [32m200[39m in 54ms
-2025-06-01 18:04:43 +02:00:  [32m[1m✓[22m[39m Compiled in 230ms (1265 modules)
-2025-06-01 18:04:43 +02:00:  GET /login [32m200[39m in 51ms
-2025-06-01 18:05:05 +02:00: 
-2025-06-01 18:05:05 +02:00: > nx run @bassnotion/frontend:serve
-2025-06-01 18:05:05 +02:00: 
-2025-06-01 18:05:06 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-06-01 18:05:06 +02:00:    - Local:        http://localhost:3001
-2025-06-01 18:05:06 +02:00:    - Network:      http://172.20.10.11:3001
-2025-06-01 18:05:06 +02:00:    - Environments: .env.local, .env
-2025-06-01 18:05:06 +02:00:  [32m[1m✓[22m[39m Starting...
-2025-06-01 18:05:08 +02:00:  [32m[1m✓[22m[39m Ready in 1779ms
-2025-06-01 18:05:58 +02:00:  [37m[1m○[22m[39m Compiling / ...
-2025-06-01 18:06:00 +02:00:  [32m[1m✓[22m[39m Compiled / in 2.2s (1243 modules)
-2025-06-01 18:06:00 +02:00:  GET / [32m200[39m in 2641ms
-2025-06-01 18:06:01 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-06-01 18:06:01 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 790ms (1230 modules)
-2025-06-01 18:06:01 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 727ms
-2025-06-01 18:06:01 +02:00:  GET /meta.json [33m404[39m in 24ms
-2025-06-01 18:06:48 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-06-01 18:06:48 +02:00:    - Local:        http://localhost:3001
-2025-06-01 18:06:48 +02:00:    - Network:      http://172.20.10.11:3001
-2025-06-01 18:06:48 +02:00:    - Environments: .env.local, .env
-2025-06-01 18:06:48 +02:00:  [32m[1m✓[22m[39m Starting...
-2025-06-01 18:06:50 +02:00:  [32m[1m✓[22m[39m Ready in 1755ms
-2025-06-01 18:06:59 +02:00: 
-2025-06-01 18:06:59 +02:00: > nx run @bassnotion/frontend:serve
-2025-06-01 18:06:59 +02:00: 
-2025-06-01 18:06:59 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-06-01 18:06:59 +02:00:    - Local:        http://localhost:3001
-2025-06-01 18:06:59 +02:00:    - Network:      http://172.20.10.11:3001
-2025-06-01 18:06:59 +02:00:    - Environments: .env.local, .env
-2025-06-01 18:06:59 +02:00:  [32m[1m✓[22m[39m Starting...
-2025-06-01 18:07:01 +02:00:  [32m[1m✓[22m[39m Ready in 1549ms
-2025-06-01 18:07:23 +02:00:  [37m[1m○[22m[39m Compiling / ...
-2025-06-01 18:07:24 +02:00:  [32m[1m✓[22m[39m Compiled / in 1345ms (1229 modules)
-2025-06-01 18:07:24 +02:00:  GET / [32m200[39m in 1687ms
-2025-06-01 18:07:25 +02:00:  [32m[1m✓[22m[39m Compiled in 390ms (544 modules)
-2025-06-01 18:07:25 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 214ms (1230 modules)
-2025-06-01 18:07:25 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 370ms
-2025-06-01 18:07:26 +02:00:  GET /meta.json [33m404[39m in 20ms
-2025-06-01 18:08:27 +02:00:  [32m[1m✓[22m[39m Compiled in 1170ms (1244 modules)
-2025-06-01 18:08:27 +02:00:  GET / [32m200[39m in 79ms
-2025-06-01 18:09:10 +02:00: 
-2025-06-01 18:09:10 +02:00: > nx run @bassnotion/frontend:serve
-2025-06-01 18:09:10 +02:00: 
-2025-06-01 18:09:11 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-06-01 18:09:11 +02:00:    - Local:        http://localhost:3001
-2025-06-01 18:09:11 +02:00:    - Network:      http://172.20.10.11:3001
-2025-06-01 18:09:11 +02:00:    - Environments: .env.local, .env
-2025-06-01 18:09:11 +02:00:  [32m[1m✓[22m[39m Starting...
-2025-06-01 18:09:12 +02:00:  [32m[1m✓[22m[39m Ready in 1412ms
-2025-06-01 18:09:14 +02:00:  [37m[1m○[22m[39m Compiling / ...
-2025-06-01 18:09:15 +02:00:  [32m[1m✓[22m[39m Compiled / in 1538ms (1229 modules)
-2025-06-01 18:09:15 +02:00:  GET / [32m200[39m in 1842ms
-2025-06-01 18:09:16 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 665ms (1230 modules)
-2025-06-01 18:09:16 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 502ms
-2025-06-01 18:09:16 +02:00:  GET /meta.json [33m404[39m in 13ms
-2025-06-01 18:10:00 +02:00:  [32m[1m✓[22m[39m Compiled in 1026ms (1244 modules)
-2025-06-01 18:10:00 +02:00:  GET / [32m200[39m in 68ms
-2025-06-01 18:10:35 +02:00: 
-2025-06-01 18:10:35 +02:00: > nx run @bassnotion/frontend:serve
-2025-06-01 18:10:35 +02:00: 
-2025-06-01 18:10:36 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-06-01 18:10:36 +02:00:    - Local:        http://localhost:3001
-2025-06-01 18:10:36 +02:00:    - Network:      http://172.20.10.11:3001
-2025-06-01 18:10:36 +02:00:    - Environments: .env.local, .env
-2025-06-01 18:10:36 +02:00:  [32m[1m✓[22m[39m Starting...
-2025-06-01 18:10:38 +02:00:  [32m[1m✓[22m[39m Ready in 1756ms
-2025-06-01 18:10:42 +02:00:  [37m[1m○[22m[39m Compiling / ...
-2025-06-01 18:10:43 +02:00:  [32m[1m✓[22m[39m Compiled / in 1517ms (1229 modules)
-2025-06-01 18:10:43 +02:00:  GET / [32m200[39m in 1815ms
-2025-06-01 18:10:44 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-06-01 18:10:44 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 635ms (1230 modules)
-2025-06-01 18:10:44 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 681ms
-2025-06-01 18:10:44 +02:00:  GET /meta.json [33m404[39m in 16ms
-2025-06-01 18:10:48 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 424ms (1243 modules)
-2025-06-01 18:10:48 +02:00:  GET /dashboard [32m200[39m in 474ms
-2025-06-01 18:10:49 +02:00:  [32m[1m✓[22m[39m Compiled /login in 480ms (1273 modules)
-2025-06-01 18:10:49 +02:00:  GET /login [32m200[39m in 530ms
-2025-06-01 18:10:49 +02:00:  GET /login [32m200[39m in 10ms
-2025-06-01 18:10:57 +02:00:  [32m[1m✓[22m[39m Compiled /auth/callback in 392ms (1280 modules)
-2025-06-01 18:10:57 +02:00:  GET /auth/callback?code=93c061e9-91e4-452a-8607-f6e86c722bff [32m200[39m in 523ms
-2025-06-01 18:10:57 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 25ms
-2025-06-01 18:10:58 +02:00:  GET /meta.json [33m404[39m in 25ms
-2025-06-01 18:10:58 +02:00:  GET /dashboard [32m200[39m in 16ms
-2025-06-01 18:10:58 +02:00:  GET /dashboard [32m200[39m in 7ms
-2025-06-01 18:11:01 +02:00:  GET / [32m200[39m in 27ms
-2025-06-01 18:11:02 +02:00:  GET /dashboard [32m200[39m in 17ms
-2025-06-01 18:11:07 +02:00:  GET /login [32m200[39m in 21ms
-2025-06-01 18:11:07 +02:00:  GET / [32m200[39m in 10ms
-2025-06-01 18:11:08 +02:00:  GET /dashboard [32m200[39m in 14ms
-2025-06-01 18:11:08 +02:00:  GET /login [32m200[39m in 11ms
-2025-06-01 18:11:08 +02:00:  GET /login [32m200[39m in 9ms
-2025-06-01 18:12:58 +02:00:  [32m[1m✓[22m[39m Compiled in 1493ms (1287 modules)
-2025-06-01 18:12:58 +02:00:  GET /login [32m200[39m in 51ms
-2025-06-01 18:13:35 +02:00:  [32m[1m✓[22m[39m Compiled in 807ms (1281 modules)
-2025-06-01 18:13:35 +02:00:  GET /login [32m200[39m in 76ms
-2025-06-01 18:13:55 +02:00:  [32m[1m✓[22m[39m Compiled in 126ms (571 modules)
-2025-06-01 18:14:48 +02:00: 
-2025-06-01 18:14:48 +02:00: > nx run @bassnotion/frontend:serve
-2025-06-01 18:14:48 +02:00: 
-2025-06-01 18:14:49 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-06-01 18:14:49 +02:00:    - Local:        http://localhost:3001
-2025-06-01 18:14:49 +02:00:    - Network:      http://172.20.10.11:3001
-2025-06-01 18:14:49 +02:00:    - Environments: .env.local, .env
-2025-06-01 18:14:49 +02:00:  [32m[1m✓[22m[39m Starting...
-2025-06-01 18:14:50 +02:00:  [32m[1m✓[22m[39m Ready in 1603ms
-2025-06-01 18:14:55 +02:00:  [37m[1m○[22m[39m Compiling / ...
-2025-06-01 18:14:57 +02:00:  [32m[1m✓[22m[39m Compiled / in 2.4s (1259 modules)
-2025-06-01 18:14:58 +02:00:  GET / [32m200[39m in 2889ms
-2025-06-01 18:14:58 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 587ms (1246 modules)
-2025-06-01 18:14:58 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 534ms
-2025-06-01 18:14:58 +02:00:  GET /meta.json [33m404[39m in 15ms
-2025-06-01 18:15:00 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 486ms (1259 modules)
-2025-06-01 18:15:00 +02:00:  GET /dashboard [32m200[39m in 535ms
-2025-06-01 18:15:01 +02:00:  [32m[1m✓[22m[39m Compiled /login in 318ms (1280 modules)
-2025-06-01 18:15:01 +02:00:  GET /login [32m200[39m in 366ms
-2025-06-01 18:15:01 +02:00:  GET /login [32m200[39m in 9ms
-2025-06-01 18:15:11 +02:00:  [32m[1m✓[22m[39m Compiled /register in 352ms (1287 modules)
-2025-06-01 18:15:11 +02:00:  GET /register [32m200[39m in 391ms
-2025-06-01 18:16:54 +02:00:  [32m[1m✓[22m[39m Compiled in 498ms (585 modules)
-2025-06-01 18:16:54 +02:00:  GET /register [32m200[39m in 19ms
-2025-06-01 18:16:55 +02:00:  [32m[1m✓[22m[39m Compiled in 221ms (585 modules)
-2025-06-01 18:16:55 +02:00:  GET /register [32m200[39m in 10ms
-2025-06-01 18:17:06 +02:00:  [32m[1m✓[22m[39m Compiled in 600ms (1279 modules)
-2025-06-01 18:17:06 +02:00:  GET /register [32m200[39m in 76ms
-2025-06-01 18:17:16 +02:00: 
-2025-06-01 18:17:16 +02:00: > nx run @bassnotion/frontend:serve
-2025-06-01 18:17:16 +02:00: 
-2025-06-01 18:17:17 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-06-01 18:17:17 +02:00:    - Local:        http://localhost:3001
-2025-06-01 18:17:17 +02:00:    - Network:      http://172.20.10.11:3001
-2025-06-01 18:17:17 +02:00:    - Environments: .env.local, .env
-2025-06-01 18:17:17 +02:00:  [32m[1m✓[22m[39m Starting...
-2025-06-01 18:17:19 +02:00:  [32m[1m✓[22m[39m Ready in 1976ms
-2025-06-01 18:17:22 +02:00:  [37m[1m○[22m[39m Compiling / ...
-2025-06-01 18:17:24 +02:00:  [32m[1m✓[22m[39m Compiled / in 2.3s (1259 modules)
-2025-06-01 18:17:24 +02:00:  GET / [32m200[39m in 2683ms
-2025-06-01 18:17:25 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-06-01 18:17:25 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 775ms (1246 modules)
-2025-06-01 18:17:25 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 752ms
-2025-06-01 18:17:25 +02:00:  GET /meta.json [33m404[39m in 27ms
-2025-06-01 18:17:29 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 385ms (1259 modules)
-2025-06-01 18:17:29 +02:00:  GET /dashboard [32m200[39m in 418ms
-2025-06-01 18:17:29 +02:00:  [32m[1m✓[22m[39m Compiled /login in 267ms (1280 modules)
-2025-06-01 18:17:29 +02:00:  GET /login [32m200[39m in 301ms
-2025-06-01 18:17:29 +02:00:  GET /login [32m200[39m in 9ms
-2025-06-01 18:17:35 +02:00:  [32m[1m✓[22m[39m Compiled /register in 290ms (1287 modules)
-2025-06-01 18:17:35 +02:00:  GET /register [32m200[39m in 320ms
-2025-06-01 18:19:39 +02:00:  [32m[1m✓[22m[39m Compiled in 670ms (1292 modules)
-2025-06-01 18:19:39 +02:00:  GET /register [32m200[39m in 64ms
-2025-06-01 18:19:53 +02:00:  [32m[1m✓[22m[39m Compiled in 329ms (1292 modules)
-2025-06-01 18:19:53 +02:00:  GET /register [32m200[39m in 45ms
-2025-06-01 18:19:59 +02:00:  [32m[1m✓[22m[39m Compiled in 291ms (1292 modules)
-2025-06-01 18:19:59 +02:00:  GET /register [32m200[39m in 32ms
-2025-06-01 18:20:19 +02:00:  [32m[1m✓[22m[39m Compiled in 340ms (1292 modules)
-2025-06-01 18:20:19 +02:00:  GET /register [32m200[39m in 32ms
-2025-06-01 18:20:26 +02:00:  [32m[1m✓[22m[39m Compiled in 418ms (1292 modules)
-2025-06-01 18:20:26 +02:00:  GET /register [32m200[39m in 43ms
-2025-06-01 18:20:59 +02:00: 
-2025-06-01 18:20:59 +02:00: > nx run @bassnotion/frontend:serve
-2025-06-01 18:20:59 +02:00: 
-2025-06-01 18:21:00 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-06-01 18:21:00 +02:00:    - Local:        http://localhost:3001
-2025-06-01 18:21:00 +02:00:    - Network:      http://172.20.10.11:3001
-2025-06-01 18:21:00 +02:00:    - Environments: .env.local, .env
-2025-06-01 18:21:00 +02:00:  [32m[1m✓[22m[39m Starting...
-2025-06-01 18:21:01 +02:00:  [32m[1m✓[22m[39m Ready in 1482ms
-2025-06-01 18:21:08 +02:00:  [37m[1m○[22m[39m Compiling / ...
-2025-06-01 18:21:09 +02:00:  [32m[1m✓[22m[39m Compiled / in 2.4s (1259 modules)
-2025-06-01 18:21:10 +02:00:  GET / [32m200[39m in 2825ms
-2025-06-01 18:21:10 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
-2025-06-01 18:21:10 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 718ms (1246 modules)
-2025-06-01 18:21:11 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 718ms
-2025-06-01 18:21:11 +02:00:  GET /meta.json [33m404[39m in 29ms
-2025-06-01 18:21:12 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 317ms (1259 modules)
-2025-06-01 18:21:12 +02:00:  GET /dashboard [32m200[39m in 366ms
-2025-06-01 18:21:13 +02:00:  [32m[1m✓[22m[39m Compiled /login in 263ms (1280 modules)
-2025-06-01 18:21:13 +02:00:  GET /login [32m200[39m in 296ms
-2025-06-01 18:21:13 +02:00:  GET /login [32m200[39m in 9ms
-2025-06-01 18:21:17 +02:00:  [32m[1m✓[22m[39m Compiled /register in 222ms (1287 modules)
-2025-06-01 18:21:17 +02:00:  GET /register [32m200[39m in 251ms
-2025-06-01 18:22:37 +02:00:  [32m[1m✓[22m[39m Compiled in 679ms (1279 modules)
-2025-06-01 18:22:37 +02:00:  GET /register [32m200[39m in 84ms
-2025-06-01 18:22:44 +02:00:  [32m[1m✓[22m[39m Compiled in 252ms (1279 modules)
-2025-06-01 18:22:44 +02:00:  GET /register [32m200[39m in 60ms
-2025-06-01 18:22:54 +02:00:  [32m[1m✓[22m[39m Compiled in 304ms (1279 modules)
-2025-06-01 18:22:54 +02:00:  GET /register [32m200[39m in 31ms
-2025-06-01 18:23:04 +02:00: 
-2025-06-01 18:23:04 +02:00: > nx run @bassnotion/frontend:serve
-2025-06-01 18:23:04 +02:00: 
-2025-06-01 18:23:05 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-06-01 18:23:05 +02:00:    - Local:        http://localhost:3001
-2025-06-01 18:23:05 +02:00:    - Network:      http://172.20.10.11:3001
-2025-06-01 18:23:05 +02:00:    - Environments: .env.local, .env
-2025-06-01 18:23:05 +02:00:  [32m[1m✓[22m[39m Starting...
-2025-06-01 18:23:07 +02:00:  [32m[1m✓[22m[39m Ready in 1766ms
-2025-06-01 18:23:27 +02:00:  [37m[1m○[22m[39m Compiling / ...
-2025-06-01 18:23:29 +02:00:  [32m[1m✓[22m[39m Compiled / in 2.2s (1259 modules)
-2025-06-01 18:23:29 +02:00:  GET / [32m200[39m in 2559ms
-2025-06-01 18:23:29 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 504ms (1246 modules)
-2025-06-01 18:23:30 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 514ms
-2025-06-01 18:23:30 +02:00:  GET /meta.json [33m404[39m in 38ms
-2025-06-01 18:23:32 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 428ms (1259 modules)
-2025-06-01 18:23:32 +02:00:  GET /dashboard [32m200[39m in 462ms
-2025-06-01 18:23:32 +02:00:  [32m[1m✓[22m[39m Compiled /login in 460ms (1280 modules)
-2025-06-01 18:23:32 +02:00:  GET /login [32m200[39m in 497ms
-2025-06-01 18:23:32 +02:00:  GET /login [32m200[39m in 9ms
-2025-06-01 18:23:46 +02:00:  [32m[1m✓[22m[39m Compiled /register in 317ms (1287 modules)
-2025-06-01 18:23:46 +02:00:  GET /register [32m200[39m in 350ms
-2025-06-01 18:24:00 +02:00:  GET /login [32m200[39m in 19ms
-2025-06-01 18:24:04 +02:00:  GET /register [32m200[39m in 13ms
-2025-06-01 18:24:56 +02:00:  [32m[1m✓[22m[39m Compiled in 588ms (1279 modules)
-2025-06-01 18:24:56 +02:00:  GET /register [32m200[39m in 80ms
-2025-06-01 18:25:12 +02:00:  [32m[1m✓[22m[39m Compiled in 332ms (1279 modules)
-2025-06-01 18:25:12 +02:00:  GET /register [32m200[39m in 43ms
-2025-06-01 18:25:22 +02:00:  [32m[1m✓[22m[39m Compiled in 404ms (1279 modules)
-2025-06-01 18:25:22 +02:00:  GET /register [32m200[39m in 48ms
-2025-06-01 18:25:33 +02:00: 
-2025-06-01 18:25:33 +02:00: > nx run @bassnotion/frontend:serve
-2025-06-01 18:25:33 +02:00: 
-2025-06-01 18:25:34 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-06-01 18:25:34 +02:00:    - Local:        http://localhost:3001
-2025-06-01 18:25:34 +02:00:    - Network:      http://172.20.10.11:3001
-2025-06-01 18:25:34 +02:00:    - Environments: .env.local, .env
-2025-06-01 18:25:34 +02:00:  [32m[1m✓[22m[39m Starting...
-2025-06-01 18:25:36 +02:00:  [32m[1m✓[22m[39m Ready in 1706ms
-2025-06-01 18:25:39 +02:00:  [37m[1m○[22m[39m Compiling / ...
-2025-06-01 18:25:41 +02:00:  [32m[1m✓[22m[39m Compiled / in 2.2s (1259 modules)
-2025-06-01 18:25:41 +02:00:  GET / [32m200[39m in 2592ms
-2025-06-01 18:25:41 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 523ms (1246 modules)
-2025-06-01 18:25:42 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 508ms
-2025-06-01 18:25:42 +02:00:  GET /meta.json [33m404[39m in 70ms
-2025-06-01 18:25:45 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 364ms (1259 modules)
-2025-06-01 18:25:46 +02:00:  GET /dashboard [32m200[39m in 411ms
-2025-06-01 18:25:46 +02:00:  [32m[1m✓[22m[39m Compiled /login in 368ms (1280 modules)
-2025-06-01 18:25:46 +02:00:  GET /login [32m200[39m in 405ms
-2025-06-01 18:25:46 +02:00:  GET /login [32m200[39m in 10ms
-2025-06-01 18:25:48 +02:00:  [32m[1m✓[22m[39m Compiled /register in 273ms (1287 modules)
-2025-06-01 18:25:48 +02:00:  GET /register [32m200[39m in 302ms
-2025-06-01 18:26:06 +02:00:  GET /login [32m200[39m in 22ms
-2025-06-01 18:27:27 +02:00:  GET / [32m200[39m in 35ms
-2025-06-01 18:27:29 +02:00:  GET /dashboard [32m200[39m in 24ms
-2025-06-01 18:27:29 +02:00:  GET /login [32m200[39m in 11ms
-2025-06-01 18:27:29 +02:00:  GET /login [32m200[39m in 9ms
-2025-06-01 18:27:35 +02:00:  GET /dashboard [32m200[39m in 10ms
-2025-06-01 18:29:02 +02:00:  [32m[1m✓[22m[39m Compiled in 633ms (1300 modules)
-2025-06-01 18:29:02 +02:00:  GET /dashboard [32m200[39m in 51ms
-2025-06-01 18:30:44 +02:00:  [32m[1m✓[22m[39m Compiled in 839ms (1286 modules)
-2025-06-01 18:32:10 +02:00:  [32m[1m✓[22m[39m Compiled in 409ms (1286 modules)
-2025-06-01 18:53:53 +02:00:  [32m[1m✓[22m[39m Compiled in 638ms (1300 modules)
-2025-06-01 18:54:03 +02:00:  [32m[1m✓[22m[39m Compiled in 341ms (1300 modules)
-2025-06-01 18:54:10 +02:00:  [32m[1m✓[22m[39m Compiled in 254ms (1300 modules)
-2025-06-01 18:55:26 +02:00:  GET / [32m200[39m in 165ms
-2025-06-01 18:55:53 +02:00:  GET /login [32m200[39m in 66ms
-2025-06-01 18:55:54 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 432ms (716 modules)
-2025-06-01 18:55:54 +02:00:  GET /meta.json [33m404[39m in 573ms
-2025-06-01 18:55:54 +02:00:  GET /meta.json [33m404[39m in 583ms
-2025-06-01 18:55:54 +02:00:  GET /meta.json [33m404[39m in 21ms
-2025-06-01 18:55:54 +02:00:  GET /meta.json [33m404[39m in 20ms
-2025-06-01 18:59:57 +02:00:  [32m[1m✓[22m[39m Compiled in 692ms (1300 modules)
-2025-06-01 19:00:07 +02:00:  [32m[1m✓[22m[39m Compiled in 272ms (1300 modules)
-2025-06-01 19:10:02 +02:00:  [32m[1m✓[22m[39m Compiled in 588ms (1300 modules)
-2025-06-01 19:12:47 +02:00:  [32m[1m✓[22m[39m Compiled in 693ms (1300 modules)
-2025-06-01 19:43:47 +02:00:  [32m[1m✓[22m[39m Compiled in 549ms (585 modules)
-2025-06-01 19:44:07 +02:00:  [32m[1m✓[22m[39m Compiled in 242ms (585 modules)
-2025-06-01 19:44:26 +02:00:  [32m[1m✓[22m[39m Compiled in 339ms (585 modules)
-2025-06-01 19:45:01 +02:00:  [32m[1m✓[22m[39m Compiled in 648ms (1300 modules)
-2025-06-01 19:45:16 +02:00:  [32m[1m✓[22m[39m Compiled in 325ms (1300 modules)
-2025-06-01 19:45:32 +02:00:  [32m[1m✓[22m[39m Compiled in 223ms (585 modules)
-2025-06-01 19:45:34 +02:00:  [32m[1m✓[22m[39m Compiled in 179ms (585 modules)
-2025-06-01 19:45:58 +02:00:  [32m[1m✓[22m[39m Compiled in 278ms (585 modules)
-2025-06-01 19:46:00 +02:00:  [32m[1m✓[22m[39m Compiled in 150ms (585 modules)
-2025-06-01 19:46:09 +02:00:  [32m[1m✓[22m[39m Compiled in 106ms (585 modules)
-2025-06-01 19:46:38 +02:00:  [32m[1m✓[22m[39m Compiled in 130ms (585 modules)
-2025-06-01 19:46:40 +02:00:  [32m[1m✓[22m[39m Compiled in 124ms (585 modules)
-2025-06-01 19:47:49 +02:00:  [32m[1m✓[22m[39m Compiled in 348ms (585 modules)
-2025-06-01 19:48:38 +02:00:  [32m[1m✓[22m[39m Compiled in 814ms (1302 modules)
-2025-06-01 19:53:47 +02:00:  [32m[1m✓[22m[39m Compiled in 644ms (1302 modules)
-2025-06-01 19:53:59 +02:00:  [32m[1m✓[22m[39m Compiled in 388ms (1289 modules)
-2025-06-01 19:57:42 +02:00:  GET / [32m200[39m in 349ms
-2025-06-01 19:57:43 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 466ms (718 modules)
-2025-06-01 19:57:43 +02:00:  GET /meta.json [33m404[39m in 611ms
-2025-06-01 19:57:43 +02:00:  GET /meta.json [33m404[39m in 598ms
-2025-06-01 19:57:43 +02:00:  GET /meta.json [33m404[39m in 26ms
-2025-06-01 19:57:43 +02:00:  GET /meta.json [33m404[39m in 19ms
-2025-06-01 19:57:45 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 32ms
-2025-06-01 20:32:16 +02:00:  GET /dashboard [32m200[39m in 51ms
-2025-06-01 20:32:16 +02:00:  GET /login [32m200[39m in 22ms
-2025-06-01 20:32:16 +02:00:  GET /login [32m200[39m in 9ms
-2025-06-01 20:32:22 +02:00:  GET / [32m200[39m in 51ms
-2025-06-01 20:32:23 +02:00:  GET /meta.json [33m404[39m in 23ms
-2025-06-01 20:32:39 +02:00:  GET /youtube-exerciser [33m404[39m in 13ms
-2025-06-01 20:32:39 +02:00:  GET /youtube-exerciser [33m404[39m in 26ms
-2025-06-01 20:32:40 +02:00:  GET /meta.json [33m404[39m in 29ms
-2025-06-01 20:32:41 +02:00:  GET / [32m200[39m in 33ms
-2025-06-01 20:32:42 +02:00:  GET /meta.json [33m404[39m in 113ms
-2025-06-01 20:32:42 +02:00:  GET /dashboard [32m200[39m in 9ms
-2025-06-01 20:32:42 +02:00:  GET /login [32m200[39m in 10ms
-2025-06-01 20:32:42 +02:00:  GET /login [32m200[39m in 8ms
-2025-06-01 20:32:59 +02:00:  GET / [32m200[39m in 17ms
-2025-06-01 20:33:00 +02:00:  GET / [32m200[39m in 32ms
-2025-06-01 20:33:01 +02:00:  GET /meta.json [33m404[39m in 28ms
-2025-06-01 20:33:05 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 35ms
-2025-06-01 20:34:35 +02:00:  [32m[1m✓[22m[39m Compiled in 785ms (1303 modules)
-2025-06-01 20:34:35 +02:00:  GET / [32m200[39m in 35ms
-2025-06-01 20:35:01 +02:00:  GET /dashboard [32m200[39m in 27ms
-2025-06-01 20:35:01 +02:00:  GET /login [32m200[39m in 24ms
-2025-06-01 20:35:01 +02:00:  GET /login [32m200[39m in 10ms
-2025-06-01 20:35:54 +02:00:  GET /dashboard [32m200[39m in 13ms
-2025-06-01 20:36:54 +02:00:  [32m[1m✓[22m[39m Compiled in 954ms (1303 modules)
-2025-06-01 20:36:54 +02:00:  GET /dashboard [32m200[39m in 53ms
-2025-06-01 20:37:08 +02:00:  [32m[1m✓[22m[39m Compiled in 161ms (586 modules)
-2025-06-01 20:37:08 +02:00:  GET /dashboard [32m200[39m in 12ms
-2025-06-01 20:37:30 +02:00:  [32m[1m✓[22m[39m Compiled in 538ms (1303 modules)
-2025-06-01 20:37:30 +02:00:  GET /dashboard [32m200[39m in 51ms
-2025-06-01 20:37:47 +02:00:  [32m[1m✓[22m[39m Compiled in 585ms (1303 modules)
-2025-06-01 20:37:47 +02:00:  GET /dashboard [32m200[39m in 65ms
-2025-06-01 20:38:23 +02:00:  GET /login [32m200[39m in 44ms
-2025-06-01 20:38:23 +02:00:  GET / [32m200[39m in 26ms
-2025-06-01 20:38:27 +02:00:  GET /dashboard [32m200[39m in 14ms
-2025-06-01 20:38:27 +02:00:  GET /login [32m200[39m in 13ms
-2025-06-01 20:38:27 +02:00:  GET /login [32m200[39m in 17ms
-2025-06-01 20:38:31 +02:00:  GET /dashboard [32m200[39m in 11ms
-2025-06-01 20:38:39 +02:00:  GET / [32m200[39m in 14ms
-2025-06-01 20:38:40 +02:00:  GET /dashboard [32m200[39m in 11ms
-2025-06-01 20:38:42 +02:00:  GET / [32m200[39m in 19ms
-2025-06-01 20:38:46 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 357ms (718 modules)
-2025-06-01 20:38:46 +02:00:  GET /youtube-exerciser [33m404[39m in 437ms
-2025-06-01 20:38:46 +02:00:  GET /youtube-exerciser [33m404[39m in 122ms
-2025-06-01 20:38:46 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 23ms
-2025-06-01 20:38:47 +02:00:  GET /meta.json [33m404[39m in 26ms
-2025-06-01 20:38:49 +02:00:  GET / [32m200[39m in 45ms
-2025-06-01 20:38:49 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 46ms
-2025-06-01 20:38:50 +02:00:  GET /meta.json [33m404[39m in 36ms
-2025-06-01 20:39:00 +02:00:  GET /dashboard [32m200[39m in 21ms
-2025-06-01 20:39:02 +02:00:  GET /login [32m200[39m in 22ms
-2025-06-01 20:39:02 +02:00:  GET / [32m200[39m in 17ms
-2025-06-01 20:39:05 +02:00:  GET /youtube-exerciser [33m404[39m in 11ms
-2025-06-01 20:39:05 +02:00:  GET /youtube-exerciser [33m404[39m in 19ms
-2025-06-01 20:39:05 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 29ms
-2025-06-01 20:39:06 +02:00:  GET /meta.json [33m404[39m in 20ms
-2025-06-01 20:39:14 +02:00:  GET / [32m200[39m in 28ms
-2025-06-01 20:39:14 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 23ms
-2025-06-01 20:39:15 +02:00:  GET /meta.json [33m404[39m in 19ms
-2025-06-01 20:39:23 +02:00:  GET /youtube-exerciser [33m404[39m in 14ms
-2025-06-01 20:39:23 +02:00:  GET /youtube-exerciser [33m404[39m in 18ms
-2025-06-01 20:39:23 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 26ms
-2025-06-01 20:39:24 +02:00:  GET /meta.json [33m404[39m in 43ms
-2025-06-01 20:39:26 +02:00:  GET / [32m200[39m in 24ms
-2025-06-01 20:39:26 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 21ms
-2025-06-01 20:39:27 +02:00:  GET /meta.json [33m404[39m in 27ms
-2025-06-01 20:41:31 +02:00:  GET /youtube-exerciser [33m404[39m in 27ms
-2025-06-01 20:41:31 +02:00:  GET /youtube-exerciser [33m404[39m in 41ms
-2025-06-01 20:41:31 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 35ms
-2025-06-01 20:41:32 +02:00:  GET /meta.json [33m404[39m in 47ms
-2025-06-01 20:41:37 +02:00:  [32m[1m✓[22m[39m Compiled in 838ms (1304 modules)
-2025-06-01 20:41:37 +02:00:  GET /youtube-exerciser [33m404[39m in 26ms
-2025-06-01 20:41:37 +02:00:  GET /youtube-exerciser [33m404[39m in 84ms
-2025-06-01 20:41:37 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 22ms
-2025-06-01 20:41:38 +02:00:  GET /meta.json [33m404[39m in 35ms
-2025-06-01 20:42:03 +02:00:  [32m[1m✓[22m[39m Compiled in 514ms (1304 modules)
-2025-06-01 20:42:03 +02:00:  GET /youtube-exerciser [33m404[39m in 31ms
-2025-06-01 20:42:03 +02:00:  GET /youtube-exerciser [33m404[39m in 54ms
-2025-06-01 20:42:03 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 28ms
-2025-06-01 20:42:04 +02:00:  GET /meta.json [33m404[39m in 95ms
-2025-06-01 20:42:13 +02:00:  [32m[1m✓[22m[39m Compiled in 435ms (1304 modules)
-2025-06-01 20:42:13 +02:00:  GET /youtube-exerciser [33m404[39m in 29ms
-2025-06-01 20:42:13 +02:00:  GET /youtube-exerciser [33m404[39m in 58ms
-2025-06-01 20:42:13 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 24ms
-2025-06-01 20:42:14 +02:00:  GET /meta.json [33m404[39m in 29ms
-2025-06-01 20:42:26 +02:00:  [32m[1m✓[22m[39m Compiled in 458ms (1304 modules)
-2025-06-01 20:42:26 +02:00:  GET /youtube-exerciser [33m404[39m in 105ms
-2025-06-01 20:42:26 +02:00:  GET /youtube-exerciser [33m404[39m in 204ms
-2025-06-01 20:42:26 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 108ms
-2025-06-01 20:42:27 +02:00:  GET /meta.json [33m404[39m in 37ms
-2025-06-01 20:42:34 +02:00:  [32m[1m✓[22m[39m Compiled in 459ms (1304 modules)
-2025-06-01 20:42:34 +02:00:  GET /youtube-exerciser [33m404[39m in 29ms
-2025-06-01 20:42:34 +02:00:  GET /youtube-exerciser [33m404[39m in 72ms
-2025-06-01 20:42:34 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 25ms
-2025-06-01 20:42:35 +02:00:  GET /meta.json [33m404[39m in 77ms
-2025-06-01 20:43:36 +02:00: [?25h
-2025-06-01 20:43:36 +02:00: 
-2025-06-01 20:43:36 +02:00: 
-2025-06-01 20:43:36 +02:00: 
-2025-06-01 20:43:36 +02:00:  NX   Successfully ran target serve for project @bassnotion/frontend
-2025-06-01 20:43:36 +02:00: 
-2025-06-01 20:43:36 +02:00: 
-2025-06-01 20:43:36 +02:00: 
-2025-06-01 20:43:36 +02:00:  NX   Nx Cloud Problems
-2025-06-01 20:43:36 +02:00: 
-2025-06-01 20:43:36 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
-2025-06-01 20:43:36 +02:00: 
-2025-06-01 20:43:42 +02:00: 
-2025-06-01 20:43:42 +02:00: > nx run @bassnotion/frontend:serve
-2025-06-01 20:43:42 +02:00: 
-2025-06-01 20:43:43 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-06-01 20:43:43 +02:00:    - Local:        http://localhost:3001
-2025-06-01 20:43:43 +02:00:    - Network:      http://10.0.0.6:3001
-2025-06-01 20:43:43 +02:00:    - Environments: .env.local, .env
-2025-06-01 20:43:43 +02:00:  [32m[1m✓[22m[39m Starting...
-2025-06-01 20:43:45 +02:00:  [32m[1m✓[22m[39m Ready in 1608ms
-2025-06-01 20:43:59 +02:00:  [37m[1m○[22m[39m Compiling / ...
-2025-06-01 20:44:01 +02:00:  [32m[1m✓[22m[39m Compiled / in 2s (1248 modules)
-2025-06-01 20:44:01 +02:00:  GET / [32m200[39m in 2336ms
-2025-06-01 20:44:01 +02:00:  [32m[1m✓[22m[39m Compiled in 184ms (556 modules)
-2025-06-01 20:46:43 +02:00: 
-2025-06-01 20:46:43 +02:00: > nx run @bassnotion/frontend:serve
-2025-06-01 20:46:43 +02:00: 
-2025-06-01 20:46:44 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-06-01 20:46:44 +02:00:    - Local:        http://localhost:3001
-2025-06-01 20:46:44 +02:00:    - Network:      http://10.0.0.6:3001
-2025-06-01 20:46:44 +02:00:    - Environments: .env.local, .env
-2025-06-01 20:46:44 +02:00:  [32m[1m✓[22m[39m Starting...
-2025-06-01 20:46:46 +02:00:  [32m[1m✓[22m[39m Ready in 1738ms
-2025-06-01 20:48:05 +02:00:  [37m[1m○[22m[39m Compiling / ...
-2025-06-01 20:48:06 +02:00:  [32m[1m✓[22m[39m Compiled / in 1683ms (1248 modules)
-2025-06-01 20:48:07 +02:00:  GET / [32m200[39m in 1998ms
-2025-06-01 20:48:07 +02:00:  [32m[1m✓[22m[39m Compiled in 74ms (556 modules)
-2025-06-01 20:48:30 +02:00:  GET / [32m200[39m in 48ms
-2025-06-01 20:48:31 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 355ms (1249 modules)
-2025-06-01 20:48:31 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 497ms
-2025-06-01 20:48:31 +02:00:  GET /meta.json [33m404[39m in 23ms
-2025-06-01 20:48:36 +02:00:  GET /youtube-exerciser [33m404[39m in 13ms
-2025-06-01 20:48:36 +02:00:  GET /youtube-exerciser [33m404[39m in 35ms
-2025-06-01 20:48:36 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 28ms
-2025-06-01 20:48:37 +02:00:  GET /meta.json [33m404[39m in 21ms
-2025-06-01 20:48:41 +02:00:  GET / [32m200[39m in 57ms
-2025-06-01 20:48:41 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 30ms
-2025-06-01 20:48:42 +02:00:  GET /meta.json [33m404[39m in 32ms
-2025-06-01 20:48:45 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
-2025-06-01 20:48:46 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 677ms (1262 modules)
-2025-06-01 20:48:46 +02:00:  GET /dashboard [32m200[39m in 733ms
-2025-06-01 20:48:46 +02:00:  [32m[1m✓[22m[39m Compiled /login in 337ms (1283 modules)
-2025-06-01 20:48:46 +02:00:  GET /login [32m200[39m in 392ms
-2025-06-01 20:48:46 +02:00:  GET /login [32m200[39m in 7ms
-2025-06-01 20:48:49 +02:00:  GET /youtube-exerciser [33m404[39m in 23ms
-2025-06-01 20:48:49 +02:00:  GET /youtube-exerciser [33m404[39m in 94ms
-2025-06-01 20:48:49 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 22ms
-2025-06-01 20:48:50 +02:00:  GET /meta.json [33m404[39m in 24ms
-2025-06-01 20:50:10 +02:00:  [32m[1m✓[22m[39m Compiled in 1340ms (1276 modules)
-2025-06-01 20:50:10 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 122ms (693 modules)
-2025-06-01 20:50:10 +02:00:  GET /youtube-exerciser [33m404[39m in 182ms
-2025-06-01 20:50:10 +02:00:  GET /youtube-exerciser [33m404[39m in 164ms
-2025-06-01 20:50:10 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 98ms
-2025-06-01 20:50:12 +02:00:  GET /meta.json [33m404[39m in 33ms
-2025-06-01 20:50:23 +02:00:  [32m[1m✓[22m[39m Compiled in 571ms (1277 modules)
-2025-06-01 20:50:23 +02:00:  GET /youtube-exerciser [33m404[39m in 62ms
-2025-06-01 20:50:24 +02:00:  GET /youtube-exerciser [33m404[39m in 140ms
-2025-06-01 20:50:24 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 44ms
-2025-06-01 20:50:25 +02:00:  GET /meta.json [33m404[39m in 54ms
-2025-06-01 20:50:29 +02:00:  [32m[1m✓[22m[39m Compiled in 366ms (1277 modules)
-2025-06-01 20:50:30 +02:00:  GET /youtube-exerciser [33m404[39m in 46ms
-2025-06-01 20:50:30 +02:00:  GET /youtube-exerciser [33m404[39m in 101ms
-2025-06-01 20:50:30 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 30ms
-2025-06-01 20:50:31 +02:00:  GET /meta.json [33m404[39m in 48ms
-2025-06-01 20:50:39 +02:00:  [32m[1m✓[22m[39m Compiled in 178ms (584 modules)
-2025-06-01 20:50:39 +02:00:  GET /youtube-exerciser [33m404[39m in 56ms
-2025-06-01 20:50:39 +02:00:  GET /youtube-exerciser [33m404[39m in 56ms
-2025-06-01 20:50:39 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 28ms
-2025-06-01 20:50:40 +02:00:  GET /meta.json [33m404[39m in 38ms
-2025-06-01 20:50:41 +02:00:  [32m[1m✓[22m[39m Compiled in 165ms (584 modules)
-2025-06-01 20:50:41 +02:00:  GET /youtube-exerciser [33m404[39m in 9ms
-2025-06-01 20:50:41 +02:00:  GET /youtube-exerciser [33m404[39m in 25ms
-2025-06-01 20:50:41 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 30ms
-2025-06-01 20:50:42 +02:00:  GET /meta.json [33m404[39m in 39ms
-2025-06-01 20:51:33 +02:00:  [32m[1m✓[22m[39m Compiled in 420ms (1277 modules)
-2025-06-01 20:51:33 +02:00:  GET /youtube-exerciser [33m404[39m in 57ms
-2025-06-01 20:51:34 +02:00:  GET /youtube-exerciser [33m404[39m in 128ms
-2025-06-01 20:51:34 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 80ms
-2025-06-01 20:51:35 +02:00:  GET /meta.json [33m404[39m in 38ms
-2025-06-01 20:51:44 +02:00:  [32m[1m✓[22m[39m Compiled in 129ms (584 modules)
-2025-06-01 20:51:44 +02:00:  GET /youtube-exerciser [33m404[39m in 11ms
-2025-06-01 20:51:44 +02:00:  GET /youtube-exerciser [33m404[39m in 28ms
-2025-06-01 20:51:44 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 27ms
-2025-06-01 20:51:45 +02:00:  GET /meta.json [33m404[39m in 52ms
-2025-06-01 20:51:49 +02:00:  [32m[1m✓[22m[39m Compiled in 128ms (584 modules)
-2025-06-01 20:51:49 +02:00:  GET /youtube-exerciser [33m404[39m in 12ms
-2025-06-01 20:51:50 +02:00:  GET /youtube-exerciser [33m404[39m in 28ms
-2025-06-01 20:51:50 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 32ms
-2025-06-01 20:51:51 +02:00:  GET /meta.json [33m404[39m in 52ms
-2025-06-01 20:51:57 +02:00:  [32m[1m✓[22m[39m Compiled in 356ms (1277 modules)
-2025-06-01 20:51:57 +02:00:  GET /youtube-exerciser [33m404[39m in 51ms
-2025-06-01 20:51:57 +02:00:  GET /youtube-exerciser [33m404[39m in 103ms
-2025-06-01 20:51:57 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 50ms
-2025-06-01 20:51:58 +02:00:  GET /meta.json [33m404[39m in 53ms
-2025-06-01 20:52:10 +02:00:  [32m[1m✓[22m[39m Compiled in 370ms (1277 modules)
-2025-06-01 20:52:10 +02:00:  GET /youtube-exerciser [33m404[39m in 29ms
-2025-06-01 20:52:10 +02:00:  GET /youtube-exerciser [33m404[39m in 85ms
-2025-06-01 20:52:10 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 37ms
-2025-06-01 20:52:11 +02:00:  GET /meta.json [33m404[39m in 61ms
-2025-06-01 20:52:25 +02:00:  GET / [32m200[39m in 61ms
-2025-06-01 20:52:26 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 25ms
-2025-06-01 20:52:27 +02:00:  GET /meta.json [33m404[39m in 36ms
-2025-06-01 20:52:27 +02:00:  GET / [32m200[39m in 35ms
-2025-06-01 20:52:27 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 28ms
-2025-06-01 20:52:28 +02:00:  GET /meta.json [33m404[39m in 38ms
-2025-06-01 20:52:32 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 414ms (701 modules)
-2025-06-01 20:52:32 +02:00:  GET /dashboard [32m200[39m in 450ms
-2025-06-01 20:52:33 +02:00:  [32m[1m✓[22m[39m Compiled /login in 189ms (713 modules)
-2025-06-01 20:52:33 +02:00:  GET /login [32m200[39m in 226ms
-2025-06-01 20:52:33 +02:00:  GET /login [32m200[39m in 6ms
-2025-06-01 20:52:38 +02:00:  GET /dashboard [32m200[39m in 14ms
-2025-06-01 20:52:40 +02:00:  GET / [32m200[39m in 23ms
-2025-06-01 20:52:41 +02:00:  GET /dashboard [32m200[39m in 10ms
-2025-06-01 20:52:47 +02:00:  GET /login [32m200[39m in 9ms
-2025-06-01 20:52:48 +02:00:  GET / [32m200[39m in 9ms
-2025-06-01 20:52:49 +02:00:  GET /dashboard [32m200[39m in 15ms
-2025-06-01 20:52:49 +02:00:  GET /login [32m200[39m in 11ms
-2025-06-01 20:52:49 +02:00:  GET /login [32m200[39m in 10ms
-2025-06-01 20:52:56 +02:00:  GET /login [32m200[39m in 183ms
-2025-06-01 20:52:56 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 34ms
-2025-06-01 20:52:57 +02:00:  GET /meta.json [33m404[39m in 67ms
-2025-06-01 20:53:19 +02:00:  [32m[1m✓[22m[39m Compiled in 1138ms (1297 modules)
-2025-06-01 20:53:19 +02:00:  GET /login [32m200[39m in 70ms
-2025-06-01 20:54:06 +02:00:  [32m[1m✓[22m[39m Compiled in 385ms (584 modules)
-2025-06-01 20:54:06 +02:00:  GET /login [32m200[39m in 48ms
-2025-06-01 20:54:14 +02:00:  [32m[1m✓[22m[39m Compiled in 282ms (584 modules)
-2025-06-01 20:54:14 +02:00:  GET /login [32m200[39m in 12ms
-2025-06-01 20:57:30 +02:00:  [32m[1m✓[22m[39m Compiled in 438ms (584 modules)
-2025-06-01 20:57:30 +02:00:  GET /login [32m200[39m in 19ms
-2025-06-01 22:46:37 +02:00:  GET / [32m200[39m in 374ms
-2025-06-01 22:46:37 +02:00:  GET /meta.json [33m404[39m in 32ms
-2025-06-01 22:46:38 +02:00:  GET /meta.json [33m404[39m in 38ms
-2025-06-01 22:46:43 +02:00:  [32m[1m✓[22m[39m Compiled in 1021ms (584 modules)
-2025-06-01 22:46:43 +02:00:  GET / [32m200[39m in 70ms
-2025-06-01 22:46:44 +02:00:  [32m[1m✓[22m[39m Compiled in 141ms (570 modules)
-2025-06-01 22:57:22 +02:00:  [32m[1m✓[22m[39m Compiled in 777ms (1282 modules)
-2025-06-01 23:07:07 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 455ms (713 modules)
-2025-06-01 23:07:07 +02:00:  GET /meta.json [33m404[39m in 714ms
-2025-06-01 23:09:53 +02:00:  [32m[1m✓[22m[39m Compiled in 865ms (1282 modules)
-2025-06-01 23:14:05 +02:00:  GET / [32m200[39m in 236ms
-2025-06-01 23:14:06 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 357ms (713 modules)
-2025-06-01 23:14:06 +02:00:  GET /meta.json [33m404[39m in 514ms
-2025-06-01 23:14:06 +02:00:  GET /meta.json [33m404[39m in 24ms
-2025-06-01 23:14:08 +02:00:  GET / [32m200[39m in 52ms
-2025-06-01 23:14:08 +02:00:  GET /meta.json [33m404[39m in 27ms
-2025-06-01 23:14:11 +02:00:  GET /dashboard [32m200[39m in 23ms
-2025-06-01 23:14:11 +02:00:  GET /login [32m200[39m in 20ms
-2025-06-01 23:14:11 +02:00:  GET /login [32m200[39m in 8ms
-2025-06-01 23:14:16 +02:00:  GET /dashboard [32m200[39m in 9ms
-2025-06-01 23:17:36 +02:00:  [32m[1m✓[22m[39m Compiled in 779ms (1282 modules)
-2025-06-01 23:19:59 +02:00:  [32m[1m✓[22m[39m Compiled in 349ms (1282 modules)
-2025-06-01 23:30:00 +02:00:  [32m[1m✓[22m[39m Compiled in 278ms (1282 modules)
+2025-06-02 11:56:56 +02:00:  [32m[1m✓[22m[39m Compiled in 475ms (757 modules)
+2025-06-02 11:58:10 +02:00:  [32m[1m✓[22m[39m Compiled in 275ms (757 modules)
+2025-06-02 11:59:36 +02:00:  [32m[1m✓[22m[39m Compiled in 315ms (757 modules)
+2025-06-02 12:04:27 +02:00:  [32m[1m✓[22m[39m Compiled in 436ms (757 modules)
+2025-06-02 12:04:27 +02:00:  [32m[1m✓[22m[39m Compiled in 160ms (757 modules)
+2025-06-02 12:04:44 +02:00:  [32m[1m✓[22m[39m Compiled in 224ms (757 modules)
+2025-06-02 12:27:11 +02:00:  [37m[1m○[22m[39m Compiling /_error ...
+2025-06-02 12:27:24 +02:00:  GET / [31m500[39m in 13416ms
+2025-06-02 12:28:59 +02:00: 
+2025-06-02 12:28:59 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 12:28:59 +02:00: 
+2025-06-02 12:29:00 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 12:29:00 +02:00:    - Local:        http://localhost:3001
+2025-06-02 12:29:00 +02:00:    - Network:      http://172.20.10.11:3001
+2025-06-02 12:29:00 +02:00:    - Environments: .env.local, .env
+2025-06-02 12:29:00 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 12:29:02 +02:00:  [32m[1m✓[22m[39m Ready in 1654ms
+2025-06-02 12:29:07 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 12:29:12 +02:00:  [32m[1m✓[22m[39m Compiled / in 4.6s (1271 modules)
+2025-06-02 12:29:12 +02:00:  GET / [32m200[39m in 5218ms
+2025-06-02 12:29:13 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-02 12:29:13 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1196ms (1249 modules)
+2025-06-02 12:29:13 +02:00:  GET /meta.json [33m404[39m in 519ms
+2025-06-02 12:29:13 +02:00:  GET /meta.json [33m404[39m in 1057ms
+2025-06-02 12:29:13 +02:00:  GET /meta.json [33m404[39m in 28ms
+2025-06-02 12:29:19 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 31ms
+2025-06-02 12:29:23 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 12:29:23 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 578ms (1280 modules)
+2025-06-02 12:29:23 +02:00:  GET /dashboard [32m200[39m in 696ms
+2025-06-02 12:29:23 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 34ms
+2025-06-02 12:29:24 +02:00:  GET /meta.json [33m404[39m in 51ms
+2025-06-02 12:29:26 +02:00:  [32m[1m✓[22m[39m Compiled /login in 388ms (1301 modules)
+2025-06-02 12:29:26 +02:00:  GET /login [32m200[39m in 424ms
+2025-06-02 12:29:40 +02:00:  GET /dashboard [32m200[39m in 29ms
+2025-06-02 12:30:28 +02:00:  [32m[1m✓[22m[39m Compiled in 526ms (1300 modules)
+2025-06-02 12:30:28 +02:00:  GET /dashboard [32m200[39m in 107ms
+2025-06-02 12:30:38 +02:00:  [32m[1m✓[22m[39m Compiled in 333ms (1300 modules)
+2025-06-02 12:30:38 +02:00:  GET /dashboard [32m200[39m in 66ms
+2025-06-02 12:31:44 +02:00: 
+2025-06-02 12:31:44 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 12:31:44 +02:00: 
+2025-06-02 12:31:45 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 12:31:45 +02:00:    - Local:        http://localhost:3001
+2025-06-02 12:31:45 +02:00:    - Network:      http://172.20.10.11:3001
+2025-06-02 12:31:45 +02:00:    - Environments: .env.local, .env
+2025-06-02 12:31:45 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 12:31:47 +02:00:  [32m[1m✓[22m[39m Ready in 1489ms
+2025-06-02 12:31:56 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 12:31:58 +02:00:  [32m[1m✓[22m[39m Compiled / in 1968ms (1269 modules)
+2025-06-02 12:31:58 +02:00:  GET /login [32m200[39m in 2170ms
+2025-06-02 12:31:58 +02:00:  GET / [32m200[39m in 2117ms
+2025-06-02 12:31:58 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 298ms (1300 modules)
+2025-06-02 12:31:59 +02:00:  GET /dashboard [32m200[39m in 655ms
+2025-06-02 12:31:59 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 259ms (1301 modules)
+2025-06-02 12:31:59 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 368ms
+2025-06-02 12:32:00 +02:00:  GET /meta.json [33m404[39m in 306ms
+2025-06-02 12:32:00 +02:00:  GET /login [32m200[39m in 200ms
+2025-06-02 12:32:03 +02:00:  GET / [32m200[39m in 40ms
+2025-06-02 12:32:03 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 26ms
+2025-06-02 12:32:04 +02:00:  GET /meta.json [33m404[39m in 30ms
+2025-06-02 12:32:05 +02:00:  GET /dashboard [32m200[39m in 23ms
+2025-06-02 12:32:05 +02:00:  GET /login [32m200[39m in 10ms
+2025-06-02 12:32:05 +02:00:  GET /login [32m200[39m in 10ms
+2025-06-02 12:32:09 +02:00:  GET /dashboard [32m200[39m in 12ms
+2025-06-02 12:34:32 +02:00:  [32m[1m✓[22m[39m Compiled in 1286ms (1300 modules)
+2025-06-02 12:34:32 +02:00:  GET /dashboard [32m200[39m in 102ms
+2025-06-02 12:34:39 +02:00: 
+2025-06-02 12:34:39 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 12:34:39 +02:00: 
+2025-06-02 12:34:40 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 12:34:40 +02:00:    - Local:        http://localhost:3001
+2025-06-02 12:34:40 +02:00:    - Network:      http://172.20.10.11:3001
+2025-06-02 12:34:40 +02:00:    - Environments: .env.local, .env
+2025-06-02 12:34:40 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 12:34:42 +02:00:  [32m[1m✓[22m[39m Ready in 1631ms
+2025-06-02 12:34:42 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 12:34:44 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 2.5s (1278 modules)
+2025-06-02 12:34:45 +02:00:  GET /dashboard [32m200[39m in 3017ms
+2025-06-02 12:34:45 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-02 12:34:45 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 948ms (1265 modules)
+2025-06-02 12:34:46 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 896ms
+2025-06-02 12:34:46 +02:00:  GET /meta.json [33m404[39m in 41ms
+2025-06-02 12:36:23 +02:00:  [32m[1m✓[22m[39m Compiled in 545ms (1278 modules)
+2025-06-02 12:36:23 +02:00:  GET /dashboard [32m200[39m in 95ms
+2025-06-02 12:36:53 +02:00: 
+2025-06-02 12:36:53 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 12:36:53 +02:00: 
+2025-06-02 12:36:54 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 12:36:54 +02:00:    - Local:        http://localhost:3001
+2025-06-02 12:36:54 +02:00:    - Network:      http://172.20.10.11:3001
+2025-06-02 12:36:54 +02:00:    - Environments: .env.local, .env
+2025-06-02 12:36:54 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 12:36:55 +02:00:  [32m[1m✓[22m[39m Ready in 1536ms
+2025-06-02 12:36:56 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 12:36:58 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 2.5s (1278 modules)
+2025-06-02 12:36:58 +02:00:  GET /dashboard [32m200[39m in 2958ms
+2025-06-02 12:36:59 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-02 12:36:59 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 745ms (1265 modules)
+2025-06-02 12:36:59 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 709ms
+2025-06-02 12:36:59 +02:00:  GET /meta.json [33m404[39m in 23ms
+2025-06-02 12:37:12 +02:00:  PUT /user/profile [33m404[39m in 38ms
+2025-06-02 12:40:07 +02:00:  [32m[1m✓[22m[39m Compiled in 732ms (1278 modules)
+2025-06-02 12:40:07 +02:00:  GET /dashboard [32m200[39m in 64ms
+2025-06-02 12:40:16 +02:00:  [32m[1m✓[22m[39m Compiled in 285ms (1278 modules)
+2025-06-02 12:40:16 +02:00:  GET /dashboard [32m200[39m in 49ms
+2025-06-02 12:40:24 +02:00: 
+2025-06-02 12:40:24 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 12:40:24 +02:00: 
+2025-06-02 12:40:25 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 12:40:25 +02:00:    - Local:        http://localhost:3001
+2025-06-02 12:40:25 +02:00:    - Network:      http://172.20.10.11:3001
+2025-06-02 12:40:25 +02:00:    - Environments: .env.local, .env
+2025-06-02 12:40:25 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 12:40:27 +02:00:  [32m[1m✓[22m[39m Ready in 2.1s
+2025-06-02 12:40:34 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 12:40:37 +02:00:  [32m[1m✓[22m[39m Compiled / in 3.4s (1283 modules)
+2025-06-02 12:40:37 +02:00:  GET / [32m200[39m in 3670ms
+2025-06-02 12:40:37 +02:00:  GET /login [32m200[39m in 3730ms
+2025-06-02 12:40:37 +02:00:  GET / [32m200[39m in 983ms
+2025-06-02 12:40:37 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 384ms (1270 modules)
+2025-06-02 12:40:38 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 514ms
+2025-06-02 12:40:38 +02:00:  GET /meta.json [33m404[39m in 60ms
+2025-06-02 12:40:40 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 12:40:40 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 530ms (1301 modules)
+2025-06-02 12:40:40 +02:00:  GET /dashboard [32m200[39m in 583ms
+2025-06-02 12:40:40 +02:00:  GET /login [32m200[39m in 21ms
+2025-06-02 12:40:40 +02:00:  GET /login [32m200[39m in 11ms
+2025-06-02 12:40:45 +02:00:  GET /dashboard [32m200[39m in 12ms
+2025-06-02 12:45:06 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 12:45:06 +02:00:    - Local:        http://localhost:3001
+2025-06-02 12:45:06 +02:00:    - Network:      http://172.20.10.11:3001
+2025-06-02 12:45:06 +02:00:    - Environments: .env.local, .env
+2025-06-02 12:45:06 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 12:45:08 +02:00:  [32m[1m✓[22m[39m Ready in 1626ms
+2025-06-02 12:47:14 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 12:47:16 +02:00:  [32m[1m✓[22m[39m Compiled / in 1946ms (1269 modules)
+2025-06-02 12:47:16 +02:00:  GET /login [32m200[39m in 2159ms
+2025-06-02 12:47:16 +02:00:  GET / [32m200[39m in 2139ms
+2025-06-02 12:47:18 +02:00:  GET / [32m200[39m in 127ms
+2025-06-02 12:47:18 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 472ms (1270 modules)
+2025-06-02 12:47:18 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 638ms
+2025-06-02 12:47:19 +02:00:  GET /meta.json [33m404[39m in 25ms
+2025-06-02 12:47:22 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 434ms (1301 modules)
+2025-06-02 12:47:22 +02:00:  GET /dashboard [32m200[39m in 484ms
+2025-06-02 12:47:22 +02:00:  GET /login [32m200[39m in 27ms
+2025-06-02 12:47:22 +02:00:  GET /login [32m200[39m in 10ms
+2025-06-02 12:47:34 +02:00:  GET /dashboard [32m200[39m in 12ms
+2025-06-02 12:51:05 +02:00:  [32m[1m✓[22m[39m Compiled in 1527ms (1300 modules)
+2025-06-02 12:56:05 +02:00:  [32m[1m✓[22m[39m Compiled in 546ms (1300 modules)
+2025-06-02 12:58:46 +02:00:  GET / [32m200[39m in 103ms
+2025-06-02 12:58:47 +02:00:  GET / [32m200[39m in 137ms
+2025-06-02 12:58:48 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-02 12:58:48 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 650ms (722 modules)
+2025-06-02 12:58:48 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 804ms
+2025-06-02 12:58:48 +02:00:  GET /meta.json [33m404[39m in 27ms
+2025-06-02 12:58:50 +02:00:  GET /dashboard [32m200[39m in 18ms
+2025-06-02 13:00:53 +02:00:  [32m[1m✓[22m[39m Compiled in 487ms (1300 modules)
+2025-06-02 13:04:25 +02:00:  [32m[1m✓[22m[39m Compiled in 643ms (1300 modules)
+2025-06-02 13:04:32 +02:00: 
+2025-06-02 13:04:32 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 13:04:32 +02:00: 
+2025-06-02 13:04:33 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 13:04:33 +02:00:    - Local:        http://localhost:3001
+2025-06-02 13:04:33 +02:00:    - Network:      http://172.20.10.11:3001
+2025-06-02 13:04:33 +02:00:    - Environments: .env.local, .env
+2025-06-02 13:04:33 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 13:04:34 +02:00:  [32m[1m✓[22m[39m Ready in 1744ms
+2025-06-02 13:04:45 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 13:04:46 +02:00:  [32m[1m✓[22m[39m Compiled / in 1586ms (1248 modules)
+2025-06-02 13:04:47 +02:00:  GET / [32m200[39m in 1800ms
+2025-06-02 13:04:47 +02:00:  [32m[1m✓[22m[39m Compiled in 99ms (556 modules)
+2025-06-02 13:04:48 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 13:04:49 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 798ms (1279 modules)
+2025-06-02 13:04:49 +02:00:  GET /dashboard [32m200[39m in 860ms
+2025-06-02 13:04:50 +02:00:  [32m[1m✓[22m[39m Compiled /login in 439ms (1300 modules)
+2025-06-02 13:04:50 +02:00:  GET /login [32m200[39m in 503ms
+2025-06-02 13:04:50 +02:00:  GET / [32m200[39m in 461ms
+2025-06-02 13:04:51 +02:00:  GET /dashboard [32m200[39m in 19ms
+2025-06-02 13:04:52 +02:00:  GET /login [32m200[39m in 14ms
+2025-06-02 13:04:52 +02:00:  GET /login [32m200[39m in 10ms
+2025-06-02 13:04:55 +02:00:  GET /dashboard [32m200[39m in 13ms
+2025-06-02 13:05:00 +02:00:  GET /dashboard [32m200[39m in 208ms
+2025-06-02 13:05:00 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 358ms (1301 modules)
+2025-06-02 13:05:00 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 485ms
+2025-06-02 13:05:01 +02:00:  GET /meta.json [33m404[39m in 63ms
+2025-06-02 13:07:06 +02:00:  [32m[1m✓[22m[39m Compiled in 1253ms (1288 modules)
+2025-06-02 13:07:06 +02:00:  GET /dashboard [32m200[39m in 88ms
+2025-06-02 13:07:16 +02:00:  [32m[1m✓[22m[39m Compiled in 360ms (1288 modules)
+2025-06-02 13:07:16 +02:00:  GET /dashboard [32m200[39m in 44ms
+2025-06-02 13:07:33 +02:00: 
+2025-06-02 13:07:33 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 13:07:33 +02:00: 
+2025-06-02 13:07:34 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 13:07:34 +02:00:    - Local:        http://localhost:3001
+2025-06-02 13:07:34 +02:00:    - Network:      http://172.20.10.11:3001
+2025-06-02 13:07:34 +02:00:    - Environments: .env.local, .env
+2025-06-02 13:07:34 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 13:07:35 +02:00:  [32m[1m✓[22m[39m Ready in 1468ms
+2025-06-02 13:12:25 +02:00: 
+2025-06-02 13:12:25 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 13:12:25 +02:00: 
+2025-06-02 13:12:26 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 13:12:26 +02:00:    - Local:        http://localhost:3001
+2025-06-02 13:12:26 +02:00:    - Network:      http://172.20.10.11:3001
+2025-06-02 13:12:26 +02:00:    - Environments: .env.local, .env
+2025-06-02 13:12:26 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 13:12:27 +02:00:  [32m[1m✓[22m[39m Ready in 1482ms
+2025-06-02 13:15:56 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 13:15:58 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 2.4s (1278 modules)
+2025-06-02 13:15:58 +02:00:  GET /dashboard [32m200[39m in 2906ms
+2025-06-02 13:15:59 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-02 13:15:59 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 878ms (1265 modules)
+2025-06-02 13:15:59 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 823ms
+2025-06-02 13:15:59 +02:00:  GET /meta.json [33m404[39m in 44ms
+2025-06-02 13:16:19 +02:00:  [32m[1m✓[22m[39m Compiled / in 420ms (1280 modules)
+2025-06-02 13:16:20 +02:00:  GET / [32m200[39m in 519ms
+2025-06-02 13:16:21 +02:00:  GET /dashboard [32m200[39m in 16ms
+2025-06-02 13:17:52 +02:00:  [32m[1m✓[22m[39m Compiled in 517ms (1279 modules)
+2025-06-02 13:17:52 +02:00:  GET /dashboard [32m200[39m in 88ms
+2025-06-02 13:18:00 +02:00: 
+2025-06-02 13:18:00 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 13:18:00 +02:00: 
+2025-06-02 13:18:01 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 13:18:01 +02:00:    - Local:        http://localhost:3001
+2025-06-02 13:18:01 +02:00:    - Network:      http://172.20.10.11:3001
+2025-06-02 13:18:01 +02:00:    - Environments: .env.local, .env
+2025-06-02 13:18:01 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 13:18:02 +02:00:  [32m[1m✓[22m[39m Ready in 1494ms
+2025-06-02 13:20:20 +02:00: 
+2025-06-02 13:20:20 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 13:20:20 +02:00: 
+2025-06-02 13:20:21 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 13:20:21 +02:00:    - Local:        http://localhost:3001
+2025-06-02 13:20:21 +02:00:    - Network:      http://172.20.10.11:3001
+2025-06-02 13:20:21 +02:00:    - Environments: .env.local, .env
+2025-06-02 13:20:21 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 13:20:22 +02:00:  [32m[1m✓[22m[39m Ready in 1523ms
+2025-06-02 13:23:28 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 13:23:30 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 2.6s (1282 modules)
+2025-06-02 13:23:31 +02:00:  GET /dashboard [32m200[39m in 3055ms
+2025-06-02 13:23:31 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-02 13:23:31 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 785ms (1269 modules)
+2025-06-02 13:23:32 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 769ms
+2025-06-02 13:23:32 +02:00:  GET /meta.json [33m404[39m in 41ms
+2025-06-02 13:25:04 +02:00:  [32m[1m✓[22m[39m Compiled in 676ms (1284 modules)
+2025-06-02 13:25:04 +02:00:  GET /dashboard [32m200[39m in 73ms
+2025-06-02 13:25:22 +02:00: 
+2025-06-02 13:25:22 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 13:25:22 +02:00: 
+2025-06-02 13:25:23 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 13:25:23 +02:00:    - Local:        http://localhost:3001
+2025-06-02 13:25:23 +02:00:    - Network:      http://172.20.10.11:3001
+2025-06-02 13:25:23 +02:00:    - Environments: .env.local, .env
+2025-06-02 13:25:23 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 13:25:24 +02:00:  [32m[1m✓[22m[39m Ready in 1454ms
+2025-06-02 13:25:44 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 13:25:46 +02:00:  [32m[1m✓[22m[39m Compiled / in 2.3s (1262 modules)
+2025-06-02 13:25:47 +02:00:  GET / [32m200[39m in 2811ms
+2025-06-02 13:25:47 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-02 13:25:47 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 802ms (1249 modules)
+2025-06-02 13:25:47 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 712ms
+2025-06-02 13:25:47 +02:00:  GET /meta.json [33m404[39m in 22ms
+2025-06-02 13:25:52 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 472ms (1286 modules)
+2025-06-02 13:25:52 +02:00:  GET /dashboard [32m200[39m in 582ms
+2025-06-02 13:25:52 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 31ms
+2025-06-02 13:25:53 +02:00:  GET /meta.json [33m404[39m in 37ms
+2025-06-02 13:34:54 +02:00:  GET /dashboard [32m200[39m in 73ms
+2025-06-02 13:34:54 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 51ms
+2025-06-02 13:34:55 +02:00:  GET /meta.json [33m404[39m in 49ms
+2025-06-02 13:35:45 +02:00:  [32m[1m✓[22m[39m Compiled in 605ms (1286 modules)
+2025-06-02 13:35:45 +02:00:  GET /dashboard [32m200[39m in 86ms
+2025-06-02 13:35:53 +02:00: 
+2025-06-02 13:35:53 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 13:35:53 +02:00: 
+2025-06-02 13:35:54 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 13:35:54 +02:00:    - Local:        http://localhost:3001
+2025-06-02 13:35:54 +02:00:    - Network:      http://172.20.10.11:3001
+2025-06-02 13:35:54 +02:00:    - Environments: .env.local, .env
+2025-06-02 13:35:54 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 13:35:55 +02:00:  [32m[1m✓[22m[39m Ready in 1502ms
+2025-06-02 13:36:00 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 13:36:02 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 2.4s (1284 modules)
+2025-06-02 13:36:02 +02:00:  GET /dashboard [32m200[39m in 2881ms
+2025-06-02 13:36:03 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-02 13:36:03 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1115ms (1271 modules)
+2025-06-02 13:36:03 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1155ms
+2025-06-02 13:36:03 +02:00:  GET /meta.json [33m404[39m in 505ms
+2025-06-02 13:37:11 +02:00:  [32m[1m✓[22m[39m Compiled in 609ms (1284 modules)
+2025-06-02 13:37:11 +02:00:  GET /dashboard [32m200[39m in 92ms
+2025-06-02 13:37:18 +02:00:  [32m[1m✓[22m[39m Compiled in 256ms (1284 modules)
+2025-06-02 13:37:18 +02:00:  GET /dashboard [32m200[39m in 70ms
+2025-06-02 13:37:26 +02:00:  [32m[1m✓[22m[39m Compiled in 494ms (1284 modules)
+2025-06-02 13:37:26 +02:00:  GET /dashboard [32m200[39m in 31ms
+2025-06-02 13:37:35 +02:00:  [32m[1m✓[22m[39m Compiled in 357ms (1284 modules)
+2025-06-02 13:37:35 +02:00:  GET /dashboard [32m200[39m in 29ms
+2025-06-02 13:37:44 +02:00: 
+2025-06-02 13:37:44 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 13:37:44 +02:00: 
+2025-06-02 13:37:44 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 13:37:44 +02:00:    - Local:        http://localhost:3001
+2025-06-02 13:37:44 +02:00:    - Network:      http://172.20.10.11:3001
+2025-06-02 13:37:44 +02:00:    - Environments: .env.local, .env
+2025-06-02 13:37:44 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 13:37:46 +02:00:  [32m[1m✓[22m[39m Ready in 2.1s
+2025-06-02 13:37:47 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 13:37:49 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 2.3s (1284 modules)
+2025-06-02 13:37:49 +02:00:  GET /dashboard [32m200[39m in 2851ms
+2025-06-02 13:37:50 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-02 13:37:50 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1051ms (1271 modules)
+2025-06-02 13:37:50 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 680ms
+2025-06-02 13:37:50 +02:00:  GET /meta.json [33m404[39m in 28ms
+2025-06-02 13:38:53 +02:00:  [32m[1m✓[22m[39m Compiled in 289ms (586 modules)
+2025-06-02 13:38:53 +02:00:  GET /dashboard [32m200[39m in 34ms
+2025-06-02 13:38:55 +02:00:  [32m[1m✓[22m[39m Compiled in 144ms (586 modules)
+2025-06-02 13:38:55 +02:00:  GET /dashboard [32m200[39m in 10ms
+2025-06-02 13:39:05 +02:00:  [32m[1m✓[22m[39m Compiled in 729ms (1286 modules)
+2025-06-02 13:39:05 +02:00:  GET /dashboard [32m200[39m in 81ms
+2025-06-02 13:39:13 +02:00:  [32m[1m✓[22m[39m Compiled in 392ms (1286 modules)
+2025-06-02 13:39:13 +02:00:  GET /dashboard [32m200[39m in 65ms
+2025-06-02 13:39:28 +02:00:  [32m[1m✓[22m[39m Compiled in 316ms (1286 modules)
+2025-06-02 13:39:28 +02:00:  GET /dashboard [32m200[39m in 36ms
+2025-06-02 13:39:49 +02:00:  [32m[1m✓[22m[39m Compiled in 310ms (1286 modules)
+2025-06-02 13:39:49 +02:00:  GET /dashboard [32m200[39m in 38ms
+2025-06-02 13:44:20 +02:00:  [32m[1m✓[22m[39m Compiled in 605ms (1286 modules)
+2025-06-02 13:44:21 +02:00:  GET /dashboard [32m200[39m in 48ms
+2025-06-02 13:44:27 +02:00:  [32m[1m✓[22m[39m Compiled in 306ms (1286 modules)
+2025-06-02 13:44:27 +02:00:  GET /dashboard [32m200[39m in 55ms
+2025-06-02 13:44:34 +02:00:  [32m[1m✓[22m[39m Compiled in 308ms (1286 modules)
+2025-06-02 13:44:34 +02:00:  GET /dashboard [32m200[39m in 32ms
+2025-06-02 13:48:40 +02:00:  GET /dashboard [32m200[39m in 201ms
+2025-06-02 13:48:41 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-02 13:48:41 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 547ms (700 modules)
+2025-06-02 13:48:41 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 748ms
+2025-06-02 13:48:41 +02:00:  GET /meta.json [33m404[39m in 24ms
+2025-06-02 13:53:00 +02:00:  [32m[1m✓[22m[39m Compiled in 1048ms (1286 modules)
+2025-06-02 13:53:01 +02:00:  GET /dashboard [32m200[39m in 82ms
+2025-06-02 13:53:08 +02:00:  [32m[1m✓[22m[39m Compiled in 258ms (1286 modules)
+2025-06-02 13:53:09 +02:00:  GET /dashboard [32m200[39m in 53ms
+2025-06-02 13:53:22 +02:00:  [32m[1m✓[22m[39m Compiled in 356ms (1286 modules)
+2025-06-02 13:53:22 +02:00:  GET /dashboard [32m200[39m in 32ms
+2025-06-02 13:53:30 +02:00:  [32m[1m✓[22m[39m Compiled in 263ms (1286 modules)
+2025-06-02 13:53:30 +02:00:  GET /dashboard [32m200[39m in 32ms
+2025-06-02 13:54:21 +02:00:  [32m[1m✓[22m[39m Compiled in 619ms (1286 modules)
+2025-06-02 13:54:21 +02:00:  GET /dashboard [32m200[39m in 31ms
+2025-06-02 13:54:48 +02:00:  GET /dashboard [32m200[39m in 178ms
+2025-06-02 13:54:48 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 247ms (700 modules)
+2025-06-02 13:54:49 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 412ms
+2025-06-02 13:54:49 +02:00:  GET /meta.json [33m404[39m in 28ms
+2025-06-02 13:56:26 +02:00:  [32m[1m✓[22m[39m Compiled in 882ms (1286 modules)
+2025-06-02 13:56:26 +02:00:  GET /dashboard [32m200[39m in 57ms
+2025-06-02 13:56:36 +02:00:  [32m[1m✓[22m[39m Compiled in 266ms (1286 modules)
+2025-06-02 13:56:36 +02:00:  GET /dashboard [32m200[39m in 55ms
+2025-06-02 13:56:45 +02:00:  [32m[1m✓[22m[39m Compiled in 252ms (1286 modules)
+2025-06-02 13:56:45 +02:00:  GET /dashboard [32m200[39m in 44ms
+2025-06-02 13:56:54 +02:00:  [32m[1m✓[22m[39m Compiled in 214ms (1286 modules)
+2025-06-02 13:56:54 +02:00:  GET /dashboard [32m200[39m in 28ms
+2025-06-02 13:57:16 +02:00:  [32m[1m✓[22m[39m Compiled in 221ms (1286 modules)
+2025-06-02 13:57:16 +02:00:  GET /dashboard [32m200[39m in 33ms
+2025-06-02 13:57:27 +02:00:  [32m[1m✓[22m[39m Compiled in 304ms (1286 modules)
+2025-06-02 13:57:27 +02:00:  GET /dashboard [32m200[39m in 53ms
+2025-06-02 13:57:37 +02:00:  [32m[1m✓[22m[39m Compiled in 230ms (1286 modules)
+2025-06-02 13:57:37 +02:00:  GET /dashboard [32m200[39m in 30ms
+2025-06-02 13:57:52 +02:00:  [32m[1m✓[22m[39m Compiled in 940ms (1286 modules)
+2025-06-02 13:57:52 +02:00:  GET /dashboard [32m200[39m in 58ms
+2025-06-02 13:57:59 +02:00:  [32m[1m✓[22m[39m Compiled in 404ms (1286 modules)
+2025-06-02 13:57:59 +02:00:  GET /dashboard [32m200[39m in 49ms
+2025-06-02 13:58:05 +02:00:  [32m[1m✓[22m[39m Compiled in 337ms (1286 modules)
+2025-06-02 13:58:05 +02:00:  GET /dashboard [32m200[39m in 40ms
+2025-06-02 13:58:11 +02:00:  [32m[1m✓[22m[39m Compiled in 368ms (1286 modules)
+2025-06-02 13:58:11 +02:00:  GET /dashboard [32m200[39m in 34ms
+2025-06-02 14:00:29 +02:00:  [32m[1m✓[22m[39m Compiled in 325ms (587 modules)
+2025-06-02 14:00:29 +02:00:  GET /dashboard [32m200[39m in 20ms
+2025-06-02 14:00:30 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 247ms (700 modules)
+2025-06-02 14:00:30 +02:00:  GET /meta.json [33m404[39m in 407ms
+2025-06-02 14:00:30 +02:00:  GET /meta.json [33m404[39m in 27ms
+2025-06-02 14:00:30 +02:00:  GET /meta.json [33m404[39m in 23ms
+2025-06-02 14:00:31 +02:00:  [32m[1m✓[22m[39m Compiled in 171ms (587 modules)
+2025-06-02 14:00:31 +02:00:  GET /dashboard [32m200[39m in 20ms
+2025-06-02 14:00:44 +02:00:  [32m[1m✓[22m[39m Compiled in 727ms (1293 modules)
+2025-06-02 14:00:44 +02:00:  GET /dashboard [32m200[39m in 58ms
+2025-06-02 14:00:53 +02:00:  [32m[1m✓[22m[39m Compiled in 400ms (1293 modules)
+2025-06-02 14:00:53 +02:00:  GET /dashboard [32m200[39m in 47ms
+2025-06-02 14:01:02 +02:00:  [32m[1m✓[22m[39m Compiled in 307ms (1293 modules)
+2025-06-02 14:01:02 +02:00:  GET /dashboard [32m200[39m in 45ms
+2025-06-02 14:01:18 +02:00:  [32m[1m✓[22m[39m Compiled in 733ms (1293 modules)
+2025-06-02 14:01:18 +02:00:  GET /dashboard [32m200[39m in 62ms
+2025-06-02 14:01:29 +02:00:  [32m[1m✓[22m[39m Compiled in 496ms (1293 modules)
+2025-06-02 14:01:30 +02:00:  GET /dashboard [32m200[39m in 56ms
+2025-06-02 14:01:39 +02:00:  [32m[1m✓[22m[39m Compiled in 822ms (1292 modules)
+2025-06-02 14:01:39 +02:00:  GET /dashboard [32m200[39m in 42ms
+2025-06-02 14:04:49 +02:00:  GET /dashboard [32m200[39m in 207ms
+2025-06-02 14:04:50 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 330ms (703 modules)
+2025-06-02 14:04:50 +02:00:  GET /meta.json [33m404[39m in 483ms
+2025-06-02 14:04:50 +02:00:  GET /meta.json [33m404[39m in 481ms
+2025-06-02 14:04:50 +02:00:  GET /meta.json [33m404[39m in 27ms
+2025-06-02 14:09:08 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 14:09:08 +02:00:  [32m[1m✓[22m[39m Compiled / in 712ms (1293 modules)
+2025-06-02 14:09:08 +02:00:  GET / [32m200[39m in 898ms
+2025-06-02 14:09:09 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 135ms (717 modules)
+2025-06-02 14:09:09 +02:00:  GET /meta.json [33m404[39m in 250ms
+2025-06-02 14:09:09 +02:00:  GET /meta.json [33m404[39m in 35ms
+2025-06-02 14:09:10 +02:00:  GET /dashboard [32m200[39m in 25ms
+2025-06-02 14:10:07 +02:00:  [32m[1m✓[22m[39m Compiled in 735ms (1308 modules)
+2025-06-02 14:10:07 +02:00:  GET /dashboard [32m200[39m in 56ms
+2025-06-02 14:10:07 +02:00:  GET /meta.json [33m404[39m in 128ms
+2025-06-02 14:10:07 +02:00:  GET /meta.json [33m404[39m in 40ms
+2025-06-02 14:10:07 +02:00:  GET /meta.json [33m404[39m in 29ms
+2025-06-02 14:10:23 +02:00:  GET /dashboard [32m200[39m in 55ms
+2025-06-02 14:10:24 +02:00:  GET /meta.json [33m404[39m in 48ms
+2025-06-02 14:15:30 +02:00:  GET /dashboard [32m200[39m in 70ms
+2025-06-02 14:15:31 +02:00:  GET /meta.json [33m404[39m in 85ms
+2025-06-02 14:15:31 +02:00:  GET /meta.json [33m404[39m in 84ms
+2025-06-02 14:15:31 +02:00:  GET /meta.json [33m404[39m in 27ms
+2025-06-02 14:16:03 +02:00:  GET /dashboard [32m200[39m in 99ms
+2025-06-02 14:16:04 +02:00:  GET /meta.json [33m404[39m in 76ms
+2025-06-02 14:16:04 +02:00:  GET /meta.json [33m404[39m in 75ms
+2025-06-02 14:16:04 +02:00:  GET /meta.json [33m404[39m in 45ms
+2025-06-02 14:16:18 +02:00:  GET /dashboard [32m200[39m in 33ms
+2025-06-02 14:16:19 +02:00:  GET /meta.json [33m404[39m in 31ms
+2025-06-02 14:18:01 +02:00:  [32m[1m✓[22m[39m Compiled in 923ms (1293 modules)
+2025-06-02 14:18:01 +02:00:  GET /dashboard [32m200[39m in 125ms
+2025-06-02 14:18:01 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 174ms (703 modules)
+2025-06-02 14:18:01 +02:00:  GET /meta.json [33m404[39m in 346ms
+2025-06-02 14:18:12 +02:00:  [32m[1m✓[22m[39m Compiled in 459ms (1294 modules)
+2025-06-02 14:18:12 +02:00:  GET /dashboard [32m200[39m in 37ms
+2025-06-02 14:18:19 +02:00:  [32m[1m✓[22m[39m Compiled in 413ms (1294 modules)
+2025-06-02 14:18:19 +02:00:  GET /dashboard [32m200[39m in 38ms
+2025-06-02 14:18:26 +02:00:  [32m[1m✓[22m[39m Compiled in 545ms (1294 modules)
+2025-06-02 14:18:26 +02:00:  GET /dashboard [32m200[39m in 41ms
+2025-06-02 14:18:41 +02:00:  [32m[1m✓[22m[39m Compiled in 430ms (1294 modules)
+2025-06-02 14:18:41 +02:00:  GET /dashboard [32m200[39m in 73ms
+2025-06-02 14:18:56 +02:00:  [32m[1m✓[22m[39m Compiled in 921ms (1294 modules)
+2025-06-02 14:18:56 +02:00:  GET /dashboard [32m200[39m in 45ms
+2025-06-02 14:19:16 +02:00:  [32m[1m✓[22m[39m Compiled in 631ms (1293 modules)
+2025-06-02 14:19:16 +02:00:  GET /dashboard [32m200[39m in 59ms
+2025-06-02 14:22:26 +02:00:  [32m[1m✓[22m[39m Compiled in 763ms (1293 modules)
+2025-06-02 14:22:26 +02:00:  GET /dashboard [32m200[39m in 87ms
+2025-06-02 14:22:27 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 141ms (703 modules)
+2025-06-02 14:22:27 +02:00:  GET /meta.json [33m404[39m in 312ms
+2025-06-02 14:22:27 +02:00:  GET /meta.json [33m404[39m in 28ms
+2025-06-02 14:22:27 +02:00:  GET /meta.json [33m404[39m in 27ms
+2025-06-02 14:23:51 +02:00:  [32m[1m✓[22m[39m Compiled in 595ms (1293 modules)
+2025-06-02 14:23:51 +02:00:  GET /dashboard [32m200[39m in 56ms
+2025-06-02 14:23:51 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 129ms (703 modules)
+2025-06-02 14:23:51 +02:00:  GET /meta.json [33m404[39m in 258ms
+2025-06-02 14:23:52 +02:00:  GET /meta.json [33m404[39m in 24ms
+2025-06-02 14:23:52 +02:00:  GET /meta.json [33m404[39m in 24ms
+2025-06-02 14:24:33 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 14:24:33 +02:00:  [32m[1m✓[22m[39m Compiled / in 597ms (717 modules)
+2025-06-02 14:24:33 +02:00:  GET / [32m200[39m in 729ms
+2025-06-02 14:24:33 +02:00:  GET /meta.json [33m404[39m in 111ms
+2025-06-02 14:24:33 +02:00:  GET /meta.json [33m404[39m in 31ms
+2025-06-02 14:24:33 +02:00:  GET /meta.json [33m404[39m in 25ms
+2025-06-02 14:24:34 +02:00:  GET /dashboard [32m200[39m in 12ms
+2025-06-02 14:24:40 +02:00:  [32m[1m✓[22m[39m Compiled in 839ms (1308 modules)
+2025-06-02 14:24:40 +02:00:  GET /dashboard [32m200[39m in 46ms
+2025-06-02 14:26:06 +02:00:  GET / [32m200[39m in 38ms
+2025-06-02 14:26:06 +02:00:  GET /meta.json [33m404[39m in 160ms
+2025-06-02 14:26:06 +02:00:  GET /meta.json [33m404[39m in 25ms
+2025-06-02 14:26:07 +02:00:  GET /meta.json [33m404[39m in 25ms
+2025-06-02 14:26:11 +02:00:  GET /dashboard [32m200[39m in 15ms
+2025-06-02 14:26:59 +02:00:  [32m[1m✓[22m[39m Compiled in 882ms (1308 modules)
+2025-06-02 14:26:59 +02:00:  GET /dashboard [32m200[39m in 69ms
+2025-06-02 14:26:59 +02:00:  GET /meta.json [33m404[39m in 140ms
+2025-06-02 14:26:59 +02:00:  GET /meta.json [33m404[39m in 30ms
+2025-06-02 14:26:59 +02:00:  GET /meta.json [33m404[39m in 23ms
+2025-06-02 14:30:02 +02:00:  [32m[1m✓[22m[39m Compiled in 968ms (1307 modules)
+2025-06-02 14:30:02 +02:00:  GET /dashboard [32m200[39m in 54ms
+2025-06-02 14:30:02 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 167ms (717 modules)
+2025-06-02 14:30:02 +02:00:  GET /meta.json [33m404[39m in 275ms
+2025-06-02 14:30:02 +02:00:  GET /meta.json [33m404[39m in 26ms
+2025-06-02 14:30:02 +02:00:  GET /meta.json [33m404[39m in 23ms
+2025-06-02 14:30:20 +02:00:  [32m[1m✓[22m[39m Compiled in 935ms (1308 modules)
+2025-06-02 14:30:20 +02:00:  GET /dashboard [32m200[39m in 36ms
+2025-06-02 14:30:42 +02:00:  [32m[1m✓[22m[39m Compiled in 405ms (1308 modules)
+2025-06-02 14:30:42 +02:00:  GET /dashboard [32m200[39m in 39ms
+2025-06-02 14:31:39 +02:00:  GET /dashboard [32m200[39m in 174ms
+2025-06-02 14:31:39 +02:00:  GET /meta.json [33m404[39m in 75ms
+2025-06-02 14:31:39 +02:00:  GET /meta.json [33m404[39m in 73ms
+2025-06-02 14:31:39 +02:00:  GET /meta.json [33m404[39m in 29ms
+2025-06-02 14:33:08 +02:00:  [32m[1m✓[22m[39m Compiled in 1124ms (1307 modules)
+2025-06-02 14:33:08 +02:00:  GET /dashboard [32m200[39m in 87ms
+2025-06-02 14:33:08 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 130ms (717 modules)
+2025-06-02 14:33:08 +02:00:  GET /meta.json [33m404[39m in 223ms
+2025-06-02 14:33:17 +02:00:  [32m[1m✓[22m[39m Compiled in 304ms (1308 modules)
+2025-06-02 14:33:17 +02:00:  GET /dashboard [32m200[39m in 28ms
+2025-06-02 14:33:29 +02:00:  [32m[1m✓[22m[39m Compiled in 444ms (1308 modules)
+2025-06-02 14:33:29 +02:00:  GET /dashboard [32m200[39m in 46ms
+2025-06-02 14:33:45 +02:00:  [32m[1m✓[22m[39m Compiled in 792ms (1314 modules)
+2025-06-02 14:33:45 +02:00:  GET /dashboard [32m200[39m in 79ms
+2025-06-02 14:33:56 +02:00:  [32m[1m✓[22m[39m Compiled in 814ms (1308 modules)
+2025-06-02 14:33:56 +02:00:  GET /dashboard [32m200[39m in 84ms
+2025-06-02 14:34:04 +02:00:  [32m[1m✓[22m[39m Compiled in 419ms (1308 modules)
+2025-06-02 14:34:04 +02:00:  GET /dashboard [32m200[39m in 53ms
+2025-06-02 14:34:13 +02:00:  [32m[1m✓[22m[39m Compiled in 354ms (1307 modules)
+2025-06-02 14:34:13 +02:00:  GET /dashboard [32m200[39m in 43ms
+2025-06-02 14:36:26 +02:00:  GET /dashboard [32m200[39m in 216ms
+2025-06-02 14:36:27 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 380ms (717 modules)
+2025-06-02 14:36:28 +02:00:  GET /meta.json [33m404[39m in 562ms
+2025-06-02 14:36:28 +02:00:  GET /meta.json [33m404[39m in 561ms
+2025-06-02 14:36:28 +02:00:  GET /meta.json [33m404[39m in 23ms
+2025-06-02 14:37:13 +02:00:  [32m[1m✓[22m[39m Compiled in 811ms (1308 modules)
+2025-06-02 14:37:13 +02:00:  GET /dashboard [32m200[39m in 96ms
+2025-06-02 14:37:13 +02:00:  GET /meta.json [33m404[39m in 127ms
+2025-06-02 14:37:23 +02:00:  [32m[1m✓[22m[39m Compiled in 694ms (1304 modules)
+2025-06-02 14:37:23 +02:00:  GET /dashboard [32m200[39m in 42ms
+2025-06-02 14:37:24 +02:00:  [32m[1m✓[22m[39m Compiled in 973ms (1308 modules)
+2025-06-02 14:37:24 +02:00:  GET /dashboard [32m200[39m in 34ms
+2025-06-02 14:37:32 +02:00:  [32m[1m✓[22m[39m Compiled in 895ms (1308 modules)
+2025-06-02 14:37:32 +02:00:  GET /dashboard [32m200[39m in 36ms
+2025-06-02 14:37:48 +02:00:  [32m[1m✓[22m[39m Compiled in 389ms (1308 modules)
+2025-06-02 14:37:48 +02:00:  GET /dashboard [32m200[39m in 30ms
+2025-06-02 14:37:59 +02:00:  [32m[1m✓[22m[39m Compiled in 991ms (1308 modules)
+2025-06-02 14:37:59 +02:00:  GET /dashboard [32m200[39m in 67ms
+2025-06-02 14:38:52 +02:00:  GET /dashboard [32m200[39m in 238ms
+2025-06-02 14:38:53 +02:00:  GET /meta.json [33m404[39m in 111ms
+2025-06-02 14:38:53 +02:00:  GET /meta.json [33m404[39m in 108ms
+2025-06-02 14:38:53 +02:00:  GET /meta.json [33m404[39m in 35ms
+2025-06-02 14:39:25 +02:00:  [32m[1m✓[22m[39m Compiled in 989ms (1308 modules)
+2025-06-02 14:39:25 +02:00:  GET /dashboard [32m200[39m in 67ms
+2025-06-02 14:39:25 +02:00:  GET /meta.json [33m404[39m in 128ms
+2025-06-02 14:39:36 +02:00:  [32m[1m✓[22m[39m Compiled in 428ms (1308 modules)
+2025-06-02 14:39:36 +02:00:  GET /dashboard [32m200[39m in 38ms
+2025-06-02 14:39:46 +02:00:  [32m[1m✓[22m[39m Compiled in 284ms (1308 modules)
+2025-06-02 14:39:47 +02:00:  GET /dashboard [32m200[39m in 31ms
+2025-06-02 14:40:02 +02:00:  GET /dashboard [32m200[39m in 172ms
+2025-06-02 14:40:03 +02:00:  GET /meta.json [33m404[39m in 82ms
+2025-06-02 14:48:16 +02:00:  [32m[1m✓[22m[39m Compiled in 1103ms (1307 modules)
+2025-06-02 14:48:16 +02:00:  GET /dashboard [32m200[39m in 123ms
+2025-06-02 14:48:16 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 158ms (717 modules)
+2025-06-02 14:48:16 +02:00:  GET /meta.json [33m404[39m in 308ms
+2025-06-02 14:48:16 +02:00:  GET /meta.json [33m404[39m in 25ms
+2025-06-02 14:48:17 +02:00:  GET /meta.json [33m404[39m in 29ms
+2025-06-02 14:48:20 +02:00:  [32m[1m✓[22m[39m Compiled in 338ms (1308 modules)
+2025-06-02 14:48:20 +02:00:  GET /dashboard [32m200[39m in 47ms
+2025-06-02 14:48:27 +02:00:  [32m[1m✓[22m[39m Compiled in 452ms (1308 modules)
+2025-06-02 14:48:27 +02:00:  GET /dashboard [32m200[39m in 41ms
+2025-06-02 14:52:45 +02:00:  GET /dashboard [32m200[39m in 206ms
+2025-06-02 14:52:46 +02:00:  GET /meta.json [33m404[39m in 84ms
+2025-06-02 14:52:46 +02:00:  GET /meta.json [33m404[39m in 81ms
+2025-06-02 14:52:46 +02:00:  GET /meta.json [33m404[39m in 29ms
+2025-06-02 14:53:24 +02:00:  [32m[1m✓[22m[39m Compiled in 938ms (1308 modules)
+2025-06-02 14:53:24 +02:00:  GET /dashboard [32m200[39m in 120ms
+2025-06-02 14:53:25 +02:00:  GET /meta.json [33m404[39m in 144ms
+2025-06-02 14:53:34 +02:00:  [32m[1m✓[22m[39m Compiled in 452ms (1308 modules)
+2025-06-02 14:53:34 +02:00:  GET /dashboard [32m200[39m in 44ms
+2025-06-02 14:53:43 +02:00:  [32m[1m✓[22m[39m Compiled in 272ms (1308 modules)
+2025-06-02 14:53:43 +02:00:  GET /dashboard [32m200[39m in 31ms
+2025-06-02 14:55:22 +02:00:  GET /dashboard [32m200[39m in 131ms
+2025-06-02 14:55:22 +02:00:  GET /meta.json [33m404[39m in 84ms
+2025-06-02 14:55:22 +02:00:  GET /meta.json [33m404[39m in 86ms
+2025-06-02 14:55:22 +02:00:  GET /meta.json [33m404[39m in 29ms
+2025-06-02 14:56:01 +02:00:  [32m[1m✓[22m[39m Compiled in 819ms (1308 modules)
+2025-06-02 14:56:01 +02:00:  GET /dashboard [32m200[39m in 81ms
+2025-06-02 14:56:01 +02:00:  GET /meta.json [33m404[39m in 111ms
+2025-06-02 14:56:12 +02:00:  [32m[1m✓[22m[39m Compiled in 360ms (1308 modules)
+2025-06-02 14:56:12 +02:00:  GET /dashboard [32m200[39m in 50ms
+2025-06-02 14:56:23 +02:00:  [32m[1m✓[22m[39m Compiled in 275ms (1308 modules)
+2025-06-02 14:56:23 +02:00:  GET /dashboard [32m200[39m in 38ms
+2025-06-02 14:56:39 +02:00:  [32m[1m✓[22m[39m Compiled in 657ms (1308 modules)
+2025-06-02 14:56:39 +02:00:  GET /dashboard [32m200[39m in 28ms
+2025-06-02 14:56:52 +02:00:  [32m[1m✓[22m[39m Compiled in 898ms (1308 modules)
+2025-06-02 14:56:52 +02:00:  GET /dashboard [32m200[39m in 43ms
+2025-06-02 14:57:05 +02:00:  [32m[1m✓[22m[39m Compiled in 333ms (1308 modules)
+2025-06-02 14:57:05 +02:00:  GET /dashboard [32m200[39m in 55ms
+2025-06-02 14:57:36 +02:00:  GET /dashboard [32m200[39m in 184ms
+2025-06-02 14:57:36 +02:00:  GET /meta.json [33m404[39m in 78ms
+2025-06-02 14:57:36 +02:00:  GET /meta.json [33m404[39m in 75ms
+2025-06-02 14:57:36 +02:00:  GET /meta.json [33m404[39m in 32ms
+2025-06-02 15:02:55 +02:00:  [32m[1m✓[22m[39m Compiled in 1001ms (1307 modules)
+2025-06-02 15:02:55 +02:00:  GET /dashboard [32m200[39m in 70ms
+2025-06-02 15:02:56 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 156ms (717 modules)
+2025-06-02 15:02:56 +02:00:  GET /meta.json [33m404[39m in 279ms
+2025-06-02 15:05:15 +02:00:  [32m[1m✓[22m[39m Compiled in 1228ms (1307 modules)
+2025-06-02 15:05:15 +02:00:  GET /dashboard [32m200[39m in 97ms
+2025-06-02 15:05:15 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 172ms (717 modules)
+2025-06-02 15:05:15 +02:00:  GET /meta.json [33m404[39m in 288ms
+2025-06-02 15:05:15 +02:00:  GET /meta.json [33m404[39m in 34ms
+2025-06-02 15:05:15 +02:00:  GET /meta.json [33m404[39m in 30ms
+2025-06-02 15:05:44 +02:00:  GET /dashboard [32m200[39m in 109ms
+2025-06-02 15:05:44 +02:00:  GET /meta.json [33m404[39m in 79ms
+2025-06-02 15:06:39 +02:00:  [32m[1m✓[22m[39m Compiled in 1053ms (1308 modules)
+2025-06-02 15:06:39 +02:00:  GET /dashboard [32m200[39m in 90ms
+2025-06-02 15:07:00 +02:00:  GET /dashboard [32m200[39m in 337ms
+2025-06-02 15:07:00 +02:00:  GET /meta.json [33m404[39m in 43ms
+2025-06-02 15:07:42 +02:00:  [32m[1m✓[22m[39m Compiled in 1362ms (1308 modules)
+2025-06-02 15:07:42 +02:00:  GET /dashboard [32m200[39m in 56ms
+2025-06-02 15:07:53 +02:00:  [32m[1m✓[22m[39m Compiled in 860ms (1308 modules)
+2025-06-02 15:07:53 +02:00:  GET /dashboard [32m200[39m in 39ms
+2025-06-02 15:08:05 +02:00:  [32m[1m✓[22m[39m Compiled in 789ms (1308 modules)
+2025-06-02 15:08:05 +02:00:  GET /dashboard [32m200[39m in 34ms
+2025-06-02 15:08:55 +02:00:  GET /dashboard [32m200[39m in 224ms
+2025-06-02 15:08:56 +02:00:  GET /meta.json [33m404[39m in 103ms
+2025-06-02 15:08:56 +02:00:  GET /meta.json [33m404[39m in 96ms
+2025-06-02 15:08:56 +02:00:  GET /meta.json [33m404[39m in 30ms
+2025-06-02 15:38:09 +02:00:  [32m[1m✓[22m[39m Compiled in 1449ms (1311 modules)
+2025-06-02 15:38:09 +02:00:  GET /dashboard [32m200[39m in 33ms
+2025-06-02 15:38:10 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 167ms (719 modules)
+2025-06-02 15:38:10 +02:00:  GET /meta.json [33m404[39m in 298ms
+2025-06-02 16:08:11 +02:00:  [37m[1m○[22m[39m Compiling /login ...
+2025-06-02 16:08:12 +02:00:  [32m[1m✓[22m[39m Compiled /login in 1663ms (1318 modules)
+2025-06-02 16:08:12 +02:00:  GET /login [32m200[39m in 1738ms
+2025-06-02 16:08:12 +02:00:  GET /login?reason=idle [32m200[39m in 1711ms
+2025-06-02 16:08:12 +02:00:  GET /login?reason=idle [32m200[39m in 13ms
+2025-06-02 16:08:12 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 256ms (731 modules)
+2025-06-02 16:08:13 +02:00:  GET /meta.json [33m404[39m in 480ms
+2025-06-02 16:08:13 +02:00:  GET /meta.json [33m404[39m in 24ms
+2025-06-02 16:08:13 +02:00:  GET /meta.json [33m404[39m in 30ms
+2025-06-02 16:12:36 +02:00:  GET /dashboard [32m200[39m in 93ms
+2025-06-02 16:12:36 +02:00:  GET /meta.json [33m404[39m in 65ms
+2025-06-02 16:12:36 +02:00:  GET /meta.json [33m404[39m in 39ms
+2025-06-02 16:12:36 +02:00:  GET /meta.json [33m404[39m in 32ms
+2025-06-02 16:12:55 +02:00:  GET / [32m200[39m in 47ms
+2025-06-02 16:39:51 +02:00:  [32m[1m✓[22m[39m Compiled in 1415ms (1332 modules)
+2025-06-02 16:39:51 +02:00:  GET / [32m200[39m in 38ms
+2025-06-02 16:40:39 +02:00:  [32m[1m✓[22m[39m Compiled in 194ms (588 modules)
+2025-06-02 16:41:11 +02:00:  [32m[1m✓[22m[39m Compiled in 2.4s (1828 modules)
+2025-06-02 16:41:11 +02:00:  GET / [32m200[39m in 53ms
+2025-06-02 16:41:19 +02:00:  [32m[1m✓[22m[39m Compiled in 476ms (1828 modules)
+2025-06-02 16:41:19 +02:00:  GET / [32m200[39m in 40ms
+2025-06-02 16:41:28 +02:00:  [32m[1m✓[22m[39m Compiled in 545ms (1828 modules)
+2025-06-02 16:41:28 +02:00:  GET / [32m200[39m in 47ms
+2025-06-02 16:41:58 +02:00:  [32m[1m✓[22m[39m Compiled in 964ms (1332 modules)
+2025-06-02 16:41:58 +02:00:  GET / [32m200[39m in 57ms
+2025-06-02 16:42:25 +02:00:  [32m[1m✓[22m[39m Compiled in 336ms (602 modules)
+2025-06-02 16:42:25 +02:00:  GET / [32m200[39m in 48ms
+2025-06-02 16:42:34 +02:00:  [32m[1m✓[22m[39m Compiled in 287ms (602 modules)
+2025-06-02 16:42:34 +02:00:  GET / [32m200[39m in 18ms
+2025-06-02 16:42:41 +02:00:  [32m[1m✓[22m[39m Compiled in 139ms (602 modules)
+2025-06-02 16:42:41 +02:00:  GET / [32m200[39m in 8ms
+2025-06-02 16:42:48 +02:00:  [32m[1m✓[22m[39m Compiled in 146ms (602 modules)
+2025-06-02 16:42:48 +02:00:  GET / [32m200[39m in 13ms
+2025-06-02 16:44:05 +02:00:  GET /dashboard [32m200[39m in 121ms
+2025-06-02 16:44:05 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-02 16:44:06 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1250ms (731 modules)
+2025-06-02 16:44:06 +02:00:  GET /meta.json [33m404[39m in 1514ms
+2025-06-02 16:44:06 +02:00:  GET /meta.json [33m404[39m in 50ms
+2025-06-02 16:44:06 +02:00:  GET /meta.json [33m404[39m in 27ms
+2025-06-02 16:44:09 +02:00:  GET /dashboard [32m200[39m in 66ms
+2025-06-02 16:44:09 +02:00:  GET /meta.json [33m404[39m in 46ms
+2025-06-02 16:44:56 +02:00:  [32m[1m✓[22m[39m Compiled in 903ms (602 modules)
+2025-06-02 16:44:56 +02:00:  GET /dashboard [32m200[39m in 17ms
+2025-06-02 16:46:05 +02:00: 
+2025-06-02 16:46:05 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 16:46:05 +02:00: 
+2025-06-02 16:46:06 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 16:46:06 +02:00:    - Local:        http://localhost:3001
+2025-06-02 16:46:06 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-02 16:46:06 +02:00:    - Environments: .env.local, .env
+2025-06-02 16:46:06 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 16:46:08 +02:00:  [32m[1m✓[22m[39m Ready in 1622ms
+2025-06-02 16:46:16 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 16:46:18 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 2s (1282 modules)
+2025-06-02 16:46:18 +02:00:  GET /dashboard [32m200[39m in 2708ms
+2025-06-02 16:46:18 +02:00:  [32m[1m✓[22m[39m Compiled in 425ms (578 modules)
+2025-06-02 16:46:19 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 334ms (1283 modules)
+2025-06-02 16:46:19 +02:00:  GET /meta.json [33m404[39m in 466ms
+2025-06-02 16:46:28 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 16:46:28 +02:00:  [32m[1m✓[22m[39m Compiled / in 703ms (1298 modules)
+2025-06-02 16:46:28 +02:00:  GET / [32m200[39m in 799ms
+2025-06-02 16:46:29 +02:00:  GET /dashboard [32m200[39m in 15ms
+2025-06-02 16:47:22 +02:00:  [32m[1m✓[22m[39m Compiled in 1077ms (1311 modules)
+2025-06-02 16:47:22 +02:00:  GET /dashboard [32m200[39m in 54ms
+2025-06-02 16:47:31 +02:00:  [32m[1m✓[22m[39m Compiled in 563ms (1315 modules)
+2025-06-02 16:47:31 +02:00:  GET /dashboard [32m200[39m in 39ms
+2025-06-02 16:47:38 +02:00: 
+2025-06-02 16:47:38 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 16:47:38 +02:00: 
+2025-06-02 16:47:39 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 16:47:39 +02:00:    - Local:        http://localhost:3001
+2025-06-02 16:47:39 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-02 16:47:39 +02:00:    - Environments: .env.local, .env
+2025-06-02 16:47:39 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 16:47:40 +02:00:  [32m[1m✓[22m[39m Ready in 1555ms
+2025-06-02 16:47:47 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 16:47:49 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 2.6s (1300 modules)
+2025-06-02 16:47:50 +02:00:  GET /dashboard [32m200[39m in 3097ms
+2025-06-02 16:47:50 +02:00:  [32m[1m✓[22m[39m Compiled in 216ms (594 modules)
+2025-06-02 16:47:50 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 328ms (1287 modules)
+2025-06-02 16:47:50 +02:00:  GET /meta.json [33m404[39m in 449ms
+2025-06-02 16:48:00 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 56ms
+2025-06-02 16:48:09 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 16:48:09 +02:00:  [32m[1m✓[22m[39m Compiled / in 546ms (1302 modules)
+2025-06-02 16:48:09 +02:00:  GET / [32m200[39m in 736ms
+2025-06-02 16:48:10 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 33ms
+2025-06-02 16:48:11 +02:00:  GET /meta.json [33m404[39m in 54ms
+2025-06-02 16:48:12 +02:00:  GET /dashboard [32m200[39m in 24ms
+2025-06-02 16:49:41 +02:00:  [32m[1m✓[22m[39m Compiled in 685ms (1309 modules)
+2025-06-02 16:49:41 +02:00:  GET /dashboard [32m200[39m in 94ms
+2025-06-02 16:50:05 +02:00:  [32m[1m✓[22m[39m Compiled in 147ms (599 modules)
+2025-06-02 16:50:05 +02:00:  GET /dashboard [32m200[39m in 12ms
+2025-06-02 16:50:12 +02:00:  [32m[1m✓[22m[39m Compiled in 334ms (1309 modules)
+2025-06-02 16:50:12 +02:00:  GET /dashboard [32m200[39m in 81ms
+2025-06-02 16:50:19 +02:00:  [32m[1m✓[22m[39m Compiled in 373ms (1309 modules)
+2025-06-02 16:50:19 +02:00:  GET /dashboard [32m200[39m in 50ms
+2025-06-02 16:50:33 +02:00: 
+2025-06-02 16:50:33 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 16:50:33 +02:00: 
+2025-06-02 16:50:34 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 16:50:34 +02:00:    - Local:        http://localhost:3001
+2025-06-02 16:50:34 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-02 16:50:34 +02:00:    - Environments: .env.local, .env
+2025-06-02 16:50:34 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 16:50:35 +02:00:  [32m[1m✓[22m[39m Ready in 1608ms
+2025-06-02 16:52:01 +02:00: 
+2025-06-02 16:52:01 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 16:52:01 +02:00: 
+2025-06-02 16:52:01 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 16:52:01 +02:00:    - Local:        http://localhost:3001
+2025-06-02 16:52:01 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-02 16:52:01 +02:00:    - Environments: .env.local, .env
+2025-06-02 16:52:01 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 16:52:03 +02:00:  [32m[1m✓[22m[39m Ready in 1550ms
+2025-06-02 16:52:03 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 16:52:06 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 2.6s (1308 modules)
+2025-06-02 16:52:06 +02:00:  GET /dashboard [32m200[39m in 3169ms
+2025-06-02 16:52:07 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-02 16:52:07 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 921ms (1295 modules)
+2025-06-02 16:52:07 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 843ms
+2025-06-02 16:52:07 +02:00:  GET /meta.json [33m404[39m in 47ms
+2025-06-02 16:54:28 +02:00:  [32m[1m✓[22m[39m Compiled in 541ms (1308 modules)
+2025-06-02 16:54:28 +02:00:  GET /dashboard [32m200[39m in 69ms
+2025-06-02 16:54:45 +02:00:  [32m[1m✓[22m[39m Compiled / in 436ms (1309 modules)
+2025-06-02 16:54:45 +02:00:  GET / [32m200[39m in 540ms
+2025-06-02 16:54:46 +02:00:  GET /dashboard [32m200[39m in 14ms
+2025-06-02 16:54:49 +02:00:  [32m[1m✓[22m[39m Compiled in 453ms (1323 modules)
+2025-06-02 16:54:49 +02:00:  GET /dashboard [32m200[39m in 49ms
+2025-06-02 16:55:10 +02:00:  [32m[1m✓[22m[39m Compiled in 419ms (1323 modules)
+2025-06-02 16:55:10 +02:00:  GET /dashboard [32m200[39m in 56ms
+2025-06-02 16:55:34 +02:00:  [32m[1m✓[22m[39m Compiled in 456ms (1323 modules)
+2025-06-02 16:55:34 +02:00:  GET /dashboard [32m200[39m in 50ms
+2025-06-02 16:55:52 +02:00: 
+2025-06-02 16:55:52 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 16:55:52 +02:00: 
+2025-06-02 16:55:53 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 16:55:53 +02:00:    - Local:        http://localhost:3001
+2025-06-02 16:55:53 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-02 16:55:53 +02:00:    - Environments: .env.local, .env
+2025-06-02 16:55:53 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 16:55:54 +02:00:  [32m[1m✓[22m[39m Ready in 1501ms
+2025-06-02 16:55:55 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 16:55:57 +02:00:  [32m[1m✓[22m[39m Compiled / in 2.4s (1266 modules)
+2025-06-02 16:55:57 +02:00:  GET / [32m200[39m in 2890ms
+2025-06-02 16:55:57 +02:00:  [32m[1m✓[22m[39m Compiled in 188ms (572 modules)
+2025-06-02 16:55:58 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 355ms (1253 modules)
+2025-06-02 16:55:58 +02:00:  GET /meta.json [33m404[39m in 498ms
+2025-06-02 16:55:59 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 16:55:59 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 527ms (1310 modules)
+2025-06-02 16:55:59 +02:00:  GET /dashboard [32m200[39m in 563ms
+2025-06-02 17:00:04 +02:00:  GET /dashboard [32m200[39m in 196ms
+2025-06-02 17:00:05 +02:00:  GET /meta.json [33m404[39m in 41ms
+2025-06-02 17:00:54 +02:00:  GET / [32m200[39m in 42ms
+2025-06-02 17:00:55 +02:00:  GET /dashboard [32m200[39m in 12ms
+2025-06-02 17:01:33 +02:00:  [37m[1m○[22m[39m Compiling /login ...
+2025-06-02 17:01:33 +02:00:  [32m[1m✓[22m[39m Compiled /login in 1111ms (1330 modules)
+2025-06-02 17:01:33 +02:00:  GET / [32m200[39m in 1189ms
+2025-06-02 17:01:33 +02:00:  GET /login [32m200[39m in 1208ms
+2025-06-02 17:01:35 +02:00:  GET /dashboard [32m200[39m in 26ms
+2025-06-02 17:01:35 +02:00:  GET /login [32m200[39m in 13ms
+2025-06-02 17:01:35 +02:00:  GET /login [32m200[39m in 8ms
+2025-06-02 17:01:48 +02:00:  GET /dashboard [32m200[39m in 15ms
+2025-06-02 17:03:34 +02:00:  [32m[1m✓[22m[39m Compiled in 681ms (1330 modules)
+2025-06-02 17:03:34 +02:00:  GET /dashboard [32m200[39m in 83ms
+2025-06-02 17:03:43 +02:00:  [32m[1m✓[22m[39m Compiled in 459ms (1330 modules)
+2025-06-02 17:03:43 +02:00:  GET /dashboard [32m200[39m in 43ms
+2025-06-02 17:03:53 +02:00:  [32m[1m✓[22m[39m Compiled in 406ms (1330 modules)
+2025-06-02 17:03:53 +02:00:  GET /dashboard [32m200[39m in 37ms
+2025-06-02 17:04:13 +02:00:  [32m[1m✓[22m[39m Compiled in 285ms (1330 modules)
+2025-06-02 17:04:13 +02:00:  GET /dashboard [32m200[39m in 37ms
+2025-06-02 17:04:21 +02:00: 
+2025-06-02 17:04:21 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 17:04:21 +02:00: 
+2025-06-02 17:04:22 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 17:04:22 +02:00:    - Local:        http://localhost:3001
+2025-06-02 17:04:22 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-02 17:04:22 +02:00:    - Environments: .env.local, .env
+2025-06-02 17:04:22 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 17:04:24 +02:00:  [32m[1m✓[22m[39m Ready in 1622ms
+2025-06-02 17:04:24 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 17:04:27 +02:00:  [32m[1m✓[22m[39m Compiled / in 3s (1287 modules)
+2025-06-02 17:04:27 +02:00:  GET /login [32m200[39m in 3424ms
+2025-06-02 17:04:27 +02:00:  GET / [32m200[39m in 3421ms
+2025-06-02 17:04:27 +02:00:  GET / [32m200[39m in 1635ms
+2025-06-02 17:04:27 +02:00:  [32m[1m✓[22m[39m Compiled in 553ms (581 modules)
+2025-06-02 17:04:28 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 282ms (1274 modules)
+2025-06-02 17:04:28 +02:00:  GET /meta.json [33m404[39m in 435ms
+2025-06-02 17:04:28 +02:00:  GET / [32m200[39m in 46ms
+2025-06-02 17:04:29 +02:00:  GET /meta.json [33m404[39m in 28ms
+2025-06-02 17:04:31 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 17:04:31 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 658ms (1331 modules)
+2025-06-02 17:04:31 +02:00:  GET /dashboard [32m200[39m in 717ms
+2025-06-02 17:04:31 +02:00:  GET /login [32m200[39m in 25ms
+2025-06-02 17:04:31 +02:00:  GET /login [32m200[39m in 12ms
+2025-06-02 17:04:35 +02:00:  GET /dashboard [32m200[39m in 10ms
+2025-06-02 17:04:37 +02:00:  GET /login [32m200[39m in 7ms
+2025-06-02 17:04:37 +02:00:  GET / [32m200[39m in 22ms
+2025-06-02 17:04:38 +02:00:  GET /dashboard [32m200[39m in 16ms
+2025-06-02 17:04:38 +02:00:  GET /login [32m200[39m in 12ms
+2025-06-02 17:04:38 +02:00:  GET /login [32m200[39m in 11ms
+2025-06-02 17:04:40 +02:00:  GET /login [32m200[39m in 161ms
+2025-06-02 17:04:40 +02:00:  GET /meta.json [33m404[39m in 38ms
+2025-06-02 17:04:52 +02:00:  GET /dashboard [32m200[39m in 13ms
+2025-06-02 17:05:37 +02:00:  GET / [32m200[39m in 16ms
+2025-06-02 17:05:45 +02:00:  GET /dashboard [32m200[39m in 10ms
+2025-06-02 17:13:32 +02:00:  [32m[1m✓[22m[39m Compiled in 816ms (1344 modules)
+2025-06-02 17:13:33 +02:00:  GET /dashboard [32m200[39m in 71ms
+2025-06-02 17:13:44 +02:00:  [32m[1m✓[22m[39m Compiled in 143ms (608 modules)
+2025-06-02 17:13:44 +02:00:  GET /dashboard [32m200[39m in 11ms
+2025-06-02 17:13:46 +02:00:  [32m[1m✓[22m[39m Compiled in 166ms (608 modules)
+2025-06-02 17:13:46 +02:00:  GET /dashboard [32m200[39m in 10ms
+2025-06-02 17:14:09 +02:00:  [32m[1m✓[22m[39m Compiled in 343ms (1344 modules)
+2025-06-02 17:14:09 +02:00:  GET /dashboard [32m200[39m in 49ms
+2025-06-02 17:14:10 +02:00:  [32m[1m✓[22m[39m Compiled in 269ms (1344 modules)
+2025-06-02 17:14:10 +02:00:  GET /dashboard [32m200[39m in 31ms
+2025-06-02 17:14:26 +02:00:  [32m[1m✓[22m[39m Compiled in 777ms (1324 modules)
+2025-06-02 17:14:26 +02:00:  GET /dashboard [32m200[39m in 84ms
+2025-06-02 17:14:42 +02:00:  [32m[1m✓[22m[39m Compiled in 458ms (1338 modules)
+2025-06-02 17:14:42 +02:00:  GET /dashboard [32m200[39m in 79ms
+2025-06-02 17:14:47 +02:00:  [32m[1m✓[22m[39m Compiled in 515ms (1338 modules)
+2025-06-02 17:14:47 +02:00:  GET /dashboard [32m200[39m in 59ms
+2025-06-02 17:14:50 +02:00:  [32m[1m✓[22m[39m Compiled in 394ms (1338 modules)
+2025-06-02 17:14:50 +02:00:  GET /dashboard [32m200[39m in 28ms
+2025-06-02 17:15:03 +02:00:  [32m[1m✓[22m[39m Compiled in 382ms (1338 modules)
+2025-06-02 17:15:03 +02:00:  GET /dashboard [32m200[39m in 36ms
+2025-06-02 17:15:09 +02:00:  [32m[1m✓[22m[39m Compiled in 288ms (1338 modules)
+2025-06-02 17:15:09 +02:00:  GET /dashboard [32m200[39m in 30ms
+2025-06-02 17:15:27 +02:00: 
+2025-06-02 17:15:27 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 17:15:27 +02:00: 
+2025-06-02 17:15:28 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 17:15:28 +02:00:    - Local:        http://localhost:3001
+2025-06-02 17:15:28 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-02 17:15:28 +02:00:    - Environments: .env.local, .env
+2025-06-02 17:15:28 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 17:15:30 +02:00:  [32m[1m✓[22m[39m Ready in 1826ms
+2025-06-02 17:15:38 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 17:15:40 +02:00:  [32m[1m✓[22m[39m Compiled / in 2.5s (1260 modules)
+2025-06-02 17:15:41 +02:00:  GET / [32m200[39m in 3033ms
+2025-06-02 17:15:41 +02:00:  [32m[1m✓[22m[39m Compiled in 261ms (574 modules)
+2025-06-02 17:15:42 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 437ms (1247 modules)
+2025-06-02 17:15:42 +02:00:  GET /meta.json [33m404[39m in 569ms
+2025-06-02 17:15:49 +02:00:  GET / [32m200[39m in 152ms
+2025-06-02 17:15:49 +02:00:  GET /meta.json [33m404[39m in 36ms
+2025-06-02 17:15:52 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 17:15:52 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 700ms (1304 modules)
+2025-06-02 17:15:52 +02:00:  GET /dashboard [32m200[39m in 760ms
+2025-06-02 17:15:57 +02:00:  GET / [32m200[39m in 20ms
+2025-06-02 17:15:59 +02:00:  GET /dashboard [32m200[39m in 11ms
+2025-06-02 17:16:01 +02:00:  GET / [32m200[39m in 17ms
+2025-06-02 17:16:03 +02:00:  GET /dashboard [32m200[39m in 14ms
+2025-06-02 17:16:06 +02:00:  GET / [32m200[39m in 10ms
+2025-06-02 17:16:08 +02:00:  GET /dashboard [32m200[39m in 10ms
+2025-06-02 17:18:32 +02:00:  [32m[1m✓[22m[39m Compiled in 683ms (1312 modules)
+2025-06-02 17:18:32 +02:00:  GET /dashboard [32m200[39m in 55ms
+2025-06-02 17:18:48 +02:00: 
+2025-06-02 17:18:48 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 17:18:48 +02:00: 
+2025-06-02 17:18:48 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 17:18:48 +02:00:    - Local:        http://localhost:3001
+2025-06-02 17:18:48 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-02 17:18:48 +02:00:    - Environments: .env.local, .env
+2025-06-02 17:18:48 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 17:18:50 +02:00:  [32m[1m✓[22m[39m Ready in 1926ms
+2025-06-02 17:18:52 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 17:18:54 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 2s (1303 modules)
+2025-06-02 17:18:54 +02:00:  GET / [32m200[39m in 2367ms
+2025-06-02 17:18:54 +02:00:  GET /dashboard [32m200[39m in 798ms
+2025-06-02 17:18:55 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-02 17:18:55 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 576ms (1304 modules)
+2025-06-02 17:18:55 +02:00:  GET /meta.json [33m404[39m in 751ms
+2025-06-02 17:18:57 +02:00:  GET / [32m200[39m in 28ms
+2025-06-02 17:18:58 +02:00:  GET /dashboard [32m200[39m in 14ms
+2025-06-02 17:18:59 +02:00:  GET / [32m200[39m in 8ms
+2025-06-02 17:19:25 +02:00:  GET / [32m200[39m in 56ms
+2025-06-02 17:19:26 +02:00:  GET /meta.json [33m404[39m in 44ms
+2025-06-02 17:19:27 +02:00:  GET /dashboard [32m200[39m in 20ms
+2025-06-02 17:19:30 +02:00:  GET / [32m200[39m in 20ms
+2025-06-02 17:19:32 +02:00:  GET /dashboard [32m200[39m in 14ms
+2025-06-02 17:19:33 +02:00:  GET / [32m200[39m in 10ms
+2025-06-02 17:22:50 +02:00:  [32m[1m✓[22m[39m Compiled in 1313ms (1317 modules)
+2025-06-02 17:22:50 +02:00:  GET / [32m200[39m in 81ms
+2025-06-02 17:23:52 +02:00:  [32m[1m✓[22m[39m Compiled in 830ms (1317 modules)
+2025-06-02 17:23:52 +02:00:  GET / [32m200[39m in 59ms
+2025-06-02 17:24:05 +02:00: 
+2025-06-02 17:24:05 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 17:24:05 +02:00: 
+2025-06-02 17:24:06 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 17:24:06 +02:00:    - Local:        http://localhost:3001
+2025-06-02 17:24:06 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-02 17:24:06 +02:00:    - Environments: .env.local, .env
+2025-06-02 17:24:06 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 17:24:08 +02:00:  [32m[1m✓[22m[39m Ready in 1741ms
+2025-06-02 17:24:12 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 17:24:13 +02:00:  [32m[1m✓[22m[39m Compiled / in 1694ms (1246 modules)
+2025-06-02 17:24:14 +02:00:  GET / [32m200[39m in 2014ms
+2025-06-02 17:24:14 +02:00:  [32m[1m✓[22m[39m Compiled in 86ms (560 modules)
+2025-06-02 17:24:15 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 274ms (1247 modules)
+2025-06-02 17:24:15 +02:00:  GET /meta.json [33m404[39m in 433ms
+2025-06-02 17:24:15 +02:00:  GET /meta.json [33m404[39m in 428ms
+2025-06-02 17:24:15 +02:00:  GET /meta.json [33m404[39m in 29ms
+2025-06-02 17:24:16 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-06-02 17:24:17 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 624ms (1304 modules)
+2025-06-02 17:24:17 +02:00:  GET /dashboard [32m200[39m in 687ms
+2025-06-02 17:24:19 +02:00:  GET / [32m200[39m in 20ms
+2025-06-02 17:24:20 +02:00:  GET /dashboard [32m200[39m in 11ms
+2025-06-02 17:24:22 +02:00:  GET / [32m200[39m in 7ms
+2025-06-02 17:24:24 +02:00:  GET /dashboard [32m200[39m in 11ms
+2025-06-02 17:24:27 +02:00:  GET / [32m200[39m in 12ms
+2025-06-02 17:24:29 +02:00:  GET /dashboard [32m200[39m in 13ms
+2025-06-02 17:24:32 +02:00:  GET / [32m200[39m in 12ms
+2025-06-02 17:24:34 +02:00:  GET /dashboard [32m200[39m in 11ms
+2025-06-02 17:24:52 +02:00:  GET / [32m200[39m in 14ms
+2025-06-02 17:24:53 +02:00:  GET /dashboard [32m200[39m in 14ms
+2025-06-02 17:24:55 +02:00:  GET / [32m200[39m in 13ms
+2025-06-02 17:24:56 +02:00:  GET /dashboard [32m200[39m in 10ms
+2025-06-02 17:25:02 +02:00:  GET / [32m200[39m in 13ms
+2025-06-02 17:25:03 +02:00:  GET /dashboard [32m200[39m in 9ms
+2025-06-02 17:27:31 +02:00:  [32m[1m✓[22m[39m Compiled in 1319ms (1312 modules)
+2025-06-02 17:27:31 +02:00:  GET /dashboard [32m200[39m in 59ms
+2025-06-02 17:33:25 +02:00:  [32m[1m✓[22m[39m Compiled in 1280ms (1298 modules)
+2025-06-02 17:33:33 +02:00:  [32m[1m✓[22m[39m Compiled in 300ms (1298 modules)
+2025-06-02 17:48:56 +02:00:  [37m[1m○[22m[39m Compiling /login ...
+2025-06-02 17:48:57 +02:00:  [32m[1m✓[22m[39m Compiled /login in 1092ms (1319 modules)
+2025-06-02 17:48:57 +02:00:  GET /login [32m200[39m in 1165ms
+2025-06-02 17:51:01 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 17:51:01 +02:00:    - Local:        http://localhost:3001
+2025-06-02 17:51:01 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-02 17:51:01 +02:00:    - Environments: .env.local, .env
+2025-06-02 17:51:01 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 17:51:03 +02:00:  [32m[1m✓[22m[39m Ready in 1691ms
+2025-06-02 17:52:58 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 17:52:58 +02:00:    - Local:        http://localhost:3001
+2025-06-02 17:52:58 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-02 17:52:58 +02:00:    - Environments: .env.local, .env
+2025-06-02 17:52:58 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 17:53:00 +02:00:  [32m[1m✓[22m[39m Ready in 1576ms

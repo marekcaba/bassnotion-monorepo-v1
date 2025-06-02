@@ -33,4 +33,17 @@ export class AppController {
       database: dbStatus,
     };
   }
+
+  @Get('api/debug/modules')
+  getModules() {
+    // This will help us see if UserController routes are being registered
+    return {
+      message: 'Debug: Check if UserController routes are available',
+      expectedRoutes: [
+        'PUT /user/profile',
+        'DELETE /user/account'
+      ],
+      instructions: 'Try accessing these routes to see if they exist'
+    };
+  }
 }

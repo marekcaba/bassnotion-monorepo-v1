@@ -1,39 +1,55 @@
+# Dependabot disabled - using manual dependency management
+# Uncomment below if you want to re-enable automated dependency updates
+
 version: 2
 updates:
-  # Enable Dependabot for npm packages in the root
+  # npm packages - SECURITY UPDATES ONLY
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
-      interval: 'weekly'
-      day: 'monday'
+      interval: 'daily'  # Check daily for security issues
       time: '09:00'
-    # Only create PRs for security updates to avoid noise
-    open-pull-requests-limit: 10
-    # Allow automatic merging of patch-level security updates
+      timezone: 'UTC'
+    # Limit concurrent PRs
+    open-pull-requests-limit: 5
+    # ONLY security updates - no feature updates
     allow:
-      - dependency-type: 'all'
-    # Focus on security updates
-    target-branch: 'main'
-    reviewers:
-      - 'marekcaba' # Replace with your GitHub username
+      - dependency-type: 'direct'
+        update-types: ['version-update:semver-patch']
+      - dependency-type: 'indirect'
+        update-types: ['version-update:semver-patch']
+    # Only create PRs for security vulnerabilities
     labels:
-      - 'dependencies'
       - 'security'
+      - 'dependencies'
+    reviewers:
+      - 'marekcaba'
     commit-message:
       prefix: 'security'
       include: 'scope'
-
-  # Monitor GitHub Actions for security updates
+    # Group security updates
+    groups:
+      security-patches:
+        patterns:
+          - '*'
+        update-types:
+          - 'security'
+  
+  # GitHub Actions - security updates only  
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
       interval: 'weekly'
       day: 'monday'
       time: '09:00'
-    open-pull-requests-limit: 5
+      timezone: 'UTC'
+    open-pull-requests-limit: 2
     labels:
-      - 'github-actions'
       - 'security'
+      - 'github-actions'
     commit-message:
-      prefix: 'ci'
+      prefix: 'security'
       include: 'scope'
+
+# Manual dependency management for feature updates
+# Use: pnpm run deps:check for controlled feature updates

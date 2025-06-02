@@ -49,7 +49,7 @@ export function LoginForm({
       await onSubmit(data);
     } catch (error) {
       // Error handling will be done by the parent component
-      console.error('Login error:', error);
+      // Note: Error is propagated to parent, no additional logging needed
     }
   };
 

@@ -1,0 +1,108 @@
+2025-06-01 18:06:48 +02:00:  [33m[1m⚠[22m[39m Found a change in next.config.js. Restarting the server to apply the changes...
+2025-06-01 18:32:09 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-06-01 18:32:09 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-06-01 18:32:09 +02:00: Caused by:
+2025-06-01 18:32:09 +02:00:     No such file or directory (os error 2)
+2025-06-01 18:32:09 +02:00: Import trace for requested module:
+2025-06-01 18:32:09 +02:00: ../../libs/contracts/dist/src/index.js
+2025-06-01 18:32:09 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-06-01 18:32:09 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-06-01 18:32:09 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-06-01 18:32:09 +02:00: Caused by:
+2025-06-01 18:32:09 +02:00:     No such file or directory (os error 2)
+2025-06-01 18:32:09 +02:00: Import trace for requested module:
+2025-06-01 18:32:09 +02:00: ../../libs/contracts/dist/src/index.js
+2025-06-01 18:32:09 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-06-01 22:57:20 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-06-01 22:57:20 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-06-01 22:57:20 +02:00: Caused by:
+2025-06-01 22:57:20 +02:00:     No such file or directory (os error 2)
+2025-06-01 22:57:20 +02:00: Import trace for requested module:
+2025-06-01 22:57:20 +02:00: ../../libs/contracts/dist/src/index.js
+2025-06-01 22:57:20 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-06-01 22:57:21 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-06-01 22:57:21 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-06-01 22:57:21 +02:00: Caused by:
+2025-06-01 22:57:21 +02:00:     No such file or directory (os error 2)
+2025-06-01 22:57:21 +02:00: Import trace for requested module:
+2025-06-01 22:57:21 +02:00: ../../libs/contracts/dist/src/index.js
+2025-06-01 22:57:21 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-06-01 23:09:51 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-06-01 23:09:51 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-06-01 23:09:51 +02:00: Caused by:
+2025-06-01 23:09:51 +02:00:     No such file or directory (os error 2)
+2025-06-01 23:09:51 +02:00: Import trace for requested module:
+2025-06-01 23:09:51 +02:00: ../../libs/contracts/dist/src/index.js
+2025-06-01 23:09:51 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-06-01 23:09:51 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-06-01 23:09:51 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-06-01 23:09:51 +02:00: Caused by:
+2025-06-01 23:09:51 +02:00:     No such file or directory (os error 2)
+2025-06-01 23:09:51 +02:00: Import trace for requested module:
+2025-06-01 23:09:51 +02:00: ../../libs/contracts/dist/src/index.js
+2025-06-01 23:09:51 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-06-01 23:17:34 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-06-01 23:17:34 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-06-01 23:17:34 +02:00: Caused by:
+2025-06-01 23:17:34 +02:00:     No such file or directory (os error 2)
+2025-06-01 23:17:34 +02:00: Import trace for requested module:
+2025-06-01 23:17:34 +02:00: ../../libs/contracts/dist/src/index.js
+2025-06-01 23:17:34 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-06-01 23:17:34 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-06-01 23:17:34 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-06-01 23:17:34 +02:00: Caused by:
+2025-06-01 23:17:34 +02:00:     No such file or directory (os error 2)
+2025-06-01 23:17:34 +02:00: Import trace for requested module:
+2025-06-01 23:17:34 +02:00: ../../libs/contracts/dist/src/index.js
+2025-06-01 23:17:34 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-06-01 23:19:58 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-06-01 23:19:58 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-06-01 23:19:58 +02:00: Caused by:
+2025-06-01 23:19:58 +02:00:     No such file or directory (os error 2)
+2025-06-01 23:19:58 +02:00: Import trace for requested module:
+2025-06-01 23:19:58 +02:00: ../../libs/contracts/dist/src/index.js
+2025-06-01 23:19:58 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-06-01 23:19:58 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-06-01 23:19:58 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-06-01 23:19:58 +02:00: Caused by:
+2025-06-01 23:19:58 +02:00:     No such file or directory (os error 2)
+2025-06-01 23:19:58 +02:00: Import trace for requested module:
+2025-06-01 23:19:58 +02:00: ../../libs/contracts/dist/src/index.js
+2025-06-01 23:19:58 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-06-01 23:29:59 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-06-01 23:29:59 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-06-01 23:29:59 +02:00: Caused by:
+2025-06-01 23:29:59 +02:00:     No such file or directory (os error 2)
+2025-06-01 23:29:59 +02:00: Import trace for requested module:
+2025-06-01 23:29:59 +02:00: ../../libs/contracts/dist/src/index.js
+2025-06-01 23:29:59 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-06-01 23:29:59 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-06-01 23:29:59 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-06-01 23:29:59 +02:00: Caused by:
+2025-06-01 23:29:59 +02:00:     No such file or directory (os error 2)
+2025-06-01 23:29:59 +02:00: Import trace for requested module:
+2025-06-01 23:29:59 +02:00: ../../libs/contracts/dist/src/index.js
+2025-06-01 23:29:59 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-06-01 23:33:42 +02:00:  [31m[1m⨯[22m[39m TypeError: Cannot read properties of undefined (reading 'call')
+2025-06-01 23:33:42 +02:00:     at Object.__webpack_require__ [as require] (.next/server/webpack-runtime.js:33:43)
+2025-06-01 23:33:42 +02:00:     at JSON.parse (<anonymous>) {
+2025-06-01 23:33:42 +02:00:   digest: [32m'3786763644'[39m
+2025-06-01 23:33:42 +02:00: }
+2025-06-01 23:33:42 +02:00: TypeError: Cannot read properties of undefined (reading 'call')
+2025-06-01 23:33:42 +02:00:     at Object.__webpack_require__ [as require] (.next/server/webpack-runtime.js:33:43)
+2025-06-01 23:33:42 +02:00:     at JSON.parse (<anonymous>)
+2025-06-01 23:33:42 +02:00:  [31m[1m⨯[22m[39m TypeError: Cannot read properties of undefined (reading 'call')
+2025-06-01 23:33:42 +02:00:     at Object.__webpack_require__ [as require] (.next/server/webpack-runtime.js:33:43)
+2025-06-01 23:33:42 +02:00:     at JSON.parse (<anonymous>)
+2025-06-01 23:33:42 +02:00:  [31m[1m⨯[22m[39m TypeError: Cannot read properties of undefined (reading 'call')
+2025-06-01 23:33:42 +02:00:     at Object.__webpack_require__ [as require] (.next/server/webpack-runtime.js:33:43)
+2025-06-01 23:33:42 +02:00:     at JSON.parse (<anonymous>) {
+2025-06-01 23:33:42 +02:00:   digest: [32m'3786763644'[39m
+2025-06-01 23:33:42 +02:00: }
+2025-06-01 23:33:42 +02:00: TypeError: Cannot read properties of undefined (reading 'call')
+2025-06-01 23:33:42 +02:00:     at Object.__webpack_require__ [as require] (.next/server/webpack-runtime.js:33:43)
+2025-06-01 23:33:42 +02:00:     at JSON.parse (<anonymous>)
+2025-06-01 23:33:42 +02:00:  [31m[1m⨯[22m[39m TypeError: Cannot read properties of undefined (reading 'call')
+2025-06-01 23:33:42 +02:00:     at Object.__webpack_require__ [as require] (.next/server/webpack-runtime.js:33:43)
+2025-06-01 23:33:42 +02:00:     at JSON.parse (<anonymous>)
+2025-06-01 23:33:48 +02:00: <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development-fallback/0.pack.gz_' -> '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development-fallback/0.pack.gz'

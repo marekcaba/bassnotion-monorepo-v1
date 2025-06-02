@@ -13,7 +13,7 @@ export interface Toast {
   title?: string;
   description?: string;
   action?: ToastActionElement;
-  variant?: 'default' | 'destructive';
+  variant?: 'default' | 'destructive' | 'success';
 }
 
 export interface ToasterToast extends Toast {

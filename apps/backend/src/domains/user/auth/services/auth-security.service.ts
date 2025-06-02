@@ -58,6 +58,15 @@ export class AuthSecurityService {
     ipAddress: string,
   ): Promise<RateLimitInfo> {
     try {
+      // Validate input parameters
+      if (!email || typeof email !== 'string') {
+        this.logger.warn('Invalid email provided to checkRateLimit, failing open');
+        return {
+          isRateLimited: false,
+          attemptsRemaining: this.MAX_ATTEMPTS_PER_EMAIL,
+        };
+      }
+
       // Defensive check for DatabaseService
       if (!this.db || !this.db.supabase) {
         this.logger.warn(
@@ -145,6 +154,15 @@ export class AuthSecurityService {
    */
   async checkAccountLockout(email: string): Promise<AccountLockoutInfo> {
     try {
+      // Validate input parameters
+      if (!email || typeof email !== 'string') {
+        this.logger.warn('Invalid email provided to checkAccountLockout, failing open');
+        return {
+          isLocked: false,
+          failedAttempts: 0,
+        };
+      }
+
       // Defensive check for DatabaseService
       if (!this.db || !this.db.supabase) {
         this.logger.warn(
@@ -243,6 +261,12 @@ export class AuthSecurityService {
     userAgent?: string,
   ): Promise<void> {
     try {
+      // Validate input parameters
+      if (!email || typeof email !== 'string') {
+        this.logger.warn('Invalid email provided to recordLoginAttempt, skipping record');
+        return;
+      }
+
       // Defensive check for DatabaseService
       if (!this.db || !this.db.supabase) {
         this.logger.warn(

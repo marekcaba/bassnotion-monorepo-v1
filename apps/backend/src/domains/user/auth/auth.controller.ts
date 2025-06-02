@@ -68,6 +68,19 @@ export class AuthController {
     @Body() signInDto: SignInDto,
     @Req() request: FastifyRequest,
   ): Promise<AuthResponse> {
+    // Validate input to prevent crashes from malformed requests
+    if (!signInDto || !signInDto.email || !signInDto.password) {
+      this.logger.warn(`Invalid signin request: missing email or password`);
+      return {
+        success: false,
+        message: 'Email and password are required',
+        error: {
+          code: 'INVALID_INPUT',
+          details: 'Missing email or password',
+        },
+      };
+    }
+
     this.logger.debug(`Signin request received for email: ${signInDto.email}`);
 
     // Defensive check for test environment
