@@ -100,21 +100,25 @@
 @keyframes view-transition-exit {
   0% {
     opacity: 1;
-    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg) rotateX(0deg) rotateY(0deg);
+    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg)
+      rotateX(0deg) rotateY(0deg);
   }
   100% {
     opacity: 0;
-    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg) rotateX(0deg) rotateY(0deg);
+    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg)
+      rotateX(0deg) rotateY(0deg);
   }
 }
 
 @keyframes view-transition-enter {
   0% {
     opacity: 0;
-    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg) rotateX(0deg) rotateY(0deg);
+    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg)
+      rotateX(0deg) rotateY(0deg);
   }
   100% {
     opacity: 1;
-    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg) rotateX(0deg) rotateY(0deg);
+    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg)
+      rotateX(0deg) rotateY(0deg);
   }
 }

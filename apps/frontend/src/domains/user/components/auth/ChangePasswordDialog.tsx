@@ -180,27 +180,31 @@ export function ChangePasswordDialog({
           background-color: #3b82f6;
         }
       `}</style>
-      
+
       <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent 
-          className="dialog-content fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 shadow-2xl rounded-lg p-6"
-        >
+        <DialogContent className="dialog-content fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 shadow-2xl rounded-lg p-6">
           <DialogHeader>
             <div className="flex items-center gap-3">
               <div className="dialog-icon-blue p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
                 <Key className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <DialogTitle className="text-gray-900 dark:text-gray-100">Change Password</DialogTitle>
+                <DialogTitle className="text-gray-900 dark:text-gray-100">
+                  Change Password
+                </DialogTitle>
                 <DialogDescription className="mt-1 text-gray-600 dark:text-gray-400">
-                  Update your account password. Make sure to use a strong, unique password.
+                  Update your account password. Make sure to use a strong,
+                  unique password.
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <form
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="space-y-4"
+            >
               <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-200 dark:border-blue-900">
                 <div className="space-y-4">
                   <FormField
@@ -208,7 +212,9 @@ export function ChangePasswordDialog({
                     name="currentPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-blue-800 dark:text-blue-200">Current Password</FormLabel>
+                        <FormLabel className="text-blue-800 dark:text-blue-200">
+                          Current Password
+                        </FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Input
@@ -223,7 +229,9 @@ export function ChangePasswordDialog({
                               variant="ghost"
                               size="sm"
                               className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                              onClick={() =>
+                                setShowCurrentPassword(!showCurrentPassword)
+                              }
                               disabled={isLoading}
                             >
                               {showCurrentPassword ? (
@@ -232,7 +240,9 @@ export function ChangePasswordDialog({
                                 <Eye className="h-4 w-4" />
                               )}
                               <span className="sr-only">
-                                {showCurrentPassword ? 'Hide password' : 'Show password'}
+                                {showCurrentPassword
+                                  ? 'Hide password'
+                                  : 'Show password'}
                               </span>
                             </Button>
                           </div>
@@ -247,7 +257,9 @@ export function ChangePasswordDialog({
                     name="newPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-blue-800 dark:text-blue-200">New Password</FormLabel>
+                        <FormLabel className="text-blue-800 dark:text-blue-200">
+                          New Password
+                        </FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Input
@@ -262,7 +274,9 @@ export function ChangePasswordDialog({
                               variant="ghost"
                               size="sm"
                               className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => setShowNewPassword(!showNewPassword)}
+                              onClick={() =>
+                                setShowNewPassword(!showNewPassword)
+                              }
                               disabled={isLoading}
                             >
                               {showNewPassword ? (
@@ -271,7 +285,9 @@ export function ChangePasswordDialog({
                                 <Eye className="h-4 w-4" />
                               )}
                               <span className="sr-only">
-                                {showNewPassword ? 'Hide password' : 'Show password'}
+                                {showNewPassword
+                                  ? 'Hide password'
+                                  : 'Show password'}
                               </span>
                             </Button>
                           </div>
@@ -286,7 +302,9 @@ export function ChangePasswordDialog({
                     name="confirmPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-blue-800 dark:text-blue-200">Confirm New Password</FormLabel>
+                        <FormLabel className="text-blue-800 dark:text-blue-200">
+                          Confirm New Password
+                        </FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Input
@@ -301,7 +319,9 @@ export function ChangePasswordDialog({
                               variant="ghost"
                               size="sm"
                               className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              onClick={() =>
+                                setShowConfirmPassword(!showConfirmPassword)
+                              }
                               disabled={isLoading}
                             >
                               {showConfirmPassword ? (
@@ -310,7 +330,9 @@ export function ChangePasswordDialog({
                                 <Eye className="h-4 w-4" />
                               )}
                               <span className="sr-only">
-                                {showConfirmPassword ? 'Hide password' : 'Show password'}
+                                {showConfirmPassword
+                                  ? 'Hide password'
+                                  : 'Show password'}
                               </span>
                             </Button>
                           </div>
@@ -353,4 +375,4 @@ export function ChangePasswordDialog({
       </Dialog>
     </>
   );
-} 
+}

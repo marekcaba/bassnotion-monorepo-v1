@@ -170,8 +170,8 @@ function LoginPageContent() {
 
         {/* Back to Home */}
         <div className="text-center">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="text-xs sm:text-sm"
             onClick={() => navigateWithTransition('/')}
           >

@@ -5,6 +5,7 @@
     "**/dist/*",
     "**/coverage/*",
     "**/.nx/*",
+    "**/deploy/*",
     "**/*.d.ts",
     "!**/*.manual.d.ts"
   ],
@@ -29,7 +30,33 @@
       }
     },
     {
-      "files": ["*.ts", "*.tsx"],
+      "files": ["libs/**/*.ts", "libs/**/*.tsx"],
+      "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@nx/typescript",
+        "prettier"
+      ],
+      "parserOptions": {
+        "project": ["./libs/*/tsconfig.json"]
+      },
+      "rules": {
+        "prettier/prettier": "error",
+        "@typescript-eslint/interface-name-prefix": "off",
+        "@typescript-eslint/explicit-function-return-type": "off",
+        "@typescript-eslint/explicit-module-boundary-types": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unused-vars": [
+          "error",
+          {
+            "argsIgnorePattern": "^_",
+            "varsIgnorePattern": "^_"
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/**/*.ts", "apps/**/*.tsx"],
       "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
@@ -41,7 +68,8 @@
           "./tsconfig.json",
           "./apps/*/tsconfig.json",
           "./apps/*/tsconfig.node.json",
-          "./libs/*/tsconfig.json"
+          "./apps/*/tsconfig.app.json",
+          "./apps/*/tsconfig.spec.json"
         ]
       },
       "rules": {
@@ -71,6 +99,21 @@
       "parser": "jsonc-eslint-parser",
       "rules": {
         "@nx/dependency-checks": "error"
+      }
+    },
+    {
+      "files": ["**/e2e/**/*.ts", "**/e2e/**/*.js", "**/*e2e*/**/*.ts", "**/*e2e*/**/*.js"],
+      "extends": ["eslint:recommended", "prettier"],
+      "env": {
+        "node": true,
+        "es2022": true
+      },
+      "parserOptions": {
+        "ecmaVersion": 2022,
+        "sourceType": "module"
+      },
+      "rules": {
+        "prettier/prettier": "error"
       }
     }
   ]

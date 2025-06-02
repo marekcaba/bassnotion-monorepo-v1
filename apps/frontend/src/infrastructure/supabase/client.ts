@@ -31,6 +31,17 @@ const useMinimalConfig = isWebkit && isE2ETesting;
 
 // Create the Supabase client with appropriate configuration
 const createSupabaseClient = () => {
+  // Get validated environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // These should already be validated above, but TypeScript doesn't know that
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      'Supabase environment variables are not properly configured',
+    );
+  }
+
   // For webkit E2E testing, return a completely mocked client
   if (useMinimalConfig) {
     console.log('Creating mocked Supabase client for webkit E2E testing');
@@ -73,66 +84,62 @@ const createSupabaseClient = () => {
     };
   }
 
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-        flowType: 'pkce',
-        debug: false,
-        // Webkit-compatible storage configuration
-        storage: isWebkit
-          ? {
-              getItem: (key: string) => {
-                try {
-                  return localStorage.getItem(key);
-                } catch {
-                  return null; // Fallback if localStorage is blocked
-                }
-              },
-              setItem: (key: string, value: string) => {
-                try {
-                  localStorage.setItem(key, value);
-                } catch {
-                  // Silently fail if localStorage is blocked in webkit
-                }
-              },
-              removeItem: (key: string) => {
-                try {
-                  localStorage.removeItem(key);
-                } catch {
-                  // Silently fail if localStorage is blocked in webkit
-                }
-              },
-            }
-          : undefined,
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce',
+      debug: false,
+      // Webkit-compatible storage configuration
+      storage: isWebkit
+        ? {
+            getItem: (key: string) => {
+              try {
+                return localStorage.getItem(key);
+              } catch {
+                return null; // Fallback if localStorage is blocked
+              }
+            },
+            setItem: (key: string, value: string) => {
+              try {
+                localStorage.setItem(key, value);
+              } catch {
+                // Silently fail if localStorage is blocked in webkit
+              }
+            },
+            removeItem: (key: string) => {
+              try {
+                localStorage.removeItem(key);
+              } catch {
+                // Silently fail if localStorage is blocked in webkit
+              }
+            },
+          }
+        : undefined,
+    },
+    global: {
+      headers: {
+        'x-client-info': '@supabase/auth-ui-react@latest',
       },
-      global: {
-        headers: {
-          'x-client-info': '@supabase/auth-ui-react@latest',
-        },
-        fetch: (input: RequestInfo | URL, init?: RequestInit) => {
-          const controller = new AbortController();
-          // Reduce timeout globally to 3 seconds for faster UX
-          const timeoutId = setTimeout(() => controller.abort(), 3000);
+      fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+        const controller = new AbortController();
+        // Reduce timeout globally to 3 seconds for faster UX
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-          return fetch(input, {
-            ...init,
-            signal: controller.signal,
-          }).finally(() => {
-            clearTimeout(timeoutId);
-          });
-        },
-      },
-      // Webkit-specific database configuration
-      db: {
-        schema: 'public',
+        return fetch(input, {
+          ...init,
+          signal: controller.signal,
+        }).finally(() => {
+          clearTimeout(timeoutId);
+        });
       },
     },
-  );
+    // Webkit-specific database configuration
+    db: {
+      schema: 'public',
+    },
+  });
 };
 
 export const supabase = createSupabaseClient() as any;

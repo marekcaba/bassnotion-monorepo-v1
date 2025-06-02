@@ -25,7 +25,8 @@ const initialCards: DashboardCard[] = [
     id: '1',
     title: 'Bass Exercises',
     content: 'Practice with interactive bass exercises',
-    color: 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900',
+    color:
+      'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900',
     buttonText: 'Coming Soon',
     disabled: true,
   },
@@ -33,7 +34,8 @@ const initialCards: DashboardCard[] = [
     id: '2',
     title: 'Learning Progress',
     content: 'Track your bass learning journey',
-    color: 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-900',
+    color:
+      'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-900',
     buttonText: 'Coming Soon',
     disabled: true,
   },
@@ -41,7 +43,8 @@ const initialCards: DashboardCard[] = [
     id: '3',
     title: 'Community',
     content: 'Connect with other bass players',
-    color: 'bg-purple-50 border-purple-200 dark:bg-purple-950/30 dark:border-purple-900',
+    color:
+      'bg-purple-50 border-purple-200 dark:bg-purple-950/30 dark:border-purple-900',
     buttonText: 'Coming Soon',
     disabled: true,
   },
@@ -52,19 +55,22 @@ const extraCards: DashboardCard[] = [
     id: '4',
     title: 'Practice Streak',
     content: '3 days in a row! Keep it up!',
-    color: 'bg-orange-50 border-orange-200 dark:bg-orange-950/30 dark:border-orange-900',
+    color:
+      'bg-orange-50 border-orange-200 dark:bg-orange-950/30 dark:border-orange-900',
   },
   {
     id: '5',
     title: 'Weekly Goal',
     content: '2/5 sessions completed this week',
-    color: 'bg-pink-50 border-pink-200 dark:bg-pink-950/30 dark:border-pink-900',
+    color:
+      'bg-pink-50 border-pink-200 dark:bg-pink-950/30 dark:border-pink-900',
   },
   {
     id: '6',
     title: 'Achievements',
     content: '🎸 First Song Completed!',
-    color: 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-900',
+    color:
+      'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-900',
   },
 ];
 
@@ -74,30 +80,33 @@ export function DashboardContent() {
 
   const addRandomCard = () => {
     const availableCards = extraCards.filter(
-      extraCard => !cards.find(card => card.id === extraCard.id)
+      (extraCard) => !cards.find((card) => card.id === extraCard.id),
     );
-    
+
     if (availableCards.length > 0) {
       const randomIndex = Math.floor(Math.random() * availableCards.length);
       const randomCard = availableCards[randomIndex];
       if (randomCard) {
-        setCards(prev => [...prev, randomCard]);
+        setCards((prev) => [...prev, randomCard]);
       }
     }
   };
 
   const removeCard = (id: string) => {
-    setCards(prev => prev.filter(card => card.id !== id));
+    setCards((prev) => prev.filter((card) => card.id !== id));
   };
 
   const shuffleCards = () => {
-    setCards(prev => {
+    setCards((prev) => {
       const shuffled = [...prev];
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        const temp = shuffled[i]!;
-        shuffled[i] = shuffled[j]!;
-        shuffled[j] = temp;
+        const itemI = shuffled[i];
+        const itemJ = shuffled[j];
+        if (itemI && itemJ) {
+          shuffled[i] = itemJ;
+          shuffled[j] = itemI;
+        }
       }
       return shuffled;
     });
@@ -132,12 +141,12 @@ export function DashboardContent() {
       </div>
 
       {/* Animated Grid */}
-      <div 
-        ref={gridRef}
-        className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
-      >
+      <div ref={gridRef} className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => (
-          <Card key={card.id} className={`relative ${card.color} transition-all duration-200 hover:shadow-lg`}>
+          <Card
+            key={card.id}
+            className={`relative ${card.color} transition-all duration-200 hover:shadow-lg`}
+          >
             <CardHeader className="relative">
               <CardTitle className="pr-8">{card.title}</CardTitle>
               {cards.length > 3 && (
@@ -154,9 +163,9 @@ export function DashboardContent() {
             <CardContent>
               <p className="text-muted-foreground mb-4">{card.content}</p>
               {card.buttonText && (
-                <Button 
-                  size="sm" 
-                  disabled={card.disabled} 
+                <Button
+                  size="sm"
+                  disabled={card.disabled}
                   className="w-full sm:w-auto"
                 >
                   {card.buttonText}
@@ -169,7 +178,9 @@ export function DashboardContent() {
 
       {cards.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
-          <p>No cards available. Add some cards to see AutoAnimate in action!</p>
+          <p>
+            No cards available. Add some cards to see AutoAnimate in action!
+          </p>
         </div>
       )}
     </div>

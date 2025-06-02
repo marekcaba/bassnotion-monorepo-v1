@@ -1,0 +1,498 @@
+/**
+ * PerformanceMonitor - Audio Performance Tracking Service
+ *
+ * Monitors audio dropouts, latency, and performance metrics
+ * to ensure NFR compliance (NFR-PO-15: <50ms latency, NFR-PF-04: <200ms response)
+ *
+ * Part of Story 2.1: Core Audio Engine Foundation
+ */
+
+export interface AudioPerformanceMetrics {
+  latency: number; // Current audio latency in ms
+  averageLatency: number; // Average latency over time
+  maxLatency: number; // Maximum recorded latency
+  dropoutCount: number; // Number of audio dropouts detected
+  bufferUnderruns: number; // Buffer underrun events
+  cpuUsage: number; // Estimated CPU usage percentage
+  memoryUsage: number; // Memory usage in MB
+  sampleRate: number; // Current sample rate
+  bufferSize: number; // Current buffer size
+  timestamp: number; // Last measurement timestamp
+}
+
+export interface PerformanceAlert {
+  type: 'latency' | 'dropout' | 'cpu' | 'memory';
+  severity: 'warning' | 'critical';
+  message: string;
+  metrics: Partial<AudioPerformanceMetrics>;
+  timestamp: number;
+}
+
+export class PerformanceMonitor {
+  private static instance: PerformanceMonitor;
+  private audioContext: AudioContext | null = null;
+  private analyserNode: AnalyserNode | null = null;
+  private isMonitoring = false;
+  private monitoringInterval: number | null = null;
+
+  // Performance thresholds (based on NFRs)
+  private readonly LATENCY_WARNING_MS = 30; // Warning at 30ms
+  private readonly LATENCY_CRITICAL_MS = 50; // Critical at 50ms (NFR limit)
+  private readonly RESPONSE_TIME_CRITICAL_MS = 200; // NFR-PF-04
+  private readonly CPU_WARNING_THRESHOLD = 70; // Warning at 70% CPU
+  private readonly CPU_CRITICAL_THRESHOLD = 85; // Critical at 85% CPU
+
+  // Metrics tracking
+  private metrics: AudioPerformanceMetrics = {
+    latency: 0,
+    averageLatency: 0,
+    maxLatency: 0,
+    dropoutCount: 0,
+    bufferUnderruns: 0,
+    cpuUsage: 0,
+    memoryUsage: 0,
+    sampleRate: 44100,
+    bufferSize: 128,
+    timestamp: Date.now(),
+  };
+
+  private latencyHistory: number[] = [];
+  private alertHandlers: Set<(alert: PerformanceAlert) => void> = new Set();
+  private metricsHandlers: Set<(metrics: AudioPerformanceMetrics) => void> =
+    new Set();
+
+  private constructor() {
+    // Private constructor to enforce singleton pattern
+  }
+
+  public static getInstance(): PerformanceMonitor {
+    if (!PerformanceMonitor.instance) {
+      PerformanceMonitor.instance = new PerformanceMonitor();
+    }
+    return PerformanceMonitor.instance;
+  }
+
+  /**
+   * Initialize performance monitoring with audio context
+   */
+  public initialize(audioContext: AudioContext): void {
+    this.audioContext = audioContext;
+    this.setupAnalyser();
+    this.updateBasicMetrics();
+  }
+
+  /**
+   * Start performance monitoring
+   */
+  public startMonitoring(intervalMs = 1000): void {
+    if (this.isMonitoring) {
+      // Already monitoring, stop first to prevent overlapping
+      this.stopMonitoring();
+    }
+
+    // Sanitize and validate monitoring interval
+    const sanitizedInterval = this.sanitizeMonitoringInterval(intervalMs);
+
+    this.isMonitoring = true;
+    this.monitoringInterval = window.setInterval(() => {
+      try {
+        this.collectMetrics();
+      } catch (error) {
+        console.error('Error collecting metrics:', error);
+        // Continue monitoring even if one collection fails
+      }
+    }, sanitizedInterval);
+  }
+
+  /**
+   * Stop performance monitoring
+   */
+  public stopMonitoring(): void {
+    if (!this.isMonitoring) return;
+
+    this.isMonitoring = false;
+    if (this.monitoringInterval !== null) {
+      clearInterval(this.monitoringInterval);
+      this.monitoringInterval = null;
+    }
+  }
+
+  /**
+   * Get current performance metrics
+   */
+  public getMetrics(): AudioPerformanceMetrics {
+    // Return a sanitized copy to prevent prototype pollution
+    return this.sanitizeMetrics(this.metrics);
+  }
+
+  /**
+   * Measure playback control response time
+   */
+  public async measureResponseTime<T>(
+    operation: () => Promise<T>,
+  ): Promise<{ result: T; responseTime: number }> {
+    const startTime = performance.now();
+    const result = await operation();
+    const responseTime = performance.now() - startTime;
+
+    // Check against NFR-PF-04 (200ms response time)
+    if (responseTime > this.RESPONSE_TIME_CRITICAL_MS) {
+      this.emitAlert({
+        type: 'latency',
+        severity: 'critical',
+        message: `Control response time exceeded ${this.RESPONSE_TIME_CRITICAL_MS}ms: ${responseTime.toFixed(1)}ms`,
+        metrics: { latency: responseTime },
+        timestamp: Date.now(),
+      });
+    }
+
+    return { result, responseTime };
+  }
+
+  /**
+   * Record audio dropout event
+   */
+  public recordDropout(): void {
+    this.metrics.dropoutCount++;
+    this.emitAlert({
+      type: 'dropout',
+      severity: 'warning',
+      message: `Audio dropout detected. Total dropouts: ${this.metrics.dropoutCount}`,
+      metrics: { dropoutCount: this.metrics.dropoutCount },
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
+   * Record buffer underrun event
+   */
+  public recordBufferUnderrun(): void {
+    this.metrics.bufferUnderruns++;
+    this.emitAlert({
+      type: 'dropout',
+      severity: 'critical',
+      message: `Buffer underrun detected. Total underruns: ${this.metrics.bufferUnderruns}`,
+      metrics: { bufferUnderruns: this.metrics.bufferUnderruns },
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
+   * Add performance alert handler
+   */
+  public onAlert(handler: (alert: PerformanceAlert) => void): () => void {
+    // Validate handler parameter gracefully
+    if (typeof handler !== 'function') {
+      // Return a no-op unsubscriber instead of throwing
+      console.warn('Invalid alert handler provided, ignoring');
+      return () => {
+        // No-op unsubscriber for invalid handlers
+      };
+    }
+
+    this.alertHandlers.add(handler);
+    return () => this.alertHandlers.delete(handler);
+  }
+
+  /**
+   * Add metrics update handler
+   */
+  public onMetrics(
+    handler: (metrics: AudioPerformanceMetrics) => void,
+  ): () => void {
+    // Validate handler parameter gracefully
+    if (typeof handler !== 'function') {
+      // Return a no-op unsubscriber instead of throwing
+      console.warn('Invalid metrics handler provided, ignoring');
+      return () => {
+        // No-op unsubscriber for invalid handlers
+      };
+    }
+
+    this.metricsHandlers.add(handler);
+    return () => this.metricsHandlers.delete(handler);
+  }
+
+  /**
+   * Reset performance metrics
+   */
+  public resetMetrics(): void {
+    this.metrics = {
+      ...this.metrics,
+      latency: 0,
+      averageLatency: 0,
+      maxLatency: 0,
+      dropoutCount: 0,
+      bufferUnderruns: 0,
+      timestamp: Date.now(),
+    };
+    this.latencyHistory = [];
+  }
+
+  private setupAnalyser(): void {
+    if (!this.audioContext) return;
+
+    this.analyserNode = this.audioContext.createAnalyser();
+    this.analyserNode.fftSize = 256;
+    this.analyserNode.smoothingTimeConstant = 0.8;
+  }
+
+  private collectMetrics(): void {
+    if (!this.audioContext) return;
+
+    // Update basic metrics
+    this.updateBasicMetrics();
+
+    // Calculate latency
+    this.calculateLatency();
+
+    // Estimate CPU usage (simplified)
+    this.estimateCPUUsage();
+
+    // Update memory usage
+    this.updateMemoryUsage();
+
+    // Check thresholds and emit alerts
+    this.checkThresholds();
+
+    // Notify metrics handlers
+    this.emitMetrics();
+  }
+
+  private updateBasicMetrics(): void {
+    if (!this.audioContext) return;
+
+    this.metrics.sampleRate = this.audioContext.sampleRate;
+    this.metrics.bufferSize =
+      this.audioContext.baseLatency * this.audioContext.sampleRate;
+    this.metrics.timestamp = Date.now();
+  }
+
+  private calculateLatency(): void {
+    if (!this.audioContext) return;
+
+    // Calculate total latency: baseLatency + outputLatency
+    const baseLatency = this.audioContext.baseLatency || 0;
+    const outputLatency = this.audioContext.outputLatency || 0;
+    const totalLatency = (baseLatency + outputLatency) * 1000; // Convert to ms
+
+    this.metrics.latency = totalLatency;
+    this.latencyHistory.push(totalLatency);
+
+    // Keep only recent history (last 100 measurements)
+    if (this.latencyHistory.length > 100) {
+      this.latencyHistory.shift();
+    }
+
+    // Calculate average and max latency
+    this.metrics.averageLatency =
+      this.latencyHistory.reduce((a, b) => a + b, 0) /
+      this.latencyHistory.length;
+    this.metrics.maxLatency = Math.max(this.metrics.maxLatency, totalLatency);
+  }
+
+  private estimateCPUUsage(): void {
+    // Simplified CPU usage estimation based on audio processing
+    // In a real implementation, this would use more sophisticated metrics
+    const baseUsage = 5; // Base audio processing overhead
+    const latencyPenalty =
+      this.metrics.latency > 20 ? (this.metrics.latency - 20) * 2 : 0;
+    const dropoutPenalty = this.metrics.dropoutCount * 5;
+
+    this.metrics.cpuUsage = Math.min(
+      100,
+      baseUsage + latencyPenalty + dropoutPenalty,
+    );
+  }
+
+  private updateMemoryUsage(): void {
+    // Get memory usage if available (Chrome only)
+    if ('memory' in performance) {
+      const memInfo = (performance as any).memory;
+      const memoryMB = memInfo.usedJSHeapSize / (1024 * 1024); // Convert to MB
+      // Sanitize memory value to prevent injection
+      this.metrics.memoryUsage = this.sanitizeNumericValue(memoryMB, 0, 16384); // Max 16GB
+    }
+  }
+
+  private checkThresholds(): void {
+    // Check latency thresholds
+    if (this.metrics.latency > this.LATENCY_CRITICAL_MS) {
+      this.emitAlert({
+        type: 'latency',
+        severity: 'critical',
+        message: `Audio latency critical: ${this.metrics.latency.toFixed(1)}ms (NFR limit: ${this.LATENCY_CRITICAL_MS}ms)`,
+        metrics: { latency: this.metrics.latency },
+        timestamp: Date.now(),
+      });
+    } else if (this.metrics.latency > this.LATENCY_WARNING_MS) {
+      this.emitAlert({
+        type: 'latency',
+        severity: 'warning',
+        message: `Audio latency warning: ${this.metrics.latency.toFixed(1)}ms`,
+        metrics: { latency: this.metrics.latency },
+        timestamp: Date.now(),
+      });
+    }
+
+    // Check CPU usage thresholds
+    if (this.metrics.cpuUsage > this.CPU_CRITICAL_THRESHOLD) {
+      this.emitAlert({
+        type: 'cpu',
+        severity: 'critical',
+        message: `CPU usage critical: ${this.metrics.cpuUsage.toFixed(1)}%`,
+        metrics: { cpuUsage: this.metrics.cpuUsage },
+        timestamp: Date.now(),
+      });
+    } else if (this.metrics.cpuUsage > this.CPU_WARNING_THRESHOLD) {
+      this.emitAlert({
+        type: 'cpu',
+        severity: 'warning',
+        message: `CPU usage warning: ${this.metrics.cpuUsage.toFixed(1)}%`,
+        metrics: { cpuUsage: this.metrics.cpuUsage },
+        timestamp: Date.now(),
+      });
+    }
+  }
+
+  private emitAlert(alert: PerformanceAlert): void {
+    // Sanitize alert message before emitting
+    const sanitizedAlert: PerformanceAlert = {
+      ...alert,
+      message: this.sanitizeAlertMessage(alert.message),
+      metrics: this.sanitizeMetrics(alert.metrics as AudioPerformanceMetrics),
+    };
+
+    this.alertHandlers.forEach((handler) => {
+      try {
+        handler(sanitizedAlert);
+      } catch (error) {
+        console.error('Error in performance alert handler:', error);
+      }
+    });
+  }
+
+  private emitMetrics(): void {
+    this.metricsHandlers.forEach((handler) => {
+      try {
+        handler(this.getMetrics());
+      } catch (error) {
+        console.error('Error in metrics handler:', error);
+      }
+    });
+  }
+
+  /**
+   * Dispose of performance monitor
+   */
+  public dispose(): void {
+    this.stopMonitoring();
+    this.audioContext = null;
+    this.analyserNode = null;
+    this.alertHandlers.clear();
+    this.metricsHandlers.clear();
+    this.latencyHistory = [];
+  }
+
+  private sanitizeMonitoringInterval(intervalMs: number): number {
+    // Ensure interval is a safe number
+    if (typeof intervalMs !== 'number' || !Number.isFinite(intervalMs)) {
+      return 1000; // Default safe interval
+    }
+
+    // Enforce minimum interval to prevent DoS (minimum 10ms)
+    const minInterval = 10;
+    const maxInterval = 60000; // Maximum 1 minute
+
+    return Math.max(minInterval, Math.min(maxInterval, Math.floor(intervalMs)));
+  }
+
+  private sanitizeMetrics(
+    metrics: AudioPerformanceMetrics,
+  ): AudioPerformanceMetrics {
+    // Create a clean object to prevent prototype pollution
+    // Use Object.create(null) to avoid inheriting from Object.prototype
+    const sanitizedMetrics = Object.create(null) as AudioPerformanceMetrics;
+
+    // Explicitly set each property to avoid prototype pollution
+    sanitizedMetrics.latency = this.sanitizeNumericValue(
+      metrics.latency,
+      0,
+      1000,
+    );
+    sanitizedMetrics.averageLatency = this.sanitizeNumericValue(
+      metrics.averageLatency,
+      0,
+      1000,
+    );
+    sanitizedMetrics.maxLatency = this.sanitizeNumericValue(
+      metrics.maxLatency,
+      0,
+      1000,
+    );
+    sanitizedMetrics.dropoutCount = this.sanitizeNumericValue(
+      metrics.dropoutCount,
+      0,
+      999999,
+    );
+    sanitizedMetrics.bufferUnderruns = this.sanitizeNumericValue(
+      metrics.bufferUnderruns,
+      0,
+      999999,
+    );
+    sanitizedMetrics.cpuUsage = this.sanitizeNumericValue(
+      metrics.cpuUsage,
+      0,
+      100,
+    );
+    sanitizedMetrics.memoryUsage = this.sanitizeNumericValue(
+      metrics.memoryUsage,
+      0,
+      16384,
+    );
+    sanitizedMetrics.sampleRate = this.sanitizeNumericValue(
+      metrics.sampleRate,
+      8000,
+      192000,
+    );
+    sanitizedMetrics.bufferSize = this.sanitizeNumericValue(
+      metrics.bufferSize,
+      32,
+      8192,
+    );
+    sanitizedMetrics.timestamp = this.sanitizeNumericValue(
+      metrics.timestamp,
+      0,
+      Date.now() + 86400000,
+    ); // Within 24 hours
+
+    // Return the clean metrics object
+    return sanitizedMetrics;
+  }
+
+  private sanitizeNumericValue(value: any, min: number, max: number): number {
+    // Handle non-numeric values
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return 0; // Safe default
+    }
+
+    // Clamp to safe bounds
+    return Math.max(min, Math.min(max, value));
+  }
+
+  private sanitizeAlertMessage(message: string): string {
+    // Remove potential script injection and limit length
+    if (typeof message !== 'string') {
+      return 'Invalid alert message';
+    }
+
+    return message
+      .replace(
+        /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+        '[script removed]',
+      )
+      .replace(/javascript:/gi, '[js removed]')
+      .replace(/on\w+\s*=/gi, '[event removed]')
+      .substring(0, 500); // Limit message length
+  }
+}

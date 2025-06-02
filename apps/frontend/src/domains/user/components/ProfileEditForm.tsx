@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState as _useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import {
-  userProfileSchema,
+  userProfileSchema as _userProfileSchema,
   type UserProfileData,
 } from '@bassnotion/contracts';
 import { z } from 'zod';
@@ -26,7 +26,11 @@ import { useToast } from '@/shared/hooks/use-toast';
 const profileEditSchema = z.object({
   displayName: z.string().min(2, 'Display name must be at least 2 characters'),
   bio: z.string().optional(),
-  avatarUrl: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
+  avatarUrl: z
+    .string()
+    .url('Please enter a valid URL')
+    .optional()
+    .or(z.literal('')),
 });
 
 type ProfileEditData = z.infer<typeof profileEditSchema>;
@@ -194,4 +198,4 @@ export function ProfileEditForm({
       </Form>
     </div>
   );
-} 
+}

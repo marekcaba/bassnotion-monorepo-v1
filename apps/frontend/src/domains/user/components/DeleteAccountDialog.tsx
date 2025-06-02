@@ -171,33 +171,36 @@ export function DeleteAccountDialog({
           background-color: #ef4444;
         }
       `}</style>
-      
+
       <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent 
-          className="dialog-content fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 shadow-2xl rounded-lg p-6"
-        >
+        <DialogContent className="dialog-content fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 shadow-2xl rounded-lg p-6">
           <DialogHeader>
             <div className="flex items-center gap-3">
               <div className="dialog-icon-red p-2 bg-destructive/10 rounded-full">
                 <AlertTriangle className="h-5 w-5 text-destructive" />
               </div>
               <div>
-                <DialogTitle className="text-gray-900 dark:text-gray-100">Delete Account</DialogTitle>
+                <DialogTitle className="text-gray-900 dark:text-gray-100">
+                  Delete Account
+                </DialogTitle>
                 <DialogDescription className="mt-1 text-gray-600 dark:text-gray-400">
-                  This action cannot be undone. This will permanently delete your
-                  account and remove all your data.
+                  This action cannot be undone. This will permanently delete
+                  your account and remove all your data.
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleConfirm)} className="space-y-4">
+            <form
+              onSubmit={form.handleSubmit(handleConfirm)}
+              className="space-y-4"
+            >
               <div className="bg-red-50 dark:bg-red-950/30 p-4 rounded-lg border border-red-200 dark:border-red-900">
                 <p className="text-sm text-red-800 dark:text-red-200 font-medium mb-2">
                   To confirm deletion, please enter your password:
                 </p>
-                
+
                 <FormField
                   control={form.control}
                   name="password"
@@ -271,4 +274,4 @@ export function DeleteAccountDialog({
       </Dialog>
     </>
   );
-} 
+}

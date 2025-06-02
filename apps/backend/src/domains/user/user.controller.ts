@@ -38,18 +38,19 @@ export class UserController {
 
       // Update the Supabase Auth user metadata (this updates the auth.users table)
       if (validatedData.displayName) {
-        const { error: authUpdateError } = await this.db.supabase.auth.admin.updateUserById(
-          request.user.id,
-          {
+        const { error: authUpdateError } =
+          await this.db.supabase.auth.admin.updateUserById(request.user.id, {
             user_metadata: {
               display_name: validatedData.displayName,
               full_name: validatedData.displayName, // Some integrations use full_name
-            }
-          }
-        );
+            },
+          });
 
         if (authUpdateError) {
-          this.logger.warn('Failed to update auth user metadata:', authUpdateError);
+          this.logger.warn(
+            'Failed to update auth user metadata:',
+            authUpdateError,
+          );
           // Don't fail the entire operation if auth metadata update fails
         } else {
           this.logger.debug('Successfully updated auth user metadata');
@@ -109,9 +110,9 @@ export class UserController {
             beatsPerMeasure: 4,
             subdivision: 1,
             accentFirstBeat: true,
-            volume: 75
-          }
-        }
+            volume: 75,
+          },
+        },
       };
 
       return {
@@ -150,7 +151,10 @@ export class UserController {
         });
 
       if (verifyError) {
-        this.logger.error('Password verification failed for account deletion:', verifyError);
+        this.logger.error(
+          'Password verification failed for account deletion:',
+          verifyError,
+        );
         return {
           success: false,
           message: 'Invalid password',
@@ -162,9 +166,8 @@ export class UserController {
       }
 
       // Delete the user account (this will cascade delete the profile due to FK constraint)
-      const { error: deleteError } = await this.db.supabase.auth.admin.deleteUser(
-        request.user.id
-      );
+      const { error: deleteError } =
+        await this.db.supabase.auth.admin.deleteUser(request.user.id);
 
       if (deleteError) {
         this.logger.error('Error deleting user account:', deleteError);
@@ -178,7 +181,9 @@ export class UserController {
         };
       }
 
-      this.logger.log(`Account deleted successfully for user: ${request.user.id}`);
+      this.logger.log(
+        `Account deleted successfully for user: ${request.user.id}`,
+      );
 
       return {
         success: true,
@@ -197,4 +202,4 @@ export class UserController {
       };
     }
   }
-} 
+}

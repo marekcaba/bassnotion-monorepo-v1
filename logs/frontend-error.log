@@ -99,3 +99,20 @@
 2025-06-02 17:33:32 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
 2025-06-02 17:51:01 +02:00:  [33m[1m⚠[22m[39m Found a change in next.config.js. Restarting the server to apply the changes...
 2025-06-02 17:52:57 +02:00:  [33m[1m⚠[22m[39m Found a change in next.config.js. Restarting the server to apply the changes...
+2025-06-02 22:05:14 +02:00:  [33m[1m⚠[22m[39m Found a change in next.config.js. Restarting the server to apply the changes...
+2025-06-02 23:16:28 +02:00: Calculating the project graph on the Nx Daemon
+2025-06-02 23:16:58 +02:00: Calculating the project graph on the Nx Daemon is taking longer than expected. Re-run with NX_DAEMON=false to see more details.
+2025-06-02 23:28:00 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-06-02 23:28:00 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-06-02 23:28:00 +02:00: Caused by:
+2025-06-02 23:28:00 +02:00:     No such file or directory (os error 2)
+2025-06-02 23:28:00 +02:00: Import trace for requested module:
+2025-06-02 23:28:00 +02:00: ../../libs/contracts/dist/src/index.js
+2025-06-02 23:28:00 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-06-02 23:28:10 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-06-02 23:28:10 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-06-02 23:28:10 +02:00: Caused by:
+2025-06-02 23:28:10 +02:00:     No such file or directory (os error 2)
+2025-06-02 23:28:10 +02:00: Import trace for requested module:
+2025-06-02 23:28:10 +02:00: ../../libs/contracts/dist/src/index.js
+2025-06-02 23:28:10 +02:00: ./src/domains/user/components/auth/LoginForm.tsx

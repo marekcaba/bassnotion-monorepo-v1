@@ -672,3 +672,243 @@
 2025-06-02 18:52:33 +02:00: [1m[31m- DELETE /user/account (UserController)[39m[22m
 2025-06-02 18:52:33 +02:00: [1m[31mDEBUG: If UserController routes are missing, check module imports[39m[22m
 2025-06-02 18:52:33 +02:00: [1m[31m[39m[22m
+2025-06-02 20:07:27 +02:00: [1m[31mWatch error: Daemon closed the connection[39m[22m
+2025-06-02 20:07:37 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 20:07:38 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-02 20:07:38 +02:00: [1m[31m[39m[22m
+2025-06-02 20:07:38 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-02 20:07:38 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-02 20:07:38 +02:00: [1m[31m[39m[22m
+2025-06-02 20:07:39 +02:00: [1m[31m[31m[Nest] 2409  - [39m[31m06/02/2025, 8:07:39 PM [31m  ERROR[39m[31m [38;5;3m[NestApplication] [39m[31m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[31m[38;5;3m +34ms[39m[31m[39m[22m
+2025-06-02 20:07:39 +02:00: [1m[31m[39m[22m
+2025-06-02 20:07:39 +02:00: [1m[31mFailed to start application: Error: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[22m
+2025-06-02 20:07:39 +02:00: [1m[31m[90m    at Server.setupListenHandle [as _listen2] (node:net:1908:16)[39m[31m[39m[22m
+2025-06-02 20:07:39 +02:00: [1m[31m[90m    at listenInCluster (node:net:1965:12)[39m[31m[39m[22m
+2025-06-02 20:07:39 +02:00: [1m[31m[90m    at doListen (node:net:2139:7)[39m[31m[39m[22m
+2025-06-02 20:07:39 +02:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:83:21)[39m[31m {[39m[22m
+2025-06-02 20:07:39 +02:00: [1m[31m  code: [32m'EADDRINUSE'[39m[31m,[39m[22m
+2025-06-02 20:07:39 +02:00: [1m[31m  errno: [33m-48[39m[31m,[39m[22m
+2025-06-02 20:07:39 +02:00: [1m[31m  syscall: [32m'listen'[39m[31m,[39m[22m
+2025-06-02 20:07:39 +02:00: [1m[31m  address: [32m'0.0.0.0'[39m[31m,[39m[22m
+2025-06-02 20:07:39 +02:00: [1m[31m  port: [33m3000[39m[31m[39m[22m
+2025-06-02 20:07:39 +02:00: [1m[31m}[39m[22m
+2025-06-02 20:07:39 +02:00: [1m[31m[39m[22m
+2025-06-02 22:17:38 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m[31m[Nest] 34903  - [39m[31m06/02/2025, 10:17:39 PM [31m  ERROR[39m[31m [38;5;3m[NestApplication] [39m[31m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[31m[38;5;3m +3ms[39m[31m[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31mFailed to start application: Error: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m[90m    at Server.setupListenHandle [as _listen2] (node:net:1908:16)[39m[31m[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m[90m    at listenInCluster (node:net:1965:12)[39m[31m[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m[90m    at doListen (node:net:2139:7)[39m[31m[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:83:21)[39m[31m {[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m  code: [32m'EADDRINUSE'[39m[31m,[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m  errno: [33m-48[39m[31m,[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m  syscall: [32m'listen'[39m[31m,[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m  address: [32m'0.0.0.0'[39m[31m,[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m  port: [33m3000[39m[31m[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m}[39m[22m
+2025-06-02 22:17:39 +02:00: [1m[31m[39m[22m
+2025-06-02 22:33:23 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m[31m[Nest] 6614  - [39m[31m06/02/2025, 10:33:25 PM [31m  ERROR[39m[31m [38;5;3m[NestApplication] [39m[31m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[31m[38;5;3m +4ms[39m[31m[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31mFailed to start application: Error: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m[90m    at Server.setupListenHandle [as _listen2] (node:net:1908:16)[39m[31m[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m[90m    at listenInCluster (node:net:1965:12)[39m[31m[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m[90m    at doListen (node:net:2139:7)[39m[31m[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:83:21)[39m[31m {[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m  code: [32m'EADDRINUSE'[39m[31m,[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m  errno: [33m-48[39m[31m,[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m  syscall: [32m'listen'[39m[31m,[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m  address: [32m'0.0.0.0'[39m[31m,[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m  port: [33m3000[39m[31m[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m}[39m[22m
+2025-06-02 22:33:25 +02:00: [1m[31m[39m[22m
+2025-06-02 22:35:12 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m[31m[Nest] 38522  - [39m[31m06/02/2025, 10:35:14 PM [31m  ERROR[39m[31m [38;5;3m[NestApplication] [39m[31m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[31m[38;5;3m +3ms[39m[31m[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31mFailed to start application: Error: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m[90m    at Server.setupListenHandle [as _listen2] (node:net:1908:16)[39m[31m[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m[90m    at listenInCluster (node:net:1965:12)[39m[31m[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m[90m    at doListen (node:net:2139:7)[39m[31m[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:83:21)[39m[31m {[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m  code: [32m'EADDRINUSE'[39m[31m,[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m  errno: [33m-48[39m[31m,[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m  syscall: [32m'listen'[39m[31m,[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m  address: [32m'0.0.0.0'[39m[31m,[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m  port: [33m3000[39m[31m[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m}[39m[22m
+2025-06-02 22:35:14 +02:00: [1m[31m[39m[22m
+2025-06-02 22:35:24 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m[31m[Nest] 41831  - [39m[31m06/02/2025, 10:35:26 PM [31m  ERROR[39m[31m [38;5;3m[NestApplication] [39m[31m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[31m[38;5;3m +3ms[39m[31m[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31mFailed to start application: Error: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m[90m    at Server.setupListenHandle [as _listen2] (node:net:1908:16)[39m[31m[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m[90m    at listenInCluster (node:net:1965:12)[39m[31m[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m[90m    at doListen (node:net:2139:7)[39m[31m[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:83:21)[39m[31m {[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m  code: [32m'EADDRINUSE'[39m[31m,[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m  errno: [33m-48[39m[31m,[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m  syscall: [32m'listen'[39m[31m,[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m  address: [32m'0.0.0.0'[39m[31m,[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m  port: [33m3000[39m[31m[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m}[39m[22m
+2025-06-02 22:35:26 +02:00: [1m[31m[39m[22m
+2025-06-02 22:35:34 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m[31m[Nest] 44358  - [39m[31m06/02/2025, 10:35:35 PM [31m  ERROR[39m[31m [38;5;3m[NestApplication] [39m[31m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[31m[38;5;3m +3ms[39m[31m[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31mFailed to start application: Error: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m[90m    at Server.setupListenHandle [as _listen2] (node:net:1908:16)[39m[31m[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m[90m    at listenInCluster (node:net:1965:12)[39m[31m[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m[90m    at doListen (node:net:2139:7)[39m[31m[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:83:21)[39m[31m {[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m  code: [32m'EADDRINUSE'[39m[31m,[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m  errno: [33m-48[39m[31m,[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m  syscall: [32m'listen'[39m[31m,[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m  address: [32m'0.0.0.0'[39m[31m,[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m  port: [33m3000[39m[31m[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m}[39m[22m
+2025-06-02 22:35:35 +02:00: [1m[31m[39m[22m
+2025-06-02 22:36:45 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 22:36:46 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-02 22:36:46 +02:00: [1m[31m[39m[22m
+2025-06-02 22:36:46 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-02 22:36:46 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-02 22:36:46 +02:00: [1m[31m[39m[22m
+2025-06-02 22:36:47 +02:00: [1m[31m[31m[Nest] 63047  - [39m[31m06/02/2025, 10:36:47 PM [31m  ERROR[39m[31m [38;5;3m[NestApplication] [39m[31m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[31m[38;5;3m +4ms[39m[31m[39m[22m
+2025-06-02 22:36:47 +02:00: [1m[31m[39m[22m
+2025-06-02 22:36:47 +02:00: [1m[31mFailed to start application: Error: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[22m
+2025-06-02 22:36:47 +02:00: [1m[31m[90m    at Server.setupListenHandle [as _listen2] (node:net:1908:16)[39m[31m[39m[22m
+2025-06-02 22:36:47 +02:00: [1m[31m[90m    at listenInCluster (node:net:1965:12)[39m[31m[39m[22m
+2025-06-02 22:36:47 +02:00: [1m[31m[90m    at doListen (node:net:2139:7)[39m[31m[39m[22m
+2025-06-02 22:36:47 +02:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:83:21)[39m[31m {[39m[22m
+2025-06-02 22:36:47 +02:00: [1m[31m  code: [32m'EADDRINUSE'[39m[31m,[39m[22m
+2025-06-02 22:36:47 +02:00: [1m[31m  errno: [33m-48[39m[31m,[39m[22m
+2025-06-02 22:36:47 +02:00: [1m[31m  syscall: [32m'listen'[39m[31m,[39m[22m
+2025-06-02 22:36:47 +02:00: [1m[31m  address: [32m'0.0.0.0'[39m[31m,[39m[22m
+2025-06-02 22:36:47 +02:00: [1m[31m  port: [33m3000[39m[31m[39m[22m
+2025-06-02 22:36:47 +02:00: [1m[31m}[39m[22m
+2025-06-02 22:36:47 +02:00: [1m[31m[39m[22m
+2025-06-02 23:10:59 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m[31m[Nest] 19768  - [39m[31m06/02/2025, 11:11:01 PM [31m  ERROR[39m[31m [38;5;3m[NestApplication] [39m[31m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[31m[38;5;3m +5ms[39m[31m[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31mFailed to start application: Error: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m[90m    at Server.setupListenHandle [as _listen2] (node:net:1908:16)[39m[31m[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m[90m    at listenInCluster (node:net:1965:12)[39m[31m[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m[90m    at doListen (node:net:2139:7)[39m[31m[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:83:21)[39m[31m {[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m  code: [32m'EADDRINUSE'[39m[31m,[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m  errno: [33m-48[39m[31m,[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m  syscall: [32m'listen'[39m[31m,[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m  address: [32m'0.0.0.0'[39m[31m,[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m  port: [33m3000[39m[31m[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m}[39m[22m
+2025-06-02 23:11:01 +02:00: [1m[31m[39m[22m
+2025-06-02 23:16:03 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m[31m[Nest] 92801  - [39m[31m06/02/2025, 11:16:04 PM [31m  ERROR[39m[31m [38;5;3m[NestApplication] [39m[31m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[31m[38;5;3m +3ms[39m[31m[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31mFailed to start application: Error: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m[90m    at Server.setupListenHandle [as _listen2] (node:net:1908:16)[39m[31m[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m[90m    at listenInCluster (node:net:1965:12)[39m[31m[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m[90m    at doListen (node:net:2139:7)[39m[31m[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:83:21)[39m[31m {[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m  code: [32m'EADDRINUSE'[39m[31m,[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m  errno: [33m-48[39m[31m,[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m  syscall: [32m'listen'[39m[31m,[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m  address: [32m'0.0.0.0'[39m[31m,[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m  port: [33m3000[39m[31m[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m}[39m[22m
+2025-06-02 23:16:04 +02:00: [1m[31m[39m[22m
+2025-06-02 23:28:02 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 23:28:03 +02:00: [1m[31mBuild failed, waiting for changes to restart...[39m[22m
+2025-06-02 23:28:03 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m[31m[Nest] 94584  - [39m[31m06/02/2025, 11:28:04 PM [31m  ERROR[39m[31m [38;5;3m[NestApplication] [39m[31m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[31m[38;5;3m +4ms[39m[31m[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31mFailed to start application: Error: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m[90m    at Server.setupListenHandle [as _listen2] (node:net:1908:16)[39m[31m[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m[90m    at listenInCluster (node:net:1965:12)[39m[31m[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m[90m    at doListen (node:net:2139:7)[39m[31m[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:83:21)[39m[31m {[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m  code: [32m'EADDRINUSE'[39m[31m,[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m  errno: [33m-48[39m[31m,[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m  syscall: [32m'listen'[39m[31m,[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m  address: [32m'0.0.0.0'[39m[31m,[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m  port: [33m3000[39m[31m[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m}[39m[22m
+2025-06-02 23:28:04 +02:00: [1m[31m[39m[22m
+2025-06-02 23:28:11 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 23:28:12 +02:00: [1m[31mBuild failed, waiting for changes to restart...[39m[22m
+2025-06-02 23:28:13 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 23:28:13 +02:00: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/@nx+js@21.1.2_@babel+traverse@7.27.4_@swc-node+register@1.9.2_@swc+core@1.5.29_@swc+hel_87f6e2acea8bcfc63be5f8f445777e76/node_modules/@nx/js/src/executors/node/node.impl.js:331
+2025-06-02 23:28:13 +02:00:     throw new Error(`Could not find ${fileToRun}. Make sure your build succeeded.`);
+2025-06-02 23:28:13 +02:00:           ^
+2025-06-02 23:28:13 +02:00: Error: Could not find /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/dist/apps/backend/src/main.js. Make sure your build succeeded.
+2025-06-02 23:28:13 +02:00:     at fileToRunCorrectPath [90m(/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39mnode_modules/[4m.pnpm[24m/@nx+js@21.1.2_@babel+traverse@7.27.4_@swc-node+register@1.9.2_@swc+core@1.5.29_@swc+hel_87f6e2acea8bcfc63be5f8f445777e76/node_modules/[4m@nx[24m/js/src/executors/node/node.impl.js:331:11[90m)[39m
+2025-06-02 23:28:13 +02:00:     at [90m/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39mnode_modules/[4m.pnpm[24m/@nx+js@21.1.2_@babel+traverse@7.27.4_@swc-node+register@1.9.2_@swc+core@1.5.29_@swc+hel_87f6e2acea8bcfc63be5f8f445777e76/node_modules/[4m@nx[24m/js/src/executors/node/node.impl.js:114:49
+2025-06-02 23:28:13 +02:00:     at new Promise (<anonymous>)
+2025-06-02 23:28:13 +02:00:     at Object.start [90m(/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39mnode_modules/[4m.pnpm[24m/@nx+js@21.1.2_@babel+traverse@7.27.4_@swc-node+register@1.9.2_@swc+core@1.5.29_@swc+hel_87f6e2acea8bcfc63be5f8f445777e76/node_modules/[4m@nx[24m/js/src/executors/node/node.impl.js:108:36[90m)[39m
+2025-06-02 23:28:13 +02:00:     at async processQueue [90m(/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/[39mnode_modules/[4m.pnpm[24m/@nx+js@21.1.2_@babel+traverse@7.27.4_@swc-node+register@1.9.2_@swc+core@1.5.29_@swc+hel_87f6e2acea8bcfc63be5f8f445777e76/node_modules/[4m@nx[24m/js/src/executors/node/node.impl.js:79:13[90m)[39m
+2025-06-02 23:28:13 +02:00: Node.js v20.19.2
+2025-06-02 23:28:22 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m[31m[Nest] 94734  - [39m[31m06/02/2025, 11:28:23 PM [31m  ERROR[39m[31m [38;5;3m[NestApplication] [39m[31m[31mError: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[31m[38;5;3m +4ms[39m[31m[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31mFailed to start application: Error: listen EADDRINUSE: address already in use 0.0.0.0:3000[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m[90m    at Server.setupListenHandle [as _listen2] (node:net:1908:16)[39m[31m[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m[90m    at listenInCluster (node:net:1965:12)[39m[31m[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m[90m    at doListen (node:net:2139:7)[39m[31m[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:83:21)[39m[31m {[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m  code: [32m'EADDRINUSE'[39m[31m,[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m  errno: [33m-48[39m[31m,[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m  syscall: [32m'listen'[39m[31m,[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m  address: [32m'0.0.0.0'[39m[31m,[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m  port: [33m3000[39m[31m[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m}[39m[22m
+2025-06-02 23:28:23 +02:00: [1m[31m[39m[22m

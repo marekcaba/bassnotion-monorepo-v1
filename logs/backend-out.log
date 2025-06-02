@@ -1919,3 +1919,543 @@
 2025-06-02 18:52:33 +02:00: [95m[Nest] 25283  - [39m06/02/2025, 6:52:33 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
 2025-06-02 18:52:33 +02:00: [95m[Nest] 25283  - [39m06/02/2025, 6:52:33 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
 2025-06-02 18:52:33 +02:00: [32m[Nest] 25283  - [39m06/02/2025, 6:52:33 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-02 20:07:27 +02:00: 
+2025-06-02 20:07:27 +02:00: 
+2025-06-02 20:07:27 +02:00: 
+2025-06-02 20:07:27 +02:00:  NX   Running target serve for project @bassnotion/backend failed
+2025-06-02 20:07:27 +02:00: 
+2025-06-02 20:07:27 +02:00: Failed tasks:
+2025-06-02 20:07:27 +02:00: 
+2025-06-02 20:07:27 +02:00: - @bassnotion/backend:serve
+2025-06-02 20:07:27 +02:00: 
+2025-06-02 20:07:27 +02:00: Hint: run the command with --verbose for more details.
+2025-06-02 20:07:27 +02:00: 
+2025-06-02 20:07:28 +02:00: 
+2025-06-02 20:07:28 +02:00:  NX   Nx Cloud Problems
+2025-06-02 20:07:28 +02:00: 
+2025-06-02 20:07:28 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+2025-06-02 20:07:28 +02:00: 
+2025-06-02 20:07:35 +02:00: 
+2025-06-02 20:07:35 +02:00: > nx run @bassnotion/backend:serve
+2025-06-02 20:07:35 +02:00: 
+2025-06-02 20:07:35 +02:00: [2J[3J[H
+2025-06-02 20:07:35 +02:00: 8:07:35 PM - Starting compilation in watch mode...
+2025-06-02 20:07:37 +02:00: 8:07:37 PM - Found 0 errors. Watching for file changes.
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +6ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 20:07:38 +02:00: [95m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-02 20:07:38 +02:00: [95m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-02 20:07:38 +02:00: [95m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 20:07:38 +02:00: [95m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 20:07:38 +02:00: [95m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +3ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/debug/modules, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +3ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +4ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +2ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +4ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserController {/user}:[39m[38;5;3m +0ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/profile, PUT} route[39m[38;5;3m +0ms[39m
+2025-06-02 20:07:38 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/account, DELETE} route[39m[38;5;3m +0ms[39m
+2025-06-02 20:07:38 +02:00: [95m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-02 20:07:38 +02:00: [95m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-02 20:07:38 +02:00: [95m[Nest] 2409  - [39m06/02/2025, 8:07:38 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 20:07:39 +02:00: [95m[Nest] 2409  - [39m06/02/2025, 8:07:39 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-02 20:07:39 +02:00: [32m[Nest] 2409  - [39m06/02/2025, 8:07:39 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +33ms[39m
+2025-06-02 20:07:39 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-02 22:17:37 +02:00: [2J[3J[H
+2025-06-02 22:17:37 +02:00: 10:17:37 PM - File change detected. Starting incremental compilation...
+2025-06-02 22:17:38 +02:00: 10:17:38 PM - Found 0 errors. Watching for file changes.
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +6ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [95m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-02 22:17:39 +02:00: [95m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-02 22:17:39 +02:00: [95m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [95m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [95m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +3ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/debug/modules, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserController {/user}:[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/profile, PUT} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/account, DELETE} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:17:39 +02:00: [95m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-02 22:17:39 +02:00: [95m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-02 22:17:39 +02:00: [95m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 22:17:39 +02:00: [95m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-02 22:17:39 +02:00: [32m[Nest] 34903  - [39m06/02/2025, 10:17:39 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-02 22:17:39 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-02 22:33:22 +02:00: [2J[3J[H10:33:22 PM - File change detected. Starting incremental compilation...
+2025-06-02 22:33:23 +02:00: 10:33:23 PM - Found 0 errors. Watching for file changes.
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +6ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [95m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-02 22:33:25 +02:00: [95m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-02 22:33:25 +02:00: [95m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [95m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-02 22:33:25 +02:00: [95m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +4ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/debug/modules, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserController {/user}:[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/profile, PUT} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/account, DELETE} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [95m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-02 22:33:25 +02:00: [95m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-02 22:33:25 +02:00: [95m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 22:33:25 +02:00: [95m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-02 22:33:25 +02:00: [32m[Nest] 6614  - [39m06/02/2025, 10:33:25 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +0ms[39m
+2025-06-02 22:33:25 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-02 22:35:12 +02:00: [2J[3J[H10:35:12 PM - File change detected. Starting incremental compilation...
+2025-06-02 22:35:12 +02:00: 10:35:12 PM - Found 0 errors. Watching for file changes.
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +5ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [95m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-02 22:35:14 +02:00: [95m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-02 22:35:14 +02:00: [95m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [95m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:14 +02:00: [95m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +3ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/debug/modules, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserController {/user}:[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/profile, PUT} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/account, DELETE} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:14 +02:00: [95m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-02 22:35:14 +02:00: [95m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-02 22:35:14 +02:00: [95m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 22:35:14 +02:00: [95m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-02 22:35:14 +02:00: [32m[Nest] 38522  - [39m06/02/2025, 10:35:14 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:14 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-02 22:35:24 +02:00: [2J[3J[H10:35:24 PM - File change detected. Starting incremental compilation...
+2025-06-02 22:35:24 +02:00: 10:35:24 PM - Found 0 errors. Watching for file changes.
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +25ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +4ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:26 +02:00: [95m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-02 22:35:26 +02:00: [95m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-02 22:35:26 +02:00: [95m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:26 +02:00: [95m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:26 +02:00: [95m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +24ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +6ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/debug/modules, GET} route[39m[38;5;3m +3ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +2ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +8ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +3ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserController {/user}:[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/profile, PUT} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/account, DELETE} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:26 +02:00: [95m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-02 22:35:26 +02:00: [95m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-02 22:35:26 +02:00: [95m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 22:35:26 +02:00: [95m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-02 22:35:26 +02:00: [32m[Nest] 41831  - [39m06/02/2025, 10:35:26 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:26 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-02 22:35:33 +02:00: [2J[3J[H10:35:33 PM - File change detected. Starting incremental compilation...
+2025-06-02 22:35:34 +02:00: 10:35:34 PM - Found 0 errors. Watching for file changes.
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +6ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [95m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-02 22:35:35 +02:00: [95m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-02 22:35:35 +02:00: [95m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [95m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [95m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +3ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/debug/modules, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserController {/user}:[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/profile, PUT} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/account, DELETE} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:35 +02:00: [95m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-02 22:35:35 +02:00: [95m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-02 22:35:35 +02:00: [95m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 22:35:35 +02:00: [95m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-02 22:35:35 +02:00: [32m[Nest] 44358  - [39m06/02/2025, 10:35:35 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-02 22:35:35 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-02 22:36:45 +02:00: [2J[3J[H10:36:45 PM - File change detected. Starting incremental compilation...
+2025-06-02 22:36:45 +02:00: 10:36:45 PM - Found 0 errors. Watching for file changes.
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +7ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-02 22:36:46 +02:00: [95m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-02 22:36:46 +02:00: [95m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-02 22:36:46 +02:00: [95m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:46 +02:00: [95m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserModule dependencies initialized[39m[38;5;3m +2ms[39m
+2025-06-02 22:36:46 +02:00: [95m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +4ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +5ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/debug/modules, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserController {/user}:[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/profile, PUT} route[39m[38;5;3m +1ms[39m
+2025-06-02 22:36:46 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/account, DELETE} route[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:46 +02:00: [95m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-02 22:36:46 +02:00: [95m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-02 22:36:46 +02:00: [95m[Nest] 63047  - [39m06/02/2025, 10:36:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 22:36:47 +02:00: [95m[Nest] 63047  - [39m06/02/2025, 10:36:47 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-02 22:36:47 +02:00: [32m[Nest] 63047  - [39m06/02/2025, 10:36:47 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +0ms[39m
+2025-06-02 22:36:47 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-02 23:10:59 +02:00: [2J[3J[H11:10:59 PM - File change detected. Starting incremental compilation...
+2025-06-02 23:10:59 +02:00: 11:10:59 PM - Found 0 errors. Watching for file changes.
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +8ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [95m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-02 23:11:01 +02:00: [95m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-02 23:11:01 +02:00: [95m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [95m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [95m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +4ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/debug/modules, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserController {/user}:[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/profile, PUT} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/account, DELETE} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:11:01 +02:00: [95m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-02 23:11:01 +02:00: [95m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-02 23:11:01 +02:00: [95m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 23:11:01 +02:00: [95m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-02 23:11:01 +02:00: [32m[Nest] 19768  - [39m06/02/2025, 11:11:01 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +2ms[39m
+2025-06-02 23:11:01 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-02 23:15:58 +02:00: 
+2025-06-02 23:15:58 +02:00:  NX   Nx Daemon was not able to compute the project graph.
+2025-06-02 23:15:58 +02:00: 
+2025-06-02 23:15:58 +02:00: Log file with the error: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/.nx/workspace-data/d/daemon-error.log
+2025-06-02 23:15:58 +02:00: Please file an issue at https://github.com/nrwl/nx
+2025-06-02 23:15:58 +02:00: Nx Daemon is going to be disabled until you run "nx reset".
+2025-06-02 23:15:58 +02:00: 
+2025-06-02 23:15:59 +02:00: 
+2025-06-02 23:15:59 +02:00: > nx run @bassnotion/backend:serve
+2025-06-02 23:15:59 +02:00: 
+2025-06-02 23:15:59 +02:00: [0m[7m[1m[33m NX [39m[22m[27m[0m  [33mNx Daemon is not enabled. Assets and package.json files will not be updated when files change.[39m
+2025-06-02 23:15:59 +02:00: [2J[3J[H
+2025-06-02 23:15:59 +02:00: 11:15:59 PM - Starting compilation in watch mode...
+2025-06-02 23:16:03 +02:00: 11:16:03 PM - Found 0 errors. Watching for file changes.
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +5ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [95m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-02 23:16:04 +02:00: [95m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-02 23:16:04 +02:00: [95m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [95m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [95m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +3ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/debug/modules, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserController {/user}:[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/profile, PUT} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/account, DELETE} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:16:04 +02:00: [95m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-02 23:16:04 +02:00: [95m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-02 23:16:04 +02:00: [95m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 23:16:04 +02:00: [95m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-02 23:16:04 +02:00: [32m[Nest] 92801  - [39m06/02/2025, 11:16:04 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-02 23:16:04 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-02 23:28:00 +02:00: [2J[3J[H11:28:00 PM - File change detected. Starting incremental compilation...
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-02 23:28:02 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:02 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:02 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:02 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:02 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:02 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:02 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:02 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:02 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:02 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:02 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:02 +02:00: 11:28:02 PM - Found 30 errors. Watching for file changes.
+2025-06-02 23:28:03 +02:00: [2J[3J[H11:28:03 PM - File change detected. Starting incremental compilation...
+2025-06-02 23:28:03 +02:00: 11:28:03 PM - Found 0 errors. Watching for file changes.
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +5ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [95m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-02 23:28:04 +02:00: [95m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-02 23:28:04 +02:00: [95m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [95m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [95m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +4ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/debug/modules, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserController {/user}:[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/profile, PUT} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/account, DELETE} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:28:04 +02:00: [95m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-02 23:28:04 +02:00: [95m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-02 23:28:04 +02:00: [95m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 23:28:04 +02:00: [95m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-02 23:28:04 +02:00: [32m[Nest] 94584  - [39m06/02/2025, 11:28:04 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-02 23:28:04 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m
+2025-06-02 23:28:10 +02:00: [2J[3J[H
+2025-06-02 23:28:10 +02:00: 11:28:10 PM - File change detected. Starting incremental compilation...
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-02 23:28:11 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:11 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:11 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:11 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:11 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:11 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:11 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:11 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:11 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:11 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:11 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-02 23:28:11 +02:00: 11:28:11 PM - Found 30 errors. Watching for file changes.
+2025-06-02 23:28:12 +02:00: [2J[3J[H
+2025-06-02 23:28:12 +02:00: 11:28:12 PM - File change detected. Starting incremental compilation...
+2025-06-02 23:28:13 +02:00: 11:28:13 PM - Found 0 errors. Watching for file changes.
+2025-06-02 23:28:13 +02:00: 
+2025-06-02 23:28:13 +02:00: 
+2025-06-02 23:28:13 +02:00: 
+2025-06-02 23:28:13 +02:00:  NX   Running target serve for project @bassnotion/backend failed
+2025-06-02 23:28:13 +02:00: 
+2025-06-02 23:28:13 +02:00: Failed tasks:
+2025-06-02 23:28:13 +02:00: 
+2025-06-02 23:28:13 +02:00: - @bassnotion/backend:serve
+2025-06-02 23:28:13 +02:00: 
+2025-06-02 23:28:13 +02:00: Hint: run the command with --verbose for more details.
+2025-06-02 23:28:13 +02:00: 
+2025-06-02 23:28:13 +02:00: 
+2025-06-02 23:28:13 +02:00:  NX   Nx Cloud Problems
+2025-06-02 23:28:13 +02:00: 
+2025-06-02 23:28:13 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+2025-06-02 23:28:13 +02:00: 
+2025-06-02 23:28:19 +02:00: 
+2025-06-02 23:28:19 +02:00: > nx run @bassnotion/backend:serve
+2025-06-02 23:28:19 +02:00: 
+2025-06-02 23:28:19 +02:00: [0m[7m[1m[33m NX [39m[22m[27m[0m  [33mNx Daemon is not enabled. Assets and package.json files will not be updated when files change.[39m
+2025-06-02 23:28:19 +02:00: [2J[3J[H
+2025-06-02 23:28:19 +02:00: 11:28:19 PM - Starting compilation in watch mode...
+2025-06-02 23:28:22 +02:00: 11:28:22 PM - Found 0 errors. Watching for file changes.
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +5ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-02 23:28:23 +02:00: [95m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-02 23:28:23 +02:00: [95m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService injected:[39m
+2025-06-02 23:28:23 +02:00: [95m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [95m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [95m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +2ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/debug/modules, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +1ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserController {/user}:[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/profile, PUT} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/account, DELETE} route[39m[38;5;3m +0ms[39m
+2025-06-02 23:28:23 +02:00: [95m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-02 23:28:23 +02:00: [95m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService available:[39m
+2025-06-02 23:28:23 +02:00: [95m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[33mtrue[39m
+2025-06-02 23:28:23 +02:00: [95m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-02 23:28:23 +02:00: [32m[Nest] 94734  - [39m06/02/2025, 11:28:23 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-02 23:28:23 +02:00: [7m[1m[36m NX [39m[22m[27m [1mProcess exited with code 1, waiting for changes to restart...[22m

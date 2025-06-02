@@ -22,7 +22,7 @@
     {
       "name": "bassnotion-frontend",
       "script": "npx",
-      "args": "nx serve @bassnotion/frontend",
+      "args": "nx serve @bassnotion/frontend --host 0.0.0.0",
       "cwd": "/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1",
       "env": {
         "NODE_ENV": "development",

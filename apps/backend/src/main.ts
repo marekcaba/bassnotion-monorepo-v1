@@ -30,12 +30,15 @@ async function bootstrap() {
 
   // Normalize frontend URL by removing trailing slash for CORS
   const frontendUrl = process.env['FRONTEND_URL']?.replace(/\/$/, '') || '*';
-  
+
   // Create array of allowed origins to handle both with and without trailing slash
-  const allowedOrigins = frontendUrl === '*' ? '*' : [
-    frontendUrl,
-    frontendUrl + '/'  // Allow both with and without trailing slash
-  ];
+  const allowedOrigins =
+    frontendUrl === '*'
+      ? '*'
+      : [
+          frontendUrl,
+          frontendUrl + '/', // Allow both with and without trailing slash
+        ];
 
   // Enable CORS
   await app.enableCors({
@@ -54,12 +57,14 @@ async function bootstrap() {
   console.warn(`Application is running on: http://localhost:${port}`);
   console.warn('DEBUG: Registered routes:');
   console.warn('- GET /api/health (AppController)');
-  console.warn('- POST /auth/signin (AuthController)');  
+  console.warn('- POST /auth/signin (AuthController)');
   console.warn('- POST /auth/signup (AuthController)');
   console.warn('- GET /auth/me (AuthController)');
   console.warn('- PUT /user/profile (UserController)');
   console.warn('- DELETE /user/account (UserController)');
-  console.warn('DEBUG: If UserController routes are missing, check module imports');
+  console.warn(
+    'DEBUG: If UserController routes are missing, check module imports',
+  );
 }
 
 // Handle bootstrap errors properly

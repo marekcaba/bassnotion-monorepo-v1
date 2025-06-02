@@ -148,7 +148,7 @@ export function IdleWarningDialog({
           background-color: #f97316;
         }
       `}</style>
-      
+
       <AlertDialog open={isOpen}>
         <AlertDialogContent className="alert-dialog-content max-w-md bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 shadow-2xl rounded-lg p-6">
           <AlertDialogHeader>
@@ -157,7 +157,9 @@ export function IdleWarningDialog({
                 <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <AlertDialogTitle className="text-gray-900 dark:text-gray-100">Session Timeout Warning</AlertDialogTitle>
+                <AlertDialogTitle className="text-gray-900 dark:text-gray-100">
+                  Session Timeout Warning
+                </AlertDialogTitle>
                 <AlertDialogDescription className="mt-1 text-gray-600 dark:text-gray-400">
                   You&apos;ve been inactive for a while. For your security,
                   you&apos;ll be automatically logged out in{' '}
@@ -169,21 +171,22 @@ export function IdleWarningDialog({
               </div>
             </div>
           </AlertDialogHeader>
-          
+
           <div className="bg-orange-50 dark:bg-orange-950/30 p-4 rounded-lg border border-orange-200 dark:border-orange-900 mt-4">
             <p className="text-sm text-orange-800 dark:text-orange-200">
-              Your session will expire automatically to protect your account. Click "Stay Logged In" to continue your session.
+              Your session will expire automatically to protect your account.
+              Click "Stay Logged In" to continue your session.
             </p>
           </div>
-          
+
           <AlertDialogFooter className="mt-6">
-            <AlertDialogCancel 
+            <AlertDialogCancel
               onClick={onLogout}
               className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border-gray-300 dark:border-gray-600"
             >
               Logout Now
             </AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={onExtendSession}
               className="bg-orange-600 hover:bg-orange-700 text-white"
             >

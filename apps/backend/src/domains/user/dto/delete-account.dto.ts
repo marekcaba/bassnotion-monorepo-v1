@@ -24,4 +24,4 @@ export class DeleteAccountDto implements DeleteAccountData {
   static getSchema() {
     return deleteAccountSchema;
   }
-} 
+}

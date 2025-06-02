@@ -13,11 +13,13 @@ import { AuthUser } from '../../src/domains/user/auth/types/auth.types.js';
 const logger = new Logger('UserFactory');
 
 // Types
+/* eslint-disable no-unused-vars */
 export enum UserRole {
   USER = 'user',
-  ADMIN = 'admin',
-  INSTRUCTOR = 'instructor',
+  _ADMIN = 'admin',
+  _INSTRUCTOR = 'instructor',
 }
+/* eslint-enable no-unused-vars */
 
 export interface UserMetadata {
   role: UserRole;
@@ -74,6 +76,7 @@ export class UserFactoryError extends Error {
 }
 
 export class UserFactory {
+  // eslint-disable-next-line no-unused-vars
   constructor(private readonly supabase: SupabaseClient) {}
 
   createData(options: CreateUserOptions = {}): {
@@ -364,7 +367,7 @@ export class UserFactory {
   async createAdmin(options: CreateUserOptions = {}): Promise<AuthUser> {
     return this.create({
       ...options,
-      role: UserRole.ADMIN,
+      role: UserRole._ADMIN,
       email: options.email || 'admin@bassnotion.com',
       metadata: {
         ...options.metadata,
@@ -376,7 +379,7 @@ export class UserFactory {
   async createInstructor(options: CreateUserOptions = {}): Promise<AuthUser> {
     return this.create({
       ...options,
-      role: UserRole.INSTRUCTOR,
+      role: UserRole._INSTRUCTOR,
       metadata: {
         ...options.metadata,
         isInstructor: true,

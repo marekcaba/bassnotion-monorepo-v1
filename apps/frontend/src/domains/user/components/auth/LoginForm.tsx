@@ -47,7 +47,7 @@ export function LoginForm({
   const handleSubmit = async (data: LoginData) => {
     try {
       await onSubmit(data);
-    } catch (error) {
+    } catch {
       // Error handling will be done by the parent component
       // Note: Error is propagated to parent, no additional logging needed
     }

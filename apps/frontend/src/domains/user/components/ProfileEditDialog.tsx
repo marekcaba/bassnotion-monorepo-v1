@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import {
-  userProfileSchema,
+  userProfileSchema as _userProfileSchema,
   type UserProfileData,
 } from '@bassnotion/contracts';
 import { z } from 'zod';
@@ -57,7 +57,7 @@ export function ProfileEditDialog({
 }: ProfileEditDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
 
   const form = useForm<ProfileEditData>({
     resolver: zodResolver(profileEditSchema),
@@ -74,7 +74,10 @@ export function ProfileEditDialog({
   // Update form values when initialData changes or dialog opens
   useEffect(() => {
     if (isOpen) {
-      console.log('[ProfileEditDialog] Dialog opened with initialData:', initialData);
+      console.log(
+        '[ProfileEditDialog] Dialog opened with initialData:',
+        initialData,
+      );
       form.reset({
         displayName: initialData.displayName || '',
         bio: initialData.bio || '',
@@ -89,7 +92,7 @@ export function ProfileEditDialog({
   const handleSubmit = async (data: ProfileEditData) => {
     try {
       setIsLoading(true);
-      
+
       // Transform data to match the expected format, preserving avatarUrl
       const submitData: UserProfileData = {
         displayName: data.displayName,
@@ -187,18 +190,18 @@ export function ProfileEditDialog({
           }
         }
       `}</style>
-      
+
       <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent 
-          className="dialog-content-animated fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 shadow-2xl rounded-lg p-6"
-        >
+        <DialogContent className="dialog-content-animated fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 shadow-2xl rounded-lg p-6">
           <DialogHeader>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full transition-all duration-300 hover:scale-110 hover:rotate-6 hover:bg-green-500">
                 <User className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <DialogTitle className="text-gray-900 dark:text-gray-100">Edit Profile</DialogTitle>
+                <DialogTitle className="text-gray-900 dark:text-gray-100">
+                  Edit Profile
+                </DialogTitle>
                 <DialogDescription className="mt-1 text-gray-600 dark:text-gray-400">
                   Update your profile information and settings.
                 </DialogDescription>
@@ -207,7 +210,10 @@ export function ProfileEditDialog({
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <form
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="space-y-4"
+            >
               <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg border border-green-200 dark:border-green-900">
                 <div className="space-y-4">
                   <FormField
@@ -215,7 +221,9 @@ export function ProfileEditDialog({
                     name="displayName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-green-800 dark:text-green-200">Display Name</FormLabel>
+                        <FormLabel className="text-green-800 dark:text-green-200">
+                          Display Name
+                        </FormLabel>
                         <FormControl>
                           <Input
                             placeholder="Enter your display name"
@@ -234,7 +242,9 @@ export function ProfileEditDialog({
                     name="bio"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-green-800 dark:text-green-200">Bio</FormLabel>
+                        <FormLabel className="text-green-800 dark:text-green-200">
+                          Bio
+                        </FormLabel>
                         <FormControl>
                           <textarea
                             placeholder="Tell us about yourself..."
@@ -284,4 +294,4 @@ export function ProfileEditDialog({
       </Dialog>
     </>
   );
-} 
+}

@@ -15,13 +15,17 @@ export class ProfileService {
     }
 
     return {
-      'Authorization': `Bearer ${session.access_token}`,
+      Authorization: `Bearer ${session.access_token}`,
       'Content-Type': 'application/json',
     };
   }
 
   private get backendUrl() {
-    return process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+    return (
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      'http://localhost:3000'
+    );
   }
 
   /**
@@ -31,7 +35,7 @@ export class ProfileService {
     try {
       const headers = await this.getAuthHeaders();
       const url = `${this.backendUrl}/user/profile`;
-      
+
       console.log('[Profile] Calling backend URL:', url);
       console.log('[Profile] Headers:', headers);
       console.log('[Profile] Data:', profileData);
@@ -43,7 +47,10 @@ export class ProfileService {
       });
 
       console.log('[Profile] Response status:', response.status);
-      console.log('[Profile] Response headers:', Object.fromEntries(response.headers));
+      console.log(
+        '[Profile] Response headers:',
+        Object.fromEntries(response.headers),
+      );
 
       const result = await response.json();
       console.log('[Profile] Response data:', result);
@@ -113,12 +120,12 @@ export class ProfileService {
       // If no profile exists, create one
       if (!profile) {
         console.log('No profile found, creating one...');
-        
-        const displayName = 
-          user.user_metadata?.display_name || 
+
+        const displayName =
+          user.user_metadata?.display_name ||
           user.user_metadata?.full_name ||
           user.user_metadata?.name ||
-          user.email?.split('@')[0] || 
+          user.email?.split('@')[0] ||
           'User';
 
         const { data: newProfile, error: createError } = await supabase
@@ -170,4 +177,4 @@ export class ProfileService {
   }
 }
 
-export const profileService = new ProfileService(); 
+export const profileService = new ProfileService();

@@ -27,7 +27,7 @@ export default function HomePage() {
 
           {/* Right side: Button group */}
           <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 sm:flex-shrink-0">
-            <Button 
+            <Button
               className="w-full sm:w-auto min-w-[160px]"
               onClick={() => navigateWithTransition('/dashboard')}
             >

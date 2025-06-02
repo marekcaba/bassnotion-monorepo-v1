@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Camera, User, Loader2 } from 'lucide-react';
 import { supabase } from '@/infrastructure/supabase/client';
 import { useToast } from '@/shared/hooks/use-toast';
@@ -19,11 +19,15 @@ export function AvatarUpload({
   userId,
 }: AvatarUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatarUrl || null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    currentAvatarUrl || null,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -57,7 +61,7 @@ export function AvatarUpload({
       const filePath = `${userId}/${fileName}`; // Store in user-specific folder
 
       // Upload to Supabase storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { data: _uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, {
           cacheControl: '3600',
@@ -70,22 +74,27 @@ export function AvatarUpload({
           statusCode: uploadError.statusCode,
           error: uploadError.error,
         });
-        
+
         // Handle specific error cases
         if (uploadError.message.includes('Bucket not found')) {
           // Try to create the bucket first
-          const { error: bucketError } = await supabase.storage.createBucket('avatars', {
-            public: true,
-            allowedMimeTypes: ['image/*'],
-            fileSizeLimit: 5242880, // 5MB
-          });
+          const { error: bucketError } = await supabase.storage.createBucket(
+            'avatars',
+            {
+              public: true,
+              allowedMimeTypes: ['image/*'],
+              fileSizeLimit: 5242880, // 5MB
+            },
+          );
 
           if (bucketError && !bucketError.message.includes('already exists')) {
-            throw new Error(`Failed to create storage bucket: ${bucketError.message}`);
+            throw new Error(
+              `Failed to create storage bucket: ${bucketError.message}`,
+            );
           }
 
           // Retry upload after creating bucket
-          const { data: retryData, error: retryError } = await supabase.storage
+          const { data: _retryData, error: retryError } = await supabase.storage
             .from('avatars')
             .upload(filePath, file, {
               cacheControl: '3600',
@@ -125,7 +134,8 @@ export function AvatarUpload({
       });
       toast({
         title: 'Upload failed',
-        description: error instanceof Error ? error.message : 'Failed to upload image',
+        description:
+          error instanceof Error ? error.message : 'Failed to upload image',
         variant: 'destructive',
       });
     } finally {
@@ -142,10 +152,10 @@ export function AvatarUpload({
     fileInputRef.current?.click();
   };
 
-  const handleRemoveAvatar = () => {
+  const _handleRemoveAvatar = useCallback(async () => {
     setPreviewUrl(null);
     onAvatarChange(null);
-  };
+  }, [onAvatarChange]);
 
   return (
     <div className="flex flex-col">
@@ -199,4 +209,4 @@ export function AvatarUpload({
       />
     </div>
   );
-} 
+}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Home, Edit, Trash2, User } from 'lucide-react';
+import { Home, Edit, Trash2 } from 'lucide-react';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { authService } from '@/domains/user/api/auth';
 import { profileService } from '@/domains/user/api/profile';
@@ -22,7 +22,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { navigateWithTransition } = useViewTransitionRouter();
-  
+
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -65,23 +65,24 @@ export default function DashboardPage() {
       console.error('Failed to load profile:', error);
       // Use user data as fallback
       if (user) {
-        const fallbackDisplayName = 
-          user.user_metadata?.display_name || 
+        const fallbackDisplayName =
+          user.user_metadata?.display_name ||
           user.user_metadata?.full_name ||
           user.user_metadata?.name ||
-          user.email?.split('@')[0] || 
+          user.email?.split('@')[0] ||
           'User';
-          
+
         setProfileData({
           displayName: fallbackDisplayName,
           bio: '',
           avatarUrl: '',
         });
-        
+
         // Show a toast to inform the user
         toast({
           title: 'Profile loading issue',
-          description: 'Using fallback profile data. You can edit your profile below.',
+          description:
+            'Using fallback profile data. You can edit your profile below.',
           variant: 'default',
         });
       }
@@ -111,10 +112,10 @@ export default function DashboardPage() {
 
   const handleProfileUpdate = async (data: UserProfileData) => {
     try {
-      const updatedUser = await profileService.updateProfile(data);
+      const _updatedUser = await profileService.updateProfile(data);
       setProfileData({
         displayName: data.displayName,
-        bio: data.bio,
+        bio: data.bio ?? undefined,
         avatarUrl: data.avatarUrl,
       });
       setShowProfileDialog(false);
@@ -138,20 +139,20 @@ export default function DashboardPage() {
 
   const handleAvatarChange = async (newAvatarUrl: string | null) => {
     if (!profileData) return;
-    
+
     try {
       const updatedData: UserProfileData = {
         displayName: profileData.displayName,
         bio: profileData.bio,
-        avatarUrl: newAvatarUrl || undefined,
+        avatarUrl: newAvatarUrl ?? undefined,
       };
-      
+
       await profileService.updateProfile(updatedData);
       setProfileData({
         ...profileData,
-        avatarUrl: newAvatarUrl || undefined,
+        avatarUrl: newAvatarUrl ?? undefined,
       });
-      
+
       toast({
         title: 'Avatar updated',
         description: 'Your profile picture has been updated successfully.',
@@ -174,17 +175,17 @@ export default function DashboardPage() {
     setIsDeleteLoading(true);
     try {
       await profileService.deleteAccount(password);
-      
+
       // Sign out and redirect to home
       await authService.signOut();
       reset();
-      
+
       toast({
         title: 'Account deleted',
         description: 'Your account has been permanently deleted.',
         variant: 'success',
       });
-      
+
       router.push('/');
     } catch (error) {
       console.error('Account deletion error:', error);
@@ -283,13 +284,19 @@ export default function DashboardPage() {
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Left Column - Account Info */}
                 <div className="space-y-3 text-sm">
-                  <h3 className="font-semibold text-base mb-3">Account Information</h3>
+                  <h3 className="font-semibold text-base mb-3">
+                    Account Information
+                  </h3>
                   <div>
-                    <span className="font-medium text-muted-foreground">Email:</span>
+                    <span className="font-medium text-muted-foreground">
+                      Email:
+                    </span>
                     <p className="mt-1 break-all">{user.email}</p>
                   </div>
                   <div>
-                    <span className="font-medium text-muted-foreground">Email Status:</span>
+                    <span className="font-medium text-muted-foreground">
+                      Email Status:
+                    </span>
                     <p className="mt-1">
                       {user.email_confirmed_at ? (
                         <span className="text-green-600">✓ Confirmed</span>
@@ -299,34 +306,50 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <div>
-                    <span className="font-medium text-muted-foreground">Member Since:</span>
-                    <p className="mt-1">{new Date(user.created_at).toLocaleDateString()}</p>
+                    <span className="font-medium text-muted-foreground">
+                      Member Since:
+                    </span>
+                    <p className="mt-1">
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </p>
                   </div>
                   <div>
-                    <span className="font-medium text-muted-foreground">User ID:</span>
-                    <p className="mt-1 font-mono text-xs break-all text-muted-foreground">{user.id}</p>
+                    <span className="font-medium text-muted-foreground">
+                      User ID:
+                    </span>
+                    <p className="mt-1 font-mono text-xs break-all text-muted-foreground">
+                      {user.id}
+                    </p>
                   </div>
                 </div>
 
                 {/* Right Column - Profile Info */}
                 <div className="space-y-3 text-sm">
-                  <h3 className="font-semibold text-base mb-3">Profile Information</h3>
+                  <h3 className="font-semibold text-base mb-3">
+                    Profile Information
+                  </h3>
                   {profileData && (
                     <>
                       <div>
-                        <span className="font-medium text-muted-foreground">Display Name:</span>
+                        <span className="font-medium text-muted-foreground">
+                          Display Name:
+                        </span>
                         <p className="mt-1">{profileData.displayName}</p>
                       </div>
-                      
+
                       <div>
-                        <span className="font-medium text-muted-foreground">Bio:</span>
+                        <span className="font-medium text-muted-foreground">
+                          Bio:
+                        </span>
                         <p className="mt-1 text-muted-foreground">
                           {profileData.bio || 'No bio added yet'}
                         </p>
                       </div>
-                      
+
                       <div>
-                        <span className="font-medium text-muted-foreground">Profile Picture:</span>
+                        <span className="font-medium text-muted-foreground">
+                          Profile Picture:
+                        </span>
                         <div className="mt-2">
                           {user?.id && (
                             <AvatarUpload
@@ -351,7 +374,8 @@ export default function DashboardPage() {
             </h2>
             <div className="bg-card rounded-lg border p-4 sm:p-6">
               <p className="text-sm text-muted-foreground mb-4">
-                Interactive BassNotion features with smooth layout animations powered by AutoAnimate
+                Interactive BassNotion features with smooth layout animations
+                powered by AutoAnimate
               </p>
               <DashboardContent />
             </div>
@@ -362,7 +386,7 @@ export default function DashboardPage() {
             <h2 className="text-lg sm:text-xl font-semibold mb-4">
               Account Settings
             </h2>
-            
+
             {/* Password Section */}
             <div className="bg-card rounded-lg border p-4 sm:p-6 mb-4">
               <h3 className="font-semibold mb-4">Password & Security</h3>
@@ -376,9 +400,12 @@ export default function DashboardPage() {
 
             {/* Danger Zone */}
             <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-4 sm:p-6">
-              <h3 className="font-semibold text-destructive mb-2">Danger Zone</h3>
+              <h3 className="font-semibold text-destructive mb-2">
+                Danger Zone
+              </h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Once you delete your account, there is no going back. Please be certain.
+                Once you delete your account, there is no going back. Please be
+                certain.
               </p>
               <Button
                 variant="destructive"

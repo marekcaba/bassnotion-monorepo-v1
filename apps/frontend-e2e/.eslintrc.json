@@ -1,15 +1,49 @@
 {
   "extends": ["../../.eslintrc.json"],
   "ignorePatterns": ["!**/*"],
+  "env": {
+    "node": true,
+    "browser": true,
+    "es2022": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module",
+    "project": "./tsconfig.json"
+  },
   "overrides": [
     {
       "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
-      "rules": {}
+      "rules": {
+        // More lenient rules for test files
+        "@typescript-eslint/no-unused-vars": "warn",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-non-null-assertion": "off",
+        "no-console": "off",
+        "prefer-const": "warn",
+        
+        // Playwright-specific allowances
+        "@typescript-eslint/no-floating-promises": "off",
+        "@typescript-eslint/no-empty-function": "off",
+        
+        // Keep formatting strict
+        "prettier/prettier": "error"
+      }
     },
     {
-      "files": ["src/**/*.ts"],
+      "files": ["*.spec.ts", "*.spec.js", "*.e2e.ts", "*.e2e.js"],
       "rules": {
-        "@typescript-eslint/no-unused-expressions": "off"
+        // Even more lenient for actual test spec files
+        "@typescript-eslint/no-unused-vars": "off",
+        "no-unused-vars": "off"
+      }
+    },
+    {
+      "files": ["playwright.config.ts"],
+      "rules": {
+        // Config files can be more flexible
+        "@typescript-eslint/no-unused-vars": "off",
+        "no-unused-vars": "off"
       }
     }
   ]

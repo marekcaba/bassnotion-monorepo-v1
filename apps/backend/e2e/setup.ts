@@ -280,11 +280,13 @@ beforeAll(async () => {
         }
       },
 
+      /* eslint-disable no-unused-vars */
       async authenticateUser(
         signInDto: any,
         _ipAddress?: string,
         _userAgent?: string,
       ) {
+        /* eslint-enable no-unused-vars */
         logger.debug(`Authenticating user: ${signInDto.email}`);
 
         // Validate inputs

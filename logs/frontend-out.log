@@ -934,3 +934,32 @@
 2025-06-02 17:52:58 +02:00:    - Environments: .env.local, .env
 2025-06-02 17:52:58 +02:00:  [32m[1m✓[22m[39m Starting...
 2025-06-02 17:53:00 +02:00:  [32m[1m✓[22m[39m Ready in 1576ms
+2025-06-02 22:05:15 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 22:05:15 +02:00:    - Local:        http://localhost:3001
+2025-06-02 22:05:15 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-02 22:05:15 +02:00:    - Environments: .env.local, .env
+2025-06-02 22:05:15 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 22:05:17 +02:00:  [32m[1m✓[22m[39m Ready in 2.1s
+2025-06-02 23:17:03 +02:00: 
+2025-06-02 23:17:03 +02:00:  NX   Nx Daemon was not able to compute the project graph.
+2025-06-02 23:17:03 +02:00: 
+2025-06-02 23:17:03 +02:00: Log file with the error: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/.nx/workspace-data/d/daemon-error.log
+2025-06-02 23:17:03 +02:00: Please file an issue at https://github.com/nrwl/nx
+2025-06-02 23:17:03 +02:00: Nx Daemon is going to be disabled until you run "nx reset".
+2025-06-02 23:17:03 +02:00: 
+2025-06-02 23:20:26 +02:00: 
+2025-06-02 23:20:26 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-02 23:20:26 +02:00: 
+2025-06-02 23:20:26 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-02 23:20:26 +02:00:    - Local:        http://localhost:3001
+2025-06-02 23:20:26 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-02 23:20:26 +02:00:    - Environments: .env.local, .env
+2025-06-02 23:20:26 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-02 23:20:28 +02:00:  [32m[1m✓[22m[39m Ready in 1615ms
+2025-06-02 23:22:07 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-02 23:22:10 +02:00:  [32m[1m✓[22m[39m Compiled / in 3s (1260 modules)
+2025-06-02 23:22:10 +02:00:  GET / [32m200[39m in 3424ms
+2025-06-02 23:22:10 +02:00:  [32m[1m✓[22m[39m Compiled in 158ms (574 modules)
+2025-06-02 23:28:00 +02:00:  [32m[1m✓[22m[39m Compiled in 34ms
+2025-06-02 23:28:01 +02:00:  [32m[1m✓[22m[39m Compiled in 149ms (560 modules)
+2025-06-02 23:28:11 +02:00:  [32m[1m✓[22m[39m Compiled in 100ms (560 modules)

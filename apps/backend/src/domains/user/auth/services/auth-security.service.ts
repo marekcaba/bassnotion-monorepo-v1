@@ -60,7 +60,9 @@ export class AuthSecurityService {
     try {
       // Validate input parameters
       if (!email || typeof email !== 'string') {
-        this.logger.warn('Invalid email provided to checkRateLimit, failing open');
+        this.logger.warn(
+          'Invalid email provided to checkRateLimit, failing open',
+        );
         return {
           isRateLimited: false,
           attemptsRemaining: this.MAX_ATTEMPTS_PER_EMAIL,
@@ -156,7 +158,9 @@ export class AuthSecurityService {
     try {
       // Validate input parameters
       if (!email || typeof email !== 'string') {
-        this.logger.warn('Invalid email provided to checkAccountLockout, failing open');
+        this.logger.warn(
+          'Invalid email provided to checkAccountLockout, failing open',
+        );
         return {
           isLocked: false,
           failedAttempts: 0,
@@ -263,7 +267,9 @@ export class AuthSecurityService {
     try {
       // Validate input parameters
       if (!email || typeof email !== 'string') {
-        this.logger.warn('Invalid email provided to recordLoginAttempt, skipping record');
+        this.logger.warn(
+          'Invalid email provided to recordLoginAttempt, skipping record',
+        );
         return;
       }
 
