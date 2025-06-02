@@ -9,6 +9,25 @@ echo "NPM version: $(npm --version)"
 echo "Installing npm dependencies..."
 npm install --no-optional --no-audit --no-fund
 
+# Verify critical frontend dependencies
+echo "Verifying critical dependencies..."
+if [ ! -d "node_modules/@formkit" ]; then
+  echo "Installing @formkit/auto-animate explicitly..."
+  npm install @formkit/auto-animate@^0.8.2 --no-optional --no-audit --no-fund
+fi
+
+if [ ! -d "node_modules/@radix-ui" ]; then
+  echo "Installing Radix UI components explicitly..."
+  npm install @radix-ui/react-dialog @radix-ui/react-alert-dialog @radix-ui/react-dropdown-menu @radix-ui/react-label @radix-ui/react-slot @radix-ui/react-tabs @radix-ui/react-toast --no-optional --no-audit --no-fund
+fi
+
+if [ ! -d "node_modules/motion" ]; then
+  echo "Installing motion library explicitly..."
+  npm install motion@^12.15.0 --no-optional --no-audit --no-fund
+fi
+
+echo "Frontend dependencies verification complete."
+
 echo "Building contracts library..."
 cd ../../libs/contracts
 echo "Contracts directory: $(pwd)"
@@ -79,5 +98,10 @@ echo "Contracts library copied successfully:"
 ls -la node_modules/@bassnotion/contracts/
 echo "Contracts dist files:"
 ls -la node_modules/@bassnotion/contracts/dist/
+
+echo "Final dependency verification:"
+echo "@formkit/auto-animate: $([ -d "node_modules/@formkit" ] && echo "✓ Found" || echo "✗ Missing")"
+echo "@radix-ui: $([ -d "node_modules/@radix-ui" ] && echo "✓ Found" || echo "✗ Missing")"
+echo "motion: $([ -d "node_modules/motion" ] && echo "✓ Found" || echo "✗ Missing")"
 
 echo "Contracts library setup complete!" 
