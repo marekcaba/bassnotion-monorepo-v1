@@ -35,73 +35,119 @@ const TRANSITION_CONFIG = {
   }
 };
 
+// Enhanced CSS management inspired by Framer Commerce
 const STYLE_ID = 'bassnotion-view-transition-styles';
 
-function generateTransitionCSS(phase: 'exit' | 'enter', config: typeof TRANSITION_CONFIG.exit) {
-  const animationName = `view-transition-${phase}`;
-  const easing = `cubic-bezier(${config.transition.ease.join(',')})`;
-  
-  const startState = phase === 'exit' 
-    ? `opacity: ${config.opacity}; transform: translateX(${config.x}) translateY(${config.y}) scale(${config.scale}) rotate(${config.rotate}deg);`
-    : `opacity: 0; transform: translateX(${config.x}) translateY(${config.y}) scale(${config.scale}) rotate(${config.rotate}deg);`;
-    
-  const endState = phase === 'exit'
-    ? `opacity: 0; transform: translateX(${config.x}) translateY(${config.y}) scale(${config.scale}) rotate(${config.rotate}deg);`
-    : `opacity: ${config.opacity}; transform: translateX(${config.x}) translateY(${config.y}) scale(${config.scale}) rotate(${config.rotate}deg);`;
+const cssManager = {
+  pendingRules: {} as Record<string, Record<string, string> | string>,
+  style: null as HTMLStyleElement | null,
 
-  return `
-    @keyframes ${animationName} {
-      0% { ${startState} }
-      100% { ${endState} }
+  set(selector: string, values: Record<string, string>) {
+    const existingRule = this.pendingRules[selector];
+    if (typeof existingRule === 'object' && existingRule) {
+      this.pendingRules[selector] = { ...existingRule, ...values };
+    } else {
+      this.pendingRules[selector] = values;
     }
-    
-    ::view-transition-${phase === 'enter' ? 'new' : 'old'}(root) {
-      animation-name: ${animationName};
-      animation-duration: ${config.transition.duration}s;
-      animation-delay: ${config.transition.delay}s;
-      animation-timing-function: ${easing};
-      animation-fill-mode: both;
+  },
+
+  commit() {
+    if (!this.style) {
+      this.style = document.createElement('style');
+      this.style.id = STYLE_ID;
     }
-  `;
-}
+
+    let cssText = '';
+    for (const selector in this.pendingRules) {
+      const rule = this.pendingRules[selector];
+      
+      if (typeof rule === 'string') {
+        // Raw CSS text (for keyframes)
+        cssText += rule + '\n';
+      } else if (rule) {
+        // CSS properties object
+        cssText += `${selector} {\n`;
+        for (const [property, value] of Object.entries(rule)) {
+          cssText += `  ${property}: ${value};\n`;
+        }
+        cssText += '}\n';
+      }
+    }
+
+    this.style.textContent = cssText;
+    document.head.appendChild(this.style);
+    this.pendingRules = {};
+  },
+
+  remove() {
+    if (this.style && this.style.parentElement) {
+      this.style.parentElement.removeChild(this.style);
+      this.style = null;
+    }
+    this.pendingRules = {};
+  },
+
+  clear() {
+    this.pendingRules = {};
+  },
+
+  setRaw(key: string, cssText: string) {
+    this.pendingRules[key] = cssText;
+  }
+};
 
 function injectTransitionStyles() {
   return new Promise<void>((resolve) => {
     requestAnimationFrame(() => {
       performance.mark('bassnotion-vt-style');
       
-      // Remove existing styles
-      const existingStyle = document.getElementById(STYLE_ID);
-      if (existingStyle) {
-        document.head.removeChild(existingStyle);
-      }
+      // Use enhanced CSS manager
+      cssManager.set('@media (prefers-reduced-motion)', {
+        '::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*)': 'animation: none !important;'
+      });
 
-      // Create new style element
-      const style = document.createElement('style');
-      style.id = STYLE_ID;
+      cssManager.set('::view-transition-old(*), ::view-transition-new(*)', {
+        'mix-blend-mode': 'normal',
+        'backface-visibility': 'hidden'
+      });
       
-      let css = `
-        @media (prefers-reduced-motion) {
-          ::view-transition-group(*),
-          ::view-transition-old(*),
-          ::view-transition-new(*) {
-            animation: none !important;
-          }
-        }
-        
-        ::view-transition-old(*),
-        ::view-transition-new(*) {
-          mix-blend-mode: normal;
-          backface-visibility: hidden;
+      const exitKeyframes = `
+        @keyframes view-transition-exit {
+          0% { opacity: ${TRANSITION_CONFIG.exit.opacity}; transform: translateX(${TRANSITION_CONFIG.exit.x}) translateY(${TRANSITION_CONFIG.exit.y}) scale(${TRANSITION_CONFIG.exit.scale}) rotate(${TRANSITION_CONFIG.exit.rotate}deg); }
+          100% { opacity: 0; transform: translateX(${TRANSITION_CONFIG.exit.x}) translateY(${TRANSITION_CONFIG.exit.y}) scale(${TRANSITION_CONFIG.exit.scale}) rotate(${TRANSITION_CONFIG.exit.rotate}deg); }
         }
       `;
       
-      css += generateTransitionCSS('exit', TRANSITION_CONFIG.exit);
-      css += generateTransitionCSS('enter', TRANSITION_CONFIG.enter);
+      const enterKeyframes = `
+        @keyframes view-transition-enter {
+          0% { opacity: 0; transform: translateX(${TRANSITION_CONFIG.enter.x}) translateY(${TRANSITION_CONFIG.enter.y}) scale(${TRANSITION_CONFIG.enter.scale}) rotate(${TRANSITION_CONFIG.enter.rotate}deg); }
+          100% { opacity: ${TRANSITION_CONFIG.enter.opacity}; transform: translateX(${TRANSITION_CONFIG.enter.x}) translateY(${TRANSITION_CONFIG.enter.y}) scale(${TRANSITION_CONFIG.enter.scale}) rotate(${TRANSITION_CONFIG.enter.rotate}deg); }
+        }
+      `;
+
+      const easing = `cubic-bezier(${TRANSITION_CONFIG.exit.transition.ease.join(',')})`;
       
-      style.textContent = css;
-      document.head.appendChild(style);
+      cssManager.set('::view-transition-old(root)', {
+        'animation-name': 'view-transition-exit',
+        'animation-duration': `${TRANSITION_CONFIG.exit.transition.duration}s`,
+        'animation-delay': `${TRANSITION_CONFIG.exit.transition.delay}s`,
+        'animation-timing-function': easing,
+        'animation-fill-mode': 'both'
+      });
+
+      cssManager.set('::view-transition-new(root)', {
+        'animation-name': 'view-transition-enter', 
+        'animation-duration': `${TRANSITION_CONFIG.enter.transition.duration}s`,
+        'animation-delay': `${TRANSITION_CONFIG.enter.transition.delay}s`,
+        'animation-timing-function': easing,
+        'animation-fill-mode': 'both'
+      });
+
+      // Inject keyframes as text (they can't be set via object syntax)
+      cssManager.setRaw('@keyframes-exit', exitKeyframes);
+      cssManager.setRaw('@keyframes-enter', enterKeyframes);
       
+      cssManager.commit();
       resolve();
     });
   });
@@ -110,10 +156,7 @@ function injectTransitionStyles() {
 function cleanupTransitionStyles() {
   requestAnimationFrame(() => {
     performance.mark('bassnotion-vt-remove');
-    const style = document.getElementById(STYLE_ID);
-    if (style) {
-      document.head.removeChild(style);
-    }
+    cssManager.remove();
   });
 }
 
@@ -180,6 +223,72 @@ async function executeViewTransition(
   return transition;
 }
 
+// Utility function for delays
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Transition queue management inspired by Framer Commerce
+let currentTransition: ViewTransition | null = null;
+let isTransitioning = false;
+
+function handleTransitionInterrupt() {
+  if (currentTransition && isTransitioning) {
+    try {
+      currentTransition.skipTransition();
+      console.log('🔄 Interrupted current transition');
+    } catch (error) {
+      // skipTransition might not be available or transition might be finished
+      console.log('⚠️ Could not interrupt transition:', error);
+    }
+  }
+}
+
+// Performance monitoring inspired by Framer Commerce
+interface TransitionStats {
+  totalDuration: number;
+  cssInjection: number;
+  navigationTime: number;
+  cleanupTime: number;
+  interrupted: boolean;
+}
+
+const transitionStats: TransitionStats[] = [];
+
+function recordTransitionStats(): TransitionStats {
+  const measures = performance.getEntriesByType('measure');
+  const marks = performance.getEntriesByType('mark');
+  
+  const vtMeasure = measures.find(m => m.name === 'bassnotion-view-transition');
+  const styleTime = marks.find(m => m.name === 'bassnotion-vt-style')?.startTime || 0;
+  const removeTime = marks.find(m => m.name === 'bassnotion-vt-remove')?.startTime || 0;
+  const startTime = marks.find(m => m.name === 'bassnotion-vt-start')?.startTime || 0;
+  
+  const stats: TransitionStats = {
+    totalDuration: vtMeasure?.duration || 0,
+    cssInjection: styleTime - startTime,
+    navigationTime: 0, // Could be enhanced to track router.push timing
+    cleanupTime: removeTime - startTime,
+    interrupted: false
+  };
+  
+  transitionStats.push(stats);
+  
+  // Keep only last 10 transitions
+  if (transitionStats.length > 10) {
+    transitionStats.shift();
+  }
+  
+  return stats;
+}
+
+// Export for debugging - only in browser environment
+if (typeof window !== 'undefined') {
+  (window as any).__bassnotionTransitionStats = () => {
+    console.table(transitionStats);
+    const avg = transitionStats.reduce((acc, s) => acc + s.totalDuration, 0) / transitionStats.length;
+    console.log(`Average transition time: ${avg.toFixed(2)}ms`);
+  };
+}
+
 /**
  * Custom hook for navigation with CSS View Transitions API
  * 
@@ -189,22 +298,50 @@ async function executeViewTransition(
 export function useViewTransitionRouter() {
   const router = useRouter();
 
-  const navigateWithTransition = useCallback(
-    (href: string, options?: TransitionNavigateOptions) => {
-      // Skip transition if explicitly requested or not supported
-      if (options?.skipTransition || !supportsViewTransitions()) {
-        router.push(href);
-        return;
-      }
+  const navigateWithTransition = useCallback(async (url: string) => {
+    if (!document.startViewTransition) {
+      router.push(url);
+      return;
+    }
 
-      // Execute Framer Commerce style transition
-      return executeViewTransition(
-        () => router.push(href),
-        TRANSITION_CONFIG
-      );
-    },
-    [router],
-  );
+    try {
+      // Handle rapid navigation clicks - interrupt current transition
+      handleTransitionInterrupt();
+      
+      performance.mark('bassnotion-vt-start');
+      console.log('🚀 Starting view transition to:', url);
+      
+      await injectTransitionStyles();
+      
+      isTransitioning = true;
+      currentTransition = document.startViewTransition(async () => {
+        await delay(50);
+        router.push(url);
+        await delay(50);
+      });
+
+      // Clean up transition state when finished
+      currentTransition.finished.finally(() => {
+        isTransitioning = false;
+        currentTransition = null;
+        cleanupTransitionStyles();
+        performance.mark('bassnotion-vt-end');
+        performance.measure('bassnotion-view-transition', 'bassnotion-vt-start', 'bassnotion-vt-end');
+        
+        // Record performance stats
+        const stats = recordTransitionStats();
+        console.log('✅ View transition completed:', `${stats.totalDuration.toFixed(2)}ms`);
+      });
+
+      await currentTransition.finished;
+    } catch (error) {
+      isTransitioning = false;
+      currentTransition = null;
+      console.error('❌ View transition failed:', error);
+      cleanupTransitionStyles();
+      router.push(url);
+    }
+  }, [router]);
 
   return { navigateWithTransition };
 }
