@@ -1,5 +1,5 @@
 import { useRouter } from 'next/navigation';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 
 type TransitionNavigateOptions = {
   skipTransition?: boolean;
@@ -234,10 +234,8 @@ function handleTransitionInterrupt() {
   if (currentTransition && isTransitioning) {
     try {
       currentTransition.skipTransition();
-      console.log('🔄 Interrupted current transition');
     } catch (error) {
       // skipTransition might not be available or transition might be finished
-      console.log('⚠️ Could not interrupt transition:', error);
     }
   }
 }
@@ -249,6 +247,7 @@ interface TransitionStats {
   navigationTime: number;
   cleanupTime: number;
   interrupted: boolean;
+  preHeated: boolean;
 }
 
 const transitionStats: TransitionStats[] = [];
@@ -258,6 +257,7 @@ function recordTransitionStats(): TransitionStats {
   const marks = performance.getEntriesByType('mark');
   
   const vtMeasure = measures.find(m => m.name === 'bassnotion-view-transition');
+  const preheatMeasure = measures.find(m => m.name === 'bassnotion-preheat');
   const styleTime = marks.find(m => m.name === 'bassnotion-vt-style')?.startTime || 0;
   const removeTime = marks.find(m => m.name === 'bassnotion-vt-remove')?.startTime || 0;
   const startTime = marks.find(m => m.name === 'bassnotion-vt-start')?.startTime || 0;
@@ -267,7 +267,8 @@ function recordTransitionStats(): TransitionStats {
     cssInjection: styleTime - startTime,
     navigationTime: 0, // Could be enhanced to track router.push timing
     cleanupTime: removeTime - startTime,
-    interrupted: false
+    interrupted: false,
+    preHeated: isPreHeated
   };
   
   transitionStats.push(stats);
@@ -283,15 +284,102 @@ function recordTransitionStats(): TransitionStats {
 // Export for debugging - only in browser environment
 if (typeof window !== 'undefined') {
   (window as any).__bassnotionTransitionStats = () => {
+    const measures = performance.getEntriesByType('measure');
+    const preheatMeasure = measures.find(m => m.name === 'bassnotion-preheat');
+    
+    console.log('Pre-heating Status:', isPreHeated ? 'Complete' : 'Pending');
+    if (preheatMeasure) {
+      console.log('Pre-heat Time:', `${preheatMeasure.duration.toFixed(2)}ms`);
+    }
     console.table(transitionStats);
     const avg = transitionStats.reduce((acc, s) => acc + s.totalDuration, 0) / transitionStats.length;
     console.log(`Average transition time: ${avg.toFixed(2)}ms`);
+    
+    const preHeatedCount = transitionStats.filter(s => s.preHeated).length;
+    console.log(`Pre-heated transitions: ${preHeatedCount}/${transitionStats.length}`);
   };
+}
+
+// Pre-heating system for smooth first transitions
+let isPreHeated = false;
+let preHeatPromise: Promise<void> | null = null;
+
+async function preHeatTransitions(): Promise<void> {
+  if (isPreHeated || preHeatPromise) {
+    return preHeatPromise || Promise.resolve();
+  }
+
+  preHeatPromise = new Promise<void>(async (resolve) => {
+    if (!document.startViewTransition) {
+      isPreHeated = true;
+      resolve();
+      return;
+    }
+
+    try {
+      performance.mark('bassnotion-preheat-start');
+
+      // Pre-inject styles to avoid cold start
+      await injectTransitionStyles();
+      
+      // Trigger an invisible dummy transition to initialize the system
+      const dummyTransition = document.startViewTransition(async () => {
+        // Minimal DOM change that doesn't affect visual layout
+        const marker = document.createElement('div');
+        marker.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
+        marker.id = 'vt-preheat-marker';
+        document.body.appendChild(marker);
+        
+        await delay(1); // Minimal delay for DOM update
+        
+        marker.remove();
+      });
+
+      // Wait for the dummy transition to complete
+      await dummyTransition.finished;
+      
+      performance.mark('bassnotion-preheat-end');
+      performance.measure('bassnotion-preheat', 'bassnotion-preheat-start', 'bassnotion-preheat-end');
+      
+      isPreHeated = true;
+      
+    } catch (error) {
+      console.warn('Pre-heating failed, transitions will still work:', error);
+      isPreHeated = true; // Mark as done to avoid retrying
+    }
+    
+    resolve();
+  });
+
+  return preHeatPromise;
+}
+
+// Auto pre-heat on module load (client-side only)
+if (typeof window !== 'undefined') {
+  // Use requestIdleCallback for non-blocking pre-heating
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(() => preHeatTransitions(), { timeout: 2000 });
+  } else {
+    // Fallback for browsers without requestIdleCallback
+    setTimeout(() => preHeatTransitions(), 100);
+  }
+}
+
+/**
+ * Hook for manually pre-heating the transition system
+ * Call this in your main app component for guaranteed smooth first transitions
+ */
+export function useTransitionPreHeat() {
+  useEffect(() => {
+    preHeatTransitions();
+  }, []);
+  
+  return { preHeatTransitions, isPreHeated: () => isPreHeated };
 }
 
 /**
  * Custom hook for navigation with CSS View Transitions API
- * 
+ *
  * Implements Framer Commerce style transitions with dynamic CSS generation,
  * proper navigation waiting, and cleanup for professional page transitions.
  */
@@ -301,19 +389,27 @@ export function useViewTransitionRouter() {
   const navigateWithTransition = useCallback(async (url: string) => {
     if (!document.startViewTransition) {
       router.push(url);
-      return;
+        return;
     }
 
     try {
       // Handle rapid navigation clicks - interrupt current transition
-      handleTransitionInterrupt();
+      if (currentTransition && isTransitioning) {
+        handleTransitionInterrupt();
+      }
+      
+      // Ensure system is pre-heated before first transition
+      await preHeatTransitions();
       
       performance.mark('bassnotion-vt-start');
-      console.log('🚀 Starting view transition to:', url);
       
-      await injectTransitionStyles();
+      // Skip style injection if already pre-heated (styles are already injected)
+      if (!isPreHeated) {
+        await injectTransitionStyles();
+      }
       
       isTransitioning = true;
+      
       currentTransition = document.startViewTransition(async () => {
         await delay(50);
         router.push(url);
@@ -324,20 +420,22 @@ export function useViewTransitionRouter() {
       currentTransition.finished.finally(() => {
         isTransitioning = false;
         currentTransition = null;
-        cleanupTransitionStyles();
+        // Don't cleanup styles immediately if pre-heated (keep them for next transition)
+        if (!isPreHeated) {
+          cleanupTransitionStyles();
+        }
         performance.mark('bassnotion-vt-end');
         performance.measure('bassnotion-view-transition', 'bassnotion-vt-start', 'bassnotion-vt-end');
         
         // Record performance stats
-        const stats = recordTransitionStats();
-        console.log('✅ View transition completed:', `${stats.totalDuration.toFixed(2)}ms`);
+        recordTransitionStats();
       });
 
       await currentTransition.finished;
     } catch (error) {
+      console.error('View transition failed:', error);
       isTransitioning = false;
       currentTransition = null;
-      console.error('❌ View transition failed:', error);
       cleanupTransitionStyles();
       router.push(url);
     }

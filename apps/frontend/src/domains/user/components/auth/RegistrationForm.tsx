@@ -8,7 +8,8 @@ import {
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import Link from 'next/link';
+import { z } from 'zod';
+import { TransitionLink } from '@/shared/components/ui/transition-link';
 
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -227,7 +228,7 @@ export function RegistrationForm({
         <p className="text-sm text-muted-foreground">
           Already have an account?{' '}
           <Button variant="link" asChild className="p-0 h-auto">
-            <Link href="/login">Sign in</Link>
+            <TransitionLink href="/login">Sign in</TransitionLink>
           </Button>
         </p>
       </div>

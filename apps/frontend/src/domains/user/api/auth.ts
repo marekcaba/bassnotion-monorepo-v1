@@ -274,6 +274,7 @@ export class AuthService {
   async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut();
     if (error) {
+      console.error('Sign out error:', error);
       throw error;
     }
   }

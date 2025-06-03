@@ -16,12 +16,14 @@ import { ResponsiveDebug } from '@/shared/components/ui/responsive-debug';
 import { DashboardContent } from '@/domains/user/components/DashboardContent/index';
 import type { UserProfileData } from '@bassnotion/contracts';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 
 export default function DashboardPage() {
   const { user, session, isAuthenticated, isReady, reset } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const { navigateWithTransition } = useViewTransitionRouter();
+  const { redirectToLogin, redirectToHome } = useAuthRedirect();
 
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
@@ -32,12 +34,12 @@ export default function DashboardPage() {
     bio?: string;
     avatarUrl?: string;
   } | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
-    // Redirect to login if not authenticated and auth is ready
-    if (isReady && !isAuthenticated) {
-      navigateWithTransition('/login');
-    }
+    // Don't redirect during sign out process - let the sign out handler control navigation
+    // This prevents competing navigation that interrupts transitions
+    // The auth guard at the app level will handle redirecting unauthenticated users
   }, [isAuthenticated, isReady, navigateWithTransition]);
 
   useEffect(() => {
@@ -46,6 +48,13 @@ export default function DashboardPage() {
       loadProfileData();
     }
   }, [user, isAuthenticated]);
+
+  useEffect(() => {
+    // Redirect unauthenticated users to login, but only if not in sign out process
+    if (isReady && !isAuthenticated && !isSigningOut) {
+      redirectToLogin(); // Use scheduled redirect instead of immediate
+    }
+  }, [isAuthenticated, isReady, redirectToLogin, isSigningOut]);
 
   const loadProfileData = async () => {
     try {
@@ -85,13 +94,21 @@ export default function DashboardPage() {
 
   const handleSignOut = async () => {
     try {
+      setIsSigningOut(true); // Prevent redirect during sign out AND keep component mounted
       await authService.signOut();
       reset();
 
-      // Redirect to home - no need for success toast since it's obvious
-      navigateWithTransition('/');
+      // Use scheduled redirect to allow auth state to settle
+      redirectToHome(); // This will wait for auth state to settle before navigating
+      
+      // Reset signing out state after transition completes
+      setTimeout(() => {
+        setIsSigningOut(false);
+      }, 200); // Slightly longer than redirect delay to ensure transition completes
+      
     } catch (error) {
       console.error('Sign out error:', error);
+      setIsSigningOut(false); // Reset state on error
       toast({
         title: 'Sign out failed',
         description: 'There was an error signing you out. Please try again.',
@@ -209,7 +226,7 @@ export default function DashboardPage() {
   }
 
   // Show nothing while redirecting to login
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isSigningOut) {
     return null;
   }
 

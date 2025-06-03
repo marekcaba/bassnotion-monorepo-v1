@@ -2,7 +2,6 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { RegistrationData } from '@bassnotion/contracts';
 
 import { RegistrationForm } from '@/domains/user/components/auth';
