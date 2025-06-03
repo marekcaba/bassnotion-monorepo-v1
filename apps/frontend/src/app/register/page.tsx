@@ -15,7 +15,7 @@ import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router'
 function RegisterPageContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const router = useRouter();
+  const _router = useRouter();
   const { navigateWithTransition } = useViewTransitionRouter();
   const searchParams = useSearchParams();
 

@@ -17,7 +17,7 @@ export function AuthGuard({
   redirectTo = '/login',
 }: AuthGuardProps) {
   const { isAuthenticated, isReady } = useAuth();
-  const router = useRouter();
+  const _router = useRouter();
   const { navigateWithTransition } = useViewTransitionRouter();
 
   useEffect(() => {

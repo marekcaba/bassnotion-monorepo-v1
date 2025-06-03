@@ -8,9 +8,6 @@ import {
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { TransitionLink } from '@/shared/components/ui/transition-link';
-
 import { Button } from '@/shared/components/ui/button';
 import {
   Form,
@@ -22,6 +19,7 @@ import {
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
 import { GoogleSignInButton } from '@/shared/components/ui/google-sign-in-button';
+import { TransitionLink } from '@/shared/components/ui/transition-link';
 
 interface RegistrationFormProps {
   onSubmit: (data: RegistrationData) => Promise<void>;

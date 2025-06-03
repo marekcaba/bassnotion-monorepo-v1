@@ -13,16 +13,19 @@ interface AnimatedLoginSwitcherProps {
 
 type LoginMode = 'password' | 'magic-link';
 
-export function AnimatedLoginSwitcher({ children, className }: AnimatedLoginSwitcherProps) {
+export function AnimatedLoginSwitcher({
+  children,
+  className,
+}: AnimatedLoginSwitcherProps) {
   const [activeMode, setActiveMode] = useState<LoginMode>('password');
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const handleModeChange = (mode: LoginMode) => {
     if (mode === activeMode || isTransitioning) return;
-    
+
     setIsTransitioning(true);
     setActiveMode(mode);
-    
+
     // Reset transition state after animation completes
     setTimeout(() => {
       setIsTransitioning(false);
@@ -40,7 +43,7 @@ export function AnimatedLoginSwitcher({ children, className }: AnimatedLoginSwit
             'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex-1',
             activeMode === 'password'
               ? 'bg-background text-foreground shadow'
-              : 'hover:bg-background/50'
+              : 'hover:bg-background/50',
           )}
           disabled={isTransitioning}
         >
@@ -53,7 +56,7 @@ export function AnimatedLoginSwitcher({ children, className }: AnimatedLoginSwit
             'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex-1',
             activeMode === 'magic-link'
               ? 'bg-background text-foreground shadow'
-              : 'hover:bg-background/50'
+              : 'hover:bg-background/50',
           )}
           disabled={isTransitioning}
         >
@@ -67,9 +70,9 @@ export function AnimatedLoginSwitcher({ children, className }: AnimatedLoginSwit
         <div
           className={cn(
             'transition-opacity duration-200 ease-in-out',
-            activeMode === 'password' 
-              ? 'opacity-100 pointer-events-auto relative' 
-              : 'opacity-0 pointer-events-none absolute inset-0'
+            activeMode === 'password'
+              ? 'opacity-100 pointer-events-auto relative'
+              : 'opacity-0 pointer-events-none absolute inset-0',
           )}
         >
           {children.password}
@@ -79,9 +82,9 @@ export function AnimatedLoginSwitcher({ children, className }: AnimatedLoginSwit
         <div
           className={cn(
             'transition-opacity duration-200 ease-in-out',
-            activeMode === 'magic-link' 
-              ? 'opacity-100 pointer-events-auto relative' 
-              : 'opacity-0 pointer-events-none absolute inset-0'
+            activeMode === 'magic-link'
+              ? 'opacity-100 pointer-events-auto relative'
+              : 'opacity-0 pointer-events-none absolute inset-0',
           )}
         >
           {children.magicLink}
@@ -89,4 +92,4 @@ export function AnimatedLoginSwitcher({ children, className }: AnimatedLoginSwit
       </div>
     </div>
   );
-} 
+}

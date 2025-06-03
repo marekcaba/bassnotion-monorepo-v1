@@ -21,11 +21,11 @@
         "@typescript-eslint/no-non-null-assertion": "off",
         "no-console": "off",
         "prefer-const": "warn",
-        
+
         // Playwright-specific allowances
         "@typescript-eslint/no-floating-promises": "off",
         "@typescript-eslint/no-empty-function": "off",
-        
+
         // Keep formatting strict
         "prettier/prettier": "error"
       }

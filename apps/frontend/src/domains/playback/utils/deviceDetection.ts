@@ -299,11 +299,14 @@ export function getBatteryOptimizationRecommendations(): {
     };
   }
 
+  // For mobile devices, check if it's a low-end device
+  const isLowEndDevice = capabilities.isIOS ? isOlderIOS() : isOlderAndroid();
+
   return {
     suspendOnBackground: true,
-    reducedPolyphony: capabilities.isIOS ? isOlderIOS() : isOlderAndroid(),
-    disableEffects: capabilities.isIOS ? isOlderIOS() : isOlderAndroid(),
-    lowerSampleRate: false, // Keep sample rate for quality
+    reducedPolyphony: isLowEndDevice,
+    disableEffects: isLowEndDevice,
+    lowerSampleRate: isLowEndDevice, // Recommend lower sample rate for low-end devices to save battery and improve performance
   };
 }
 

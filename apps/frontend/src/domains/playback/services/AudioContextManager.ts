@@ -110,7 +110,7 @@ export class AudioContextManager {
   }
 
   /**
-   * Resume audio context (for handling interruptions)
+   * Resume audio context from suspended state
    */
   public async resume(): Promise<void> {
     if (!this.audioContext) {
@@ -118,31 +118,22 @@ export class AudioContextManager {
     }
 
     try {
-      // Always call resume for testing - in real scenarios, check state first
-      await this.audioContext.resume();
-
-      // In production, you might want to check state:
-      // if (this.audioContext.state === 'suspended') {
-      //   await this.audioContext.resume();
-      // }
+      // Only resume if actually suspended
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
     } catch (error) {
-      // Create sanitized error message immediately
-      const sanitizedMessage = this.sanitizeErrorMessage(
-        error instanceof Error
-          ? error.message
-          : 'Failed to resume audio context',
-      );
-
+      // Create properly structured error object matching test expectations
       const audioError: AudioContextError = {
         type: 'hardware',
-        message: sanitizedMessage,
-        originalError: undefined, // Never expose original error
+        message: 'Failed to resume audio context',
+        originalError: error instanceof Error ? error : undefined,
       };
 
       this.notifyError(audioError);
 
-      // Re-throw a completely sanitized error
-      throw new Error(sanitizedMessage);
+      // Re-throw the structured error object, not a plain Error
+      throw audioError;
     }
   }
 
@@ -153,13 +144,10 @@ export class AudioContextManager {
     if (!this.audioContext) return;
 
     try {
-      // Always call suspend for testing - in real scenarios, check state first
-      await this.audioContext.suspend();
-
-      // In production, you might want to check state:
-      // if (this.audioContext.state === 'running') {
-      //   await this.audioContext.suspend();
-      // }
+      // Only suspend if actually running
+      if (this.audioContext.state === 'running') {
+        await this.audioContext.suspend();
+      }
     } catch (error) {
       const audioError: AudioContextError = {
         type: 'hardware',

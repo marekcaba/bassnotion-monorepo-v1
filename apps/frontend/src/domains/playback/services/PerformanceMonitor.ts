@@ -86,8 +86,8 @@ export class PerformanceMonitor {
    */
   public startMonitoring(intervalMs = 1000): void {
     if (this.isMonitoring) {
-      // Already monitoring, stop first to prevent overlapping
-      this.stopMonitoring();
+      // Already monitoring, return early to prevent duplicate intervals
+      return;
     }
 
     // Sanitize and validate monitoring interval

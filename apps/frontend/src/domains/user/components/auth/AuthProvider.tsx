@@ -25,7 +25,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated,
     isReady,
   } = useAuth();
-  const router = useRouter();
+  const _router = useRouter();
   const { navigateWithTransition } = useViewTransitionRouter();
   const { toast } = useToast();
   const [showIdleWarning, setShowIdleWarning] = useState(false);

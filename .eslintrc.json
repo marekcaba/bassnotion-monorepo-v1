@@ -102,7 +102,12 @@
       }
     },
     {
-      "files": ["**/e2e/**/*.ts", "**/e2e/**/*.js", "**/*e2e*/**/*.ts", "**/*e2e*/**/*.js"],
+      "files": [
+        "**/e2e/**/*.ts",
+        "**/e2e/**/*.js",
+        "**/*e2e*/**/*.ts",
+        "**/*e2e*/**/*.js"
+      ],
       "extends": ["eslint:recommended", "prettier"],
       "env": {
         "node": true,

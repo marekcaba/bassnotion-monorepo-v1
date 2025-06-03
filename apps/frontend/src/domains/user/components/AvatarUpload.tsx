@@ -30,13 +30,17 @@ export function AvatarUpload({
   // Detect mobile device and log avatar info for debugging
   useEffect(() => {
     const checkMobile = () => {
-      const mobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const mobile =
+        window.innerWidth <= 768 ||
+        /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent,
+        );
       setIsMobile(mobile);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
@@ -180,7 +184,7 @@ export function AvatarUpload({
       isMobile,
       userAgent: navigator.userAgent,
       userId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     setImageError(true);
     setPreviewUrl(null);

@@ -9,7 +9,7 @@ import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 
 function AuthCallbackContent() {
-  const router = useRouter();
+  const _router = useRouter();
   const { navigateWithTransition } = useViewTransitionRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -108,7 +108,14 @@ function AuthCallbackContent() {
     };
 
     handleAuthCallback();
-  }, [navigateWithTransition, searchParams, toast, setUser, setSession, redirectAfterAuth]);
+  }, [
+    navigateWithTransition,
+    searchParams,
+    toast,
+    setUser,
+    setSession,
+    redirectAfterAuth,
+  ]);
 
   return (
     <div className="flex h-screen w-screen items-center justify-center">

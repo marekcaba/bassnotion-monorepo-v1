@@ -11,28 +11,34 @@ interface UseAuthRedirectOptions {
 }
 
 export const useAuthRedirect = (options: UseAuthRedirectOptions = {}) => {
-  const router = useRouter();
+  const _router = useRouter();
   const { navigateWithTransition } = useViewTransitionRouter();
   const { defaultRedirect = '/dashboard', requireEmailConfirmation = true } =
     options;
-  
-  const pendingRedirectRef = useRef<{ destination: string; delay: number } | null>(null);
+
+  const pendingRedirectRef = useRef<{
+    destination: string;
+    delay: number;
+  } | null>(null);
   const redirectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Enhanced redirect that waits for auth state to settle
-  const scheduleRedirect = useCallback((destination: string, delay = 150) => {
-    // Clear any pending redirect
-    if (redirectTimeoutRef.current) {
-      clearTimeout(redirectTimeoutRef.current);
-    }
-    
-    pendingRedirectRef.current = { destination, delay };
-    
-    redirectTimeoutRef.current = setTimeout(() => {
-      navigateWithTransition(destination);
-      pendingRedirectRef.current = null;
-    }, delay);
-  }, [navigateWithTransition]);
+  const scheduleRedirect = useCallback(
+    (destination: string, delay = 150) => {
+      // Clear any pending redirect
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+
+      pendingRedirectRef.current = { destination, delay };
+
+      redirectTimeoutRef.current = setTimeout(() => {
+        navigateWithTransition(destination);
+        pendingRedirectRef.current = null;
+      }, delay);
+    },
+    [navigateWithTransition],
+  );
 
   const redirectAfterAuth = useCallback(
     (user: User | null) => {

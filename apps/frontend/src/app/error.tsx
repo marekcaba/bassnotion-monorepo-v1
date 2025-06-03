@@ -28,7 +28,7 @@ export default function Error({
             We apologize for the inconvenience. Please try again.
           </p>
         </div>
-        
+
         <div className="space-y-4">
           <button
             onClick={reset}
@@ -36,8 +36,11 @@ export default function Error({
           >
             Try again
           </button>
-          
-          <TransitionLink href="/" className="block w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-2 px-4 rounded-lg transition-colors">
+
+          <TransitionLink
+            href="/"
+            className="block w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-2 px-4 rounded-lg transition-colors"
+          >
             Go back home
           </TransitionLink>
         </div>

@@ -11,25 +11,34 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AudioContextManager } from '../AudioContextManager.js';
 
 // Mock Web Audio API with security-focused mocks
-const createMockAudioContext = () => ({
-  state: 'suspended',
-  sampleRate: 44100,
-  baseLatency: 0.005,
-  outputLatency: 0.01,
-  currentTime: 0,
-  resume: vi.fn().mockResolvedValue(undefined),
-  suspend: vi.fn().mockResolvedValue(undefined),
-  close: vi.fn().mockResolvedValue(undefined),
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  createGain: vi.fn(),
-  createOscillator: vi.fn(),
-  createAnalyser: vi.fn(),
-  createBiquadFilter: vi.fn(),
-  createBufferSource: vi.fn(),
-  createDelay: vi.fn(),
-  createDynamicsCompressor: vi.fn(),
-});
+const createMockAudioContext = () => {
+  const mock = {
+    state: 'suspended',
+    sampleRate: 44100,
+    baseLatency: 0.005,
+    outputLatency: 0.01,
+    currentTime: 0,
+    resume: vi.fn().mockImplementation(async () => {
+      mock.state = 'running';
+      return undefined;
+    }),
+    suspend: vi.fn().mockImplementation(async () => {
+      mock.state = 'suspended';
+      return undefined;
+    }),
+    close: vi.fn().mockResolvedValue(undefined),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    createGain: vi.fn(),
+    createOscillator: vi.fn(),
+    createAnalyser: vi.fn(),
+    createBiquadFilter: vi.fn(),
+    createBufferSource: vi.fn(),
+    createDelay: vi.fn(),
+    createDynamicsCompressor: vi.fn(),
+  };
+  return mock;
+};
 
 describe('AudioContextManager - Security Tests', () => {
   let manager: AudioContextManager;

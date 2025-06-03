@@ -20,7 +20,7 @@ import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 
 export default function DashboardPage() {
   const { user, session, isAuthenticated, isReady, reset } = useAuth();
-  const router = useRouter();
+  const _router = useRouter();
   const { toast } = useToast();
   const { navigateWithTransition } = useViewTransitionRouter();
   const { redirectToLogin, redirectToHome } = useAuthRedirect();
@@ -100,12 +100,11 @@ export default function DashboardPage() {
 
       // Use scheduled redirect to allow auth state to settle
       redirectToHome(); // This will wait for auth state to settle before navigating
-      
+
       // Reset signing out state after transition completes
       setTimeout(() => {
         setIsSigningOut(false);
       }, 200); // Slightly longer than redirect delay to ensure transition completes
-      
     } catch (error) {
       console.error('Sign out error:', error);
       setIsSigningOut(false); // Reset state on error

@@ -399,7 +399,7 @@ export function useCorePlaybackEngine(
         document.removeEventListener('touchstart', handleFirstInteraction);
       };
     }
-    
+
     // Return undefined explicitly when condition is not met
     return undefined;
   }, [autoInitialize, isInitialized, isLoading, initialize]);

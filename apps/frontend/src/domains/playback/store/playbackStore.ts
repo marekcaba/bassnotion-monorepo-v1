@@ -111,6 +111,11 @@ const initialState: PlaybackControlsState = {
     reducedLatencyMode: false,
     autoSuspendOnBackground: true,
     gestureActivationRequired: true,
+    // Enhanced mobile optimization features
+    adaptiveQualityScaling: true,
+    thermalManagement: true,
+    batteryAwareProcessing: true,
+    backgroundAudioOptimization: true,
   },
 
   // Audio sources

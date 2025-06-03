@@ -1,0 +1,52 @@
+2025-06-03 22:15:24 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31m[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31m[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31mApplication is running on: http://localhost:3000[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31mDEBUG: Registered routes:[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31m- GET /api/health (AppController)[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31m[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31m- POST /auth/signin (AuthController)[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31m- POST /auth/signup (AuthController)[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31m- GET /auth/me (AuthController)[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31m- PUT /user/profile (UserController)[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31m- DELETE /user/account (UserController)[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31mDEBUG: If UserController routes are missing, check module imports[39m[22m
+2025-06-03 22:15:25 +02:00: [1m[31m[39m[22m
+2025-06-03 22:27:45 +02:00: node:fs:2368
+2025-06-03 22:27:45 +02:00:     return binding.writeFileUtf8(
+2025-06-03 22:27:45 +02:00:                    ^
+2025-06-03 22:27:45 +02:00: 
+2025-06-03 22:27:45 +02:00: Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/.nx/cache/terminalOutputs/17993593504246802031'
+2025-06-03 22:27:45 +02:00:     at writeFileSync (node:fs:2368:20)
+2025-06-03 22:27:45 +02:00:     at ForkedProcessTaskRunner.writeTerminalOutput (/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/nx@21.1.2_@swc-node+register@1.9.2_@swc+core@1.5.29_@swc+helpers@0.5.17__@swc+types@0.1_2db11073ee710c85f57051c80b4e4355/node_modules/nx/src/tasks-runner/forked-process-task-runner.js:234:32)
+2025-06-03 22:27:45 +02:00:     at /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/nx@21.1.2_@swc-node+register@1.9.2_@swc+core@1.5.29_@swc+helpers@0.5.17__@swc+types@0.1_2db11073ee710c85f57051c80b4e4355/node_modules/nx/src/tasks-runner/forked-process-task-runner.js:178:22
+2025-06-03 22:27:45 +02:00:     at ChildProcess.<anonymous> (/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/nx@21.1.2_@swc-node+register@1.9.2_@swc+core@1.5.29_@swc+helpers@0.5.17__@swc+types@0.1_2db11073ee710c85f57051c80b4e4355/node_modules/nx/src/tasks-runner/running-tasks/node-child-process.js:40:17)
+2025-06-03 22:27:45 +02:00:     at ChildProcess.emit (node:events:524:28)
+2025-06-03 22:27:45 +02:00:     at ChildProcess._handle.onexit (node:internal/child_process:293:12) {
+2025-06-03 22:27:45 +02:00:   errno: -2,
+2025-06-03 22:27:45 +02:00:   code: 'ENOENT',
+2025-06-03 22:27:45 +02:00:   syscall: 'open',
+2025-06-03 22:27:45 +02:00:   path: '/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/.nx/cache/terminalOutputs/17993593504246802031'
+2025-06-03 22:27:45 +02:00: }
+2025-06-03 22:27:45 +02:00: 
+2025-06-03 22:27:45 +02:00: Node.js v20.19.2
+2025-06-03 22:27:56 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31m[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31m[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31mApplication is running on: http://localhost:3000[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31m[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31mDEBUG: Registered routes:[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31m- GET /api/health (AppController)[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31m- POST /auth/signin (AuthController)[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31m- POST /auth/signup (AuthController)[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31m- GET /auth/me (AuthController)[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31m- PUT /user/profile (UserController)[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31m- DELETE /user/account (UserController)[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31mDEBUG: If UserController routes are missing, check module imports[39m[22m
+2025-06-03 22:27:57 +02:00: [1m[31m[39m[22m

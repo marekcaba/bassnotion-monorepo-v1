@@ -17,6 +17,9 @@ import {
   AudioPerformanceMetrics,
   PerformanceAlert,
 } from './PerformanceMonitor.js';
+import { WorkerPoolManager } from './WorkerPoolManager.js';
+import { StatePersistenceManager } from './StatePersistenceManager.js';
+import { BackgroundProcessingConfig } from '../types/audio.js';
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused' | 'loading';
 export type AudioSourceType =
@@ -40,6 +43,7 @@ export interface CoreAudioEngineConfig {
   tempo: number; // BPM
   pitch: number; // Semitones offset
   swingFactor: number; // 0-1 (0 = straight, 0.5 = triplet swing)
+  backgroundProcessing?: BackgroundProcessingConfig; // NEW: Worker thread configuration
 }
 
 export interface CoreAudioEngineEvents {
@@ -54,6 +58,8 @@ export class CoreAudioEngine {
   private static instance: CoreAudioEngine;
   private audioContextManager: AudioContextManager;
   private performanceMonitor: PerformanceMonitor;
+  private workerPoolManager: WorkerPoolManager;
+  private statePersistenceManager: StatePersistenceManager;
 
   // Tone.js components
   private toneTransport: typeof Tone.Transport;
@@ -74,6 +80,15 @@ export class CoreAudioEngine {
     tempo: 120,
     pitch: 0,
     swingFactor: 0,
+    backgroundProcessing: {
+      enableWorkerThreads: true,
+      maxWorkerThreads: Math.min(navigator.hardwareConcurrency || 4, 6),
+      priorityScheduling: true,
+      adaptiveScaling: true,
+      batteryOptimization: true,
+      backgroundThrottling: true,
+      workerConfigs: [], // Will use defaults from WorkerPoolManager
+    },
   };
 
   // Event handlers
@@ -85,6 +100,8 @@ export class CoreAudioEngine {
   private constructor() {
     this.audioContextManager = AudioContextManager.getInstance();
     this.performanceMonitor = PerformanceMonitor.getInstance();
+    this.workerPoolManager = WorkerPoolManager.getInstance();
+    this.statePersistenceManager = StatePersistenceManager.getInstance();
     this.toneTransport = Tone.getTransport();
 
     this.setupEventHandlers();
@@ -118,6 +135,22 @@ export class CoreAudioEngine {
       // Initialize performance monitoring
       this.performanceMonitor.initialize(audioContext);
       this.performanceMonitor.startMonitoring();
+
+      // Initialize worker pool for background processing
+      await this.workerPoolManager.initialize(this.config.backgroundProcessing);
+
+      // Initialize state persistence for session recovery
+      await this.statePersistenceManager.initialize({
+        enabled: true,
+        autoSaveInterval: 30000, // Auto-save every 30 seconds
+        storageType: 'localStorage',
+        crossTabSync: true,
+      });
+
+      // Set up auto-save handler
+      this.statePersistenceManager.on('autoSaveRequested', () => {
+        this.saveCurrentState();
+      });
 
       // Configure Tone.js transport
       this.configureTransport();
@@ -333,11 +366,178 @@ export class CoreAudioEngine {
   }
 
   /**
-   * Get Tone.js transport for advanced scheduling
+   * Get Tone.js Transport for advanced timing control
    */
   public getTransport(): typeof Tone.Transport {
     this.ensureInitialized();
     return this.toneTransport;
+  }
+
+  /**
+   * Process MIDI data in background worker thread
+   * @param midiData Raw MIDI data bytes
+   * @param scheduleTime When to execute the MIDI event (in Tone.Transport time)
+   * @param velocity MIDI velocity (0-127)
+   * @param channel MIDI channel (0-15)
+   */
+  public async processMidiInBackground(
+    midiData: Uint8Array,
+    scheduleTime: number,
+    velocity = 127,
+    channel = 0,
+  ): Promise<void> {
+    this.ensureInitialized();
+
+    try {
+      await this.workerPoolManager.processMidi(
+        midiData,
+        scheduleTime,
+        velocity,
+        channel,
+      );
+    } catch (error) {
+      console.error('Background MIDI processing failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process audio data with effects in background worker thread
+   * @param audioData Array of Float32Array (one per channel)
+   * @param effectParameters Effect configuration object
+   */
+  public async processAudioEffectsInBackground(
+    audioData: Float32Array[],
+    effectParameters: {
+      gain?: number;
+      distortion?: number;
+      compression?: number;
+      compressionThreshold?: number;
+      compressionRatio?: number;
+    } = {},
+  ): Promise<Float32Array[]> {
+    this.ensureInitialized();
+
+    try {
+      return await this.workerPoolManager.processAudio(
+        audioData,
+        'effects',
+        effectParameters,
+      );
+    } catch (error) {
+      console.error('Background audio effects processing failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Perform audio analysis in background worker thread
+   * @param audioData Array of Float32Array (one per channel)
+   * @param analysisParameters Analysis configuration
+   */
+  public async performAudioAnalysisInBackground(
+    audioData: Float32Array[],
+    analysisParameters: {
+      includeFrequencyAnalysis?: boolean;
+      fftSize?: number;
+    } = {},
+  ): Promise<{
+    timestamp: number;
+    rms: number[];
+    peak: number[];
+    frequencyBins?: number[][];
+  }> {
+    this.ensureInitialized();
+
+    try {
+      // Process and wait for analysis result
+      const resultPromise = this.workerPoolManager.processAudio(
+        audioData,
+        'analysis',
+        analysisParameters,
+      );
+
+      // The analysis worker sends results via separate message
+      // For now, we'll return the processed audio data response
+      await resultPromise;
+
+      // Return a placeholder result - in production, you'd listen for analysis_result messages
+      return {
+        timestamp: Date.now(),
+        rms: audioData.map(() => 0),
+        peak: audioData.map(() => 0),
+        frequencyBins: analysisParameters.includeFrequencyAnalysis
+          ? audioData.map(() => [])
+          : undefined,
+      };
+    } catch (error) {
+      console.error('Background audio analysis failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Normalize audio levels in background worker thread
+   * @param audioData Array of Float32Array (one per channel)
+   * @param targetLevel Target peak level (0-1)
+   */
+  public async normalizeAudioInBackground(
+    audioData: Float32Array[],
+    targetLevel = 0.8,
+  ): Promise<Float32Array[]> {
+    this.ensureInitialized();
+
+    try {
+      return await this.workerPoolManager.processAudio(
+        audioData,
+        'normalization',
+        { targetLevel },
+      );
+    } catch (error) {
+      console.error('Background audio normalization failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Apply audio filtering in background worker thread
+   * @param audioData Array of Float32Array (one per channel)
+   * @param filterParameters Filter configuration
+   */
+  public async applyAudioFilteringInBackground(
+    audioData: Float32Array[],
+    filterParameters: {
+      highPass?: boolean;
+      lowPass?: boolean;
+      cutoffFrequency?: number;
+    },
+  ): Promise<Float32Array[]> {
+    this.ensureInitialized();
+
+    try {
+      return await this.workerPoolManager.processAudio(
+        audioData,
+        'filtering',
+        filterParameters,
+      );
+    } catch (error) {
+      console.error('Background audio filtering failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get worker pool performance metrics
+   */
+  public getWorkerPoolMetrics() {
+    return this.workerPoolManager.getMetrics();
+  }
+
+  /**
+   * Check if background processing is available and enabled
+   */
+  public isBackgroundProcessingEnabled(): boolean {
+    return this.config.backgroundProcessing?.enableWorkerThreads ?? false;
   }
 
   /**
@@ -362,34 +562,45 @@ export class CoreAudioEngine {
   }
 
   /**
-   * Dispose of the audio engine
+   * Clean up and dispose of the Core Audio Engine
    */
   public async dispose(): Promise<void> {
-    if (!this.isInitialized) return;
-
     try {
-      // Stop playback
-      await this.stop();
+      if (this.isInitialized) {
+        // Stop transport
+        this.toneTransport.stop();
+        this.toneTransport.cancel();
 
-      // Dispose of all audio sources
-      this.audioSources.forEach((source) => source.dispose());
-      this.audioSources.clear();
-      this.sourceConfigs.clear();
-      this.soloSources.clear();
+        // Dispose worker pool
+        await this.workerPoolManager.dispose();
 
-      // Dispose of master chain
-      this.analyzer?.dispose();
-      this.limiter?.dispose();
-      this.masterGain?.dispose();
+        // Dispose state persistence manager
+        await this.statePersistenceManager.dispose();
 
-      // Stop performance monitoring
-      this.performanceMonitor.stopMonitoring();
+        // Stop performance monitoring
+        this.performanceMonitor.stopMonitoring();
 
-      // Dispose audio context
-      await this.audioContextManager.dispose();
+        // Disconnect audio nodes
+        if (this.masterGain) {
+          this.masterGain.disconnect();
+        }
+        if (this.limiter) {
+          this.limiter.disconnect();
+        }
+        if (this.analyzer) {
+          this.analyzer.disconnect();
+        }
 
-      this.isInitialized = false;
-      this.setState('stopped');
+        // Clear audio sources
+        this.audioSources.clear();
+        this.sourceConfigs.clear();
+        this.soloSources.clear();
+
+        // Dispose audio context
+        await this.audioContextManager.dispose();
+
+        this.isInitialized = false;
+      }
     } catch (error) {
       console.error('Error disposing Core Audio Engine:', error);
     }
@@ -490,5 +701,148 @@ export class CoreAudioEngine {
         'Core Audio Engine not initialized. Call initialize() first.',
       );
     }
+  }
+
+  // Session Recovery Methods (NEW: Subtask 4.5)
+
+  /**
+   * Save current engine state for session recovery
+   */
+  public async saveCurrentState(): Promise<void> {
+    if (!this.isInitialized) return;
+
+    try {
+      const currentState = {
+        config: this.config,
+        playbackState: this.playbackState,
+        audioSources: Array.from(this.sourceConfigs.values()),
+        soloSources: Array.from(this.soloSources),
+        transportState: {
+          position: this.toneTransport.seconds,
+          bpm: this.toneTransport.bpm.value,
+          swing: this.toneTransport.swing,
+          loop: this.toneTransport.loop,
+          loopStart:
+            typeof this.toneTransport.loopStart === 'number'
+              ? this.toneTransport.loopStart
+              : undefined,
+          loopEnd:
+            typeof this.toneTransport.loopEnd === 'number'
+              ? this.toneTransport.loopEnd
+              : undefined,
+        },
+        performanceHistory: {
+          averageLatency: this.performanceMonitor.getMetrics().averageLatency,
+          maxLatency: this.performanceMonitor.getMetrics().maxLatency,
+          dropoutCount: this.performanceMonitor.getMetrics().dropoutCount,
+          lastMeasurement: Date.now(),
+        },
+        userPreferences: {
+          masterVolume: this.config.masterVolume,
+          audioQuality: 'high' as const,
+          backgroundProcessing:
+            this.config.backgroundProcessing?.enableWorkerThreads ?? false,
+          batteryOptimization:
+            this.config.backgroundProcessing?.batteryOptimization ?? false,
+        },
+      };
+
+      await this.statePersistenceManager.saveState(currentState);
+    } catch (error) {
+      console.error('Failed to save current state:', error);
+    }
+  }
+
+  /**
+   * Check if a recoverable session exists
+   */
+  public async hasRecoverableSession(): Promise<boolean> {
+    try {
+      return await this.statePersistenceManager.hasRecoverableSession();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Recover from a previous session
+   */
+  public async recoverSession(): Promise<boolean> {
+    try {
+      const persistedState = await this.statePersistenceManager.loadState();
+
+      if (!persistedState) {
+        console.log('No recoverable session found');
+        return false;
+      }
+
+      // Restore configuration
+      this.config = { ...this.config, ...persistedState.config };
+
+      // Restore playback state
+      this.setState(persistedState.playbackState);
+
+      // Restore transport state
+      if (persistedState.transportState) {
+        this.toneTransport.bpm.value = persistedState.transportState.bpm;
+        this.toneTransport.swing = persistedState.transportState.swing;
+        this.toneTransport.loop = persistedState.transportState.loop;
+        if (persistedState.transportState.loopStart !== undefined) {
+          this.toneTransport.loopStart =
+            persistedState.transportState.loopStart;
+        }
+        if (persistedState.transportState.loopEnd !== undefined) {
+          this.toneTransport.loopEnd = persistedState.transportState.loopEnd;
+        }
+      }
+
+      // Restore master volume
+      if (persistedState.userPreferences?.masterVolume !== undefined) {
+        this.setMasterVolume(persistedState.userPreferences.masterVolume);
+      }
+
+      // Restore audio sources
+      for (const sourceConfig of persistedState.audioSources) {
+        try {
+          this.registerAudioSource(sourceConfig);
+        } catch (error) {
+          console.warn(
+            `Failed to restore audio source ${sourceConfig.id}:`,
+            error,
+          );
+        }
+      }
+
+      // Restore solo states
+      for (const sourceId of persistedState.soloSources) {
+        this.setSourceSolo(sourceId, true);
+      }
+
+      console.log('Session recovered successfully');
+      return true;
+    } catch (error) {
+      console.error('Failed to recover session:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Clear persisted session data
+   */
+  public async clearPersistedSession(): Promise<void> {
+    try {
+      await this.statePersistenceManager.clearState();
+      console.log('Persisted session data cleared');
+    } catch (error) {
+      console.error('Failed to clear persisted session:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get state persistence metrics
+   */
+  public getStatePersistenceMetrics() {
+    return this.statePersistenceManager.getMetrics();
   }
 }

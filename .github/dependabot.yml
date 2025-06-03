@@ -7,7 +7,7 @@ updates:
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
-      interval: 'daily'  # Check daily for security vulnerabilities
+      interval: 'daily' # Check daily for security vulnerabilities
       time: '09:00'
       timezone: 'UTC'
     # Limit concurrent PRs to avoid spam
@@ -37,8 +37,8 @@ updates:
           - '*'
         update-types:
           - 'security'
-  
-  # GitHub Actions - security vulnerabilities only  
+
+  # GitHub Actions - security vulnerabilities only
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
@@ -61,10 +61,9 @@ updates:
     commit-message:
       prefix: '🔒 security'
       include: 'scope'
-
 # 📝 MANUAL DEPENDENCY MANAGEMENT FOR FEATURE UPDATES
 # Use these commands for controlled feature updates:
 # - pnpm audit                    # Check for security issues
-# - pnpm outdated                 # Check for outdated packages  
+# - pnpm outdated                 # Check for outdated packages
 # - pnpm update --latest          # Manual feature updates
 # - pnpm run deps:check           # Custom dependency check script

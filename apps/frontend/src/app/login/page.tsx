@@ -15,7 +15,7 @@ import { useToast } from '@/shared/hooks/use-toast';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 
 function LoginPageContent() {
-  const router = useRouter();
+  const _router = useRouter();
   const { navigateWithTransition } = useViewTransitionRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -134,7 +134,7 @@ function LoginPageContent() {
                   isGoogleLoading={isGoogleLoading}
                 />
               ),
-              magicLink: <MagicLinkSignIn />
+              magicLink: <MagicLinkSignIn />,
             }}
           </AnimatedLoginSwitcher>
         </div>

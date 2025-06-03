@@ -5,12 +5,15 @@ This directory contains utility scripts for the BassNotion project.
 ## Dependency Management
 
 ### Problem
+
 Dependabot was creating too many PRs (running ~20 times per hour instead of weekly), causing notification spam and making it hard to focus on actual development work.
 
 ### Solution
+
 We've implemented a controlled dependency update approach:
 
 1. **Restrictive Dependabot Configuration** (`.github/dependabot.yml`):
+
    - Updates only **monthly** (15th for npm, 1st for GitHub Actions)
    - Limited to 3 concurrent PRs max
    - Only patch-level updates for most dependencies
@@ -27,6 +30,7 @@ We've implemented a controlled dependency update approach:
 ### Usage
 
 #### Quick Commands
+
 ```bash
 # Check and update dependencies interactively
 pnpm run deps:check
@@ -39,12 +43,14 @@ pnpm run deps:outdated
 ```
 
 #### Manual Script
+
 ```bash
 # Run the interactive dependency update script
 ./scripts/dependency-update.sh
 ```
 
 #### Script Options
+
 1. **Update patch versions only** - Safest option, minimal breaking changes
 2. **Update minor versions** - Recommended for regular updates
 3. **Update major versions** - Requires careful testing
@@ -68,4 +74,4 @@ pnpm run deps:outdated
 - **Specific package (4)**: When you need to update just one dependency
 - **Dry run (5)**: To see what's available before committing to updates
 
-This approach gives you control over when and how dependencies are updated, reducing noise while maintaining security and keeping packages reasonably current. 
+This approach gives you control over when and how dependencies are updated, reducing noise while maintaining security and keeping packages reasonably current.
