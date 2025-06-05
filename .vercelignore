@@ -4,6 +4,7 @@ pnpm-workspace.yaml
 
 # Exclude other apps and directories
 apps/backend/
+!apps/frontend/
 bmad-agent/
 deploy/
 .docs/
