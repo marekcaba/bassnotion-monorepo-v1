@@ -9,11 +9,11 @@
 
 import { useEffect, useCallback, useRef } from 'react';
 import { usePlaybackStore, playbackSelectors } from '../store/playbackStore.js';
-import { CoreAudioEngine } from '../services/CoreAudioEngine.js';
+import { CorePlaybackEngine } from '../services/CorePlaybackEngine.js';
 import type {
   PlaybackState,
   AudioContextState,
-  CoreAudioEngineConfig,
+  CorePlaybackEngineConfig,
   AudioSourceConfig,
   AudioPerformanceMetrics,
   PerformanceAlert,
@@ -56,7 +56,7 @@ export interface PlaybackEngineState {
   error: string | null;
 
   // Configuration
-  config: CoreAudioEngineConfig;
+  config: CorePlaybackEngineConfig;
 
   // Performance metrics
   performanceMetrics: AudioPerformanceMetrics | null;
@@ -77,7 +77,7 @@ export interface UseCorePlaybackEngineReturn {
   controls: PlaybackControls;
 
   // Engine instance (for advanced use)
-  engine: CoreAudioEngine | null;
+  engine: CorePlaybackEngine | null;
 
   // Initialization
   initialize: () => Promise<void>;
@@ -141,7 +141,7 @@ export function useCorePlaybackEngine(
   const criticalAlerts = usePlaybackStore(playbackSelectors.criticalAlerts);
 
   // Engine instance ref
-  const engineRef = useRef<CoreAudioEngine | null>(null);
+  const engineRef = useRef<CorePlaybackEngine | null>(null);
   const unsubscribeRefs = useRef<Array<() => void>>([]);
 
   // Initialize engine
@@ -154,7 +154,7 @@ export function useCorePlaybackEngine(
 
       // Get engine instance
       if (!engineRef.current) {
-        engineRef.current = CoreAudioEngine.getInstance();
+        engineRef.current = CorePlaybackEngine.getInstance();
       }
 
       const engine = engineRef.current;

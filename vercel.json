@@ -1,5 +1,5 @@
 {
-  "installCommand": "chmod +x setup-contracts.sh && ./setup-contracts.sh",
+  "installCommand": "chmod +x apps/frontend/setup-contracts.sh && ./apps/frontend/setup-contracts.sh",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",

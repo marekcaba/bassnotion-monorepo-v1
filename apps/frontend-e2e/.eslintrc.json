@@ -1,35 +1,45 @@
 {
-  "extends": ["../../.eslintrc.json"],
-  "ignorePatterns": ["!**/*"],
+  "root": true,
+  "ignorePatterns": ["!**/*", "node_modules/*", "dist/*"],
   "env": {
     "node": true,
     "browser": true,
     "es2022": true
   },
+  "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": 2022,
     "sourceType": "module",
     "project": "./tsconfig.json"
   },
+  "plugins": ["@typescript-eslint", "prettier"],
+  "extends": [
+    "eslint:recommended",
+    "@typescript-eslint/recommended",
+    "prettier"
+  ],
+  "rules": {
+    // More lenient rules for test files
+    "@typescript-eslint/no-unused-vars": ["warn", {
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_"
+    }],
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "@typescript-eslint/interface-name-prefix": "off",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "no-console": "off",
+    "prefer-const": "warn",
+
+    // Playwright-specific allowances
+    "@typescript-eslint/no-floating-promises": "off",
+    "@typescript-eslint/no-empty-function": "off",
+
+    // Keep formatting strict
+    "prettier/prettier": "error"
+  },
   "overrides": [
-    {
-      "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
-      "rules": {
-        // More lenient rules for test files
-        "@typescript-eslint/no-unused-vars": "warn",
-        "@typescript-eslint/no-explicit-any": "off",
-        "@typescript-eslint/no-non-null-assertion": "off",
-        "no-console": "off",
-        "prefer-const": "warn",
-
-        // Playwright-specific allowances
-        "@typescript-eslint/no-floating-promises": "off",
-        "@typescript-eslint/no-empty-function": "off",
-
-        // Keep formatting strict
-        "prettier/prettier": "error"
-      }
-    },
     {
       "files": ["*.spec.ts", "*.spec.js", "*.e2e.ts", "*.e2e.js"],
       "rules": {

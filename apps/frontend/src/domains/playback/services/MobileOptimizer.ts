@@ -1,55 +1,44 @@
 /**
- * MobileOptimizer - Adaptive Quality Scaling Service
+ * MobileOptimizer - Advanced Mobile Audio Optimization
  *
- * Implements intelligent mobile optimization with adaptive quality scaling
- * based on device capabilities, battery level, and performance constraints.
+ * Provides intelligent mobile-specific optimizations for audio processing
+ * with device-specific configurations, network adaptation, and progressive enhancement.
  *
- * Part of Story 2.1: Core Audio Engine Foundation - Task 7, Subtask 7.1
+ * Part of Story 2.1: Core Audio Engine Foundation - Task 12, Subtask 12.1
  */
 
-import {
-  AudioPerformanceMetrics,
+import type {
   DeviceCapabilities,
-  DeviceClass,
-  QualityLevel,
-  PowerMode,
-  ThermalState,
   BatteryStatus,
   ThermalStatus,
   AdaptiveQualityConfig,
   UserOptimizationPreferences,
   OptimizationDecision,
+  OptimizationRules,
   OptimizationReasoning,
   OptimizationImpact,
+  AudioPerformanceMetrics,
+  DeviceClass,
+  QualityLevel,
+  PowerMode,
+  ThermalState,
+  // NEW: Enhanced device-specific types
+  DeviceModel,
+  NetworkCapabilities,
+  BrowserCapabilities,
+  DeviceSpecificConfig,
+  NetworkAdaptiveConfig,
+  ProgressiveEnhancementConfig,
+  DynamicOptimizationState,
+  EnhancedOptimizationRules,
+  DeviceOptimizationMetrics,
 } from '../types/audio.js';
 
-export interface OptimizationRules {
-  batteryThresholds: {
-    highPerformance: number; // Battery % above which high performance is allowed
-    balanced: number; // Battery % for balanced mode
-    batterySaver: number; // Battery % for battery saver mode
-    ultraLowPower: number; // Battery % for emergency mode
-  };
-
-  thermalThresholds: {
-    qualityReduction: number; // Temperature for quality reduction
-    effectsDisable: number; // Temperature to disable effects
-    emergencyThrottle: number; // Temperature for emergency throttling
-  };
-
-  performanceThresholds: {
-    cpuUsageLimit: number; // Max CPU usage before quality reduction
-    memoryUsageLimit: number; // Max memory usage before optimization
-    latencyThreshold: number; // Max latency before buffer optimization
-  };
-
-  deviceClassRules: {
-    lowEnd: AdaptiveQualityConfig;
-    midRange: AdaptiveQualityConfig;
-    highEnd: AdaptiveQualityConfig;
-    premium: AdaptiveQualityConfig;
-  };
-}
+import {
+  NetworkLatencyMonitor,
+  type NetworkLatencyMetrics,
+  type NetworkCondition,
+} from './NetworkLatencyMonitor.js';
 
 export class MobileOptimizer {
   private static instance: MobileOptimizer;
@@ -61,46 +50,67 @@ export class MobileOptimizer {
   private currentQualityConfig!: AdaptiveQualityConfig;
   private userPreferences!: UserOptimizationPreferences;
 
+  // NEW: Enhanced device-specific state
+  private deviceModel!: DeviceModel;
+  private networkCapabilities!: NetworkCapabilities;
+  private browserCapabilities!: BrowserCapabilities;
+  private deviceSpecificConfig!: DeviceSpecificConfig;
+  private dynamicOptimizationState!: DynamicOptimizationState;
+
   // Monitoring
   private performanceHistory: AudioPerformanceMetrics[] = [];
   private optimizationHistory: OptimizationDecision[] = [];
   private batteryMonitor?: any;
   private thermalMonitor?: any;
+  private networkLatencyMonitor: NetworkLatencyMonitor; // Network latency monitoring integration
 
   // Configuration
   private optimizationRules!: OptimizationRules;
+  private enhancedOptimizationRules!: EnhancedOptimizationRules; // NEW: Enhanced rules
   private reEvaluationInterval = 30000; // 30 seconds
   private isOptimizationActive = true;
+  private lastOptimization: number = Date.now();
+
+  // NEW: Device database and analytics
+  private deviceOptimizationMetrics!: DeviceOptimizationMetrics;
+  private progressiveEnhancementConfig!: ProgressiveEnhancementConfig;
 
   private constructor() {
-    this.initializeOptimizer();
+    // Initialize with defaults to prevent undefined errors during async initialization
+    this.optimizationHistory = [];
+    this.performanceHistory = [];
+    this.reEvaluationInterval = 30000;
+    this.isOptimizationActive = true;
+    this.lastOptimization = Date.now();
+
+    // Initialize NetworkLatencyMonitor
+    this.networkLatencyMonitor = NetworkLatencyMonitor.getInstance();
+
+    // Initialize all properties with safe defaults
+    this.deviceModel = this.createDefaultDeviceModel();
+    this.deviceCapabilities = this.createDefaultDeviceCapabilities();
+    this.networkCapabilities = this.createDefaultNetworkCapabilities();
+    this.browserCapabilities = this.createDefaultBrowserCapabilities();
+    this.batteryStatus = this.createDefaultBatteryStatus();
+    this.thermalStatus = this.createDefaultThermalStatus();
+    this.deviceSpecificConfig = this.createDefaultDeviceSpecificConfig();
+    this.progressiveEnhancementConfig =
+      this.createDefaultProgressiveEnhancementConfig();
+    this.dynamicOptimizationState =
+      this.createDefaultDynamicOptimizationState();
+    this.enhancedOptimizationRules =
+      this.createDefaultEnhancedOptimizationRules();
+    this.deviceOptimizationMetrics =
+      this.createDefaultDeviceOptimizationMetrics();
+    this.optimizationRules = this.createOptimizationRules();
+    this.userPreferences = this.getDefaultUserPreferences();
+    this.currentQualityConfig = this.createLowEndConfig(); // Safe default
+
+    // Start async initialization in background
+    this.initializeOptimizer().catch(console.error);
   }
 
   public static getInstance(): MobileOptimizer {
-    // In test environments, check if navigator specs have changed
-    if (
-      MobileOptimizer.instance &&
-      typeof process !== 'undefined' &&
-      process.env?.NODE_ENV === 'test'
-    ) {
-      const currentCores = navigator.hardwareConcurrency || 4;
-      const currentMemory = (navigator as any).deviceMemory || 4;
-      const instanceCores =
-        MobileOptimizer.instance.deviceCapabilities?.cpuCores;
-      const instanceMemory =
-        MobileOptimizer.instance.deviceCapabilities?.memoryGB;
-
-      // If navigator specs changed, reset the instance
-      if (
-        instanceCores !== undefined &&
-        instanceMemory !== undefined &&
-        (instanceCores !== currentCores || instanceMemory !== currentMemory)
-      ) {
-        MobileOptimizer.instance.dispose();
-        MobileOptimizer.instance = undefined as any;
-      }
-    }
-
     if (!MobileOptimizer.instance) {
       MobileOptimizer.instance = new MobileOptimizer();
     }
@@ -125,29 +135,45 @@ export class MobileOptimizer {
   }
 
   /**
-   * Initialize the mobile optimizer
+   * Initialize the mobile optimizer with enhanced device-specific detection
    */
   private async initializeOptimizer(): Promise<void> {
-    // Detect device capabilities
+    // Enhanced device detection
+    this.deviceModel = await this.detectDeviceModel();
     this.deviceCapabilities = await this.detectDeviceCapabilities();
+    this.networkCapabilities = await this.detectNetworkCapabilities();
+    this.browserCapabilities = await this.detectBrowserCapabilities();
 
-    // Initialize battery monitoring
+    // Initialize monitoring
     this.batteryStatus = await this.getBatteryStatus();
-
-    // Initialize thermal monitoring
     this.thermalStatus = this.getThermalStatus();
 
-    // Load optimization rules
+    // Load enhanced optimization rules
     this.optimizationRules = this.createOptimizationRules();
+    this.enhancedOptimizationRules =
+      await this.createEnhancedOptimizationRules();
 
     // Set default user preferences
     this.userPreferences = this.getDefaultUserPreferences();
 
-    // Calculate initial quality configuration
-    this.currentQualityConfig = this.calculateOptimalQuality();
+    // Create device-specific configuration
+    this.deviceSpecificConfig = await this.createDeviceSpecificConfig();
 
-    // Start monitoring
-    this.startContinuousMonitoring();
+    // Initialize progressive enhancement
+    this.progressiveEnhancementConfig =
+      this.createProgressiveEnhancementConfig();
+
+    // Calculate initial quality configuration with enhanced logic
+    this.currentQualityConfig = this.calculateOptimalQualityEnhanced();
+
+    // Initialize dynamic optimization state
+    this.dynamicOptimizationState = this.initializeDynamicOptimizationState();
+
+    // Initialize metrics tracking
+    this.deviceOptimizationMetrics = this.initializeOptimizationMetrics();
+
+    // Start enhanced monitoring
+    this.startEnhancedMonitoring();
   }
 
   /**
@@ -799,26 +825,32 @@ export class MobileOptimizer {
     config: AdaptiveQualityConfig,
   ): AdaptiveQualityConfig {
     const prefs = this.userPreferences;
+    const deviceClass = this.deviceCapabilities.deviceClass;
+
+    // CRITICAL FIX: Hardware constraints are non-negotiable
+    // Store the original hardware-limited config as baseline
+    const hardwareConstraints = { ...config };
 
     if (prefs.prioritizeBatteryLife) {
       config = this.applyBatteryOptimizations(config);
     }
 
     if (prefs.prioritizeQuality && this.batteryStatus.level > 0.5) {
-      const deviceClass = this.deviceCapabilities.deviceClass;
-
-      // Don't override quality for low-end devices - they should stay at their base quality
+      // CRITICAL FIX: User preferences can only work WITHIN hardware limitations
       if (deviceClass === 'low-end') {
-        // Keep the low-end device's base 'low' quality, just enable effects if possible
-        config.enableEffects = true;
-        config.enableVisualization = false; // Keep disabled for low-end
+        // Low-end devices CANNOT exceed their hardware limitations regardless of user preference
+        // Keep the hardware-mandated 'low' quality level
+        config.qualityLevel = hardwareConstraints.qualityLevel; // Keep 'low'
+        config.enableEffects = false; // Hardware limitation - cannot enable effects
+        config.enableVisualization = false; // Hardware limitation - keep disabled
+        config.maxPolyphony = Math.min(config.maxPolyphony, 4); // Hardware limit
       } else if (prefs.prioritizeStability && deviceClass === 'premium') {
-        // Keep the premium device's base 'ultra' quality when both quality and stability are wanted
+        // Premium devices can use ultra quality if stable
         config.qualityLevel = 'ultra' as QualityLevel;
         config.enableEffects = true;
         config.enableVisualization = true;
-      } else {
-        // For explicit quality-only preference or mid/high-end devices, use 'high'
+      } else if (deviceClass === 'mid-range' || deviceClass === 'high-end') {
+        // Mid/high-end can use high quality within their capabilities
         config.qualityLevel = 'high' as QualityLevel;
         config.enableEffects = true;
         config.enableVisualization = true;
@@ -828,14 +860,16 @@ export class MobileOptimizer {
     if (prefs.prioritizeStability) {
       config.bufferSize = Math.max(config.bufferSize, 512);
 
-      // For low-end devices, don't increase polyphony above their base config
-      if (this.deviceCapabilities.deviceClass === 'low-end') {
-        // Keep the original low-end polyphony (4), don't increase it
+      // CRITICAL FIX: Enforce hardware polyphony limits strictly
+      if (deviceClass === 'low-end') {
+        // Low-end devices CANNOT exceed 4 polyphony - this is a hardware constraint
         config.maxPolyphony = Math.min(config.maxPolyphony, 4);
+      } else if (deviceClass === 'mid-range') {
+        // Mid-range: max 8 polyphony for stability
+        config.maxPolyphony = Math.min(config.maxPolyphony, 8);
       } else {
-        // Be less aggressive with polyphony reduction to maintain >= 16 for premium devices
-        const minPolyphony =
-          this.deviceCapabilities.deviceClass === 'premium' ? 16 : 8;
+        // High-end and premium can use higher polyphony
+        const minPolyphony = deviceClass === 'premium' ? 16 : 12;
         config.maxPolyphony = Math.max(
           Math.floor(config.maxPolyphony * 0.75),
           minPolyphony,
@@ -843,15 +877,26 @@ export class MobileOptimizer {
       }
     }
 
+    // CRITICAL FIX: Hardware constraints override any custom overrides
     if (prefs.customQualityOverrides) {
-      config = { ...config, ...prefs.customQualityOverrides };
+      const customConfig = { ...config, ...prefs.customQualityOverrides };
+
+      // But enforce hardware limits on the custom config
+      if (deviceClass === 'low-end') {
+        customConfig.qualityLevel = hardwareConstraints.qualityLevel;
+        customConfig.maxPolyphony = Math.min(customConfig.maxPolyphony, 4);
+        customConfig.enableEffects = false;
+        customConfig.enableVisualization = false;
+      }
+
+      config = customConfig;
     }
 
     return config;
   }
 
   private calculateOptimizationDecision(): OptimizationDecision {
-    const qualityConfig = this.calculateOptimalQuality();
+    const qualityConfig = this.calculateOptimalQualityEnhanced();
     const reasoning = this.generateOptimizationReasoning(qualityConfig);
     const estimatedImprovement = this.estimateOptimizationImpact(qualityConfig);
 
@@ -1102,6 +1147,72 @@ export class MobileOptimizer {
     return [...this.optimizationHistory];
   }
 
+  // ============================================================================
+  // PUBLIC GETTERS FOR TESTING AND DEBUGGING
+  // ============================================================================
+
+  /**
+   * Get current device model (for testing/debugging)
+   */
+  public getDeviceModel(): DeviceModel {
+    return this.deviceModel;
+  }
+
+  /**
+   * Get current network capabilities (for testing/debugging)
+   */
+  public getNetworkCapabilities(): NetworkCapabilities {
+    return this.networkCapabilities;
+  }
+
+  /**
+   * Get current browser capabilities (for testing/debugging)
+   */
+  public getBrowserCapabilities(): BrowserCapabilities {
+    return this.browserCapabilities;
+  }
+
+  /**
+   * Get current device specific configuration (for testing/debugging)
+   */
+  public getDeviceSpecificConfig(): DeviceSpecificConfig {
+    return this.deviceSpecificConfig;
+  }
+
+  /**
+   * Get current dynamic optimization state (for testing/debugging)
+   */
+  public getDynamicOptimizationState(): DynamicOptimizationState {
+    return this.dynamicOptimizationState;
+  }
+
+  /**
+   * Get current optimization metrics (for testing/debugging)
+   */
+  public getOptimizationMetrics(): DeviceOptimizationMetrics {
+    return this.deviceOptimizationMetrics;
+  }
+
+  /**
+   * Force reconfiguration for testing purposes
+   */
+  public forceReconfiguration(): void {
+    this.evaluateDynamicOptimizations();
+  }
+
+  /**
+   * Update network capabilities manually (for testing)
+   */
+  public updateNetworkCapabilitiesManually(
+    capabilities: Partial<NetworkCapabilities>,
+  ): void {
+    this.networkCapabilities = {
+      ...this.networkCapabilities,
+      ...capabilities,
+    };
+    this.evaluateDynamicOptimizations();
+  }
+
   /**
    * Clean up resources
    */
@@ -1111,5 +1222,1873 @@ export class MobileOptimizer {
     this.optimizationHistory = [];
 
     // Clean up monitoring intervals (in a real implementation)
+  }
+
+  // ============================================================================
+  // NEW: Enhanced Device Detection and Configuration
+  // ============================================================================
+
+  /**
+   * Detect specific device model for precise optimization
+   */
+  private async detectDeviceModel(): Promise<DeviceModel> {
+    const userAgent = navigator.userAgent || '';
+
+    // Default device model
+    const deviceModel: DeviceModel = {
+      manufacturer: 'unknown',
+      model: 'unknown',
+      series: 'unknown',
+      year: new Date().getFullYear(),
+      chipset: 'unknown',
+    };
+
+    // iOS Device Detection
+    if (/iphone/i.test(userAgent)) {
+      const iosMatch = userAgent.match(/iPhone(\d+,\d+)/);
+
+      deviceModel.manufacturer = 'Apple';
+      deviceModel.series = 'iPhone';
+
+      if (iosMatch && iosMatch[1]) {
+        const modelId = iosMatch[1];
+        deviceModel.model = this.mapIPhoneModelId(modelId);
+        deviceModel.year = this.getIPhoneYear(modelId);
+        deviceModel.chipset = this.getIPhoneChipset(modelId);
+      }
+    }
+    // iPad Detection
+    else if (/ipad/i.test(userAgent)) {
+      deviceModel.manufacturer = 'Apple';
+      deviceModel.series = 'iPad';
+
+      const ipadMatch = userAgent.match(/iPad(\d+,\d+)/);
+      if (ipadMatch && ipadMatch[1]) {
+        const modelId = ipadMatch[1];
+        deviceModel.model = this.mapIPadModelId(modelId);
+        deviceModel.year = this.getIPadYear(modelId);
+        deviceModel.chipset = this.getIPadChipset(modelId);
+      }
+    }
+    // Android Device Detection
+    else if (/android/i.test(userAgent)) {
+      // Extract manufacturer and model from user agent
+      const androidMatch = userAgent.match(/Android.*?;\s*([^)]+)\)/);
+      if (androidMatch && androidMatch[1]) {
+        const deviceInfo = androidMatch[1];
+        const parts = deviceInfo.split(/\s+/);
+
+        if (parts.length >= 2 && parts[0]) {
+          deviceModel.manufacturer = parts[0];
+          deviceModel.model = parts.slice(1).join(' ');
+          deviceModel.series = this.extractAndroidSeries(deviceModel.model);
+          deviceModel.year = this.estimateAndroidYear(deviceModel.model);
+          deviceModel.chipset = this.estimateAndroidChipset(
+            deviceModel.manufacturer,
+            deviceModel.model,
+          );
+        }
+      }
+    }
+
+    return deviceModel;
+  }
+
+  /**
+   * Detect network capabilities for adaptive optimization
+   */
+  private async detectNetworkCapabilities(): Promise<NetworkCapabilities> {
+    const connection =
+      (navigator as any)?.connection ||
+      (navigator as any)?.mozConnection ||
+      (navigator as any)?.webkitConnection;
+
+    const defaultCapabilities: NetworkCapabilities = {
+      connectionType: 'unknown',
+      effectiveType: '4g',
+      downlink: 10,
+      rtt: 50,
+      saveData: false,
+      isMetered: false,
+    };
+
+    if (!connection) {
+      return defaultCapabilities;
+    }
+
+    return {
+      connectionType: this.mapConnectionType(connection.type || 'unknown'),
+      effectiveType: connection.effectiveType || '4g',
+      downlink: connection.downlink || 10,
+      rtt: connection.rtt || 50,
+      saveData: connection.saveData || false,
+      isMetered: this.detectMeteredConnection(connection),
+    };
+  }
+
+  /**
+   * Detect browser capabilities and limitations
+   */
+  private async detectBrowserCapabilities(): Promise<BrowserCapabilities> {
+    const userAgent = navigator.userAgent.toLowerCase();
+
+    // Detect browser name and version
+    let name: BrowserCapabilities['name'] = 'other';
+    let version = 'unknown';
+    let engine: BrowserCapabilities['engine'] = 'other';
+    let isWebView = false;
+
+    if (userAgent.includes('safari') && !userAgent.includes('chrome')) {
+      name = 'safari';
+      engine = 'webkit';
+      const safariMatch = userAgent.match(/version\/([0-9.]+)/);
+      if (safariMatch?.[1]) version = safariMatch[1];
+    } else if (userAgent.includes('chrome')) {
+      name = 'chrome';
+      engine = 'blink';
+      isWebView = userAgent.includes('wv') || userAgent.includes('webview');
+      const chromeMatch = userAgent.match(/chrome\/([0-9.]+)/);
+      if (chromeMatch?.[1]) version = chromeMatch[1];
+    } else if (userAgent.includes('firefox')) {
+      name = 'firefox';
+      engine = 'gecko';
+      const firefoxMatch = userAgent.match(/firefox\/([0-9.]+)/);
+      if (firefoxMatch?.[1]) version = firefoxMatch[1];
+    } else if (userAgent.includes('edge')) {
+      name = 'edge';
+      engine = 'blink';
+      const edgeMatch = userAgent.match(/edge\/([0-9.]+)/);
+      if (edgeMatch?.[1]) version = edgeMatch[1];
+    }
+
+    // Detect supported features
+    const supportedFeatures = {
+      audioWorklet: await this.detectAudioWorkletSupport(),
+      sharedArrayBuffer: typeof SharedArrayBuffer !== 'undefined',
+      webGL: this.detectWebGLSupport(),
+      webGL2: this.detectWebGL2Support(),
+      offscreenCanvas: typeof OffscreenCanvas !== 'undefined',
+      serviceworker: 'serviceWorker' in navigator,
+      webAssembly: typeof WebAssembly !== 'undefined',
+    };
+
+    // Detect browser limitations
+    const limitations = {
+      requiresUserGesture: this.detectUserGestureRequirement(name),
+      audioSuspendOnBackground: this.detectBackgroundAudioSuspension(name),
+      maxAudioContexts: this.estimateMaxAudioContexts(name),
+      maxOscillators: this.estimateMaxOscillators(name),
+      maxAudioBufferSize: this.estimateMaxAudioBufferSize(name),
+    };
+
+    return {
+      name,
+      version,
+      engine,
+      isWebView,
+      supportedFeatures,
+      limitations,
+    };
+  }
+
+  /**
+   * Create comprehensive device-specific configuration
+   */
+  private async createDeviceSpecificConfig(): Promise<DeviceSpecificConfig> {
+    // Check if we have a pre-configured profile for this device
+    const deviceKey = `${this.deviceModel.manufacturer}-${this.deviceModel.model}-${this.deviceModel.year}`;
+    const existingConfig =
+      this.enhancedOptimizationRules.deviceModelRules.get(deviceKey);
+
+    if (existingConfig) {
+      return existingConfig;
+    }
+
+    // Create custom configuration based on detected capabilities
+    return {
+      deviceModel: this.deviceModel,
+      networkCapabilities: this.networkCapabilities,
+      browserCapabilities: this.browserCapabilities,
+
+      audioOptimizations: {
+        preferredSampleRate: this.calculateOptimalSampleRate(),
+        optimalBufferSize: this.calculateOptimalBufferSize(),
+        maxPolyphony: this.calculateOptimalPolyphony(),
+        enabledEffects: this.getEnabledEffects(),
+        disabledEffects: this.getDisabledEffects(),
+        compressionLevel: this.calculateOptimalCompression(),
+        latencyOptimization: this.calculateLatencyOptimization(),
+      },
+
+      performanceProfile: {
+        cpuEfficiency: this.estimateCPUEfficiency(),
+        thermalCharacteristics: this.estimateThermalCharacteristics(),
+        batteryEfficiency: this.estimateBatteryEfficiency(),
+        memoryConstraints: this.estimateMemoryConstraints(),
+        backgroundProcessingCapability:
+          this.estimateBackgroundProcessingCapability(),
+      },
+
+      platformSettings: this.createPlatformSettings(),
+    };
+  }
+
+  /**
+   * Create enhanced optimization rules with device database
+   */
+  private async createEnhancedOptimizationRules(): Promise<EnhancedOptimizationRules> {
+    return {
+      deviceModelRules: this.createDeviceModelDatabase(),
+      browserRules: this.createBrowserRules(),
+      networkRules: this.createNetworkAdaptiveRules(),
+      progressiveEnhancement: this.createProgressiveEnhancementConfig(),
+
+      dynamicThresholds: {
+        batteryLowThreshold: 0.2,
+        thermalWarningThreshold: 75,
+        cpuUsageThreshold: 0.8,
+        memoryPressureThreshold: 0.9,
+        dropoutRateThreshold: 0.05,
+        latencyThreshold: 100,
+      },
+
+      emergencyFallbacks: {
+        minimalConfig: this.createMinimalConfig(),
+        safeConfig: this.createSafeConfig(),
+        compatibilityConfig: this.createCompatibilityConfig(),
+      },
+    };
+  }
+
+  /**
+   * Calculate optimal quality with enhanced device-specific logic
+   */
+  private calculateOptimalQualityEnhanced(): AdaptiveQualityConfig {
+    // Start with device-specific base configuration
+    const baseConfig = this.getDeviceSpecificBaseConfig();
+
+    // Apply network adaptations
+    const networkOptimizedConfig = this.applyNetworkOptimizations(baseConfig);
+
+    // Apply browser-specific optimizations
+    const browserOptimizedConfig = this.applyBrowserOptimizations(
+      networkOptimizedConfig,
+    );
+
+    // Apply user preferences
+    const userOptimizedConfig = this.applyUserPreferences(
+      browserOptimizedConfig,
+    );
+
+    // Apply current conditions (battery, thermal, etc.)
+    const finalConfig = this.applyCurrentConditions(userOptimizedConfig);
+
+    // Enforce network constraints for very slow networks (override other settings)
+    if (
+      this.networkCapabilities.effectiveType === 'slow-2g' ||
+      this.networkCapabilities.effectiveType === '2g'
+    ) {
+      finalConfig.enableVisualization = false;
+      finalConfig.backgroundProcessing = false;
+    }
+
+    return finalConfig;
+  }
+
+  /**
+   * Initialize dynamic optimization state
+   */
+  private initializeDynamicOptimizationState(): DynamicOptimizationState {
+    return {
+      currentConditions: {
+        batteryLevel: this.batteryStatus.level,
+        thermalState: this.thermalStatus.state,
+        cpuUsage: 0.5, // Will be updated by monitoring
+        memoryPressure: 0.5, // Will be updated by monitoring
+        networkLatency: this.networkCapabilities.rtt,
+        audioDropouts: 0,
+        userActivity: 'active',
+      },
+
+      activeAdjustments: {
+        qualityLevel: this.currentQualityConfig.qualityLevel,
+        enabledOptimizations: [],
+        disabledFeatures: [],
+        performanceMode: 'balanced',
+        reasoning: ['Initial configuration'],
+      },
+
+      nextEvaluationTime: Date.now() + this.reEvaluationInterval,
+      lastNetworkChange: Date.now(),
+      adjustmentHistory: [],
+    };
+  }
+
+  /**
+   * Start enhanced monitoring with network and dynamic optimization
+   */
+  private startEnhancedMonitoring(): void {
+    this.startContinuousMonitoring(); // Existing monitoring
+
+    // Network monitoring integration
+    this.startNetworkLatencyMonitoring();
+
+    // Dynamic optimization evaluation
+    setInterval(() => {
+      this.evaluateDynamicOptimizations();
+    }, this.reEvaluationInterval);
+  }
+
+  // ============================================================================
+  // NEW: Network Adaptive Configuration
+  // ============================================================================
+
+  /**
+   * Apply network-specific optimizations
+   */
+  private applyNetworkOptimizations(
+    config: AdaptiveQualityConfig,
+  ): AdaptiveQualityConfig {
+    const networkConfig = this.enhancedOptimizationRules.networkRules.get(
+      this.networkCapabilities.connectionType,
+    );
+
+    if (!networkConfig) {
+      return config;
+    }
+
+    const optimizedConfig = { ...config };
+    const adaptations = networkConfig.adaptations;
+
+    // Apply quality reductions for slow networks
+    if (adaptations.qualityReduction > 0) {
+      optimizedConfig.sampleRate = Math.max(
+        optimizedConfig.sampleRate * (1 - adaptations.qualityReduction),
+        22050,
+      );
+      optimizedConfig.maxPolyphony = Math.max(
+        Math.floor(
+          optimizedConfig.maxPolyphony * (1 - adaptations.qualityReduction),
+        ),
+        2,
+      );
+    }
+
+    // Apply compression for slow networks
+    if (adaptations.compressionIncrease > 0) {
+      optimizedConfig.compressionRatio = Math.min(
+        optimizedConfig.compressionRatio + adaptations.compressionIncrease,
+        0.8,
+      );
+    }
+
+    // Disable features for very slow networks
+    if (
+      this.networkCapabilities.effectiveType === 'slow-2g' ||
+      this.networkCapabilities.effectiveType === '2g'
+    ) {
+      optimizedConfig.enableVisualization = false;
+      optimizedConfig.backgroundProcessing = false;
+    }
+
+    return optimizedConfig;
+  }
+
+  /**
+   * Optimize configuration based on real-time network conditions
+   * This is the main network-aware optimization method for Phase 3.1
+   */
+  public optimizeForNetworkConditions(
+    baseConfig: AdaptiveQualityConfig,
+    networkMetrics: NetworkLatencyMetrics,
+    networkCondition: NetworkCondition,
+  ): AdaptiveQualityConfig {
+    const optimizedConfig = { ...baseConfig };
+
+    // Network condition-based optimizations
+    switch (networkCondition) {
+      case 'excellent':
+        // Optimal network - can use high quality settings
+        optimizedConfig.sampleRate = Math.max(
+          optimizedConfig.sampleRate,
+          44100,
+        );
+        optimizedConfig.enableVisualization = true;
+        optimizedConfig.backgroundProcessing = true;
+        optimizedConfig.maxPolyphony = Math.max(
+          optimizedConfig.maxPolyphony,
+          16,
+        );
+        break;
+
+      case 'good':
+        // Good network - moderate quality
+        optimizedConfig.sampleRate = Math.max(
+          optimizedConfig.sampleRate,
+          22050,
+        );
+        optimizedConfig.enableVisualization = true;
+        optimizedConfig.maxPolyphony = Math.max(
+          optimizedConfig.maxPolyphony,
+          12,
+        );
+        break;
+
+      case 'fair':
+        // Fair network - reduce quality, enable compression
+        optimizedConfig.sampleRate = Math.min(
+          optimizedConfig.sampleRate,
+          22050,
+        );
+        optimizedConfig.compressionRatio = Math.max(
+          optimizedConfig.compressionRatio,
+          0.3,
+        );
+        optimizedConfig.bufferSize = Math.max(optimizedConfig.bufferSize, 256);
+        optimizedConfig.maxPolyphony = Math.min(
+          optimizedConfig.maxPolyphony,
+          8,
+        );
+        break;
+
+      case 'poor':
+        // Poor network - significant reductions
+        optimizedConfig.sampleRate = Math.min(
+          optimizedConfig.sampleRate,
+          22050,
+        );
+        optimizedConfig.compressionRatio = Math.max(
+          optimizedConfig.compressionRatio,
+          0.5,
+        );
+        optimizedConfig.bufferSize = Math.max(optimizedConfig.bufferSize, 512);
+        optimizedConfig.maxPolyphony = Math.min(
+          optimizedConfig.maxPolyphony,
+          6,
+        );
+        optimizedConfig.enableVisualization = false;
+        break;
+
+      case 'critical':
+        // Critical network - minimal settings
+        optimizedConfig.sampleRate = Math.min(
+          optimizedConfig.sampleRate,
+          11025,
+        );
+        optimizedConfig.compressionRatio = Math.max(
+          optimizedConfig.compressionRatio,
+          0.7,
+        );
+        optimizedConfig.bufferSize = Math.max(optimizedConfig.bufferSize, 1024);
+        optimizedConfig.maxPolyphony = Math.min(
+          optimizedConfig.maxPolyphony,
+          4,
+        );
+        optimizedConfig.enableVisualization = false;
+        optimizedConfig.backgroundProcessing = false;
+        optimizedConfig.enableEffects = false;
+        break;
+    }
+
+    // Latency-specific optimizations
+    if (networkMetrics.currentLatency > 300) {
+      // High latency - increase buffer sizes for stability
+      optimizedConfig.bufferSize = Math.max(optimizedConfig.bufferSize, 512);
+    }
+
+    // CDN vs Supabase routing decisions (future enhancement)
+    // This will be used by AssetManager to choose the best source
+    const sourceComparison =
+      this.networkLatencyMonitor.getSourcePerformanceComparison();
+    if (
+      sourceComparison.cdn.averageLatency <
+      sourceComparison.supabase.averageLatency * 0.8
+    ) {
+      // CDN is significantly faster - this optimization will be used by AssetManager
+      console.log(
+        'Network optimization: CDN preferred based on latency comparison',
+      );
+    }
+
+    return optimizedConfig;
+  }
+
+  /**
+   * Start network latency monitoring integration
+   */
+  private startNetworkLatencyMonitoring(): void {
+    // Start the NetworkLatencyMonitor
+    this.networkLatencyMonitor.startMonitoring();
+
+    // Listen for network condition changes
+    this.networkLatencyMonitor.on('networkConditionChanged', (event: any) => {
+      this.handleNetworkConditionChange(event.condition, event.metrics);
+    });
+
+    // Listen for measurement updates
+    this.networkLatencyMonitor.on('measurementCompleted', (event: any) => {
+      this.handleNetworkMeasurement(event.measurement);
+    });
+
+    // Listen for alerts
+    this.networkLatencyMonitor.on('alert', (event: any) => {
+      this.handleNetworkAlert(event.alert);
+    });
+  }
+
+  /**
+   * Handle network condition changes for immediate optimization
+   */
+  private handleNetworkConditionChange(
+    condition: NetworkCondition,
+    metrics: NetworkLatencyMetrics,
+  ): void {
+    console.log(`Network condition changed to: ${condition}`, metrics);
+
+    // Trigger immediate optimization if condition degraded significantly
+    if (condition === 'poor' || condition === 'critical') {
+      this.optimizeForCurrentConditions().catch((error) => {
+        console.error(
+          'Failed to optimize for network condition change:',
+          error,
+        );
+      });
+    }
+
+    // Update dynamic optimization state
+    this.dynamicOptimizationState.currentConditions.networkLatency =
+      metrics.currentLatency;
+    this.dynamicOptimizationState.lastNetworkChange = Date.now();
+  }
+
+  /**
+   * Handle completed network measurements
+   */
+  private handleNetworkMeasurement(measurement: any): void {
+    // Update device optimization metrics
+    this.deviceOptimizationMetrics.networkAdaptations++;
+
+    // Log asset loading performance for analysis
+    if (measurement.source === 'cdn' || measurement.source === 'supabase') {
+      console.log(
+        `Asset loading performance - ${measurement.source}: ${measurement.totalTime}ms`,
+        measurement,
+      );
+    }
+  }
+
+  /**
+   * Handle network alerts for optimization adjustments
+   */
+  private handleNetworkAlert(alert: any): void {
+    console.warn('Network alert received:', alert);
+
+    // Trigger immediate optimization for critical alerts
+    if (alert.severity === 'critical') {
+      this.optimizeForCurrentConditions().catch((error) => {
+        console.error('Failed to optimize for network alert:', error);
+      });
+    }
+  }
+
+  /**
+   * Apply browser-specific optimizations
+   */
+  private applyBrowserOptimizations(
+    config: AdaptiveQualityConfig,
+  ): AdaptiveQualityConfig {
+    const browserKey = `${this.browserCapabilities.name}-${this.browserCapabilities.version.split('.')[0]}`;
+    const _browserConfig =
+      this.enhancedOptimizationRules.browserRules.get(browserKey);
+
+    const optimizedConfig = { ...config };
+
+    // Apply Safari-specific optimizations
+    if (this.browserCapabilities.name === 'safari') {
+      // Safari has strict buffer size requirements
+      optimizedConfig.bufferSize = Math.max(optimizedConfig.bufferSize, 256);
+
+      // Safari requires user gesture for audio
+      if (this.browserCapabilities.limitations.requiresUserGesture) {
+        optimizedConfig.enableEffects = false; // Disable until user interaction
+      }
+    }
+
+    // Apply Chrome-specific optimizations
+    if (this.browserCapabilities.name === 'chrome') {
+      // Chrome can handle smaller buffer sizes
+      optimizedConfig.bufferSize = Math.max(optimizedConfig.bufferSize, 128);
+
+      // Chrome WebView has different limitations
+      if (this.browserCapabilities.isWebView) {
+        optimizedConfig.maxPolyphony = Math.min(
+          optimizedConfig.maxPolyphony,
+          8,
+        );
+      }
+    }
+
+    // Apply based on supported features
+    if (!this.browserCapabilities.supportedFeatures.audioWorklet) {
+      // Fallback to ScriptProcessorNode - less efficient
+      optimizedConfig.bufferSize = Math.max(optimizedConfig.bufferSize, 512);
+      optimizedConfig.maxPolyphony = Math.min(optimizedConfig.maxPolyphony, 4);
+    }
+
+    return optimizedConfig;
+  }
+
+  /**
+   * Apply current device conditions (battery, thermal, etc.)
+   */
+  private applyCurrentConditions(
+    config: AdaptiveQualityConfig,
+  ): AdaptiveQualityConfig {
+    const optimizedConfig = { ...config };
+    const conditions = this.dynamicOptimizationState.currentConditions;
+
+    // Battery-based optimizations
+    if (
+      conditions.batteryLevel <
+      this.enhancedOptimizationRules.dynamicThresholds.batteryLowThreshold
+    ) {
+      optimizedConfig.aggressiveBatteryMode = true;
+      optimizedConfig.maxPolyphony = Math.min(optimizedConfig.maxPolyphony, 4);
+      optimizedConfig.enableEffects = false;
+      optimizedConfig.enableVisualization = false;
+    }
+
+    // Thermal-based optimizations
+    if (
+      conditions.thermalState === 'serious' ||
+      conditions.thermalState === 'critical'
+    ) {
+      optimizedConfig.cpuThrottling = Math.max(
+        optimizedConfig.cpuThrottling,
+        0.7,
+      );
+      optimizedConfig.backgroundProcessing = false;
+      optimizedConfig.maxPolyphony = Math.min(optimizedConfig.maxPolyphony, 6);
+    }
+
+    // CPU usage-based optimizations
+    if (
+      conditions.cpuUsage >
+      this.enhancedOptimizationRules.dynamicThresholds.cpuUsageThreshold
+    ) {
+      optimizedConfig.cpuThrottling = Math.max(
+        optimizedConfig.cpuThrottling,
+        0.8,
+      );
+      optimizedConfig.enableEffects = false;
+    }
+
+    return optimizedConfig;
+  }
+
+  // ============================================================================
+  // NEW: Progressive Enhancement and Fallbacks
+  // ============================================================================
+
+  /**
+   * Create progressive enhancement configuration
+   */
+  private createProgressiveEnhancementConfig(): ProgressiveEnhancementConfig {
+    return {
+      featureDetection: {
+        audioWorklet: {
+          available: this.browserCapabilities.supportedFeatures.audioWorklet,
+          fallback: 'scriptprocessor',
+        },
+        sharedArrayBuffer: {
+          available:
+            this.browserCapabilities.supportedFeatures.sharedArrayBuffer,
+          fallback: 'arraybuffer',
+        },
+        offlineAudioContext: {
+          available: typeof OfflineAudioContext !== 'undefined',
+          fallback: 'realtime',
+        },
+        webGL: {
+          available: this.browserCapabilities.supportedFeatures.webGL,
+          fallback: 'canvas2d',
+        },
+      },
+
+      degradationStrategy: {
+        gracefulDegradation: true,
+        fallbackLevels: [
+          {
+            condition: 'audioWorklet_unavailable',
+            disabledFeatures: ['realtime_effects', 'low_latency_processing'],
+            qualityReduction: 0.2,
+            reasoning:
+              'AudioWorklet not supported, falling back to ScriptProcessorNode',
+          },
+          {
+            condition: 'low_memory',
+            disabledFeatures: ['visualization', 'background_processing'],
+            qualityReduction: 0.3,
+            reasoning: 'Low memory device, reducing feature set',
+          },
+          {
+            condition: 'slow_network',
+            disabledFeatures: ['high_quality_samples', 'background_downloads'],
+            qualityReduction: 0.4,
+            reasoning: 'Slow network connection, reducing quality and features',
+          },
+        ],
+      },
+    };
+  }
+
+  // ============================================================================
+  // NEW: Dynamic Optimization Evaluation
+  // ============================================================================
+
+  /**
+   * Evaluate and apply dynamic optimizations based on current conditions
+   */
+  private evaluateDynamicOptimizations(): void {
+    // Update current conditions
+    this.updateCurrentConditions();
+
+    // Check if reconfiguration is needed
+    const needsReconfiguration = this.needsReconfiguration();
+
+    if (needsReconfiguration) {
+      const newConfig = this.calculateOptimalQualityEnhanced();
+      const adjustmentReasoning = this.analyzeConfigurationChanges(
+        this.currentQualityConfig,
+        newConfig,
+      );
+
+      // Apply new configuration
+      this.currentQualityConfig = newConfig;
+
+      // Update dynamic state
+      this.dynamicOptimizationState.activeAdjustments = {
+        qualityLevel: newConfig.qualityLevel,
+        enabledOptimizations: this.getEnabledOptimizations(newConfig),
+        disabledFeatures: this.getDisabledFeatures(newConfig),
+        performanceMode: this.calculatePerformanceMode(newConfig),
+        reasoning: adjustmentReasoning,
+      };
+
+      // Record adjustment in history
+      this.dynamicOptimizationState.adjustmentHistory.push({
+        timestamp: Date.now(),
+        adjustment: `Quality: ${newConfig.qualityLevel}, Buffer: ${newConfig.bufferSize}`,
+        trigger: this.identifyAdjustmentTrigger(),
+        impact: this.estimateAdjustmentImpact(newConfig),
+      });
+
+      // Broadcast configuration change
+      this.broadcastConfigurationChange(newConfig, adjustmentReasoning);
+    }
+
+    // Schedule next evaluation
+    this.dynamicOptimizationState.nextEvaluationTime =
+      Date.now() + this.reEvaluationInterval;
+  }
+
+  // ============================================================================
+  // NEW: Device Database and Specific Configurations
+  // ============================================================================
+
+  /**
+   * Create comprehensive device model database
+   */
+  private createDeviceModelDatabase(): Map<string, DeviceSpecificConfig> {
+    const database = new Map<string, DeviceSpecificConfig>();
+
+    // Add iPhone configurations
+    this.addIPhoneConfigurations(database);
+
+    // Add iPad configurations
+    this.addIPadConfigurations(database);
+
+    // Add popular Android device configurations
+    this.addAndroidConfigurations(database);
+
+    return database;
+  }
+
+  /**
+   * Add iPhone device configurations to database
+   */
+  private addIPhoneConfigurations(
+    _database: Map<string, DeviceSpecificConfig>,
+  ): void {
+    // Add specific iPhone configurations based on model and year
+    // This would be populated with real device data in production
+  }
+
+  /**
+   * Add iPad device configurations to database
+   */
+  private addIPadConfigurations(
+    _database: Map<string, DeviceSpecificConfig>,
+  ): void {
+    // Add specific iPad configurations based on model and year
+  }
+
+  /**
+   * Add Android device configurations to database
+   */
+  private addAndroidConfigurations(
+    _database: Map<string, DeviceSpecificConfig>,
+  ): void {
+    // Add specific Android device configurations
+  }
+
+  /**
+   * Map iPhone model ID to readable name
+   */
+  private mapIPhoneModelId(modelId: string): string {
+    const iPhoneModels: Record<string, string> = {
+      '14,7': 'iPhone 14',
+      '14,8': 'iPhone 14 Plus',
+      '15,2': 'iPhone 14 Pro',
+      '15,3': 'iPhone 14 Pro Max',
+      '15,4': 'iPhone 15',
+      '15,5': 'iPhone 15 Plus',
+      '16,1': 'iPhone 15 Pro',
+      '16,2': 'iPhone 15 Pro Max',
+    };
+    return iPhoneModels[modelId] || `iPhone (${modelId})`;
+  }
+
+  /**
+   * Get iPhone release year from model ID
+   */
+  private getIPhoneYear(modelId: string): number {
+    const yearMap: Record<string, number> = {
+      '14,7': 2022,
+      '14,8': 2022,
+      '15,2': 2022,
+      '15,3': 2022,
+      '15,4': 2023,
+      '15,5': 2023,
+      '16,1': 2023,
+      '16,2': 2023,
+    };
+    return yearMap[modelId] || new Date().getFullYear();
+  }
+
+  /**
+   * Get iPhone chipset from model ID
+   */
+  private getIPhoneChipset(modelId: string): string {
+    const chipsetMap: Record<string, string> = {
+      '14,7': 'A15 Bionic',
+      '14,8': 'A15 Bionic',
+      '15,2': 'A16 Bionic',
+      '15,3': 'A16 Bionic',
+      '15,4': 'A16 Bionic',
+      '15,5': 'A16 Bionic',
+      '16,1': 'A17 Pro',
+      '16,2': 'A17 Pro',
+    };
+    return chipsetMap[modelId] || 'Unknown';
+  }
+
+  /**
+   * Map iPad model ID to readable name
+   */
+  private mapIPadModelId(modelId: string): string {
+    const iPadModels: Record<string, string> = {
+      '13,18': 'iPad (10th generation)',
+      '13,19': 'iPad (10th generation)',
+      '14,1': 'iPad mini (6th generation)',
+      '14,2': 'iPad mini (6th generation)',
+      '14,3': 'iPad Air (5th generation)',
+      '14,4': 'iPad Air (5th generation)',
+    };
+    return iPadModels[modelId] || `iPad (${modelId})`;
+  }
+
+  /**
+   * Get iPad release year from model ID
+   */
+  private getIPadYear(modelId: string): number {
+    const yearMap: Record<string, number> = {
+      '13,18': 2022,
+      '13,19': 2022,
+      '14,1': 2021,
+      '14,2': 2021,
+      '14,3': 2022,
+      '14,4': 2022,
+    };
+    return yearMap[modelId] || new Date().getFullYear();
+  }
+
+  /**
+   * Get iPad chipset from model ID
+   */
+  private getIPadChipset(modelId: string): string {
+    const chipsetMap: Record<string, string> = {
+      '13,18': 'A14 Bionic',
+      '13,19': 'A14 Bionic',
+      '14,1': 'A15 Bionic',
+      '14,2': 'A15 Bionic',
+      '14,3': 'M1',
+      '14,4': 'M1',
+    };
+    return chipsetMap[modelId] || 'Unknown';
+  }
+
+  /**
+   * Extract Android device series from model name
+   */
+  private extractAndroidSeries(model: string): string {
+    if (model.includes('Galaxy')) return 'Galaxy';
+    if (model.includes('Pixel')) return 'Pixel';
+    if (model.includes('OnePlus')) return 'OnePlus';
+    if (model.includes('Xiaomi')) return 'Xiaomi';
+    return 'Unknown';
+  }
+
+  /**
+   * Estimate Android device year from model name
+   */
+  private estimateAndroidYear(model: string): number {
+    // Simple heuristic - in production this would be more sophisticated
+    if (model.includes('S23') || model.includes('Pixel 7')) return 2023;
+    if (model.includes('S22') || model.includes('Pixel 6')) return 2022;
+    if (model.includes('S21') || model.includes('Pixel 5')) return 2021;
+    return new Date().getFullYear() - 1; // Default to last year
+  }
+
+  /**
+   * Estimate Android chipset from manufacturer and model
+   */
+  private estimateAndroidChipset(manufacturer: string, model: string): string {
+    if (manufacturer.includes('Samsung')) {
+      if (model.includes('S23')) return 'Snapdragon 8 Gen 2';
+      if (model.includes('S22')) return 'Snapdragon 8 Gen 1';
+      return 'Exynos/Snapdragon';
+    }
+    if (manufacturer.includes('Google')) {
+      if (model.includes('Pixel 7')) return 'Google Tensor G2';
+      if (model.includes('Pixel 6')) return 'Google Tensor';
+      return 'Google Tensor';
+    }
+    return 'Unknown';
+  }
+
+  /**
+   * Initialize device optimization metrics
+   */
+  private initializeOptimizationMetrics(): DeviceOptimizationMetrics {
+    return {
+      deviceIdentifier: `${this.deviceModel.manufacturer}-${this.deviceModel.model}`,
+      sessionDuration: 0,
+      averageLatency: 0,
+      dropoutRate: 0,
+      cpuEfficiency: 0,
+      batteryUsage: 0,
+      thermalEvents: 0,
+      qualityAdjustments: 0,
+      optimizationTriggers: new Map(),
+      fallbackActivations: 0,
+      networkAdaptations: 0,
+      reportedIssues: [],
+      successfulSessions: 0,
+      failedSessions: 0,
+      performanceImprovement: 0,
+      batteryLifeExtension: 0,
+      qualityMaintained: 0,
+    };
+  }
+
+  // Helper methods for network and browser detection
+  private mapConnectionType(
+    type: string,
+  ): NetworkCapabilities['connectionType'] {
+    switch (type.toLowerCase()) {
+      case 'cellular':
+        return '4g';
+      case 'wifi':
+        return 'wifi';
+      case 'ethernet':
+        return 'ethernet';
+      default:
+        return 'unknown';
+    }
+  }
+
+  private detectMeteredConnection(connection: any): boolean {
+    return (
+      connection.saveData === true ||
+      connection.effectiveType === '2g' ||
+      connection.effectiveType === 'slow-2g'
+    );
+  }
+
+  private async detectAudioWorkletSupport(): Promise<boolean> {
+    try {
+      if (typeof AudioContext === 'undefined') return false;
+      const context = new AudioContext();
+      const supported = typeof context.audioWorklet !== 'undefined';
+      context.close();
+      return supported;
+    } catch {
+      return false;
+    }
+  }
+
+  private detectWebGLSupport(): boolean {
+    try {
+      // Handle test environment (JSdom doesn't support canvas getContext)
+      if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
+        return false;
+      }
+      const canvas = document.createElement('canvas');
+      return !!(
+        canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  private detectWebGL2Support(): boolean {
+    try {
+      // Handle test environment (JSdom doesn't support canvas getContext)
+      if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
+        return false;
+      }
+      const canvas = document.createElement('canvas');
+      return !!canvas.getContext('webgl2');
+    } catch {
+      return false;
+    }
+  }
+
+  private detectUserGestureRequirement(
+    browser: BrowserCapabilities['name'],
+  ): boolean {
+    return browser === 'safari' || browser === 'chrome';
+  }
+
+  private detectBackgroundAudioSuspension(
+    browser: BrowserCapabilities['name'],
+  ): boolean {
+    return browser === 'safari' || browser === 'chrome';
+  }
+
+  private estimateMaxAudioContexts(
+    browser: BrowserCapabilities['name'],
+  ): number {
+    switch (browser) {
+      case 'safari':
+        return 6;
+      case 'chrome':
+        return 8;
+      case 'firefox':
+        return 10;
+      default:
+        return 4;
+    }
+  }
+
+  private estimateMaxOscillators(browser: BrowserCapabilities['name']): number {
+    switch (browser) {
+      case 'safari':
+        return 32;
+      case 'chrome':
+        return 64;
+      case 'firefox':
+        return 48;
+      default:
+        return 16;
+    }
+  }
+
+  private estimateMaxAudioBufferSize(
+    browser: BrowserCapabilities['name'],
+  ): number {
+    switch (browser) {
+      case 'safari':
+        return 16384;
+      case 'chrome':
+        return 32768;
+      case 'firefox':
+        return 16384;
+      default:
+        return 8192;
+    }
+  }
+
+  // Enhanced configuration calculation methods
+  private calculateOptimalSampleRate(): number {
+    if (this.deviceCapabilities.deviceClass === 'premium') return 48000;
+    if (this.deviceCapabilities.deviceClass === 'high-end') return 44100;
+    return 44100; // Safe default
+  }
+
+  private calculateOptimalBufferSize(): number {
+    const baseSize = this.browserCapabilities.name === 'safari' ? 256 : 128;
+    if (this.deviceCapabilities.deviceClass === 'low-end') return baseSize * 4;
+    if (this.deviceCapabilities.deviceClass === 'mid-range')
+      return baseSize * 2;
+    return baseSize;
+  }
+
+  private calculateOptimalPolyphony(): number {
+    switch (this.deviceCapabilities.deviceClass) {
+      case 'premium':
+        return 32;
+      case 'high-end':
+        return 16;
+      case 'mid-range':
+        return 8;
+      case 'low-end':
+        return 4;
+      default:
+        return 8;
+    }
+  }
+
+  private getEnabledEffects(): string[] {
+    if (this.deviceCapabilities.deviceClass === 'premium') {
+      return ['reverb', 'delay', 'chorus', 'distortion', 'eq'];
+    }
+    if (this.deviceCapabilities.deviceClass === 'high-end') {
+      return ['reverb', 'delay', 'eq'];
+    }
+    return ['eq']; // Minimal effects for lower-end devices
+  }
+
+  private getDisabledEffects(): string[] {
+    if (this.deviceCapabilities.deviceClass === 'low-end') {
+      return ['reverb', 'delay', 'chorus', 'distortion'];
+    }
+    return []; // No disabled effects for higher-end devices
+  }
+
+  private calculateOptimalCompression(): DeviceSpecificConfig['audioOptimizations']['compressionLevel'] {
+    if (
+      this.networkCapabilities.effectiveType === 'slow-2g' ||
+      this.networkCapabilities.effectiveType === '2g'
+    ) {
+      return 'aggressive';
+    }
+    if (this.deviceCapabilities.deviceClass === 'low-end') return 'medium';
+    return 'light';
+  }
+
+  private calculateLatencyOptimization(): DeviceSpecificConfig['audioOptimizations']['latencyOptimization'] {
+    if (this.deviceCapabilities.deviceClass === 'premium') return 'minimal';
+    if (this.deviceCapabilities.deviceClass === 'high-end') return 'balanced';
+    return 'quality';
+  }
+
+  // Performance estimation methods
+  private estimateCPUEfficiency(): number {
+    switch (this.deviceCapabilities.deviceClass) {
+      case 'premium':
+        return 0.9;
+      case 'high-end':
+        return 0.8;
+      case 'mid-range':
+        return 0.6;
+      case 'low-end':
+        return 0.4;
+      default:
+        return 0.5;
+    }
+  }
+
+  private estimateThermalCharacteristics(): DeviceSpecificConfig['performanceProfile']['thermalCharacteristics'] {
+    switch (this.deviceCapabilities.deviceClass) {
+      case 'premium':
+        return 'excellent';
+      case 'high-end':
+        return 'good';
+      case 'mid-range':
+        return 'fair';
+      case 'low-end':
+        return 'poor';
+      default:
+        return 'fair';
+    }
+  }
+
+  private estimateBatteryEfficiency(): number {
+    switch (this.deviceCapabilities.deviceClass) {
+      case 'premium':
+        return 0.8;
+      case 'high-end':
+        return 0.7;
+      case 'mid-range':
+        return 0.5;
+      case 'low-end':
+        return 0.3;
+      default:
+        return 0.5;
+    }
+  }
+
+  private estimateMemoryConstraints(): DeviceSpecificConfig['performanceProfile']['memoryConstraints'] {
+    if (this.deviceCapabilities.memoryGB <= 2) return 'severe';
+    if (this.deviceCapabilities.memoryGB <= 4) return 'moderate';
+    if (this.deviceCapabilities.memoryGB <= 6) return 'light';
+    return 'none';
+  }
+
+  private estimateBackgroundProcessingCapability(): DeviceSpecificConfig['performanceProfile']['backgroundProcessingCapability'] {
+    switch (this.deviceCapabilities.deviceClass) {
+      case 'premium':
+        return 'full';
+      case 'high-end':
+        return 'reduced';
+      case 'mid-range':
+        return 'minimal';
+      case 'low-end':
+        return 'none';
+      default:
+        return 'minimal';
+    }
+  }
+
+  // ============================================================================
+  // MISSING INTEGRATION METHODS FOR OTHER SERVICES
+  // ============================================================================
+
+  /**
+   * Create platform-specific settings
+   */
+  private createPlatformSettings(): DeviceSpecificConfig['platformSettings'] {
+    const platformSettings: DeviceSpecificConfig['platformSettings'] = {};
+
+    // iOS platform settings
+    if (this.deviceModel.manufacturer === 'Apple') {
+      platformSettings.ios = {
+        audioSessionCategory: 'playback',
+        audioSessionMode: 'default',
+        backgroundAudioStrategy: 'native',
+        safariWorkarounds: [],
+      };
+    }
+
+    // Android platform settings
+    if (/android/i.test(navigator.userAgent)) {
+      platformSettings.android = {
+        audioStreamType: 'music',
+        audioUsage: 'media',
+        powerOptimization: 'standard',
+        chromeWorkarounds: [],
+      };
+    }
+
+    return platformSettings;
+  }
+
+  /**
+   * Create browser-specific optimization rules
+   */
+  private createBrowserRules(): Map<string, Partial<DeviceSpecificConfig>> {
+    const browserRules = new Map<string, Partial<DeviceSpecificConfig>>();
+
+    // Safari-specific rules
+    browserRules.set('safari-14', {
+      audioOptimizations: {
+        preferredSampleRate: 44100,
+        optimalBufferSize: 512,
+        maxPolyphony: 8,
+        enabledEffects: ['eq'],
+        disabledEffects: ['reverb', 'delay'],
+        compressionLevel: 'medium',
+        latencyOptimization: 'quality',
+      },
+    });
+
+    // Chrome-specific rules
+    browserRules.set('chrome-90', {
+      audioOptimizations: {
+        preferredSampleRate: 48000,
+        optimalBufferSize: 256,
+        maxPolyphony: 16,
+        enabledEffects: ['eq', 'reverb'],
+        disabledEffects: [],
+        compressionLevel: 'light',
+        latencyOptimization: 'minimal',
+      },
+    });
+
+    return browserRules;
+  }
+
+  /**
+   * Create network adaptive rules
+   */
+  private createNetworkAdaptiveRules(): Map<
+    NetworkCapabilities['connectionType'],
+    NetworkAdaptiveConfig
+  > {
+    const networkRules = new Map<
+      NetworkCapabilities['connectionType'],
+      NetworkAdaptiveConfig
+    >();
+
+    // 2G optimizations
+    networkRules.set('2g', {
+      connectionType: '2g',
+      adaptations: {
+        qualityReduction: 0.6,
+        compressionIncrease: 0.4,
+        maxConcurrentLoads: 1,
+        assetCaching: 'aggressive',
+        prefetchingEnabled: false,
+        backgroundProcessingReduction: 0.8,
+        effectsReduction: ['reverb', 'delay', 'chorus'],
+        visualizationDisabled: true,
+        loadTimeout: 30000,
+        retryAttempts: 3,
+        retryDelay: 5000,
+      },
+    });
+
+    // WiFi optimizations
+    networkRules.set('wifi', {
+      connectionType: 'wifi',
+      adaptations: {
+        qualityReduction: 0,
+        compressionIncrease: 0,
+        maxConcurrentLoads: 4,
+        assetCaching: 'moderate',
+        prefetchingEnabled: true,
+        backgroundProcessingReduction: 0,
+        effectsReduction: [],
+        visualizationDisabled: false,
+        loadTimeout: 10000,
+        retryAttempts: 2,
+        retryDelay: 1000,
+      },
+    });
+
+    return networkRules;
+  }
+
+  /**
+   * Create minimal fallback configuration
+   */
+  private createMinimalConfig(): AdaptiveQualityConfig {
+    return {
+      sampleRate: 22050,
+      bufferSize: 2048,
+      bitDepth: 16,
+      compressionRatio: 0.4,
+      maxPolyphony: 2,
+      enableEffects: false,
+      enableVisualization: false,
+      backgroundProcessing: false,
+      cpuThrottling: 0.3,
+      memoryLimit: 128,
+      thermalManagement: true,
+      aggressiveBatteryMode: true,
+      backgroundAudioReduction: true,
+      displayOptimization: true,
+      qualityLevel: 'minimal',
+      estimatedBatteryImpact: 0.1,
+      estimatedCpuUsage: 0.2,
+    };
+  }
+
+  /**
+   * Create safe fallback configuration
+   */
+  private createSafeConfig(): AdaptiveQualityConfig {
+    return {
+      sampleRate: 44100,
+      bufferSize: 1024,
+      bitDepth: 16,
+      compressionRatio: 0.6,
+      maxPolyphony: 4,
+      enableEffects: false,
+      enableVisualization: false,
+      backgroundProcessing: false,
+      cpuThrottling: 0.5,
+      memoryLimit: 256,
+      thermalManagement: true,
+      aggressiveBatteryMode: false,
+      backgroundAudioReduction: true,
+      displayOptimization: true,
+      qualityLevel: 'low',
+      estimatedBatteryImpact: 0.3,
+      estimatedCpuUsage: 0.4,
+    };
+  }
+
+  /**
+   * Create compatibility fallback configuration
+   */
+  private createCompatibilityConfig(): AdaptiveQualityConfig {
+    return {
+      sampleRate: 44100,
+      bufferSize: 512,
+      bitDepth: 16,
+      compressionRatio: 0.8,
+      maxPolyphony: 8,
+      enableEffects: true,
+      enableVisualization: false,
+      backgroundProcessing: true,
+      cpuThrottling: 0.7,
+      memoryLimit: 512,
+      thermalManagement: false,
+      aggressiveBatteryMode: false,
+      backgroundAudioReduction: false,
+      displayOptimization: false,
+      qualityLevel: 'medium',
+      estimatedBatteryImpact: 0.5,
+      estimatedCpuUsage: 0.6,
+    };
+  }
+
+  /**
+   * Get device-specific base configuration
+   */
+  private getDeviceSpecificBaseConfig(): AdaptiveQualityConfig {
+    // Use the device-specific config if available
+    if (this.deviceSpecificConfig) {
+      // Determine appropriate quality level based on device class
+      let qualityLevel: QualityLevel;
+      switch (this.deviceCapabilities.deviceClass) {
+        case 'low-end':
+          qualityLevel = 'low';
+          break;
+        case 'mid-range':
+          qualityLevel = 'medium';
+          break;
+        case 'high-end':
+          qualityLevel = 'high';
+          break;
+        case 'premium':
+          qualityLevel = 'ultra';
+          break;
+        default:
+          qualityLevel = 'medium';
+      }
+
+      return {
+        sampleRate:
+          this.deviceSpecificConfig.audioOptimizations.preferredSampleRate,
+        bufferSize:
+          this.deviceSpecificConfig.audioOptimizations.optimalBufferSize,
+        bitDepth: 16,
+        compressionRatio: 0.8,
+        maxPolyphony: this.deviceSpecificConfig.audioOptimizations.maxPolyphony,
+        enableEffects:
+          this.deviceSpecificConfig.audioOptimizations.enabledEffects.length >
+            0 && this.deviceCapabilities.deviceClass !== 'low-end', // Disable effects for low-end devices
+        enableVisualization: this.deviceCapabilities.deviceClass !== 'low-end', // Disable visualization for low-end devices
+        backgroundProcessing:
+          this.deviceSpecificConfig.performanceProfile
+            .backgroundProcessingCapability !== 'none',
+        cpuThrottling:
+          this.deviceSpecificConfig.performanceProfile.cpuEfficiency,
+        memoryLimit: 512,
+        thermalManagement: true,
+        aggressiveBatteryMode:
+          this.deviceCapabilities.deviceClass === 'low-end', // Enable aggressive mode for low-end devices
+        backgroundAudioReduction:
+          this.deviceCapabilities.deviceClass === 'low-end',
+        displayOptimization: this.deviceCapabilities.deviceClass === 'low-end',
+        qualityLevel,
+        estimatedBatteryImpact:
+          1 - this.deviceSpecificConfig.performanceProfile.batteryEfficiency,
+        estimatedCpuUsage:
+          1 - this.deviceSpecificConfig.performanceProfile.cpuEfficiency,
+      };
+    }
+
+    // Fallback to device class base config
+    return this.calculateOptimalQuality();
+  }
+
+  /**
+   * Update network capabilities
+   */
+  private async updateNetworkCapabilities(): Promise<void> {
+    try {
+      this.networkCapabilities = await this.detectNetworkCapabilities();
+    } catch (error) {
+      console.warn('Failed to update network capabilities:', error);
+    }
+  }
+
+  /**
+   * Update current conditions for dynamic optimization
+   */
+  private updateCurrentConditions(): void {
+    this.dynamicOptimizationState.currentConditions = {
+      batteryLevel: this.batteryStatus.level,
+      thermalState: this.thermalStatus.state,
+      cpuUsage: this.getAveragePerformanceMetric('cpuUsage'),
+      memoryPressure: this.getAveragePerformanceMetric('memoryUsage') / 1024, // Convert to GB
+      networkLatency: this.networkCapabilities.rtt,
+      audioDropouts: this.getAveragePerformanceMetric('dropoutCount'),
+      userActivity: 'active', // Would be detected from user interaction
+    };
+  }
+
+  /**
+   * Check if reconfiguration is needed
+   */
+  private needsReconfiguration(): boolean {
+    const conditions = this.dynamicOptimizationState.currentConditions;
+    const thresholds = this.enhancedOptimizationRules.dynamicThresholds;
+
+    return (
+      conditions.batteryLevel < thresholds.batteryLowThreshold ||
+      conditions.cpuUsage > thresholds.cpuUsageThreshold ||
+      conditions.memoryPressure > thresholds.memoryPressureThreshold ||
+      conditions.audioDropouts > thresholds.dropoutRateThreshold
+    );
+  }
+
+  /**
+   * Analyze configuration changes
+   */
+  private analyzeConfigurationChanges(
+    oldConfig: AdaptiveQualityConfig,
+    newConfig: AdaptiveQualityConfig,
+  ): string[] {
+    const changes: string[] = [];
+
+    if (oldConfig.qualityLevel !== newConfig.qualityLevel) {
+      changes.push(
+        `Quality changed from ${oldConfig.qualityLevel} to ${newConfig.qualityLevel}`,
+      );
+    }
+
+    if (oldConfig.bufferSize !== newConfig.bufferSize) {
+      changes.push(
+        `Buffer size changed from ${oldConfig.bufferSize} to ${newConfig.bufferSize}`,
+      );
+    }
+
+    if (oldConfig.maxPolyphony !== newConfig.maxPolyphony) {
+      changes.push(
+        `Polyphony changed from ${oldConfig.maxPolyphony} to ${newConfig.maxPolyphony}`,
+      );
+    }
+
+    return changes;
+  }
+
+  /**
+   * Get enabled optimizations for a configuration
+   */
+  private getEnabledOptimizations(config: AdaptiveQualityConfig): string[] {
+    const optimizations: string[] = [];
+
+    if (config.aggressiveBatteryMode) optimizations.push('aggressive_battery');
+    if (config.thermalManagement) optimizations.push('thermal_management');
+    if (config.backgroundAudioReduction)
+      optimizations.push('background_reduction');
+    if (config.displayOptimization) optimizations.push('display_optimization');
+
+    return optimizations;
+  }
+
+  /**
+   * Get disabled features for a configuration
+   */
+  private getDisabledFeatures(config: AdaptiveQualityConfig): string[] {
+    const disabled: string[] = [];
+
+    if (!config.enableEffects) disabled.push('effects');
+    if (!config.enableVisualization) disabled.push('visualization');
+    if (!config.backgroundProcessing) disabled.push('background_processing');
+
+    return disabled;
+  }
+
+  /**
+   * Calculate performance mode
+   */
+  private calculatePerformanceMode(
+    config: AdaptiveQualityConfig,
+  ): 'maximum' | 'balanced' | 'efficient' | 'minimal' {
+    if (config.qualityLevel === 'ultra' || config.qualityLevel === 'high') {
+      return 'maximum';
+    }
+    if (config.qualityLevel === 'medium') {
+      return 'balanced';
+    }
+    if (config.qualityLevel === 'low') {
+      return 'efficient';
+    }
+    return 'minimal';
+  }
+
+  /**
+   * Identify adjustment trigger
+   */
+  private identifyAdjustmentTrigger(): string {
+    const conditions = this.dynamicOptimizationState.currentConditions;
+    const thresholds = this.enhancedOptimizationRules.dynamicThresholds;
+
+    if (conditions.batteryLevel < thresholds.batteryLowThreshold) {
+      return 'low_battery';
+    }
+    if (conditions.cpuUsage > thresholds.cpuUsageThreshold) {
+      return 'high_cpu_usage';
+    }
+    if (conditions.memoryPressure > thresholds.memoryPressureThreshold) {
+      return 'memory_pressure';
+    }
+    if (conditions.audioDropouts > thresholds.dropoutRateThreshold) {
+      return 'audio_dropouts';
+    }
+
+    return 'automatic_optimization';
+  }
+
+  /**
+   * Estimate adjustment impact
+   */
+  private estimateAdjustmentImpact(config: AdaptiveQualityConfig): string {
+    const currentCpu = this.currentQualityConfig.estimatedCpuUsage;
+    const newCpu = config.estimatedCpuUsage;
+    const cpuImprovement = ((currentCpu - newCpu) / currentCpu) * 100;
+
+    if (cpuImprovement > 20) {
+      return 'significant_improvement';
+    }
+    if (cpuImprovement > 10) {
+      return 'moderate_improvement';
+    }
+    if (cpuImprovement > 0) {
+      return 'minor_improvement';
+    }
+
+    return 'no_improvement';
+  }
+
+  /**
+   * Broadcast configuration change
+   */
+  private broadcastConfigurationChange(
+    config: AdaptiveQualityConfig,
+    reasoning: string[],
+  ): void {
+    // This would integrate with the event system
+    console.log('Mobile optimization configuration changed:', {
+      quality: config.qualityLevel,
+      bufferSize: config.bufferSize,
+      polyphony: config.maxPolyphony,
+      reasoning: reasoning.join(', '),
+    });
+  }
+
+  // ============================================================================
+  // DEFAULT VALUE CREATION METHODS
+  // ============================================================================
+
+  private createDefaultDeviceModel(): DeviceModel {
+    return {
+      manufacturer: 'unknown',
+      model: 'unknown',
+      series: 'unknown',
+      year: new Date().getFullYear(),
+      chipset: 'unknown',
+    };
+  }
+
+  private createDefaultDeviceCapabilities(): DeviceCapabilities {
+    return {
+      cpuCores: 4,
+      memoryGB: 4,
+      deviceClass: 'mid-range',
+      isTablet: false,
+      architecture: 'unknown',
+      screenSize: { width: 1920, height: 1080 },
+      maxSampleRate: 48000,
+      minBufferSize: 256,
+      maxPolyphony: 16,
+      audioWorkletSupport: false,
+      sharedArrayBufferSupport: false,
+      performanceScore: 50,
+      platformVersion: '1.0',
+      gpuSupport: false,
+      thermalThrottlingThreshold: 70,
+    };
+  }
+
+  private createDefaultNetworkCapabilities(): NetworkCapabilities {
+    return {
+      connectionType: 'wifi',
+      effectiveType: '4g',
+      downlink: 10,
+      rtt: 50,
+      saveData: false,
+      isMetered: false,
+    };
+  }
+
+  private createDefaultBrowserCapabilities(): BrowserCapabilities {
+    return {
+      name: 'other',
+      version: '1.0',
+      engine: 'other',
+      isWebView: false,
+      supportedFeatures: {
+        audioWorklet: false,
+        sharedArrayBuffer: false,
+        webGL: false,
+        webGL2: false,
+        offscreenCanvas: false,
+        serviceworker: false,
+        webAssembly: false,
+      },
+      limitations: {
+        requiresUserGesture: true,
+        audioSuspendOnBackground: true,
+        maxAudioContexts: 1,
+        maxOscillators: 32,
+        maxAudioBufferSize: 16384,
+      },
+    };
+  }
+
+  private createDefaultBatteryStatus(): BatteryStatus {
+    return {
+      level: 1.0,
+      charging: false,
+      powerMode: 'balanced',
+      lowPowerModeEnabled: false,
+    };
+  }
+
+  private createDefaultThermalStatus(): ThermalStatus {
+    return {
+      state: 'nominal',
+      throttlingActive: false,
+      performanceReduction: 0,
+    };
+  }
+
+  private createDefaultDeviceSpecificConfig(): DeviceSpecificConfig {
+    return {
+      deviceModel: this.createDefaultDeviceModel(),
+      networkCapabilities: this.createDefaultNetworkCapabilities(),
+      browserCapabilities: this.createDefaultBrowserCapabilities(),
+      audioOptimizations: {
+        preferredSampleRate: 48000,
+        optimalBufferSize: 256,
+        maxPolyphony: 16,
+        enabledEffects: ['eq'],
+        disabledEffects: [],
+        compressionLevel: 'medium',
+        latencyOptimization: 'balanced',
+      },
+      performanceProfile: {
+        cpuEfficiency: 0.7,
+        thermalCharacteristics: 'good',
+        batteryEfficiency: 0.7,
+        memoryConstraints: 'moderate',
+        backgroundProcessingCapability: 'reduced',
+      },
+      platformSettings: {},
+    };
+  }
+
+  private createDefaultProgressiveEnhancementConfig(): ProgressiveEnhancementConfig {
+    return {
+      featureDetection: {
+        audioWorklet: {
+          available: false,
+          fallback: 'scriptprocessor',
+        },
+        sharedArrayBuffer: {
+          available: false,
+          fallback: 'arraybuffer',
+        },
+        offlineAudioContext: {
+          available: false,
+          fallback: 'realtime',
+        },
+        webGL: {
+          available: false,
+          fallback: 'canvas2d',
+        },
+      },
+      degradationStrategy: {
+        gracefulDegradation: true,
+        fallbackLevels: [],
+      },
+    };
+  }
+
+  private createDefaultDynamicOptimizationState(): DynamicOptimizationState {
+    return {
+      currentConditions: {
+        batteryLevel: 1.0,
+        thermalState: 'nominal',
+        cpuUsage: 0.3,
+        memoryPressure: 0.3,
+        networkLatency: 50,
+        audioDropouts: 0,
+        userActivity: 'active',
+      },
+      activeAdjustments: {
+        qualityLevel: 'medium',
+        enabledOptimizations: [],
+        disabledFeatures: [],
+        performanceMode: 'balanced',
+        reasoning: [],
+      },
+      nextEvaluationTime: Date.now() + this.reEvaluationInterval,
+      lastNetworkChange: Date.now(),
+      adjustmentHistory: [],
+    };
+  }
+
+  private createDefaultEnhancedOptimizationRules(): EnhancedOptimizationRules {
+    return {
+      deviceModelRules: new Map(),
+      browserRules: new Map(),
+      networkRules: new Map(),
+      progressiveEnhancement: this.createDefaultProgressiveEnhancementConfig(),
+      dynamicThresholds: {
+        batteryLowThreshold: 0.2,
+        thermalWarningThreshold: 75,
+        cpuUsageThreshold: 0.8,
+        memoryPressureThreshold: 0.8,
+        dropoutRateThreshold: 5,
+        latencyThreshold: 100,
+      },
+      emergencyFallbacks: {
+        minimalConfig: this.createMinimalConfig(),
+        safeConfig: this.createSafeConfig(),
+        compatibilityConfig: this.createCompatibilityConfig(),
+      },
+    };
+  }
+
+  private createDefaultDeviceOptimizationMetrics(): DeviceOptimizationMetrics {
+    return {
+      deviceIdentifier: 'unknown-device',
+      sessionDuration: 0,
+      averageLatency: 0,
+      dropoutRate: 0,
+      cpuEfficiency: 0,
+      batteryUsage: 0,
+      thermalEvents: 0,
+      qualityAdjustments: 0,
+      optimizationTriggers: new Map(),
+      fallbackActivations: 0,
+      networkAdaptations: 0,
+      reportedIssues: [],
+      successfulSessions: 0,
+      failedSessions: 0,
+      performanceImprovement: 0,
+      batteryLifeExtension: 0,
+      qualityMaintained: 0,
+    };
   }
 }

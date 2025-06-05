@@ -1,10 +1,13 @@
 /**
- * CoreAudioEngine - Main Audio Processing Service
+ * CorePlaybackEngine - Main Audio Processing Service
  *
  * Provides unified interface for all audio operations (tempo, pitch, volume)
  * with Tone.js integration for low-latency audio processing.
  *
- * Part of Story 2.1: Core Audio Engine Foundation
+ * Aligned with Epic 2 architecture for n8n payload processing and
+ * Supabase CDN asset loading integration.
+ *
+ * Part of Story 2.1: Core Playback Engine Foundation Module
  */
 
 import * as Tone from 'tone';
@@ -19,7 +22,17 @@ import {
 } from './PerformanceMonitor.js';
 import { WorkerPoolManager } from './WorkerPoolManager.js';
 import { StatePersistenceManager } from './StatePersistenceManager.js';
-import { BackgroundProcessingConfig } from '../types/audio.js';
+import { N8nPayloadProcessor } from './N8nPayloadProcessor.js';
+import { AssetManifestProcessor } from './AssetManifestProcessor.js';
+import { AssetManager } from './AssetManager.js';
+import {
+  BackgroundProcessingConfig,
+  N8nPayloadConfig,
+  AssetLoadingState,
+  AssetLoadResult,
+  AssetLoadError,
+  AssetLoadProgress,
+} from '../types/audio.js';
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused' | 'loading';
 export type AudioSourceType =
@@ -38,7 +51,7 @@ export interface AudioSourceConfig {
   solo: boolean;
 }
 
-export interface CoreAudioEngineConfig {
+export interface CorePlaybackEngineConfig {
   masterVolume: number;
   tempo: number; // BPM
   pitch: number; // Semitones offset
@@ -46,7 +59,7 @@ export interface CoreAudioEngineConfig {
   backgroundProcessing?: BackgroundProcessingConfig; // NEW: Worker thread configuration
 }
 
-export interface CoreAudioEngineEvents {
+export interface CorePlaybackEngineEvents {
   stateChange: (state: PlaybackState) => void;
   audioContextChange: (contextState: AudioContextState) => void;
   performanceAlert: (alert: PerformanceAlert) => void;
@@ -54,12 +67,15 @@ export interface CoreAudioEngineEvents {
   masterVolumeChange: (volume: number) => void;
 }
 
-export class CoreAudioEngine {
-  private static instance: CoreAudioEngine;
+export class CorePlaybackEngine {
+  private static instance: CorePlaybackEngine;
   private audioContextManager: AudioContextManager;
   private performanceMonitor: PerformanceMonitor;
   private workerPoolManager: WorkerPoolManager;
   private statePersistenceManager: StatePersistenceManager;
+  private n8nPayloadProcessor: N8nPayloadProcessor; // NEW: Epic 2 integration
+  private assetManifestProcessor: AssetManifestProcessor; // NEW: Epic 2 asset processing
+  private assetManager: AssetManager; // NEW: Epic 2 asset loading
 
   // Tone.js components
   private toneTransport: typeof Tone.Transport;
@@ -75,7 +91,15 @@ export class CoreAudioEngine {
   // Engine state
   private playbackState: PlaybackState = 'stopped';
   private isInitialized = false;
-  private config: CoreAudioEngineConfig = {
+  private n8nPayload: N8nPayloadConfig | null = null; // NEW: Epic 2 payload state
+  private assetLoadingState: AssetLoadingState = {
+    // NEW: Epic 2 asset tracking
+    midiFiles: new Map(),
+    audioSamples: new Map(),
+    totalAssets: 0,
+    loadedAssets: 0,
+  };
+  private config: CorePlaybackEngineConfig = {
     masterVolume: 0.8,
     tempo: 120,
     pitch: 0,
@@ -93,7 +117,7 @@ export class CoreAudioEngine {
 
   // Event handlers
   private eventHandlers: Map<
-    keyof CoreAudioEngineEvents,
+    keyof CorePlaybackEngineEvents,
     Set<(...args: any[]) => void>
   > = new Map();
 
@@ -102,16 +126,19 @@ export class CoreAudioEngine {
     this.performanceMonitor = PerformanceMonitor.getInstance();
     this.workerPoolManager = WorkerPoolManager.getInstance();
     this.statePersistenceManager = StatePersistenceManager.getInstance();
+    this.n8nPayloadProcessor = N8nPayloadProcessor.getInstance(); // NEW: Epic 2
+    this.assetManifestProcessor = AssetManifestProcessor.getInstance(); // NEW: Epic 2
+    this.assetManager = AssetManager.getInstance(); // NEW: Epic 2
     this.toneTransport = Tone.getTransport();
 
     this.setupEventHandlers();
   }
 
-  public static getInstance(): CoreAudioEngine {
-    if (!CoreAudioEngine.instance) {
-      CoreAudioEngine.instance = new CoreAudioEngine();
+  public static getInstance(): CorePlaybackEngine {
+    if (!CorePlaybackEngine.instance) {
+      CorePlaybackEngine.instance = new CorePlaybackEngine();
     }
-    return CoreAudioEngine.instance;
+    return CorePlaybackEngine.instance;
   }
 
   /**
@@ -354,7 +381,7 @@ export class CoreAudioEngine {
   /**
    * Get current configuration
    */
-  public getConfig(): CoreAudioEngineConfig {
+  public getConfig(): CorePlaybackEngineConfig {
     return { ...this.config };
   }
 
@@ -540,12 +567,285 @@ export class CoreAudioEngine {
     return this.config.backgroundProcessing?.enableWorkerThreads ?? false;
   }
 
+  // ============================================================================
+  // EPIC 2 INTEGRATION - N8n Payload Processing and Asset Management
+  // ============================================================================
+
+  /**
+   * Initialize playbook engine from n8n AI agent payload
+   * Complete Epic 2 data flow: n8n payload → asset manifest → CDN loading → playback ready
+   */
+  public async initializeFromN8nPayload(
+    payload: N8nPayloadConfig,
+  ): Promise<void> {
+    this.ensureInitialized();
+
+    try {
+      // Validate payload first
+      const validation = this.n8nPayloadProcessor.validatePayload(payload);
+      if (!validation.isValid) {
+        throw new Error(`Invalid n8n payload: ${validation.errors.join(', ')}`);
+      }
+
+      // Store payload for reference
+      this.n8nPayload = payload;
+
+      // Step 1: Extract basic asset manifest from n8n payload (Epic 2 Section 9)
+      const basicManifest =
+        this.n8nPayloadProcessor.extractAssetManifest(payload);
+
+      // Step 2: Process manifest with advanced dependency analysis and optimization
+      const processedManifest =
+        this.assetManifestProcessor.processManifest(basicManifest);
+
+      // Step 3: Validate processed manifest
+      const manifestValidation =
+        this.assetManifestProcessor.validateProcessedManifest(
+          processedManifest,
+        );
+      if (!manifestValidation.isValid) {
+        throw new Error(
+          `Invalid asset manifest: ${manifestValidation.errors.join(', ')}`,
+        );
+      }
+
+      if (manifestValidation.warnings.length > 0) {
+        console.warn('Asset manifest warnings:', manifestValidation.warnings);
+      }
+
+      // Step 4: Initialize asset loading state
+      this.assetLoadingState = {
+        midiFiles: new Map(),
+        audioSamples: new Map(),
+        totalAssets: processedManifest.totalCount,
+        loadedAssets: 0,
+      };
+
+      // Step 5: Configure asset manager with audio context
+      const audioContext = this.audioContextManager.getContext();
+      if (audioContext) {
+        this.assetManager.setAudioContext(audioContext);
+      }
+
+      // Step 6: Load critical assets first for minimum viable playback
+      console.log('Loading critical assets for Epic 2 playback...');
+      const criticalAssets =
+        await this.assetManager.preloadCriticalAssets(processedManifest);
+      console.log(`Loaded ${criticalAssets.length} critical assets`);
+
+      // Step 7: Load remaining assets with Epic 2 optimization strategy
+      const loadResults =
+        await this.assetManager.loadAssetsFromManifest(processedManifest);
+
+      // Step 8: Update asset loading state with results
+      this.updateAssetLoadingStateFromResults(loadResults);
+
+      // Step 9: Configure timing and synchronization (Epic 2 Section 7.4)
+      this.configureFromN8nSynchronization(payload.synchronization);
+
+      // Step 10: Initialize Tone.js instruments with loaded assets
+      await this.initializeToneInstrumentsFromAssets(loadResults.successful);
+
+      // Step 11: Set up Epic 2 specific audio routing and effects
+      this.setupEpic2AudioRouting();
+
+      console.log('Epic 2 payload integration completed successfully:', {
+        totalAssets: processedManifest.totalCount,
+        loadedAssets: loadResults.successful.length,
+        failedAssets: loadResults.failed.length,
+        totalSize: processedManifest.totalSize,
+        criticalPath: processedManifest.criticalPath,
+        bpm: payload.synchronization.bpm,
+        keySignature: payload.synchronization.keySignature,
+        loadingSpeed: loadResults.progress.loadingSpeed,
+      });
+
+      // Log any loading failures for debugging
+      if (loadResults.failed.length > 0) {
+        console.warn(
+          'Some assets failed to load:',
+          loadResults.failed.map((f) => ({
+            url: f.url,
+            error: f.error.message,
+            sources: f.attemptedSources,
+          })),
+        );
+      }
+    } catch (error) {
+      console.error('Failed to initialize from n8n payload:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get current n8n payload state
+   */
+  public getN8nPayload(): N8nPayloadConfig | null {
+    return this.n8nPayload;
+  }
+
+  /**
+   * Get Epic 2 asset loading state
+   */
+  public getAssetLoadingState(): AssetLoadingState {
+    return { ...this.assetLoadingState };
+  }
+
+  /**
+   * Get asset loading progress percentage
+   */
+  public getAssetLoadingProgress(): number {
+    return this.n8nPayloadProcessor.getLoadingProgress();
+  }
+
+  /**
+   * Configure timing and synchronization from n8n payload
+   */
+  private configureFromN8nSynchronization(
+    sync: N8nPayloadConfig['synchronization'],
+  ): void {
+    // Set BPM from n8n payload
+    this.setTempo(sync.bpm);
+
+    // Configure time signature (future implementation)
+    // this.setTimeSignature(sync.timeSignature);
+
+    // Configure key signature (future implementation)
+    // this.setKeySignature(sync.keySignature);
+
+    console.log('Configured synchronization from n8n:', sync);
+  }
+
+  /**
+   * Update asset loading state from asset manager results
+   */
+  private updateAssetLoadingStateFromResults(loadResults: {
+    successful: AssetLoadResult[];
+    failed: AssetLoadError[];
+    progress: AssetLoadProgress;
+  }): void {
+    // Update the loading state based on successful loads
+    loadResults.successful.forEach((result) => {
+      if (result.url.includes('.mid') || result.url.includes('.midi')) {
+        this.assetLoadingState.midiFiles.set(
+          result.url,
+          result.data as ArrayBuffer,
+        );
+      } else {
+        this.assetLoadingState.audioSamples.set(
+          result.url,
+          result.data as AudioBuffer,
+        );
+      }
+    });
+
+    this.assetLoadingState.loadedAssets = loadResults.successful.length;
+    console.log('Updated asset loading state:', {
+      totalAssets: this.assetLoadingState.totalAssets,
+      loadedAssets: this.assetLoadingState.loadedAssets,
+      midiFiles: this.assetLoadingState.midiFiles.size,
+      audioSamples: this.assetLoadingState.audioSamples.size,
+    });
+  }
+
+  /**
+   * Initialize Tone.js instruments from loaded assets
+   */
+  private async initializeToneInstrumentsFromAssets(
+    loadedAssets: AssetLoadResult[],
+  ): Promise<void> {
+    console.log('Initializing Tone.js instruments from loaded assets...');
+
+    // Separate assets by type for Epic 2 architecture
+    const midiAssets = loadedAssets.filter(
+      (asset) => asset.url.includes('.mid') || asset.url.includes('.midi'),
+    );
+    const audioAssets = loadedAssets.filter(
+      (asset) => !asset.url.includes('.mid') && !asset.url.includes('.midi'),
+    );
+
+    // Create bass sampler from bass samples
+    const bassSamples = audioAssets.filter(
+      (asset) => asset.url.includes('bass') || asset.url.includes('low'),
+    );
+    if (bassSamples.length > 0) {
+      console.log(`Creating bass sampler with ${bassSamples.length} samples`);
+      // Bass sampler creation will be implemented in future tasks
+    }
+
+    // Create drum sampler from drum samples
+    const drumSamples = audioAssets.filter(
+      (asset) =>
+        asset.url.includes('drum') ||
+        asset.url.includes('kick') ||
+        asset.url.includes('snare'),
+    );
+    if (drumSamples.length > 0) {
+      console.log(`Creating drum sampler with ${drumSamples.length} samples`);
+      // Drum sampler creation will be implemented in future tasks
+    }
+
+    // Set up MIDI sequencing for loaded MIDI files
+    if (midiAssets.length > 0) {
+      console.log(`Setting up MIDI sequencing for ${midiAssets.length} files`);
+      // MIDI sequencing will be implemented in Story 2.2
+    }
+
+    console.log('Tone.js instruments initialization completed');
+  }
+
+  /**
+   * Set up Epic 2 specific audio routing and effects
+   */
+  private setupEpic2AudioRouting(): void {
+    console.log('Setting up Epic 2 audio routing...');
+
+    // Create Epic 2 specific audio channels
+    const bassChannel = this.registerAudioSource({
+      id: 'epic2-bass',
+      type: 'bass',
+      volume: 0.8,
+      pan: 0,
+      muted: false,
+      solo: false,
+    });
+
+    const drumChannel = this.registerAudioSource({
+      id: 'epic2-drums',
+      type: 'drums',
+      volume: 0.7,
+      pan: 0,
+      muted: false,
+      solo: false,
+    });
+
+    const harmonyChannel = this.registerAudioSource({
+      id: 'epic2-harmony',
+      type: 'harmony',
+      volume: 0.5,
+      pan: 0,
+      muted: false,
+      solo: false,
+    });
+
+    // Future: Add Epic 2 specific effects chains
+    // - Bass compression and EQ
+    // - Drum processing
+    // - Harmony reverb and delay
+
+    console.log('Epic 2 audio routing setup completed:', {
+      bassChannel: !!bassChannel,
+      drumChannel: !!drumChannel,
+      harmonyChannel: !!harmonyChannel,
+    });
+  }
+
   /**
    * Add event listener
    */
-  public on<K extends keyof CoreAudioEngineEvents>(
+  public on<K extends keyof CorePlaybackEngineEvents>(
     event: K,
-    handler: CoreAudioEngineEvents[K],
+    handler: CorePlaybackEngineEvents[K],
   ): () => void {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
@@ -679,9 +979,9 @@ export class CoreAudioEngine {
     }
   }
 
-  private emit<K extends keyof CoreAudioEngineEvents>(
+  private emit<K extends keyof CorePlaybackEngineEvents>(
     event: K,
-    ...args: Parameters<CoreAudioEngineEvents[K]>
+    ...args: Parameters<CorePlaybackEngineEvents[K]>
   ): void {
     const handlers = this.eventHandlers.get(event);
     if (handlers) {

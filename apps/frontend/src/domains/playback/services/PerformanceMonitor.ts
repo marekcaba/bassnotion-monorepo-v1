@@ -3,9 +3,13 @@
  *
  * Monitors audio dropouts, latency, and performance metrics
  * to ensure NFR compliance (NFR-PO-15: <50ms latency, NFR-PF-04: <200ms response)
+ * Enhanced with network latency and cache hit rate monitoring for Epic 2
  *
- * Part of Story 2.1: Core Audio Engine Foundation
+ * Part of Story 2.1: Core Audio Engine Foundation + Task 12, Subtask 12.5
  */
+
+import { NetworkLatencyMonitor } from './NetworkLatencyMonitor.js';
+import { CacheMetricsCollector } from './CacheMetricsCollector.js';
 
 export interface AudioPerformanceMetrics {
   latency: number; // Current audio latency in ms
@@ -18,6 +22,8 @@ export interface AudioPerformanceMetrics {
   sampleRate: number; // Current sample rate
   bufferSize: number; // Current buffer size
   timestamp: number; // Last measurement timestamp
+  networkLatency?: number; // Network latency for asset loading (ms) - NEW for Epic 2
+  cacheHitRate?: number; // Cache hit rate (0-1) - NEW for Epic 2
 }
 
 export interface PerformanceAlert {
@@ -34,6 +40,8 @@ export class PerformanceMonitor {
   private analyserNode: AnalyserNode | null = null;
   private isMonitoring = false;
   private monitoringInterval: number | null = null;
+  private networkMonitor: NetworkLatencyMonitor;
+  private cacheMetrics: CacheMetricsCollector;
 
   // Performance thresholds (based on NFRs)
   private readonly LATENCY_WARNING_MS = 30; // Warning at 30ms
@@ -63,6 +71,8 @@ export class PerformanceMonitor {
 
   private constructor() {
     // Private constructor to enforce singleton pattern
+    this.networkMonitor = NetworkLatencyMonitor.getInstance();
+    this.cacheMetrics = CacheMetricsCollector.getInstance();
   }
 
   public static getInstance(): PerformanceMonitor {
@@ -123,6 +133,13 @@ export class PerformanceMonitor {
   public getMetrics(): AudioPerformanceMetrics {
     // Return a sanitized copy to prevent prototype pollution
     return this.sanitizeMetrics(this.metrics);
+  }
+
+  /**
+   * Get current performance metrics (alias for getMetrics for compatibility)
+   */
+  public getCurrentMetrics(): AudioPerformanceMetrics {
+    return this.getMetrics();
   }
 
   /**
@@ -252,6 +269,9 @@ export class PerformanceMonitor {
     // Update memory usage
     this.updateMemoryUsage();
 
+    // Update network latency and cache hit rate (NEW for Epic 2)
+    this.updateNetworkAndCacheMetrics();
+
     // Check thresholds and emit alerts
     this.checkThresholds();
 
@@ -313,6 +333,27 @@ export class PerformanceMonitor {
       // Sanitize memory value to prevent injection
       this.metrics.memoryUsage = this.sanitizeNumericValue(memoryMB, 0, 16384); // Max 16GB
     }
+  }
+
+  /**
+   * Update network latency and cache hit rate metrics (NEW for Epic 2)
+   */
+  private updateNetworkAndCacheMetrics(): void {
+    // Get network latency from NetworkLatencyMonitor
+    const networkMetrics = this.networkMonitor.getMetrics();
+    this.metrics.networkLatency = this.sanitizeNumericValue(
+      networkMetrics.averageLatency,
+      0,
+      10000, // Max 10 seconds
+    );
+
+    // Get cache hit rate from CacheMetricsCollector
+    const cacheMetrics = this.cacheMetrics.getMetrics();
+    this.metrics.cacheHitRate = this.sanitizeNumericValue(
+      cacheMetrics.hitRate,
+      0,
+      1, // 0-1 range
+    );
   }
 
   private checkThresholds(): void {

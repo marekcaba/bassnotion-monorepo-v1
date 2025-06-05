@@ -11,11 +11,16 @@
 // CORE SERVICES - Main engine components
 // ============================================================================
 
-export { CoreAudioEngine } from './services/CoreAudioEngine.js';
+export { CorePlaybackEngine } from './services/CorePlaybackEngine.js';
 export { AudioContextManager } from './services/AudioContextManager.js';
 export { PerformanceMonitor } from './services/PerformanceMonitor.js';
 export { WorkerPoolManager } from './services/WorkerPoolManager.js';
 export { StatePersistenceManager } from './services/StatePersistenceManager.js';
+export { N8nPayloadProcessor } from './services/N8nPayloadProcessor.js';
+export { AssetManifestProcessor } from './services/AssetManifestProcessor.js';
+export { AssetManager } from './services/AssetManager.js';
+export { NetworkLatencyMonitor } from './services/NetworkLatencyMonitor.js';
+export { CacheMetricsCollector } from './services/CacheMetricsCollector.js';
 
 // ============================================================================
 // PERFORMANCE OPTIMIZATION - A/B Testing and Analytics
@@ -100,6 +105,7 @@ export {
 
 export type {
   // Core audio types
+  CorePlaybackEngineConfig,
   CoreAudioEngineConfig,
   AudioContextState,
   PlaybackState,
@@ -111,6 +117,22 @@ export type {
   MobileAudioConfig,
   AudioVisualizationData,
   AudioEngineEvents,
+  // Epic 2 - N8n Payload Processing types
+  N8nPayloadConfig,
+  AssetReference,
+  AssetManifest,
+  AssetLoadingState,
+  N8nPayloadProcessorConfig,
+  // Epic 2 - Asset Manifest Processing types
+  AssetDependency,
+  AssetOptimization,
+  ProcessedAssetManifest,
+  AssetLoadingGroup,
+  // Epic 2 - Asset Manager types
+  AssetManagerConfig,
+  AssetLoadResult,
+  AssetLoadError,
+  AssetLoadProgress,
   // Worker Thread Types
   WorkerThreadType,
   WorkerThreadConfig,
@@ -252,10 +274,10 @@ export const isFeatureSupported = (
 // ============================================================================
 
 /**
- * @deprecated Use CoreAudioEngine instead
- * This alias is provided for backward compatibility
+ * @deprecated Use CorePlaybackEngine instead
+ * This alias is provided for backward compatibility during Epic 2 transition
  */
-export { CoreAudioEngine as CorePlaybackEngine } from './services/CoreAudioEngine.js';
+export { CorePlaybackEngine as CoreAudioEngine } from './services/CorePlaybackEngine.js';
 
 // ============================================================================
 // LAZY IMPORTS - For optional features that don't exist yet
@@ -355,4 +377,24 @@ export type {
   AndroidAudioInterruption,
   AndroidAudioRouteChangeEvent,
   AndroidOptimizationDecision,
+} from './types/audio.js';
+
+// Resource Management & Cleanup
+export { ResourceManager } from './services/ResourceManager.js';
+export { MemoryLeakDetector } from './services/MemoryLeakDetector.js';
+export { GarbageCollectionOptimizer } from './services/GarbageCollectionOptimizer.js';
+export { AudioResourceDisposer } from './services/AudioResourceDisposer.js';
+export { ResourceUsageMonitor } from './services/ResourceUsageMonitor.js';
+
+// Enhanced mobile optimization exports - NEW for Task 12.1
+export type {
+  DeviceModel,
+  NetworkCapabilities,
+  BrowserCapabilities,
+  DeviceSpecificConfig,
+  NetworkAdaptiveConfig,
+  ProgressiveEnhancementConfig,
+  DynamicOptimizationState,
+  EnhancedOptimizationRules,
+  DeviceOptimizationMetrics,
 } from './types/audio.js';
