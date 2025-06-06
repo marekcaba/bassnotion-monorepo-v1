@@ -424,7 +424,7 @@ export abstract class BaseAudioPlugin implements AudioPlugin {
     });
   }
 
-  private initializeParameters(): void {
+  protected initializeParameters(): void {
     // Subclasses should override this to define their parameters
   }
 }

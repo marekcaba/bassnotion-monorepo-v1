@@ -536,7 +536,7 @@ export class AudioCompressionEngine {
     return `compression_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private selectOptimalFormat(inputFormat: AudioFormat): AudioFormat {
+  private selectOptimalFormat(_inputFormat: AudioFormat): AudioFormat {
     if (this.currentDevice) {
       return this.capabilityAnalyzer.selectBestFormat(
         this.config.preferredFormats,
@@ -547,7 +547,7 @@ export class AudioCompressionEngine {
   }
 
   private async analyzeAudioBuffer(
-    buffer: ArrayBuffer,
+    _buffer: ArrayBuffer,
   ): Promise<AudioMetadata> {
     // Simplified audio analysis - in production this would use Web Audio API
     return {
@@ -791,7 +791,7 @@ export class AudioCompressionEngine {
     if (!job.deviceContext) return 0.5;
 
     const profile = job.compressionProfile;
-    const device = job.deviceContext;
+    const _device = job.deviceContext;
 
     // Score based on how well the compression profile matches device capabilities
     let score = 0.5;
@@ -825,7 +825,7 @@ export class AudioCompressionEngine {
 
   private getCacheSize(): number {
     let totalSize = 0;
-    for (const result of this.compressionCache.values()) {
+    for (const result of Array.from(this.compressionCache.values())) {
       totalSize += result.outputBuffer?.byteLength || 0;
     }
     return totalSize;
@@ -874,7 +874,7 @@ export class AudioCompressionEngine {
       outputFormat: result.outputFormat,
       compressionRatio: result.compressionRatio,
       processingTime: result.processingTime,
-      deviceContext: this.currentDevice?.deviceType || 'unknown',
+      deviceContext: this.currentDevice?.deviceClass || 'unknown',
       networkContext: this.currentNetwork?.connectionType || 'unknown',
       success: result.success,
     };
@@ -947,7 +947,7 @@ export class AudioCompressionEngine {
     });
   }
 
-  private completeJob(jobId: string, result: CompressionResult): void {
+  private completeJob(_jobId: string, _result: CompressionResult): void {
     // Job completion logic would be implemented here
     // For now, this is a placeholder
   }
@@ -1001,6 +1001,15 @@ export class AudioCompressionEngine {
 
   private createDefaultQualityPresets(): QualityPresetMap {
     return {
+      minimal: {
+        name: 'Minimal Quality',
+        bitrate: 32,
+        sampleRate: 22050,
+        channels: 1,
+        algorithm: 'lame',
+        qualityFactor: 0.2,
+        compressionLevel: 9,
+      },
       low: {
         name: 'Low Quality',
         bitrate: 64,
@@ -1042,6 +1051,7 @@ export class AudioCompressionEngine {
 
   private createDefaultBitrateRanges(): BitrateRangeMap {
     return {
+      minimal: { min: 16, max: 48, recommended: 32 },
       low: { min: 32, max: 96, recommended: 64 },
       medium: { min: 96, max: 160, recommended: 128 },
       high: { min: 160, max: 256, recommended: 192 },
@@ -1107,7 +1117,7 @@ class CompressionPerformanceMonitor {
 }
 
 class AudioFormatDetector {
-  async detectFormat(buffer: ArrayBuffer): Promise<AudioFormat> {
+  async detectFormat(_buffer: ArrayBuffer): Promise<AudioFormat> {
     // Simplified format detection - in production would analyze file headers
     return 'mp3';
   }
@@ -1115,10 +1125,10 @@ class AudioFormatDetector {
 
 class CompressionCapabilityAnalyzer {
   determineOptimalProfile(
-    inputFormat: AudioFormat,
-    device?: DeviceCapabilities,
-    network?: NetworkCapabilities,
-    profiles?: CompressionProfileMap,
+    _inputFormat: AudioFormat,
+    _device?: DeviceCapabilities,
+    _network?: NetworkCapabilities,
+    _profiles?: CompressionProfileMap,
   ): CompressionProfile {
     // Return default profile for now
     return {
@@ -1141,7 +1151,7 @@ class CompressionCapabilityAnalyzer {
 
   selectBestFormat(
     formats: AudioFormat[],
-    device: DeviceCapabilities,
+    _device: DeviceCapabilities,
   ): AudioFormat {
     // Return first supported format or fallback
     return formats[0] || 'mp3';

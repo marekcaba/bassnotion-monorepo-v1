@@ -23,6 +23,31 @@ export enum PluginCategory {
 }
 
 /**
+ * Processing result status indicators
+ */
+export enum ProcessingResultStatus {
+  SUCCESS = 'success',
+  PARTIAL = 'partial',
+  FAILED = 'failed',
+  ERROR = 'error',
+  BYPASSED = 'bypassed',
+  TIMEOUT = 'timeout',
+}
+
+/**
+ * Plugin parameter types for validation
+ */
+export enum PluginParameterType {
+  NUMBER = 'number',
+  FLOAT = 'float',
+  BOOLEAN = 'boolean',
+  STRING = 'string',
+  ENUM = 'enum',
+  ARRAY = 'array',
+  OBJECT = 'object',
+}
+
+/**
  * Plugin lifecycle states
  */
 export enum PluginState {
@@ -42,6 +67,7 @@ export enum PluginState {
 export enum PluginPriority {
   CRITICAL = 1000,
   HIGH = 750,
+  MEDIUM = 625,
   NORMAL = 500,
   LOW = 250,
   BACKGROUND = 100,
@@ -190,13 +216,16 @@ export interface PluginParameter {
   id: string;
   name: string;
   description: string;
-  type: 'number' | 'boolean' | 'string' | 'enum';
+  type: PluginParameterType;
   defaultValue: unknown;
 
-  // For number parameters
+  // For number/float parameters
   min?: number;
   max?: number;
+  minValue?: number;
+  maxValue?: number;
   step?: number;
+  unit?: string;
 
   // For enum parameters
   options?: { value: unknown; label: string }[];
@@ -212,22 +241,27 @@ export interface PluginParameter {
  */
 export interface PluginProcessingResult {
   success: boolean;
+  status: ProcessingResultStatus;
   processingTime: number;
   bypassMode: boolean;
 
-  // Performance metrics
+  // Processing metrics
+  processedSamples: number;
   cpuUsage: number;
-  memoryDelta: number;
+  memoryDelta?: number;
+  memoryUsage?: number;
 
   // Optional metadata
   metadata?: Record<string, unknown>;
 
   // Error information if failed
-  error?: {
-    code: string;
-    message: string;
-    recoverable: boolean;
-  };
+  error?:
+    | {
+        code: string;
+        message: string;
+        recoverable: boolean;
+      }
+    | Error;
 }
 
 /**
