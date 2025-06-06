@@ -5,14 +5,26 @@
  * memory leak detection, garbage collection optimization, and intelligent
  * resource allocation strategies.
  *
- * Part of Story 2.1: Core Audio Engine Foundation - Task 8
+ * Enhanced for Epic 2 integration: Manages assets loaded via AssetManager,
+ * coordinates with n8n payload processing, and provides comprehensive
+ * asset lifecycle management for audio applications.
+ *
+ * Part of Story 2.1: Core Audio Engine Foundation - Task 8 + Task 13.1
  */
 
 import * as Tone from 'tone';
+import { AssetManager } from './AssetManager.js';
+import { N8nPayloadProcessor } from './N8nPayloadProcessor.js';
+import { AssetManifestProcessor } from './AssetManifestProcessor.js';
 import {
   DeviceCapabilities,
   BatteryStatus,
   ThermalStatus,
+  ProcessedAssetManifest,
+  AssetLoadResult,
+  AssetLoadError,
+  AssetLoadProgress,
+  AssetReference,
 } from '../types/audio.js';
 
 // Extended performance interface to handle memory API
@@ -45,7 +57,16 @@ export type ResourceType =
   | 'subscription'
   | 'webgl_context'
   | 'websocket'
-  | 'service_worker';
+  | 'service_worker'
+  // NEW: Epic 2 specific asset types
+  | 'midi_file'
+  | 'audio_sample'
+  | 'n8n_asset'
+  | 'cdn_cache_entry'
+  | 'supabase_asset'
+  | 'compressed_audio'
+  | 'audio_manifest'
+  | 'asset_metadata';
 
 export type ResourcePriority =
   | 'critical'
@@ -195,6 +216,52 @@ export interface ResourceManagerEvents {
   poolResized: (type: ResourceType, oldSize: number, newSize: number) => void;
 }
 
+// NEW: Epic 2 Asset Lifecycle Management Interfaces
+export interface AssetLifecycleMetadata extends ResourceMetadata {
+  assetType: 'midi' | 'audio';
+  assetCategory: string;
+  sourceUrl: string;
+  loadedFrom: 'cdn' | 'supabase' | 'cache';
+  compressionUsed: boolean;
+  originalSize: number;
+  compressedSize?: number;
+  n8nPayloadId?: string;
+  manifestId?: string;
+  loadTime: number;
+  lastUsed: number;
+  useCount: number;
+  criticalForPlayback: boolean;
+}
+
+export interface AssetCleanupStrategy {
+  priority: 'immediate' | 'deferred' | 'batch' | 'lazy';
+  maxIdleTime: number; // ms
+  memoryPressureThreshold: number; // 0-1
+  batteryAwareCleanup: boolean;
+  preserveCriticalAssets: boolean;
+  compressionBeforeCleanup: boolean;
+}
+
+export interface AssetCacheConfiguration {
+  maxMemoryUsage: number; // bytes
+  maxAssetCount: number;
+  compressionEnabled: boolean;
+  priorityBasedEviction: boolean;
+  networkAwareRetention: boolean;
+  batteryAwareEviction: boolean;
+}
+
+export interface AssetLoadingCoordination {
+  manifestProcessor: AssetManifestProcessor;
+  assetManager: AssetManager;
+  n8nProcessor: N8nPayloadProcessor;
+  resourceTracker: Map<string, AssetLifecycleMetadata>;
+  loadingCallbacks: Map<
+    string,
+    (result: AssetLoadResult | AssetLoadError) => void
+  >;
+}
+
 export class ResourceManager {
   private static instance: ResourceManager;
   private resources: Map<string, ManagedResource> = new Map();
@@ -226,10 +293,27 @@ export class ResourceManager {
     cleanupCycles: 0,
   };
 
+  // NEW: Epic 2 Asset Management Integration
+  private assetCoordination!: AssetLoadingCoordination;
+  private assetCacheConfig!: AssetCacheConfiguration;
+  private assetCleanupStrategy!: AssetCleanupStrategy;
+  private assetLifecycleMetrics = {
+    totalAssetsLoaded: 0,
+    totalAssetsDisposed: 0,
+    totalCacheHits: 0,
+    totalCacheMisses: 0,
+    totalCompressionSavings: 0,
+    averageAssetLoadTime: 0,
+    assetMemoryUsage: 0,
+  };
+
   private constructor(config?: Partial<ResourceManagerConfig>) {
     this.config = this.mergeConfig(config);
     this.initializePools();
     this.setupMemoryBaseline();
+
+    // NEW: Initialize Epic 2 asset coordination
+    this.initializeAssetCoordination();
   }
 
   public static getInstance(
@@ -237,6 +321,10 @@ export class ResourceManager {
   ): ResourceManager {
     if (!ResourceManager.instance) {
       ResourceManager.instance = new ResourceManager(config);
+    } else if (config) {
+      // Update configuration if provided
+      ResourceManager.instance.config =
+        ResourceManager.instance.mergeConfig(config);
     }
     return ResourceManager.instance;
   }
@@ -249,22 +337,22 @@ export class ResourceManager {
     batteryStatus?: BatteryStatus,
     thermalStatus?: ThermalStatus,
   ): Promise<void> {
+    if (this.isRunning) return;
+
     this.deviceCapabilities = deviceCapabilities;
     this.batteryStatus = batteryStatus;
     this.thermalStatus = thermalStatus;
 
-    // Adjust constraints based on device capabilities
     if (deviceCapabilities) {
       this.adjustConstraintsForDevice(deviceCapabilities);
     }
 
+    // NEW: Initialize asset coordination services
+    await this.initializeAssetServices();
+
     this.isRunning = true;
     this.startBackgroundTasks();
-
-    console.log(
-      'ResourceManager initialized with constraints:',
-      this.config.constraints,
-    );
+    this.setupMemoryBaseline();
   }
 
   /**
@@ -1171,5 +1259,489 @@ export class ResourceManager {
 
   public isInitialized(): boolean {
     return this.isRunning;
+  }
+
+  // NEW: Epic 2 Asset Lifecycle Management Methods
+
+  /**
+   * Load assets from CDN via coordination with AssetManager
+   * This is the main method expected by Epic 2 architecture
+   */
+  public async loadAssetsFromCDN(
+    manifest: ProcessedAssetManifest,
+    onProgress?: (progress: AssetLoadProgress) => void,
+  ): Promise<{
+    successful: AssetLoadResult[];
+    failed: AssetLoadError[];
+    managedAssets: Map<string, string>; // url -> resourceId mapping
+  }> {
+    const startTime = Date.now();
+    const managedAssets = new Map<string, string>();
+
+    // Load assets via AssetManager
+    const loadResults =
+      await this.assetCoordination.assetManager.loadAssetsFromManifest(
+        manifest,
+      );
+
+    // Register successful assets with ResourceManager
+    for (const result of loadResults.successful) {
+      const resourceId = await this.registerAsset(result, manifest);
+      managedAssets.set(result.url, resourceId);
+      this.assetLifecycleMetrics.totalAssetsLoaded++;
+    }
+
+    // Track failed assets for potential retry
+    for (const error of loadResults.failed) {
+      console.warn(`Failed to load asset ${error.url}:`, error.error.message);
+    }
+
+    // Update progress callback
+    if (onProgress) {
+      onProgress(loadResults.progress);
+    }
+
+    // Update metrics
+    const totalLoadTime = Date.now() - startTime;
+    this.assetLifecycleMetrics.averageAssetLoadTime =
+      (this.assetLifecycleMetrics.averageAssetLoadTime *
+        (this.assetLifecycleMetrics.totalAssetsLoaded -
+          loadResults.successful.length) +
+        totalLoadTime) /
+      this.assetLifecycleMetrics.totalAssetsLoaded;
+
+    return {
+      successful: loadResults.successful,
+      failed: loadResults.failed,
+      managedAssets,
+    };
+  }
+
+  /**
+   * Register an asset loaded by AssetManager with ResourceManager
+   */
+  private async registerAsset(
+    loadResult: AssetLoadResult,
+    manifest: ProcessedAssetManifest,
+  ): Promise<string> {
+    const assetRef = manifest.assets.find((a) => a.url === loadResult.url);
+    if (!assetRef) {
+      throw new Error(`Asset reference not found for ${loadResult.url}`);
+    }
+
+    const resourceType: ResourceType =
+      assetRef.type === 'midi' ? 'midi_file' : 'audio_sample';
+
+    const metadata: Partial<AssetLifecycleMetadata> = {
+      type: resourceType,
+      priority: this.mapAssetPriorityToResourcePriority(assetRef.priority),
+      tags: new Set([
+        'epic2_asset',
+        assetRef.type,
+        assetRef.category,
+        loadResult.source,
+      ]),
+      assetType: assetRef.type,
+      assetCategory: assetRef.category,
+      sourceUrl: loadResult.url,
+      loadedFrom: loadResult.source,
+      compressionUsed: loadResult.compressionUsed,
+      originalSize:
+        loadResult.data instanceof ArrayBuffer
+          ? loadResult.data.byteLength
+          : loadResult.data.length * 4,
+      loadTime: loadResult.loadTime,
+      lastUsed: Date.now(),
+      useCount: 0,
+      criticalForPlayback: this.isCriticalAsset(assetRef, manifest),
+      cleanupStrategy: this.determineBestCleanupStrategy(assetRef),
+      autoCleanupTimeout: this.calculateAutoCleanupTimeout(assetRef),
+    };
+
+    const resourceId = this.register(loadResult.data, resourceType, metadata);
+
+    // Store asset lifecycle metadata
+    const managedResource = this.resources.get(resourceId);
+    if (managedResource) {
+      this.assetCoordination.resourceTracker.set(
+        loadResult.url,
+        managedResource.metadata as AssetLifecycleMetadata,
+      );
+    }
+
+    // Update asset memory usage
+    this.assetLifecycleMetrics.assetMemoryUsage +=
+      loadResult.data instanceof ArrayBuffer
+        ? loadResult.data.byteLength
+        : loadResult.data.length * 4;
+
+    return resourceId;
+  }
+
+  /**
+   * Get asset by URL with usage tracking
+   */
+  public getAssetByUrl<T = any>(url: string): T | null {
+    const metadata = this.assetCoordination.resourceTracker.get(url);
+    if (!metadata) return null;
+
+    const resource = this.access<T>(metadata.id);
+    if (resource) {
+      // Update usage tracking
+      metadata.lastUsed = Date.now();
+      metadata.useCount++;
+    }
+
+    return resource;
+  }
+
+  /**
+   * Preload critical assets for immediate playback
+   */
+  public async preloadCriticalAssets(
+    manifest: ProcessedAssetManifest,
+  ): Promise<string[]> {
+    const criticalAssets = manifest.assets.filter((asset) =>
+      this.isCriticalAsset(asset, manifest),
+    );
+
+    const resourceIds: string[] = [];
+    for (const asset of criticalAssets) {
+      try {
+        const result = await this.assetCoordination.assetManager.loadAsset(
+          asset,
+          manifest,
+        );
+        const resourceId = await this.registerAsset(result, manifest);
+        resourceIds.push(resourceId);
+
+        // Mark as high priority to prevent cleanup
+        const managedResource = this.resources.get(resourceId);
+        if (managedResource) {
+          managedResource.metadata.priority = 'critical';
+        }
+      } catch (error) {
+        console.warn(`Failed to preload critical asset ${asset.url}:`, error);
+      }
+    }
+
+    return resourceIds;
+  }
+
+  /**
+   * Clean up assets based on usage patterns and memory pressure
+   */
+  public async cleanupAssets(
+    options: {
+      memoryPressureThreshold?: number;
+      preserveCritical?: boolean;
+      maxAge?: number;
+      forceCleanup?: boolean;
+    } = {},
+  ): Promise<{
+    assetsDisposed: number;
+    memoryReclaimed: number;
+    preservedAssets: number;
+  }> {
+    const {
+      memoryPressureThreshold = 0.8,
+      preserveCritical = true,
+      maxAge = 5 * 60 * 1000, // 5 minutes
+      forceCleanup = false,
+    } = options;
+
+    const currentMemoryPressure =
+      this.getCurrentMemoryUsage() / this.config.constraints.maxTotalMemory;
+
+    if (!forceCleanup && currentMemoryPressure < memoryPressureThreshold) {
+      return { assetsDisposed: 0, memoryReclaimed: 0, preservedAssets: 0 };
+    }
+
+    const now = Date.now();
+    let assetsDisposed = 0;
+    let memoryReclaimed = 0;
+    let preservedAssets = 0;
+
+    // Collect cleanup candidates
+    const candidates: Array<{ url: string; metadata: AssetLifecycleMetadata }> =
+      [];
+
+    for (const [url, metadata] of Array.from(
+      this.assetCoordination.resourceTracker.entries(),
+    )) {
+      const resource = this.resources.get(metadata.id);
+      if (!resource) continue;
+
+      // Preserve critical assets if requested
+      if (preserveCritical && metadata.criticalForPlayback) {
+        preservedAssets++;
+        continue;
+      }
+
+      // Check if asset is old enough for cleanup
+      const age = now - metadata.lastUsed;
+      if (age > maxAge || forceCleanup) {
+        candidates.push({ url, metadata });
+      }
+    }
+
+    // Sort by cleanup priority (least recently used, lowest priority first)
+    candidates.sort((a, b) => {
+      const aPriority = this.getPriorityScore(a.metadata.priority);
+      const bPriority = this.getPriorityScore(b.metadata.priority);
+
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority; // Lower priority first
+      }
+
+      return a.metadata.lastUsed - b.metadata.lastUsed; // Older first
+    });
+
+    // Dispose assets until memory pressure is relieved
+    for (const { url, metadata } of candidates) {
+      const resource = this.resources.get(metadata.id);
+      if (!resource) continue;
+
+      const assetMemory = metadata.memoryUsage;
+      const disposed = await this.dispose(metadata.id, forceCleanup);
+
+      if (disposed) {
+        this.assetCoordination.resourceTracker.delete(url);
+        assetsDisposed++;
+        memoryReclaimed += assetMemory;
+        this.assetLifecycleMetrics.totalAssetsDisposed++;
+        this.assetLifecycleMetrics.assetMemoryUsage -= assetMemory;
+
+        // Check if we've relieved enough memory pressure
+        const newMemoryPressure =
+          this.getCurrentMemoryUsage() / this.config.constraints.maxTotalMemory;
+        if (
+          !forceCleanup &&
+          newMemoryPressure < memoryPressureThreshold * 0.8
+        ) {
+          break;
+        }
+      }
+    }
+
+    return { assetsDisposed, memoryReclaimed, preservedAssets };
+  }
+
+  /**
+   * Get comprehensive asset lifecycle metrics
+   */
+  public getAssetLifecycleMetrics() {
+    return {
+      ...this.assetLifecycleMetrics,
+      activeAssets: this.assetCoordination.resourceTracker.size,
+      assetTypes: this.getAssetTypeBreakdown(),
+      memoryUsageByCategory: this.getMemoryUsageByCategory(),
+      cacheEfficiency: this.calculateCacheEfficiency(),
+      averageAssetAge: this.calculateAverageAssetAge(),
+    };
+  }
+
+  /**
+   * Update asset cache configuration
+   */
+  public updateAssetCacheConfiguration(
+    config: Partial<AssetCacheConfiguration>,
+  ): void {
+    this.assetCacheConfig = { ...this.assetCacheConfig, ...config };
+
+    // Apply new configuration
+    this.applyAssetCacheConfiguration();
+  }
+
+  /**
+   * Force comprehensive asset cleanup (emergency cleanup)
+   */
+  public async emergencyAssetCleanup(): Promise<void> {
+    await this.cleanupAssets({
+      memoryPressureThreshold: 0,
+      preserveCritical: false,
+      maxAge: 0,
+      forceCleanup: true,
+    });
+
+    // Force garbage collection
+    await this.triggerGC(true);
+
+    // Clear any remaining caches
+    this.assetCoordination.assetManager.clearCache();
+  }
+
+  // NEW: Private Epic 2 Asset Management Helper Methods
+
+  private async initializeAssetCoordination(): Promise<void> {
+    this.assetCoordination = {
+      manifestProcessor: AssetManifestProcessor.getInstance(),
+      assetManager: AssetManager.getInstance(),
+      n8nProcessor: N8nPayloadProcessor.getInstance(),
+      resourceTracker: new Map(),
+      loadingCallbacks: new Map(),
+    };
+
+    this.assetCacheConfig = {
+      maxMemoryUsage: this.config.constraints.maxTotalMemory * 0.6, // 60% of total memory for assets
+      maxAssetCount: 200,
+      compressionEnabled: true,
+      priorityBasedEviction: true,
+      networkAwareRetention: true,
+      batteryAwareEviction: true,
+    };
+
+    this.assetCleanupStrategy = {
+      priority: 'deferred',
+      maxIdleTime: 5 * 60 * 1000, // 5 minutes
+      memoryPressureThreshold: 0.8,
+      batteryAwareCleanup: true,
+      preserveCriticalAssets: true,
+      compressionBeforeCleanup: false,
+    };
+  }
+
+  private async initializeAssetServices(): Promise<void> {
+    // Initialize AssetManager if not already done
+    if (
+      this.assetCoordination.assetManager &&
+      typeof this.assetCoordination.assetManager.setAudioContext === 'function'
+    ) {
+      // Audio context will be set by CorePlaybackEngine
+    }
+  }
+
+  private mapAssetPriorityToResourcePriority(
+    assetPriority: 'high' | 'medium' | 'low',
+  ): ResourcePriority {
+    switch (assetPriority) {
+      case 'high':
+        return 'high';
+      case 'medium':
+        return 'medium';
+      case 'low':
+        return 'low';
+      default:
+        return 'medium';
+    }
+  }
+
+  private isCriticalAsset(
+    asset: AssetReference,
+    manifest: ProcessedAssetManifest,
+  ): boolean {
+    // Check if asset is in critical path
+    return (
+      manifest.criticalPath.includes(asset.url) ||
+      asset.priority === 'high' ||
+      asset.category === 'bassline' ||
+      asset.category === 'chords'
+    );
+  }
+
+  private determineBestCleanupStrategy(asset: AssetReference): CleanupStrategy {
+    if (asset.priority === 'high') return 'graceful';
+    if (asset.type === 'midi') return 'deferred';
+    if (asset.category === 'ambience') return 'immediate';
+    return 'batch';
+  }
+
+  private calculateAutoCleanupTimeout(asset: AssetReference): number {
+    switch (asset.priority) {
+      case 'high':
+        return 15 * 60 * 1000; // 15 minutes
+      case 'medium':
+        return 10 * 60 * 1000; // 10 minutes
+      case 'low':
+        return 5 * 60 * 1000; // 5 minutes
+      default:
+        return 5 * 60 * 1000;
+    }
+  }
+
+  private getPriorityScore(priority: ResourcePriority): number {
+    switch (priority) {
+      case 'critical':
+        return 5;
+      case 'high':
+        return 4;
+      case 'medium':
+        return 3;
+      case 'low':
+        return 2;
+      case 'disposable':
+        return 1;
+      default:
+        return 3;
+    }
+  }
+
+  private getAssetTypeBreakdown(): Record<string, number> {
+    const breakdown: Record<string, number> = {};
+
+    for (const metadata of this.assetCoordination.resourceTracker.values()) {
+      const key = `${metadata.assetType}_${metadata.assetCategory}`;
+      breakdown[key] = (breakdown[key] || 0) + 1;
+    }
+
+    return breakdown;
+  }
+
+  private getMemoryUsageByCategory(): Record<string, number> {
+    const usage: Record<string, number> = {};
+
+    for (const metadata of this.assetCoordination.resourceTracker.values()) {
+      const category = metadata.assetCategory;
+      usage[category] = (usage[category] || 0) + metadata.memoryUsage;
+    }
+
+    return usage;
+  }
+
+  private calculateCacheEfficiency(): number {
+    const totalAttempts =
+      this.assetLifecycleMetrics.totalCacheHits +
+      this.assetLifecycleMetrics.totalCacheMisses;
+    return totalAttempts > 0
+      ? this.assetLifecycleMetrics.totalCacheHits / totalAttempts
+      : 0;
+  }
+
+  private calculateAverageAssetAge(): number {
+    if (this.assetCoordination.resourceTracker.size === 0) return 0;
+
+    const now = Date.now();
+    let totalAge = 0;
+
+    for (const metadata of this.assetCoordination.resourceTracker.values()) {
+      totalAge += now - metadata.createdAt;
+    }
+
+    return totalAge / this.assetCoordination.resourceTracker.size;
+  }
+
+  private applyAssetCacheConfiguration(): void {
+    // Apply memory limits
+    if (
+      this.assetLifecycleMetrics.assetMemoryUsage >
+      this.assetCacheConfig.maxMemoryUsage
+    ) {
+      this.cleanupAssets({
+        memoryPressureThreshold: 0,
+        forceCleanup: true,
+      });
+    }
+
+    // Apply asset count limits
+    if (
+      this.assetCoordination.resourceTracker.size >
+      this.assetCacheConfig.maxAssetCount
+    ) {
+      this.cleanupAssets({
+        memoryPressureThreshold: 0,
+        preserveCritical: true,
+        forceCleanup: true,
+      });
+    }
   }
 }

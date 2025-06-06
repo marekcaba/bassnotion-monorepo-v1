@@ -25,6 +25,7 @@ import { StatePersistenceManager } from './StatePersistenceManager.js';
 import { N8nPayloadProcessor } from './N8nPayloadProcessor.js';
 import { AssetManifestProcessor } from './AssetManifestProcessor.js';
 import { AssetManager } from './AssetManager.js';
+import { ResourceManager } from './ResourceManager.js';
 import {
   BackgroundProcessingConfig,
   N8nPayloadConfig,
@@ -76,6 +77,7 @@ export class CorePlaybackEngine {
   private n8nPayloadProcessor: N8nPayloadProcessor; // NEW: Epic 2 integration
   private assetManifestProcessor: AssetManifestProcessor; // NEW: Epic 2 asset processing
   private assetManager: AssetManager; // NEW: Epic 2 asset loading
+  private resourceManager: ResourceManager; // NEW: Task 13.1 - Comprehensive resource lifecycle management
 
   // Tone.js components
   private toneTransport: typeof Tone.Transport;
@@ -129,6 +131,7 @@ export class CorePlaybackEngine {
     this.n8nPayloadProcessor = N8nPayloadProcessor.getInstance(); // NEW: Epic 2
     this.assetManifestProcessor = AssetManifestProcessor.getInstance(); // NEW: Epic 2
     this.assetManager = AssetManager.getInstance(); // NEW: Epic 2
+    this.resourceManager = ResourceManager.getInstance(); // NEW: Task 13.1
     this.toneTransport = Tone.getTransport();
 
     this.setupEventHandlers();
@@ -165,6 +168,9 @@ export class CorePlaybackEngine {
 
       // Initialize worker pool for background processing
       await this.workerPoolManager.initialize(this.config.backgroundProcessing);
+
+      // Initialize resource manager for comprehensive lifecycle management
+      await this.resourceManager.initialize();
 
       // Initialize state persistence for session recovery
       await this.statePersistenceManager.initialize({
@@ -627,17 +633,34 @@ export class CorePlaybackEngine {
         this.assetManager.setAudioContext(audioContext);
       }
 
-      // Step 6: Load critical assets first for minimum viable playback
+      // Step 6: Load critical assets first for minimum viable playback (via ResourceManager)
       console.log('Loading critical assets for Epic 2 playback...');
-      const criticalAssets =
-        await this.assetManager.preloadCriticalAssets(processedManifest);
-      console.log(`Loaded ${criticalAssets.length} critical assets`);
+      const criticalAssetIds =
+        await this.resourceManager.preloadCriticalAssets(processedManifest);
+      console.log(`Loaded ${criticalAssetIds.length} critical assets`);
 
-      // Step 7: Load remaining assets with Epic 2 optimization strategy
-      const loadResults =
-        await this.assetManager.loadAssetsFromManifest(processedManifest);
+      // Step 7: Load remaining assets with Epic 2 optimization strategy + comprehensive lifecycle management
+      const resourceLoadResults = await this.resourceManager.loadAssetsFromCDN(
+        processedManifest,
+        (progress) => {
+          this.assetLoadingState.loadedAssets = progress.loadedAssets;
+          this.assetLoadingState.totalAssets = progress.totalAssets;
+        },
+      );
 
-      // Step 8: Update asset loading state with results
+      // Step 8: Update asset loading state with results (convert ResourceManager format to expected format)
+      const loadResults = {
+        successful: resourceLoadResults.successful,
+        failed: resourceLoadResults.failed,
+        progress: {
+          totalAssets: processedManifest.totalCount,
+          loadedAssets: resourceLoadResults.successful.length,
+          failedAssets: resourceLoadResults.failed.length,
+          bytesLoaded: 0, // Will be calculated
+          totalBytes: 0, // Will be calculated
+          loadingSpeed: 0, // Will be calculated
+        },
+      };
       this.updateAssetLoadingStateFromResults(loadResults);
 
       // Step 9: Configure timing and synchronization (Epic 2 Section 7.4)
@@ -876,6 +899,9 @@ export class CorePlaybackEngine {
 
         // Dispose state persistence manager
         await this.statePersistenceManager.dispose();
+
+        // Dispose resource manager
+        await this.resourceManager.shutdown();
 
         // Stop performance monitoring
         this.performanceMonitor.stopMonitoring();

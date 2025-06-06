@@ -386,6 +386,18 @@ export { GarbageCollectionOptimizer } from './services/GarbageCollectionOptimize
 export { AudioResourceDisposer } from './services/AudioResourceDisposer.js';
 export { ResourceUsageMonitor } from './services/ResourceUsageMonitor.js';
 
+// Audio Compression Engine - Task 13.4
+export {
+  AudioCompressionEngine,
+  type AudioCompressionConfig,
+  type CompressionProfile,
+  type CompressionResult,
+  type CompressionOptions,
+  type CompressionMetrics,
+  type AudioFormat,
+  type CompressionAlgorithm,
+} from './services/AudioCompressionEngine.js';
+
 // Enhanced mobile optimization exports - NEW for Task 12.1
 export type {
   DeviceModel,

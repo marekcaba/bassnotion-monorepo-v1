@@ -3,6 +3,7 @@
 ## Architectural Overview
 
 ### **Domain-Driven Design (DDD)**
+
 BassNotion follows domain-driven design principles with clear separation of concerns:
 
 ```
@@ -31,6 +32,7 @@ graph TD
 ```
 
 **Key Benefits:**
+
 - **Shared Types**: Single source of truth for API contracts
 - **Coordinated Releases**: Synchronized frontend/backend deployments
 - **Code Reuse**: Shared utilities and components
@@ -39,6 +41,7 @@ graph TD
 ### **Layered Architecture Pattern**
 
 #### **Frontend Layers**
+
 ```
 ┌─ Pages/Routes (Next.js App Router)
 ├─ Components (UI Components)
@@ -49,6 +52,7 @@ graph TD
 ```
 
 #### **Backend Layers**
+
 ```
 ┌─ Controllers (HTTP/WebSocket Endpoints)
 ├─ Services (Business Logic)
@@ -62,6 +66,7 @@ graph TD
 ### **Component Architecture Pattern**
 
 #### **Frontend Component Structure**
+
 ```typescript
 // Domain-specific component organization
 domains/user/components/
@@ -77,6 +82,7 @@ domains/user/components/
 ```
 
 #### **Component Design Principles**
+
 1. **Single Responsibility**: Each component has one clear purpose
 2. **Composition over Inheritance**: Use component composition patterns
 3. **Props Interface**: Strict TypeScript interfaces for all props
@@ -86,6 +92,7 @@ domains/user/components/
 ### **State Management Pattern**
 
 #### **Frontend State Architecture**
+
 ```typescript
 // Zustand for client state
 interface UserStore {
@@ -106,6 +113,7 @@ const useUserData = (userId: string) => {
 ```
 
 #### **State Management Principles**
+
 - **Client State**: Zustand for UI state, user preferences, temporary data
 - **Server State**: React Query for API data, caching, and synchronization
 - **Form State**: React Hook Form for form management and validation
@@ -114,6 +122,7 @@ const useUserData = (userId: string) => {
 ### **Service Layer Pattern**
 
 #### **Backend Service Structure**
+
 ```typescript
 @Injectable()
 export class UserService {
@@ -133,6 +142,7 @@ export class UserService {
 ```
 
 #### **Frontend Service Structure**
+
 ```typescript
 class UserApiService {
   private baseUrl = '/api/users';
@@ -152,6 +162,7 @@ class UserApiService {
 ### **Repository Pattern**
 
 #### **Data Access Layer**
+
 ```typescript
 @Injectable()
 export class UserRepository {
@@ -177,6 +188,7 @@ export class UserRepository {
 ### **Event-Driven Pattern**
 
 #### **Domain Events**
+
 ```typescript
 // Event definition
 export class UserRegisteredEvent {
@@ -188,10 +200,10 @@ export class UserRegisteredEvent {
 export class UserService {
   async registerUser(dto: RegisterUserDto): Promise<User> {
     const user = await this.createUser(dto);
-    
+
     // Emit domain event
     this.eventEmitter.emit('user.registered', new UserRegisteredEvent(user));
-    
+
     return user;
   }
 }
@@ -211,6 +223,7 @@ export class EmailService {
 ### **Frontend Error Handling**
 
 #### **React Error Boundaries**
+
 ```typescript
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
@@ -230,11 +243,12 @@ export class ErrorBoundary extends Component<Props, State> {
 ```
 
 #### **API Error Handling**
+
 ```typescript
 class ApiError extends Error {
   constructor(
     public readonly response: Response,
-    message?: string
+    message?: string,
   ) {
     super(message || `API Error: ${response.status}`);
   }
@@ -250,7 +264,7 @@ const handleApiError = (error: unknown) => {
         // Show permission error
         break;
       default:
-        // Generic error handling
+      // Generic error handling
     }
   }
 };
@@ -259,6 +273,7 @@ const handleApiError = (error: unknown) => {
 ### **Backend Error Handling**
 
 #### **Global Exception Filter**
+
 ```typescript
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -290,14 +305,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 ### **Frontend Testing Strategy**
 
 #### **Component Testing**
+
 ```typescript
 describe('LoginForm', () => {
   it('should validate required fields', async () => {
     render(<LoginForm onSubmit={mockSubmit} />);
-    
+
     const submitButton = screen.getByRole('button', { name: /login/i });
     await userEvent.click(submitButton);
-    
+
     expect(screen.getByText(/email is required/i)).toBeInTheDocument();
     expect(screen.getByText(/password is required/i)).toBeInTheDocument();
   });
@@ -305,6 +321,7 @@ describe('LoginForm', () => {
 ```
 
 #### **Hook Testing**
+
 ```typescript
 describe('useUserData', () => {
   it('should fetch user data', async () => {
@@ -324,6 +341,7 @@ describe('useUserData', () => {
 ### **Backend Testing Strategy**
 
 #### **Service Testing**
+
 ```typescript
 describe('UserService', () => {
   it('should create user with valid data', async () => {
@@ -341,15 +359,16 @@ describe('UserService', () => {
 ```
 
 #### **E2E Testing**
+
 ```typescript
 describe('User Registration Flow', () => {
   it('should register new user successfully', async () => {
     await page.goto('/register');
-    
+
     await page.fill('input[name="email"]', 'test@example.com');
     await page.fill('input[name="password"]', 'SecurePassword123');
     await page.click('button[type="submit"]');
-    
+
     await expect(page).toHaveURL('/dashboard');
     await expect(page.locator('h1')).toContainText('Welcome');
   });
@@ -361,6 +380,7 @@ describe('User Registration Flow', () => {
 ### **Authentication & Authorization**
 
 #### **JWT Token Handling**
+
 ```typescript
 // Frontend token management
 class AuthService {
@@ -381,6 +401,7 @@ class AuthService {
 ```
 
 #### **API Request Interceptor**
+
 ```typescript
 // Automatic token injection
 const apiClient = axios.create({
@@ -399,6 +420,7 @@ apiClient.interceptors.request.use((config) => {
 ### **Input Validation Pattern**
 
 #### **DTO Validation**
+
 ```typescript
 export class CreateUserDto {
   @IsEmail()
@@ -417,6 +439,7 @@ export class CreateUserDto {
 ```
 
 #### **Frontend Form Validation**
+
 ```typescript
 const schema = z.object({
   email: z.string().email('Invalid email address'),
@@ -434,6 +457,7 @@ const form = useForm<FormData>({
 ### **Caching Strategy**
 
 #### **Frontend Caching**
+
 ```typescript
 // React Query caching configuration
 const queryClient = new QueryClient({
@@ -449,6 +473,7 @@ const queryClient = new QueryClient({
 ```
 
 #### **Backend Caching**
+
 ```typescript
 @Injectable()
 export class UserService {
@@ -462,6 +487,7 @@ export class UserService {
 ### **Code Splitting Pattern**
 
 #### **Dynamic Imports**
+
 ```typescript
 // Lazy load heavy components
 const AudioAnalyzer = lazy(() => import('./AudioAnalyzer.js'));
@@ -477,4 +503,4 @@ export function PracticeSession() {
 }
 ```
 
-These patterns ensure BassNotion maintains high code quality, performance, and maintainability while scaling effectively. 
+These patterns ensure BassNotion maintains high code quality, performance, and maintainability while scaling effectively.
