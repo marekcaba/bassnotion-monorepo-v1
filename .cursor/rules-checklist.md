@@ -78,22 +78,29 @@ jest               # ❌ (use Vitest via NX)
 ### ✅ **CORRECT TEST COMMANDS:**
 
 ```bash
-# Run all tests for a project
-pnpm nx test @bassnotion/backend
+# MANDATORY: Use pnpm vitest run with specific paths
+pnpm vitest run apps/backend/src/                                      # Run all backend tests
+pnpm vitest run apps/backend/src/domains/user/                         # Run domain-specific tests
+pnpm vitest run apps/backend/src/domains/user/auth/auth.service.spec.ts # Run specific test file
+pnpm vitest run apps/frontend/src/                                      # Run all frontend tests
+pnpm vitest run apps/backend/src/ --coverage                           # Run with coverage
+pnpm vitest run apps/backend/src/ --watch                              # Run in watch mode
+```
 
-# Run specific test file
-pnpm nx test @bassnotion/backend auth-security.integration.spec.ts
+### ❌ **FORBIDDEN TEST COMMANDS:**
 
-# Run tests with coverage
-pnpm nx test @bassnotion/backend --coverage
-
-# Run tests in watch mode
-pnpm nx test @bassnotion/backend --watch
+```bash
+# NEVER use these:
+pnpm nx test @bassnotion/backend    # ❌ (replaced by vitest)
+npm test                            # ❌
+jest                               # ❌
 ```
 
 ### ⚠️ **TEST REQUIREMENTS:**
 
+- **MANDATORY:** All tests MUST use `pnpm vitest run path..` format
 - Tests use **Vitest** (not Jest)
+- Always specify the path to tests you want to run
 - Integration tests require database setup
 - Tests may need `.env.test` file with proper Supabase credentials
 - Tests run in parallel - each test should be isolated

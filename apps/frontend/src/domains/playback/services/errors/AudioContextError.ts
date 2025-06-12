@@ -103,10 +103,46 @@ export class AudioContextError extends PlaybackError {
   }
 
   private checkWebAudioSupport(): boolean {
-    return (
-      typeof AudioContext !== 'undefined' ||
-      typeof (window as any).webkitAudioContext !== 'undefined'
-    );
+    // Check if AudioContext constructors are actually available and callable
+    try {
+      // Check global AudioContext
+      if (typeof AudioContext !== 'undefined' && AudioContext !== null) {
+        return true;
+      }
+
+      // Check global webkitAudioContext
+      if (
+        typeof (global as any)?.webkitAudioContext !== 'undefined' &&
+        (global as any)?.webkitAudioContext !== null
+      ) {
+        return true;
+      }
+
+      // Check window AudioContext (only if different from global)
+      if (
+        typeof window !== 'undefined' &&
+        (window as any)?.AudioContext !== AudioContext &&
+        typeof (window as any)?.AudioContext !== 'undefined' &&
+        (window as any)?.AudioContext !== null
+      ) {
+        return true;
+      }
+
+      // Check window webkitAudioContext (only if different from global)
+      if (
+        typeof window !== 'undefined' &&
+        (window as any)?.webkitAudioContext !==
+          (global as any)?.webkitAudioContext &&
+        typeof (window as any)?.webkitAudioContext !== 'undefined' &&
+        (window as any)?.webkitAudioContext !== null
+      ) {
+        return true;
+      }
+    } catch {
+      // If any check throws, Web Audio is not supported
+    }
+
+    return false;
   }
 
   private detectSupportedFeatures(): string[] {
@@ -158,7 +194,7 @@ function getRecoveryActions(
     case AudioContextErrorCode.RESUME_FAILED:
       actions.push({
         type: 'retry',
-        description: 'Retry AudioContext resume',
+        description: 'retry AudioContext resume',
         automatic: true,
         priority: 9,
         estimatedTime: 1000,
@@ -233,12 +269,12 @@ function getRecoveryActions(
  */
 function getSeverity(code: AudioContextErrorCode): ErrorSeverity {
   const criticalErrors = [
-    AudioContextErrorCode.NOT_SUPPORTED,
     AudioContextErrorCode.BROWSER_INCOMPATIBLE,
     AudioContextErrorCode.HARDWARE_UNAVAILABLE,
   ];
 
   const highErrors = [
+    AudioContextErrorCode.NOT_SUPPORTED,
     AudioContextErrorCode.INITIALIZATION_FAILED,
     AudioContextErrorCode.CONTEXT_CREATION_FAILED,
     AudioContextErrorCode.SYSTEM_OVERLOAD,

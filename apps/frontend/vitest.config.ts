@@ -19,5 +19,19 @@ export default defineConfig({
       reporter: ['text', 'html'],
       exclude: ['node_modules/', 'src/test/setup.ts'],
     },
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
+    pool: 'threads',
+    mockReset: true,
+    clearMocks: true,
+    restoreMocks: true,
+    deps: {
+      external: [],
+      inline: ['undici'],
+    },
+    isolate: true,
   },
 });

@@ -23,6 +23,8 @@ export class AudioContextManager {
   private static instance: AudioContextManager;
   private audioContext: AudioContext | null = null;
   private isInitialized = false;
+  private currentState: AudioContextState = 'suspended';
+  private initializationPromise: Promise<void> | null = null;
   private errorHandlers: Set<(error: AudioContextError) => void> = new Set();
   private stateChangeHandlers: Set<(state: AudioContextState) => void> =
     new Set();
@@ -44,10 +46,27 @@ export class AudioContextManager {
    * Must be called from a user interaction event (click, touch, etc.)
    */
   public async initialize(): Promise<void> {
+    // If already initialized, return immediately
     if (this.isInitialized && this.audioContext) {
       return;
     }
 
+    // If initialization is in progress, wait for it to complete
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    // Start initialization process
+    this.initializationPromise = this.performInitialization();
+    try {
+      await this.initializationPromise;
+    } finally {
+      // Clear the promise after completion (success or failure)
+      this.initializationPromise = null;
+    }
+  }
+
+  private async performInitialization(): Promise<void> {
     try {
       // Check browser support
       if (!this.isBrowserSupported()) {
@@ -72,6 +91,7 @@ export class AudioContextManager {
       }
 
       this.isInitialized = true;
+      this.currentState = this.audioContext.state as AudioContextState;
       this.notifyStateChange(this.audioContext.state as AudioContextState);
     } catch (error) {
       const audioError: AudioContextError = {
@@ -105,8 +125,7 @@ export class AudioContextManager {
    * Get current audio context state
    */
   public getState(): AudioContextState {
-    if (!this.audioContext) return 'suspended';
-    return this.audioContext.state as AudioContextState;
+    return this.currentState;
   }
 
   /**
@@ -185,6 +204,8 @@ export class AudioContextManager {
 
       this.audioContext = null;
       this.isInitialized = false;
+      this.initializationPromise = null;
+      this.currentState = 'closed';
       this.notifyStateChange('closed');
     } catch (error) {
       console.error('Error disposing AudioContext:', error);
@@ -225,6 +246,7 @@ export class AudioContextManager {
 
   private handleStateChange(): void {
     if (this.audioContext) {
+      this.currentState = this.audioContext.state as AudioContextState;
       this.notifyStateChange(this.audioContext.state as AudioContextState);
     }
   }

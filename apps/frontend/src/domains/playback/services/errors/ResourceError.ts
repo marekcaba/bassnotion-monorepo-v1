@@ -97,6 +97,20 @@ export class ResourceError extends PlaybackError {
       (this as any).utilizationPercentage = metrics.utilizationPercentage;
     }
   }
+
+  /**
+   * Override toJSON to include resource-specific properties
+   */
+  public toJSON(): Record<string, unknown> {
+    const baseJson = super.toJSON();
+    return {
+      ...baseJson,
+      resourceType: this.resourceType,
+      requestedSize: this.requestedSize,
+      availableSize: this.availableSize,
+      utilizationPercentage: this.utilizationPercentage,
+    };
+  }
 }
 
 function getResourceRecoveryActions(
@@ -203,8 +217,8 @@ export function createResourceError(
   cause?: Error,
 ): ResourceError {
   const context: Partial<ErrorContext> = {
-    currentOperation: 'Resource management',
     ...additionalContext,
+    currentOperation: 'Resource management',
   };
 
   return new ResourceError(code, message, context, cause);

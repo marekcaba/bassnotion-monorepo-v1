@@ -253,15 +253,143 @@ export class GracefulDegradation {
       return null;
     }
 
+    // First try exact match for error category + severity
     const strategyKey = this.getStrategyKey(context);
-    const strategy = this.strategies.get(strategyKey);
+    let strategy = this.strategies.get(strategyKey);
 
     if (strategy) {
-      return strategy;
+      // Check if the proposed strategy would be a downgrade
+      if (
+        this.isDegradationDowngrade(
+          strategy.level,
+          context.currentDegradationLevel,
+        )
+      ) {
+        return null; // Don't downgrade
+      }
+      return this.adjustStrategyForContext(strategy, context);
+    }
+
+    // Try fallback strategies based on user preferences and device capabilities
+    strategy = this.getContextualStrategy(context);
+    if (strategy) {
+      // Check if the proposed strategy would be a downgrade
+      if (
+        this.isDegradationDowngrade(
+          strategy.level,
+          context.currentDegradationLevel,
+        )
+      ) {
+        return null; // Don't downgrade
+      }
+      return this.adjustStrategyForContext(strategy, context);
     }
 
     // Fallback to general strategies based on error severity
-    return this.getGeneralStrategy(context);
+    const generalStrategy = this.getGeneralStrategy(context);
+    if (generalStrategy) {
+      // Check if the proposed strategy would be a downgrade
+      if (
+        this.isDegradationDowngrade(
+          generalStrategy.level,
+          context.currentDegradationLevel,
+        )
+      ) {
+        return null; // Don't downgrade
+      }
+    }
+    return generalStrategy;
+  }
+
+  /**
+   * Get strategy considering user preferences and device capabilities
+   */
+  private getContextualStrategy(
+    context: DegradationContext,
+  ): DegradationStrategy | undefined {
+    // Check for network conditions with user preferences
+    if (
+      context.errorCategory === ErrorCategory.NETWORK &&
+      context.userPreferences.enableOfflineMode
+    ) {
+      if (
+        context.errorSeverity === ErrorSeverity.MEDIUM ||
+        context.errorSeverity === ErrorSeverity.HIGH
+      ) {
+        return this.strategies.get('network_high');
+      }
+    }
+
+    // Check for low-end device with medium severity issues
+    if (
+      context.deviceCapabilities.isLowEnd &&
+      context.errorSeverity === ErrorSeverity.MEDIUM
+    ) {
+      return this.strategies.get('low_end_device');
+    }
+
+    // Check for user preference for performance over quality
+    if (context.userPreferences.preferPerformanceOverQuality) {
+      if (context.errorSeverity === ErrorSeverity.MEDIUM) {
+        // Use more aggressive degradation when user prefers performance
+        return this.strategies.get('performance_high');
+      }
+    }
+
+    // Network condition degradation for data saving preference
+    if (
+      context.userPreferences.allowDataSaving &&
+      (context.deviceCapabilities.networkCondition === 'poor' ||
+        context.deviceCapabilities.networkCondition === 'fair')
+    ) {
+      return this.strategies.get('network_high');
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Adjust strategy based on context (add more affected features if needed)
+   */
+  private adjustStrategyForContext(
+    strategy: DegradationStrategy,
+    context: DegradationContext,
+  ): DegradationStrategy {
+    // Clone the strategy to avoid mutating the original
+    const adjustedStrategy = { ...strategy };
+
+    // Add additional affected features based on context
+    const additionalFeatures: FeatureCategory[] = [];
+
+    // If user prefers performance, add performance monitoring to affected features
+    if (
+      context.userPreferences.preferPerformanceOverQuality &&
+      strategy.level !== DegradationLevel.MINIMAL
+    ) {
+      additionalFeatures.push(FeatureCategory.PERFORMANCE_MONITORING);
+    }
+
+    // If data saving is preferred, affect network features
+    if (context.userPreferences.allowDataSaving) {
+      additionalFeatures.push(FeatureCategory.NETWORK_FEATURES);
+    }
+
+    // If memory pressure is high, add background processing
+    if (
+      context.deviceCapabilities.memoryPressure === 'high' ||
+      context.deviceCapabilities.memoryPressure === 'critical'
+    ) {
+      additionalFeatures.push(FeatureCategory.BACKGROUND_PROCESSING);
+    }
+
+    // Merge additional features (avoiding duplicates)
+    const mergedFeatures = new Set([
+      ...strategy.affectedFeatures,
+      ...additionalFeatures,
+    ]);
+    adjustedStrategy.affectedFeatures = Array.from(mergedFeatures);
+
+    return adjustedStrategy;
   }
 
   /**
@@ -282,6 +410,12 @@ export class GracefulDegradation {
           return this.strategies.get('low_end_device') || null;
         }
         return this.strategies.get('moderate_degradation') || null;
+
+      case ErrorSeverity.LOW: {
+        // For low severity, try category-specific minimal strategies
+        const lowSeverityKey = `${context.errorCategory}_low`;
+        return this.strategies.get(lowSeverityKey) || null;
+      }
 
       default:
         return null;
@@ -350,6 +484,28 @@ export class GracefulDegradation {
         }
       });
     }
+  }
+
+  /**
+   * Check if applying a strategy would be a downgrade from current level
+   */
+  private isDegradationDowngrade(
+    proposedLevel: DegradationLevel,
+    currentLevel: DegradationLevel,
+  ): boolean {
+    const levelOrder = [
+      DegradationLevel.NONE,
+      DegradationLevel.MINIMAL,
+      DegradationLevel.MODERATE,
+      DegradationLevel.SEVERE,
+      DegradationLevel.CRITICAL,
+    ];
+
+    const currentIndex = levelOrder.indexOf(currentLevel);
+    const proposedIndex = levelOrder.indexOf(proposedLevel);
+
+    // If proposed level is lower than current level, it's a downgrade
+    return proposedIndex < currentIndex;
   }
 
   /**
@@ -443,7 +599,7 @@ export class GracefulDegradation {
 
     // Network Issues
     this.strategies.set('network_high', {
-      level: DegradationLevel.MODERATE,
+      level: DegradationLevel.SEVERE,
       description: 'Enable offline mode and use cached content',
       affectedFeatures: [FeatureCategory.NETWORK_FEATURES],
       fallbackActions: [
@@ -513,6 +669,82 @@ export class GracefulDegradation {
       estimatedImpact: 25,
     });
 
+    // Minimal degradation strategies for low severity errors
+    this.strategies.set('performance_low', {
+      level: DegradationLevel.MINIMAL,
+      description: 'Minor performance optimizations for low severity issues',
+      affectedFeatures: [FeatureCategory.AUDIO_EFFECTS],
+      fallbackActions: [
+        {
+          type: 'reduce',
+          target: 'audio_effects_quality',
+          description: 'Slightly reduce audio effects quality',
+          implementation: async () => {
+            console.log('Minimal degradation: reducing audio effects quality');
+            return true;
+          },
+          rollback: async () => {
+            console.log('Restoring full audio effects quality');
+            return true;
+          },
+        },
+      ],
+      userMessage: 'Minor optimizations applied for better performance.',
+      technicalDetails: 'Low severity performance issue detected',
+      canRecover: true,
+      estimatedImpact: 10,
+    });
+
+    this.strategies.set('audio_context_low', {
+      level: DegradationLevel.MINIMAL,
+      description: 'Minor audio context optimizations',
+      affectedFeatures: [FeatureCategory.AUDIO_EFFECTS],
+      fallbackActions: [
+        {
+          type: 'reduce',
+          target: 'audio_context_features',
+          description: 'Reduce non-essential audio context features',
+          implementation: async () => {
+            console.log('Minimal degradation: reducing audio context features');
+            return true;
+          },
+          rollback: async () => {
+            console.log('Restoring full audio context features');
+            return true;
+          },
+        },
+      ],
+      userMessage: 'Audio optimizations applied.',
+      technicalDetails: 'Low severity audio context issue detected',
+      canRecover: true,
+      estimatedImpact: 15,
+    });
+
+    this.strategies.set('network_low', {
+      level: DegradationLevel.MINIMAL,
+      description: 'Minor network optimizations',
+      affectedFeatures: [FeatureCategory.BACKGROUND_PROCESSING],
+      fallbackActions: [
+        {
+          type: 'reduce',
+          target: 'background_sync',
+          description: 'Reduce background synchronization frequency',
+          implementation: async () => {
+            console.log('Minimal degradation: reducing background sync');
+            return true;
+          },
+          rollback: async () => {
+            console.log('Restoring normal background sync');
+            return true;
+          },
+        },
+      ],
+      userMessage: 'Network usage optimized.',
+      technicalDetails: 'Low severity network issue detected',
+      canRecover: true,
+      estimatedImpact: 5,
+    });
+
     // Critical Fallback
     this.strategies.set('critical_fallback', {
       level: DegradationLevel.CRITICAL,
@@ -548,5 +780,198 @@ export class GracefulDegradation {
       canRecover: true,
       estimatedImpact: 75,
     });
+
+    // High Severity Fallback
+    this.strategies.set('high_severity_fallback', {
+      level: DegradationLevel.SEVERE,
+      description: 'High severity error fallback strategy',
+      affectedFeatures: [
+        FeatureCategory.AUDIO_EFFECTS,
+        FeatureCategory.VISUALIZATION,
+        FeatureCategory.BACKGROUND_PROCESSING,
+      ],
+      fallbackActions: [
+        {
+          type: 'disable',
+          target: 'non_critical_features',
+          description: 'Disable non-critical features',
+          implementation: async () => {
+            console.log('High severity: disabling non-critical features');
+            return true;
+          },
+          rollback: async () => {
+            console.log('Attempting to restore non-critical features');
+            return true;
+          },
+        },
+      ],
+      userMessage: 'Some features temporarily disabled due to system issues.',
+      technicalDetails: 'High severity error detected, reducing functionality',
+      canRecover: true,
+      estimatedImpact: 50,
+    });
+
+    // Moderate Degradation
+    this.strategies.set('moderate_degradation', {
+      level: DegradationLevel.MODERATE,
+      description: 'Moderate degradation for medium severity issues',
+      affectedFeatures: [
+        FeatureCategory.AUDIO_EFFECTS,
+        FeatureCategory.VISUALIZATION,
+      ],
+      fallbackActions: [
+        {
+          type: 'reduce',
+          target: 'feature_quality',
+          description: 'Reduce feature quality',
+          implementation: async () => {
+            console.log('Moderate degradation: reducing feature quality');
+            return true;
+          },
+          rollback: async () => {
+            console.log('Restoring original feature quality');
+            return true;
+          },
+        },
+      ],
+      userMessage: 'Running in reduced quality mode for better stability.',
+      technicalDetails: 'Medium severity issue, applying quality reduction',
+      canRecover: true,
+      estimatedImpact: 25,
+    });
+
+    // Add more specific error category + severity combinations
+    this.strategies.set('performance_critical', {
+      level: DegradationLevel.CRITICAL,
+      description: 'Critical performance issues require severe degradation',
+      affectedFeatures: [
+        FeatureCategory.AUDIO_EFFECTS,
+        FeatureCategory.VISUALIZATION,
+        FeatureCategory.BACKGROUND_PROCESSING,
+        FeatureCategory.PERFORMANCE_MONITORING,
+      ],
+      fallbackActions: [
+        {
+          type: 'disable',
+          target: 'performance_heavy_features',
+          description: 'Disable all performance-heavy features',
+          implementation: async () => {
+            console.log('Critical performance issue: disabling heavy features');
+            return true;
+          },
+          rollback: async () => {
+            console.log('Attempting to restore performance features');
+            return true;
+          },
+        },
+      ],
+      userMessage: 'Performance mode active. Advanced features disabled.',
+      technicalDetails: 'Critical performance degradation detected',
+      canRecover: true,
+      estimatedImpact: 70,
+    });
+
+    this.strategies.set('audio_context_high', {
+      level: DegradationLevel.SEVERE,
+      description: 'High severity audio context issues',
+      affectedFeatures: [
+        FeatureCategory.AUDIO_CONTEXT,
+        FeatureCategory.AUDIO_EFFECTS,
+      ],
+      fallbackActions: [
+        {
+          type: 'fallback',
+          target: 'audio_context',
+          description: 'Use fallback audio context',
+          implementation: async () => {
+            console.log('Using fallback audio context');
+            return true;
+          },
+          rollback: async () => {
+            console.log('Attempting to restore primary audio context');
+            return true;
+          },
+        },
+      ],
+      userMessage: 'Audio quality reduced due to browser limitations.',
+      technicalDetails: 'Audio context high severity error',
+      canRecover: true,
+      estimatedImpact: 60,
+    });
+
+    this.strategies.set('resource_high', {
+      level: DegradationLevel.SEVERE,
+      description: 'High severity resource issues',
+      affectedFeatures: [
+        FeatureCategory.AUDIO_EFFECTS,
+        FeatureCategory.VISUALIZATION,
+        FeatureCategory.BACKGROUND_PROCESSING,
+        FeatureCategory.PERFORMANCE_MONITORING,
+        FeatureCategory.PLUGIN_SYSTEM,
+      ],
+      fallbackActions: [
+        {
+          type: 'disable',
+          target: 'resource_intensive_features',
+          description: 'Disable resource-intensive features',
+          implementation: async () => {
+            console.log('Disabling resource-intensive features');
+            return true;
+          },
+          rollback: async () => {
+            console.log('Attempting to restore resource features');
+            return true;
+          },
+        },
+      ],
+      userMessage:
+        'Resource usage optimized. Some features temporarily disabled.',
+      technicalDetails: 'High resource usage detected',
+      canRecover: true,
+      estimatedImpact: 45,
+    });
+
+    this.strategies.set('network_critical', {
+      level: DegradationLevel.CRITICAL,
+      description: 'Critical network failure - full offline mode',
+      affectedFeatures: [
+        FeatureCategory.NETWORK_FEATURES,
+        FeatureCategory.PLUGIN_SYSTEM,
+      ],
+      fallbackActions: [
+        {
+          type: 'offline',
+          target: 'all_network_features',
+          description: 'Switch to full offline mode',
+          implementation: async () => {
+            console.log('Critical network failure: full offline mode');
+            return true;
+          },
+          rollback: async () => {
+            console.log('Attempting to restore network features');
+            return true;
+          },
+        },
+      ],
+      userMessage: 'Working offline. Network features unavailable.',
+      technicalDetails: 'Critical network failure detected',
+      canRecover: true,
+      estimatedImpact: 80,
+    });
+  }
+
+  /**
+   * Reset degradation system to initial state
+   */
+  public reset(): void {
+    this.state = {
+      currentLevel: DegradationLevel.NONE,
+      activeStrategies: [],
+      disabledFeatures: new Set(),
+      appliedActions: [],
+      lastUpdate: Date.now(),
+      recoveryAttempts: 0,
+    };
+    this.eventHandlers.clear();
   }
 }

@@ -15,6 +15,7 @@ import {
   PluginState,
   PluginCapabilities,
   PluginParameter,
+  PluginParameterType,
   PluginEvents,
   PluginAudioContext,
   PluginProcessingResult,
@@ -78,14 +79,13 @@ export abstract class BaseAudioPlugin implements AudioPlugin {
   }
 
   public async initialize(context: PluginAudioContext): Promise<void> {
-    if (this._state !== PluginState.LOADED) {
-      throw new Error(
-        `Plugin ${this.metadata.id} must be loaded before initialization`,
-      );
-    }
-
     try {
-      this._state = PluginState.INITIALIZING;
+      if (this._state !== PluginState.LOADED) {
+        throw new Error(
+          `Plugin ${this.metadata.id} must be loaded before initialization`,
+        );
+      }
+
       this._audioContext = context;
       await this.onInitialize(context);
       this._state = PluginState.INACTIVE;
@@ -98,13 +98,13 @@ export abstract class BaseAudioPlugin implements AudioPlugin {
   }
 
   public async activate(): Promise<void> {
-    if (this._state !== PluginState.INACTIVE) {
-      throw new Error(
-        `Plugin ${this.metadata.id} must be inactive before activation`,
-      );
-    }
-
     try {
+      if (this._state !== PluginState.INACTIVE) {
+        throw new Error(
+          `Plugin ${this.metadata.id} must be inactive before activation`,
+        );
+      }
+
       await this.onActivate();
       this._state = PluginState.ACTIVE;
       this.emit('activated');
@@ -116,13 +116,13 @@ export abstract class BaseAudioPlugin implements AudioPlugin {
   }
 
   public async deactivate(): Promise<void> {
-    if (this._state !== PluginState.ACTIVE) {
-      throw new Error(
-        `Plugin ${this.metadata.id} must be active before deactivation`,
-      );
-    }
-
     try {
+      if (this._state !== PluginState.ACTIVE) {
+        throw new Error(
+          `Plugin ${this.metadata.id} must be active before deactivation`,
+        );
+      }
+
       await this.onDeactivate();
       this._state = PluginState.INACTIVE;
       this.emit('deactivated');
@@ -349,16 +349,28 @@ export abstract class BaseAudioPlugin implements AudioPlugin {
     value: unknown,
   ): unknown {
     switch (parameter.type) {
-      case 'number': {
+      case PluginParameterType.NUMBER:
+      case PluginParameterType.FLOAT:
+      case 'number':
+      case 'float': {
         const numValue = Number(value);
         if (isNaN(numValue)) {
           throw new Error(`Parameter ${parameter.id} must be a number`);
         }
-        if (parameter.min !== undefined && numValue < parameter.min) {
-          return parameter.min;
+
+        // Check bounds and throw error instead of clamping
+        const minValue = parameter.min ?? parameter.minValue;
+        const maxValue = parameter.max ?? parameter.maxValue;
+
+        if (minValue !== undefined && numValue < minValue) {
+          throw new Error(
+            `Parameter ${parameter.id} value ${numValue} is below minimum ${minValue}`,
+          );
         }
-        if (parameter.max !== undefined && numValue > parameter.max) {
-          return parameter.max;
+        if (maxValue !== undefined && numValue > maxValue) {
+          throw new Error(
+            `Parameter ${parameter.id} value ${numValue} is above maximum ${maxValue}`,
+          );
         }
         return numValue;
       }

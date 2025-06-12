@@ -13,3 +13,6 @@ export * from './auth-schemas.js';
 
 // User profile validation
 export * from './user-schemas.js';
+
+// Playback domain validation - NEW for Task 15
+export * from './playback-schemas.js';

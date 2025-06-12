@@ -1,274 +1,260 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { INestApplication, Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
+import { Logger } from '@nestjs/common';
 
 import { DatabaseModule } from '../../../../infrastructure/database/database.module.js';
 import { AuthModule } from '../../auth/auth.module.js';
 import { AuthService } from '../../auth/auth.service.js';
+import { DatabaseService } from '../../../../infrastructure/database/database.service.js';
+import { AuthSecurityService } from '../../auth/services/auth-security.service.js';
+import { PasswordSecurityService } from '../../auth/services/password-security.service.js';
+
+const testConfig = {
+  SUPABASE_URL: process.env.SUPABASE_URL || 'http://localhost:54321',
+  SUPABASE_SERVICE_ROLE_KEY:
+    process.env.SUPABASE_SERVICE_ROLE_KEY || 'your-super-secret-key',
+  SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || 'your-anon-key',
+  JWT_SECRET: process.env.JWT_SECRET || 'your-jwt-secret',
+  NODE_ENV: 'test',
+  RATE_LIMIT_TTL: 60,
+  RATE_LIMIT_MAX: 20,
+  DATABASE_URL: 'postgresql://test',
+};
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [() => testConfig],
+    }),
+  ],
+})
+class TestConfigModule {}
 
 describe('Auth Security Integration Tests', () => {
   let app: INestApplication;
   let authService: AuthService;
+  let databaseService: DatabaseService;
+  let authSecurityService: AuthSecurityService;
+  let passwordSecurityService: PasswordSecurityService;
+  let configService: ConfigService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-          envFilePath: 'apps/backend/.env.test',
-        }),
-        DatabaseModule,
-        AuthModule,
-      ],
+      imports: [TestConfigModule, DatabaseModule, AuthModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    await app.init();
 
+    // Get service instances
     authService = moduleFixture.get<AuthService>(AuthService);
+    databaseService = moduleFixture.get<DatabaseService>(DatabaseService);
+    authSecurityService =
+      moduleFixture.get<AuthSecurityService>(AuthSecurityService);
+    passwordSecurityService = moduleFixture.get<PasswordSecurityService>(
+      PasswordSecurityService,
+    );
+    configService = moduleFixture.get<ConfigService>(ConfigService);
+
+    // Log service initialization state
+    const logger = moduleFixture.get(Logger);
+    logger.debug('Test module initialized with services:', {
+      hasAuthService: !!authService,
+      hasDatabaseService: !!databaseService,
+      hasAuthSecurityService: !!authSecurityService,
+      hasPasswordSecurityService: !!passwordSecurityService,
+      hasConfigService: !!configService,
+      databaseServiceType: databaseService?.constructor?.name,
+      isSupabaseInitialized: !!databaseService?.supabase,
+    });
+
+    await app.init();
   });
 
   afterAll(async () => {
     await app.close();
   });
 
+  beforeEach(async () => {
+    // Clean up test data before each test
+    if (databaseService?.supabase) {
+      await databaseService.supabase
+        .from('login_attempts')
+        .delete()
+        .neq('id', 0); // Delete all records
+    }
+  });
+
   describe('🔐 HaveIBeenPwned Password Security Integration', () => {
     describe('Registration Flow Security', () => {
       it('should block registration with commonly compromised password', async () => {
-        const compromisedPassword = 'password123'; // Known compromised password
-
         const response = await request(app.getHttpServer())
           .post('/auth/signup')
           .send({
-            email: 'test-security@example.com',
-            password: compromisedPassword,
-            displayName: 'Security Test User',
-          })
-          .expect(200);
+            email: 'test@example.com',
+            password: 'password123',
+            displayName: 'Test User',
+          });
 
+        expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
-        expect(response.body.error.code).toBe('COMPROMISED_PASSWORD');
-        expect(response.body.message).toContain('data breaches');
+        expect(response.body.error).toContain('commonly used password');
       });
 
       it('should block registration with weak password', async () => {
-        const weakPassword = '123';
-
         const response = await request(app.getHttpServer())
           .post('/auth/signup')
           .send({
-            email: 'test-weak@example.com',
-            password: weakPassword,
-            displayName: 'Weak Password Test',
-          })
-          .expect(200);
+            email: 'test@example.com',
+            password: 'weak',
+            displayName: 'Test User',
+          });
 
+        expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
-        expect(response.body.error.code).toBe('WEAK_PASSWORD');
-        expect(response.body.error.details).toContain('12 characters');
+        expect(response.body.error).toContain('password requirements');
       });
 
       it('should allow registration with strong, uncompromised password', async () => {
-        const strongPassword = 'SecureTestP@ssw0rd2024!';
-
         const response = await request(app.getHttpServer())
           .post('/auth/signup')
           .send({
-            email: `secure-${Date.now()}@example.com`,
-            password: strongPassword,
-            displayName: 'Secure Test User',
-          })
-          .expect(201);
+            email: 'test@example.com',
+            password: 'vK9#mP2$nL5@xR8',
+            displayName: 'Test User',
+          });
 
+        expect(response.status).toBe(201);
         expect(response.body.success).toBe(true);
         expect(response.body.data.user).toBeDefined();
       });
     });
 
     describe('Login Flow Security', () => {
-      let testUser: any;
+      it('should handle login attempts properly', async () => {
+        // First create a user
+        await request(app.getHttpServer()).post('/auth/signup').send({
+          email: 'login-test@example.com',
+          password: 'vK9#mP2$nL5@xR8',
+          displayName: 'Login Test User',
+        });
 
-      beforeAll(async () => {
-        // Create a test user with a strong password
-        const strongPassword = 'SecureTestLogin2024!';
-        const signupResponse = await request(app.getHttpServer())
-          .post('/auth/signup')
+        // Test successful login
+        const successResponse = await request(app.getHttpServer())
+          .post('/auth/signin')
           .send({
-            email: `logintest-${Date.now()}@example.com`,
-            password: strongPassword,
-            displayName: 'Login Test User',
+            email: 'login-test@example.com',
+            password: 'vK9#mP2$nL5@xR8',
           });
 
-        testUser = {
-          email: signupResponse.body.data.user.email,
-          password: strongPassword,
-        };
-      });
+        expect(successResponse.status).toBe(200);
+        expect(successResponse.body.success).toBe(true);
+        expect(successResponse.body.data.session).toBeDefined();
 
-      it('should provide security warning for user with compromised password', async () => {
-        // This test simulates a user who registered before our security enhancement
-        // and now has a password that appears in breaches
-        const response = await request(app.getHttpServer())
+        // Test failed login
+        const failedResponse = await request(app.getHttpServer())
           .post('/auth/signin')
           .send({
-            email: testUser.email,
-            password: testUser.password, // Use valid password for successful login
-          })
-          .expect(200);
+            email: 'login-test@example.com',
+            password: 'wrongpassword',
+          });
 
-        expect(response.body.success).toBe(true);
-        // For a secure password, there should be no warning
-        expect(response.body.message).not.toContain('compromised');
-      });
-
-      it('should allow checking password security for authenticated users', async () => {
-        // First login to get token
-        const loginResponse = await request(app.getHttpServer())
-          .post('/auth/signin')
-          .send({
-            email: testUser.email,
-            password: testUser.password,
-          })
-          .expect(200);
-
-        const token = loginResponse.body.data.session.accessToken;
-
-        // Check password security
-        const securityResponse = await request(app.getHttpServer())
-          .post('/auth/check-password-security')
-          .set('Authorization', `Bearer ${token}`)
-          .send({
-            password: 'password123', // Test with compromised password
-          })
-          .expect(200);
-
-        expect(securityResponse.body.success).toBe(true);
-        expect(securityResponse.body.data.isCompromised).toBe(true);
-        expect(securityResponse.body.data.breachCount).toBeGreaterThan(0);
-        expect(securityResponse.body.data.recommendation).toBeDefined();
+        expect(failedResponse.status).toBe(401);
+        expect(failedResponse.body.success).toBe(false);
       });
     });
   });
 
   describe('🛡️ Rate Limiting & Account Lockout Security', () => {
-    const testEmail = `ratelimit-${Date.now()}@example.com`;
-
     it('should enforce rate limiting on login attempts', async () => {
-      const requests = [];
+      const testEmail = 'ratelimit@example.com';
+      const testPassword = 'wrongpassword';
 
-      // Make 21 rapid login attempts (rate limit is 20 per IP)
-      for (let i = 0; i < 21; i++) {
-        requests.push(
-          request(app.getHttpServer()).post('/auth/signin').send({
+      // Make multiple login attempts
+      for (let i = 0; i < 6; i++) {
+        const response = await request(app.getHttpServer())
+          .post('/auth/signin')
+          .send({
             email: testEmail,
-            password: 'wrongpassword',
-          }),
-        );
+            password: testPassword,
+          });
+
+        if (i < 5) {
+          expect(response.status).toBe(401);
+        } else {
+          expect(response.status).toBe(429);
+          expect(response.body.error).toContain('Too many login attempts');
+        }
       }
-
-      const responses = await Promise.all(requests);
-
-      // Check that at least one request was rate limited
-      const rateLimitedResponse = responses.find(
-        (res) => res.body.error?.code === 'RATE_LIMITED',
-      );
-
-      expect(rateLimitedResponse).toBeDefined();
-    }, 10000);
+    });
 
     it('should implement progressive account lockout', async () => {
-      const lockoutEmail = `lockout-${Date.now()}@example.com`;
+      const testEmail = 'lockout@example.com';
+      const testPassword = 'wrongpassword';
 
-      // Make 6 failed attempts (lockout threshold is 5)
+      // Make multiple failed login attempts
       for (let i = 0; i < 6; i++) {
-        await request(app.getHttpServer()).post('/auth/signin').send({
-          email: lockoutEmail,
-          password: 'wrongpassword',
-        });
+        const response = await request(app.getHttpServer())
+          .post('/auth/signin')
+          .send({
+            email: testEmail,
+            password: testPassword,
+          });
 
-        // Small delay between attempts
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        if (i < 5) {
+          expect(response.status).toBe(401);
+        } else {
+          expect(response.status).toBe(423);
+          expect(response.body.error).toContain(
+            'Account is temporarily locked',
+          );
+        }
       }
-
-      // The 7th attempt should be blocked due to account lockout
-      const response = await request(app.getHttpServer())
-        .post('/auth/signin')
-        .send({
-          email: lockoutEmail,
-          password: 'wrongpassword',
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.error.code).toBe('ACCOUNT_LOCKED');
-    }, 15000);
+    });
   });
 
   describe('🔒 Authentication & Authorization Security', () => {
-    let validToken: string;
-    let testUserEmail: string;
-
-    beforeAll(async () => {
-      testUserEmail = `authtest-${Date.now()}@example.com`;
-      const strongPassword = 'AuthTestP@ssw0rd2024!';
-
-      // Create test user
-      await request(app.getHttpServer()).post('/auth/signup').send({
-        email: testUserEmail,
-        password: strongPassword,
-        displayName: 'Auth Test User',
-      });
-
-      // Login to get valid token
-      const loginResponse = await request(app.getHttpServer())
-        .post('/auth/signin')
-        .send({
-          email: testUserEmail,
-          password: strongPassword,
-        });
-
-      validToken = loginResponse.body.data.session.accessToken;
-    });
-
     it('should protect endpoints with AuthGuard', async () => {
-      // Try to access protected endpoint without token
-      await request(app.getHttpServer()).get('/auth/me').expect(401);
-
-      // Try with invalid token
-      await request(app.getHttpServer())
-        .get('/auth/me')
-        .set('Authorization', 'Bearer invalid-token')
-        .expect(401);
-
-      // Should work with valid token
       const response = await request(app.getHttpServer())
-        .get('/auth/me')
-        .set('Authorization', `Bearer ${validToken}`)
-        .expect(200);
+        .get('/auth/profile')
+        .send();
 
-      expect(response.body.email).toBe(testUserEmail);
+      expect(response.status).toBe(401);
     });
 
     it('should validate JWT tokens properly', async () => {
-      // Test with malformed token
-      await request(app.getHttpServer())
-        .get('/auth/me')
-        .set('Authorization', 'Bearer malformed.jwt.token')
-        .expect(401);
+      // First create and login a user
+      await request(app.getHttpServer()).post('/auth/signup').send({
+        email: 'jwt-test@example.com',
+        password: 'vK9#mP2$nL5@xR8',
+        displayName: 'JWT Test User',
+      });
 
-      // Test with empty Authorization header
-      await request(app.getHttpServer())
-        .get('/auth/me')
-        .set('Authorization', '')
-        .expect(401);
+      const loginResponse = await request(app.getHttpServer())
+        .post('/auth/signin')
+        .send({
+          email: 'jwt-test@example.com',
+          password: 'vK9#mP2$nL5@xR8',
+        });
 
-      // Test with wrong format
-      await request(app.getHttpServer())
-        .get('/auth/me')
-        .set('Authorization', 'Basic sometoken')
-        .expect(401);
+      const token = loginResponse.body.data.session.access_token;
+
+      // Test protected endpoint with valid token
+      const validResponse = await request(app.getHttpServer())
+        .get('/auth/profile')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(validResponse.status).toBe(200);
+
+      // Test with invalid token
+      const invalidResponse = await request(app.getHttpServer())
+        .get('/auth/profile')
+        .set('Authorization', 'Bearer invalid-token');
+
+      expect(invalidResponse.status).toBe(401);
     });
   });
 
@@ -277,13 +263,13 @@ describe('Auth Security Integration Tests', () => {
       const response = await request(app.getHttpServer())
         .post('/auth/signup')
         .send({
-          email: 'invalid-email-format',
-          password: 'ValidP@ssw0rd123!',
+          email: 'invalid-email',
+          password: 'vK9#mP2$nL5@xR8',
           displayName: 'Test User',
-        })
-        .expect(400);
+        });
 
-      expect(response.body.error).toBeDefined();
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain('email');
     });
 
     it('should validate password requirements', async () => {
@@ -291,12 +277,12 @@ describe('Auth Security Integration Tests', () => {
         .post('/auth/signup')
         .send({
           email: 'test@example.com',
-          password: '', // Empty password
+          password: '123',
           displayName: 'Test User',
-        })
-        .expect(400);
+        });
 
-      expect(response.body.error).toBeDefined();
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain('password');
     });
 
     it('should validate display name requirements', async () => {
@@ -304,34 +290,32 @@ describe('Auth Security Integration Tests', () => {
         .post('/auth/signup')
         .send({
           email: 'test@example.com',
-          password: 'ValidP@ssw0rd123!',
-          displayName: '', // Empty display name
-        })
-        .expect(400);
+          password: 'vK9#mP2$nL5@xR8',
+          displayName: '',
+        });
 
-      expect(response.body.error).toBeDefined();
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain('display name');
     });
 
     it('should handle malformed JSON gracefully', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/auth/signup')
         .set('Content-Type', 'application/json')
-        .send('{ invalid json }')
-        .expect(400);
+        .send('{"malformed json');
+
+      expect(response.status).toBe(400);
     });
 
     it('should prevent SQL injection attempts', async () => {
-      const sqlInjectionPayload = "'; DROP TABLE users; --";
-
       const response = await request(app.getHttpServer())
         .post('/auth/signin')
         .send({
-          email: sqlInjectionPayload,
-          password: 'password',
-        })
-        .expect(400); // Should be rejected by validation
+          email: "' OR '1'='1",
+          password: "' OR '1'='1",
+        });
 
-      expect(response.body.success).toBe(false);
+      expect(response.status).toBe(401);
     });
   });
 
@@ -341,45 +325,55 @@ describe('Auth Security Integration Tests', () => {
         .post('/auth/signin')
         .send({
           email: 'nonexistent@example.com',
-          password: 'wrongpassword',
-        })
-        .expect(200);
+          password: 'somepassword',
+        });
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Invalid credentials');
-      expect(response.body.error.code).toBe('INVALID_CREDENTIALS');
-
-      // Should not expose database errors or stack traces
-      expect(response.body.error.details).not.toContain('database');
-      expect(response.body.error.details).not.toContain('stack');
-      expect(response.body.error.details).not.toContain('supabase');
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Invalid email or password');
+      expect(response.body.error).not.toContain('SQL');
+      expect(response.body.error).not.toContain('database');
     });
 
     it('should handle database connection errors gracefully', async () => {
-      // This test would require mocking database failures
-      // For now, we ensure the service handles errors properly
-      expect(authService).toBeDefined();
+      // Temporarily break database connection
+      const originalSupabase = databaseService.supabase;
+      // @ts-expect-error Intentionally setting to null for testing
+      databaseService.supabase = null;
+
+      const response = await request(app.getHttpServer())
+        .post('/auth/signin')
+        .send({
+          email: 'test@example.com',
+          password: 'password123',
+        });
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('An unexpected error occurred');
+
+      // Restore database connection
+      databaseService.supabase = originalSupabase;
     });
   });
 
   describe('🌐 Security Headers & CORS', () => {
     it('should set security headers on responses', async () => {
       const response = await request(app.getHttpServer())
-        .get('/auth/me')
-        .expect(401); // Expect 401 but check headers
+        .get('/auth/profile')
+        .send();
 
-      // These headers should be set by the framework/deployment
-      // In a real deployment, we'd check for CSP, X-Frame-Options, etc.
-      expect(response.headers).toBeDefined();
+      expect(response.headers['x-content-type-options']).toBe('nosniff');
+      expect(response.headers['x-frame-options']).toBe('SAMEORIGIN');
+      expect(response.headers['x-xss-protection']).toBe('1; mode=block');
     });
 
     it('should handle CORS properly', async () => {
       const response = await request(app.getHttpServer())
         .options('/auth/signin')
-        .set('Origin', process.env.FRONTEND_URL || 'http://localhost:3000')
-        .expect(204);
+        .set('Origin', 'http://example.com')
+        .set('Access-Control-Request-Method', 'POST');
 
       expect(response.headers['access-control-allow-origin']).toBeDefined();
+      expect(response.headers['access-control-allow-methods']).toBeDefined();
     });
   });
 });

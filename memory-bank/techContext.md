@@ -149,10 +149,6 @@ Both frontend and backend follow consistent domain organization:
 - **`social/`**: Community features, sharing, collaboration
 - **`widgets/`**: Reusable components, specialized tools
 
-**Frontend-Specific:**
-
-- **`playbook/`**: Practice session management and tools
-
 ## Technical Constraints
 
 ### **Performance Requirements**

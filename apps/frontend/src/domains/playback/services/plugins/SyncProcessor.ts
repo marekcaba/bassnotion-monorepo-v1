@@ -935,6 +935,15 @@ export class SyncProcessor extends BaseAudioPlugin {
     });
 
     this.addParameter({
+      id: 'tempoRange',
+      name: 'Tempo Range',
+      type: PluginParameterType.ARRAY,
+      defaultValue: [60, 180],
+      automatable: false,
+      description: 'Tempo detection range (BPM)',
+    });
+
+    this.addParameter({
       id: 'tempoStability',
       name: 'Tempo Stability',
       type: PluginParameterType.FLOAT,
@@ -963,7 +972,7 @@ export class SyncProcessor extends BaseAudioPlugin {
       defaultValue: 0,
       minValue: -180,
       maxValue: 180,
-      unit: '°',
+      unit: 'degrees',
       automatable: true,
       description: 'Phase correction amount',
     });
@@ -975,7 +984,7 @@ export class SyncProcessor extends BaseAudioPlugin {
       defaultValue: 10,
       minValue: 0,
       maxValue: 90,
-      unit: '°',
+      unit: 'degrees',
       automatable: true,
       description: 'Phase alignment tolerance',
     });
@@ -1058,7 +1067,7 @@ export class SyncProcessor extends BaseAudioPlugin {
       type: PluginParameterType.FLOAT,
       defaultValue: 100,
       minValue: 10,
-      maxValue: 1000,
+      maxValue: 4096,
       unit: 'ms',
       automatable: true,
       description: 'Alignment window size',

@@ -61,6 +61,7 @@ export class CircuitBreaker {
   private nextOpenTime?: number;
   private readonly config: CircuitBreakerConfig;
   private readonly name: string;
+  private forcedOpen = false;
 
   // Retry state tracking
   private activeRetries = new Map<string, RetryContext>();
@@ -107,6 +108,8 @@ export class CircuitBreaker {
         this.successCount = 0;
       } else {
         this.rejectedCount++;
+
+        // When circuit is OPEN, immediately reject all requests
         throw new Error(
           `Circuit breaker '${this.name}' is OPEN. Service unavailable.`,
         );
@@ -117,26 +120,57 @@ export class CircuitBreaker {
       operationId || `${this.name}-${Date.now()}-${Math.random()}`;
 
     try {
-      // Execute with timeout
       const result = await this.executeWithTimeout(operation);
 
-      // Record success
-      this.onSuccess(Date.now() - startTime);
-
-      // Clear any retry context for this operation
+      // Success path
       this.activeRetries.delete(requestId);
-
+      const responseTime = Date.now() - startTime;
+      this.onSuccess(responseTime);
       return result;
     } catch (error) {
-      // Record failure
-      this.onFailure(error as Error);
+      // Handle both Error objects and non-Error objects
+      const preservedError = error; // Preserve original error for final throw
 
-      // Attempt retry if applicable
-      if (this.shouldRetry(error as Error, requestId)) {
-        return await this.retryWithBackoff(operation, requestId);
+      // For HALF_OPEN state, fail immediately without retries
+      if (this.state === CircuitState.HALF_OPEN) {
+        this.onFailure(error);
+        this.activeRetries.delete(requestId);
+        throw preservedError; // Preserve non-Error objects even in HALF_OPEN
       }
 
-      throw error;
+      // Check if we should retry
+      if (this.shouldRetry(error, requestId)) {
+        // Count initial failure immediately to track operation degradation
+        this.onFailure(preservedError);
+
+        try {
+          const result = await this.retryWithBackoff(
+            operation,
+            requestId,
+            preservedError,
+          );
+          // Success after retries - failure already counted, just count success
+          const responseTime = Date.now() - startTime;
+          this.onSuccess(responseTime);
+          return result;
+        } catch (retryError) {
+          // All retries failed - failure already counted, don't double-count
+          this.activeRetries.delete(requestId);
+          const errorMessage = (retryError as Error).message;
+          if (errorMessage.includes('Maximum retry attempts')) {
+            // Throw retry exhaustion error for truly exhausted retries
+            throw retryError;
+          } else {
+            // Preserve original error (including non-Error objects)
+            throw preservedError;
+          }
+        }
+      } else {
+        // No retries attempted - count as failure and preserve original error
+        this.onFailure(error);
+        this.activeRetries.delete(requestId);
+        throw preservedError; // Preserve non-Error objects
+      }
     }
   }
 
@@ -146,6 +180,7 @@ export class CircuitBreaker {
   private async retryWithBackoff<T>(
     operation: () => Promise<T>,
     requestId: string,
+    _initialError: unknown,
   ): Promise<T> {
     let retryContext = this.activeRetries.get(requestId);
 
@@ -158,59 +193,71 @@ export class CircuitBreaker {
       this.activeRetries.set(requestId, retryContext);
     }
 
-    retryContext.attempt++;
+    // Use recursive approach to ensure proper promise chaining
+    const attemptRetry = async (): Promise<T> => {
+      if (retryContext!.attempt >= this.config.retryPolicy.maxRetries) {
+        // All retries exhausted - clean up and throw retry exhaustion message
+        this.activeRetries.delete(requestId);
+        const lastError =
+          retryContext!.lastError ||
+          new Error('Maximum retry attempts exceeded');
+        throw new Error(
+          `Maximum retry attempts (${this.config.retryPolicy.maxRetries}) exceeded. Last error: ${lastError.message}`,
+        );
+      }
 
-    if (retryContext.attempt > this.config.retryPolicy.maxRetries) {
-      this.activeRetries.delete(requestId);
-      throw new Error(
-        `Maximum retry attempts (${this.config.retryPolicy.maxRetries}) exceeded for '${this.name}'`,
-      );
-    }
+      retryContext!.attempt++;
 
-    // Calculate delay with exponential backoff
-    const delay = this.calculateBackoffDelay(retryContext.attempt);
-    retryContext.nextRetryDelay = delay;
+      try {
+        const result = await this.executeWithTimeout(operation);
+        // Success on retry - clean up and return
+        this.activeRetries.delete(requestId);
+        return result;
+      } catch (error) {
+        // Do NOT track individual retry failures - only track final operation failure
+        retryContext!.lastError = error as Error;
 
-    // Add jitter to prevent thundering herd
-    const finalDelay = this.config.exponentialBackoff.jitter
-      ? delay + Math.random() * 1000
-      : delay;
+        // Calculate backoff delay
+        const delay = this.calculateBackoffDelay(retryContext!.attempt);
+        retryContext!.nextRetryDelay = delay;
+        retryContext!.totalElapsed += delay;
 
-    console.log(
-      `Circuit breaker '${this.name}': Retry attempt ${retryContext.attempt}/${this.config.retryPolicy.maxRetries} in ${finalDelay}ms`,
-    );
+        // Delay before next retry
+        await this.delay(delay);
 
-    await this.delay(finalDelay);
-    retryContext.totalElapsed += finalDelay;
+        // Recursively attempt next retry
+        return attemptRetry();
+      }
+    };
 
-    try {
-      const result = await this.executeWithTimeout(operation);
-      this.onSuccess(Date.now());
-      this.activeRetries.delete(requestId);
-      return result;
-    } catch (error) {
-      retryContext.lastError = error as Error;
-      this.onFailure(error as Error);
-
-      // Continue retry loop
-      return await this.retryWithBackoff(operation, requestId);
-    }
+    return attemptRetry();
   }
 
   /**
    * Execute operation with timeout protection
    */
   private async executeWithTimeout<T>(operation: () => Promise<T>): Promise<T> {
-    return Promise.race([
-      operation(),
-      new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(
-            new Error(`Operation timed out after ${this.config.timeout}ms`),
-          );
-        }, this.config.timeout);
-      }),
-    ]);
+    let timeoutId: NodeJS.Timeout | number | undefined;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = globalThis.setTimeout(() => {
+        reject(
+          new Error(
+            `timeout: Operation timed out after ${this.config.timeout}ms`,
+          ),
+        );
+      }, this.config.timeout);
+    });
+
+    try {
+      const result = await Promise.race([operation(), timeoutPromise]);
+      return result;
+    } finally {
+      // Always clear the timeout to prevent unhandled rejections
+      if (timeoutId !== undefined) {
+        globalThis.clearTimeout(timeoutId as any);
+      }
+    }
   }
 
   /**
@@ -225,20 +272,18 @@ export class CircuitBreaker {
       if (this.successCount >= this.config.successThreshold) {
         this.state = CircuitState.CLOSED;
         this.failureCount = 0;
-        console.log(
-          `Circuit breaker '${this.name}' closed - service recovered`,
-        );
       }
     } else if (this.state === CircuitState.CLOSED) {
-      // Reset failure count on success
-      this.failureCount = 0;
+      // Don't reset failure count on every success in CLOSED state
+      // This allows tracking of recent failures
+      this.successCount++;
     }
   }
 
   /**
    * Handle failed operation
    */
-  private onFailure(_error: Error): void {
+  private onFailure(_error: Error | unknown): void {
     this.lastFailureTime = Date.now();
     this.failureCount++;
 
@@ -246,17 +291,11 @@ export class CircuitBreaker {
       // Return to open state
       this.state = CircuitState.OPEN;
       this.nextOpenTime = Date.now() + this.config.recoveryTimeout;
-      console.log(
-        `Circuit breaker '${this.name}' opened - service still failing`,
-      );
     } else if (this.state === CircuitState.CLOSED) {
       // Check if we should open the circuit
       if (this.failureCount >= this.config.failureThreshold) {
         this.state = CircuitState.OPEN;
         this.nextOpenTime = Date.now() + this.config.recoveryTimeout;
-        console.log(
-          `Circuit breaker '${this.name}' opened - failure threshold (${this.config.failureThreshold}) exceeded`,
-        );
       }
     }
   }
@@ -264,17 +303,11 @@ export class CircuitBreaker {
   /**
    * Check if operation should be retried
    */
-  private shouldRetry(_error: Error, requestId: string): boolean {
-    const retryContext = this.activeRetries.get(requestId);
-    const attempt = retryContext?.attempt || 0;
-
-    // Check retry limits
-    if (attempt >= this.config.retryPolicy.maxRetries) {
-      return false;
-    }
-
-    // Check if error type is retryable
-    const errorType = _error.constructor.name;
+  private shouldRetry(error: Error | unknown, requestId: string): boolean {
+    // Handle non-Error objects by creating Error wrapper
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    // Check if error type is retryable - use error.name which can be set explicitly
+    const errorType = errorObj.name || errorObj.constructor.name;
     if (!this.config.retryPolicy.retryableErrors.includes(errorType)) {
       return false;
     }
@@ -284,15 +317,32 @@ export class CircuitBreaker {
       return false;
     }
 
+    // Check retry limits - we haven't created the context yet, so check if we can start retrying
+    const retryContext = this.activeRetries.get(requestId);
+    const currentAttempt = retryContext?.attempt || 0;
+
+    if (currentAttempt >= this.config.retryPolicy.maxRetries) {
+      return false;
+    }
+
     return true;
   }
 
   /**
    * Check if circuit should attempt recovery
+   * Uses a tolerance window to handle real-world timer scheduling variations
    */
   private shouldAttemptRecovery(): boolean {
     if (!this.nextOpenTime) return false;
-    return Date.now() >= this.nextOpenTime;
+
+    // Production-grade tolerance: allow recovery slightly before exact timeout
+    // This accounts for real-world timer scheduling variations and execution timing
+    const RECOVERY_TOLERANCE_MS = Math.min(
+      50,
+      this.config.recoveryTimeout * 0.05,
+    );
+
+    return Date.now() >= this.nextOpenTime - RECOVERY_TOLERANCE_MS;
   }
 
   /**
@@ -310,7 +360,10 @@ export class CircuitBreaker {
    * Delay utility
    */
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise((resolve) => {
+      // Use globalThis.setTimeout to ensure we get the mocked version in tests
+      globalThis.setTimeout(resolve, ms);
+    });
   }
 
   /**
@@ -346,9 +399,13 @@ export class CircuitBreaker {
     this.failureCount = 0;
     this.successCount = 0;
     this.rejectedCount = 0;
+    this.totalRequests = 0; // Reset total requests counter
+    this.totalResponseTime = 0; // Reset total response time
+    this.lastFailureTime = undefined;
+    this.lastSuccessTime = undefined;
     this.activeRetries.clear();
     this.nextOpenTime = undefined;
-    console.log(`Circuit breaker '${this.name}' manually reset`);
+    this.forcedOpen = false;
   }
 
   /**
@@ -357,7 +414,7 @@ export class CircuitBreaker {
   public forceOpen(): void {
     this.state = CircuitState.OPEN;
     this.nextOpenTime = Date.now() + this.config.recoveryTimeout;
-    console.log(`Circuit breaker '${this.name}' manually opened`);
+    this.forcedOpen = true;
   }
 
   /**

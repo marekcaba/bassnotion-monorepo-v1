@@ -153,9 +153,14 @@ export class NetworkLatencyMonitor extends EventEmitter {
     if (!this.config.enabled || this.isMonitoring) return;
 
     this.isMonitoring = true;
-    this.monitoringInterval = window.setInterval(() => {
+
+    // Use globalThis for cross-environment compatibility
+    const setIntervalFn =
+      globalThis.setInterval || (global as any)?.setInterval || setInterval;
+
+    this.monitoringInterval = setIntervalFn(() => {
       this.performLatencyMeasurement();
-    }, this.config.measurementInterval);
+    }, this.config.measurementInterval) as any;
 
     // Perform initial measurement
     this.performLatencyMeasurement();
@@ -171,7 +176,12 @@ export class NetworkLatencyMonitor extends EventEmitter {
 
     this.isMonitoring = false;
     if (this.monitoringInterval) {
-      clearInterval(this.monitoringInterval);
+      // Use globalThis for cross-environment compatibility
+      const clearIntervalFn =
+        globalThis.clearInterval ||
+        (global as any)?.clearInterval ||
+        clearInterval;
+      clearIntervalFn(this.monitoringInterval);
       this.monitoringInterval = null;
     }
 
@@ -448,10 +458,11 @@ export class NetworkLatencyMonitor extends EventEmitter {
   }
 
   /**
-   * Update network condition based on current metrics
+   * Update network condition based on current metrics with weighted recent measurements
    */
   private updateNetworkCondition(): void {
-    const latency = this.metrics.averageLatency;
+    // Use weighted average giving more importance to recent measurements
+    const latency = this.calculateWeightedAverageLatency();
 
     let condition: NetworkCondition;
     if (latency <= this.LATENCY_THRESHOLDS.excellent.max) {
@@ -477,5 +488,74 @@ export class NetworkLatencyMonitor extends EventEmitter {
         timestamp: Date.now(),
       });
     }
+  }
+
+  /**
+   * Calculate weighted average latency giving more importance to recent measurements
+   */
+  private calculateWeightedAverageLatency(): number {
+    if (this.latencyHistory.length === 0) {
+      return this.metrics.averageLatency;
+    }
+
+    // For condition improvement detection: if recent measurements are consistently excellent,
+    // heavily weight them to enable rapid condition upgrades
+    const recentCount = Math.min(5, this.latencyHistory.length);
+    const recentMeasurements = this.latencyHistory.slice(-recentCount);
+
+    // Check if recent measurements show significant improvement
+    const recentAreExcellent = recentMeasurements.every(
+      (latency) => latency <= this.LATENCY_THRESHOLDS.excellent.max,
+    );
+
+    if (recentAreExcellent && recentCount >= 3) {
+      // If we have 3+ consecutive excellent measurements, heavily favor them
+      // This enables rapid recovery from poor to excellent conditions
+      const recentAverage =
+        recentMeasurements.reduce((sum, lat) => sum + lat, 0) /
+        recentMeasurements.length;
+      const olderMeasurements = this.latencyHistory.slice(0, -recentCount);
+
+      if (olderMeasurements.length === 0) {
+        return recentAverage;
+      }
+
+      const olderAverage =
+        olderMeasurements.reduce((sum, lat) => sum + lat, 0) /
+        olderMeasurements.length;
+
+      // Weight recent excellent measurements at 99%, older at 1% for rapid improvement
+      // This ensures that consistent excellent performance dominates condition classification
+      return recentAverage * 0.99 + olderAverage * 0.01;
+    }
+
+    // Standard weighted calculation for normal scenarios
+    const weights: number[] = [];
+    const totalMeasurements = this.latencyHistory.length;
+
+    // Calculate weights: exponential growth for recent measurements
+    for (let i = 0; i < totalMeasurements; i++) {
+      const recencyFactor = (i + 1) / totalMeasurements;
+      const exponentialWeight = Math.pow(recencyFactor, 0.3) * 1.5;
+      weights.push(exponentialWeight);
+    }
+
+    // Calculate weighted sum and total weights
+    let weightedSum = 0;
+    let totalWeight = 0;
+
+    for (let i = 0; i < this.latencyHistory.length; i++) {
+      const weight = weights[i] || 1; // Default weight fallback
+      const latencyValue = this.latencyHistory[i];
+      if (latencyValue !== undefined) {
+        weightedSum += latencyValue * weight;
+        totalWeight += weight;
+      }
+    }
+
+    // Return weighted average
+    return totalWeight > 0
+      ? weightedSum / totalWeight
+      : this.metrics.averageLatency;
   }
 }

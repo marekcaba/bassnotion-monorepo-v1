@@ -447,36 +447,51 @@ export class IOSOptimizer {
   }
 
   private setupEventListeners(): void {
-    // Visibility change for background audio
-    if (typeof document !== 'undefined') {
-      this.visibilityChangeHandler = () => this.handleVisibilityChange();
-      document.addEventListener(
-        'visibilitychange',
-        this.visibilityChangeHandler,
+    try {
+      // Visibility change for background audio
+      if (typeof document !== 'undefined') {
+        this.visibilityChangeHandler = () => this.handleVisibilityChange();
+        document.addEventListener(
+          'visibilitychange',
+          this.visibilityChangeHandler,
+        );
+      }
+
+      // Page lifecycle events
+      if (typeof window !== 'undefined') {
+        this.beforeUnloadHandler = () => this.handleBeforeUnload();
+        window.addEventListener('beforeunload', this.beforeUnloadHandler);
+
+        // Focus/blur for audio context management
+        this.focusHandler = () => this.handleWindowFocus();
+        this.blurHandler = () => this.handleWindowBlur();
+        window.addEventListener('focus', this.focusHandler);
+        window.addEventListener('blur', this.blurHandler);
+      }
+
+      // Touch events for activation
+      if (
+        typeof document !== 'undefined' &&
+        this.safariConfig.touchActivationRequired
+      ) {
+        this.touchStartHandler = () => this.handleTouchActivation();
+        document.addEventListener('touchstart', this.touchStartHandler, {
+          once: true,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to setup event listeners:', error);
+      // Graceful degradation: Continue initialization but with limited functionality
+      // This allows the optimizer to work even if event listeners fail to set up
+      console.warn(
+        'IOSOptimizer: Continuing initialization with limited event handling capabilities',
       );
-    }
-
-    // Page lifecycle events
-    if (typeof window !== 'undefined') {
-      this.beforeUnloadHandler = () => this.handleBeforeUnload();
-      window.addEventListener('beforeunload', this.beforeUnloadHandler);
-
-      // Focus/blur for audio context management
-      this.focusHandler = () => this.handleWindowFocus();
-      this.blurHandler = () => this.handleWindowBlur();
-      window.addEventListener('focus', this.focusHandler);
-      window.addEventListener('blur', this.blurHandler);
-    }
-
-    // Touch events for activation
-    if (
-      typeof document !== 'undefined' &&
-      this.safariConfig.touchActivationRequired
-    ) {
-      this.touchStartHandler = () => this.handleTouchActivation();
-      document.addEventListener('touchstart', this.touchStartHandler, {
-        once: true,
-      });
+      // Reset event handlers to prevent issues during cleanup
+      this.visibilityChangeHandler = undefined;
+      this.beforeUnloadHandler = undefined;
+      this.focusHandler = undefined;
+      this.blurHandler = undefined;
+      this.touchStartHandler = undefined;
     }
   }
 

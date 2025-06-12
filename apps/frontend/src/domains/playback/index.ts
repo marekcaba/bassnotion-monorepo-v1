@@ -410,3 +410,14 @@ export type {
   EnhancedOptimizationRules,
   DeviceOptimizationMetrics,
 } from './types/audio.js';
+
+// ============================================================================
+// ENHANCED REACT HOOKS - NEW for Task 15.3: Widget Consumption Hooks
+// ============================================================================
+
+// NEW: Widget-optimized hooks for easy consumption
+export { usePlaybackState } from './hooks/usePlaybackState.js';
+export type { UsePlaybackStateReturn } from './hooks/usePlaybackState.js';
+
+export { useAssetLoading } from './hooks/useAssetLoading.js';
+export type { UseAssetLoadingReturn } from './hooks/useAssetLoading.js';

@@ -821,6 +821,20 @@ export interface N8nPayloadConfig {
     timeSignature: string;
     keySignature: string;
   };
+
+  /**
+   * Optional enhanced asset manifest (Epic 2 Section 6.2).
+   * When provided, the CorePlaybackEngine will use this manifest for bulk asset loading.
+   */
+  assetManifest?: AssetManifest;
+
+  /**
+   * Optional audio configuration supplied by upstream workflow (e.g., sample-rate hints).
+   */
+  audioConfiguration?: {
+    sampleRate: number;
+    bufferSize: number;
+  };
 }
 
 /**
@@ -832,6 +846,7 @@ export interface AssetReference {
     | 'bassline'
     | 'chords'
     | 'drums'
+    | 'metronome'
     | 'bass-sample'
     | 'drum-sample'
     | 'ambience';
@@ -921,6 +936,13 @@ export interface AssetLoadResult {
   source: 'cdn' | 'supabase' | 'cache';
   loadTime: number;
   compressionUsed: boolean;
+
+  // Enhanced properties required by tests
+  success: boolean; // Indicates if the load was successful
+  assetId?: string; // Asset identifier for tracking
+  type?: 'midi' | 'audio'; // Asset type
+  size?: number; // Size in bytes
+  error?: Error; // Error details if success is false
 }
 
 /**
@@ -974,6 +996,7 @@ export interface DeviceModel {
   year: number; // Release year
   chipset: string; // A16 Bionic, Snapdragon 8 Gen 2, etc.
   gpuModel?: string; // Specific GPU model if available
+  platform: string; // iOS, Android, Windows, etc. (for test compatibility)
 }
 
 /**
@@ -986,6 +1009,8 @@ export interface NetworkCapabilities {
   rtt: number; // Round trip time in ms
   saveData: boolean; // Data saver mode enabled
   isMetered: boolean; // Is connection metered/limited
+  bandwidth: number; // Bandwidth in kbps (for test compatibility)
+  latency: number; // Latency in ms (for test compatibility)
 }
 
 /**
@@ -1003,6 +1028,7 @@ export interface BrowserCapabilities {
   version: string;
   engine: 'webkit' | 'blink' | 'gecko' | 'other';
   isWebView: boolean;
+  userGestureRequired: boolean; // For test compatibility
   supportedFeatures: {
     audioWorklet: boolean;
     sharedArrayBuffer: boolean;

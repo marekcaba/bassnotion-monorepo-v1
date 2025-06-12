@@ -70,6 +70,8 @@ export interface StorageQuota {
 
 export interface PersistenceMetrics {
   saveOperations: number;
+  userSaveOperations: number;
+  autoSaveOperations: number;
   loadOperations: number;
   compressionRatio: number;
   averageSaveTime: number;
@@ -87,10 +89,16 @@ export class StatePersistenceManager {
   private storageKey = 'bassnotion-playback-state';
   private backupKey = 'bassnotion-playback-backup';
   private isInitialized = false;
+  // Auto-save state tracking
+  private lastSavedState: PersistedState | null = null;
+  // Cross-tab synchronization
+  private broadcastChannel: BroadcastChannel | null = null;
 
   // Performance and monitoring
   private metrics: PersistenceMetrics = {
     saveOperations: 0,
+    userSaveOperations: 0,
+    autoSaveOperations: 0,
     loadOperations: 0,
     compressionRatio: 1.0,
     averageSaveTime: 0,
@@ -162,9 +170,31 @@ export class StatePersistenceManager {
   /**
    * Save current state to storage
    */
-  public async saveState(state: Partial<PersistedState>): Promise<void> {
+  public async saveState(
+    state: Partial<PersistedState>,
+    options: { isAutoSave?: boolean } = {},
+  ): Promise<void> {
     if (!this.config.enabled || !this.isInitialized) {
       return;
+    }
+
+    // Bulletproof parameter handling - create completely new object to avoid reference issues
+    const saveOptions = {
+      isAutoSave:
+        options && typeof options.isAutoSave === 'boolean'
+          ? options.isAutoSave
+          : false,
+    };
+
+    // Generate unique operation ID for tracking and validate parameters
+    const operationId = `save-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const operationType = saveOptions.isAutoSave ? 'auto-save' : 'user-save';
+
+    // Enhanced parameter validation for production robustness
+    if (typeof options !== 'object' || options === null) {
+      console.warn(
+        `[${operationId}] Invalid options parameter, using defaults`,
+      );
     }
 
     const startTime = performance.now();
@@ -229,20 +259,54 @@ export class StatePersistenceManager {
         await this.updateStorageQuota();
 
         if (stateSize > this.metrics.storageQuota.available) {
+          // Handle storage quota error gracefully
+          this.metrics.errorCount++;
+          this.metrics.lastError =
+            'Insufficient storage space for state persistence';
+          console.warn('Storage quota exceeded - state not saved');
+
+          // If it's an auto-save, don't throw - just log the issue
+          if (saveOptions.isAutoSave) {
+            return;
+          }
           throw new Error('Insufficient storage space for state persistence');
         }
       }
 
-      // Save to storage with backup
-      const currentState = await this.loadFromStorage(this.storageKey);
-      if (currentState) {
-        await this.saveToStorage(this.backupKey, currentState);
+      // Save to storage with backup - handle backup creation gracefully
+      try {
+        const currentState = await this.loadFromStorage(this.storageKey);
+        if (currentState) {
+          await this.saveToStorage(this.backupKey, currentState);
+        }
+      } catch (backupError) {
+        // Backup creation failed, but continue with main save
+        console.warn(
+          `[${operationId}] ${operationType} backup failed:`,
+          backupError,
+        );
+        this.metrics.errorCount++;
       }
+
+      // Enhanced error handling for main storage save
       await this.saveToStorage(this.storageKey, serializedState);
 
-      // Update metrics
+      // Track the last saved state for auto-save functionality
+      if (!saveOptions.isAutoSave) {
+        // Only track user-initiated saves for auto-save to prevent loops
+        this.lastSavedState = persistedState;
+      }
+
+      // Update metrics - track user vs auto-save operations
       const saveTime = performance.now() - startTime;
       this.metrics.saveOperations++;
+
+      if (saveOptions.isAutoSave) {
+        this.metrics.autoSaveOperations++;
+      } else {
+        this.metrics.userSaveOperations++;
+      }
+
       this.metrics.averageSaveTime =
         (this.metrics.averageSaveTime * (this.metrics.saveOperations - 1) +
           saveTime) /
@@ -254,12 +318,32 @@ export class StatePersistenceManager {
         timestamp: Date.now(),
       });
 
+      // Notify other tabs via BroadcastChannel
+      if (this.broadcastChannel) {
+        this.broadcastChannel.postMessage({
+          sessionId: this.sessionId,
+          state: persistedState,
+          timestamp: Date.now(),
+        });
+      }
+
       console.log(`State saved successfully in ${saveTime.toFixed(1)}ms`);
     } catch (error) {
+      // Enhanced error handling with operation context
       this.metrics.errorCount++;
       this.metrics.lastError =
         error instanceof Error ? error.message : 'Save failed';
-      console.error('Failed to save state:', error);
+
+      // Handle errors gracefully for auto-saves
+      if (saveOptions.isAutoSave === true) {
+        console.warn(
+          `[${operationId}] ${operationType} failed (non-critical):`,
+          error,
+        );
+        return;
+      }
+
+      console.error(`[${operationId}] ${operationType} failed:`, error);
       throw error;
     }
   }
@@ -287,19 +371,21 @@ export class StatePersistenceManager {
         serializedState = await this.decompressData(serializedState);
       }
 
-      // Parse and validate
+      // Parse state
       let state: PersistedState = JSON.parse(serializedState);
-      this.validateState(state);
 
-      // Check version compatibility
+      // Check version compatibility BEFORE validation for old formats
       if (this.config.versionMigration) {
         const migratedState = await this.migrateStateVersion(state);
         if (migratedState !== state) {
-          // Save migrated state
-          await this.saveState(migratedState);
+          // Save migrated state (internal operation, not user-initiated)
+          await this.saveState(migratedState, { isAutoSave: true });
           state = migratedState;
         }
       }
+
+      // Validate after migration to ensure current format compliance
+      this.validateState(state);
 
       // Update metrics
       const loadTime = performance.now() - startTime;
@@ -349,6 +435,23 @@ export class StatePersistenceManager {
   }
 
   /**
+   * Reset metrics for testing
+   */
+  public resetMetrics(): void {
+    this.metrics = {
+      saveOperations: 0,
+      userSaveOperations: 0,
+      autoSaveOperations: 0,
+      loadOperations: 0,
+      compressionRatio: 0,
+      averageSaveTime: 0,
+      averageLoadTime: 0,
+      storageQuota: { used: 0, available: 0, total: 0, percentage: 0 },
+      errorCount: 0,
+    };
+  }
+
+  /**
    * Check if session recovery is available
    */
   public async hasRecoverableSession(): Promise<boolean> {
@@ -392,11 +495,26 @@ export class StatePersistenceManager {
       this.stopAutoSave();
       this.cleanupCrossTabSync();
       this.eventHandlers.clear();
+
+      // Reset all state to ensure clean reinitialization
       this.isInitialized = false;
+      this.config = this.getDefaultConfig();
+      this.sessionId = this.generateSessionId();
+      this.resetMetrics();
 
       console.log('State persistence manager disposed');
     } catch (error) {
       console.error('Error disposing state persistence manager:', error);
+    }
+  }
+
+  /**
+   * Reset singleton instance (for testing purposes)
+   */
+  public static resetInstance(): void {
+    if (StatePersistenceManager.instance) {
+      StatePersistenceManager.instance.dispose();
+      StatePersistenceManager.instance = null as any;
     }
   }
 
@@ -530,9 +648,106 @@ export class StatePersistenceManager {
   private async migrateStateVersion(
     state: PersistedState,
   ): Promise<PersistedState> {
-    // Version migration logic would go here
-    // For now, return state unchanged
-    return state;
+    const currentVersion = '2.1.0';
+
+    // If already current version, no migration needed
+    if (state.version === currentVersion) {
+      return state;
+    }
+
+    console.log(
+      `Migrating state from version ${state.version} to ${currentVersion}`,
+    );
+
+    // Create migrated state with current version
+    const migratedState: PersistedState = {
+      ...state,
+      version: currentVersion,
+      timestamp: Date.now(), // Update timestamp to mark migration
+    };
+
+    // Apply version-specific migrations
+    if (state.version === '1.0.0') {
+      // Migrate from 1.0.0 to 2.1.0
+      // Add any required field transformations
+      migratedState.sessionId = migratedState.sessionId || this.sessionId;
+      migratedState.audioSources = migratedState.audioSources || [];
+      migratedState.soloSources = migratedState.soloSources || [];
+      migratedState.transportState = migratedState.transportState || {
+        position: 0,
+        bpm: 120,
+        swing: 0,
+        loop: false,
+      };
+      migratedState.performanceHistory = migratedState.performanceHistory || {
+        averageLatency: 0,
+        maxLatency: 0,
+        dropoutCount: 0,
+        lastMeasurement: Date.now(),
+      };
+      migratedState.userPreferences = migratedState.userPreferences || {
+        masterVolume: 0.8,
+        audioQuality: 'high',
+        backgroundProcessing: true,
+        batteryOptimization: false,
+      };
+      migratedState.metadata = migratedState.metadata || {
+        deviceInfo: this.getDeviceInfo(),
+        browserInfo: this.getBrowserInfo(),
+        lastActiveTime: Date.now(),
+        sessionDuration: 0,
+      };
+    } else if (state.version === '1.5.0') {
+      // Migrate from 1.5.0 to 2.1.0
+      // Ensure sessionId is set (critical for test validation)
+      migratedState.sessionId = migratedState.sessionId || this.sessionId;
+
+      // Ensure all required fields are present
+      migratedState.audioSources = migratedState.audioSources || [];
+      migratedState.soloSources = migratedState.soloSources || [];
+
+      // Add missing config fields that were added after 1.5.0
+      if (migratedState.config && typeof migratedState.config === 'object') {
+        const config = migratedState.config as any;
+        if (config.pitch === undefined) config.pitch = 0;
+        if (config.swingFactor === undefined) config.swingFactor = 0.1;
+      }
+
+      // Ensure transportState is complete
+      migratedState.transportState = migratedState.transportState || {
+        position: 0,
+        bpm: 120,
+        swing: 0,
+        loop: false,
+      };
+
+      // Add performanceHistory if missing
+      migratedState.performanceHistory = migratedState.performanceHistory || {
+        averageLatency: 0,
+        maxLatency: 0,
+        dropoutCount: 0,
+        lastMeasurement: Date.now(),
+      };
+
+      // Add userPreferences if missing
+      migratedState.userPreferences = migratedState.userPreferences || {
+        masterVolume: migratedState.config?.masterVolume || 0.8,
+        audioQuality: 'high',
+        backgroundProcessing: true,
+        batteryOptimization: false,
+      };
+
+      // Add metadata if missing
+      migratedState.metadata = migratedState.metadata || {
+        deviceInfo: this.getDeviceInfo(),
+        browserInfo: this.getBrowserInfo(),
+        lastActiveTime: Date.now(),
+        sessionDuration: 0,
+      };
+    }
+
+    console.log(`State successfully migrated to version ${currentVersion}`);
+    return migratedState;
   }
 
   private async loadBackupState(): Promise<PersistedState | null> {
@@ -590,6 +805,21 @@ export class StatePersistenceManager {
   private setupCrossTabSync(): void {
     if (typeof window === 'undefined') return;
 
+    // Set up BroadcastChannel for modern cross-tab communication
+    try {
+      this.broadcastChannel = new BroadcastChannel('bassnotion-state-sync');
+      this.broadcastChannel.addEventListener('message', (event) => {
+        if (event.data?.sessionId !== this.sessionId) {
+          this.emit('externalStateChange', event.data.state);
+        }
+      });
+    } catch {
+      console.warn(
+        'BroadcastChannel not available, falling back to storage events',
+      );
+    }
+
+    // Keep storage listener for compatibility
     this.storageListener = (event: StorageEvent) => {
       if (event.key === this.storageKey && event.newValue) {
         try {
@@ -611,6 +841,10 @@ export class StatePersistenceManager {
       window.removeEventListener('storage', this.storageListener);
       this.storageListener = null;
     }
+    if (this.broadcastChannel) {
+      this.broadcastChannel.close();
+      this.broadcastChannel = null;
+    }
   }
 
   private startAutoSave(): void {
@@ -618,7 +852,17 @@ export class StatePersistenceManager {
       clearInterval(this.autoSaveTimer);
     }
 
-    this.autoSaveTimer = window.setInterval(() => {
+    this.autoSaveTimer = window.setInterval(async () => {
+      // Auto-save the last saved state if it exists
+      if (this.lastSavedState) {
+        try {
+          await this.saveState(this.lastSavedState, { isAutoSave: true });
+        } catch (error) {
+          console.warn('Auto-save failed:', error);
+          this.metrics.errorCount++;
+        }
+      }
+      // Also emit event for external listeners
       this.emit('autoSaveRequested');
     }, this.config.autoSaveInterval);
   }

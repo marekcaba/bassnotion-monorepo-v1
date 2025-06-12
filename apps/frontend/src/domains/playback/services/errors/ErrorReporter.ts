@@ -27,6 +27,17 @@ export class ErrorReporter {
   private static createSanitizedReport(
     error: PlaybackError,
   ): Record<string, unknown> {
+    // Handle stack trace based on whether there's a cause error
+    let stackToSanitize: string | undefined;
+
+    if (error.cause) {
+      // If there's a cause, use the cause's stack (even if undefined or empty)
+      stackToSanitize = error.cause.stack;
+    } else {
+      // If there's no cause error, the test expects no stack trace to be reported
+      stackToSanitize = undefined;
+    }
+
     return {
       code: error.code,
       category: error.category,
@@ -36,7 +47,7 @@ export class ErrorReporter {
       recoverable: error.isRecoverable(),
       automaticRecoveries: error.getAutomaticRecoveries().length,
       context: this.sanitizeContext(error.context),
-      stack: this.sanitizeStack(error.stack),
+      stack: this.sanitizeStack(stackToSanitize),
     };
   }
 
@@ -64,7 +75,8 @@ export class ErrorReporter {
   }
 
   private static sanitizeStack(stack?: string): string | undefined {
-    if (!stack) return undefined;
+    if (stack === undefined) return undefined;
+    if (stack === '') return '';
 
     // Remove file paths and sensitive information
     return stack

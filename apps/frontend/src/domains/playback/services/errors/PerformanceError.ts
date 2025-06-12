@@ -124,6 +124,20 @@ export class PerformanceError extends PlaybackError {
         break;
     }
   }
+
+  /**
+   * Override toJSON to include performance-specific properties
+   */
+  public toJSON(): Record<string, unknown> {
+    const baseJson = super.toJSON();
+    return {
+      ...baseJson,
+      performanceMetrics: this.performanceMetrics,
+      threshold: this.threshold,
+      measuredValue: this.measuredValue,
+      nfrViolation: this.nfrViolation,
+    };
+  }
 }
 
 function getPerformanceRecoveryActions(
@@ -227,6 +241,7 @@ function getPerformanceSeverity(
     PerformanceErrorCode.BUFFER_UNDERRUN,
     PerformanceErrorCode.MEMORY_LEAK_DETECTED,
     PerformanceErrorCode.AUDIO_DROPOUTS_DETECTED,
+    PerformanceErrorCode.CPU_USAGE_HIGH,
   ];
 
   if (highSeverityErrors.includes(code)) {
@@ -239,16 +254,16 @@ function getPerformanceSeverity(
 function getPerformanceUserMessage(code: PerformanceErrorCode): string {
   switch (code) {
     case PerformanceErrorCode.LATENCY_THRESHOLD_EXCEEDED:
-      return 'Audio latency is higher than optimal. Consider closing other applications for better performance.';
+      return 'Audio latency is higher than optimal. Performance may be affected.';
 
     case PerformanceErrorCode.CPU_USAGE_HIGH:
-      return 'High CPU usage detected. Audio quality may be reduced to maintain smooth playback.';
+      return 'System is under heavy load. Audio quality may be reduced.';
 
     case PerformanceErrorCode.MEMORY_USAGE_HIGH:
-      return 'High memory usage detected. Some audio features may be temporarily disabled.';
+      return 'Memory usage is high. Please close other applications.';
 
     case PerformanceErrorCode.BATTERY_DRAIN_EXCEEDED:
-      return 'High battery usage detected. Battery saver mode has been enabled.';
+      return 'High battery usage detected. Enabling power saving mode.';
 
     default:
       return 'Performance issue detected. Audio quality may be automatically adjusted.';
@@ -262,22 +277,8 @@ function getPerformanceTechnicalMessage(
   return `${code}: ${originalMessage}`;
 }
 
-function getPerformanceDocumentationUrl(code: PerformanceErrorCode): string {
-  const baseUrl = '/docs/troubleshooting/performance';
-
-  switch (code) {
-    case PerformanceErrorCode.LATENCY_THRESHOLD_EXCEEDED:
-      return `${baseUrl}#latency-optimization`;
-
-    case PerformanceErrorCode.CPU_USAGE_HIGH:
-      return `${baseUrl}#cpu-optimization`;
-
-    case PerformanceErrorCode.MEMORY_USAGE_HIGH:
-      return `${baseUrl}#memory-optimization`;
-
-    default:
-      return `${baseUrl}#general-performance`;
-  }
+function getPerformanceDocumentationUrl(_code: PerformanceErrorCode): string {
+  return '/docs/troubleshooting/performance';
 }
 
 export function createPerformanceError(
@@ -287,8 +288,8 @@ export function createPerformanceError(
   cause?: Error,
 ): PerformanceError {
   const context: Partial<ErrorContext> = {
-    currentOperation: 'Performance monitoring',
     ...additionalContext,
+    currentOperation: 'Performance management',
   };
 
   return new PerformanceError(code, message, context, cause);

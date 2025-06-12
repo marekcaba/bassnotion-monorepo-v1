@@ -328,6 +328,11 @@ export class MemoryLeakDetector {
    */
   public registerResource(resource: ManagedResource): void {
     if (!this.config.enabled) return;
+    // Gracefully handle null or invalid resources
+    if (!resource || !resource.weakRefs) {
+      console.warn('Cannot register invalid resource:', resource);
+      return;
+    }
 
     // Add weak reference for tracking
     if (this.config.detection.gcAnalysisEnabled) {
@@ -356,7 +361,7 @@ export class MemoryLeakDetector {
    * Perform immediate leak scan
    */
   public async performScan(deep = false): Promise<LeakDetectionReport> {
-    const startTime = Date.now();
+    const startTime = performance.now();
 
     // Take memory snapshot
     const snapshot = this.takeMemorySnapshot();
@@ -374,7 +379,8 @@ export class MemoryLeakDetector {
     const patterns = this.analyzeLeakPatterns();
 
     // Generate report
-    const scanDuration = Date.now() - startTime;
+    const endTime = performance.now();
+    const scanDuration = Math.max(1, endTime - startTime);
     const report = this.generateReport(scanDuration, patterns);
 
     this.metrics.totalScans++;
@@ -508,10 +514,17 @@ export class MemoryLeakDetector {
   public async shutdown(): Promise<void> {
     this.isRunning = false;
 
+    // Use window.clearInterval if available (for proper test mocking), otherwise fallback
+    const clearIntervalFn =
+      (typeof window !== 'undefined' && window.clearInterval) ||
+      globalThis.clearInterval ||
+      (global as any)?.clearInterval ||
+      clearInterval;
+
     // Clear all timers
-    if (this.scanTimer) clearInterval(this.scanTimer);
-    if (this.deepScanTimer) clearInterval(this.deepScanTimer);
-    if (this.cleanupTimer) clearInterval(this.cleanupTimer);
+    if (this.scanTimer) clearIntervalFn(this.scanTimer);
+    if (this.deepScanTimer) clearIntervalFn(this.deepScanTimer);
+    if (this.cleanupTimer) clearIntervalFn(this.cleanupTimer);
 
     // Final remediation attempt for critical leaks
     const criticalLeaks = Array.from(this.confirmedLeaks.values()).filter(
@@ -1167,10 +1180,22 @@ export class MemoryLeakDetector {
 
     // Restart timers with new intervals
     if (this.scanTimer) {
-      clearInterval(this.scanTimer);
-      this.scanTimer = window.setInterval((): void => {
+      // Use window.clearInterval if available (for proper test mocking), otherwise fallback
+      const clearIntervalFn =
+        (typeof window !== 'undefined' && window.clearInterval) ||
+        globalThis.clearInterval ||
+        (global as any)?.clearInterval ||
+        clearInterval;
+      clearIntervalFn(this.scanTimer);
+      // Use window.setInterval if available (for proper test mocking), otherwise fallback
+      const setIntervalFn =
+        (typeof window !== 'undefined' && window.setInterval) ||
+        globalThis.setInterval ||
+        (global as any)?.setInterval ||
+        setInterval;
+      this.scanTimer = setIntervalFn((): void => {
         void this.performScan(false);
-      }, this.config.scanning.interval);
+      }, this.config.scanning.interval) as any;
     }
   }
 
@@ -1188,18 +1213,25 @@ export class MemoryLeakDetector {
   private startBackgroundDetection(): void {
     if (!this.config.scanning.backgroundScanning) return;
 
+    // Use window.setInterval if available (for proper test mocking), otherwise fallback
+    const setIntervalFn =
+      (typeof window !== 'undefined' && window.setInterval) ||
+      globalThis.setInterval ||
+      (global as any)?.setInterval ||
+      setInterval;
+
     // Regular scan timer
-    this.scanTimer = window.setInterval((): void => {
+    this.scanTimer = setIntervalFn((): void => {
       this.performScan(false);
-    }, this.config.scanning.interval);
+    }, this.config.scanning.interval) as any;
 
     // Deep scan timer
-    this.deepScanTimer = window.setInterval((): void => {
+    this.deepScanTimer = setIntervalFn((): void => {
       this.performScan(true);
-    }, this.config.scanning.deepScanInterval);
+    }, this.config.scanning.deepScanInterval) as any;
 
     // Cleanup timer for resolved leaks
-    this.cleanupTimer = window.setInterval((): void => {
+    this.cleanupTimer = setIntervalFn((): void => {
       const cutoff = Date.now() - 3600000; // 1 hour
       const resolvedLeaksArray = Array.from(this.resolvedLeaks.entries());
       for (const [id, leak] of resolvedLeaksArray) {
@@ -1207,7 +1239,7 @@ export class MemoryLeakDetector {
           this.resolvedLeaks.delete(id);
         }
       }
-    }, 300000); // Every 5 minutes
+    }, 300000) as any; // Every 5 minutes
   }
 
   private emit<K extends keyof MemoryLeakDetectorEvents>(

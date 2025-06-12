@@ -16,14 +16,33 @@ import {
   getBatteryOptimizationRecommendations,
 } from '../deviceDetection.js';
 
-// Store original values
-const _originalUserAgent = navigator.userAgent;
-const _originalAudioContext = globalThis.AudioContext;
+// Store original values - will be set up in beforeEach
+let _originalUserAgent: string;
+let _originalAudioContext: any;
 
 // Mock navigator.userAgent
 const mockUserAgent = (userAgent: string) => {
+  const currentNavigator = (global as any).navigator || {
+    hardwareConcurrency: 2,
+    deviceMemory: 4,
+    onLine: true,
+    platform: 'Win32',
+    language: 'en-US',
+    languages: ['en-US', 'en'],
+    cookieEnabled: true,
+    doNotTrack: null,
+    maxTouchPoints: 0,
+    vendor: 'Google Inc.',
+    vendorSub: '',
+    productSub: '20030107',
+    appName: 'Netscape',
+    appVersion: '5.0',
+    appCodeName: 'Mozilla',
+    product: 'Gecko',
+  };
+
   vi.stubGlobal('navigator', {
-    ...navigator,
+    ...currentNavigator,
     userAgent,
   });
 };
@@ -37,24 +56,31 @@ const mockAudioContext = () => {
     audioWorklet: {}, // Mock audioWorklet for testing
   };
 
+  // Mock on global scope
   vi.stubGlobal('AudioContext', MockedAudioContext);
   vi.stubGlobal('webkitAudioContext', MockedAudioContext);
+
+  // Mock on window object for deviceDetection utility
+  const mockWindow = {
+    AudioContext: MockedAudioContext,
+    webkitAudioContext: MockedAudioContext,
+  };
+  vi.stubGlobal('window', mockWindow);
 };
 
 // Remove AudioContext completely
 const removeAudioContext = () => {
   vi.stubGlobal('AudioContext', undefined);
   vi.stubGlobal('webkitAudioContext', undefined);
+  // Also remove from window object
+  vi.stubGlobal('window', {});
 };
 
 describe('Device Detection Utilities', () => {
   beforeEach(() => {
-    // Store original values (prefixed with _ since they're not used in current test structure)
-    const _originalUserAgent = Object.getOwnPropertyDescriptor(
-      Navigator.prototype,
-      'userAgent',
-    );
-    const _originalAudioContext = global.AudioContext;
+    // Store original values for cleanup (if needed)
+    _originalUserAgent = (global as any).navigator?.userAgent || '';
+    _originalAudioContext = (global as any).AudioContext;
 
     // Spy on console to suppress warnings during tests
     vi.spyOn(console, 'warn').mockImplementation(() => {

@@ -1,0 +1,97 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Vitest Test Execution Rules
+
+**MANDATORY: All tests MUST be run using `pnpm vitest run` commands**
+
+## ✅ **CORRECT TEST COMMANDS**
+
+### **Standard Test Execution:**
+```bash
+# Run all tests in a specific directory
+pnpm vitest run apps/backend/src/
+
+# Run all tests in a domain
+pnpm vitest run apps/backend/src/domains/user/
+
+# Run specific test file
+pnpm vitest run apps/backend/src/domains/user/auth/auth.service.spec.ts
+
+# Run tests matching a pattern
+pnpm vitest run apps/backend/src/domains/user/ --grep "auth"
+
+# Run tests with coverage
+pnpm vitest run apps/backend/src/ --coverage
+
+# Run tests in watch mode for development
+pnpm vitest run apps/backend/src/ --watch
+
+# Run frontend tests
+pnpm vitest run apps/frontend/src/
+
+# Run specific frontend component tests
+pnpm vitest run apps/frontend/src/domains/user/components/
+```
+
+### **Test Types and Paths:**
+```bash
+# Unit Tests
+pnpm vitest run apps/backend/src/domains/user/auth/auth.service.spec.ts
+
+# Integration Tests  
+pnpm vitest run apps/backend/src/domains/user/test/integration/
+
+# Frontend Component Tests
+pnpm vitest run apps/frontend/src/domains/user/components/auth/LoginForm.test.tsx
+
+# Frontend Hook Tests
+pnpm vitest run apps/frontend/src/domains/user/hooks/useAuth.test.ts
+```
+
+## ❌ **FORBIDDEN TEST COMMANDS**
+
+```bash
+# NEVER use these:
+npm test                           # ❌
+npm run test                       # ❌
+yarn test                          # ❌
+jest                              # ❌
+pnpm nx test                      # ❌ (old command, replaced by vitest)
+pnpm test                         # ❌
+pnpm run test                     # ❌
+npx vitest                        # ❌ (use pnpm vitest)
+```
+
+## 🎯 **Command Pattern Rules**
+
+1. **Always use `pnpm vitest run`** as the base command
+2. **Always specify the path** to the tests you want to run
+3. **Use relative paths from project root** (e.g., `apps/backend/src/`)
+4. **Be specific about test location** rather than running all tests unnecessarily
+
+## 🔍 **Path Guidelines**
+
+- **Backend Tests:** `apps/backend/src/[domain-path]/` 
+- **Frontend Tests:** `apps/frontend/src/[domain-path]/`
+- **E2E Tests:** `apps/[app]/e2e/`
+- **Integration Tests:** `apps/[app]/src/[domain]/test/integration/`
+
+## ⚠️ **Important Notes**
+
+- Vitest is the standardized test runner for this monorepo
+- All test files should use `.test.ts`, `.spec.ts`, or `.test.tsx` extensions
+- Always run tests from the project root directory
+- Use path-specific commands to avoid running unnecessary tests
+
+## 🚨 **VERIFICATION CHECKLIST**
+
+Before running any test command, verify:
+- [ ] ✅ Using `pnpm vitest run` (not nx, npm, or yarn)
+- [ ] ✅ Specified the correct path to tests
+- [ ] ✅ Running from project root directory
+- [ ] ✅ Using appropriate flags (--coverage, --watch, etc.)
+
+**IF NOT USING `pnpm vitest run path..`, STOP AND CORRECT IMMEDIATELY!** 🛑

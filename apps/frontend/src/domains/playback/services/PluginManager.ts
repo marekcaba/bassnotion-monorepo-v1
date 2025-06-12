@@ -17,6 +17,7 @@ import {
   PluginCategory,
   PluginAudioContext,
   PluginProcessingResult,
+  ProcessingResultStatus,
 } from '../types/plugin';
 import { PerformanceMonitor } from './PerformanceMonitor';
 import {
@@ -144,15 +145,16 @@ export class PluginManager {
         throw new Error(`Plugin ${plugin.metadata.id} is already registered`);
       }
 
-      // Check resource constraints
+      // **ARCHITECTURE UPGRADE**: Resource validation during registration
       await this.validateResourceConstraints(plugin);
 
-      // Create registry entry
+      // Create registry entry with manager-controlled state
       const registryEntry: PluginRegistryEntry = {
         plugin,
         registeredAt: Date.now(),
         lastUsed: 0,
         usageCount: 0,
+        managerState: PluginState.LOADING, // Manager controls state
         averageProcessingTime: 0,
         averageCpuUsage: 0,
         totalErrors: 0,
@@ -162,11 +164,14 @@ export class PluginManager {
 
       // Load the plugin
       await plugin.load();
+      registryEntry.managerState = PluginState.LOADED;
 
       // Initialize if audio context is available
       if (this.audioContext) {
         const context = this.createPluginAudioContext();
+        registryEntry.managerState = PluginState.INITIALIZING;
         await plugin.initialize(context);
+        registryEntry.managerState = PluginState.INACTIVE;
       }
 
       // Register plugin
@@ -205,7 +210,7 @@ export class PluginManager {
 
     try {
       // Deactivate plugin if active
-      if (entry.plugin.state === PluginState.ACTIVE) {
+      if (entry.managerState === PluginState.ACTIVE) {
         await this.deactivatePlugin(pluginId);
       }
 
@@ -244,25 +249,31 @@ export class PluginManager {
     }
 
     try {
-      // Check if plugin is already active
-      if (entry.plugin.state === PluginState.ACTIVE) {
+      // Check if plugin is already active using manager state
+      if (entry.managerState === PluginState.ACTIVE) {
         console.warn(`Plugin ${pluginId} is already active`);
         return;
       }
 
-      // Validate resource constraints
+      // Validate resource constraints before activation
       await this.validateResourceConstraints(entry.plugin);
 
       // Activate dependencies first
       for (const depId of Array.from(entry.dependencies)) {
         const depEntry = this.registry.get(depId);
-        if (depEntry && depEntry.plugin.state !== PluginState.ACTIVE) {
+        if (depEntry && depEntry.managerState !== PluginState.ACTIVE) {
           await this.activatePlugin(depId);
         }
       }
 
       // Activate the plugin
       await entry.plugin.activate();
+
+      // **ARCHITECTURE UPGRADE**: Update manager-controlled state
+      entry.managerState = PluginState.ACTIVE;
+
+      // Update processing order to include newly activated plugin
+      this.updateProcessingOrder();
 
       this.emit('pluginStateChanged', pluginId, PluginState.ACTIVE);
       console.log(`Plugin activated: ${pluginId}`);
@@ -282,8 +293,8 @@ export class PluginManager {
     }
 
     try {
-      // Check if plugin is already inactive
-      if (entry.plugin.state !== PluginState.ACTIVE) {
+      // Check if plugin is already inactive using manager state
+      if (entry.managerState !== PluginState.ACTIVE) {
         console.warn(`Plugin ${pluginId} is not active`);
         return;
       }
@@ -293,7 +304,7 @@ export class PluginManager {
         const dependentEntry = this.registry.get(dependentId);
         if (
           dependentEntry &&
-          dependentEntry.plugin.state === PluginState.ACTIVE
+          dependentEntry.managerState === PluginState.ACTIVE
         ) {
           await this.deactivatePlugin(dependentId);
         }
@@ -301,6 +312,12 @@ export class PluginManager {
 
       // Deactivate the plugin
       await entry.plugin.deactivate();
+
+      // **ARCHITECTURE UPGRADE**: Update manager-controlled state
+      entry.managerState = PluginState.INACTIVE;
+
+      // Update processing order to exclude deactivated plugin
+      this.updateProcessingOrder();
 
       this.emit('pluginStateChanged', pluginId, PluginState.INACTIVE);
       console.log(`Plugin deactivated: ${pluginId}`);
@@ -341,7 +358,7 @@ export class PluginManager {
       for (const pluginId of this.processingOrder) {
         const entry = this.registry.get(pluginId);
 
-        if (!entry || entry.plugin.state !== PluginState.ACTIVE) {
+        if (!entry || entry.managerState !== PluginState.ACTIVE) {
           continue;
         }
 
@@ -407,12 +424,12 @@ export class PluginManager {
   }
 
   /**
-   * Get active plugins
+   * Get active plugins - **ARCHITECTURE UPGRADE**: Use manager state
    */
   public getActivePlugins(): AudioPlugin[] {
-    return this.getAllPlugins().filter(
-      (plugin) => plugin.state === PluginState.ACTIVE,
-    );
+    return Array.from(this.registry.values())
+      .filter((entry) => entry.managerState === PluginState.ACTIVE)
+      .map((entry) => entry.plugin);
   }
 
   /**
@@ -541,24 +558,61 @@ export class PluginManager {
   private async validateResourceConstraints(
     plugin: AudioPlugin,
   ): Promise<void> {
+    // **ARCHITECTURE UPGRADE**: Comprehensive resource validation
     const currentCpuUsage = this.processingStats.totalCpuUsage;
     const currentMemoryUsage = this.processingStats.totalMemoryUsage;
 
+    // Calculate estimated resource usage if this plugin were added/activated
     const estimatedCpuUsage = currentCpuUsage + plugin.capabilities.cpuUsage;
     const estimatedMemoryUsage =
       currentMemoryUsage + plugin.capabilities.memoryUsage;
 
+    // **CRITICAL FIX**: Enforce CPU usage constraints
     if (estimatedCpuUsage > this.config.maxTotalCpuUsage) {
       throw createPerformanceError(
         PerformanceErrorCode.CPU_USAGE_HIGH,
-        `Plugin would exceed CPU usage limit: ${estimatedCpuUsage} > ${this.config.maxTotalCpuUsage}`,
+        `Plugin would exceed CPU usage limit: ${estimatedCpuUsage.toFixed(3)} > ${this.config.maxTotalCpuUsage}`,
       );
     }
 
+    // **CRITICAL FIX**: Enforce memory usage constraints
     if (estimatedMemoryUsage > this.config.maxTotalMemoryUsage) {
       throw createResourceError(
         ResourceErrorCode.MEMORY_LIMIT_EXCEEDED,
         `Plugin would exceed memory usage limit: ${estimatedMemoryUsage}MB > ${this.config.maxTotalMemoryUsage}MB`,
+      );
+    }
+
+    // **ARCHITECTURE UPGRADE**: Validate plugin-specific constraints
+    if (
+      plugin.config.maxCpuUsage &&
+      plugin.capabilities.cpuUsage > plugin.config.maxCpuUsage
+    ) {
+      throw createPerformanceError(
+        PerformanceErrorCode.CPU_USAGE_HIGH,
+        `Plugin CPU usage ${plugin.capabilities.cpuUsage} exceeds plugin limit ${plugin.config.maxCpuUsage}`,
+      );
+    }
+
+    if (
+      plugin.config.maxMemoryUsage &&
+      plugin.capabilities.memoryUsage > plugin.config.maxMemoryUsage
+    ) {
+      throw createResourceError(
+        ResourceErrorCode.MEMORY_LIMIT_EXCEEDED,
+        `Plugin memory usage ${plugin.capabilities.memoryUsage}MB exceeds plugin limit ${plugin.config.maxMemoryUsage}MB`,
+      );
+    }
+
+    // **ARCHITECTURE UPGRADE**: Check concurrent plugin limits
+    const activePluginCount = Array.from(this.registry.values()).filter(
+      (entry) => entry.managerState === PluginState.ACTIVE,
+    ).length;
+
+    if (activePluginCount >= this.config.maxConcurrentPlugins) {
+      throw createResourceError(
+        ResourceErrorCode.CONCURRENT_LIMIT_EXCEEDED,
+        `Cannot activate plugin: would exceed maximum concurrent plugins limit of ${this.config.maxConcurrentPlugins}`,
       );
     }
   }
@@ -623,9 +677,12 @@ export class PluginManager {
       // Return failed result
       return {
         success: false,
+        status: ProcessingResultStatus.ERROR,
         processingTime: performance.now() - startTime,
         bypassMode: true,
+        processedSamples: 0,
         cpuUsage: 0,
+        memoryUsage: 0,
         memoryDelta: 0,
         error: {
           code: 'PLUGIN_PROCESSING_ERROR',
@@ -654,11 +711,11 @@ export class PluginManager {
 
     // Update total resource usage
     this.processingStats.totalCpuUsage = Array.from(this.registry.values())
-      .filter((entry) => entry.plugin.state === PluginState.ACTIVE)
+      .filter((entry) => entry.managerState === PluginState.ACTIVE)
       .reduce((total, entry) => total + entry.averageCpuUsage, 0);
 
     this.processingStats.totalMemoryUsage = Array.from(this.registry.values())
-      .filter((entry) => entry.plugin.state === PluginState.ACTIVE)
+      .filter((entry) => entry.managerState === PluginState.ACTIVE)
       .reduce(
         (total, entry) => total + entry.plugin.capabilities.memoryUsage,
         0,

@@ -28,8 +28,27 @@ import {
 
 // Mock user agent safely
 const mockUserAgent = (userAgent: string) => {
+  // Get current navigator or use a basic fallback
+  const currentNavigator = (global as any).navigator || {
+    hardwareConcurrency: 2,
+    deviceMemory: 4,
+    onLine: true,
+    platform: 'Win32',
+    language: 'en-US',
+    languages: ['en-US', 'en'],
+    cookieEnabled: true,
+    doNotTrack: null,
+    maxTouchPoints: 0,
+    vendor: 'Google Inc.',
+    vendorSub: '',
+    productSub: '20030107',
+    appName: 'Netscape',
+    appVersion: '5.0',
+    appCodeName: 'Mozilla',
+    product: 'Gecko',
+  };
   vi.stubGlobal('navigator', {
-    ...navigator,
+    ...currentNavigator,
     userAgent,
   });
 };

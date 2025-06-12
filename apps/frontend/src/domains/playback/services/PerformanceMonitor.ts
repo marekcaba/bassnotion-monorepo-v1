@@ -47,8 +47,8 @@ export class PerformanceMonitor {
   private readonly LATENCY_WARNING_MS = 30; // Warning at 30ms
   private readonly LATENCY_CRITICAL_MS = 50; // Critical at 50ms (NFR limit)
   private readonly RESPONSE_TIME_CRITICAL_MS = 200; // NFR-PF-04
-  private readonly CPU_WARNING_THRESHOLD = 70; // Warning at 70% CPU
-  private readonly CPU_CRITICAL_THRESHOLD = 85; // Critical at 85% CPU
+  private readonly CPU_WARNING_THRESHOLD = 0.7; // Warning at 70% CPU (0.7 in 0-1 range)
+  private readonly CPU_CRITICAL_THRESHOLD = 0.85; // Critical at 85% CPU (0.85 in 0-1 range)
 
   // Metrics tracking
   private metrics: AudioPerformanceMetrics = {
@@ -89,6 +89,73 @@ export class PerformanceMonitor {
     this.audioContext = audioContext;
     this.setupAnalyser();
     this.updateBasicMetrics();
+
+    // Enhanced audio context property sanitization
+    this.sanitizeAudioContextProperties(audioContext);
+  }
+
+  /**
+   * Sanitize and extract safe values from potentially malicious audio context properties
+   */
+  private sanitizeAudioContextProperties(audioContext: any): void {
+    // Only apply enhanced sanitization if properties exist and might be malicious
+    if (audioContext.sampleRate !== undefined) {
+      const sampleRate = this.extractNumericValue(
+        audioContext.sampleRate,
+        44100,
+      );
+      this.metrics.sampleRate = this.sanitizeNumericValue(
+        sampleRate,
+        8000,
+        192000,
+      );
+    }
+
+    // Only calculate latency if both properties exist
+    if (
+      audioContext.baseLatency !== undefined &&
+      audioContext.outputLatency !== undefined
+    ) {
+      const baseLatency = this.extractNumericValue(
+        audioContext.baseLatency,
+        0.005,
+      );
+      const outputLatency = this.extractNumericValue(
+        audioContext.outputLatency,
+        0.01,
+      );
+
+      // Calculate total latency in milliseconds
+      const totalLatencyMs = (baseLatency + outputLatency) * 1000;
+      this.metrics.latency = this.sanitizeNumericValue(totalLatencyMs, 0, 1000);
+      this.metrics.averageLatency = this.metrics.latency;
+      this.metrics.maxLatency = this.metrics.latency;
+    }
+    // If latency properties are missing, leave them at default 0 (handled by updateBasicMetrics)
+  }
+
+  /**
+   * Extract numeric value from potentially malicious input with fallback default
+   */
+  private extractNumericValue(value: any, defaultValue: number): number {
+    // If already a valid number, return it
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    // Try to extract numbers from strings (e.g., "44100" from malicious content)
+    if (typeof value === 'string') {
+      // Remove all non-numeric characters and try to parse
+      const cleaned = value.replace(/[^\d.-]/g, '');
+      const parsed = parseFloat(cleaned);
+
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    // Return safe default for invalid inputs
+    return defaultValue;
   }
 
   /**
@@ -104,14 +171,22 @@ export class PerformanceMonitor {
     const sanitizedInterval = this.sanitizeMonitoringInterval(intervalMs);
 
     this.isMonitoring = true;
-    this.monitoringInterval = window.setInterval(() => {
+
+    // Use window.setInterval if available (for proper test mocking), otherwise fallback
+    const setIntervalFn =
+      (typeof window !== 'undefined' && window.setInterval) ||
+      globalThis.setInterval ||
+      (global as any)?.setInterval ||
+      setInterval;
+
+    this.monitoringInterval = setIntervalFn(() => {
       try {
         this.collectMetrics();
       } catch (error) {
         console.error('Error collecting metrics:', error);
         // Continue monitoring even if one collection fails
       }
-    }, sanitizedInterval);
+    }, sanitizedInterval) as any;
   }
 
   /**
@@ -122,7 +197,13 @@ export class PerformanceMonitor {
 
     this.isMonitoring = false;
     if (this.monitoringInterval !== null) {
-      clearInterval(this.monitoringInterval);
+      // Use window.clearInterval if available (for proper test mocking), otherwise fallback
+      const clearIntervalFn =
+        (typeof window !== 'undefined' && window.clearInterval) ||
+        globalThis.clearInterval ||
+        (global as any)?.clearInterval ||
+        clearInterval;
+      clearIntervalFn(this.monitoringInterval);
       this.monitoringInterval = null;
     }
   }
@@ -152,6 +233,9 @@ export class PerformanceMonitor {
     const result = await operation();
     const responseTime = performance.now() - startTime;
 
+    // Sanitize operation result to prevent XSS
+    const sanitizedResult = this.sanitizeOperationResult(result);
+
     // Check against NFR-PF-04 (200ms response time)
     if (responseTime > this.RESPONSE_TIME_CRITICAL_MS) {
       this.emitAlert({
@@ -163,7 +247,30 @@ export class PerformanceMonitor {
       });
     }
 
-    return { result, responseTime };
+    return { result: sanitizedResult, responseTime };
+  }
+
+  /**
+   * Sanitize operation results to prevent XSS and other security issues
+   */
+  private sanitizeOperationResult<T>(result: T): T {
+    if (typeof result === 'string') {
+      // Apply the same sanitization as alert messages
+      const sanitized = this.sanitizeAlertMessage(result);
+      return sanitized as T;
+    }
+
+    if (typeof result === 'object' && result !== null) {
+      // Deep sanitize object properties
+      const sanitizedObj = {} as T;
+      for (const [key, value] of Object.entries(result)) {
+        (sanitizedObj as any)[key] = this.sanitizeOperationResult(value);
+      }
+      return sanitizedObj;
+    }
+
+    // Return primitive values as-is (numbers, booleans, etc.)
+    return result;
   }
 
   /**
@@ -314,13 +421,14 @@ export class PerformanceMonitor {
   private estimateCPUUsage(): void {
     // Simplified CPU usage estimation based on audio processing
     // In a real implementation, this would use more sophisticated metrics
-    const baseUsage = 5; // Base audio processing overhead
+    const baseUsage = 0.05; // Base audio processing overhead (5% as 0.05)
     const latencyPenalty =
-      this.metrics.latency > 20 ? (this.metrics.latency - 20) * 2 : 0;
-    const dropoutPenalty = this.metrics.dropoutCount * 5;
+      this.metrics.latency > 20 ? (this.metrics.latency - 20) * 0.02 : 0;
+    const dropoutPenalty = this.metrics.dropoutCount * 0.05;
 
+    // Return CPU usage as 0-1 range (not 0-100 percentage)
     this.metrics.cpuUsage = Math.min(
-      100,
+      1.0,
       baseUsage + latencyPenalty + dropoutPenalty,
     );
   }
@@ -484,7 +592,7 @@ export class PerformanceMonitor {
     sanitizedMetrics.cpuUsage = this.sanitizeNumericValue(
       metrics.cpuUsage,
       0,
-      100,
+      1,
     );
     sanitizedMetrics.memoryUsage = this.sanitizeNumericValue(
       metrics.memoryUsage,

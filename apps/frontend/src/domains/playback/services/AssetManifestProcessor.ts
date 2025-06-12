@@ -41,10 +41,10 @@ export interface AssetLoadingGroup {
 
 export class AssetManifestProcessor {
   private static instance: AssetManifestProcessor;
-  private deviceCapabilities: DeviceCapabilities;
 
   private constructor() {
-    this.deviceCapabilities = this.detectDeviceCapabilities();
+    // Device capabilities will be detected on each processManifest call
+    // to handle test environment changes and singleton persistence
   }
 
   public static getInstance(): AssetManifestProcessor {
@@ -58,6 +58,10 @@ export class AssetManifestProcessor {
    * Process asset manifest with advanced optimization and dependency resolution
    */
   public processManifest(manifest: AssetManifest): ProcessedAssetManifest {
+    // Re-detect device capabilities for each processing call
+    // This ensures test environment changes are properly captured
+    const deviceCapabilities = this.detectDeviceCapabilities();
+
     // Analyze dependencies between assets
     const dependencies = this.analyzeDependencies(manifest.assets);
 
@@ -68,7 +72,10 @@ export class AssetManifestProcessor {
     );
 
     // Generate optimization strategies per asset
-    const optimizations = this.generateOptimizations(manifest.assets);
+    const optimizations = this.generateOptimizations(
+      manifest.assets,
+      deviceCapabilities,
+    );
 
     // Calculate critical path for priority loading
     const criticalPath = this.calculateCriticalPath(
@@ -213,36 +220,54 @@ export class AssetManifestProcessor {
    */
   private generateOptimizations(
     assets: AssetReference[],
+    deviceCapabilities: DeviceCapabilities,
   ): Map<string, AssetOptimization> {
     const optimizations = new Map<string, AssetOptimization>();
 
     assets.forEach((asset) => {
       let optimization: AssetOptimization;
 
-      if (this.deviceCapabilities.isLowEnd) {
-        // Aggressive optimization for low-end devices
+      if (deviceCapabilities.isLowEnd) {
+        // Aggressive optimization for low-end devices regardless of priority
         optimization = {
           compressionLevel: 'high',
           qualityTarget: 'efficient',
           deviceOptimized: true,
           networkOptimized: true,
         };
-      } else if (this.deviceCapabilities.isSlowNetwork) {
-        // Network-optimized for slow connections
+      } else if (deviceCapabilities.isSlowNetwork) {
+        // Network-optimized for slow connections with priority consideration
         optimization = {
-          compressionLevel: 'medium',
-          qualityTarget: 'balanced',
+          compressionLevel: asset.priority === 'low' ? 'high' : 'medium',
+          qualityTarget: asset.priority === 'low' ? 'efficient' : 'balanced',
           deviceOptimized: false,
           networkOptimized: true,
         };
       } else {
-        // High quality for capable devices
-        optimization = {
-          compressionLevel: asset.priority === 'high' ? 'low' : 'medium',
-          qualityTarget: asset.priority === 'high' ? 'maximum' : 'balanced',
-          deviceOptimized: this.deviceCapabilities.isMobile,
-          networkOptimized: false,
-        };
+        // Priority-based optimization for capable devices
+        if (asset.priority === 'high') {
+          optimization = {
+            compressionLevel: 'low',
+            qualityTarget: 'maximum',
+            deviceOptimized: deviceCapabilities.isMobile,
+            networkOptimized: false,
+          };
+        } else if (asset.priority === 'medium') {
+          optimization = {
+            compressionLevel: 'medium',
+            qualityTarget: 'balanced',
+            deviceOptimized: deviceCapabilities.isMobile,
+            networkOptimized: false,
+          };
+        } else {
+          // Low priority assets get aggressive compression for bandwidth savings
+          optimization = {
+            compressionLevel: 'high',
+            qualityTarget: 'minimal',
+            deviceOptimized: true,
+            networkOptimized: true,
+          };
+        }
       }
 
       optimizations.set(asset.url, optimization);
@@ -312,27 +337,61 @@ export class AssetManifestProcessor {
    */
   private detectDeviceCapabilities(): DeviceCapabilities {
     // Simple capability detection - can be enhanced with actual device detection
-    const userAgent =
-      typeof navigator !== 'undefined' ? navigator.userAgent : '';
-    const connection = (navigator as any)?.connection;
+    let userAgent = '';
+    let connection: any = undefined;
 
-    return {
+    try {
+      userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+      connection =
+        typeof navigator !== 'undefined'
+          ? (navigator as any)?.connection
+          : undefined;
+    } catch {
+      // Handle cases where navigator is completely undefined or causes errors
+      userAgent = '';
+      connection = undefined;
+    }
+
+    // Improved low-end device detection
+    const isLowEndDevice =
+      // Android 4.x and lower
+      /Android\s+[1-4]\./.test(userAgent) ||
+      // Very old iOS versions (5-9)
+      /iPhone.*OS\s+[5-9]_/.test(userAgent) ||
+      // Old Android devices with SM- model numbers (Samsung Galaxy older models)
+      /Android.*SM-G[0-9]{4}/.test(userAgent) ||
+      // Generic low-end indicators
+      /Android.*2\.|Android.*3\./.test(userAgent);
+
+    // Improved slow network detection
+    const isSlowNetwork =
+      connection?.effectiveType === '2g' ||
+      connection?.effectiveType === 'slow-2g' ||
+      connection?.effectiveType === '3g';
+
+    const capabilities: DeviceCapabilities = {
       isMobile: /Mobile|Android|iPhone|iPad/.test(userAgent),
-      isLowEnd: /Android.*4\.|iPhone.*OS [5-9]_/.test(userAgent),
-      isSlowNetwork:
-        connection?.effectiveType === '2g' ||
-        connection?.effectiveType === 'slow-2g',
-      maxConcurrentDownloads: this.getMaxConcurrentDownloads(),
+      isLowEnd: isLowEndDevice,
+      isSlowNetwork: isSlowNetwork,
+      maxConcurrentDownloads: 6, // Will be set below
       supportedFormats: this.getSupportedAudioFormats(),
     };
+
+    // Set max concurrent downloads based on detected capabilities
+    capabilities.maxConcurrentDownloads =
+      this.getMaxConcurrentDownloads(capabilities);
+
+    return capabilities;
   }
 
   /**
    * Get maximum concurrent downloads based on device
    */
-  private getMaxConcurrentDownloads(): number {
-    if (this.deviceCapabilities?.isLowEnd) return 2;
-    if (this.deviceCapabilities?.isMobile) return 4;
+  private getMaxConcurrentDownloads(
+    deviceCapabilities: DeviceCapabilities,
+  ): number {
+    if (deviceCapabilities.isLowEnd) return 2;
+    if (deviceCapabilities.isMobile) return 4;
     return 6;
   }
 

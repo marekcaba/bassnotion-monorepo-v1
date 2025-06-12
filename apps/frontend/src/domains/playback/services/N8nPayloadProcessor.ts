@@ -43,6 +43,9 @@ export class N8nPayloadProcessor {
   ): N8nPayloadProcessor {
     if (!N8nPayloadProcessor.instance) {
       N8nPayloadProcessor.instance = new N8nPayloadProcessor(config);
+    } else if (config) {
+      // Update configuration on existing instance
+      N8nPayloadProcessor.instance.updateConfig(config);
     }
     return N8nPayloadProcessor.instance;
   }
@@ -55,51 +58,88 @@ export class N8nPayloadProcessor {
     const assets: AssetReference[] = [];
 
     // Tutorial-specific MIDI files (Epic 2 Section 9)
-    assets.push({
-      type: 'midi',
-      category: 'bassline',
-      url: payload.tutorialSpecificMidi.basslineUrl,
-      priority: 'high',
-    });
+    if (payload.tutorialSpecificMidi?.basslineUrl) {
+      assets.push({
+        type: 'midi',
+        category: 'bassline',
+        url: payload.tutorialSpecificMidi.basslineUrl,
+        priority: 'high',
+      });
+    }
 
-    assets.push({
-      type: 'midi',
-      category: 'chords',
-      url: payload.tutorialSpecificMidi.chordsUrl,
-      priority: 'high',
-    });
+    if (payload.tutorialSpecificMidi?.chordsUrl) {
+      assets.push({
+        type: 'midi',
+        category: 'chords',
+        url: payload.tutorialSpecificMidi.chordsUrl,
+        priority: 'high',
+      });
+    }
 
     // Library MIDI patterns
-    assets.push({
-      type: 'midi',
-      category: 'drums',
-      url: this.resolveDrumPatternUrl(payload.libraryMidi.drumPatternId),
-      priority: 'medium',
-    });
+    if (payload.libraryMidi?.drumPatternId) {
+      const drumUrl = this.resolveDrumPatternUrl(
+        payload.libraryMidi.drumPatternId,
+      );
+      if (drumUrl) {
+        assets.push({
+          type: 'midi',
+          category: 'drums',
+          url: drumUrl,
+          priority: 'medium',
+        });
+      }
+    }
+
+    // Metronome MIDI (from metronomeStyleId)
+    if (payload.libraryMidi?.metronomeStyleId) {
+      const metronomeUrl = this.resolveMetronomeUrl(
+        payload.libraryMidi.metronomeStyleId,
+      );
+      if (metronomeUrl) {
+        assets.push({
+          type: 'midi',
+          category: 'metronome',
+          url: metronomeUrl,
+          priority: 'medium',
+        });
+      }
+    }
 
     // Audio samples per Epic 2 Section 7.2
-    payload.audioSamples.bassNotes.forEach((url, index) => {
-      assets.push({
-        type: 'audio',
-        category: 'bass-sample',
-        url,
-        priority: 'high',
-        noteIndex: index,
+    if (payload.audioSamples?.bassNotes) {
+      payload.audioSamples.bassNotes.forEach((url, index) => {
+        if (url && url.length > 0) {
+          assets.push({
+            type: 'audio',
+            category: 'bass-sample',
+            url,
+            priority: 'high',
+            noteIndex: index,
+          });
+        }
       });
-    });
+    }
 
-    payload.audioSamples.drumHits.forEach((url, index) => {
-      assets.push({
-        type: 'audio',
-        category: 'drum-sample',
-        url,
-        priority: 'medium',
-        drumPiece: this.identifyDrumPiece(index),
+    if (payload.audioSamples?.drumHits) {
+      payload.audioSamples.drumHits.forEach((url, index) => {
+        if (url && url.length > 0) {
+          assets.push({
+            type: 'audio',
+            category: 'drum-sample',
+            url,
+            priority: 'medium',
+            drumPiece: this.identifyDrumPiece(index),
+          });
+        }
       });
-    });
+    }
 
     // Ambient audio (Epic 2 Section 7.5)
-    if (payload.audioSamples.ambienceTrack) {
+    if (
+      payload.audioSamples?.ambienceTrack &&
+      payload.audioSamples.ambienceTrack.length > 0
+    ) {
       assets.push({
         type: 'audio',
         category: 'ambience',
@@ -237,12 +277,26 @@ export class N8nPayloadProcessor {
     this.assetCache.forEach((data) => {
       if (data instanceof ArrayBuffer) {
         totalSize += data.byteLength;
-      } else if (data instanceof AudioBuffer) {
+      } else if (this.isAudioBuffer(data)) {
         // Estimate AudioBuffer size
         totalSize += data.length * data.numberOfChannels * 4; // 32-bit float
       }
     });
     return totalSize;
+  }
+
+  /**
+   * Check if data is an AudioBuffer (handles both real and mock AudioBuffers)
+   */
+  private isAudioBuffer(data: any): data is AudioBuffer {
+    return (
+      data instanceof AudioBuffer ||
+      (typeof data === 'object' &&
+        data !== null &&
+        typeof data.length === 'number' &&
+        typeof data.numberOfChannels === 'number' &&
+        typeof data.sampleRate === 'number')
+    );
   }
 
   /**
@@ -253,6 +307,16 @@ export class N8nPayloadProcessor {
     const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     const storageBucket = 'library-midi';
     return `${baseUrl}/storage/v1/object/public/${storageBucket}/drum-patterns/${drumPatternId}.mid`;
+  }
+
+  /**
+   * Resolve metronome pattern URL from style ID
+   */
+  private resolveMetronomeUrl(metronomeStyleId: string): string {
+    // Epic 2: Direct Supabase Storage integration
+    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const storageBucket = 'library-midi';
+    return `${baseUrl}/storage/v1/object/public/${storageBucket}/metronome-patterns/${metronomeStyleId}.mid`;
   }
 
   /**

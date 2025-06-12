@@ -99,6 +99,7 @@ export class PlaybackError extends Error {
   public readonly technicalMessage?: string;
   public readonly documentationUrl?: string;
   public readonly timestamp: number;
+  public readonly cause?: Error;
 
   constructor(details: ErrorDetails, cause?: Error) {
     super(details.message);
@@ -114,15 +115,17 @@ export class PlaybackError extends Error {
     this.technicalMessage = details.technicalMessage;
     this.documentationUrl = details.documentationUrl;
     this.timestamp = Date.now();
+    this.cause = cause;
 
-    // Maintain error chain
-    if (cause) {
-      this.stack = `${this.stack}\nCaused by: ${cause.stack}`;
-    }
-
-    // Ensure error is properly captured
+    // Ensure error is properly captured first
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, PlaybackError);
+    }
+
+    // Maintain error chain - append after stack trace is captured
+    if (cause && cause.stack) {
+      const currentStack = this.stack || '';
+      this.stack = `${currentStack}\nCaused by: ${cause.stack}`;
     }
   }
 
@@ -242,12 +245,62 @@ export class PlaybackError extends Error {
 export function createErrorContext(
   partial: Partial<ErrorContext> = {},
 ): ErrorContext {
-  return {
+  const defaultContext: ErrorContext = {
     timestamp: Date.now(),
     userAgent:
       typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+    audioContextState:
+      typeof AudioContext !== 'undefined' ? 'supported' : 'unsupported',
+    currentOperation: 'unknown',
+    engineState: 'idle',
+    recoveryAttempts: 0,
     ...partial,
   };
+
+  // Check if this looks like a substantial context (has multiple meaningful fields)
+  const meaningfulFields = Object.keys(partial).filter(
+    (key) => key !== 'timestamp' && key !== 'currentOperation',
+  );
+  const hasSubstantialContext = meaningfulFields.length > 1;
+
+  // Only include deviceInfo defaults if it's missing AND we have substantial context
+  if (!defaultContext.deviceInfo && hasSubstantialContext) {
+    const platform =
+      typeof navigator !== 'undefined' ? navigator.platform : 'unknown';
+    const userAgent =
+      typeof navigator !== 'undefined' ? navigator.userAgent : undefined;
+    const isMobile =
+      /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        userAgent || '',
+      );
+
+    // Extract browser version (simplified)
+    const browserVersion =
+      userAgent?.match(/(Chrome|Firefox|Safari|Edge)\/(\d+)/)?.[0] || 'unknown';
+
+    // Check for low latency support (Web Audio API feature)
+    const hasLowLatencySupport =
+      typeof AudioContext !== 'undefined' &&
+      'audioWorklet' in AudioContext.prototype;
+
+    defaultContext.deviceInfo = {
+      platform,
+      browserVersion,
+      isMobile,
+      hasLowLatencySupport,
+    };
+  }
+
+  // Only include performanceMetrics defaults if it's missing AND we have substantial context
+  if (!defaultContext.performanceMetrics && hasSubstantialContext) {
+    defaultContext.performanceMetrics = {
+      latency: 0,
+      cpuUsage: 0,
+      memoryUsage: 0,
+    };
+  }
+
+  return defaultContext;
 }
 
 /**
@@ -266,9 +319,12 @@ export function determineSeverity(
     return ErrorSeverity.HIGH;
   }
 
+  // Network and other recoverable issues that affect user experience
   if (
     category === ErrorCategory.PERFORMANCE ||
-    category === ErrorCategory.RESOURCE
+    category === ErrorCategory.RESOURCE ||
+    category === ErrorCategory.NETWORK ||
+    category === ErrorCategory.AUDIO_CONTEXT
   ) {
     return ErrorSeverity.MEDIUM;
   }

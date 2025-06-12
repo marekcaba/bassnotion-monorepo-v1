@@ -239,21 +239,21 @@ export function getDevicePerformanceTier(): 'low' | 'medium' | 'high' {
  * Check if current device is an older iOS device
  */
 function isOlderIOS(): boolean {
-  const userAgent = navigator.userAgent;
+  const userAgent = getUserAgentSafely();
 
   // Check for specific older iOS devices
-  if (/iPhone/i.test(userAgent)) {
+  if (/iphone/i.test(userAgent)) {
     // iPhone 7 and below
-    const iPhoneMatch = userAgent.match(/iPhone OS (\d+)/);
+    const iPhoneMatch = userAgent.match(/iphone os (\d+)/);
     if (iPhoneMatch && iPhoneMatch[1]) {
       const version = parseInt(iPhoneMatch[1]);
       return version < 13; // iOS 13+ generally indicates iPhone 8+
     }
   }
 
-  if (/iPad/i.test(userAgent)) {
+  if (/ipad/i.test(userAgent)) {
     // Older iPads
-    const iPadMatch = userAgent.match(/OS (\d+)/);
+    const iPadMatch = userAgent.match(/os (\d+)/);
     if (iPadMatch && iPadMatch[1]) {
       const version = parseInt(iPadMatch[1]);
       return version < 13;
@@ -267,10 +267,10 @@ function isOlderIOS(): boolean {
  * Check if current device is an older Android device
  */
 function isOlderAndroid(): boolean {
-  const userAgent = navigator.userAgent;
+  const userAgent = getUserAgentSafely();
 
   // Check Android version
-  const androidMatch = userAgent.match(/Android (\d+)/);
+  const androidMatch = userAgent.match(/android (\d+)/);
   if (androidMatch && androidMatch[1]) {
     const version = parseInt(androidMatch[1]);
     return version < 8; // Android 8+ generally has better audio support

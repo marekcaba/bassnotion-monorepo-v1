@@ -348,13 +348,17 @@ export interface PluginManagerEvents {
 }
 
 /**
- * Plugin registry entry
+ * Plugin registry entry for manager tracking
  */
 export interface PluginRegistryEntry {
   plugin: AudioPlugin;
   registeredAt: number;
   lastUsed: number;
   usageCount: number;
+
+  // **ARCHITECTURE UPGRADE**: PluginManager-controlled state tracking
+  // Since plugin.state is readonly, the manager maintains authoritative state
+  managerState: PluginState;
 
   // Performance tracking
   averageProcessingTime: number;

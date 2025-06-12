@@ -10,7 +10,12 @@ export class DatabaseService implements OnModuleInit {
 
   constructor(private readonly configService: ConfigService) {
     this.logger.debug('DatabaseService constructor called');
-    this.logger.debug('ConfigService injected:', !!this.configService);
+    this.logger.debug('ConfigService state:', {
+      isDefined: !!this.configService,
+      hasSupabaseUrl: !!this.configService?.get('SUPABASE_URL'),
+      hasSupabaseKey: !!this.configService?.get('SUPABASE_SERVICE_ROLE_KEY'),
+    });
+
     if (!this.configService) {
       this.logger.error('ConfigService is undefined in constructor!');
     }
@@ -19,7 +24,11 @@ export class DatabaseService implements OnModuleInit {
   async onModuleInit() {
     try {
       this.logger.debug('Initializing Supabase client');
-      this.logger.debug('ConfigService available:', !!this.configService);
+      this.logger.debug('ConfigService state:', {
+        isDefined: !!this.configService,
+        hasSupabaseUrl: !!this.configService?.get('SUPABASE_URL'),
+        hasSupabaseKey: !!this.configService?.get('SUPABASE_SERVICE_ROLE_KEY'),
+      });
 
       if (!this.configService) {
         this.logger.error(
@@ -39,6 +48,7 @@ export class DatabaseService implements OnModuleInit {
           return;
         }
 
+        this.logger.debug('Creating Supabase client from env vars');
         this.supabase = createClient(supabaseUrl, supabaseKey);
         this.logger.debug('Supabase client initialized from env vars');
         this.isInitialized = true;
@@ -49,6 +59,11 @@ export class DatabaseService implements OnModuleInit {
       const supabaseKey = this.configService.get<string>(
         'SUPABASE_SERVICE_ROLE_KEY',
       );
+
+      this.logger.debug('Supabase configuration:', {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseKey,
+      });
 
       if (!supabaseUrl || !supabaseKey) {
         this.logger.warn(
@@ -62,10 +77,12 @@ export class DatabaseService implements OnModuleInit {
         return;
       }
 
+      this.logger.debug('Creating Supabase client');
       this.supabase = createClient(supabaseUrl, supabaseKey);
 
       try {
         // Test the connection but don't fail if it doesn't work
+        this.logger.debug('Testing Supabase connection');
         const { error } = await this.supabase.auth.getSession();
         if (error) {
           this.logger.warn(
@@ -94,6 +111,12 @@ export class DatabaseService implements OnModuleInit {
   }
 
   isReady(): boolean {
-    return this.isInitialized && !!this.supabase;
+    const ready = this.isInitialized && !!this.supabase;
+    this.logger.debug('DatabaseService readiness check:', {
+      isInitialized: this.isInitialized,
+      hasSupabase: !!this.supabase,
+      isReady: ready,
+    });
+    return ready;
   }
 }
