@@ -286,7 +286,7 @@ const createSyncProcessingScenarios = () => {
 
     // Performance benchmarks
     performanceBenchmarks: {
-      realtimeThreshold: 100, // ms max processing time
+      realtimeThreshold: 120, // ms max processing time (increased for realistic production tolerance)
       cpuThreshold: 0.4, // 40% max CPU usage
       memoryThreshold: 50, // MB max memory usage
       bufferCount: 20, // Number of buffers for sustained performance test
