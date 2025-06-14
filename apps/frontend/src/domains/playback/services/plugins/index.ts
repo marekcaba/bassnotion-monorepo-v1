@@ -1,22 +1,35 @@
 /**
- * Plugins Index - Sample Plugin Exports
+ * Plugins Index - Plugin Exports
  *
- * Provides convenient access to all sample plugins that demonstrate
- * the plugin architecture capabilities. These plugins serve as examples
- * and can be used directly in the BassNotion platform.
+ * Provides convenient access to all plugins including sample plugins and
+ * Story 2.2 professional instrument processors. These plugins serve as examples
+ * and production-ready instruments for the BassNotion platform.
  *
  * Part of Story 2.1: Task 14, Subtask 14.4
+ * Enhanced for Story 2.2: Professional Instrument Processors
  */
 
-// Export sample plugins
+// Export sample plugins (Story 2.1)
 export { BassProcessor } from './BassProcessor.js';
 export { DrumProcessor } from './DrumProcessor.js';
 export { SyncProcessor } from './SyncProcessor.js';
+
+// Export professional instrument processors (Story 2.2)
+export { MidiParserProcessor } from './MidiParserProcessor.js';
+export { BassInstrumentProcessor } from './BassInstrumentProcessor.js';
+export { DrumInstrumentProcessor } from './DrumInstrumentProcessor.js';
+export { ChordInstrumentProcessor } from './ChordInstrumentProcessor.js';
+export { MetronomeInstrumentProcessor } from './MetronomeInstrumentProcessor.js';
 
 // Plugin registry for easy registration
 import { BassProcessor } from './BassProcessor.js';
 import { DrumProcessor } from './DrumProcessor.js';
 import { SyncProcessor } from './SyncProcessor.js';
+import { MidiParserProcessor } from './MidiParserProcessor.js';
+import { BassInstrumentProcessor } from './BassInstrumentProcessor.js';
+import { DrumInstrumentProcessor } from './DrumInstrumentProcessor.js';
+import { ChordInstrumentProcessor } from './ChordInstrumentProcessor.js';
+import { MetronomeInstrumentProcessor } from './MetronomeInstrumentProcessor.js';
 import type { AudioPlugin } from '../../types/plugin.js';
 
 /**

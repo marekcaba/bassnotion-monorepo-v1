@@ -1,12 +1,83 @@
-2025-06-04 11:02:01 +02:00: [?25h
-2025-06-04 11:02:02 +02:00: 
-2025-06-04 11:02:02 +02:00: 
-2025-06-04 11:02:02 +02:00: 
-2025-06-04 11:02:02 +02:00:  NX   Successfully ran target serve for project @bassnotion/frontend
-2025-06-04 11:02:02 +02:00: 
-2025-06-04 11:02:02 +02:00: 
-2025-06-04 11:02:02 +02:00: 
-2025-06-04 11:02:02 +02:00:  NX   Nx Cloud Problems
-2025-06-04 11:02:02 +02:00: 
-2025-06-04 11:02:02 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
-2025-06-04 11:02:02 +02:00: 
+2025-06-14 00:00:53 +02:00:  [32m[1m✓[22m[39m Compiled in 2.6s (604 modules)
+2025-06-14 00:00:56 +02:00:  [32m[1m✓[22m[39m Compiled in 1357ms (604 modules)
+2025-06-14 00:02:29 +02:00:  [32m[1m✓[22m[39m Compiled in 2.4s (604 modules)
+2025-06-14 00:02:58 +02:00:  [32m[1m✓[22m[39m Compiled in 2.3s (604 modules)
+2025-06-14 00:03:06 +02:00:  [32m[1m✓[22m[39m Compiled in 981ms (604 modules)
+2025-06-14 00:03:22 +02:00:  [32m[1m✓[22m[39m Compiled in 6.3s (604 modules)
+2025-06-14 00:03:34 +02:00:  [32m[1m✓[22m[39m Compiled in 2.6s (604 modules)
+2025-06-14 00:04:05 +02:00:  [32m[1m✓[22m[39m Compiled in 1682ms (604 modules)
+2025-06-14 00:05:33 +02:00:  [32m[1m✓[22m[39m Compiled in 1066ms (604 modules)
+2025-06-14 00:05:47 +02:00:  [32m[1m✓[22m[39m Compiled in 2.5s (604 modules)
+2025-06-14 00:05:53 +02:00:  [32m[1m✓[22m[39m Compiled in 1703ms (604 modules)
+2025-06-14 00:06:01 +02:00:  [32m[1m✓[22m[39m Compiled in 1915ms (604 modules)
+2025-06-14 00:06:07 +02:00:  [32m[1m✓[22m[39m Compiled in 405ms (604 modules)
+2025-06-14 00:10:32 +02:00:  [32m[1m✓[22m[39m Compiled in 2.4s (604 modules)
+2025-06-14 00:10:48 +02:00:  [32m[1m✓[22m[39m Compiled in 1169ms (604 modules)
+2025-06-14 00:10:55 +02:00:  [32m[1m✓[22m[39m Compiled in 962ms (604 modules)
+2025-06-14 00:11:02 +02:00:  [32m[1m✓[22m[39m Compiled in 961ms (604 modules)
+2025-06-14 00:11:12 +02:00:  [32m[1m✓[22m[39m Compiled in 726ms (604 modules)
+2025-06-14 00:11:13 +02:00:  [32m[1m✓[22m[39m Compiled in 148ms (604 modules)
+2025-06-14 00:11:34 +02:00:  [32m[1m✓[22m[39m Compiled in 338ms (604 modules)
+2025-06-14 00:11:41 +02:00:  [32m[1m✓[22m[39m Compiled in 710ms (604 modules)
+2025-06-14 00:11:47 +02:00:  [32m[1m✓[22m[39m Compiled in 186ms (604 modules)
+2025-06-14 00:17:14 +02:00:  [32m[1m✓[22m[39m Compiled in 650ms (604 modules)
+2025-06-14 00:17:20 +02:00:  [32m[1m✓[22m[39m Compiled in 198ms (604 modules)
+2025-06-14 00:18:10 +02:00:  [32m[1m✓[22m[39m Compiled in 363ms (604 modules)
+2025-06-14 00:18:17 +02:00:  [32m[1m✓[22m[39m Compiled in 184ms (604 modules)
+2025-06-14 00:20:02 +02:00:  [32m[1m✓[22m[39m Compiled in 313ms (604 modules)
+2025-06-14 00:20:24 +02:00:  [32m[1m✓[22m[39m Compiled in 810ms (604 modules)
+2025-06-14 00:31:22 +02:00:  [32m[1m✓[22m[39m Compiled in 485ms (604 modules)
+2025-06-14 00:31:33 +02:00:  [32m[1m✓[22m[39m Compiled in 940ms (604 modules)
+2025-06-14 00:31:39 +02:00:  [32m[1m✓[22m[39m Compiled in 217ms (604 modules)
+2025-06-14 00:31:46 +02:00:  [32m[1m✓[22m[39m Compiled in 130ms (604 modules)
+2025-06-14 00:43:54 +02:00:  [32m[1m✓[22m[39m Compiled in 464ms (604 modules)
+2025-06-14 00:43:56 +02:00:  [32m[1m✓[22m[39m Compiled in 182ms (604 modules)
+2025-06-14 00:44:49 +02:00:  [32m[1m✓[22m[39m Compiled in 288ms (604 modules)
+2025-06-14 00:45:16 +02:00:  [32m[1m✓[22m[39m Compiled in 1219ms (604 modules)
+2025-06-14 00:45:38 +02:00:  [32m[1m✓[22m[39m Compiled in 266ms (604 modules)
+2025-06-14 00:46:52 +02:00:  [32m[1m✓[22m[39m Compiled in 282ms (604 modules)
+2025-06-14 00:47:58 +02:00:  [32m[1m✓[22m[39m Compiled in 508ms (604 modules)
+2025-06-14 00:48:01 +02:00:  [32m[1m✓[22m[39m Compiled in 691ms (604 modules)
+2025-06-14 00:48:29 +02:00:  [32m[1m✓[22m[39m Compiled in 215ms (604 modules)
+2025-06-14 00:50:04 +02:00:  [32m[1m✓[22m[39m Compiled in 250ms (604 modules)
+2025-06-14 00:50:06 +02:00:  [32m[1m✓[22m[39m Compiled in 593ms (604 modules)
+2025-06-14 00:52:04 +02:00:  [32m[1m✓[22m[39m Compiled in 273ms (604 modules)
+2025-06-14 00:52:06 +02:00:  [32m[1m✓[22m[39m Compiled in 151ms (604 modules)
+2025-06-14 00:55:39 +02:00:  [32m[1m✓[22m[39m Compiled in 415ms (604 modules)
+2025-06-14 00:55:40 +02:00:  [32m[1m✓[22m[39m Compiled in 147ms (604 modules)
+2025-06-14 00:57:06 +02:00:  [32m[1m✓[22m[39m Compiled in 269ms (604 modules)
+2025-06-14 00:57:08 +02:00:  [32m[1m✓[22m[39m Compiled in 555ms (604 modules)
+2025-06-14 00:58:40 +02:00:  [32m[1m✓[22m[39m Compiled in 276ms (604 modules)
+2025-06-14 00:58:42 +02:00:  [32m[1m✓[22m[39m Compiled in 184ms (604 modules)
+2025-06-14 01:04:06 +02:00:  [32m[1m✓[22m[39m Compiled in 418ms (604 modules)
+2025-06-14 01:04:08 +02:00:  [32m[1m✓[22m[39m Compiled in 240ms (604 modules)
+2025-06-14 01:05:22 +02:00:  [32m[1m✓[22m[39m Compiled in 268ms (604 modules)
+2025-06-14 01:05:44 +02:00:  [32m[1m✓[22m[39m Compiled in 188ms (604 modules)
+2025-06-14 01:05:44 +02:00:  [32m[1m✓[22m[39m Compiled in 159ms (604 modules)
+2025-06-14 01:05:52 +02:00:  [32m[1m✓[22m[39m Compiled in 153ms (604 modules)
+2025-06-14 01:05:53 +02:00:  [32m[1m✓[22m[39m Compiled in 146ms (604 modules)
+2025-06-14 01:05:57 +02:00:  [32m[1m✓[22m[39m Compiled in 134ms (604 modules)
+2025-06-14 01:06:06 +02:00:  [32m[1m✓[22m[39m Compiled in 377ms (604 modules)
+2025-06-14 01:06:07 +02:00:  [32m[1m✓[22m[39m Compiled in 142ms (604 modules)
+2025-06-14 01:08:01 +02:00:  [32m[1m✓[22m[39m Compiled in 320ms (604 modules)
+2025-06-14 01:08:24 +02:00:  [32m[1m✓[22m[39m Compiled in 214ms (604 modules)
+2025-06-14 01:08:25 +02:00:  [32m[1m✓[22m[39m Compiled in 152ms (604 modules)
+2025-06-14 01:09:31 +02:00:  [32m[1m✓[22m[39m Compiled in 309ms (604 modules)
+2025-06-14 01:09:33 +02:00:  [32m[1m✓[22m[39m Compiled in 163ms (604 modules)
+2025-06-14 01:09:41 +02:00:  [32m[1m✓[22m[39m Compiled in 142ms (604 modules)
+2025-06-14 01:09:41 +02:00:  [32m[1m✓[22m[39m Compiled in 145ms (604 modules)
+2025-06-14 01:11:15 +02:00:  [32m[1m✓[22m[39m Compiled in 280ms (604 modules)
+2025-06-14 01:11:17 +02:00:  [32m[1m✓[22m[39m Compiled in 146ms (604 modules)
+2025-06-14 01:14:29 +02:00:  [32m[1m✓[22m[39m Compiled in 20.5s (604 modules)
+2025-06-14 01:18:10 +02:00: [?25h
+2025-06-14 01:18:10 +02:00: 
+2025-06-14 01:18:10 +02:00: 
+2025-06-14 01:18:10 +02:00: 
+2025-06-14 01:18:10 +02:00:  NX   Successfully ran target serve for project @bassnotion/frontend
+2025-06-14 01:18:10 +02:00: 
+2025-06-14 01:18:10 +02:00: 
+2025-06-14 01:18:11 +02:00: 
+2025-06-14 01:18:11 +02:00:  NX   Nx Cloud Problems
+2025-06-14 01:18:11 +02:00: 
+2025-06-14 01:18:11 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+2025-06-14 01:18:11 +02:00: 

@@ -1,0 +1,87 @@
+2025-06-04 00:40:06 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-04 00:40:08 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-04 00:40:08 +02:00: [1m[31mBuild failed, waiting for changes to restart...[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31m[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31m[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31mApplication is running on: http://localhost:3000[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31mDEBUG: Registered routes:[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31m[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31m- GET /api/health (AppController)[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31m- POST /auth/signin (AuthController)[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31m- POST /auth/signup (AuthController)[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31m- GET /auth/me (AuthController)[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31m- PUT /user/profile (UserController)[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31m- DELETE /user/account (UserController)[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31mDEBUG: If UserController routes are missing, check module imports[39m[22m
+2025-06-04 00:40:09 +02:00: [1m[31m[39m[22m
+2025-06-13 18:59:38 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31m[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31m[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31mApplication is running on: http://localhost:3000[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31m[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31mDEBUG: Registered routes:[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31m- GET /api/health (AppController)[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31m- POST /auth/signin (AuthController)[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31m- POST /auth/signup (AuthController)[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31m- GET /auth/me (AuthController)[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31m- PUT /user/profile (UserController)[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31m- DELETE /user/account (UserController)[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31mDEBUG: If UserController routes are missing, check module imports[39m[22m
+2025-06-13 18:59:39 +02:00: [1m[31m[39m[22m
+2025-06-13 19:39:16 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31m[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31m[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31mApplication is running on: http://localhost:3000[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31m[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31mDEBUG: Registered routes:[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31m- GET /api/health (AppController)[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31m- POST /auth/signin (AuthController)[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31m- POST /auth/signup (AuthController)[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31m- GET /auth/me (AuthController)[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31m- PUT /user/profile (UserController)[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31m- DELETE /user/account (UserController)[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31mDEBUG: If UserController routes are missing, check module imports[39m[22m
+2025-06-13 19:39:18 +02:00: [1m[31m[39m[22m
+2025-06-13 21:38:02 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31m[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31m[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31mApplication is running on: http://localhost:3000[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31m[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31mDEBUG: Registered routes:[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31m- GET /api/health (AppController)[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31m- POST /auth/signin (AuthController)[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31m- POST /auth/signup (AuthController)[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31m- GET /auth/me (AuthController)[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31m- PUT /user/profile (UserController)[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31m- DELETE /user/account (UserController)[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31mDEBUG: If UserController routes are missing, check module imports[39m[22m
+2025-06-13 21:38:04 +02:00: [1m[31m[39m[22m
+2025-06-13 21:38:24 +02:00: [1m[33mPackage type is set to "module" but "cjs" format is included. Going to use "esm" format instead. You can change the package type to "commonjs" or remove type in the package.json file.[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31mDEBUG: Process CWD: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31m[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31mDEBUG: Loaded SUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31mDEBUG: Loaded SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0dXp0a3JidWV3aGVlaGpzcGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3MjY1NTQsImV4cCI6MjA2MzMwMjU1NH0.yqEzmBR8SykKYa3rJlWfAIjiR0EltXn77H2ptuNUqCg[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31m[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31mApplication is running on: http://localhost:3000[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31m[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31mDEBUG: Registered routes:[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31m- GET /api/health (AppController)[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31m- POST /auth/signin (AuthController)[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31m- POST /auth/signup (AuthController)[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31m- GET /auth/me (AuthController)[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31m- PUT /user/profile (UserController)[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31m- DELETE /user/account (UserController)[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31mDEBUG: If UserController routes are missing, check module imports[39m[22m
+2025-06-13 21:38:25 +02:00: [1m[31m[39m[22m

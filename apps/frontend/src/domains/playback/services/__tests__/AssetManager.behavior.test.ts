@@ -529,6 +529,17 @@ describe('AssetManager Behavior', () => {
 
       await assetManager.initialize(config);
 
+      // Mock fetch with small delays to ensure timing is measurable
+      let callCount = 0;
+      mockEnv.fetch.mockImplementation(() => {
+        callCount++;
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve(mockEnv.createSuccessfulResponse(1024000));
+          }, 10); // Small delay to ensure measurable timing
+        });
+      });
+
       const assetManifest = {
         assets: Object.values(scenarios.epic2Assets),
         totalCount: 6,
@@ -539,8 +550,10 @@ describe('AssetManager Behavior', () => {
       await assetManager.loadAssetsFromCDN(assetManifest);
       const endTime = Date.now();
 
-      // Should take longer due to concurrent limit
-      expect(endTime - startTime).toBeGreaterThan(0);
+      // Should take longer due to concurrent limit and artificial delays
+      expect(endTime - startTime).toBeGreaterThanOrEqual(10);
+      // Verify that assets were actually loaded
+      expect(callCount).toBeGreaterThan(0);
     });
   });
 

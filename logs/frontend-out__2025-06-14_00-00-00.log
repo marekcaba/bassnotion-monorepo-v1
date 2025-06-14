@@ -1,0 +1,373 @@
+2025-06-04 11:02:01 +02:00: [?25h
+2025-06-04 11:02:02 +02:00: 
+2025-06-04 11:02:02 +02:00: 
+2025-06-04 11:02:02 +02:00: 
+2025-06-04 11:02:02 +02:00:  NX   Successfully ran target serve for project @bassnotion/frontend
+2025-06-04 11:02:02 +02:00: 
+2025-06-04 11:02:02 +02:00: 
+2025-06-04 11:02:02 +02:00: 
+2025-06-04 11:02:02 +02:00:  NX   Nx Cloud Problems
+2025-06-04 11:02:02 +02:00: 
+2025-06-04 11:02:02 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+2025-06-04 11:02:02 +02:00: 
+2025-06-13 18:59:35 +02:00: 
+2025-06-13 18:59:35 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-13 18:59:35 +02:00: 
+2025-06-13 18:59:36 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-13 18:59:36 +02:00:    - Local:        http://localhost:3001
+2025-06-13 18:59:36 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-13 18:59:36 +02:00:    - Environments: .env.local, .env
+2025-06-13 18:59:36 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-13 18:59:38 +02:00:  [32m[1m✓[22m[39m Ready in 1922ms
+2025-06-13 18:59:42 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-13 18:59:47 +02:00:  [32m[1m✓[22m[39m Compiled / in 5.6s (1220 modules)
+2025-06-13 18:59:48 +02:00:  GET / [32m200[39m in 6323ms
+2025-06-13 18:59:48 +02:00:  [32m[1m✓[22m[39m Compiled in 792ms (571 modules)
+2025-06-13 18:59:51 +02:00:  GET / [32m200[39m in 132ms
+2025-06-13 18:59:51 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-13 18:59:52 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 849ms (1198 modules)
+2025-06-13 18:59:52 +02:00:  GET /meta.json [33m404[39m in 360ms
+2025-06-13 18:59:52 +02:00:  GET /meta.json [33m404[39m in 1009ms
+2025-06-13 18:59:52 +02:00:  GET /meta.json [33m404[39m in 34ms
+2025-06-13 18:59:52 +02:00:  GET /meta.json [33m404[39m in 26ms
+2025-06-13 18:59:53 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 431ms (1257 modules)
+2025-06-13 18:59:53 +02:00:  GET /dashboard [32m200[39m in 468ms
+2025-06-13 18:59:55 +02:00:  GET / [32m200[39m in 17ms
+2025-06-13 19:15:27 +02:00:  [32m[1m✓[22m[39m Compiled in 656ms (599 modules)
+2025-06-13 19:15:27 +02:00:  GET / [32m200[39m in 27ms
+2025-06-13 19:15:28 +02:00:  [32m[1m✓[22m[39m Compiled in 175ms (599 modules)
+2025-06-13 19:15:28 +02:00:  GET / [32m200[39m in 9ms
+2025-06-13 19:39:17 +02:00:  [32m[1m✓[22m[39m Compiled in 404ms (585 modules)
+2025-06-13 19:51:10 +02:00:  [32m[1m✓[22m[39m Compiled in 323ms (585 modules)
+2025-06-13 19:52:12 +02:00:  [32m[1m✓[22m[39m Compiled in 508ms (599 modules)
+2025-06-13 19:52:12 +02:00:  GET / [32m200[39m in 38ms
+2025-06-13 19:52:21 +02:00:  [32m[1m✓[22m[39m Compiled in 194ms (599 modules)
+2025-06-13 19:52:21 +02:00:  GET / [32m200[39m in 11ms
+2025-06-13 19:53:14 +02:00:  [32m[1m✓[22m[39m Compiled in 295ms (599 modules)
+2025-06-13 19:53:14 +02:00:  GET / [32m200[39m in 21ms
+2025-06-13 19:53:40 +02:00:  [32m[1m✓[22m[39m Compiled in 472ms (599 modules)
+2025-06-13 19:53:40 +02:00:  GET / [32m200[39m in 33ms
+2025-06-13 19:53:57 +02:00:  [32m[1m✓[22m[39m Compiled in 410ms (599 modules)
+2025-06-13 19:53:57 +02:00:  GET / [32m200[39m in 20ms
+2025-06-13 19:54:16 +02:00:  [32m[1m✓[22m[39m Compiled in 320ms (599 modules)
+2025-06-13 19:54:16 +02:00:  GET / [32m200[39m in 30ms
+2025-06-13 19:54:42 +02:00:  [32m[1m✓[22m[39m Compiled in 300ms (599 modules)
+2025-06-13 19:54:42 +02:00:  GET / [32m200[39m in 16ms
+2025-06-13 19:55:09 +02:00:  [32m[1m✓[22m[39m Compiled in 298ms (599 modules)
+2025-06-13 19:55:09 +02:00:  GET / [32m200[39m in 25ms
+2025-06-13 19:55:33 +02:00:  [32m[1m✓[22m[39m Compiled in 287ms (599 modules)
+2025-06-13 19:55:33 +02:00:  GET / [32m200[39m in 14ms
+2025-06-13 19:55:54 +02:00:  [32m[1m✓[22m[39m Compiled in 271ms (599 modules)
+2025-06-13 19:55:55 +02:00:  GET / [32m200[39m in 26ms
+2025-06-13 19:56:16 +02:00:  [32m[1m✓[22m[39m Compiled in 863ms (599 modules)
+2025-06-13 19:56:16 +02:00:  GET / [32m200[39m in 30ms
+2025-06-13 19:56:40 +02:00:  [32m[1m✓[22m[39m Compiled in 366ms (599 modules)
+2025-06-13 19:56:40 +02:00:  GET / [32m200[39m in 23ms
+2025-06-13 19:57:14 +02:00:  [32m[1m✓[22m[39m Compiled in 296ms (599 modules)
+2025-06-13 19:57:14 +02:00:  GET / [32m200[39m in 12ms
+2025-06-13 19:57:40 +02:00:  [32m[1m✓[22m[39m Compiled in 262ms (599 modules)
+2025-06-13 19:57:40 +02:00:  GET / [32m200[39m in 26ms
+2025-06-13 19:58:05 +02:00:  [32m[1m✓[22m[39m Compiled in 292ms (599 modules)
+2025-06-13 19:58:05 +02:00:  GET / [32m200[39m in 15ms
+2025-06-13 20:02:09 +02:00:  [32m[1m✓[22m[39m Compiled in 425ms (599 modules)
+2025-06-13 20:02:09 +02:00:  GET / [32m200[39m in 14ms
+2025-06-13 20:04:15 +02:00:  [32m[1m✓[22m[39m Compiled in 489ms (599 modules)
+2025-06-13 20:04:15 +02:00:  GET / [32m200[39m in 10ms
+2025-06-13 20:04:21 +02:00:  [32m[1m✓[22m[39m Compiled in 235ms (599 modules)
+2025-06-13 20:04:21 +02:00:  GET / [32m200[39m in 14ms
+2025-06-13 20:04:28 +02:00:  [32m[1m✓[22m[39m Compiled in 227ms (599 modules)
+2025-06-13 20:04:28 +02:00:  GET / [32m200[39m in 12ms
+2025-06-13 20:04:29 +02:00:  [32m[1m✓[22m[39m Compiled in 209ms (599 modules)
+2025-06-13 20:04:29 +02:00:  GET / [32m200[39m in 13ms
+2025-06-13 20:10:29 +02:00:  [32m[1m✓[22m[39m Compiled in 431ms (599 modules)
+2025-06-13 20:10:29 +02:00:  GET / [32m200[39m in 13ms
+2025-06-13 20:10:31 +02:00:  [32m[1m✓[22m[39m Compiled in 154ms (599 modules)
+2025-06-13 20:10:31 +02:00:  GET / [32m200[39m in 9ms
+2025-06-13 20:13:11 +02:00:  [32m[1m✓[22m[39m Compiled in 506ms (599 modules)
+2025-06-13 20:13:11 +02:00:  GET / [32m200[39m in 10ms
+2025-06-13 20:13:19 +02:00:  [32m[1m✓[22m[39m Compiled in 304ms (599 modules)
+2025-06-13 20:13:19 +02:00:  GET / [32m200[39m in 10ms
+2025-06-13 20:13:27 +02:00:  [32m[1m✓[22m[39m Compiled in 291ms (599 modules)
+2025-06-13 20:13:27 +02:00:  GET / [32m200[39m in 21ms
+2025-06-13 20:13:42 +02:00:  [32m[1m✓[22m[39m Compiled in 867ms (599 modules)
+2025-06-13 20:13:42 +02:00:  GET / [32m200[39m in 16ms
+2025-06-13 20:14:25 +02:00:  [32m[1m✓[22m[39m Compiled in 264ms (599 modules)
+2025-06-13 20:14:25 +02:00:  GET / [32m200[39m in 33ms
+2025-06-13 20:18:11 +02:00:  [32m[1m✓[22m[39m Compiled in 402ms (599 modules)
+2025-06-13 20:18:11 +02:00:  GET / [32m200[39m in 15ms
+2025-06-13 20:18:58 +02:00:  [32m[1m✓[22m[39m Compiled in 339ms (599 modules)
+2025-06-13 20:18:58 +02:00:  GET / [32m200[39m in 12ms
+2025-06-13 20:19:07 +02:00:  [32m[1m✓[22m[39m Compiled in 297ms (599 modules)
+2025-06-13 20:19:07 +02:00:  GET / [32m200[39m in 42ms
+2025-06-13 20:19:35 +02:00:  [32m[1m✓[22m[39m Compiled in 294ms (599 modules)
+2025-06-13 20:19:35 +02:00:  GET / [32m200[39m in 16ms
+2025-06-13 20:19:53 +02:00:  [32m[1m✓[22m[39m Compiled in 283ms (599 modules)
+2025-06-13 20:19:53 +02:00:  GET / [32m200[39m in 22ms
+2025-06-13 20:23:07 +02:00:  [32m[1m✓[22m[39m Compiled in 437ms (599 modules)
+2025-06-13 20:23:07 +02:00:  GET / [32m200[39m in 12ms
+2025-06-13 20:23:09 +02:00:  [32m[1m✓[22m[39m Compiled in 152ms (599 modules)
+2025-06-13 20:23:09 +02:00:  GET / [32m200[39m in 9ms
+2025-06-13 20:23:54 +02:00:  [32m[1m✓[22m[39m Compiled in 297ms (599 modules)
+2025-06-13 20:23:54 +02:00:  GET / [32m200[39m in 12ms
+2025-06-13 20:24:05 +02:00:  [32m[1m✓[22m[39m Compiled in 219ms (599 modules)
+2025-06-13 20:24:05 +02:00:  GET / [32m200[39m in 24ms
+2025-06-13 20:24:09 +02:00:  [32m[1m✓[22m[39m Compiled in 213ms (599 modules)
+2025-06-13 20:24:09 +02:00:  GET / [32m200[39m in 10ms
+2025-06-13 20:24:28 +02:00:  [32m[1m✓[22m[39m Compiled in 298ms (599 modules)
+2025-06-13 20:24:28 +02:00:  GET / [32m200[39m in 13ms
+2025-06-13 20:25:38 +02:00:  [32m[1m✓[22m[39m Compiled in 272ms (599 modules)
+2025-06-13 20:25:38 +02:00:  GET / [32m200[39m in 9ms
+2025-06-13 20:25:50 +02:00:  [32m[1m✓[22m[39m Compiled in 805ms (599 modules)
+2025-06-13 20:25:51 +02:00:  GET / [32m200[39m in 17ms
+2025-06-13 20:27:19 +02:00:  [32m[1m✓[22m[39m Compiled in 395ms (599 modules)
+2025-06-13 20:27:19 +02:00:  GET / [32m200[39m in 9ms
+2025-06-13 20:27:30 +02:00:  [32m[1m✓[22m[39m Compiled in 297ms (599 modules)
+2025-06-13 20:27:30 +02:00:  GET / [32m200[39m in 15ms
+2025-06-13 20:27:36 +02:00:  [32m[1m✓[22m[39m Compiled in 319ms (599 modules)
+2025-06-13 20:27:36 +02:00:  GET / [32m200[39m in 27ms
+2025-06-13 20:27:51 +02:00:  [32m[1m✓[22m[39m Compiled in 320ms (599 modules)
+2025-06-13 20:27:51 +02:00:  GET / [32m200[39m in 11ms
+2025-06-13 20:29:27 +02:00:  [32m[1m✓[22m[39m Compiled in 445ms (599 modules)
+2025-06-13 20:29:27 +02:00:  GET / [32m200[39m in 11ms
+2025-06-13 20:29:29 +02:00:  [32m[1m✓[22m[39m Compiled in 161ms (599 modules)
+2025-06-13 20:29:29 +02:00:  GET / [32m200[39m in 8ms
+2025-06-13 20:31:15 +02:00:  [37m[1m○[22m[39m Compiling /login ...
+2025-06-13 20:31:15 +02:00:  [32m[1m✓[22m[39m Compiled /login in 857ms (1239 modules)
+2025-06-13 20:31:15 +02:00:  GET /login?reason=idle [32m200[39m in 1001ms
+2025-06-13 20:34:09 +02:00:  [32m[1m✓[22m[39m Compiled in 441ms (604 modules)
+2025-06-13 20:34:09 +02:00:  GET /login?reason=idle [32m200[39m in 24ms
+2025-06-13 20:34:09 +02:00:  [32m[1m✓[22m[39m Compiled in 263ms (604 modules)
+2025-06-13 20:34:09 +02:00:  GET /login?reason=idle [32m200[39m in 9ms
+2025-06-13 20:34:15 +02:00:  [32m[1m✓[22m[39m Compiled in 275ms (604 modules)
+2025-06-13 20:34:16 +02:00:  GET /login?reason=idle [32m200[39m in 26ms
+2025-06-13 20:34:16 +02:00:  [32m[1m✓[22m[39m Compiled in 139ms (604 modules)
+2025-06-13 20:34:16 +02:00:  GET /login?reason=idle [32m200[39m in 8ms
+2025-06-13 20:34:31 +02:00:  [32m[1m✓[22m[39m Compiled in 243ms (604 modules)
+2025-06-13 20:34:31 +02:00:  GET /login?reason=idle [32m200[39m in 31ms
+2025-06-13 20:34:32 +02:00:  [32m[1m✓[22m[39m Compiled in 179ms (604 modules)
+2025-06-13 20:34:32 +02:00:  GET /login?reason=idle [32m200[39m in 18ms
+2025-06-13 20:34:40 +02:00:  [32m[1m✓[22m[39m Compiled in 169ms (604 modules)
+2025-06-13 20:34:40 +02:00:  GET /login?reason=idle [32m200[39m in 9ms
+2025-06-13 20:34:40 +02:00:  [32m[1m✓[22m[39m Compiled in 158ms (604 modules)
+2025-06-13 20:34:40 +02:00:  GET /login?reason=idle [32m200[39m in 10ms
+2025-06-13 20:34:53 +02:00:  [32m[1m✓[22m[39m Compiled in 291ms (604 modules)
+2025-06-13 20:34:53 +02:00:  GET /login?reason=idle [32m200[39m in 24ms
+2025-06-13 20:35:35 +02:00:  [32m[1m✓[22m[39m Compiled in 369ms (604 modules)
+2025-06-13 20:35:35 +02:00:  GET /login?reason=idle [32m200[39m in 21ms
+2025-06-13 20:35:44 +02:00:  [32m[1m✓[22m[39m Compiled in 169ms (604 modules)
+2025-06-13 20:35:44 +02:00:  GET /login?reason=idle [32m200[39m in 12ms
+2025-06-13 20:35:46 +02:00:  [32m[1m✓[22m[39m Compiled in 251ms (604 modules)
+2025-06-13 20:35:46 +02:00:  GET /login?reason=idle [32m200[39m in 21ms
+2025-06-13 20:38:37 +02:00:  [32m[1m✓[22m[39m Compiled in 434ms (604 modules)
+2025-06-13 20:38:37 +02:00:  GET /login?reason=idle [32m200[39m in 12ms
+2025-06-13 20:38:39 +02:00:  [32m[1m✓[22m[39m Compiled in 163ms (604 modules)
+2025-06-13 20:38:39 +02:00:  GET /login?reason=idle [32m200[39m in 10ms
+2025-06-13 20:39:04 +02:00:  [32m[1m✓[22m[39m Compiled in 232ms (604 modules)
+2025-06-13 20:39:04 +02:00:  GET /login?reason=idle [32m200[39m in 24ms
+2025-06-13 20:40:30 +02:00:  [32m[1m✓[22m[39m Compiled in 462ms (604 modules)
+2025-06-13 20:40:30 +02:00:  GET /login?reason=idle [32m200[39m in 14ms
+2025-06-13 20:40:32 +02:00:  [32m[1m✓[22m[39m Compiled in 159ms (604 modules)
+2025-06-13 20:40:32 +02:00:  GET /login?reason=idle [32m200[39m in 12ms
+2025-06-13 20:46:27 +02:00:  [32m[1m✓[22m[39m Compiled in 403ms (604 modules)
+2025-06-13 20:46:28 +02:00:  GET /login?reason=idle [32m200[39m in 12ms
+2025-06-13 20:46:28 +02:00:  [32m[1m✓[22m[39m Compiled in 166ms (604 modules)
+2025-06-13 20:46:28 +02:00:  GET /login?reason=idle [32m200[39m in 9ms
+2025-06-13 20:46:44 +02:00:  [32m[1m✓[22m[39m Compiled in 280ms (604 modules)
+2025-06-13 20:46:44 +02:00:  GET /login?reason=idle [32m200[39m in 13ms
+2025-06-13 20:46:54 +02:00:  [32m[1m✓[22m[39m Compiled in 338ms (604 modules)
+2025-06-13 20:46:54 +02:00:  GET /login?reason=idle [32m200[39m in 33ms
+2025-06-13 20:46:58 +02:00:  [32m[1m✓[22m[39m Compiled in 258ms (604 modules)
+2025-06-13 20:46:58 +02:00:  GET /login?reason=idle [32m200[39m in 16ms
+2025-06-13 20:46:59 +02:00:  [32m[1m✓[22m[39m Compiled in 200ms (604 modules)
+2025-06-13 20:46:59 +02:00:  GET /login?reason=idle [32m200[39m in 11ms
+2025-06-13 20:47:01 +02:00:  [32m[1m✓[22m[39m Compiled in 287ms (604 modules)
+2025-06-13 20:47:01 +02:00:  GET /login?reason=idle [32m200[39m in 13ms
+2025-06-13 20:47:08 +02:00:  [32m[1m✓[22m[39m Compiled in 777ms (604 modules)
+2025-06-13 20:47:08 +02:00:  GET /login?reason=idle [32m200[39m in 9ms
+2025-06-13 20:48:09 +02:00:  [32m[1m✓[22m[39m Compiled in 275ms (604 modules)
+2025-06-13 20:48:09 +02:00:  GET /login?reason=idle [32m200[39m in 13ms
+2025-06-13 20:48:20 +02:00:  [32m[1m✓[22m[39m Compiled in 368ms (604 modules)
+2025-06-13 20:48:20 +02:00:  GET /login?reason=idle [32m200[39m in 21ms
+2025-06-13 20:48:28 +02:00:  [32m[1m✓[22m[39m Compiled in 475ms (604 modules)
+2025-06-13 20:48:28 +02:00:  GET /login?reason=idle [32m200[39m in 26ms
+2025-06-13 20:49:09 +02:00:  [32m[1m✓[22m[39m Compiled in 286ms (604 modules)
+2025-06-13 20:49:09 +02:00:  GET /login?reason=idle [32m200[39m in 18ms
+2025-06-13 20:49:34 +02:00:  [32m[1m✓[22m[39m Compiled in 332ms (604 modules)
+2025-06-13 20:49:34 +02:00:  GET /login?reason=idle [32m200[39m in 16ms
+2025-06-13 20:49:43 +02:00:  [32m[1m✓[22m[39m Compiled in 330ms (604 modules)
+2025-06-13 20:49:43 +02:00:  GET /login?reason=idle [32m200[39m in 9ms
+2025-06-13 20:49:52 +02:00:  [32m[1m✓[22m[39m Compiled in 293ms (604 modules)
+2025-06-13 20:49:52 +02:00:  GET /login?reason=idle [32m200[39m in 17ms
+2025-06-13 20:53:15 +02:00:  [32m[1m✓[22m[39m Compiled in 779ms (604 modules)
+2025-06-13 20:53:15 +02:00:  GET /login?reason=idle [32m200[39m in 14ms
+2025-06-13 20:53:34 +02:00:  [32m[1m✓[22m[39m Compiled in 314ms (604 modules)
+2025-06-13 20:53:34 +02:00:  GET /login?reason=idle [32m200[39m in 20ms
+2025-06-13 20:53:36 +02:00:  [32m[1m✓[22m[39m Compiled in 165ms (604 modules)
+2025-06-13 20:53:36 +02:00:  GET /login?reason=idle [32m200[39m in 9ms
+2025-06-13 20:53:58 +02:00:  [32m[1m✓[22m[39m Compiled in 287ms (604 modules)
+2025-06-13 20:53:58 +02:00:  GET /login?reason=idle [32m200[39m in 18ms
+2025-06-13 20:58:03 +02:00:  [32m[1m✓[22m[39m Compiled in 448ms (604 modules)
+2025-06-13 20:58:03 +02:00:  GET /login?reason=idle [32m200[39m in 30ms
+2025-06-13 21:08:07 +02:00:  [32m[1m✓[22m[39m Compiled in 3.5s (604 modules)
+2025-06-13 21:08:44 +02:00:  [32m[1m✓[22m[39m Compiled in 752ms (604 modules)
+2025-06-13 21:12:11 +02:00:  [32m[1m✓[22m[39m Compiled in 614ms (604 modules)
+2025-06-13 21:12:19 +02:00:  [32m[1m✓[22m[39m Compiled in 334ms (604 modules)
+2025-06-13 21:12:20 +02:00:  [32m[1m✓[22m[39m Compiled in 258ms (604 modules)
+2025-06-13 21:12:27 +02:00:  [32m[1m✓[22m[39m Compiled in 322ms (604 modules)
+2025-06-13 21:12:28 +02:00:  [32m[1m✓[22m[39m Compiled in 206ms (604 modules)
+2025-06-13 21:12:48 +02:00:  [32m[1m✓[22m[39m Compiled in 248ms (604 modules)
+2025-06-13 21:12:56 +02:00:  [32m[1m✓[22m[39m Compiled in 275ms (604 modules)
+2025-06-13 21:17:32 +02:00:  [32m[1m✓[22m[39m Compiled in 458ms (604 modules)
+2025-06-13 21:17:40 +02:00:  [32m[1m✓[22m[39m Compiled in 332ms (604 modules)
+2025-06-13 21:17:53 +02:00:  [32m[1m✓[22m[39m Compiled in 288ms (604 modules)
+2025-06-13 21:17:54 +02:00:  [32m[1m✓[22m[39m Compiled in 190ms (604 modules)
+2025-06-13 21:18:12 +02:00:  [32m[1m✓[22m[39m Compiled in 322ms (604 modules)
+2025-06-13 21:18:13 +02:00:  [32m[1m✓[22m[39m Compiled in 245ms (604 modules)
+2025-06-13 21:18:35 +02:00:  [32m[1m✓[22m[39m Compiled in 378ms (604 modules)
+2025-06-13 21:18:36 +02:00:  [32m[1m✓[22m[39m Compiled in 179ms (604 modules)
+2025-06-13 21:20:58 +02:00:  [32m[1m✓[22m[39m Compiled in 438ms (604 modules)
+2025-06-13 21:21:15 +02:00:  [32m[1m✓[22m[39m Compiled in 458ms (604 modules)
+2025-06-13 21:21:16 +02:00:  [32m[1m✓[22m[39m Compiled in 809ms (604 modules)
+2025-06-13 21:21:22 +02:00:  [32m[1m✓[22m[39m Compiled in 379ms (604 modules)
+2025-06-13 21:29:30 +02:00:  [32m[1m✓[22m[39m Compiled in 500ms (604 modules)
+2025-06-13 21:30:15 +02:00:  [32m[1m✓[22m[39m Compiled in 247ms (604 modules)
+2025-06-13 21:30:35 +02:00:  [32m[1m✓[22m[39m Compiled in 264ms (604 modules)
+2025-06-13 21:30:39 +02:00:  [32m[1m✓[22m[39m Compiled in 211ms (604 modules)
+2025-06-13 21:30:54 +02:00:  [32m[1m✓[22m[39m Compiled in 185ms (604 modules)
+2025-06-13 21:35:45 +02:00:  [32m[1m✓[22m[39m Compiled in 637ms (604 modules)
+2025-06-13 21:38:25 +02:00:  [32m[1m✓[22m[39m Compiled in 1298ms (1239 modules)
+2025-06-13 21:44:00 +02:00:  [32m[1m✓[22m[39m Compiled in 740ms (604 modules)
+2025-06-13 21:44:03 +02:00:  [32m[1m✓[22m[39m Compiled in 179ms (604 modules)
+2025-06-13 21:45:32 +02:00:  [32m[1m✓[22m[39m Compiled in 428ms (604 modules)
+2025-06-13 21:46:41 +02:00:  [32m[1m✓[22m[39m Compiled in 458ms (604 modules)
+2025-06-13 21:46:44 +02:00:  [32m[1m✓[22m[39m Compiled in 146ms (604 modules)
+2025-06-13 21:47:21 +02:00:  [32m[1m✓[22m[39m Compiled in 446ms (604 modules)
+2025-06-13 21:47:32 +02:00:  [32m[1m✓[22m[39m Compiled in 351ms (604 modules)
+2025-06-13 21:47:33 +02:00:  [32m[1m✓[22m[39m Compiled in 196ms (604 modules)
+2025-06-13 21:48:52 +02:00:  [32m[1m✓[22m[39m Compiled in 395ms (604 modules)
+2025-06-13 21:48:54 +02:00:  [32m[1m✓[22m[39m Compiled in 150ms (604 modules)
+2025-06-13 21:48:55 +02:00:  [32m[1m✓[22m[39m Compiled in 304ms (604 modules)
+2025-06-13 21:49:11 +02:00:  [32m[1m✓[22m[39m Compiled in 272ms (604 modules)
+2025-06-13 21:49:11 +02:00:  [32m[1m✓[22m[39m Compiled in 138ms (604 modules)
+2025-06-13 21:50:15 +02:00:  [32m[1m✓[22m[39m Compiled in 302ms (604 modules)
+2025-06-13 21:51:11 +02:00:  [32m[1m✓[22m[39m Compiled in 532ms (604 modules)
+2025-06-13 21:51:14 +02:00:  [32m[1m✓[22m[39m Compiled in 362ms (604 modules)
+2025-06-13 21:51:43 +02:00:  [32m[1m✓[22m[39m Compiled in 280ms (604 modules)
+2025-06-13 21:51:50 +02:00:  [32m[1m✓[22m[39m Compiled in 252ms (604 modules)
+2025-06-13 21:51:51 +02:00:  [32m[1m✓[22m[39m Compiled in 278ms (604 modules)
+2025-06-13 21:52:02 +02:00:  [32m[1m✓[22m[39m Compiled in 252ms (604 modules)
+2025-06-13 21:52:04 +02:00:  [32m[1m✓[22m[39m Compiled in 248ms (604 modules)
+2025-06-13 21:52:29 +02:00:  [32m[1m✓[22m[39m Compiled in 302ms (604 modules)
+2025-06-13 21:52:36 +02:00:  [32m[1m✓[22m[39m Compiled in 1150ms (604 modules)
+2025-06-13 21:52:43 +02:00:  [32m[1m✓[22m[39m Compiled in 305ms (604 modules)
+2025-06-13 21:52:54 +02:00:  [32m[1m✓[22m[39m Compiled in 266ms (604 modules)
+2025-06-13 21:53:41 +02:00:  [32m[1m✓[22m[39m Compiled in 261ms (604 modules)
+2025-06-13 21:54:09 +02:00:  [32m[1m✓[22m[39m Compiled in 481ms (604 modules)
+2025-06-13 21:54:24 +02:00:  [32m[1m✓[22m[39m Compiled in 344ms (604 modules)
+2025-06-13 21:54:33 +02:00:  [32m[1m✓[22m[39m Compiled in 580ms (604 modules)
+2025-06-13 21:54:43 +02:00:  [32m[1m✓[22m[39m Compiled in 295ms (604 modules)
+2025-06-13 21:55:10 +02:00:  [32m[1m✓[22m[39m Compiled in 277ms (604 modules)
+2025-06-13 21:58:04 +02:00:  [32m[1m✓[22m[39m Compiled in 1160ms (604 modules)
+2025-06-13 22:00:17 +02:00:  [32m[1m✓[22m[39m Compiled in 1767ms (604 modules)
+2025-06-13 22:01:36 +02:00:  [32m[1m✓[22m[39m Compiled in 387ms (604 modules)
+2025-06-13 22:03:28 +02:00:  [32m[1m✓[22m[39m Compiled in 498ms (604 modules)
+2025-06-13 22:03:31 +02:00:  [32m[1m✓[22m[39m Compiled in 1003ms (604 modules)
+2025-06-13 22:04:44 +02:00:  [32m[1m✓[22m[39m Compiled in 382ms (604 modules)
+2025-06-13 22:05:03 +02:00:  [32m[1m✓[22m[39m Compiled in 362ms (604 modules)
+2025-06-13 22:07:06 +02:00:  [32m[1m✓[22m[39m Compiled in 596ms (604 modules)
+2025-06-13 22:07:20 +02:00:  [32m[1m✓[22m[39m Compiled in 311ms (604 modules)
+2025-06-13 22:07:22 +02:00:  [32m[1m✓[22m[39m Compiled in 323ms (604 modules)
+2025-06-13 22:07:47 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (604 modules)
+2025-06-13 22:07:55 +02:00:  [32m[1m✓[22m[39m Compiled in 670ms (604 modules)
+2025-06-13 22:08:02 +02:00:  [32m[1m✓[22m[39m Compiled in 383ms (604 modules)
+2025-06-13 22:08:05 +02:00:  [32m[1m✓[22m[39m Compiled in 269ms (604 modules)
+2025-06-13 22:08:26 +02:00:  [32m[1m✓[22m[39m Compiled in 317ms (604 modules)
+2025-06-13 22:08:34 +02:00:  [32m[1m✓[22m[39m Compiled in 427ms (604 modules)
+2025-06-13 22:08:38 +02:00:  [32m[1m✓[22m[39m Compiled in 257ms (604 modules)
+2025-06-13 22:09:49 +02:00:  [32m[1m✓[22m[39m Compiled in 329ms (604 modules)
+2025-06-13 22:09:57 +02:00:  [32m[1m✓[22m[39m Compiled in 309ms (604 modules)
+2025-06-13 22:10:08 +02:00:  [32m[1m✓[22m[39m Compiled in 725ms (604 modules)
+2025-06-13 22:10:16 +02:00:  [32m[1m✓[22m[39m Compiled in 349ms (604 modules)
+2025-06-13 22:10:27 +02:00:  [32m[1m✓[22m[39m Compiled in 474ms (604 modules)
+2025-06-13 22:10:29 +02:00:  [32m[1m✓[22m[39m Compiled in 142ms (604 modules)
+2025-06-13 22:14:23 +02:00:  [32m[1m✓[22m[39m Compiled in 496ms (604 modules)
+2025-06-13 22:14:25 +02:00:  [32m[1m✓[22m[39m Compiled in 157ms (604 modules)
+2025-06-13 22:19:02 +02:00:  [32m[1m✓[22m[39m Compiled in 474ms (604 modules)
+2025-06-13 22:22:40 +02:00:  [32m[1m✓[22m[39m Compiled in 654ms (604 modules)
+2025-06-13 22:22:42 +02:00:  [32m[1m✓[22m[39m Compiled in 346ms (604 modules)
+2025-06-13 22:24:52 +02:00:  [32m[1m✓[22m[39m Compiled in 468ms (604 modules)
+2025-06-13 22:25:44 +02:00:  [32m[1m✓[22m[39m Compiled in 392ms (604 modules)
+2025-06-13 22:25:51 +02:00:  [32m[1m✓[22m[39m Compiled in 327ms (604 modules)
+2025-06-13 22:26:18 +02:00:  [32m[1m✓[22m[39m Compiled in 277ms (604 modules)
+2025-06-13 22:26:28 +02:00:  [32m[1m✓[22m[39m Compiled in 283ms (604 modules)
+2025-06-13 22:27:57 +02:00:  [32m[1m✓[22m[39m Compiled in 426ms (604 modules)
+2025-06-13 22:30:00 +02:00:  [32m[1m✓[22m[39m Compiled in 560ms (604 modules)
+2025-06-13 22:30:09 +02:00:  [32m[1m✓[22m[39m Compiled in 251ms (604 modules)
+2025-06-13 22:31:02 +02:00:  [32m[1m✓[22m[39m Compiled in 352ms (604 modules)
+2025-06-13 22:31:13 +02:00:  [32m[1m✓[22m[39m Compiled in 253ms (604 modules)
+2025-06-13 22:31:18 +02:00:  [32m[1m✓[22m[39m Compiled in 267ms (604 modules)
+2025-06-13 22:31:32 +02:00:  [32m[1m✓[22m[39m Compiled in 290ms (604 modules)
+2025-06-13 22:31:49 +02:00:  [32m[1m✓[22m[39m Compiled in 416ms (604 modules)
+2025-06-13 22:31:56 +02:00:  [32m[1m✓[22m[39m Compiled in 553ms (604 modules)
+2025-06-13 22:32:16 +02:00:  [32m[1m✓[22m[39m Compiled in 283ms (604 modules)
+2025-06-13 22:32:22 +02:00:  [32m[1m✓[22m[39m Compiled in 298ms (604 modules)
+2025-06-13 22:36:40 +02:00:  [32m[1m✓[22m[39m Compiled in 512ms (604 modules)
+2025-06-13 22:37:32 +02:00:  [32m[1m✓[22m[39m Compiled in 270ms (604 modules)
+2025-06-13 22:37:51 +02:00:  [32m[1m✓[22m[39m Compiled in 429ms (604 modules)
+2025-06-13 22:42:53 +02:00:  [32m[1m✓[22m[39m Compiled in 506ms (604 modules)
+2025-06-13 22:42:54 +02:00:  [32m[1m✓[22m[39m Compiled in 183ms (604 modules)
+2025-06-13 22:43:04 +02:00:  [32m[1m✓[22m[39m Compiled in 1089ms (604 modules)
+2025-06-13 22:43:12 +02:00:  [32m[1m✓[22m[39m Compiled in 257ms (604 modules)
+2025-06-13 22:43:19 +02:00:  [32m[1m✓[22m[39m Compiled in 262ms (604 modules)
+2025-06-13 22:43:26 +02:00:  [32m[1m✓[22m[39m Compiled in 1063ms (604 modules)
+2025-06-13 22:44:03 +02:00:  [32m[1m✓[22m[39m Compiled in 421ms (604 modules)
+2025-06-13 22:45:12 +02:00:  [32m[1m✓[22m[39m Compiled in 590ms (604 modules)
+2025-06-13 22:45:14 +02:00:  [32m[1m✓[22m[39m Compiled in 340ms (604 modules)
+2025-06-13 22:45:31 +02:00:  [32m[1m✓[22m[39m Compiled in 277ms (604 modules)
+2025-06-13 22:46:15 +02:00:  [32m[1m✓[22m[39m Compiled in 360ms (604 modules)
+2025-06-13 22:46:30 +02:00:  [32m[1m✓[22m[39m Compiled in 562ms (604 modules)
+2025-06-13 22:46:49 +02:00:  [32m[1m✓[22m[39m Compiled in 274ms (604 modules)
+2025-06-13 22:55:18 +02:00:  [32m[1m✓[22m[39m Compiled in 504ms (604 modules)
+2025-06-13 22:55:33 +02:00:  [32m[1m✓[22m[39m Compiled in 206ms (604 modules)
+2025-06-13 22:56:20 +02:00:  [32m[1m✓[22m[39m Compiled in 338ms (604 modules)
+2025-06-13 22:56:25 +02:00:  [32m[1m✓[22m[39m Compiled in 247ms (604 modules)
+2025-06-13 22:56:30 +02:00:  [32m[1m✓[22m[39m Compiled in 250ms (604 modules)
+2025-06-13 22:56:47 +02:00:  [32m[1m✓[22m[39m Compiled in 348ms (604 modules)
+2025-06-13 22:56:57 +02:00:  [32m[1m✓[22m[39m Compiled in 158ms (604 modules)
+2025-06-13 23:02:59 +02:00:  [32m[1m✓[22m[39m Compiled in 448ms (604 modules)
+2025-06-13 23:03:11 +02:00:  [32m[1m✓[22m[39m Compiled in 409ms (604 modules)
+2025-06-13 23:03:34 +02:00:  [32m[1m✓[22m[39m Compiled in 766ms (604 modules)
+2025-06-13 23:04:41 +02:00:  [32m[1m✓[22m[39m Compiled in 1757ms (604 modules)
+2025-06-13 23:06:08 +02:00:  [32m[1m✓[22m[39m Compiled in 434ms (604 modules)
+2025-06-13 23:06:29 +02:00:  [32m[1m✓[22m[39m Compiled in 1760ms (604 modules)
+2025-06-13 23:07:03 +02:00:  [32m[1m✓[22m[39m Compiled in 530ms (604 modules)
+2025-06-13 23:07:15 +02:00:  [32m[1m✓[22m[39m Compiled in 1114ms (604 modules)
+2025-06-13 23:07:37 +02:00:  [32m[1m✓[22m[39m Compiled in 1251ms (604 modules)
+2025-06-13 23:08:57 +02:00:  [32m[1m✓[22m[39m Compiled in 383ms (604 modules)
+2025-06-13 23:11:41 +02:00:  [32m[1m✓[22m[39m Compiled in 389ms (604 modules)
+2025-06-13 23:12:07 +02:00:  [32m[1m✓[22m[39m Compiled in 364ms (604 modules)
+2025-06-13 23:12:23 +02:00:  [32m[1m✓[22m[39m Compiled in 284ms (604 modules)
+2025-06-13 23:15:51 +02:00:  [32m[1m✓[22m[39m Compiled in 401ms (604 modules)
+2025-06-13 23:16:36 +02:00:  [32m[1m✓[22m[39m Compiled in 288ms (604 modules)
+2025-06-13 23:17:47 +02:00:  [32m[1m✓[22m[39m Compiled in 400ms (604 modules)
+2025-06-13 23:19:43 +02:00:  [32m[1m✓[22m[39m Compiled in 449ms (604 modules)
+2025-06-13 23:24:28 +02:00:  [32m[1m✓[22m[39m Compiled in 639ms (604 modules)
+2025-06-13 23:27:33 +02:00:  [32m[1m✓[22m[39m Compiled in 387ms (604 modules)
+2025-06-13 23:30:44 +02:00:  [32m[1m✓[22m[39m Compiled in 515ms (604 modules)
+2025-06-13 23:31:47 +02:00:  [32m[1m✓[22m[39m Compiled in 360ms (604 modules)
+2025-06-13 23:32:08 +02:00:  [32m[1m✓[22m[39m Compiled in 316ms (604 modules)
+2025-06-13 23:35:49 +02:00:  [32m[1m✓[22m[39m Compiled in 694ms (604 modules)
+2025-06-13 23:52:18 +02:00:  [32m[1m✓[22m[39m Compiled in 5.3s (604 modules)
+2025-06-13 23:53:42 +02:00:  [32m[1m✓[22m[39m Compiled in 3.2s (604 modules)
+2025-06-13 23:53:49 +02:00:  [32m[1m✓[22m[39m Compiled in 1146ms (604 modules)
+2025-06-13 23:54:03 +02:00:  [32m[1m✓[22m[39m Compiled in 1354ms (604 modules)
+2025-06-13 23:54:19 +02:00:  [32m[1m✓[22m[39m Compiled in 1618ms (604 modules)
+2025-06-13 23:54:29 +02:00:  [32m[1m✓[22m[39m Compiled in 1303ms (604 modules)
+2025-06-13 23:54:53 +02:00:  [32m[1m✓[22m[39m Compiled in 3.6s (604 modules)
+2025-06-13 23:56:13 +02:00:  [32m[1m✓[22m[39m Compiled in 608ms (604 modules)
+2025-06-13 23:56:52 +02:00:  [32m[1m✓[22m[39m Compiled in 353ms (604 modules)
+2025-06-13 23:56:54 +02:00:  [32m[1m✓[22m[39m Compiled in 184ms (604 modules)
+2025-06-13 23:58:30 +02:00:  [32m[1m✓[22m[39m Compiled in 449ms (604 modules)
+2025-06-13 23:58:30 +02:00:  [32m[1m✓[22m[39m Compiled in 173ms (604 modules)
+2025-06-13 23:58:45 +02:00:  [32m[1m✓[22m[39m Compiled in 181ms (604 modules)
+2025-06-13 23:58:46 +02:00:  [32m[1m✓[22m[39m Compiled in 236ms (604 modules)
