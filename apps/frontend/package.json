@@ -33,7 +33,7 @@
     "clsx": "^2.1.0",
     "framer-motion": "^12.19.0",
     "lucide-react": "^0.263.1",
-    "motion": "^12.15.0",
+    "motion": "^12.20.1",
     "next": "15.3.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
