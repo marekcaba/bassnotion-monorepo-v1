@@ -42,7 +42,7 @@
     "@nx/webpack": "21.1.2",
     "@playwright/test": "^1.52.0",
     "@swc-node/register": "~1.9.2",
-    "@swc/core": "~1.5.29",
+    "@swc/core": "~1.12.7",
     "@swc/helpers": "~0.5.17",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
