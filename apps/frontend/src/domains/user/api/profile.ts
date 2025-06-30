@@ -10,6 +10,7 @@ export class ProfileService {
       error,
     } = await supabase.auth.getSession();
 
+    // TODO: Review non-null assertion - consider null safety
     if (error || !session?.access_token) {
       throw new Error('User not authenticated');
     }
@@ -55,6 +56,7 @@ export class ProfileService {
       const result = await response.json();
       console.log('[Profile] Response data:', result);
 
+      // TODO: Review non-null assertion - consider null safety
       if (!response.ok || !result.success) {
         throw new Error(result.message || 'Failed to update profile');
       }
@@ -81,6 +83,7 @@ export class ProfileService {
 
       const result = await response.json();
 
+      // TODO: Review non-null assertion - consider null safety
       if (!response.ok || !result.success) {
         throw new Error(result.message || 'Failed to delete account');
       }
@@ -102,6 +105,7 @@ export class ProfileService {
         error: userError,
       } = await supabase.auth.getUser();
 
+      // TODO: Review non-null assertion - consider null safety
       if (userError || !user) {
         throw new Error('User not authenticated');
       }
@@ -118,6 +122,7 @@ export class ProfileService {
       }
 
       // If no profile exists, create one
+      // TODO: Review non-null assertion - consider null safety
       if (!profile) {
         console.log('No profile found, creating one...');
 
@@ -146,6 +151,7 @@ export class ProfileService {
           throw new Error(`Failed to create profile: ${createError.message}`);
         }
 
+        // TODO: Review non-null assertion - consider null safety
         if (!newProfile) {
           throw new Error('Failed to create profile: No data returned');
         }

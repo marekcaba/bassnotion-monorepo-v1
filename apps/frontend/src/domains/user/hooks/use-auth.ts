@@ -30,6 +30,7 @@ const isE2ETesting =
 
 // Disable devtools in webkit or E2E testing to prevent crashes
 const shouldUseDevtools =
+  // TODO: Review non-null assertion - consider null safety
   !isWebkit && !isE2ETesting && process.env.NODE_ENV === 'development';
 
 export const useAuthStore = create<AuthState>()(
@@ -82,9 +83,11 @@ export const useAuth = () => {
   return {
     ...state,
     // Computed properties for easier usage
+    // TODO: Review non-null assertion - consider null safety
     isAuthenticated: !!state.user && !!state.session,
     isReady: state.isInitialized,
     // Quick check - don't block if auth is still loading, assume not authenticated
+    // TODO: Review non-null assertion - consider null safety
     isAuthenticatedSync: !!state.user && !!state.session && state.isInitialized,
   };
 };

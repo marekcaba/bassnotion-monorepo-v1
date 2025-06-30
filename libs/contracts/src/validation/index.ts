@@ -14,5 +14,8 @@ export * from './auth-schemas.js';
 // User profile validation
 export * from './user-schemas.js';
 
+// Exercise validation - Epic 3 & 4 compatible
+export * from './exercise-schemas.js';
+
 // Playback domain validation - NEW for Task 15
 export * from './playback-schemas.js';

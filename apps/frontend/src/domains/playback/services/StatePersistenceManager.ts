@@ -117,6 +117,7 @@ export class StatePersistenceManager {
   }
 
   public static getInstance(): StatePersistenceManager {
+    // TODO: Review non-null assertion - consider null safety
     if (!StatePersistenceManager.instance) {
       StatePersistenceManager.instance = new StatePersistenceManager();
     }
@@ -133,6 +134,7 @@ export class StatePersistenceManager {
 
     this.config = { ...this.config, ...config };
 
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enabled) {
       console.log('State persistence disabled');
       return;
@@ -174,6 +176,7 @@ export class StatePersistenceManager {
     state: Partial<PersistedState>,
     options: { isAutoSave?: boolean } = {},
   ): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enabled || !this.isInitialized) {
       return;
     }
@@ -292,6 +295,7 @@ export class StatePersistenceManager {
       await this.saveToStorage(this.storageKey, serializedState);
 
       // Track the last saved state for auto-save functionality
+      // TODO: Review non-null assertion - consider null safety
       if (!saveOptions.isAutoSave) {
         // Only track user-initiated saves for auto-save to prevent loops
         this.lastSavedState = persistedState;
@@ -352,6 +356,7 @@ export class StatePersistenceManager {
    * Load state from storage
    */
   public async loadState(): Promise<PersistedState | null> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enabled || !this.isInitialized) {
       return null;
     }
@@ -361,6 +366,7 @@ export class StatePersistenceManager {
     try {
       let serializedState = await this.loadFromStorage(this.storageKey);
 
+      // TODO: Review non-null assertion - consider null safety
       if (!serializedState) {
         console.log('No persisted state found');
         return null;
@@ -457,6 +463,7 @@ export class StatePersistenceManager {
   public async hasRecoverableSession(): Promise<boolean> {
     try {
       const state = await this.loadState();
+      // TODO: Review non-null assertion - consider null safety
       if (!state) return false;
 
       // Check if session is recent enough to recover (within 24 hours)
@@ -473,6 +480,7 @@ export class StatePersistenceManager {
    * Add event listener
    */
   public on(event: string, handler: (...args: any[]) => void): () => void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
     }
@@ -586,6 +594,7 @@ export class StatePersistenceManager {
   }
 
   private async saveToStorage(key: string, data: string | null): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!data) return; // Skip saving if data is null
 
     switch (this.config.storageType) {
@@ -630,6 +639,7 @@ export class StatePersistenceManager {
   }
 
   private validateState(state: PersistedState): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!state.version || !state.timestamp || !state.sessionId) {
       throw new Error('Invalid state: missing required fields');
     }
@@ -638,6 +648,7 @@ export class StatePersistenceManager {
       throw new Error('Invalid state: config must be an object');
     }
 
+    // TODO: Review non-null assertion - consider null safety
     if (!Array.isArray(state.audioSources)) {
       throw new Error('Invalid state: audioSources must be an array');
     }

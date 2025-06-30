@@ -166,9 +166,12 @@ export class PlaybackError extends Error {
    * Get manual recovery actions
    */
   public getManualRecoveries(): ErrorRecoveryAction[] {
-    return this.recoveryActions
-      .filter((action) => !action.automatic)
-      .sort((a, b) => b.priority - a.priority);
+    return (
+      this.recoveryActions
+        // TODO: Review non-null assertion - consider null safety
+        .filter((action) => !action.automatic)
+        .sort((a, b) => b.priority - a.priority)
+    );
   }
 
   /**
@@ -264,6 +267,7 @@ export function createErrorContext(
   const hasSubstantialContext = meaningfulFields.length > 1;
 
   // Only include deviceInfo defaults if it's missing AND we have substantial context
+  // TODO: Review non-null assertion - consider null safety
   if (!defaultContext.deviceInfo && hasSubstantialContext) {
     const platform =
       typeof navigator !== 'undefined' ? navigator.platform : 'unknown';
@@ -292,6 +296,7 @@ export function createErrorContext(
   }
 
   // Only include performanceMetrics defaults if it's missing AND we have substantial context
+  // TODO: Review non-null assertion - consider null safety
   if (!defaultContext.performanceMetrics && hasSubstantialContext) {
     defaultContext.performanceMetrics = {
       latency: 0,
@@ -311,6 +316,7 @@ export function determineSeverity(
   isRecoverable: boolean,
   affectsCore: boolean,
 ): ErrorSeverity {
+  // TODO: Review non-null assertion - consider null safety
   if (!isRecoverable && affectsCore) {
     return ErrorSeverity.CRITICAL;
   }

@@ -359,8 +359,8 @@ describe('NetworkLatencyMonitor Behavior', () => {
     vi.stubGlobal('window', mockEnv.globalObj.window);
     vi.stubGlobal('fetch', mockEnv.mockFetch);
 
-    // Mock Date.now specifically
-    vi.spyOn(Date, 'now').mockImplementation(mockEnv.mockDate.now);
+    // Mock Date.now safely
+    vi.spyOn(Date, 'now').mockReturnValue(mockEnv.fixedTimestamp);
 
     // Reset singleton
     (NetworkLatencyMonitor as any).instance = undefined;

@@ -147,8 +147,11 @@ export class DrumProcessor extends BaseAudioPlugin {
   public readonly capabilities = this.metadata.capabilities;
 
   // Audio analysis components
+  // TODO: Review non-null assertion - consider null safety
   private analyser!: AnalyserNode;
+  // TODO: Review non-null assertion - consider null safety
   private frequencyData!: Float32Array;
+  // TODO: Review non-null assertion - consider null safety
   private timeDomainData!: Float32Array;
 
   // Tone.js components
@@ -428,6 +431,7 @@ export class DrumProcessor extends BaseAudioPlugin {
     const startTime = performance.now();
 
     // Validate inputs and throw exceptions for critical errors (as tests expect)
+    // TODO: Review non-null assertion - consider null safety
     if (!inputBuffer || !outputBuffer) {
       throw new Error('Input and output buffers are required');
     }
@@ -956,6 +960,7 @@ export class DrumProcessor extends BaseAudioPlugin {
   }
 
   private startMetronome(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.metronome || !this.metronomeEnvelope) return;
 
     const bpm = this.getParameter('metronomeBpm') as number;
@@ -985,9 +990,11 @@ export class DrumProcessor extends BaseAudioPlugin {
   }
 
   private async updateDrumPattern(style: string): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.drumSampler) return;
 
     const pattern = this.drumPatterns.get(style);
+    // TODO: Review non-null assertion - consider null safety
     if (!pattern) return;
 
     // Stop existing sequence

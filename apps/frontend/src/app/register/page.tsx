@@ -65,9 +65,11 @@ function RegisterPageContent() {
 
           // Redirect without success toast - user will see they're logged in
           redirectAfterAuth(authData.user);
+          // TODO: Review non-null assertion - consider null safety
         } else if (authData.user && !authData.session) {
           // User needs to confirm email - this toast is helpful
           toast({
+            // TODO: Review non-null assertion - consider null safety
             title: 'Account created!',
             description:
               'Please check your email to confirm your account before signing in.',

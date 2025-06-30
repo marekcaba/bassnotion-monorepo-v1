@@ -53,6 +53,7 @@ export function LoginForm({
     }
   };
 
+  // TODO: Review non-null assertion - consider null safety
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   return (

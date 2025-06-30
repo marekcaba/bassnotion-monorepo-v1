@@ -42,12 +42,14 @@ export const useAuthRedirect = (options: UseAuthRedirectOptions = {}) => {
 
   const redirectAfterAuth = useCallback(
     (user: User | null) => {
+      // TODO: Review non-null assertion - consider null safety
       if (!user) {
         scheduleRedirect('/login');
         return;
       }
 
       // Check if email confirmation is required and user hasn't confirmed
+      // TODO: Review non-null assertion - consider null safety
       if (requireEmailConfirmation && !user.email_confirmed_at) {
         scheduleRedirect('/verify-email');
         return;

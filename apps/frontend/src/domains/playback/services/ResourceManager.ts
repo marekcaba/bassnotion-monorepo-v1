@@ -294,8 +294,11 @@ export class ResourceManager {
   };
 
   // NEW: Epic 2 Asset Management Integration
+  // TODO: Review non-null assertion - consider null safety
   private assetCoordination!: AssetLoadingCoordination;
+  // TODO: Review non-null assertion - consider null safety
   private assetCacheConfig!: AssetCacheConfiguration;
+  // TODO: Review non-null assertion - consider null safety
   private assetCleanupStrategy!: AssetCleanupStrategy;
   private assetLifecycleMetrics = {
     totalAssetsLoaded: 0,
@@ -319,6 +322,7 @@ export class ResourceManager {
   public static getInstance(
     config?: Partial<ResourceManagerConfig>,
   ): ResourceManager {
+    // TODO: Review non-null assertion - consider null safety
     if (!ResourceManager.instance) {
       ResourceManager.instance = new ResourceManager(config);
     } else if (config) {
@@ -437,6 +441,7 @@ export class ResourceManager {
    */
   public access<T>(resourceId: string): T | null {
     const managed = this.resources.get(resourceId);
+    // TODO: Review non-null assertion - consider null safety
     if (!managed || managed.metadata.state === 'disposed') {
       return null;
     }
@@ -456,6 +461,7 @@ export class ResourceManager {
    */
   public addRef(resourceId: string): boolean {
     const managed = this.resources.get(resourceId);
+    // TODO: Review non-null assertion - consider null safety
     if (!managed || managed.metadata.state === 'disposed') {
       return false;
     }
@@ -470,6 +476,7 @@ export class ResourceManager {
    */
   public removeRef(resourceId: string): boolean {
     const managed = this.resources.get(resourceId);
+    // TODO: Review non-null assertion - consider null safety
     if (!managed) {
       return false;
     }
@@ -489,10 +496,12 @@ export class ResourceManager {
    */
   public async dispose(resourceId: string, force = false): Promise<boolean> {
     const managed = this.resources.get(resourceId);
+    // TODO: Review non-null assertion - consider null safety
     if (!managed || managed.metadata.state === 'disposed') {
       return false;
     }
 
+    // TODO: Review non-null assertion - consider null safety
     if (!force && managed.refs > 0) {
       console.warn(
         `Cannot dispose resource ${resourceId}: still has ${managed.refs} references`,
@@ -508,6 +517,7 @@ export class ResourceManager {
    */
   public async getFromPool<T>(type: ResourceType): Promise<T> {
     const pool = this.pools.get(type);
+    // TODO: Review non-null assertion - consider null safety
     if (!pool) {
       console.log('Available pools:', Array.from(this.pools.keys()));
       console.log('Requested pool type:', type);
@@ -538,6 +548,7 @@ export class ResourceManager {
    */
   public async returnToPool<T>(type: ResourceType, resource: T): Promise<void> {
     const pool = this.pools.get(type);
+    // TODO: Review non-null assertion - consider null safety
     if (!pool) {
       console.warn(`No pool configured for resource type: ${type}`);
       return;
@@ -572,6 +583,7 @@ export class ResourceManager {
       const now = Date.now();
 
       // Check if resource should be cleaned up
+      // TODO: Review non-null assertion - consider null safety
       if (options.types && !options.types.includes(metadata.type)) continue;
 
       if (options.priority && metadata.priority !== options.priority) continue;
@@ -701,6 +713,7 @@ export class ResourceManager {
    * Detect memory leaks
    */
   public async detectMemoryLeaks(): Promise<MemoryLeakReport> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.leakDetection.enabled) {
       return {
         suspectedLeaks: [],
@@ -805,6 +818,7 @@ export class ResourceManager {
     event: K,
     handler: ResourceManagerEvents[K],
   ): () => void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
     }
@@ -1143,6 +1157,7 @@ export class ResourceManager {
 
   private scheduleCleanup(resourceId: string): void {
     const managed = this.resources.get(resourceId);
+    // TODO: Review non-null assertion - consider null safety
     if (!managed) return;
 
     const delay = managed.metadata.cleanupStrategy === 'immediate' ? 0 : 5000; // 5 second delay for deferred cleanup
@@ -1257,6 +1272,7 @@ export class ResourceManager {
   private createAudioBuffer(): AudioBuffer {
     // Create a minimal audio buffer for pooling
     // Use test environment detection for better compatibility
+    // TODO: Review non-null assertion - consider null safety
     if (typeof window === 'undefined' || !window.AudioContext) {
       // Test environment - create a mock AudioBuffer
       return {
@@ -1300,6 +1316,7 @@ export class ResourceManager {
     canvas.width = 256;
     canvas.height = 256;
     const context = canvas.getContext('2d');
+    // TODO: Review non-null assertion - consider null safety
     if (!context) {
       throw new Error('Failed to create 2D canvas context');
     }
@@ -1343,6 +1360,7 @@ export class ResourceManager {
     const managedAssets = new Map<string, string>();
 
     // Handle missing AssetManager in test environments
+    // TODO: Review non-null assertion - consider null safety
     if (!this.assetCoordination?.assetManager) {
       console.warn(
         'AssetManager not available, creating mock assets for testing',
@@ -1426,6 +1444,7 @@ export class ResourceManager {
     manifest: ProcessedAssetManifest,
   ): Promise<string> {
     const assetRef = manifest.assets.find((a) => a.url === loadResult.url);
+    // TODO: Review non-null assertion - consider null safety
     if (!assetRef) {
       // In test environments or when URLs are modified for error simulation,
       // create a fallback asset reference
@@ -1541,6 +1560,7 @@ export class ResourceManager {
    */
   public getAssetByUrl<T = any>(url: string): T | null {
     const metadata = this.assetCoordination.resourceTracker.get(url);
+    // TODO: Review non-null assertion - consider null safety
     if (!metadata) return null;
 
     const resource = this.access<T>(metadata.id);
@@ -1611,6 +1631,7 @@ export class ResourceManager {
     const currentMemoryPressure =
       this.getCurrentMemoryUsage() / this.config.constraints.maxTotalMemory;
 
+    // TODO: Review non-null assertion - consider null safety
     if (!forceCleanup && currentMemoryPressure < memoryPressureThreshold) {
       return { assetsDisposed: 0, memoryReclaimed: 0, preservedAssets: 0 };
     }
@@ -1628,6 +1649,7 @@ export class ResourceManager {
       this.assetCoordination.resourceTracker.entries(),
     )) {
       const resource = this.resources.get(metadata.id);
+      // TODO: Review non-null assertion - consider null safety
       if (!resource) continue;
 
       // Preserve critical assets if requested
@@ -1658,6 +1680,7 @@ export class ResourceManager {
     // Dispose assets until memory pressure is relieved
     for (const { url, metadata } of candidates) {
       const resource = this.resources.get(metadata.id);
+      // TODO: Review non-null assertion - consider null safety
       if (!resource) continue;
 
       const assetMemory = metadata.memoryUsage;
@@ -1674,6 +1697,7 @@ export class ResourceManager {
         const newMemoryPressure =
           this.getCurrentMemoryUsage() / this.config.constraints.maxTotalMemory;
         if (
+          // TODO: Review non-null assertion - consider null safety
           !forceCleanup &&
           newMemoryPressure < memoryPressureThreshold * 0.8
         ) {
@@ -1853,6 +1877,7 @@ export class ResourceManager {
   private getAssetTypeBreakdown(): Record<string, number> {
     const breakdown: Record<string, number> = {};
 
+    // TODO: Review non-null assertion - consider null safety
     if (!this.assetCoordination?.resourceTracker) {
       return breakdown;
     }
@@ -1868,6 +1893,7 @@ export class ResourceManager {
   private getMemoryUsageByCategory(): Record<string, number> {
     const usage: Record<string, number> = {};
 
+    // TODO: Review non-null assertion - consider null safety
     if (!this.assetCoordination?.resourceTracker) {
       return usage;
     }

@@ -357,7 +357,7 @@ describe('CacheMetricsCollector Behavior', () => {
     vi.stubGlobal('window', mockEnv.globalObj.window);
     vi.stubGlobal('AudioBuffer', mockEnv.globalObj.AudioBuffer);
 
-    // Mock Date.now specifically
+    // Mock Date.now safely
     vi.spyOn(Date, 'now').mockReturnValue(mockEnv.fixedTimestamp);
 
     // Reset singleton

@@ -1,0 +1,33 @@
+2025-06-22 18:29:00 +02:00:  [33m[1m⚠[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx
+2025-06-22 18:29:00 +02:00: Attempted import error: 'exerciseToMockExercise' is not exported from '@bassnotion/contracts' (imported as 'exerciseToMockExercise').
+2025-06-22 18:29:00 +02:00: Import trace for requested module:
+2025-06-22 18:29:00 +02:00: ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx
+2025-06-22 18:29:00 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-22 18:29:00 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-22 18:29:00 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-22 18:29:00 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-22 18:29:00 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-22 18:29:00 +02:00: ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx
+2025-06-22 18:29:00 +02:00: Attempted import error: 'exerciseToMockExercise' is not exported from '@bassnotion/contracts' (imported as 'exerciseToMockExercise').
+2025-06-22 18:29:00 +02:00: Import trace for requested module:
+2025-06-22 18:29:00 +02:00: ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx
+2025-06-22 18:29:00 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-22 18:29:00 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-22 18:29:00 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-22 18:29:00 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-22 18:29:00 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-22 21:45:26 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts
+2025-06-22 21:45:26 +02:00: Module parse failed: Identifier 'currentTime' has already been declared (129:18)
+2025-06-22 21:45:26 +02:00: |                 "useFretboardAnimation.useCallback[animationCallback].currentVisibleIds": (note)=>note.id
+2025-06-22 21:45:26 +02:00: |             }["useFretboardAnimation.useCallback[animationCallback].currentVisibleIds"]);
+2025-06-22 21:45:26 +02:00: >             const currentTime = performance.now();
+2025-06-22 21:45:26 +02:00: |             // Find new notes that weren't visible before
+2025-06-22 21:45:26 +02:00: |             const newNoteIds = currentVisibleIds.filter({
+2025-06-22 21:45:26 +02:00: Import trace for requested module:
+2025-06-22 21:45:26 +02:00: ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts
+2025-06-22 21:45:26 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-22 21:45:26 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-22 21:45:26 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-22 21:45:26 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-22 21:45:26 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-22 23:43:02 +02:00: <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOSPC: no space left on device, write

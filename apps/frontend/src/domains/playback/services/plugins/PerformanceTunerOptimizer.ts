@@ -9,6 +9,7 @@ import { AssetManager } from '../AssetManager.js';
 import { N8nAssetPipelineProcessor } from './N8nAssetPipelineProcessor.js';
 import { InstrumentAssetOptimizer } from './InstrumentAssetOptimizer.js';
 import { MusicalContextAnalyzer } from './MusicalContextAnalyzer.js';
+import { DeviceInfoService } from '../DeviceInfoService.js';
 
 interface PerformanceProfile {
   deviceType: 'mobile' | 'tablet' | 'desktop' | 'lowend';
@@ -51,6 +52,7 @@ export class PerformanceTunerOptimizer {
   private pipelineProcessor: N8nAssetPipelineProcessor;
   private assetOptimizer: InstrumentAssetOptimizer;
   private musicalAnalyzer: MusicalContextAnalyzer;
+  private deviceInfoService: DeviceInfoService;
 
   private currentProfile: PerformanceProfile;
   private activeStrategy: OptimizationStrategy;
@@ -143,6 +145,7 @@ export class PerformanceTunerOptimizer {
     this.pipelineProcessor = pipelineProcessor;
     this.assetOptimizer = assetOptimizer;
     this.musicalAnalyzer = musicalAnalyzer;
+    this.deviceInfoService = DeviceInfoService.getInstance();
 
     this.currentProfile = this.detectPerformanceProfile();
     this.activeStrategy = this.selectOptimalStrategy();
@@ -160,35 +163,27 @@ export class PerformanceTunerOptimizer {
    * Detect current device and network performance profile
    */
   private detectPerformanceProfile(): PerformanceProfile {
-    const userAgent = navigator.userAgent.toLowerCase();
-    const connection = (navigator as any).connection;
-    const _battery = (navigator as any).getBattery?.();
-
-    // Device detection
+    // Device detection using DeviceInfoService
     let deviceType: PerformanceProfile['deviceType'] = 'desktop';
-    if (userAgent.includes('mobile')) deviceType = 'mobile';
-    else if (userAgent.includes('tablet') || userAgent.includes('ipad'))
+    if (this.deviceInfoService.isMobile()) {
+      deviceType = 'mobile';
+    } else if (this.deviceInfoService.isTablet()) {
       deviceType = 'tablet';
+    }
 
     // Low-end device detection
-    const cores = navigator.hardwareConcurrency || 4;
-    const memory = (navigator as any).deviceMemory || 4;
-    if (cores <= 2 || memory <= 2) deviceType = 'lowend';
-
-    // Enhanced network speed detection with more conservative defaults
-    let networkSpeed: PerformanceProfile['networkSpeed'] = 'medium'; // Default to medium instead of fast
-    if (connection) {
-      const effectiveType = connection.effectiveType;
-      if (effectiveType === 'slow-2g' || effectiveType === '2g')
-        networkSpeed = 'slow';
-      else if (effectiveType === '4g' && connection.downlink > 15)
-        networkSpeed = 'fast'; // Higher threshold for fast
-      // Otherwise keep medium as default
+    if (this.deviceInfoService.isLowEndDevice()) {
+      deviceType = 'lowend';
     }
+
+    // Network speed detection
+    const networkSpeed = this.deviceInfoService.getNetworkSpeed();
+    const validNetworkSpeed: PerformanceProfile['networkSpeed'] =
+      networkSpeed === 'unknown' ? 'medium' : networkSpeed;
 
     return {
       deviceType,
-      networkSpeed,
+      networkSpeed: validNetworkSpeed,
       batteryLevel: 1.0, // Will be updated if battery API is available
       thermalState: 'nominal',
       memoryPressure: 'low',
@@ -204,6 +199,7 @@ export class PerformanceTunerOptimizer {
       this.currentProfile.thermalState === 'serious' ||
       this.currentProfile.thermalState === 'critical'
     ) {
+      // TODO: Review non-null assertion - consider null safety
       return this.strategies.find((s) => s.id === 'emergency-thermal')!;
     }
 
@@ -213,6 +209,7 @@ export class PerformanceTunerOptimizer {
       this.currentProfile.batteryLevel &&
       this.currentProfile.batteryLevel < 0.2
     ) {
+      // TODO: Review non-null assertion - consider null safety
       return this.strategies.find((s) => s.id === 'mobile-aggressive')!;
     }
 
@@ -223,7 +220,12 @@ export class PerformanceTunerOptimizer {
         strategy.networkRequirements.includes(this.currentProfile.networkSpeed),
     );
 
-    return candidates[0] || this.strategies[1]!; // Default to mobile-balanced
+    return (
+      (candidates[0] || this.strategies[1]) ??
+      (() => {
+        throw new Error('Expected strategies[1] to exist');
+      })()
+    ); // Default to mobile-balanced
   }
 
   /**
@@ -255,14 +257,15 @@ export class PerformanceTunerOptimizer {
     };
     requestAnimationFrame(frameMonitor);
 
-    // Monitor memory usage
-    if ((performance as any).memory) {
-      setInterval(() => {
-        const memory = (performance as any).memory;
+    // Monitor memory usage using DeviceInfoService
+    setInterval(() => {
+      const performanceInfo = this.deviceInfoService.getPerformanceInfo();
+      if (performanceInfo.memory) {
         this.performanceMetrics.memoryUsage =
-          memory.usedJSHeapSize / memory.jsHeapSizeLimit;
-      }, 5000);
-    }
+          performanceInfo.memory.usedJSHeapSize /
+          performanceInfo.memory.jsHeapSizeLimit;
+      }
+    }, 5000);
 
     // Check for performance degradation
     setInterval(() => {
@@ -505,27 +508,33 @@ export class PerformanceTunerOptimizer {
     const recommendations: string[] = [...this.performanceRecommendations];
 
     if (this.performanceMetrics.frameRate < 45) {
+      // TODO: Review non-null assertion - consider null safety
       if (!recommendations.includes('Reduce visual effects quality')) {
         recommendations.push('Reduce visual effects quality');
       }
+      // TODO: Review non-null assertion - consider null safety
       if (!recommendations.includes('Enable aggressive asset compression')) {
         recommendations.push('Enable aggressive asset compression');
       }
     }
 
     if (this.performanceMetrics.memoryUsage > 0.7) {
+      // TODO: Review non-null assertion - consider null safety
       if (!recommendations.includes('Clear unused asset cache')) {
         recommendations.push('Clear unused asset cache');
       }
+      // TODO: Review non-null assertion - consider null safety
       if (!recommendations.includes('Reduce sample pool size')) {
         recommendations.push('Reduce sample pool size');
       }
     }
 
     if (this.performanceMetrics.audioLatency > 50) {
+      // TODO: Review non-null assertion - consider null safety
       if (!recommendations.includes('Increase audio buffer size')) {
         recommendations.push('Increase audio buffer size');
       }
+      // TODO: Review non-null assertion - consider null safety
       if (!recommendations.includes('Reduce voice polyphony')) {
         recommendations.push('Reduce voice polyphony');
       }
@@ -535,9 +544,11 @@ export class PerformanceTunerOptimizer {
       this.currentProfile.batteryLevel &&
       this.currentProfile.batteryLevel < 0.2
     ) {
+      // TODO: Review non-null assertion - consider null safety
       if (!recommendations.includes('Enable battery saver mode')) {
         recommendations.push('Enable battery saver mode');
       }
+      // TODO: Review non-null assertion - consider null safety
       if (!recommendations.includes('Reduce background processing')) {
         recommendations.push('Reduce background processing');
       }
@@ -561,6 +572,7 @@ export class PerformanceTunerOptimizer {
 
     // Update performance profile (unless preserving manual settings for tests)
     const previousProfile = { ...this.currentProfile };
+    // TODO: Review non-null assertion - consider null safety
     if (!preserveManualProfile) {
       this.currentProfile = this.detectPerformanceProfile();
     }

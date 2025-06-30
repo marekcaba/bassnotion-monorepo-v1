@@ -6,6 +6,7 @@ import {
 import * as dotenv from 'dotenv';
 
 import { AppModule } from './app.module.js';
+import { ZodValidationPipe } from './shared/pipes/zod-validation.pipe.js';
 
 // Load environment variables from .env file in monorepo root
 // Try multiple paths for different deployment scenarios
@@ -15,12 +16,6 @@ dotenv.config(); // Default .env loading
 
 // Import reflect-metadata for NestJS decorators
 import 'reflect-metadata';
-
-// --- DEBUG LINES ---
-console.warn('DEBUG: Process CWD:', process.cwd());
-console.warn('DEBUG: Loaded SUPABASE_URL:', process.env['SUPABASE_URL']);
-console.warn('DEBUG: Loaded SUPABASE_KEY:', process.env['SUPABASE_KEY']);
-// --- END DEBUG LINES ---
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -40,6 +35,25 @@ async function bootstrap() {
           frontendUrl + '/', // Allow both with and without trailing slash
         ];
 
+  // Enable global validation pipes
+  app.useGlobalPipes(new ZodValidationPipe());
+
+  // Add security headers middleware
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook('onSend', async (request, reply, payload) => {
+      // Security headers
+      reply.header('X-Content-Type-Options', 'nosniff');
+      reply.header('X-Frame-Options', 'SAMEORIGIN');
+      reply.header('X-XSS-Protection', '1; mode=block');
+      reply.header('Referrer-Policy', 'origin-when-cross-origin');
+      reply.header('X-DNS-Prefetch-Control', 'on');
+
+      // CORS headers will be handled by the CORS middleware below
+      return payload;
+    });
+
   // Enable CORS
   await app.enableCors({
     origin: allowedOrigins,
@@ -53,18 +67,7 @@ async function bootstrap() {
 
   await app.listen(port, host);
 
-  // Debug: Log all registered routes
-  console.warn(`Application is running on: http://localhost:${port}`);
-  console.warn('DEBUG: Registered routes:');
-  console.warn('- GET /api/health (AppController)');
-  console.warn('- POST /auth/signin (AuthController)');
-  console.warn('- POST /auth/signup (AuthController)');
-  console.warn('- GET /auth/me (AuthController)');
-  console.warn('- PUT /user/profile (UserController)');
-  console.warn('- DELETE /user/account (UserController)');
-  console.warn(
-    'DEBUG: If UserController routes are missing, check module imports',
-  );
+  console.log(`Application is running on: http://localhost:${port}`);
 }
 
 // Handle bootstrap errors properly

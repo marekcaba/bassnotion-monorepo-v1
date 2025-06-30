@@ -42,6 +42,7 @@ export function detectDeviceCapabilities(): DeviceCapabilities {
     const isIOS = /iphone|ipad|ipod/i.test(userAgent);
     const isAndroid = /android/i.test(userAgent);
     const isSafari =
+      // TODO: Review non-null assertion - consider null safety
       /safari/i.test(userAgent) && !/chrome|chromium/i.test(userAgent);
     const isChrome = /chrome|chromium/i.test(userAgent);
 
@@ -110,6 +111,7 @@ export function getMobileAudioConstraints(
 
   const isMobile = Boolean(capabilities.isMobile);
 
+  // TODO: Review non-null assertion - consider null safety
   if (!isMobile) {
     // Desktop - no constraints
     return createCleanConstraints({
@@ -172,12 +174,15 @@ export function supportsLowLatencyAudio(): boolean {
   const capabilities = detectDeviceCapabilities();
 
   // Desktop generally supports low latency
+  // TODO: Review non-null assertion - consider null safety
   if (!capabilities.isMobile) return true;
 
   // Modern iOS devices support low latency
+  // TODO: Review non-null assertion - consider null safety
   if (capabilities.isIOS && !isOlderIOS()) return true;
 
   // Modern Android devices with Chrome support low latency
+  // TODO: Review non-null assertion - consider null safety
   if (capabilities.isAndroid && capabilities.isChrome && !isOlderAndroid()) {
     return true;
   }
@@ -220,6 +225,7 @@ export function requiresUserGesture(): boolean {
 export function getDevicePerformanceTier(): 'low' | 'medium' | 'high' {
   const capabilities = detectDeviceCapabilities();
 
+  // TODO: Review non-null assertion - consider null safety
   if (!capabilities.isMobile) {
     return 'high'; // Assume desktop is high performance
   }
@@ -290,6 +296,7 @@ export function getBatteryOptimizationRecommendations(): {
 } {
   const capabilities = detectDeviceCapabilities();
 
+  // TODO: Review non-null assertion - consider null safety
   if (!capabilities.isMobile) {
     return {
       suspendOnBackground: false,
@@ -315,6 +322,7 @@ export function getBatteryOptimizationRecommendations(): {
  */
 function getUserAgentSafely(): string {
   try {
+    // TODO: Review non-null assertion - consider null safety
     if (typeof navigator === 'undefined' || !navigator.userAgent) {
       return '';
     }
@@ -323,15 +331,21 @@ function getUserAgentSafely(): string {
 
     // Sanitize malicious content while preserving platform detection
     userAgent = userAgent
+      // TODO: Review non-null assertion - consider null safety
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
       .replace(/javascript:/gi, '') // Remove javascript: protocol
       .replace(/on\w+\s*=/gi, '') // Remove event handlers
-      .replace(/eval\s*\(/gi, '') // Remove eval calls
+      .replace(/\beval\s*\(/gi, '') // Remove eval calls (word boundary to be more precise)
       .replace(/<[^>]*>/g, ''); // Remove any remaining HTML tags
 
     return userAgent.toLowerCase().substring(0, 500); // Limit length
   } catch {
-    console.error('Error accessing user agent, using safe defaults');
+    // Safely handle errors without exposing system information
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn(
+        'Device detection: Using safe defaults due to user agent access error',
+      );
+    }
     // Return safe defaults for any user agent access errors
     return 'SafeDefault/1.0';
   }
@@ -339,6 +353,7 @@ function getUserAgentSafely(): string {
 
 function checkWebAudioSupport(): boolean {
   try {
+    // TODO: Review non-null assertion - consider null safety
     return !!(
       typeof window !== 'undefined' &&
       (window.AudioContext || (window as any).webkitAudioContext)

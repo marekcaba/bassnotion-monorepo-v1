@@ -118,6 +118,7 @@ export class AuthService {
         error: result.error,
       });
 
+      // TODO: Review non-null assertion - consider null safety
       if (!response.ok || !result.success) {
         // Extract the specific error message from backend response
         let errorMessage = 'Registration failed';
@@ -192,6 +193,7 @@ export class AuthService {
       });
 
       // Handle both HTTP errors and successful responses with success: false
+      // TODO: Review non-null assertion - consider null safety
       if (!response.ok || !result.success) {
         // Extract the specific error message from backend response
         let errorMessage = 'Login failed';
@@ -354,7 +356,9 @@ export class AuthService {
       }
 
       console.debug('[Auth Debug] Google sign-in response:', {
+        // TODO: Review non-null assertion - consider null safety
         hasProvider: !!data.provider,
+        // TODO: Review non-null assertion - consider null safety
         hasUrl: !!data.url,
         url: data.url,
         provider: data.provider,
@@ -389,6 +393,7 @@ export class AuthService {
 
       if (error) throw error;
 
+      // TODO: Review non-null assertion - consider null safety
       return { exists: !!data, error: null };
     } catch (error) {
       console.error('[Auth Debug] Check user exists error:', error);

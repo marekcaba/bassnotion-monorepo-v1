@@ -45,6 +45,7 @@ function LoginPageContent() {
       setIsLoading(true);
 
       // Validate input data before sending
+      // TODO: Review non-null assertion - consider null safety
       if (!data.email || !data.password) {
         throw new Error('Email and password are required');
       }

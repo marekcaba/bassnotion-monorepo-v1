@@ -263,6 +263,7 @@ export class PracticeSessionTracker extends EventEmitter {
   }
 
   public endSession(): PracticeSession | null {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.currentSession) {
       return null;
     }
@@ -292,6 +293,7 @@ export class PracticeSessionTracker extends EventEmitter {
   }
 
   public recordInteraction(interaction: ControlInteraction): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.currentSession) {
       return;
     }
@@ -716,12 +718,14 @@ export class BehaviorPatternRecognizer extends EventEmitter {
 
     for (let i = 0; i < allInteractions.length; i++) {
       const interaction = allInteractions[i];
+      // TODO: Review non-null assertion - consider null safety
       if (!interaction) continue;
 
       if (currentSession.length === 0) {
         currentSession.push(interaction);
       } else {
         const lastInteraction = currentSession[currentSession.length - 1];
+        // TODO: Review non-null assertion - consider null safety
         if (!lastInteraction) continue;
 
         const timeDiff = interaction.timestamp - lastInteraction.timestamp;
@@ -912,6 +916,7 @@ export class BehaviorPatternRecognizer extends EventEmitter {
   ): 'increasing' | 'decreasing' | 'stable' {
     const existingPattern = this.patterns.get(patternType);
 
+    // TODO: Review non-null assertion - consider null safety
     if (!existingPattern) {
       return 'stable';
     }
@@ -1054,6 +1059,7 @@ export class IntelligentSuggestionEngine extends EventEmitter {
       (a) => a.area === 'tempo_control',
     );
 
+    // TODO: Review non-null assertion - consider null safety
     if (!tempoPattern || !tempoProgress) return suggestions;
 
     // Suggest tempo progression strategy based on patterns
@@ -1115,6 +1121,7 @@ export class IntelligentSuggestionEngine extends EventEmitter {
       (a) => a.area === 'transposition',
     );
 
+    // TODO: Review non-null assertion - consider null safety
     if (!transpositionPattern || !transpositionProgress) return suggestions;
 
     // Suggest key exploration based on preferences
@@ -1173,6 +1180,7 @@ export class IntelligentSuggestionEngine extends EventEmitter {
     const routinePattern = patterns.find((p) => p.type === 'practice_routine');
     const timingPattern = patterns.find((p) => p.type === 'session_timing');
 
+    // TODO: Review non-null assertion - consider null safety
     if (!routinePattern) return suggestions;
 
     // Suggest routine optimization
@@ -1228,6 +1236,7 @@ export class IntelligentSuggestionEngine extends EventEmitter {
       (p) => p.type === 'learning_style',
     );
 
+    // TODO: Review non-null assertion - consider null safety
     if (!learningStylePattern) return suggestions;
 
     // Suggest automation based on learning style
@@ -1585,6 +1594,7 @@ export class ProgressAnalyzer extends EventEmitter {
     const lastRecentSession = recentSessions[recentSessions.length - 1];
     const firstOlderSession = olderSessions[0];
 
+    // TODO: Review non-null assertion - consider null safety
     if (!lastRecentSession || !firstOlderSession) return 0;
 
     const timeSpan = lastRecentSession.startTime - firstOlderSession.startTime;
@@ -1759,6 +1769,7 @@ export class AnalyticsEngine extends EventEmitter {
   }
 
   public trackControlUsage(controlType: string, parameters: any): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isInitialized) {
       console.warn('AnalyticsEngine not initialized. Call initialize() first.');
       return;
@@ -1813,15 +1824,25 @@ export class AnalyticsEngine extends EventEmitter {
     if (session) {
       this.emit('practiceSessionEnded', session);
 
-      // Generate insights after session ends
+      // Generate insights after session ends - only if initialized
       setTimeout(() => {
-        this.generatePracticeInsights();
+        if (this.isInitialized) {
+          try {
+            this.generatePracticeInsights();
+          } catch (error) {
+            this.emit('error', {
+              message: 'Failed to generate practice insights',
+              error,
+            });
+          }
+        }
       }, 1000);
     }
     return session;
   }
 
   public generatePracticeInsights(): PracticeInsights {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isInitialized) {
       throw new Error('AnalyticsEngine not initialized');
     }
@@ -1942,6 +1963,7 @@ export class AnalyticsEngine extends EventEmitter {
         .slice(-10, -5)
         .reduce((sum, s) => sum + s.qualityMetrics.accuracy, 0) / 5;
 
+    // TODO: Review non-null assertion - consider null safety
     if (!isNaN(recentAccuracy) && !isNaN(olderAccuracy)) {
       const accuracyChange =
         ((recentAccuracy - olderAccuracy) / olderAccuracy) * 100;

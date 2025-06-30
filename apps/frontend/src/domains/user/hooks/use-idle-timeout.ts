@@ -59,6 +59,7 @@ export function useIdleTimeout(options: UseIdleTimeoutOptions = {}) {
   }, [onWarning]);
 
   const resetTimer = useCallback(() => {
+    // TODO: Review non-null assertion - consider null safety
     if (!enabled) return;
 
     lastActivity.current = Date.now();
@@ -85,6 +86,7 @@ export function useIdleTimeout(options: UseIdleTimeoutOptions = {}) {
   }, [resetTimer]);
 
   useEffect(() => {
+    // TODO: Review non-null assertion - consider null safety
     if (!enabled) {
       // Clear timers if disabled
       if (idleTimer.current) {

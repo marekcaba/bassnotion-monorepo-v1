@@ -120,6 +120,7 @@ export interface UseAssetLoadingReturn {
  *
  *   return (
  *     <div>
+ // TODO: Review non-null assertion - consider null safety
  *       <button disabled={!canStartPlayback}>
  *         Start Exercise
  *       </button>

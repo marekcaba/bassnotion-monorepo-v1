@@ -1,3 +1,6 @@
+// Import reflect-metadata for NestJS decorators - MUST be first import
+import 'reflect-metadata';
+
 import { beforeEach, afterEach, afterAll, beforeAll, vi } from 'vitest';
 import { config } from 'dotenv';
 import path from 'path';

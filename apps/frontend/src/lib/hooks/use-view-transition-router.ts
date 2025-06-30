@@ -48,6 +48,7 @@ const cssManager = {
   },
 
   commit() {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.style) {
       this.style = document.createElement('style');
       this.style.id = STYLE_ID;
@@ -100,6 +101,7 @@ function injectTransitionStyles() {
       // Use enhanced CSS manager
       cssManager.set('@media (prefers-reduced-motion)', {
         '::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*)':
+          // TODO: Review non-null assertion - consider null safety
           'animation: none !important;',
       });
 
@@ -159,6 +161,7 @@ function cleanupTransitionStyles() {
 
 /* 
 function supportsViewTransitions() {
+  // TODO: Review non-null assertion - consider null safety
   return !!document.startViewTransition;
 }
 
@@ -168,6 +171,7 @@ async function executeViewTransition(
   navigationCallback: () => void,
   _transitionConfig: typeof TRANSITION_CONFIG,
 ) {
+  // TODO: Review non-null assertion - consider null safety
   if (!document.startViewTransition) {
     navigationCallback();
     return;
@@ -325,6 +329,7 @@ async function preHeatTransitions(): Promise<void> {
 
   preHeatPromise = new Promise<void>((resolve) => {
     const executePreHeat = async () => {
+      // TODO: Review non-null assertion - consider null safety
       if (!document.startViewTransition) {
         isPreHeated = true;
         resolve();
@@ -413,6 +418,7 @@ export function useViewTransitionRouter() {
 
   const navigateWithTransition = useCallback(
     async (url: string) => {
+      // TODO: Review non-null assertion - consider null safety
       if (!document.startViewTransition) {
         router.push(url);
         return;
@@ -430,6 +436,7 @@ export function useViewTransitionRouter() {
         performance.mark('bassnotion-vt-start');
 
         // Skip style injection if already pre-heated (styles are already injected)
+        // TODO: Review non-null assertion - consider null safety
         if (!isPreHeated) {
           await injectTransitionStyles();
         }
@@ -447,6 +454,7 @@ export function useViewTransitionRouter() {
           isTransitioning = false;
           currentTransition = null;
           // Don't cleanup styles immediately if pre-heated (keep them for next transition)
+          // TODO: Review non-null assertion - consider null safety
           if (!isPreHeated) {
             cleanupTransitionStyles();
           }

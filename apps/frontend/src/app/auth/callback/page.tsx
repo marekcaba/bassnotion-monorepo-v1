@@ -34,6 +34,7 @@ function AuthCallbackContent() {
         } = await supabase.auth.getSession();
 
         console.debug('[Auth Debug] Current session check:', {
+          // TODO: Review non-null assertion - consider null safety
           hasSession: !!session,
           error: sessionError,
         });
@@ -67,6 +68,7 @@ function AuthCallbackContent() {
           return;
         }
 
+        // TODO: Review non-null assertion - consider null safety
         if (!code) {
           console.error('[Auth Debug] No code found and no session available');
           toast({
@@ -87,6 +89,7 @@ function AuthCallbackContent() {
           throw exchangeError;
         }
 
+        // TODO: Review non-null assertion - consider null safety
         if (!data.session || !data.user) {
           throw new Error('No session or user data received');
         }

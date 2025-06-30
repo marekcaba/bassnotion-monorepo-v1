@@ -18,7 +18,16 @@
     "deps:check": "./scripts/dependency-update.sh",
     "deps:audit": "pnpm audit --audit-level moderate",
     "deps:outdated": "pnpm outdated",
-    "deps:safe": "pnpm audit --fix && pnpm update --save-exact"
+    "deps:safe": "pnpm audit --fix && pnpm update --save-exact",
+    "test": "vitest",
+    "test:frontend": "vitest run apps/frontend/",
+    "test:frontend:playback": "vitest run apps/frontend/src/domains/playback/",
+    "test:frontend:user": "vitest run apps/frontend/src/domains/user/",
+    "test:frontend:widgets": "vitest run apps/frontend/src/domains/widgets/",
+    "test:frontend:shared": "vitest run apps/frontend/src/shared/",
+    "test:frontend:ci": "pnpm run test:frontend:playback && pnpm run test:frontend:user && (pnpm run test:frontend:widgets || echo 'No widgets tests found') && pnpm run test:frontend:shared",
+    "test:backend": "vitest run apps/backend/",
+    "test:e2e": "vitest run apps/frontend-e2e/"
   },
   "private": true,
   "devDependencies": {

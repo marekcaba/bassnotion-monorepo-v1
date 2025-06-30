@@ -244,6 +244,7 @@ export class ABTestFramework {
   }
 
   public static getInstance(): ABTestFramework {
+    // TODO: Review non-null assertion - consider null safety
     if (!ABTestFramework.instance) {
       ABTestFramework.instance = new ABTestFramework();
     }
@@ -299,6 +300,7 @@ export class ABTestFramework {
    */
   public startExperiment(experimentId: string): void {
     const experiment = this.activeExperiments.get(experimentId);
+    // TODO: Review non-null assertion - consider null safety
     if (!experiment) {
       throw new Error(`Experiment ${experimentId} not found`);
     }
@@ -343,6 +345,7 @@ export class ABTestFramework {
     }
 
     // Check targeting criteria
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isUserEligible(experiment.config, userId)) {
       return null;
     }
@@ -351,6 +354,7 @@ export class ABTestFramework {
     const variant = this.assignVariant(experiment.config, userId);
 
     // Store assignment
+    // TODO: Review non-null assertion - consider null safety
     if (!this.userAssignments.has(userId)) {
       this.userAssignments.set(userId, new Map());
     }
@@ -372,6 +376,7 @@ export class ABTestFramework {
     experimentId: string,
   ): AudioOptimizationConfig {
     const experiment = this.activeExperiments.get(experimentId);
+    // TODO: Review non-null assertion - consider null safety
     if (!experiment) {
       throw new Error(`Experiment ${experimentId} not found`);
     }
@@ -379,6 +384,7 @@ export class ABTestFramework {
     const variantConfig = experiment.config.variants.find(
       (v: ExperimentVariantConfig) => v.name === variant,
     );
+    // TODO: Review non-null assertion - consider null safety
     if (!variantConfig) {
       throw new Error(
         `Variant ${variant} not found in experiment ${experimentId}`,
@@ -419,6 +425,7 @@ export class ABTestFramework {
     this.results.set(experimentId, results);
 
     // Update current results for real-time monitoring
+    // TODO: Review non-null assertion - consider null safety
     if (!experiment.currentResults.has(variant)) {
       experiment.currentResults.set(variant, []);
     }
@@ -439,6 +446,7 @@ export class ABTestFramework {
    */
   public analyzeExperiment(experimentId: string): ExperimentAnalysis {
     const experiment = this.activeExperiments.get(experimentId);
+    // TODO: Review non-null assertion - consider null safety
     if (!experiment) {
       throw new Error(`Experiment ${experimentId} not found`);
     }
@@ -449,6 +457,7 @@ export class ABTestFramework {
     const variantResults: Map<ExperimentVariant, ExperimentResult[]> =
       new Map();
     for (const result of results) {
+      // TODO: Review non-null assertion - consider null safety
       if (!variantResults.has(result.variant)) {
         variantResults.set(result.variant, []);
       }
@@ -515,6 +524,7 @@ export class ABTestFramework {
    */
   public endExperiment(experimentId: string): void {
     const experiment = this.activeExperiments.get(experimentId);
+    // TODO: Review non-null assertion - consider null safety
     if (!experiment) {
       throw new Error(`Experiment ${experimentId} not found`);
     }
@@ -538,6 +548,7 @@ export class ABTestFramework {
    */
   public rollbackExperiment(experimentId: string): void {
     const experiment = this.activeExperiments.get(experimentId);
+    // TODO: Review non-null assertion - consider null safety
     if (!experiment) {
       throw new Error(`Experiment ${experimentId} not found`);
     }
@@ -575,6 +586,7 @@ export class ABTestFramework {
   // Private helper methods
 
   private validateExperimentConfig(config: ExperimentConfig): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!config.id || !config.name) {
       throw new Error('Experiment must have id and name');
     }
@@ -603,6 +615,7 @@ export class ABTestFramework {
 
       if (
         config.deviceTargeting.platforms &&
+        // TODO: Review non-null assertion - consider null safety
         !config.deviceTargeting.platforms.includes(deviceInfo.platform as any)
       ) {
         return false;
@@ -735,6 +748,7 @@ export class ABTestFramework {
 
   private setupRollbackMonitoring(experimentId: string): void {
     const experiment = this.activeExperiments.get(experimentId);
+    // TODO: Review non-null assertion - consider null safety
     if (!experiment) return;
 
     // Monitor rollback conditions
@@ -750,6 +764,7 @@ export class ABTestFramework {
 
   private checkRollbackConditions(experimentId: string): void {
     const experiment = this.activeExperiments.get(experimentId);
+    // TODO: Review non-null assertion - consider null safety
     if (!experiment || experiment.rollbackTriggered) return;
 
     const config = experiment.config;
@@ -1033,6 +1048,7 @@ export class ABTestFramework {
     const hasMinSampleSize = variantArray.every(
       (v) => v.sampleSize >= config.minSampleSize,
     );
+    // TODO: Review non-null assertion - consider null safety
     if (!hasMinSampleSize) {
       return { isSignificant: false, pValue: 1.0 };
     }
@@ -1055,6 +1071,7 @@ export class ABTestFramework {
 
     // Find control variant
     const control = variantArray.find((v) => v.variant === 'control');
+    // TODO: Review non-null assertion - consider null safety
     if (!control) return null;
 
     // Find best performing variant
@@ -1181,6 +1198,7 @@ export class ABTestFramework {
           'Document optimization for future use',
         ],
       });
+      // TODO: Review non-null assertion - consider null safety
     } else if (!significance.isSignificant) {
       recommendations.push({
         type: 'extend',

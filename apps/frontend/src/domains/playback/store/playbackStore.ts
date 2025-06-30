@@ -850,6 +850,7 @@ export const usePlaybackStore = create<PlaybackStore>()(
     addToBackgroundQueue: (assetId) =>
       set((state) => {
         const currentQueue = state.assetLoadingProgress.backgroundLoadingQueue;
+        // TODO: Review non-null assertion - consider null safety
         if (!currentQueue.includes(assetId)) {
           return {
             assetLoadingProgress: {
@@ -889,6 +890,7 @@ export const playbackSelectors = {
   isPlaying: (state: PlaybackStore) => state.playbackState === 'playing',
   canPlay: (state: PlaybackStore) =>
     state.isInitialized &&
+    // TODO: Review non-null assertion - consider null safety
     !state.isLoading &&
     state.audioContextState === 'running' &&
     state.playbackState !== 'loading',

@@ -29,6 +29,7 @@ export function IdleWarningDialog({
   const [remainingTime, setRemainingTime] = useState(countdownSeconds);
 
   useEffect(() => {
+    // TODO: Review non-null assertion - consider null safety
     if (!isOpen) {
       setRemainingTime(countdownSeconds);
       return;
@@ -61,6 +62,7 @@ export function IdleWarningDialog({
         .fixed.inset-0.z-50.bg-black\\/80[data-state="open"],
         [data-state="open"].fixed.inset-0.z-50.bg-black\\/80,
         .fixed.inset-0.z-50[data-state="open"].bg-black\\/80 {
+          // TODO: Review non-null assertion - consider null safety
           animation: overlayShow 500ms ease-out forwards !important;
         }
         
@@ -68,6 +70,7 @@ export function IdleWarningDialog({
         .fixed.inset-0.z-50.bg-black\\/80[data-state="closed"],
         [data-state="closed"].fixed.inset-0.z-50.bg-black\\/80,
         .fixed.inset-0.z-50[data-state="closed"].bg-black\\/80 {
+          // TODO: Review non-null assertion - consider null safety
           animation: overlayHide 400ms ease-out forwards !important;
         }
         
@@ -75,6 +78,7 @@ export function IdleWarningDialog({
         [data-state="open"].fade-in-0,
         .fade-in-0[data-state="open"],
         [data-state="open"].animate-in.fade-in-0 {
+          // TODO: Review non-null assertion - consider null safety
           animation: overlayShow 500ms ease-out forwards !important;
         }
         
@@ -82,6 +86,7 @@ export function IdleWarningDialog({
         [data-state="closed"].fade-in-0,
         .fade-in-0[data-state="closed"],
         [data-state="closed"].animate-in.fade-in-0 {
+          // TODO: Review non-null assertion - consider null safety
           animation: overlayHide 400ms ease-out forwards !important;
         }
         

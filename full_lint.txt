@@ -1,0 +1,82 @@
+
+> nx run @bassnotion/frontend:lint
+
+Linting "@bassnotion/frontend"...
+[0m[0m
+[0m[4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/AssetManager.ts[24m[0m
+[0m  [2m2189:30[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/CorePlaybackEngine.ts[24m[0m
+[0m   [2m298:46[22m  [33mwarning[39m  Forbidden non-null assertion                                                           [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m   [2m428:9[22m   [31merror[39m    'playResult' is assigned a value but never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m682:24[22m  [31merror[39m    Unexpected empty method 'connect'                                                      [2m@typescript-eslint/no-empty-function[22m[0m
+[0m   [2m683:27[22m  [31merror[39m    Unexpected empty method 'disconnect'                                                   [2m@typescript-eslint/no-empty-function[22m[0m
+[0m   [2m684:24[22m  [31merror[39m    Unexpected empty method 'dispose'                                                      [2m@typescript-eslint/no-empty-function[22m[0m
+[0m   [2m686:33[22m  [31merror[39m    Unexpected empty method 'setValueAtTime'                                               [2m@typescript-eslint/no-empty-function[22m[0m
+[0m   [2m689:22[22m  [31merror[39m    Unexpected empty method 'chain'                                                        [2m@typescript-eslint/no-empty-function[22m[0m
+[0m   [2m692:24[22m  [31merror[39m    Unexpected empty method 'connect'                                                      [2m@typescript-eslint/no-empty-function[22m[0m
+[0m   [2m693:27[22m  [31merror[39m    Unexpected empty method 'disconnect'                                                   [2m@typescript-eslint/no-empty-function[22m[0m
+[0m   [2m694:24[22m  [31merror[39m    Unexpected empty method 'dispose'                                                      [2m@typescript-eslint/no-empty-function[22m[0m
+[0m  [2m1635:57[22m  [31merror[39m    Unexpected empty method 'setValueAtTime'                                               [2m@typescript-eslint/no-empty-function[22m[0m
+[0m  [2m1636:42[22m  [31merror[39m    Unexpected empty method 'disconnect'                                                   [2m@typescript-eslint/no-empty-function[22m[0m
+[0m  [2m1637:43[22m  [31merror[39m    Unexpected empty method 'disconnect'                                                   [2m@typescript-eslint/no-empty-function[22m[0m
+[0m[0m
+[0m[4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/IntelligentTempoController.ts[24m[0m
+[0m  [2m913:5[22m  [31merror[39m  Expected an assignment or function call and instead saw an expression  [2m@typescript-eslint/no-unused-expressions[22m[0m
+[0m[0m
+[0m[4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/MIDIAssetOrchestrator.ts[24m[0m
+[0m  [2m532:53[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/MixingConsole.ts[24m[0m
+[0m  [2m538:27[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/PerformanceOptimizationEngine.ts[24m[0m
+[0m  [2m390:5[22m  [31merror[39m  Expected an assignment or function call and instead saw an expression  [2m@typescript-eslint/no-unused-expressions[22m[0m
+[0m  [2m523:5[22m  [31merror[39m  Expected an assignment or function call and instead saw an expression  [2m@typescript-eslint/no-unused-expressions[22m[0m
+[0m[0m
+[0m[4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/__tests__/ABTestFramework.behavior.test.ts[24m[0m
+[0m  [2m689:40[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/__tests__/AnalyticsEngine.test.ts[24m[0m
+[0m  [2m114:14[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m115:14[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m116:14[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m117:14[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m191:14[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m193:27[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m210:27[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m226:27[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m281:16[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m282:16[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m311:9[22m   [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m400:14[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m402:14[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m672:27[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m694:27[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m716:27[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m748:14[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m879:14[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m880:14[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m881:14[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m882:14[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m930:14[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m  [2m931:14[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-assertion[22m[0m
+[0m[0m
+[0m[4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/__tests__/AssetManifestProcessor.behavior.test.ts[24m[0m
+[0m  [2m226:12[22m  [33mwarning[39m  Forbidden non-null assertion  [2m@typescript-eslint/no-non-null-asse
+
+
+
+ NX   Running target lint for project @bassnotion/frontend failed
+
+Failed tasks:
+
+- @bassnotion/frontend:lint
+
+Hint: run the command with --verbose for more details.
+
+
+ NX   Nx Cloud encountered some problems
+
+This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+

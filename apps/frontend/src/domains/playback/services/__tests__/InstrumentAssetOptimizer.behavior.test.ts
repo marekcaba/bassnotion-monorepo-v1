@@ -7,7 +7,7 @@
  * Part of Story 2.2: Task 7, Subtask 7.3
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   InstrumentAssetOptimizer,
   type InstrumentOptimizationConfig,
@@ -18,12 +18,12 @@ import type {
   AssetLoadResult,
 } from '../../types/audio.js';
 
-// Enhanced AudioBuffer Mock for Node.js test environment
+// Mock AudioBuffer for Node.js environment
 class MockAudioBuffer {
-  public readonly length: number;
-  public readonly sampleRate: number;
-  public readonly numberOfChannels: number;
-  public readonly duration: number;
+  length: number;
+  sampleRate: number;
+  numberOfChannels: number;
+  duration: number;
 
   constructor(options: {
     length: number;
@@ -36,36 +36,21 @@ class MockAudioBuffer {
     this.duration = this.length / this.sampleRate;
   }
 
-  getChannelData(channel: number): Float32Array {
-    if (channel >= this.numberOfChannels) {
-      throw new Error(`Channel ${channel} does not exist`);
-    }
+  copyFromChannel(_destination: Float32Array, _channelNumber: number): void {
+    // Mock implementation
+  }
+
+  copyToChannel(_source: Float32Array, _channelNumber: number): void {
+    // Mock implementation
+  }
+
+  getChannelData(_channel: number): Float32Array {
     return new Float32Array(this.length);
-  }
-
-  copyFromChannel(
-    destination: Float32Array,
-    channelNumber: number,
-    startInChannel?: number,
-  ): void {
-    const start = startInChannel || 0;
-    const source = this.getChannelData(channelNumber);
-    destination.set(source.slice(start, start + destination.length));
-  }
-
-  copyToChannel(
-    source: Float32Array,
-    channelNumber: number,
-    startInChannel?: number,
-  ): void {
-    const start = startInChannel || 0;
-    const destination = this.getChannelData(channelNumber);
-    destination.set(source, start);
   }
 }
 
-// Set up global AudioBuffer mock
-global.AudioBuffer = MockAudioBuffer as any;
+// Store original global for restoration
+const originalAudioBuffer = global.AudioBuffer;
 
 // Mock the AssetManager
 vi.mock('../AssetManager.js', () => ({
@@ -81,9 +66,21 @@ describe('InstrumentAssetOptimizer', () => {
   let mockAssetManager: any;
 
   beforeEach(() => {
+    // Set up our mock AudioBuffer for this test suite
+    global.AudioBuffer = MockAudioBuffer as any;
+
     vi.clearAllMocks();
     optimizer = new InstrumentAssetOptimizer();
     mockAssetManager = optimizer['assetManager'];
+  });
+
+  afterEach(() => {
+    // Restore original AudioBuffer to prevent global pollution
+    if (originalAudioBuffer) {
+      global.AudioBuffer = originalAudioBuffer;
+    } else {
+      delete (global as any).AudioBuffer;
+    }
   });
 
   describe('Initialization', () => {
@@ -817,3 +814,6 @@ describe('InstrumentAssetOptimizer', () => {
     });
   });
 });
+
+// Restore original global AudioBuffer
+global.AudioBuffer = originalAudioBuffer;

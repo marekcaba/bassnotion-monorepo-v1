@@ -134,6 +134,7 @@ export function usePlaybackState(widgetId?: string): UsePlaybackStateReturn {
 
   // Control functions - memoized to prevent recreation on every render
   const play = useCallback(() => {
+    // TODO: Review non-null assertion - consider null safety
     if (isInitialized && !isPlaying) {
       setPlaybackState('playing');
 

@@ -82,6 +82,7 @@ export class ErrorRecovery {
   }
 
   public static getInstance(): ErrorRecovery {
+    // TODO: Review non-null assertion - consider null safety
     if (!ErrorRecovery.instance) {
       ErrorRecovery.instance = new ErrorRecovery();
     }
@@ -93,6 +94,7 @@ export class ErrorRecovery {
    */
   private get circuitBreakerManager(): CircuitBreakerManager {
     try {
+      // TODO: Review non-null assertion - consider null safety
       if (!this._circuitBreakerManager) {
         // Use static property for testability if available
         if ((ErrorRecovery as any)._mockCircuitBreakerManager) {
@@ -106,12 +108,15 @@ export class ErrorRecovery {
           this._circuitBreakerManager = CircuitBreakerManager.getInstance();
         }
       }
+      // TODO: Review non-null assertion - consider null safety
       return this._circuitBreakerManager!;
     } catch (error) {
       console.error('Failed to get circuit breaker manager:', error);
+      // TODO: Review non-null assertion - consider null safety
       if (!this._circuitBreakerManager) {
         this._circuitBreakerManager = this.createMockCircuitBreakerManager();
       }
+      // TODO: Review non-null assertion - consider null safety
       return this._circuitBreakerManager!;
     }
   }
@@ -121,6 +126,7 @@ export class ErrorRecovery {
    */
   private get gracefulDegradation(): GracefulDegradation {
     try {
+      // TODO: Review non-null assertion - consider null safety
       if (!this._gracefulDegradation) {
         // Use static property for testability if available
         if ((ErrorRecovery as any)._mockGracefulDegradation) {
@@ -134,12 +140,15 @@ export class ErrorRecovery {
           this._gracefulDegradation = GracefulDegradation.getInstance();
         }
       }
+      // TODO: Review non-null assertion - consider null safety
       return this._gracefulDegradation!;
     } catch (error) {
       console.error('Failed to get graceful degradation:', error);
+      // TODO: Review non-null assertion - consider null safety
       if (!this._gracefulDegradation) {
         this._gracefulDegradation = this.createMockGracefulDegradation();
       }
+      // TODO: Review non-null assertion - consider null safety
       return this._gracefulDegradation!;
     }
   }
@@ -209,6 +218,7 @@ export class ErrorRecovery {
 
     try {
       // Check if error is recoverable before attempting recovery
+      // TODO: Review non-null assertion - consider null safety
       if (error.isRecoverable && !error.isRecoverable()) {
         console.log('Error is not recoverable, skipping recovery');
         this.metrics.failedRecoveries++;
@@ -312,6 +322,7 @@ export class ErrorRecovery {
       const action = actions[i];
 
       // Add null check for action
+      // TODO: Review non-null assertion - consider null safety
       if (!action) {
         console.warn(`Action at index ${i} is undefined, skipping`);
         continue;

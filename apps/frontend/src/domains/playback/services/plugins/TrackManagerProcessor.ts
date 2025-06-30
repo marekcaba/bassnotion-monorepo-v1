@@ -308,6 +308,7 @@ export class TrackNameAnalysisAlgorithm
     const trackName = this.extractTrackName(track);
     const reasoning: string[] = [];
 
+    // TODO: Review non-null assertion - consider null safety
     if (!trackName) {
       reasoning.push('No track name found');
       return {
@@ -382,6 +383,7 @@ export class NoteRangeAnalysisAlgorithm
     const noteRange = this.calculateNoteRange(track);
     const reasoning: string[] = [];
 
+    // TODO: Review non-null assertion - consider null safety
     if (!noteRange) {
       reasoning.push('No notes found in track');
       return {
@@ -873,6 +875,7 @@ export class TrackManagerProcessor {
    * Setup instrument processor for a track
    */
   private async setupInstrumentProcessor(track: ManagedTrack): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!track.processor) return;
 
     const setupData = {
@@ -991,6 +994,7 @@ export class TrackManagerProcessor {
     params: Partial<TrackMixingState>,
   ): void {
     const track = this.tracks.get(trackId);
+    // TODO: Review non-null assertion - consider null safety
     if (!track) return;
 
     track.mixing = { ...track.mixing, ...params };
@@ -1005,6 +1009,7 @@ export class TrackManagerProcessor {
     timing: 'immediate' | 'nextBar' | 'nextSection' = 'nextBar',
   ): void {
     const track = this.tracks.get(trackId);
+    // TODO: Review non-null assertion - consider null safety
     if (!track?.processor) return;
 
     // Call processor-specific fill trigger if available
@@ -1320,6 +1325,7 @@ export class AutomationEngine {
     time: number,
   ): number {
     const automation = this.automationData.get(trackId);
+    // TODO: Review non-null assertion - consider null safety
     if (!automation) return 0;
 
     let curve: AutomationCurve[] = [];

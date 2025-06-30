@@ -22,17 +22,20 @@ export function AuthGuard({
 
   useEffect(() => {
     // Only redirect when auth is ready and user is definitely not authenticated
+    // TODO: Review non-null assertion - consider null safety
     if (isReady && !isAuthenticated) {
       navigateWithTransition(redirectTo);
     }
   }, [isReady, isAuthenticated, navigateWithTransition, redirectTo]);
 
   // If auth is still loading, show fallback or children
+  // TODO: Review non-null assertion - consider null safety
   if (!isReady) {
     return fallback || children;
   }
 
   // If definitely not authenticated, show fallback
+  // TODO: Review non-null assertion - consider null safety
   if (!isAuthenticated) {
     return (
       fallback || (

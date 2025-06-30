@@ -332,8 +332,11 @@ export class CDNCache {
   private accessPatterns: Map<string, AccessPattern> = new Map();
 
   // Analytics and monitoring
+  // TODO: Review non-null assertion - consider null safety
   private analytics!: CacheAnalytics;
+  // TODO: Review non-null assertion - consider null safety
   private networkMonitor!: NetworkLatencyMonitor;
+  // TODO: Review non-null assertion - consider null safety
   private metricsCollector!: CacheMetricsCollector;
 
   // Optimization engine
@@ -405,6 +408,7 @@ export class CDNCache {
   }
 
   public static getInstance(config?: Partial<CDNCacheConfig>): CDNCache {
+    // TODO: Review non-null assertion - consider null safety
     if (!CDNCache.instance) {
       CDNCache.instance = new CDNCache(config);
     }
@@ -445,6 +449,7 @@ export class CDNCache {
    */
   public has(key: string): boolean {
     const entry = this.globalCache.get(key);
+    // TODO: Review non-null assertion - consider null safety
     if (!entry) {
       return false;
     }
@@ -523,6 +528,7 @@ export class CDNCache {
     context?: CacheAccessContext,
   ): Promise<AssetLoadResult | null> {
     const entry = this.globalCache.get(key);
+    // TODO: Review non-null assertion - consider null safety
     if (!entry) {
       this.recordCacheMiss(key, context);
       return null;
@@ -530,6 +536,7 @@ export class CDNCache {
 
     // Check TTL and staleness
     if (this.isEntryExpired(entry)) {
+      // TODO: Review non-null assertion - consider null safety
       if (entry.staleTolerance > 0 && !this.isEntryStale(entry)) {
         // Serve stale content while refreshing in background
         this.triggerBackgroundRefresh(key, entry);
@@ -542,8 +549,11 @@ export class CDNCache {
 
     // Validate data integrity - check for invalid data types and corruption
     if (
+      // TODO: Review non-null assertion - consider null safety
       !entry.data ||
+      // TODO: Review non-null assertion - consider null safety
       (!(entry.data instanceof ArrayBuffer) &&
+        // TODO: Review non-null assertion - consider null safety
         !(entry.data instanceof AudioBuffer)) ||
       (entry.data instanceof ArrayBuffer && entry.data.byteLength === 0)
     ) {
@@ -628,6 +638,7 @@ export class CDNCache {
       );
 
       // Check if we have space
+      // TODO: Review non-null assertion - consider null safety
       if (!this.hasSpaceForEntry(entry)) {
         // Be more conservative about eviction if we have few entries
         // This helps preserve diversity in the cache during initial population
@@ -642,6 +653,7 @@ export class CDNCache {
               entry.size,
               entry.metadata.priority,
             );
+            // TODO: Review non-null assertion - consider null safety
             if (!evicted) {
               console.warn(`Unable to cache asset ${key}: insufficient space`);
               return false;
@@ -653,6 +665,7 @@ export class CDNCache {
             entry.size,
             entry.metadata.priority,
           );
+          // TODO: Review non-null assertion - consider null safety
           if (!evicted) {
             console.warn(`Unable to cache asset ${key}: insufficient space`);
             return false;
@@ -707,6 +720,7 @@ export class CDNCache {
       }
 
       // Check memory and bandwidth constraints
+      // TODO: Review non-null assertion - consider null safety
       if (!this.canPrefetch(request)) {
         results.skipped.push(request.assetUrl);
         continue;
@@ -754,6 +768,7 @@ export class CDNCache {
     let clearedCount = 0;
 
     for (const [key, entry] of Array.from(this.globalCache.entries())) {
+      // TODO: Review non-null assertion - consider null safety
       if (!filter || this.matchesClearFilter(entry, filter)) {
         this.evictEntry(key, 'manual_eviction');
         clearedCount++;
@@ -1093,6 +1108,7 @@ export class CDNCache {
 
     // Filter out protected entries from eviction candidates
     const evictionCandidates = entries.filter(
+      // TODO: Review non-null assertion - consider null safety
       ([, entry]) => !entry.evictionProtection,
     );
 
@@ -1169,6 +1185,7 @@ export class CDNCache {
    */
   private evictEntry(key: string, reason: CacheEvictionReason): void {
     const entry = this.globalCache.get(key);
+    // TODO: Review non-null assertion - consider null safety
     if (!entry) return;
 
     // Increment global eviction counter
@@ -1379,6 +1396,7 @@ export class CDNCache {
    */
   private calculateStrategyHitRate(strategy: CacheStrategy): number {
     const partition = this.partitions.get(strategy);
+    // TODO: Review non-null assertion - consider null safety
     if (!partition) return 0;
 
     let totalHits = 0;
@@ -1458,6 +1476,7 @@ export class CDNCache {
     entry: EnhancedCacheEntry,
     _reason: CacheEvictionReason,
   ): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enableAnalytics) return;
 
     const partition = this.partitions.get(entry.cacheStrategy);
@@ -1473,6 +1492,7 @@ export class CDNCache {
     entry: EnhancedCacheEntry,
     action: 'added' | 'removed',
   ): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enableAnalytics) return;
 
     if (action === 'added') {
@@ -1533,6 +1553,7 @@ export class CDNCache {
    * Collect performance metrics
    */
   private collectMetrics(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enableAnalytics) return;
 
     // Update global metrics
@@ -1560,6 +1581,7 @@ export class CDNCache {
    */
   private calculateStrategyEvictionRate(strategy: CacheStrategy): number {
     const partition = this.partitions.get(strategy);
+    // TODO: Review non-null assertion - consider null safety
     if (!partition) return 0;
 
     const totalOperations =
@@ -1574,6 +1596,7 @@ export class CDNCache {
    */
   private calculateStrategyMemoryEfficiency(strategy: CacheStrategy): number {
     const partition = this.partitions.get(strategy);
+    // TODO: Review non-null assertion - consider null safety
     if (!partition) return 0;
 
     return partition.metadata.totalSize > 0
@@ -1587,6 +1610,7 @@ export class CDNCache {
   private calculateStrategySuitability(strategy: CacheStrategy): number {
     // Simplified suitability calculation
     const metrics = this.analytics.strategyPerformance.get(strategy);
+    // TODO: Review non-null assertion - consider null safety
     if (!metrics) return 0;
 
     return (
@@ -1614,6 +1638,7 @@ export class CDNCache {
       const hasDevice = entry.accessPattern.deviceTypePreference.has(
         filter.deviceType,
       );
+      // TODO: Review non-null assertion - consider null safety
       if (!hasDevice) return false;
     }
     return true;
@@ -1694,6 +1719,7 @@ export class CDNCache {
       const underperformingEntries = entries.filter(([, entry]) => {
         const age = Date.now() - entry.timestamp;
         const ageHours = age / (1000 * 60 * 60);
+        // TODO: Review non-null assertion - consider null safety
         return entry.hitCount < 2 && ageHours > 1 && !entry.evictionProtection;
       });
 

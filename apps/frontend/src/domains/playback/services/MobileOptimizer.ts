@@ -44,17 +44,27 @@ export class MobileOptimizer {
   private static instance: MobileOptimizer;
 
   // Current state - using definite assignment assertions
+  // TODO: Review non-null assertion - consider null safety
   private deviceCapabilities!: DeviceCapabilities;
+  // TODO: Review non-null assertion - consider null safety
   private batteryStatus!: BatteryStatus;
+  // TODO: Review non-null assertion - consider null safety
   private thermalStatus!: ThermalStatus;
+  // TODO: Review non-null assertion - consider null safety
   private currentQualityConfig!: AdaptiveQualityConfig;
+  // TODO: Review non-null assertion - consider null safety
   private userPreferences!: UserOptimizationPreferences;
 
   // NEW: Enhanced device-specific state
+  // TODO: Review non-null assertion - consider null safety
   private deviceModel!: DeviceModel;
+  // TODO: Review non-null assertion - consider null safety
   private networkCapabilities!: NetworkCapabilities;
+  // TODO: Review non-null assertion - consider null safety
   private browserCapabilities!: BrowserCapabilities;
+  // TODO: Review non-null assertion - consider null safety
   private deviceSpecificConfig!: DeviceSpecificConfig;
+  // TODO: Review non-null assertion - consider null safety
   private dynamicOptimizationState!: DynamicOptimizationState;
 
   // Monitoring
@@ -65,14 +75,18 @@ export class MobileOptimizer {
   private networkLatencyMonitor: NetworkLatencyMonitor; // Network latency monitoring integration
 
   // Configuration
+  // TODO: Review non-null assertion - consider null safety
   private optimizationRules!: OptimizationRules;
+  // TODO: Review non-null assertion - consider null safety
   private enhancedOptimizationRules!: EnhancedOptimizationRules; // NEW: Enhanced rules
   private reEvaluationInterval = 30000; // 30 seconds
   private isOptimizationActive = true;
   private lastOptimization: number = Date.now();
 
   // NEW: Device database and analytics
+  // TODO: Review non-null assertion - consider null safety
   private deviceOptimizationMetrics!: DeviceOptimizationMetrics;
+  // TODO: Review non-null assertion - consider null safety
   private progressiveEnhancementConfig!: ProgressiveEnhancementConfig;
 
   private constructor() {
@@ -111,6 +125,7 @@ export class MobileOptimizer {
   }
 
   public static getInstance(): MobileOptimizer {
+    // TODO: Review non-null assertion - consider null safety
     if (!MobileOptimizer.instance) {
       MobileOptimizer.instance = new MobileOptimizer();
     }
@@ -294,6 +309,7 @@ export class MobileOptimizer {
       (process.env?.NODE_ENV === 'test' ||
         process.env?.VITEST === 'true' ||
         typeof window === 'undefined' ||
+        // TODO: Review non-null assertion - consider null safety
         !window.navigator?.userAgent?.includes('Mozilla'));
 
     const userAgent = navigator?.userAgent || 'Mozilla/5.0 (Test Environment)';
@@ -347,6 +363,7 @@ export class MobileOptimizer {
   }
 
   private detectTablet(userAgent: string): boolean {
+    // TODO: Review non-null assertion - consider null safety
     return /tablet|ipad/i.test(userAgent) && !/mobile/i.test(userAgent);
   }
 
@@ -418,6 +435,7 @@ export class MobileOptimizer {
       (process.env?.NODE_ENV === 'test' ||
         process.env?.VITEST === 'true' ||
         typeof window === 'undefined' ||
+        // TODO: Review non-null assertion - consider null safety
         !window.navigator?.userAgent?.includes('Mozilla'));
 
     // For test environments, return a performance score based on mocked hardware
@@ -488,6 +506,7 @@ export class MobileOptimizer {
         return false;
       }
 
+      // TODO: Review non-null assertion - consider null safety
       return !!(
         canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
       );
@@ -1392,6 +1411,7 @@ export class MobileOptimizer {
       latency: 50,
     };
 
+    // TODO: Review non-null assertion - consider null safety
     if (!connection) {
       return defaultCapabilities;
     }
@@ -1420,6 +1440,7 @@ export class MobileOptimizer {
     let engine: BrowserCapabilities['engine'] = 'other';
     let isWebView = false;
 
+    // TODO: Review non-null assertion - consider null safety
     if (userAgent.includes('safari') && !userAgent.includes('chrome')) {
       name = 'safari';
       engine = 'webkit';
@@ -1645,6 +1666,7 @@ export class MobileOptimizer {
       this.networkCapabilities.effectiveType === '2g'
     ) {
       console.log(
+        // TODO: Review non-null assertion - consider null safety
         'SLOW NETWORK DETECTED! Applying network optimizations for:',
         this.networkCapabilities.effectiveType,
       );
@@ -1659,6 +1681,7 @@ export class MobileOptimizer {
         0.5,
       );
       console.log(
+        // TODO: Review non-null assertion - consider null safety
         'Network optimization applied! New quality level:',
         optimizedConfig.qualityLevel,
       );
@@ -1950,6 +1973,7 @@ export class MobileOptimizer {
     }
 
     // Apply based on supported features
+    // TODO: Review non-null assertion - consider null safety
     if (!this.browserCapabilities.supportedFeatures.audioWorklet) {
       // Fallback to ScriptProcessorNode - less efficient
       optimizedConfig.bufferSize = Math.max(optimizedConfig.bufferSize, 512);
@@ -2389,6 +2413,7 @@ export class MobileOptimizer {
         return false;
       }
       const canvas = document.createElement('canvas');
+      // TODO: Review non-null assertion - consider null safety
       return !!(
         canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
       );
@@ -2404,6 +2429,7 @@ export class MobileOptimizer {
         return false;
       }
       const canvas = document.createElement('canvas');
+      // TODO: Review non-null assertion - consider null safety
       return !!canvas.getContext('webgl2');
     } catch {
       return false;
@@ -3001,8 +3027,11 @@ export class MobileOptimizer {
   private getDisabledFeatures(config: AdaptiveQualityConfig): string[] {
     const disabled: string[] = [];
 
+    // TODO: Review non-null assertion - consider null safety
     if (!config.enableEffects) disabled.push('effects');
+    // TODO: Review non-null assertion - consider null safety
     if (!config.enableVisualization) disabled.push('visualization');
+    // TODO: Review non-null assertion - consider null safety
     if (!config.backgroundProcessing) disabled.push('background_processing');
 
     return disabled;

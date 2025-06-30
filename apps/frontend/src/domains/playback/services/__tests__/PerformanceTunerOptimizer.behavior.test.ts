@@ -7,6 +7,14 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PerformanceTunerOptimizer } from '../plugins/PerformanceTunerOptimizer.js';
+import { DeviceInfoService } from '../DeviceInfoService.js';
+
+// Mock DeviceInfoService
+vi.mock('../DeviceInfoService.js', () => ({
+  DeviceInfoService: {
+    getInstance: vi.fn(),
+  },
+}));
 
 // Enhanced Browser API Mocks for Node.js test environment
 class MockNavigator {
@@ -112,60 +120,99 @@ describe('PerformanceTunerOptimizer', () => {
   let mockPipelineProcessor: any;
   let mockAssetOptimizer: any;
   let mockMusicalAnalyzer: any;
+  let mockDeviceInfoService: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
 
-    // Create fresh mocks for each test
+    // Create mock DeviceInfoService instance
+    mockDeviceInfoService = {
+      getInstance: vi.fn().mockReturnThis(),
+      getDeviceInfo: vi.fn().mockReturnValue({
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        hardwareConcurrency: 8,
+        deviceMemory: 8,
+        platform: 'desktop',
+        onLine: true,
+        connection: undefined, // No connection data for default test
+      }),
+      getNetworkSpeed: vi.fn().mockReturnValue('medium'),
+      getHardwareConcurrency: vi.fn().mockReturnValue(8),
+      isMobile: vi.fn().mockReturnValue(false),
+      isTablet: vi.fn().mockReturnValue(false),
+      isLowEndDevice: vi.fn().mockReturnValue(false),
+      getPerformanceInfo: vi.fn().mockReturnValue({
+        memory: {
+          usedJSHeapSize: 50 * 1024 * 1024,
+          totalJSHeapSize: 80 * 1024 * 1024,
+          jsHeapSizeLimit: 100 * 1024 * 1024,
+        },
+      }),
+      setMockDeviceInfo: vi.fn(),
+      clearMocks: vi.fn(),
+    };
+
+    // Mock DeviceInfoService.getInstance to return our mock
+    vi.mocked(DeviceInfoService.getInstance).mockReturnValue(
+      mockDeviceInfoService,
+    );
+
+    // Create mock dependencies
     mockAssetManager = {
-      updateConfiguration: vi.fn(),
-      getPerformanceMetrics: vi.fn().mockReturnValue({
-        loadTime: 100,
-        cacheHitRate: 0.8,
-        memoryUsage: 50 * 1024 * 1024,
+      preloadAssets: vi.fn().mockResolvedValue(true),
+      getAssetStatistics: vi.fn().mockReturnValue({
+        totalAssets: 100,
+        loadedAssets: 80,
+        failedAssets: 2,
+        cacheHitRate: 0.85,
       }),
     };
 
     mockPipelineProcessor = {
       updateConfiguration: vi.fn(),
-      getPerformanceMetrics: vi.fn().mockReturnValue({
-        cdnLatency: 50,
-        failoverCount: 0,
-        qualityAdaptations: 2,
+      getLoadBalanceStatus: vi.fn().mockReturnValue({
+        activeNodes: 3,
+        totalNodes: 5,
+        averageLatency: 45,
+      }),
+      exportConfiguration: vi.fn().mockReturnValue({
+        pipelineProcessor: {
+          loadBalancing: true,
+          failoverEnabled: true,
+        },
       }),
     };
 
     mockAssetOptimizer = {
       updateConfiguration: vi.fn(),
       getOptimizationStatus: vi.fn().mockReturnValue({
-        optimizedInstruments: ['bass', 'drums'],
-        totalCachedAssets: 50,
-        averageCacheHitRate: 0.75,
+        compressionLevel: 'medium',
+        qualityLevel: 0.8,
+        cacheStrategy: 'balanced',
+      }),
+      exportConfiguration: vi.fn().mockReturnValue({
+        assetOptimizer: {
+          deviceCapabilityTier: 'standard',
+          compressionLevel: 0.6,
+        },
       }),
     };
 
     mockMusicalAnalyzer = {
       updateConfiguration: vi.fn(),
+      getAnalysisStatus: vi.fn().mockReturnValue({
+        analysisMode: 'comprehensive',
+        predictionEnabled: true,
+        contextualAdaptation: true,
+      }),
       exportConfiguration: vi.fn().mockReturnValue({
         musicalAnalyzer: {
           analysisMode: 'comprehensive',
           predictionEnabled: true,
         },
       }),
-    };
-
-    // Reset navigator to default state
-    (global.navigator as any).userAgent =
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
-    (global.navigator as any).hardwareConcurrency = 8;
-    (global.navigator as any).deviceMemory = 8;
-
-    // Reset performance memory
-    (global.performance as any).memory = {
-      usedJSHeapSize: 50 * 1024 * 1024,
-      jsHeapSizeLimit: 100 * 1024 * 1024,
-      totalJSHeapSize: 80 * 1024 * 1024,
     };
 
     // Initialize optimizer
@@ -180,6 +227,8 @@ describe('PerformanceTunerOptimizer', () => {
   afterEach(() => {
     vi.clearAllMocks();
     vi.useRealTimers();
+    // Reset DeviceInfoService mocks
+    mockDeviceInfoService.clearMocks();
   });
 
   describe('Device Detection', () => {
@@ -190,9 +239,18 @@ describe('PerformanceTunerOptimizer', () => {
     });
 
     it('should detect mobile devices', () => {
-      // Update navigator for mobile detection
-      (global.navigator as any).userAgent =
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) mobile';
+      // Mock mobile device detection
+      mockDeviceInfoService.isMobile.mockReturnValue(true);
+      mockDeviceInfoService.isTablet.mockReturnValue(false);
+      mockDeviceInfoService.isLowEndDevice.mockReturnValue(false);
+      mockDeviceInfoService.getDeviceInfo.mockReturnValue({
+        userAgent:
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) mobile',
+        hardwareConcurrency: 4,
+        deviceMemory: 3,
+        platform: 'mobile',
+        onLine: true,
+      });
 
       const newOptimizer = new PerformanceTunerOptimizer(
         mockAssetManager as any,
@@ -206,9 +264,18 @@ describe('PerformanceTunerOptimizer', () => {
     });
 
     it('should detect low-end devices', () => {
-      // Update navigator for low-end device detection
-      (global.navigator as any).hardwareConcurrency = 2;
-      (global.navigator as any).deviceMemory = 1;
+      // Mock low-end device detection
+      mockDeviceInfoService.isMobile.mockReturnValue(false);
+      mockDeviceInfoService.isTablet.mockReturnValue(false);
+      mockDeviceInfoService.isLowEndDevice.mockReturnValue(true);
+      mockDeviceInfoService.getHardwareConcurrency.mockReturnValue(2);
+      mockDeviceInfoService.getDeviceInfo.mockReturnValue({
+        userAgent: 'Mozilla/5.0 (Low-end device)',
+        hardwareConcurrency: 2,
+        deviceMemory: 1,
+        platform: 'desktop',
+        onLine: true,
+      });
 
       const newOptimizer = new PerformanceTunerOptimizer(
         mockAssetManager as any,

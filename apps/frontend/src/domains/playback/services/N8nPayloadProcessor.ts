@@ -41,6 +41,7 @@ export class N8nPayloadProcessor {
   public static getInstance(
     config?: Partial<N8nPayloadProcessorConfig>,
   ): N8nPayloadProcessor {
+    // TODO: Review non-null assertion - consider null safety
     if (!N8nPayloadProcessor.instance) {
       N8nPayloadProcessor.instance = new N8nPayloadProcessor(config);
     } else if (config) {
@@ -173,36 +174,45 @@ export class N8nPayloadProcessor {
     const warnings: string[] = [];
 
     // Validate tutorial MIDI
+    // TODO: Review non-null assertion - consider null safety
     if (!payload.tutorialSpecificMidi?.basslineUrl) {
       errors.push('Missing bassline URL in tutorial MIDI');
     }
+    // TODO: Review non-null assertion - consider null safety
     if (!payload.tutorialSpecificMidi?.chordsUrl) {
       errors.push('Missing chords URL in tutorial MIDI');
     }
 
     // Validate library MIDI
+    // TODO: Review non-null assertion - consider null safety
     if (!payload.libraryMidi?.drumPatternId) {
       errors.push('Missing drum pattern ID in library MIDI');
     }
+    // TODO: Review non-null assertion - consider null safety
     if (!payload.libraryMidi?.metronomeStyleId) {
       warnings.push('Missing metronome style ID - using default');
     }
 
     // Validate audio samples
+    // TODO: Review non-null assertion - consider null safety
     if (!payload.audioSamples?.bassNotes?.length) {
       errors.push('No bass note samples provided');
     }
+    // TODO: Review non-null assertion - consider null safety
     if (!payload.audioSamples?.drumHits?.length) {
       warnings.push('No drum hit samples provided');
     }
 
     // Validate synchronization
+    // TODO: Review non-null assertion - consider null safety
     if (!payload.synchronization?.bpm || payload.synchronization.bpm <= 0) {
       errors.push('Invalid BPM in synchronization settings');
     }
+    // TODO: Review non-null assertion - consider null safety
     if (!payload.synchronization?.timeSignature) {
       warnings.push('Missing time signature - using 4/4 default');
     }
+    // TODO: Review non-null assertion - consider null safety
     if (!payload.synchronization?.keySignature) {
       warnings.push('Missing key signature - using C major default');
     }

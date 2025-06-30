@@ -153,6 +153,7 @@ export class CacheMetricsCollector extends EventEmitter {
   public static getInstance(
     config?: Partial<CacheMetricsConfig>,
   ): CacheMetricsCollector {
+    // TODO: Review non-null assertion - consider null safety
     if (!CacheMetricsCollector.instance) {
       CacheMetricsCollector.instance = new CacheMetricsCollector(config);
     }
@@ -163,6 +164,7 @@ export class CacheMetricsCollector extends EventEmitter {
    * Start cache metrics tracking
    */
   public startTracking(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enabled || this.isTracking) return;
 
     this.isTracking = true;
@@ -186,6 +188,7 @@ export class CacheMetricsCollector extends EventEmitter {
    * Stop cache metrics tracking
    */
   public stopTracking(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isTracking) return;
 
     this.isTracking = false;
@@ -216,6 +219,7 @@ export class CacheMetricsCollector extends EventEmitter {
       memoryPressure?: number;
     } = {},
   ): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enabled) return;
 
     const operation: CacheOperationRecord = {

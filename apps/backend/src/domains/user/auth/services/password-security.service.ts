@@ -11,6 +11,10 @@ export interface PasswordSecurityCheck {
 export class PasswordSecurityService {
   private readonly logger = new Logger(PasswordSecurityService.name);
 
+  constructor() {
+    console.log('🔧 [PasswordSecurityService] Constructor called');
+  }
+
   /**
    * Check if a password has been compromised in known data breaches
    * Uses HaveIBeenPwned API with k-anonymity (only first 5 chars of hash sent)

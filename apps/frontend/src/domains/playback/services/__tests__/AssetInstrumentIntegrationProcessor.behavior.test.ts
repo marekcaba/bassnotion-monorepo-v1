@@ -7,7 +7,27 @@
  * Part of Story 2.2: Task 7, Subtask 7.1
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
+
+// CRITICAL: Mock Tone.js to prevent AudioContext creation issues
+vi.mock('tone', () => ({
+  default: {},
+  Tone: {},
+  Transport: {
+    start: vi.fn(),
+    stop: vi.fn(),
+    pause: vi.fn(),
+    bpm: { value: 120 },
+  },
+  getContext: vi.fn(() => ({
+    currentTime: 0,
+    sampleRate: 44100,
+    state: 'running',
+  })),
+  setContext: vi.fn(),
+  start: vi.fn(),
+  now: vi.fn(() => 0),
+}));
 import { AssetInstrumentIntegrationProcessor } from '../plugins/AssetInstrumentIntegrationProcessor.js';
 import { AssetManager } from '../AssetManager.js';
 import { BassInstrumentProcessor } from '../plugins/BassInstrumentProcessor.js';
@@ -48,7 +68,8 @@ class MockAudioBuffer {
   }
 }
 
-global.AudioBuffer = MockAudioBuffer as any;
+// Store original global for restoration
+const originalAudioBuffer = global.AudioBuffer;
 
 // Mock the AssetManager
 vi.mock('../AssetManager.js', () => ({
@@ -78,6 +99,9 @@ describe('AssetInstrumentIntegrationProcessor', () => {
   };
 
   beforeEach(() => {
+    // Set up our mock AudioBuffer for this test suite
+    global.AudioBuffer = MockAudioBuffer as any;
+
     // Reset all mocks
     vi.clearAllMocks();
 
@@ -94,6 +118,15 @@ describe('AssetInstrumentIntegrationProcessor', () => {
       chords: new ChordInstrumentProcessor(),
       metronome: new MetronomeInstrumentProcessor(),
     };
+  });
+
+  afterEach(() => {
+    // Restore original AudioBuffer to prevent global pollution
+    if (originalAudioBuffer) {
+      global.AudioBuffer = originalAudioBuffer;
+    } else {
+      delete (global as any).AudioBuffer;
+    }
   });
 
   describe('Constructor & Initialization', () => {

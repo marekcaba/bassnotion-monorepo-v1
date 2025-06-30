@@ -307,11 +307,17 @@ export class LoopController {
   private audioContextManager: AudioContextManager;
 
   // Audio processing components
+  // TODO: Review non-null assertion - consider null safety
   private audioContext!: AudioContext;
+  // TODO: Review non-null assertion - consider null safety
   private crossfadeProcessor!: CrossfadeProcessor;
+  // TODO: Review non-null assertion - consider null safety
   private boundaryDetector!: MusicalBoundaryDetector;
+  // TODO: Review non-null assertion - consider null safety
   private progressionTracker!: LoopProgressionTracker;
+  // TODO: Review non-null assertion - consider null safety
   private recordingEngine!: AutoPunchRecordingEngine;
+  // TODO: Review non-null assertion - consider null safety
   private analysisEngine!: LoopAnalysisEngine;
 
   // State management
@@ -376,6 +382,7 @@ export class LoopController {
   }
 
   public static getInstance(): LoopController {
+    // TODO: Review non-null assertion - consider null safety
     if (!LoopController.instance) {
       LoopController.instance = new LoopController();
     }
@@ -686,6 +693,7 @@ export class LoopController {
     this.ensureInitialized();
 
     const loop = this.loops.get(loopId);
+    // TODO: Review non-null assertion - consider null safety
     if (!loop) {
       throw new Error(`Loop not found: ${loopId}`);
     }
@@ -721,6 +729,7 @@ export class LoopController {
       this.activeLoops.add(loopId);
 
       // Set as current loop if none is set
+      // TODO: Review non-null assertion - consider null safety
       if (!this.currentLoop) {
         this.currentLoop = loopId;
       }
@@ -748,6 +757,7 @@ export class LoopController {
     this.ensureInitialized();
 
     const loop = this.loops.get(loopId);
+    // TODO: Review non-null assertion - consider null safety
     if (!loop) {
       throw new Error(`Loop not found: ${loopId}`);
     }
@@ -810,6 +820,7 @@ export class LoopController {
   // ===============================
 
   private ensureInitialized(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isInitialized) {
       throw new Error(
         'LoopController not initialized. Call initialize() first.',
@@ -833,6 +844,7 @@ export class LoopController {
 
   private calculateNestingLevel(parentLoopId: string): number {
     const parentLoop = this.loops.get(parentLoopId);
+    // TODO: Review non-null assertion - consider null safety
     if (!parentLoop) {
       return 0;
     }
@@ -977,7 +989,13 @@ export class LoopController {
 
   public getActiveLoops(): LoopRegion[] {
     return Array.from(this.activeLoops)
-      .map((id) => this.loops.get(id)!)
+      .map(
+        (id) =>
+          this.loops.get(id) ??
+          (() => {
+            throw new Error('Expected loops to contain id');
+          })(),
+      )
       .filter(Boolean);
   }
 

@@ -36,9 +36,9 @@ export default function HomePage() {
             <Button
               variant="outline"
               className="w-full sm:w-auto min-w-[160px]"
-              disabled
+              onClick={() => navigateWithTransition('/library')}
             >
-              Try YouTube Exercises (Coming Soon)
+              YouTube Exerciser
             </Button>
           </div>
         </div>

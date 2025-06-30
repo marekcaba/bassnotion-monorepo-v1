@@ -137,6 +137,7 @@ export class NetworkLatencyMonitor extends EventEmitter {
   public static getInstance(
     config?: Partial<NetworkLatencyConfig>,
   ): NetworkLatencyMonitor {
+    // TODO: Review non-null assertion - consider null safety
     if (!NetworkLatencyMonitor.instance) {
       NetworkLatencyMonitor.instance = new NetworkLatencyMonitor(config);
     } else if (config) {
@@ -150,6 +151,7 @@ export class NetworkLatencyMonitor extends EventEmitter {
    * Start network latency monitoring
    */
   public startMonitoring(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enabled || this.isMonitoring) return;
 
     this.isMonitoring = true;
@@ -172,6 +174,7 @@ export class NetworkLatencyMonitor extends EventEmitter {
    * Stop network latency monitoring
    */
   public stopMonitoring(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isMonitoring) return;
 
     this.isMonitoring = false;
@@ -227,6 +230,7 @@ export class NetworkLatencyMonitor extends EventEmitter {
     assetSize?: number,
   ): NetworkMeasurementDetails | null {
     const measurement = this.pendingMeasurements.get(measurementId);
+    // TODO: Review non-null assertion - consider null safety
     if (!measurement) return null;
 
     measurement.responseEnd = this.getSafePerformanceNow();
@@ -411,6 +415,7 @@ export class NetworkLatencyMonitor extends EventEmitter {
   private updateMetricsFromMeasurement(
     measurement: NetworkMeasurementDetails,
   ): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!measurement.success) {
       this.metrics.failedMeasurements++;
       return;

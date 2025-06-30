@@ -1,6 +1,14 @@
-import type { User } from '@bassnotion/contracts';
-import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  Logger,
+  forwardRef,
+  Inject,
+  OnModuleInit,
+} from '@nestjs/common';
 import { AuthError as SupabaseAuthError } from '@supabase/supabase-js';
+
+import type { User } from '@bassnotion/contracts';
 
 import {
   ApiSuccessResponse,
@@ -16,15 +24,22 @@ import { AuthSecurityService } from './services/auth-security.service.js';
 import { PasswordSecurityService } from './services/password-security.service.js';
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
+    @Inject(forwardRef(() => DatabaseService))
     private readonly db: DatabaseService,
-    private readonly authSecurity: AuthSecurityService,
-    private readonly passwordSecurity: PasswordSecurityService,
+    @Inject(forwardRef(() => AuthSecurityService))
+    private readonly authSecurityService: AuthSecurityService,
+    @Inject(forwardRef(() => PasswordSecurityService))
+    private readonly passwordSecurityService: PasswordSecurityService,
   ) {
-    this.logger.debug('AuthService constructor called');
+    this.logger.debug('AuthService constructor completed successfully');
+  }
+
+  onModuleInit() {
+    this.logger.debug('AuthService module initialized');
   }
 
   private normalizeError(error: unknown): AuthError {
@@ -58,44 +73,58 @@ export class AuthService {
     this.logger.debug(`Registering user with email: ${signUpDto.email}`);
 
     try {
-      // Check password security before proceeding with registration
-      const passwordCheck = await this.passwordSecurity.checkPasswordSecurity(
-        signUpDto.password,
-      );
+      // Basic validation is now handled by Zod at controller level
 
-      if (passwordCheck.isCompromised) {
-        this.logger.warn(
-          `Registration blocked: password found in ${passwordCheck.breachCount} breaches for ${signUpDto.email}`,
-        );
-        return {
-          success: false,
-          message:
-            passwordCheck.recommendation ||
-            'Please choose a different password for your security.',
-          error: {
-            code: 'COMPROMISED_PASSWORD',
-            details: `Password has been found in ${passwordCheck.breachCount} data breaches`,
-          },
-        };
-      }
+      // 1. VALIDATE PASSWORD SECURITY (Zod handles basic format validation)
+      this.logger.debug('Checking password security...');
 
-      // Get password strength recommendations
+      // Check password strength requirements
       const strengthRecommendations =
-        this.passwordSecurity.getPasswordStrengthRecommendations(
+        this.passwordSecurityService.getPasswordStrengthRecommendations(
           signUpDto.password,
         );
-      if (strengthRecommendations.length > 2) {
+
+      if (strengthRecommendations.length > 0) {
+        this.logger.warn(
+          `Password does not meet requirements for ${signUpDto.email}`,
+        );
         return {
           success: false,
           message: 'Password does not meet security requirements',
           error: {
-            code: 'WEAK_PASSWORD',
-            details: strengthRecommendations.join(', '),
+            code: 'PASSWORD_REQUIREMENTS_NOT_MET',
+            details: `Password requirements: ${strengthRecommendations.join(', ')}`,
           },
         };
       }
 
-      // First, check if user already exists
+      // Check if password is compromised via HaveIBeenPwned
+      const securityCheck =
+        await this.passwordSecurityService.checkPasswordSecurity(
+          signUpDto.password,
+        );
+
+      if (securityCheck.isCompromised) {
+        this.logger.warn(
+          `Compromised password detected for ${signUpDto.email}: ${securityCheck.breachCount} breaches`,
+        );
+        return {
+          success: false,
+          message:
+            'This password has been found in data breaches and is not secure',
+          error: {
+            code: 'PASSWORD_COMPROMISED',
+            details:
+              securityCheck.recommendation ||
+              'This is a commonly used password that has been compromised in data breaches. Please choose a different password.',
+          },
+        };
+      }
+
+      this.logger.debug('Password security validation passed');
+
+      // 2. CHECK IF USER ALREADY EXISTS
+      this.logger.debug('Checking if user already exists...');
       const { data: existingUser } = await this.db.supabase
         .from('profiles')
         .select('id')
@@ -107,7 +136,7 @@ export class AuthService {
           success: false,
           message: 'User already exists',
           error: {
-            code: 'USER_EXISTS',
+            code: 'USER_ALREADY_EXISTS',
             details: 'A user with this email already exists.',
           },
         };
@@ -231,9 +260,22 @@ export class AuthService {
     const clientIp = ipAddress || 'unknown';
 
     try {
+      // Check if database connection is available
+      if (!this.db.supabase) {
+        this.logger.error('Database connection is not available');
+        return {
+          success: false,
+          message: 'An unexpected error occurred',
+          error: {
+            code: 'DATABASE_UNAVAILABLE',
+            details: 'An unexpected error occurred',
+          },
+        };
+      }
+
       // Check rate limiting and account lockout BEFORE attempting authentication
       const { rateLimitInfo, lockoutInfo } =
-        (await this.authSecurity.getSecurityInfo(
+        (await this.authSecurityService.getSecurityInfo(
           signInDto.email,
           clientIp,
         )) || {
@@ -244,7 +286,7 @@ export class AuthService {
       // Block if rate limited or account locked
       if (rateLimitInfo.isRateLimited || lockoutInfo.isLocked) {
         const errorMessage =
-          this.authSecurity.getSecurityErrorMessage(
+          this.authSecurityService.getSecurityErrorMessage(
             rateLimitInfo,
             lockoutInfo,
           ) || 'Login blocked due to security measures';
@@ -254,7 +296,7 @@ export class AuthService {
         );
 
         // Still record the attempt for tracking
-        await this.authSecurity.recordLoginAttempt(
+        await this.authSecurityService.recordLoginAttempt(
           signInDto.email,
           clientIp,
           false,
@@ -265,7 +307,9 @@ export class AuthService {
           success: false,
           message: errorMessage,
           error: {
-            code: lockoutInfo.isLocked ? 'ACCOUNT_LOCKED' : 'RATE_LIMITED',
+            code: rateLimitInfo.isRateLimited
+              ? 'RATE_LIMITED'
+              : 'ACCOUNT_LOCKED',
             details: errorMessage,
           },
         };
@@ -281,7 +325,7 @@ export class AuthService {
 
       // Record failed attempt if authentication failed
       if (error || !auth.user) {
-        await this.authSecurity.recordLoginAttempt(
+        await this.authSecurityService.recordLoginAttempt(
           signInDto.email,
           clientIp,
           false,
@@ -293,7 +337,7 @@ export class AuthService {
         );
         const errorResponse: ApiErrorResponse = {
           success: false,
-          message: 'Invalid credentials',
+          message: 'Invalid email or password',
           error: {
             code: 'INVALID_CREDENTIALS',
             details: 'Invalid email or password',
@@ -302,11 +346,6 @@ export class AuthService {
         return errorResponse;
       }
 
-      console.log('Before Supabase profile fetch (authenticateUser):', {
-        userId: auth.user.id,
-        email: auth.user.email,
-      });
-
       // Get user profile
       const { data: profile, error: profileError } = await this.db.supabase
         .from('profiles')
@@ -314,14 +353,9 @@ export class AuthService {
         .eq('id', auth.user.id)
         .single();
 
-      console.log('Result from Supabase single() call (authenticateUser):', {
-        data: profile,
-        error: profileError,
-      });
-
       if (profileError) {
         // Record failed attempt for profile fetch failure
-        await this.authSecurity.recordLoginAttempt(
+        await this.authSecurityService.recordLoginAttempt(
           signInDto.email,
           clientIp,
           false,
@@ -345,7 +379,7 @@ export class AuthService {
 
       if (!profile) {
         // Record failed attempt for missing profile
-        await this.authSecurity.recordLoginAttempt(
+        await this.authSecurityService.recordLoginAttempt(
           signInDto.email,
           clientIp,
           false,
@@ -367,7 +401,7 @@ export class AuthService {
       }
 
       // SUCCESS: Record successful login attempt
-      await this.authSecurity.recordLoginAttempt(
+      await this.authSecurityService.recordLoginAttempt(
         signInDto.email,
         clientIp,
         true,
@@ -381,9 +415,10 @@ export class AuthService {
       // Check if user's password has been compromised (after successful login)
       let passwordWarning = '';
       try {
-        const passwordCheck = await this.passwordSecurity.checkPasswordSecurity(
-          signInDto.password,
-        );
+        const passwordCheck =
+          await this.passwordSecurityService.checkPasswordSecurity(
+            signInDto.password,
+          );
         if (
           passwordCheck.isCompromised &&
           passwordCheck.breachCount &&
@@ -430,7 +465,7 @@ export class AuthService {
       return successResponse;
     } catch (error) {
       // Record failed attempt for unexpected errors
-      await this.authSecurity.recordLoginAttempt(
+      await this.authSecurityService.recordLoginAttempt(
         signInDto.email,
         clientIp,
         false,

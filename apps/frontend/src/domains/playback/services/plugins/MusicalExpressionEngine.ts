@@ -136,12 +136,19 @@ export class MusicalExpressionEngine extends EventEmitter {
   private static instance: MusicalExpressionEngine | null = null;
 
   private grooveTemplates: Map<string, GrooveTemplate> = new Map();
+  // TODO: Review non-null assertion - consider null safety
   private swingProcessor!: SwingProcessor;
+  // TODO: Review non-null assertion - consider null safety
   private microTimingEngine!: MicroTimingEngine;
+  // TODO: Review non-null assertion - consider null safety
   private dynamicsProcessor!: DynamicsProcessor;
+  // TODO: Review non-null assertion - consider null safety
   private articulationProcessor!: ArticulationProcessor;
+  // TODO: Review non-null assertion - consider null safety
   private humanizationEngine!: HumanizationEngine;
+  // TODO: Review non-null assertion - consider null safety
   private contextAnalyzer!: MusicalContextAnalyzer;
+  // TODO: Review non-null assertion - consider null safety
   private phrasingEngine!: PhrasingEngine;
 
   private currentContext: MusicalContext | null = null;
@@ -156,6 +163,7 @@ export class MusicalExpressionEngine extends EventEmitter {
    * Get singleton instance of MusicalExpressionEngine
    */
   public static getInstance(): MusicalExpressionEngine {
+    // TODO: Review non-null assertion - consider null safety
     if (!MusicalExpressionEngine.instance) {
       MusicalExpressionEngine.instance = new MusicalExpressionEngine();
     }
@@ -204,6 +212,7 @@ export class MusicalExpressionEngine extends EventEmitter {
     context: MusicalContext,
     options: ExpressionOptions = {},
   ): Promise<MidiNoteEvent[]> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isInitialized) {
       await this.initialize();
     }
@@ -282,6 +291,7 @@ export class MusicalExpressionEngine extends EventEmitter {
     grooveName: string,
   ): Promise<MidiNoteEvent[]> {
     const template = this.grooveTemplates.get(grooveName);
+    // TODO: Review non-null assertion - consider null safety
     if (!template) {
       console.warn(`⚠️ Groove template '${grooveName}' not found`);
       return notes;
@@ -500,6 +510,7 @@ export class MusicalExpressionEngine extends EventEmitter {
    * Calculate beat position for timing adjustments
    */
   private calculateBeatPosition(time: number): string {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.currentContext) return '1';
 
     const beatsPerMeasure = this.currentContext.timeSignature[0];
@@ -796,6 +807,7 @@ class HumanizationEngine {
     notes: MidiNoteEvent[],
     settings: HumanizationSettings,
   ): MidiNoteEvent[] {
+    // TODO: Review non-null assertion - consider null safety
     if (!settings.enabled) return notes;
 
     return notes.map((note) => {

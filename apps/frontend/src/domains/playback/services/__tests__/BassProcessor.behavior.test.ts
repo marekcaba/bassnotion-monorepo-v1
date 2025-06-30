@@ -16,6 +16,26 @@ import {
   PluginParameterType,
 } from '../../types/plugin.js';
 
+// CRITICAL: Mock Tone.js to prevent AudioContext creation issues
+vi.mock('tone', () => ({
+  default: {},
+  Tone: {},
+  Transport: {
+    start: vi.fn(),
+    stop: vi.fn(),
+    pause: vi.fn(),
+    bpm: { value: 120 },
+  },
+  getContext: vi.fn(() => ({
+    currentTime: 0,
+    sampleRate: 44100,
+    state: 'running',
+  })),
+  setContext: vi.fn(),
+  start: vi.fn(),
+  now: vi.fn(() => 0),
+}));
+
 // Test Environment Setup
 const setupTestEnvironment = () => {
   // Mock console to prevent test noise

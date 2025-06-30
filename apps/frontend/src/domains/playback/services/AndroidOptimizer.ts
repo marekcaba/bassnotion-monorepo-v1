@@ -50,10 +50,15 @@ export class AndroidOptimizer {
   private isInitialized = false;
 
   // Audio Manager Configuration
+  // TODO: Review non-null assertion - consider null safety
   private currentAudioManagerConfig!: AndroidAudioManagerConfig;
+  // TODO: Review non-null assertion - consider null safety
   private powerManagerConfig!: AndroidPowerManagerConfig;
+  // TODO: Review non-null assertion - consider null safety
   private backgroundAudioConfig!: AndroidBackgroundAudioConfig;
+  // TODO: Review non-null assertion - consider null safety
   private chromeConfig!: AndroidChromeOptimizationConfig;
+  // TODO: Review non-null assertion - consider null safety
   private webViewConfig!: AndroidWebViewOptimizationConfig;
 
   // State tracking
@@ -128,6 +133,7 @@ export class AndroidOptimizer {
   }
 
   public static getInstance(): AndroidOptimizer {
+    // TODO: Review non-null assertion - consider null safety
     if (!AndroidOptimizer.instance) {
       AndroidOptimizer.instance = new AndroidOptimizer();
     }
@@ -166,6 +172,7 @@ export class AndroidOptimizer {
       this.checkBrowserAPIAvailability();
 
       // Handle null/invalid audio context gracefully
+      // TODO: Review non-null assertion - consider null safety
       if (!audioContext) {
         console.warn(
           'AndroidOptimizer: Null audio context provided, using fallback initialization',
@@ -176,6 +183,7 @@ export class AndroidOptimizer {
       }
 
       // Only initialize if we're on Android
+      // TODO: Review non-null assertion - consider null safety
       if (!this.isAndroidDevice) {
         console.log(
           'AndroidOptimizer: Not running on Android device, skipping initialization',
@@ -269,6 +277,7 @@ export class AndroidOptimizer {
    * Handle background audio optimization for Android
    */
   public async enableBackgroundAudio(): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isAndroidDevice || !this.backgroundAudioConfig.enabled) {
       return;
     }
@@ -420,6 +429,7 @@ export class AndroidOptimizer {
         recommendedBufferSize: 512,
         recommendedLatencyHint: 'interactive' as AudioContextLatencyCategory,
         aaudioRecommended: this.androidCapabilities.aaudioSupport,
+        // TODO: Review non-null assertion - consider null safety
         openslFallback: !this.androidCapabilities.aaudioSupport,
       };
 
@@ -716,6 +726,7 @@ export class AndroidOptimizer {
     // Detect Android
     this.isAndroidDevice = /android/i.test(userAgent);
 
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isAndroidDevice) {
       return;
     }
@@ -728,8 +739,10 @@ export class AndroidOptimizer {
     }
 
     // Detect Chrome vs WebView
+    // TODO: Review non-null assertion - consider null safety
     this.isChrome = /chrome/i.test(userAgent) && !/wv/i.test(userAgent);
     this.isWebView =
+      // TODO: Review non-null assertion - consider null safety
       /wv/i.test(userAgent) || (!this.isChrome && /webkit/i.test(userAgent));
 
     console.log('Android environment detected:', {
@@ -865,6 +878,7 @@ export class AndroidOptimizer {
       this.chromeConfig.enabledWorkarounds.push('audioworklet_compatibility');
     }
 
+    // TODO: Review non-null assertion - consider null safety
     if (!this.androidCapabilities.lowLatencyAudioSupport) {
       this.chromeConfig.enabledWorkarounds.push('buffer_size_optimization');
     }
@@ -906,6 +920,7 @@ export class AndroidOptimizer {
    */
   private setupEventListeners(): void {
     // Only set up event listeners if browser APIs are available
+    // TODO: Review non-null assertion - consider null safety
     if (!this.browserAPIs.addEventListener) {
       console.warn(
         'Event listeners not available, skipping Android event listener setup',
@@ -986,6 +1001,7 @@ export class AndroidOptimizer {
    * Apply Chrome-specific workarounds
    */
   private async applyChromeWorkarounds(): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isChrome) return;
 
     for (const workaround of this.chromeConfig.enabledWorkarounds) {
@@ -1018,6 +1034,7 @@ export class AndroidOptimizer {
    * Apply WebView-specific optimizations
    */
   private async applyWebViewOptimizations(): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isWebView) return;
 
     for (const optimization of this.webViewConfig.enabledOptimizations) {
@@ -1063,6 +1080,7 @@ export class AndroidOptimizer {
    * Enable low-latency mode using AAudio
    */
   private async enableLowLatencyMode(): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.androidCapabilities.aaudioSupport) {
       console.warn('AAudio not supported, falling back to OpenSL ES');
       return;
@@ -1075,6 +1093,7 @@ export class AndroidOptimizer {
    * Enable hardware acceleration for audio processing
    */
   private async enableHardwareAcceleration(): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.androidCapabilities.hardwareAcceleration) {
       console.warn('Hardware acceleration not available');
       return;
@@ -1103,6 +1122,7 @@ export class AndroidOptimizer {
    * Configure power manager integration
    */
   private async configurePowerManagerIntegration(): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.powerManagerConfig.enabled) return;
 
     // Monitor battery saver mode
@@ -1263,6 +1283,7 @@ export class AndroidOptimizer {
       recommendedLatencyHint: this.calculateOptimalLatencyHint(),
       aaudioRecommended: this.androidCapabilities.aaudioSupport,
       openslFallback:
+        // TODO: Review non-null assertion - consider null safety
         !this.androidCapabilities.aaudioSupport &&
         this.androidCapabilities.openslSupport,
     };
@@ -1386,6 +1407,7 @@ export class AndroidOptimizer {
   }
 
   private detectWebViewVersion(): number {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isWebView) return 0;
 
     const userAgent = navigator.userAgent;
@@ -1561,6 +1583,7 @@ export class AndroidOptimizer {
   }
 
   private checkAudioSessionHealth(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.audioContext) return;
 
     // Check for audio context issues
@@ -1706,6 +1729,7 @@ export class AndroidOptimizer {
    * Clean up Android optimizer resources
    */
   public async dispose(): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isInitialized) {
       return;
     }

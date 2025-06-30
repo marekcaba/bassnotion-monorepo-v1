@@ -103,7 +103,14 @@ const _sharedToneMock = {
         connect: vi.fn(),
         disconnect: vi.fn(),
       }),
+      destination: {
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      },
     },
+    state: 'running',
+    sampleRate: 44100,
+    currentTime: 0,
   }),
   setContext: vi.fn().mockResolvedValue(undefined),
   getTransport: vi.fn().mockReturnValue(mockTransport),
@@ -237,7 +244,19 @@ vi.mock('tone', () => {
         state: 'running',
         sampleRate: 44100,
         currentTime: 0,
+        createGain: vi.fn().mockReturnValue({
+          gain: { value: 1, setValueAtTime: vi.fn() },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        }),
+        destination: {
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        },
       },
+      state: 'running',
+      sampleRate: 44100,
+      currentTime: 0,
     }),
     setContext: vi.fn().mockResolvedValue(undefined),
     getTransport: vi.fn().mockReturnValue(mockTransportForMock),
@@ -304,6 +323,96 @@ vi.mock('../WorkerPoolManager.js', () => ({
         totalJobsProcessed: 10,
         averageProcessingTime: 25,
       }),
+    }),
+  },
+}));
+
+// Mock AudioContextManager
+vi.mock('../AudioContextManager.js', () => {
+  const mockInstance = {
+    initialize: vi.fn().mockResolvedValue(undefined),
+    getContext: vi.fn().mockReturnValue({
+      state: 'running',
+      sampleRate: 44100,
+      currentTime: 0,
+      createGain: vi.fn().mockReturnValue({
+        gain: { value: 1, setValueAtTime: vi.fn() },
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      }),
+      destination: {
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      },
+    }),
+    onStateChange: vi.fn(),
+    dispose: vi.fn().mockResolvedValue(undefined),
+  };
+
+  return {
+    AudioContextManager: {
+      getInstance: vi.fn().mockReturnValue(mockInstance),
+    },
+  };
+});
+
+// Mock other singleton services
+vi.mock('../PerformanceMonitor.js', () => ({
+  PerformanceMonitor: {
+    getInstance: vi.fn().mockReturnValue({
+      initialize: vi.fn().mockResolvedValue(undefined),
+      startMonitoring: vi.fn(),
+      measureResponseTime: vi.fn().mockImplementation(async (fn) => {
+        const result = await fn();
+        return { result, responseTime: 10 };
+      }),
+      dispose: vi.fn().mockResolvedValue(undefined),
+    }),
+  },
+}));
+
+vi.mock('../StatePersistenceManager.js', () => ({
+  StatePersistenceManager: {
+    getInstance: vi.fn().mockReturnValue({
+      initialize: vi.fn().mockResolvedValue(undefined),
+      on: vi.fn(),
+      dispose: vi.fn().mockResolvedValue(undefined),
+    }),
+  },
+}));
+
+vi.mock('../N8nPayloadProcessor.js', () => ({
+  N8nPayloadProcessor: {
+    getInstance: vi.fn().mockReturnValue({
+      initialize: vi.fn().mockResolvedValue(undefined),
+      dispose: vi.fn().mockResolvedValue(undefined),
+    }),
+  },
+}));
+
+vi.mock('../AssetManifestProcessor.js', () => ({
+  AssetManifestProcessor: {
+    getInstance: vi.fn().mockReturnValue({
+      initialize: vi.fn().mockResolvedValue(undefined),
+      dispose: vi.fn().mockResolvedValue(undefined),
+    }),
+  },
+}));
+
+vi.mock('../AssetManager.js', () => ({
+  AssetManager: {
+    getInstance: vi.fn().mockReturnValue({
+      initialize: vi.fn().mockResolvedValue(undefined),
+      dispose: vi.fn().mockResolvedValue(undefined),
+    }),
+  },
+}));
+
+vi.mock('../ResourceManager.js', () => ({
+  ResourceManager: {
+    getInstance: vi.fn().mockReturnValue({
+      initialize: vi.fn().mockResolvedValue(undefined),
+      dispose: vi.fn().mockResolvedValue(undefined),
     }),
   },
 }));
@@ -822,12 +931,38 @@ describe('CorePlaybackEngine Behavior', () => {
     _mockEnv = { globalObj };
     scenarios = createPlaybackScenarios();
 
-    // Reset singleton
+    // Clear all mocks first
+    vi.clearAllMocks();
+
+    // Reset all singleton instances
     (CorePlaybackEngine as any).instance = undefined;
 
-    coreEngine = CorePlaybackEngine.getInstance();
+    // Reset singleton instances for all mocked services
+    const { AudioContextManager } = await import('../AudioContextManager.js');
+    const { PerformanceMonitor } = await import('../PerformanceMonitor.js');
+    const { WorkerPoolManager } = await import('../WorkerPoolManager.js');
+    const { StatePersistenceManager } = await import(
+      '../StatePersistenceManager.js'
+    );
+    const { N8nPayloadProcessor } = await import('../N8nPayloadProcessor.js');
+    const { AssetManifestProcessor } = await import(
+      '../AssetManifestProcessor.js'
+    );
+    const { AssetManager } = await import('../AssetManager.js');
+    const { ResourceManager } = await import('../ResourceManager.js');
 
-    vi.clearAllMocks();
+    // Reset singleton instances if they exist
+    (AudioContextManager as any).instance = undefined;
+    (PerformanceMonitor as any).instance = undefined;
+    (WorkerPoolManager as any).instance = undefined;
+    (StatePersistenceManager as any).instance = undefined;
+    (N8nPayloadProcessor as any).instance = undefined;
+    (AssetManifestProcessor as any).instance = undefined;
+    (AssetManager as any).instance = undefined;
+    (ResourceManager as any).instance = undefined;
+
+    // Now create the CorePlaybackEngine instance
+    coreEngine = CorePlaybackEngine.getInstance();
   });
 
   describe('Core Initialization Behavior', () => {
@@ -871,18 +1006,27 @@ describe('CorePlaybackEngine Behavior', () => {
 
       // Mock AudioContextManager to fail during initialization
       // This is more effective than mocking AudioContext constructor
-      const originalInitialize = freshEngine['audioContextManager'].initialize;
-      freshEngine['audioContextManager'].initialize = vi
-        .fn()
-        .mockRejectedValue(new Error('AudioContext initialization failed'));
+      const audioContextManager = freshEngine['audioContextManager'];
+      if (audioContextManager) {
+        const originalInitialize = audioContextManager.initialize;
+        audioContextManager.initialize = vi
+          .fn()
+          .mockRejectedValue(new Error('AudioContext initialization failed'));
 
-      await expect(freshEngine.initialize()).rejects.toThrow();
+        await expect(freshEngine.initialize()).rejects.toThrow();
 
-      const state = freshEngine.getPlaybackState();
-      expectPlaybackState(state, ['stopped']); // Should remain in safe state
+        const state = freshEngine.getPlaybackState();
+        expectPlaybackState(state, ['stopped']); // Should remain in safe state
 
-      // Restore original method for other tests
-      freshEngine['audioContextManager'].initialize = originalInitialize;
+        // Restore original method for other tests
+        audioContextManager.initialize = originalInitialize;
+      } else {
+        // If audioContextManager is null, just test that initialization fails
+        await expect(freshEngine.initialize()).rejects.toThrow();
+
+        const state = freshEngine.getPlaybackState();
+        expectPlaybackState(state, ['stopped']); // Should remain in safe state
+      }
     });
   });
 

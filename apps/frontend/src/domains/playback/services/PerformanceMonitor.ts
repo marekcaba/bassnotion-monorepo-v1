@@ -76,6 +76,7 @@ export class PerformanceMonitor {
   }
 
   public static getInstance(): PerformanceMonitor {
+    // TODO: Review non-null assertion - consider null safety
     if (!PerformanceMonitor.instance) {
       PerformanceMonitor.instance = new PerformanceMonitor();
     }
@@ -193,6 +194,7 @@ export class PerformanceMonitor {
    * Stop performance monitoring
    */
   public stopMonitoring(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isMonitoring) return;
 
     this.isMonitoring = false;
@@ -354,6 +356,7 @@ export class PerformanceMonitor {
   }
 
   private setupAnalyser(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.audioContext) return;
 
     this.analyserNode = this.audioContext.createAnalyser();
@@ -362,6 +365,7 @@ export class PerformanceMonitor {
   }
 
   private collectMetrics(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.audioContext) return;
 
     // Update basic metrics
@@ -387,6 +391,7 @@ export class PerformanceMonitor {
   }
 
   private updateBasicMetrics(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.audioContext) return;
 
     this.metrics.sampleRate = this.audioContext.sampleRate;
@@ -396,6 +401,7 @@ export class PerformanceMonitor {
   }
 
   private calculateLatency(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.audioContext) return;
 
     // Calculate total latency: baseLatency + outputLatency
@@ -637,6 +643,7 @@ export class PerformanceMonitor {
 
     return message
       .replace(
+        // TODO: Review non-null assertion - consider null safety
         /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
         '[script removed]',
       )

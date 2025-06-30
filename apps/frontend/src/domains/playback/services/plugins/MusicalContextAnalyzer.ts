@@ -173,10 +173,16 @@ export class MusicalContextAnalyzer {
     // Group notes by time
     track.notes.forEach((note) => {
       const time = Math.floor(note.startTime * 4); // Quantize to quarter notes
+      // TODO: Review non-null assertion - consider null safety
       if (!simultaneousNotes.has(time)) {
         simultaneousNotes.set(time, []);
       }
-      simultaneousNotes.get(time)!.push(note.note);
+      const notesList =
+        simultaneousNotes.get(time) ??
+        (() => {
+          throw new Error('Expected simultaneousNotes to contain time');
+        })();
+      notesList.push(note.note);
     });
 
     // Analyze each time slice for chord identification
@@ -897,6 +903,7 @@ export class MusicalContextAnalyzer {
     if (currentChords.length === 0) return [];
 
     const lastChord = currentChords[currentChords.length - 1];
+    // TODO: Review non-null assertion - consider null safety
     if (!lastChord) return ['C', 'F', 'G'];
 
     // Simplified next chord prediction
@@ -940,6 +947,7 @@ export class MusicalContextAnalyzer {
    * Predict next difficulty level
    */
   private predictNextDifficultyLevel(): number {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.userBehavior) return 0.5;
 
     const progression = this.userBehavior.patterns.difficultyProgression;

@@ -67,6 +67,9 @@ export class PluginManager {
     processedSamples: 0,
   };
 
+  // Performance monitoring interval - CRITICAL FIX for memory leaks
+  private performanceMonitoringInterval?: NodeJS.Timeout;
+
   // Event handling
   private eventHandlers: Map<
     keyof PluginManagerEvents,
@@ -94,6 +97,7 @@ export class PluginManager {
   public static getInstance(
     config?: Partial<PluginManagerConfig>,
   ): PluginManager {
+    // TODO: Review non-null assertion - consider null safety
     if (!PluginManager.instance) {
       PluginManager.instance = new PluginManager(config);
     }
@@ -108,6 +112,7 @@ export class PluginManager {
       this.audioContext = audioContext;
 
       // Validate audio context capabilities
+      // TODO: Review non-null assertion - consider null safety
       if (!audioContext || audioContext.state === 'closed') {
         throw createAudioContextError(
           AudioContextErrorCode.INVALID_STATE,
@@ -203,6 +208,7 @@ export class PluginManager {
    */
   public async unregisterPlugin(pluginId: string): Promise<void> {
     const entry = this.registry.get(pluginId);
+    // TODO: Review non-null assertion - consider null safety
     if (!entry) {
       console.warn(`Plugin ${pluginId} not found in registry`);
       return;
@@ -244,6 +250,7 @@ export class PluginManager {
    */
   public async activatePlugin(pluginId: string): Promise<void> {
     const entry = this.registry.get(pluginId);
+    // TODO: Review non-null assertion - consider null safety
     if (!entry) {
       throw new Error(`Plugin ${pluginId} not found`);
     }
@@ -288,6 +295,7 @@ export class PluginManager {
    */
   public async deactivatePlugin(pluginId: string): Promise<void> {
     const entry = this.registry.get(pluginId);
+    // TODO: Review non-null assertion - consider null safety
     if (!entry) {
       throw new Error(`Plugin ${pluginId} not found`);
     }
@@ -334,6 +342,7 @@ export class PluginManager {
     inputBuffer: AudioBuffer,
     outputBuffer: AudioBuffer,
   ): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isInitialized || !this.audioContext) {
       throw createAudioContextError(
         AudioContextErrorCode.INVALID_STATE,
@@ -439,6 +448,7 @@ export class PluginManager {
     event: K,
     handler: PluginManagerEvents[K],
   ): () => void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
     }
@@ -463,10 +473,12 @@ export class PluginManager {
     payload: unknown,
   ): Promise<void> {
     const entry = this.registry.get(pluginId);
+    // TODO: Review non-null assertion - consider null safety
     if (!entry) {
       throw new Error(`Plugin ${pluginId} not found`);
     }
 
+    // TODO: Review non-null assertion - consider null safety
     if (!entry.plugin.processN8nPayload) {
       console.warn(
         `Plugin ${pluginId} does not support n8n payload processing`,
@@ -492,10 +504,12 @@ export class PluginManager {
     asset: AudioBuffer | ArrayBuffer,
   ): Promise<void> {
     const entry = this.registry.get(pluginId);
+    // TODO: Review non-null assertion - consider null safety
     if (!entry) {
       throw new Error(`Plugin ${pluginId} not found`);
     }
 
+    // TODO: Review non-null assertion - consider null safety
     if (!entry.plugin.loadAsset) {
       console.warn(`Plugin ${pluginId} does not support asset loading`);
       return;
@@ -532,20 +546,31 @@ export class PluginManager {
       }
     }
 
+    // Clear performance monitoring interval to prevent memory leaks
+    if (this.performanceMonitoringInterval) {
+      clearInterval(this.performanceMonitoringInterval);
+      this.performanceMonitoringInterval = undefined;
+    }
+
     this.registry.clear();
     this.processingOrder = [];
     this.isInitialized = false;
 
     console.log('PluginManager disposed');
+
+    // Reset singleton instance to ensure clean state for next initialization
+    PluginManager.instance = null as any;
   }
 
   // Private implementation methods...
 
   private validatePluginForRegistration(plugin: AudioPlugin): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!plugin.metadata?.id) {
       throw new Error('Plugin must have a valid metadata.id');
     }
 
+    // TODO: Review non-null assertion - consider null safety
     if (!plugin.metadata?.name) {
       throw new Error('Plugin must have a valid metadata.name');
     }
@@ -631,6 +656,7 @@ export class PluginManager {
   }
 
   private createPluginAudioContext(): PluginAudioContext {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.audioContext) {
       throw createAudioContextError(
         AudioContextErrorCode.INVALID_STATE,
@@ -744,14 +770,16 @@ export class PluginManager {
 
   private setupPerformanceMonitoring(): void {
     // Monitor plugin performance - simplified without recordMetric
-    setInterval(() => {
-      // Performance monitoring would integrate with the existing PerformanceMonitor
-      // For now, just log the metrics periodically
-      console.debug('Plugin Performance:', {
-        totalCpuUsage: this.processingStats.totalCpuUsage,
-        totalMemoryUsage: this.processingStats.totalMemoryUsage,
-        totalProcessingTime: this.processingStats.totalProcessingTime,
-      });
+    this.performanceMonitoringInterval = setInterval(() => {
+      // Only log performance metrics in development environment
+      // Skip logging during tests to prevent memory buildup and console spam
+      if (process.env.NODE_ENV !== 'test' && process.env.VITEST !== 'true') {
+        console.debug('Plugin Performance:', {
+          totalCpuUsage: this.processingStats.totalCpuUsage,
+          totalMemoryUsage: this.processingStats.totalMemoryUsage,
+          totalProcessingTime: this.processingStats.totalProcessingTime,
+        });
+      }
     }, 10000); // Log every 10 seconds
   }
 

@@ -96,6 +96,7 @@ export class GracefulDegradation {
   }
 
   public static getInstance(): GracefulDegradation {
+    // TODO: Review non-null assertion - consider null safety
     if (!GracefulDegradation.instance) {
       GracefulDegradation.instance = new GracefulDegradation();
     }
@@ -108,6 +109,7 @@ export class GracefulDegradation {
   public async applyDegradation(context: DegradationContext): Promise<boolean> {
     const strategy = this.selectDegradationStrategy(context);
 
+    // TODO: Review non-null assertion - consider null safety
     if (!strategy) {
       console.log('No degradation strategy required for current context');
       return true;
@@ -162,6 +164,7 @@ export class GracefulDegradation {
           const rollbackFn = action.rollback;
           if (rollbackFn) {
             const success = await rollbackFn();
+            // TODO: Review non-null assertion - consider null safety
             if (!success) {
               console.warn(`Failed to rollback action: ${action.description}`);
             }
@@ -201,6 +204,7 @@ export class GracefulDegradation {
    * Check if specific feature is available
    */
   public isFeatureAvailable(feature: FeatureCategory): boolean {
+    // TODO: Review non-null assertion - consider null safety
     return !this.state.disabledFeatures.has(feature);
   }
 
@@ -223,6 +227,7 @@ export class GracefulDegradation {
     event: 'degradationChange',
     handler: (state: DegradationState) => void,
   ): () => void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
     }

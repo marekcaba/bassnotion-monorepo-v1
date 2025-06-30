@@ -250,6 +250,7 @@ export class AssetManager {
     // Add validation for cdnEndpoints array format
     if (
       config.cdnEndpoints !== undefined &&
+      // TODO: Review non-null assertion - consider null safety
       (!Array.isArray(config.cdnEndpoints) || config.cdnEndpoints.length === 0)
     ) {
       throw new Error('cdnEndpoints must be a non-empty array');
@@ -267,6 +268,7 @@ export class AssetManager {
     if (
       config.cdnEndpoints !== undefined &&
       Array.isArray(config.cdnEndpoints) &&
+      // TODO: Review non-null assertion - consider null safety
       config.cdnEndpoints.some((endpoint) => !endpoint.baseUrl)
     ) {
       throw new Error('CDN endpoints must have valid baseUrl');
@@ -420,6 +422,7 @@ export class AssetManager {
   public static getInstance(
     config?: Partial<AdvancedAssetManagerConfig>,
   ): AssetManager {
+    // TODO: Review non-null assertion - consider null safety
     if (!AssetManager.instance) {
       AssetManager.instance = new AssetManager(config);
     } else if (config) {
@@ -545,6 +548,7 @@ export class AssetManager {
             .map((r) => (r as PromiseFulfilledResult<any>).value);
 
           const failed = results
+            // TODO: Review non-null assertion - consider null safety
             .filter((r) => r.status === 'rejected' || !r.value?.success)
             .map((r, index) => ({
               index,
@@ -604,6 +608,7 @@ export class AssetManager {
   public processAssetManifest(manifest: any): any {
     try {
       // Validate manifest structure
+      // TODO: Review non-null assertion - consider null safety
       if (!manifest || !manifest.assets) {
         throw new Error('Invalid manifest structure');
       }
@@ -661,6 +666,7 @@ export class AssetManager {
   public async processManifest(manifest: any): Promise<any> {
     try {
       // Validate manifest structure
+      // TODO: Review non-null assertion - consider null safety
       if (!manifest || !manifest.assets) {
         throw new Error('Invalid manifest structure');
       }
@@ -775,6 +781,7 @@ export class AssetManager {
     loadingOrder: string[];
   }> {
     // SURGICAL FIX: Only reset test counters if not in partial manifest test mode
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isPartialManifestTest) {
       this.resetTestCounters();
     }
@@ -850,6 +857,7 @@ export class AssetManager {
 
     // Force sequential loading for partial manifest test to avoid race conditions
     const useParallelLoading =
+      // TODO: Review non-null assertion - consider null safety
       group.parallelLoadable && !this.isPartialManifestTest;
 
     if (useParallelLoading) {
@@ -981,6 +989,7 @@ export class AssetManager {
           shouldBypassCache,
         });
 
+        // TODO: Review non-null assertion - consider null safety
         if (!shouldBypassCache) {
           const cacheResult = await this.checkEnhancedCache(asset);
           if (cacheResult) {
@@ -1124,7 +1133,12 @@ export class AssetManager {
     // Check if already loading to prevent duplicate requests
     const loadingKey = `${asset.url}-${asset.type}`;
     if (this.loadingPromises.has(loadingKey)) {
-      return this.loadingPromises.get(loadingKey)!;
+      return (
+        this.loadingPromises.get(loadingKey) ??
+        (() => {
+          throw new Error('Expected loadingPromises to contain loadingKey');
+        })()
+      );
     }
 
     // Acquire semaphore for concurrency control
@@ -1181,7 +1195,9 @@ export class AssetManager {
 
       // Try Supabase fallback only if CDN failed and not in partial manifest test for second asset
       if (
+        // TODO: Review non-null assertion - consider null safety
         !cdnError ||
+        // TODO: Review non-null assertion - consider null safety
         !(
           this.isPartialManifestTest && asset.url.includes('practice-track.mid')
         )
@@ -1262,6 +1278,7 @@ export class AssetManager {
     optimization?: AssetOptimization,
   ): string {
     const baseUrl = this.config.cdnBaseUrl;
+    // TODO: Review non-null assertion - consider null safety
     if (!baseUrl) {
       throw new Error('CDN base URL not configured');
     }
@@ -1298,6 +1315,7 @@ export class AssetManager {
    */
   private buildSupabaseUrl(asset: AssetReference): string {
     // Guard against undefined URL
+    // TODO: Review non-null assertion - consider null safety
     if (!asset.url) {
       throw new Error('Asset URL is required');
     }
@@ -1386,6 +1404,7 @@ export class AssetManager {
 
     // For test scenarios: provide mock data for Supabase fallback when CDN fails
     const isSupabaseUrl =
+      // TODO: Review non-null assertion - consider null safety
       isCDNUrl && !url.includes('https://cdn.example.com/https://');
     if (
       isSupabaseUrl &&
@@ -1413,6 +1432,7 @@ export class AssetManager {
         },
       });
 
+      // TODO: Review non-null assertion - consider null safety
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -1802,6 +1822,7 @@ export class AssetManager {
     }
 
     const cacheEntry = this.cache.get(asset.url);
+    // TODO: Review non-null assertion - consider null safety
     if (!cacheEntry) {
       this.cacheMisses++;
       return null;
@@ -1955,6 +1976,7 @@ export class AssetManager {
    */
   private updateCircuitBreakerOnFailure(endpoint: string): void {
     const circuitBreaker = this.circuitBreakers.get(endpoint);
+    // TODO: Review non-null assertion - consider null safety
     if (!circuitBreaker) return;
 
     circuitBreaker.failureCount++;
@@ -2163,6 +2185,7 @@ export class AssetManager {
         this.cacheSize + size > this.config.maxCacheSize &&
         entries.length > 0
       ) {
+        // TODO: Review non-null assertion - consider null safety
         const [key, entry] = entries.shift()!;
         this.cache.delete(key);
         this.cacheSize -= entry.size;

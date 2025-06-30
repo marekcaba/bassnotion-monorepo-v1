@@ -1,0 +1,853 @@
+2025-06-23 13:17:11 +02:00: [32m[Nest] 84419  - [39m06/23/2025, 1:17:11 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:17:11 +02:00: [95m[Nest] 84419  - [39m06/23/2025, 1:17:11 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:17:12 +02:00: [95m[Nest] 84419  - [39m06/23/2025, 1:17:12 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:17:12 +02:00: [32m[Nest] 84419  - [39m06/23/2025, 1:17:12 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:17:12 +02:00: [32m[Nest] 84419  - [39m06/23/2025, 1:17:12 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:17:12 +02:00: [95m[Nest] 84419  - [39m06/23/2025, 1:17:12 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:17:12 +02:00: [32m[Nest] 84419  - [39m06/23/2025, 1:17:12 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises/e4d5a8f9-c123-4567-8901-234567890126 - Fetching exercise by ID[39m
+2025-06-23 13:17:12 +02:00: [95m[Nest] 84419  - [39m06/23/2025, 1:17:12 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching exercise with ID: e4d5a8f9-c123-4567-8901-234567890126[39m
+2025-06-23 13:17:13 +02:00: [95m[Nest] 84419  - [39m06/23/2025, 1:17:13 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:17:13 +02:00: [32m[Nest] 84419  - [39m06/23/2025, 1:17:13 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:17:13 +02:00: [95m[Nest] 84419  - [39m06/23/2025, 1:17:13 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound exercise: Blues Scale Mastery[39m
+2025-06-23 13:17:13 +02:00: [32m[Nest] 84419  - [39m06/23/2025, 1:17:13 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched exercise: Blues Scale Mastery[39m
+2025-06-23 13:18:06 +02:00: [32m[Nest] 84419  - [39m06/23/2025, 1:18:06 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:18:06 +02:00: [95m[Nest] 84419  - [39m06/23/2025, 1:18:06 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:18:06 +02:00: [95m[Nest] 84419  - [39m06/23/2025, 1:18:06 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:18:06 +02:00: [32m[Nest] 84419  - [39m06/23/2025, 1:18:06 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:18:38 +02:00: [2J[3J[H
+2025-06-23 13:18:38 +02:00: 1:18:38 PM - File change detected. Starting incremental compilation...
+2025-06-23 13:18:39 +02:00: 1:18:39 PM - Found 0 errors. Watching for file changes.
+2025-06-23 13:18:40 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:40 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +17ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService state:[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39mObject(3) {
+2025-06-23 13:18:41 +02:00:   isDefined: [33mtrue[39m,
+2025-06-23 13:18:41 +02:00:   hasSupabaseUrl: [33mtrue[39m,
+2025-06-23 13:18:41 +02:00:   hasSupabaseKey: [33mtrue[39m
+2025-06-23 13:18:41 +02:00: }
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mSupabaseService constructor called[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mConfigService instance: true[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mSUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mSUPABASE_ANON_KEY exists: true[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSupabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mExercisesModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +6ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/debug/modules, GET} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +2ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserController {/user}:[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/profile, PUT} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/account, DELETE} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mExercisesController {/api/exercises}:[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/exercises, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/exercises/:id, GET} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/exercises/difficulty/:level, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/exercises/search, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[SupabaseService] [39m[32mSupabase client initialized[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService state:[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39mObject(3) {
+2025-06-23 13:18:41 +02:00:   isDefined: [33mtrue[39m,
+2025-06-23 13:18:41 +02:00:   hasSupabaseUrl: [33mtrue[39m,
+2025-06-23 13:18:41 +02:00:   hasSupabaseKey: [33mtrue[39m
+2025-06-23 13:18:41 +02:00: }
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase configuration:[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39mObject(2) {
+2025-06-23 13:18:41 +02:00:   hasUrl: [33mtrue[39m,
+2025-06-23 13:18:41 +02:00:   hasKey: [33mtrue[39m
+2025-06-23 13:18:41 +02:00: }
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mCreating Supabase client[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mTesting Supabase connection[39m
+2025-06-23 13:18:41 +02:00: [95m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-23 13:18:41 +02:00: [32m[Nest] 64098  - [39m06/23/2025, 1:18:41 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:49 +02:00: [2J[3J[H1:18:49 PM - File change detected. Starting incremental compilation...
+2025-06-23 13:18:50 +02:00: 1:18:50 PM - Found 0 errors. Watching for file changes.
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +11ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService state:[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39mObject(3) {
+2025-06-23 13:18:52 +02:00:   isDefined: [33mtrue[39m,
+2025-06-23 13:18:52 +02:00:   hasSupabaseUrl: [33mtrue[39m,
+2025-06-23 13:18:52 +02:00:   hasSupabaseKey: [33mtrue[39m
+2025-06-23 13:18:52 +02:00: }
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mSupabaseService constructor called[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mConfigService instance: true[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mSUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mSUPABASE_ANON_KEY exists: true[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSupabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mExercisesModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +10ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +5ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/debug/modules, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +2ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserController {/user}:[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/profile, PUT} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/account, DELETE} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mExercisesController {/api/exercises}:[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/exercises, GET} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/exercises/:id, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/exercises/difficulty/:level, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/exercises/search, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[SupabaseService] [39m[32mSupabase client initialized[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService state:[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39mObject(3) {
+2025-06-23 13:18:52 +02:00:   isDefined: [33mtrue[39m,
+2025-06-23 13:18:52 +02:00:   hasSupabaseUrl: [33mtrue[39m,
+2025-06-23 13:18:52 +02:00:   hasSupabaseKey: [33mtrue[39m
+2025-06-23 13:18:52 +02:00: }
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase configuration:[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39mObject(2) {
+2025-06-23 13:18:52 +02:00:   hasUrl: [33mtrue[39m,
+2025-06-23 13:18:52 +02:00:   hasKey: [33mtrue[39m
+2025-06-23 13:18:52 +02:00: }
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mCreating Supabase client[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mTesting Supabase connection[39m
+2025-06-23 13:18:52 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-23 13:18:52 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:18:52 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+2025-06-23 13:19:20 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:19:20 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:19:20 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:19:20 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:19:21 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:19:21 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:19:21 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:19:21 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:27:37 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:27:37 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:27:37 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:27:37 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:27:37 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:27:37 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:27:37 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:27:37 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:27:51 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:27:51 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:27:51 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:27:51 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:27:51 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:27:51 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:27:51 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:27:51 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:28:30 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:28:30 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:28:30 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:28:30 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:28:30 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:28:30 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:28:30 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:28:30 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:28:47 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:28:47 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:28:47 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:28:47 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:28:47 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:28:47 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:28:47 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:28:47 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:29:48 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:29:48 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:29:48 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:29:48 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:29:49 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:29:49 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:29:49 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:29:49 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:29:49 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:29:49 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:29:49 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:29:49 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:29:49 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:29:49 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises/e4d5a8f9-c123-4567-8901-234567890126 - Fetching exercise by ID[39m
+2025-06-23 13:29:49 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:29:49 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching exercise with ID: e4d5a8f9-c123-4567-8901-234567890126[39m
+2025-06-23 13:29:49 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:29:49 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:29:49 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:29:49 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:29:49 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:29:49 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound exercise: Blues Scale Mastery[39m
+2025-06-23 13:29:49 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:29:49 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched exercise: Blues Scale Mastery[39m
+2025-06-23 13:30:09 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:09 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:30:09 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:09 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:30:09 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:09 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises/e1d5a8f9-c123-4567-8901-234567890123 - Fetching exercise by ID[39m
+2025-06-23 13:30:09 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:09 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching exercise with ID: e1d5a8f9-c123-4567-8901-234567890123[39m
+2025-06-23 13:30:10 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:10 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:30:10 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:10 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:30:10 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:10 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound exercise: Modal Interchange Exercise[39m
+2025-06-23 13:30:10 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:10 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched exercise: Modal Interchange Exercise[39m
+2025-06-23 13:30:12 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:12 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:30:12 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:12 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:30:12 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:12 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises/e2d5a8f9-c123-4567-8901-234567890124 - Fetching exercise by ID[39m
+2025-06-23 13:30:12 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:12 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching exercise with ID: e2d5a8f9-c123-4567-8901-234567890124[39m
+2025-06-23 13:30:12 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:12 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:30:12 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:12 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:30:12 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:12 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound exercise: II-V-I Progression Study[39m
+2025-06-23 13:30:12 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:12 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched exercise: II-V-I Progression Study[39m
+2025-06-23 13:30:16 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:16 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:30:16 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:16 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:30:16 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:16 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises/e3d5a8f9-c123-4567-8901-234567890125 - Fetching exercise by ID[39m
+2025-06-23 13:30:16 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:16 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching exercise with ID: e3d5a8f9-c123-4567-8901-234567890125[39m
+2025-06-23 13:30:16 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:16 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound exercise: Funk Slap Technique Builder[39m
+2025-06-23 13:30:16 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:16 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched exercise: Funk Slap Technique Builder[39m
+2025-06-23 13:30:16 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:16 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:30:16 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:16 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:30:19 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:19 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:30:19 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:19 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:30:19 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:19 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises/e4d5a8f9-c123-4567-8901-234567890126 - Fetching exercise by ID[39m
+2025-06-23 13:30:19 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:19 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching exercise with ID: e4d5a8f9-c123-4567-8901-234567890126[39m
+2025-06-23 13:30:19 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:19 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:30:19 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:19 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:30:19 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:30:19 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound exercise: Blues Scale Mastery[39m
+2025-06-23 13:30:19 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:30:19 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched exercise: Blues Scale Mastery[39m
+2025-06-23 13:31:31 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:31:31 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:31:31 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:31:31 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:31:31 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:31:31 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:31:31 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:31:31 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:31:44 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:31:44 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:31:44 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:31:44 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:31:45 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:31:45 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:31:45 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:31:45 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:33:41 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:33:41 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:33:41 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:33:41 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:33:42 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:33:42 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:33:42 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:33:42 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:33:42 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:33:42 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:33:42 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:33:42 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:33:42 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:33:42 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises/e4d5a8f9-c123-4567-8901-234567890126 - Fetching exercise by ID[39m
+2025-06-23 13:33:42 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:33:42 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching exercise with ID: e4d5a8f9-c123-4567-8901-234567890126[39m
+2025-06-23 13:33:42 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:33:42 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:33:42 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:33:42 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:33:42 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:33:42 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound exercise: Blues Scale Mastery[39m
+2025-06-23 13:33:42 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:33:42 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched exercise: Blues Scale Mastery[39m
+2025-06-23 13:35:48 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:35:48 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:35:48 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:35:48 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:35:50 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:35:50 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:35:50 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:35:50 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:38:17 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:38:17 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:38:17 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:38:17 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:38:18 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:38:18 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:38:18 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:38:18 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:38:26 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:38:26 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:38:26 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:38:26 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:38:26 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:38:26 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:38:26 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:38:26 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:38:28 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:38:28 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:38:28 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:38:28 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:38:28 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:38:28 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:38:28 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:38:28 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:38:42 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:38:42 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:38:42 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:38:42 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:38:43 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:38:43 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:38:43 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:38:43 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:38:45 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:38:45 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:38:45 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:38:45 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:38:46 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:38:46 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:38:46 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:38:46 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:39:03 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:39:03 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:39:03 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:39:03 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:39:03 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:39:03 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:39:03 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:39:03 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:49:12 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:49:12 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:49:12 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:49:12 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:49:13 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:49:13 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:49:13 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:49:13 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:49:13 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:49:13 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:49:13 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:49:13 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:49:13 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:49:13 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises/e4d5a8f9-c123-4567-8901-234567890126 - Fetching exercise by ID[39m
+2025-06-23 13:49:13 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:49:13 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching exercise with ID: e4d5a8f9-c123-4567-8901-234567890126[39m
+2025-06-23 13:49:13 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:49:13 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:49:13 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:49:13 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:49:13 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:49:13 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound exercise: Blues Scale Mastery[39m
+2025-06-23 13:49:13 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:49:13 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched exercise: Blues Scale Mastery[39m
+2025-06-23 13:49:17 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:49:17 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:49:17 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:49:17 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:49:17 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:49:17 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:49:17 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:49:17 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:49:18 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:49:18 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mGET /api/exercises - Fetching all exercises[39m
+2025-06-23 13:49:18 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:49:18 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFetching all active exercises from Supabase[39m
+2025-06-23 13:49:18 +02:00: [95m[Nest] 64167  - [39m06/23/2025, 1:49:18 PM [95m  DEBUG[39m [38;5;3m[ExercisesService] [39m[95mFound 4 exercises[39m
+2025-06-23 13:49:18 +02:00: [32m[Nest] 64167  - [39m06/23/2025, 1:49:18 PM [32m    LOG[39m [38;5;3m[ExercisesController] [39m[32mSuccessfully fetched 4 exercises[39m
+2025-06-23 13:59:45 +02:00: [2J[3J[H
+2025-06-23 13:59:45 +02:00: 1:59:45 PM - File change detected. Starting incremental compilation...
+2025-06-23 13:59:45 +02:00: 1:59:45 PM - Found 0 errors. Watching for file changes.
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +8ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mDatabaseService constructor called[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService state:[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39mObject(3) {
+2025-06-23 13:59:46 +02:00:   isDefined: [33mtrue[39m,
+2025-06-23 13:59:46 +02:00:   hasSupabaseUrl: [33mtrue[39m,
+2025-06-23 13:59:46 +02:00:   hasSupabaseKey: [33mtrue[39m
+2025-06-23 13:59:46 +02:00: }
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mSupabaseService constructor called[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mConfigService instance: true[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mSUPABASE_URL: https://htuztkrbuewheehjspcz.supabase.co[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mSUPABASE_ANON_KEY exists: true[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSupabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[AuthService] [39m[95mAuthService constructor called[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mExercisesModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserModule dependencies initialized[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[AuthController] [39m[95mAuthController constructor called[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +1ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +4ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/debug/modules, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signup, POST} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/signin, POST} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google, GET} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/google/callback, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/magic-link, POST} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/check-password-security, POST} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUserController {/user}:[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/profile, PUT} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/user/account, DELETE} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mExercisesController {/api/exercises}:[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/exercises, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/exercises/:id, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/exercises/difficulty/:level, GET} route[39m[38;5;3m +0ms[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/exercises/search, GET} route[39m[38;5;3m +1ms[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[SupabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[SupabaseService] [39m[32mSupabase client initialized[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mInitializing Supabase client[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mConfigService state:[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39mObject(3) {
+2025-06-23 13:59:46 +02:00:   isDefined: [33mtrue[39m,
+2025-06-23 13:59:46 +02:00:   hasSupabaseUrl: [33mtrue[39m,
+2025-06-23 13:59:46 +02:00:   hasSupabaseKey: [33mtrue[39m
+2025-06-23 13:59:46 +02:00: }
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase configuration:[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39mObject(2) {
+2025-06-23 13:59:46 +02:00:   hasUrl: [33mtrue[39m,
+2025-06-23 13:59:46 +02:00:   hasKey: [33mtrue[39m
+2025-06-23 13:59:46 +02:00: }
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mCreating Supabase client[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mTesting Supabase connection[39m
+2025-06-23 13:59:46 +02:00: [95m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [95m  DEBUG[39m [38;5;3m[DatabaseService] [39m[95mSupabase client initialized successfully[39m
+2025-06-23 13:59:46 +02:00: [32m[Nest] 68766  - [39m06/23/2025, 1:59:46 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +0ms[39m
+2025-06-23 14:08:48 +02:00: [2J[3J[H2:08:48 PM - File change detected. Starting incremental compilation...
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:08:50 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:50 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:50 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:50 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:50 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:50 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:50 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:50 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:50 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:50 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:50 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:50 +02:00: 2:08:50 PM - Found 30 errors. Watching for file changes.
+2025-06-23 14:08:51 +02:00: [2J[3J[H2:08:51 PM - File change detected. Starting incremental compilation...
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:08:51 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:51 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:51 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:51 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:51 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:51 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:51 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:51 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:51 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:51 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:51 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:08:51 +02:00: 2:08:51 PM - Found 30 errors. Watching for file changes.
+2025-06-23 14:09:12 +02:00: [2J[3J[H2:09:12 PM - File change detected. Starting incremental compilation...
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:09:12 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:12 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:12 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:12 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:12 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:12 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:12 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:12 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:12 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:12 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:12 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:12 +02:00: 2:09:12 PM - Found 30 errors. Watching for file changes.
+2025-06-23 14:09:13 +02:00: [2J[3J[H
+2025-06-23 14:09:13 +02:00: 2:09:13 PM - File change detected. Starting incremental compilation...
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:09:13 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:13 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:13 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:13 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:13 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:13 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:13 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:13 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:13 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:13 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:13 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:09:13 +02:00: 2:09:13 PM - Found 30 errors. Watching for file changes.
+2025-06-23 14:26:40 +02:00: [2J[3J[H2:26:40 PM - File change detected. Starting incremental compilation...
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:26:40 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:40 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:40 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:40 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:40 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:40 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:40 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:40 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:40 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:40 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:40 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:40 +02:00: 2:26:40 PM - Found 30 errors. Watching for file changes.
+2025-06-23 14:26:41 +02:00: [2J[3J[H2:26:41 PM - File change detected. Starting incremental compilation...
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:26:41 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:41 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:41 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:41 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:41 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:41 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:41 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:41 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:41 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:41 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:41 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:26:41 +02:00: 2:26:41 PM - Found 30 errors. Watching for file changes.
+2025-06-23 14:29:40 +02:00: [2J[3J[H2:29:40 PM - File change detected. Starting incremental compilation...
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:29:40 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:40 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:40 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:40 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:40 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:40 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:40 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:40 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:40 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:40 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:40 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:40 +02:00: 2:29:40 PM - Found 30 errors. Watching for file changes.
+2025-06-23 14:29:41 +02:00: [2J[3J[H2:29:41 PM - File change detected. Starting incremental compilation...
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:29:41 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:41 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:41 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:41 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:41 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:41 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:41 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:41 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:41 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:41 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:41 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:29:41 +02:00: 2:29:41 PM - Found 30 errors. Watching for file changes.
+2025-06-23 14:30:30 +02:00: [2J[3J[H
+2025-06-23 14:30:30 +02:00: 2:30:30 PM - File change detected. Starting incremental compilation...
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:30:30 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:30:30 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:30:30 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:30:30 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:30:30 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:30:30 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:30:30 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:30:30 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:30:30 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:30:30 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:30:30 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:30:30 +02:00: 2:30:30 PM - Found 30 errors. Watching for file changes.
+2025-06-23 14:32:45 +02:00: [2J[3J[H2:32:45 PM - File change detected. Starting incremental compilation...
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:32:45 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:45 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:45 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:45 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:45 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:45 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:45 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:45 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:45 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:45 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:45 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:45 +02:00: 2:32:45 PM - Found 30 errors. Watching for file changes.
+2025-06-23 14:32:46 +02:00: [2J[3J[H
+2025-06-23 14:32:46 +02:00: 2:32:46 PM - File change detected. Starting incremental compilation...
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:32:46 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:46 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:46 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:46 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:46 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:46 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:46 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:46 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:46 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:46 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:46 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:32:46 +02:00: 2:32:46 PM - Found 30 errors. Watching for file changes.
+2025-06-23 14:33:29 +02:00: [2J[3J[H2:33:29 PM - File change detected. Starting incremental compilation...
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:33:29 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:29 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:29 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:29 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:29 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:29 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:29 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:29 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:29 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:29 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:29 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:29 +02:00: 2:33:29 PM - Found 30 errors. Watching for file changes.
+2025-06-23 14:33:30 +02:00: [2J[3J[H2:33:30 PM - File change detected. Starting incremental compilation...
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 14:33:30 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:30 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:30 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:30 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:30 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:30 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:30 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:30 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:30 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:30 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:30 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 14:33:30 +02:00: 2:33:30 PM - Found 30 errors. Watching for file changes.
+2025-06-23 15:23:10 +02:00: [2J[3J[H
+2025-06-23 15:23:10 +02:00: 3:23:10 PM - File change detected. Starting incremental compilation...
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 15:23:10 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:23:10 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:23:10 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:23:10 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:23:10 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:23:10 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:23:10 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:23:10 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:23:10 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:23:10 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:23:10 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:23:10 +02:00: 3:23:10 PM - Found 30 errors. Watching for file changes.
+2025-06-23 15:24:24 +02:00: 
+2025-06-23 15:24:24 +02:00: > nx run @bassnotion/backend:serve
+2025-06-23 15:24:24 +02:00: 
+2025-06-23 15:24:24 +02:00: [0m[7m[1m[33m NX [39m[22m[27m[0m  [33mNx Daemon is not enabled. Assets and package.json files will not be updated when files change.[39m
+2025-06-23 15:24:24 +02:00: [2J[3J[H
+2025-06-23 15:24:24 +02:00: 3:24:24 PM - Starting compilation in watch mode...
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/factories/user.factory.ts(274,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(54,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(62,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(91,74): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(101,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(115,72): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(121,52): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(127,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(147,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(158,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(166,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(178,18): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(191,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(203,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(225,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(244,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(259,45): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/specs/youtube-exerciser.e2e-spec.ts(273,28): error TS2339: Property 'id' does not exist on type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/test-fixtures.ts(128,5): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'AuthUser'.
+2025-06-23 15:24:27 +02:00: apps/backend/e2e/test-utils.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:24:27 +02:00: apps/backend/src/domains/user/auth/auth.controller.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:24:27 +02:00: apps/backend/src/domains/user/auth/auth.service.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:24:27 +02:00: apps/backend/src/domains/user/auth/dto/change-password.dto.ts(4,8): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:24:27 +02:00: apps/backend/src/domains/user/auth/dto/login-user.dto.ts(1,40): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:24:27 +02:00: apps/backend/src/domains/user/auth/dto/register-user.dto.ts(1,54): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:24:27 +02:00: apps/backend/src/domains/user/auth/dto/sign-in.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:24:27 +02:00: apps/backend/src/domains/user/auth/dto/sign-up.dto.ts(1,42): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:24:27 +02:00: apps/backend/src/domains/user/auth/types/auth.types.ts(1,27): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:24:27 +02:00: apps/backend/src/domains/user/user.controller.ts(1,51): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:24:27 +02:00: apps/backend/src/domains/user/user.controller.ts(2,35): error TS2307: Cannot find module '@bassnotion/contracts' or its corresponding type declarations.
+2025-06-23 15:24:27 +02:00: 3:24:27 PM - Found 30 errors. Watching for file changes.
+2025-06-23 15:25:59 +02:00: 
+2025-06-23 15:25:59 +02:00: 
+2025-06-23 15:25:59 +02:00: 
+2025-06-23 15:25:59 +02:00:  NX   Running target serve for project @bassnotion/backend failed
+2025-06-23 15:25:59 +02:00: 
+2025-06-23 15:25:59 +02:00: Failed tasks:
+2025-06-23 15:25:59 +02:00: 
+2025-06-23 15:25:59 +02:00: - @bassnotion/backend:serve
+2025-06-23 15:25:59 +02:00: 
+2025-06-23 15:25:59 +02:00: Hint: run the command with --verbose for more details.
+2025-06-23 15:25:59 +02:00: 
+2025-06-23 15:25:59 +02:00: 
+2025-06-23 15:25:59 +02:00:  NX   Nx Cloud encountered some problems
+2025-06-23 15:25:59 +02:00: 
+2025-06-23 15:25:59 +02:00: Cannot connect to Nx Cloud (scope: api, code: ENOTFOUND).
+2025-06-23 15:25:59 +02:00: 

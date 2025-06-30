@@ -29,10 +29,7 @@ const setupGracefulDegradationEnvironment = () => {
   };
 
   // Mock Date.now with proper typing
-  const originalDate = global.Date;
-  global.Date = class extends originalDate {
-    static now = vi.fn(() => 1000);
-  } as unknown as DateConstructor;
+  vi.spyOn(Date, 'now').mockReturnValue(1000);
 
   global.performance = {
     now: vi.fn(() => 1000),

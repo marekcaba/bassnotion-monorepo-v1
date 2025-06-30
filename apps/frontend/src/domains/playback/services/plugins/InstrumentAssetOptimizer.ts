@@ -102,9 +102,13 @@ export class InstrumentAssetOptimizer {
   private performanceMetrics: Map<string, OptimizationMetrics> = new Map();
 
   // Optimization strategies for each instrument
+  // TODO: Review non-null assertion - consider null safety
   private bassStrategy!: BassOptimizationStrategy;
+  // TODO: Review non-null assertion - consider null safety
   private drumStrategy!: DrumOptimizationStrategy;
+  // TODO: Review non-null assertion - consider null safety
   private chordStrategy!: ChordOptimizationStrategy;
+  // TODO: Review non-null assertion - consider null safety
   private metronomeStrategy!: MetronomeOptimizationStrategy;
 
   constructor() {
@@ -231,6 +235,7 @@ export class InstrumentAssetOptimizer {
     instrument: 'bass' | 'drums' | 'chords' | 'metronome',
     _config: InstrumentOptimizationConfig,
   ): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.deviceCapabilities) return;
 
     const { deviceClass, memoryGB, maxPolyphony } = this.deviceCapabilities;
@@ -358,6 +363,7 @@ export class InstrumentAssetOptimizer {
     instrument: 'bass' | 'drums' | 'chords' | 'metronome',
     config: InstrumentOptimizationConfig,
   ): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.networkCapabilities) return;
 
     const { connectionType, downlink } = this.networkCapabilities;
@@ -404,6 +410,7 @@ export class InstrumentAssetOptimizer {
     assets: string[],
   ): Promise<AssetLoadResult[]> {
     const config = this.optimizationConfigs.get(instrument);
+    // TODO: Review non-null assertion - consider null safety
     if (!config) {
       throw new Error(`No optimization configuration found for ${instrument}`);
     }
@@ -532,6 +539,7 @@ export class InstrumentAssetOptimizer {
   private async optimizeBassAsset(
     asset: AssetLoadResult,
   ): Promise<AssetLoadResult> {
+    // TODO: Review non-null assertion - consider null safety
     if (!(asset.data instanceof AudioBuffer)) return asset;
 
     let optimizedBuffer = asset.data;
@@ -558,6 +566,7 @@ export class InstrumentAssetOptimizer {
   private async optimizeDrumAsset(
     asset: AssetLoadResult,
   ): Promise<AssetLoadResult> {
+    // TODO: Review non-null assertion - consider null safety
     if (!(asset.data instanceof AudioBuffer)) return asset;
 
     let optimizedBuffer = asset.data;
@@ -582,6 +591,7 @@ export class InstrumentAssetOptimizer {
   private async optimizeChordAsset(
     asset: AssetLoadResult,
   ): Promise<AssetLoadResult> {
+    // TODO: Review non-null assertion - consider null safety
     if (!(asset.data instanceof AudioBuffer)) return asset;
 
     let optimizedBuffer = asset.data;
@@ -603,6 +613,7 @@ export class InstrumentAssetOptimizer {
   private async optimizeMetronomeAsset(
     asset: AssetLoadResult,
   ): Promise<AssetLoadResult> {
+    // TODO: Review non-null assertion - consider null safety
     if (!(asset.data instanceof AudioBuffer)) return asset;
 
     let optimizedBuffer = asset.data;

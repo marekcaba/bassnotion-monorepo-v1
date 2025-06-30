@@ -184,6 +184,7 @@ export class CircuitBreaker {
   ): Promise<T> {
     let retryContext = this.activeRetries.get(requestId);
 
+    // TODO: Review non-null assertion - consider null safety
     if (!retryContext) {
       retryContext = {
         attempt: 0,
@@ -195,10 +196,12 @@ export class CircuitBreaker {
 
     // Use recursive approach to ensure proper promise chaining
     const attemptRetry = async (): Promise<T> => {
+      // TODO: Review non-null assertion - consider null safety
       if (retryContext!.attempt >= this.config.retryPolicy.maxRetries) {
         // All retries exhausted - clean up and throw retry exhaustion message
         this.activeRetries.delete(requestId);
         const lastError =
+          // TODO: Review non-null assertion - consider null safety
           retryContext!.lastError ||
           new Error('Maximum retry attempts exceeded');
         throw new Error(
@@ -206,6 +209,7 @@ export class CircuitBreaker {
         );
       }
 
+      // TODO: Review non-null assertion - consider null safety
       retryContext!.attempt++;
 
       try {
@@ -215,11 +219,15 @@ export class CircuitBreaker {
         return result;
       } catch (error) {
         // Do NOT track individual retry failures - only track final operation failure
+        // TODO: Review non-null assertion - consider null safety
         retryContext!.lastError = error as Error;
 
         // Calculate backoff delay
+        // TODO: Review non-null assertion - consider null safety
         const delay = this.calculateBackoffDelay(retryContext!.attempt);
+        // TODO: Review non-null assertion - consider null safety
         retryContext!.nextRetryDelay = delay;
+        // TODO: Review non-null assertion - consider null safety
         retryContext!.totalElapsed += delay;
 
         // Delay before next retry
@@ -308,6 +316,7 @@ export class CircuitBreaker {
     const errorObj = error instanceof Error ? error : new Error(String(error));
     // Check if error type is retryable - use error.name which can be set explicitly
     const errorType = errorObj.name || errorObj.constructor.name;
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.retryPolicy.retryableErrors.includes(errorType)) {
       return false;
     }
@@ -333,6 +342,7 @@ export class CircuitBreaker {
    * Uses a tolerance window to handle real-world timer scheduling variations
    */
   private shouldAttemptRecovery(): boolean {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.nextOpenTime) return false;
 
     // Production-grade tolerance: allow recovery slightly before exact timeout
@@ -443,6 +453,7 @@ export class CircuitBreakerManager {
   private constructor() {}
 
   public static getInstance(): CircuitBreakerManager {
+    // TODO: Review non-null assertion - consider null safety
     if (!CircuitBreakerManager.instance) {
       CircuitBreakerManager.instance = new CircuitBreakerManager();
     }
@@ -456,10 +467,12 @@ export class CircuitBreakerManager {
     name: string,
     config?: Partial<CircuitBreakerConfig>,
   ): CircuitBreaker {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.circuitBreakers.has(name)) {
       this.circuitBreakers.set(name, new CircuitBreaker(name, config));
     }
     const circuitBreaker = this.circuitBreakers.get(name);
+    // TODO: Review non-null assertion - consider null safety
     if (!circuitBreaker) {
       throw new Error(`Failed to create circuit breaker: ${name}`);
     }

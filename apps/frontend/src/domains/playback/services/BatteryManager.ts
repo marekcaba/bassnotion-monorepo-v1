@@ -203,6 +203,7 @@ export class BatteryManager {
 
   public static getInstance(): BatteryManager {
     BatteryManager.getInstanceCallCount++; // Count every call to getInstance
+    // TODO: Review non-null assertion - consider null safety
     if (!BatteryManager.instance) {
       BatteryManager.instance = new BatteryManager();
     }
@@ -416,6 +417,7 @@ export class BatteryManager {
       (prioritizeBattery && batteryPercent < 70)
     ) {
       this.currentMetrics.optimalQualityRecommendation = 'medium';
+      // TODO: Review non-null assertion - consider null safety
     } else if (batteryPercent < 80 && !isCharging) {
       this.currentMetrics.optimalQualityRecommendation = 'high';
     } else {
@@ -472,6 +474,7 @@ export class BatteryManager {
    * Stop battery monitoring
    */
   public stopBatteryMonitoring(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isMonitoringActive) return;
 
     this.isMonitoringActive = false;
@@ -500,6 +503,7 @@ export class BatteryManager {
   private async updateBatteryMetrics(): Promise<void> {
     try {
       // Ensure initialization is complete before calculating metrics
+      // TODO: Review non-null assertion - consider null safety
       if (!this.isInitialized) {
         return;
       }
@@ -799,6 +803,7 @@ export class BatteryManager {
     }
 
     // Background optimization
+    // TODO: Review non-null assertion - consider null safety
     if (batteryStatus.level < 0.15 && !qualityConfig.aggressiveBatteryMode) {
       suggestions.push({
         type: 'background_optimization',
@@ -840,6 +845,7 @@ export class BatteryManager {
   private async applyAutomaticOptimizations(
     batteryStatus: BatteryStatus,
   ): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.powerManagementSettings.enableAutomaticOptimization) {
       return;
     }
@@ -915,6 +921,7 @@ export class BatteryManager {
    * Check for battery warnings
    */
   private async checkBatteryWarnings(): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.powerManagementSettings.batteryWarningsEnabled) return;
 
     try {
@@ -922,6 +929,7 @@ export class BatteryManager {
       const batteryPercent = batteryStatus.level * 100;
 
       // Critical battery warning
+      // TODO: Review non-null assertion - consider null safety
       if (batteryPercent <= 5 && !batteryStatus.charging) {
         const alert: PerformanceAlert = {
           type: 'memory', // Using closest available type for battery warnings
@@ -936,6 +944,7 @@ export class BatteryManager {
         }
       }
       // Low battery warning
+      // TODO: Review non-null assertion - consider null safety
       else if (batteryPercent <= 15 && !batteryStatus.charging) {
         const alert: PerformanceAlert = {
           type: 'memory', // Using closest available type for battery warnings
@@ -984,7 +993,9 @@ export class BatteryManager {
       optimizations.push('thermal_management');
     if (qualityConfig.backgroundAudioReduction)
       optimizations.push('background_reduction');
+    // TODO: Review non-null assertion - consider null safety
     if (!qualityConfig.enableEffects) optimizations.push('effects_disabled');
+    // TODO: Review non-null assertion - consider null safety
     if (!qualityConfig.enableVisualization)
       optimizations.push('visualization_disabled');
 

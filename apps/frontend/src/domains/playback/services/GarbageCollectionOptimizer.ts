@@ -137,6 +137,7 @@ export class GarbageCollectionOptimizer extends EventEmitter {
   public static getInstance(
     config?: Partial<GCConfig>,
   ): GarbageCollectionOptimizer {
+    // TODO: Review non-null assertion - consider null safety
     if (!GarbageCollectionOptimizer.instance) {
       GarbageCollectionOptimizer.instance = new GarbageCollectionOptimizer(
         config,
@@ -178,6 +179,7 @@ export class GarbageCollectionOptimizer extends EventEmitter {
   }
 
   private setupPerformanceObserver(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enablePerformanceMonitoring) return;
 
     try {
@@ -204,6 +206,7 @@ export class GarbageCollectionOptimizer extends EventEmitter {
   }
 
   private setupIdleDetection(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enableSmartTiming || typeof document === 'undefined')
       return;
 
@@ -345,6 +348,7 @@ export class GarbageCollectionOptimizer extends EventEmitter {
       if (
         trigger === GCTrigger.MANUAL &&
         this.config.strategy === GCStrategy.BALANCED &&
+        // TODO: Review non-null assertion - consider null safety
         !isTestEnvironment
       ) {
         adjustedStrategy = GCStrategy.MANUAL;
@@ -387,6 +391,7 @@ export class GarbageCollectionOptimizer extends EventEmitter {
   }
 
   private adjustStrategyForDevice(constraints?: DeviceConstraints): GCStrategy {
+    // TODO: Review non-null assertion - consider null safety
     if (!constraints) return this.config.strategy;
 
     // Conservative strategy for low battery or thermal issues

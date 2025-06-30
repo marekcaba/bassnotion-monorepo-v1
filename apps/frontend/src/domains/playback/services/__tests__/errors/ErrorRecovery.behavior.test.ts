@@ -26,17 +26,44 @@ const setupErrorRecoveryEnvironment = () => {
     error: vi.fn(),
   };
 
-  global.Date = {
-    ...Date,
-    now: vi.fn(() => 1000),
-  } as unknown as DateConstructor;
+  // Use safer mocking approach that doesn't break core functionality
+  vi.spyOn(Date, 'now').mockReturnValue(1000);
 
-  global.performance = {
-    now: vi.fn(() => 1000),
-    mark: vi.fn(),
-    measure: vi.fn(),
-    getEntriesByType: vi.fn(() => []),
-  } as any;
+  // Ensure performance global exists before trying to modify it
+  if (typeof globalThis.performance === 'undefined') {
+    globalThis.performance = {
+      now: vi.fn(() => 1000),
+      mark: vi.fn(),
+      measure: vi.fn(),
+      getEntriesByType: vi.fn(() => []),
+      clearMarks: vi.fn(),
+      clearMeasures: vi.fn(),
+    } as any;
+  } else {
+    Object.defineProperty(performance, 'now', {
+      value: vi.fn(() => 1000),
+      writable: true,
+      configurable: true,
+    });
+
+    Object.defineProperty(performance, 'mark', {
+      value: vi.fn(),
+      writable: true,
+      configurable: true,
+    });
+
+    Object.defineProperty(performance, 'measure', {
+      value: vi.fn(),
+      writable: true,
+      configurable: true,
+    });
+
+    Object.defineProperty(performance, 'getEntriesByType', {
+      value: vi.fn(() => []),
+      writable: true,
+      configurable: true,
+    });
+  }
 
   global.navigator = {
     userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X)',

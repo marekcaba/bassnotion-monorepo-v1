@@ -17,6 +17,7 @@ export function useUser(userId: string) {
   return useQuery({
     queryKey: queryKeys.user(userId),
     queryFn: () => apiClient.get<User>(`/api/users/${userId}`),
+    // TODO: Review non-null assertion - consider null safety
     enabled: !!userId,
   });
 }
@@ -25,6 +26,7 @@ export function useUserProfile(userId: string) {
   return useQuery({
     queryKey: queryKeys.userProfile(userId),
     queryFn: () => apiClient.get<UserProfile>(`/api/users/${userId}/profile`),
+    // TODO: Review non-null assertion - consider null safety
     enabled: !!userId,
   });
 }

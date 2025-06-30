@@ -51,6 +51,7 @@ class ApiClient {
     try {
       const response = await fetch(url, config);
 
+      // TODO: Review non-null assertion - consider null safety
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new ApiError(

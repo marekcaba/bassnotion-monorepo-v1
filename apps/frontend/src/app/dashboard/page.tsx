@@ -51,6 +51,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // Redirect unauthenticated users to login, but only if not in sign out process
+    // TODO: Review non-null assertion - consider null safety
     if (isReady && !isAuthenticated && !isSigningOut) {
       redirectToLogin(); // Use scheduled redirect instead of immediate
     }
@@ -148,6 +149,7 @@ export default function DashboardPage() {
   };
 
   const handleAvatarChange = async (newAvatarUrl: string | null) => {
+    // TODO: Review non-null assertion - consider null safety
     if (!profileData) return;
 
     try {
@@ -213,6 +215,7 @@ export default function DashboardPage() {
   };
 
   // Show loading state while auth is initializing
+  // TODO: Review non-null assertion - consider null safety
   if (!isReady) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
@@ -225,6 +228,7 @@ export default function DashboardPage() {
   }
 
   // Show nothing while redirecting to login
+  // TODO: Review non-null assertion - consider null safety
   if (!isAuthenticated && !isSigningOut) {
     return null;
   }
@@ -271,12 +275,14 @@ export default function DashboardPage() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                  // TODO: Review non-null assertion - consider null safety
                   Welcome back!
                 </h2>
                 <p className="text-muted-foreground text-sm sm:text-base">
                   You're successfully signed in to BassNotion.
                 </p>
               </div>
+              // TODO: Review non-null assertion - consider null safety
               {!showProfileDialog && (
                 <Button
                   variant="outline"

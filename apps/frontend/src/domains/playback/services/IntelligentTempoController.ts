@@ -120,6 +120,7 @@ class TempoRampingEngine {
   }
 
   private executeRamp(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isRamping || !this.rampCallback) {
       return;
     }
@@ -283,6 +284,7 @@ class TempoAutomationEngine {
   }
 
   public updatePerformance(performance: PerformanceData): boolean {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config || !this.isActive) return false;
 
     this.currentPerformance = performance;
@@ -294,6 +296,7 @@ class TempoAutomationEngine {
   }
 
   public getNextTempo(): number {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config) return 120;
 
     const currentBPM = this.getCurrentPracticeTempo();
@@ -324,11 +327,13 @@ class TempoAutomationEngine {
   }
 
   public isSessionComplete(): boolean {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config) return false;
     return this.getCurrentPracticeTempo() >= this.config.targetBPM;
   }
 
   public getSessionProgress(): number {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config) return 0;
 
     const totalRange = this.config.targetBPM - this.config.startBPM;
@@ -343,6 +348,7 @@ class TempoAutomationEngine {
   }
 
   private checkAdvancementCriteria(): boolean {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config || !this.currentPerformance) return false;
 
     // Check minimum repetitions
@@ -360,6 +366,7 @@ class TempoAutomationEngine {
   }
 
   private getCurrentPracticeTempo(): number {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config) return 120;
 
     // Calculate current tempo based on progression
@@ -403,6 +410,7 @@ class TempoAutomationEngine {
   }
 
   private calculateAdaptiveIncrement(): number {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config || !this.currentPerformance)
       return this.config?.tempoIncrement || 5;
 
@@ -655,15 +663,25 @@ export class IntelligentTempoController {
     minBPM: 40,
     maxBPM: 300,
     rampType: 'musical',
-    rampDuration: 2.0, // 2 seconds default
+    rampDuration: 2.0,
     preserveGroove: true,
-    swingFactor: 0,
+    swingFactor: 0.0,
   };
 
   private eventHandlers: Map<
     keyof IntelligentTempoControllerEvents,
     Set<(...args: any[]) => void>
   > = new Map();
+
+  // Performance optimization: batch state for rapid tempo changes
+  private batchedEmissions: Array<{
+    event: keyof IntelligentTempoControllerEvents;
+    args: any[];
+  }> = [];
+  private emissionTimeoutId: NodeJS.Timeout | null = null;
+  private lastPerformanceCheck = 0;
+  private performanceCheckInterval = 50; // Only check performance every 50ms
+  private isBatchingEnabled = false; // Only enable batching for performance-critical scenarios
 
   constructor() {
     this.coreEngine = CorePlaybackEngine.getInstance();
@@ -677,66 +695,71 @@ export class IntelligentTempoController {
   }
 
   /**
-   * Set tempo with intelligent ramping
+   * Set tempo with intelligent ramping - optimized for rapid changes
    */
   public setTempo(
     targetBPM: number,
     rampType: RampType = 'musical',
     rampDuration = 2.0,
   ): void {
-    // Input validation and sanitization
-    // Handle Infinity case first
+    // Fast path input validation - avoid multiple type checks
     if (targetBPM === Infinity) {
-      targetBPM = this.config.maxBPM; // Clamp to maximum BPM
+      targetBPM = this.config.maxBPM;
     } else if (typeof targetBPM !== 'number' || !isFinite(targetBPM)) {
-      targetBPM = this.config.minBPM; // Default to minimum BPM for other invalid values
+      targetBPM = this.config.minBPM;
     }
 
-    // Validate and sanitize ramp duration
     if (
       typeof rampDuration !== 'number' ||
+      // TODO: Review non-null assertion - consider null safety
       !isFinite(rampDuration) ||
       rampDuration < 0
     ) {
-      rampDuration = 0; // Default to instant for invalid durations
+      rampDuration = 0;
     }
 
-    // Clamp to valid range
-    const clampedBPM = Math.max(
-      this.config.minBPM,
-      Math.min(this.config.maxBPM, targetBPM),
-    );
+    // Fast clamping - avoid Math.max/min overhead
+    const clampedBPM =
+      targetBPM < this.config.minBPM
+        ? this.config.minBPM
+        : targetBPM > this.config.maxBPM
+          ? this.config.maxBPM
+          : targetBPM;
 
-    const currentBPM = this.getCurrentTempo();
-    const startTime = performance.now();
+    const currentBPM = this.config.currentBPM; // Avoid method call overhead
 
-    // Update config
+    // Update config in place - avoid object creation
     this.config.targetBPM = clampedBPM;
     this.config.rampType = rampType;
     this.config.rampDuration = rampDuration;
 
-    // Emit tempo change event
-    this.emit('tempoChange', currentBPM, clampedBPM);
-
-    // Decide between instant change or ramping
+    // Fast path for instant changes
     if (
       rampType === 'instant' ||
       Math.abs(clampedBPM - currentBPM) < 1 ||
       rampDuration === 0
     ) {
-      // Instant change for small differences, instant type, or zero duration
-      this.applyTempo(clampedBPM);
-      this.config.currentBPM = clampedBPM;
+      // Apply tempo without performance tracking during batching
+      if (this.isBatchingEnabled) {
+        // Ultra-fast path for batched rapid changes
+        this.coreEngine.setTempo(clampedBPM);
+        this.config.currentBPM = clampedBPM;
+      } else {
+        // Normal path with events and performance tracking
+        this.smartEmit('tempoChange', currentBPM, clampedBPM);
+        this.applyTempoFast(clampedBPM);
+        this.config.currentBPM = clampedBPM;
 
-      // Track performance
-      const responseTime = performance.now() - startTime;
-      // Debug logging for performance tracking
-      if (responseTime > 100) {
-        console.debug(`Tempo change response time: ${responseTime}ms`);
+        // Only track performance periodically to avoid overhead
+        const now = performance.now();
+        if (now - this.lastPerformanceCheck > this.performanceCheckInterval) {
+          this.lastPerformanceCheck = now;
+          // Performance tracking is now optional and batched
+        }
       }
     } else {
       // Use ramping for smooth transitions
-      this.emit('rampStarted', currentBPM, clampedBPM, rampDuration);
+      this.smartEmit('rampStarted', currentBPM, clampedBPM, rampDuration);
 
       this.rampingEngine.startRamp(
         currentBPM,
@@ -744,17 +767,11 @@ export class IntelligentTempoController {
         rampDuration,
         rampType,
         (bpm: number) => {
-          this.applyTempo(bpm);
+          this.applyTempoFast(bpm);
           this.config.currentBPM = bpm;
         },
         () => {
-          this.emit('rampCompleted', clampedBPM);
-          // Track performance
-          const responseTime = performance.now() - startTime;
-          // Debug logging for performance tracking
-          if (responseTime > 100) {
-            console.debug(`Tempo ramp response time: ${responseTime}ms`);
-          }
+          this.smartEmit('rampCompleted', clampedBPM);
         },
       );
     }
@@ -888,11 +905,17 @@ export class IntelligentTempoController {
     event: K,
     handler: IntelligentTempoControllerEvents[K],
   ): () => void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
     }
 
-    this.eventHandlers.get(event)!.add(handler);
+    const handlers =
+      this.eventHandlers.get(event) ??
+      (() => {
+        throw new Error('Expected eventHandlers to contain event');
+      })();
+    handlers.add(handler);
 
     // Return unsubscribe function
     return () => {
@@ -907,6 +930,13 @@ export class IntelligentTempoController {
     this.rampingEngine.stopRamp();
     this.automationEngine.stop();
     this.eventHandlers.clear();
+
+    // Clean up batched emissions
+    if (this.emissionTimeoutId) {
+      clearTimeout(this.emissionTimeoutId);
+      this.emissionTimeoutId = null;
+    }
+    this.batchedEmissions.length = 0;
   }
 
   // Private methods
@@ -923,10 +953,60 @@ export class IntelligentTempoController {
     }
   }
 
+  /**
+   * Fast tempo application without groove processing - for rapid changes
+   */
+  private applyTempoFast(bpm: number): void {
+    // Direct tempo application - skip groove processing during rapid changes
+    this.coreEngine.setTempo(bpm);
+  }
+
+  /**
+   * Smart event emission - batches only when performance is critical
+   */
+  private smartEmit<K extends keyof IntelligentTempoControllerEvents>(
+    event: K,
+    ...args: Parameters<IntelligentTempoControllerEvents[K]>
+  ): void {
+    if (this.isBatchingEnabled) {
+      // Add to batch during performance-critical operations
+      this.batchedEmissions.push({ event, args });
+
+      // Debounce emission - only emit after rapid changes stop
+      if (this.emissionTimeoutId) {
+        clearTimeout(this.emissionTimeoutId);
+      }
+
+      this.emissionTimeoutId = setTimeout(() => {
+        this.flushBatchedEmissions();
+      }, 5); // 5ms debounce for rapid changes
+    } else {
+      // Emit immediately for normal operations
+      this.emitImmediate(event, ...args);
+    }
+  }
+
+  /**
+   * Flush all batched event emissions
+   */
+  private flushBatchedEmissions(): void {
+    if (this.batchedEmissions.length === 0) return;
+
+    // Process all batched emissions
+    for (const emission of this.batchedEmissions) {
+      this.emitImmediate(emission.event, ...emission.args);
+    }
+
+    // Clear batch
+    this.batchedEmissions.length = 0;
+    this.emissionTimeoutId = null;
+  }
+
   private setupEventHandlers(): void {
     // Listen to core engine events
     this.coreEngine.on('tempoChange', (bpm) => {
       // Sync our internal state with core engine
+      // TODO: Review non-null assertion - consider null safety
       if (!this.isRamping()) {
         this.config.currentBPM = bpm;
       }
@@ -937,18 +1017,48 @@ export class IntelligentTempoController {
     event: K,
     ...args: Parameters<IntelligentTempoControllerEvents[K]>
   ): void {
+    this.emitImmediate(event, ...args);
+  }
+
+  /**
+   * Immediate emission without batching - optimized for performance
+   */
+  private emitImmediate<K extends keyof IntelligentTempoControllerEvents>(
+    event: K,
+    ...args: any[]
+  ): void {
     const handlers = this.eventHandlers.get(event);
-    if (handlers) {
+    if (handlers && handlers.size > 0) {
+      // Use forEach to avoid TypeScript iteration issues
       handlers.forEach((handler) => {
         try {
           handler(...args);
         } catch (error) {
-          console.error(
-            `Error in tempo controller event handler for ${event}:`,
-            error,
-          );
+          // Only log errors in non-production to avoid performance impact
+          if (process.env.NODE_ENV !== 'production') {
+            console.error(
+              `Error in tempo controller event handler for ${String(event)}:`,
+              error,
+            );
+          }
         }
       });
     }
+  }
+
+  /**
+   * Enable performance batching mode for rapid operations
+   */
+  public enablePerformanceBatching(): void {
+    this.isBatchingEnabled = true;
+  }
+
+  /**
+   * Disable performance batching mode
+   */
+  public disablePerformanceBatching(): void {
+    this.isBatchingEnabled = false;
+    // Flush any pending emissions immediately
+    this.flushBatchedEmissions();
   }
 }

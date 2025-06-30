@@ -54,9 +54,11 @@ export function AvatarUpload({
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
+    // TODO: Review non-null assertion - consider null safety
     if (!file) return;
 
     // Validate file type
+    // TODO: Review non-null assertion - consider null safety
     if (!file.type.startsWith('image/')) {
       toast({
         title: 'Invalid file type',
@@ -112,6 +114,7 @@ export function AvatarUpload({
             },
           );
 
+          // TODO: Review non-null assertion - consider null safety
           if (bucketError && !bucketError.message.includes('already exists')) {
             throw new Error(
               `Failed to create storage bucket: ${bucketError.message}`,
@@ -139,6 +142,7 @@ export function AvatarUpload({
         .from('avatars')
         .getPublicUrl(filePath);
 
+      // TODO: Review non-null assertion - consider null safety
       if (!urlData?.publicUrl) {
         throw new Error('Failed to get public URL for uploaded image');
       }
@@ -211,6 +215,7 @@ export function AvatarUpload({
         }`}
         onClick={handleClick}
       >
+        // TODO: Review non-null assertion - consider null safety
         {previewUrl && !imageError ? (
           <img
             src={previewUrl}
@@ -237,7 +242,6 @@ export function AvatarUpload({
             )}
           </div>
         )}
-
         {/* Overlay for upload/loading state */}
         <div
           className={`absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center transition-opacity ${

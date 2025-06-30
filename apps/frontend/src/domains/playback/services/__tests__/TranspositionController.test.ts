@@ -10,6 +10,30 @@
  * - Capo simulation for bass and intelligent enharmonic spelling
  */
 
+// Mock Tone.js at the very top for proper hoisting
+vi.mock('tone', () => {
+  const mockAudioNode = {
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    dispose: vi.fn(),
+    toDestination: vi.fn(),
+    fan: vi.fn(),
+    chain: vi.fn(),
+  };
+
+  return {
+    PitchShift: vi.fn(() => ({
+      ...mockAudioNode,
+      pitch: 0,
+      windowSize: 0.1,
+    })),
+    Gain: vi.fn(() => ({
+      ...mockAudioNode,
+      gain: { value: 1 },
+    })),
+  };
+});
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   TranspositionController,
@@ -17,52 +41,23 @@ import {
   type TranspositionConfig,
   type TranspositionOptions,
 } from '../TranspositionController.js';
-import { CorePlaybackEngine } from '../CorePlaybackEngine.js';
 import {
   ChordQuality,
   type ParsedChord,
 } from '../plugins/ChordInstrumentProcessor.js';
 
-// Mock Tone.js completely to prevent audio context issues
-vi.mock('tone', () => ({
-  default: {
-    PitchShift: vi.fn().mockImplementation(() => ({
-      pitch: 0,
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-      dispose: vi.fn(),
-    })),
-    Gain: vi.fn().mockImplementation(() => ({
-      gain: { value: 1 },
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-      dispose: vi.fn(),
-    })),
-  },
-  PitchShift: vi.fn().mockImplementation(() => ({
-    pitch: 0,
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-    dispose: vi.fn(),
-  })),
-  Gain: vi.fn().mockImplementation(() => ({
-    gain: { value: 1 },
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-    dispose: vi.fn(),
-  })),
-}));
-
 // Mock the CorePlaybackEngine
+const mockCoreEngineInstance = {
+  setPitch: vi.fn(),
+  on: vi.fn(),
+  off: vi.fn(),
+  dispose: vi.fn(),
+  initialize: vi.fn().mockResolvedValue(undefined),
+};
+
 vi.mock('../CorePlaybackEngine.js', () => ({
   CorePlaybackEngine: {
-    getInstance: vi.fn().mockReturnValue({
-      setPitch: vi.fn(),
-      on: vi.fn(),
-      off: vi.fn(),
-      dispose: vi.fn(),
-      initialize: vi.fn().mockResolvedValue(undefined),
-    }),
+    getInstance: vi.fn(() => mockCoreEngineInstance),
   },
 }));
 
@@ -83,11 +78,11 @@ vi.mock('../plugins/ChordInstrumentProcessor.js', async () => {
 
 describe('TranspositionController', () => {
   let transpositionController: TranspositionController;
-  let mockCoreEngine: CorePlaybackEngine;
+  let mockCoreEngine: any;
 
   beforeEach(async () => {
-    // Create mock core engine
-    mockCoreEngine = CorePlaybackEngine.getInstance();
+    // Use the pre-created mock instance
+    mockCoreEngine = mockCoreEngineInstance;
 
     // Create transposition controller with test config
     const testConfig: Partial<TranspositionConfig> = {

@@ -1,4 +1,20 @@
 {
+  "../../../node_modules/.pnpm/@react-three+drei@9.122.0_@react-three+fiber@8.18.0_@types+react@19.1.6_react-dom@19.1._c1958e31f3b3bb65e2c13739ec61289e/node_modules/@react-three/drei/core/VideoTexture.js -> hls.js": {
+    "id": "../../../node_modules/.pnpm/@react-three+drei@9.122.0_@react-three+fiber@8.18.0_@types+react@19.1.6_react-dom@19.1._c1958e31f3b3bb65e2c13739ec61289e/node_modules/@react-three/drei/core/VideoTexture.js -> hls.js",
+    "files": []
+  },
+  "../../../node_modules/.pnpm/@react-three+drei@9.122.0_@react-three+fiber@8.18.0_@types+react@19.1.6_react-dom@19.1._c1958e31f3b3bb65e2c13739ec61289e/node_modules/@react-three/drei/web/FaceLandmarker.js -> @mediapipe/tasks-vision": {
+    "id": "../../../node_modules/.pnpm/@react-three+drei@9.122.0_@react-three+fiber@8.18.0_@types+react@19.1.6_react-dom@19.1._c1958e31f3b3bb65e2c13739ec61289e/node_modules/@react-three/drei/web/FaceLandmarker.js -> @mediapipe/tasks-vision",
+    "files": []
+  },
+  "../../../node_modules/.pnpm/@react-three+drei@9.122.0_@react-three+fiber@9.1.4_@types+react@19.1.6_react-dom@19.1.0_9896539b8f067d97ca3263fe3620ccd5/node_modules/@react-three/drei/core/VideoTexture.js -> hls.js": {
+    "id": "../../../node_modules/.pnpm/@react-three+drei@9.122.0_@react-three+fiber@9.1.4_@types+react@19.1.6_react-dom@19.1.0_9896539b8f067d97ca3263fe3620ccd5/node_modules/@react-three/drei/core/VideoTexture.js -> hls.js",
+    "files": []
+  },
+  "../../../node_modules/.pnpm/@react-three+drei@9.122.0_@react-three+fiber@9.1.4_@types+react@19.1.6_react-dom@19.1.0_9896539b8f067d97ca3263fe3620ccd5/node_modules/@react-three/drei/web/FaceLandmarker.js -> @mediapipe/tasks-vision": {
+    "id": "../../../node_modules/.pnpm/@react-three+drei@9.122.0_@react-three+fiber@9.1.4_@types+react@19.1.6_react-dom@19.1.0_9896539b8f067d97ca3263fe3620ccd5/node_modules/@react-three/drei/web/FaceLandmarker.js -> @mediapipe/tasks-vision",
+    "files": []
+  },
   "../../../node_modules/.pnpm/@supabase+auth-js@2.69.1/node_modules/@supabase/auth-js/dist/module/lib/helpers.js -> @supabase/node-fetch": {
     "id": "../../../node_modules/.pnpm/@supabase+auth-js@2.69.1/node_modules/@supabase/auth-js/dist/module/lib/helpers.js -> @supabase/node-fetch",
     "files": []

@@ -1,14 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   changePasswordSchema,
   type ChangePasswordData,
 } from '@bassnotion/contracts';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
-
 import { Button } from '@/shared/components/ui/button';
 import {
   Form,
@@ -81,6 +80,7 @@ export function ChangePasswordForm() {
                       type={showCurrentPassword ? 'text' : 'password'}
                       placeholder="Enter current password"
                       disabled={isLoading}
+                      data-testid="Enter current password-input"
                       {...field}
                     />
                     <Button
@@ -89,9 +89,11 @@ export function ChangePasswordForm() {
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                       onClick={() =>
+                        // TODO: Review non-null assertion - consider null safety
                         setShowCurrentPassword(!showCurrentPassword)
                       }
                       disabled={isLoading}
+                      data-testid="toggle-current-password"
                     >
                       {showCurrentPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -123,6 +125,7 @@ export function ChangePasswordForm() {
                       type={showNewPassword ? 'text' : 'password'}
                       placeholder="Enter new password"
                       disabled={isLoading}
+                      data-testid="Enter new password-input"
                       {...field}
                     />
                     <Button
@@ -130,8 +133,10 @@ export function ChangePasswordForm() {
                       variant="ghost"
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      // TODO: Review non-null assertion - consider null safety
                       onClick={() => setShowNewPassword(!showNewPassword)}
                       disabled={isLoading}
+                      data-testid="toggle-new-password"
                     >
                       {showNewPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -161,6 +166,7 @@ export function ChangePasswordForm() {
                       type={showConfirmPassword ? 'text' : 'password'}
                       placeholder="Confirm new password"
                       disabled={isLoading}
+                      data-testid="Confirm new password-input"
                       {...field}
                     />
                     <Button
@@ -169,9 +175,11 @@ export function ChangePasswordForm() {
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                       onClick={() =>
+                        // TODO: Review non-null assertion - consider null safety
                         setShowConfirmPassword(!showConfirmPassword)
                       }
                       disabled={isLoading}
+                      data-testid="toggle-confirm-password"
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -194,15 +202,17 @@ export function ChangePasswordForm() {
           <Button
             type="submit"
             className="w-full"
+            // TODO: Review non-null assertion - consider null safety
             disabled={isLoading || !form.formState.isValid}
+            data-testid="submit-button"
           >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating Password...
+                Changing password...
               </>
             ) : (
-              'Update Password'
+              'Change password'
             )}
           </Button>
         </form>

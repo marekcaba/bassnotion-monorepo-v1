@@ -35,9 +35,13 @@ export class IOSOptimizer {
   private isInitialized = false;
 
   // Audio Session Management
+  // TODO: Review non-null assertion - consider null safety
   private currentSessionConfig!: IOSAudioSessionConfig;
+  // TODO: Review non-null assertion - consider null safety
   private backgroundAudioConfig!: IOSBackgroundAudioConfig;
+  // TODO: Review non-null assertion - consider null safety
   private safariConfig!: SafariOptimizationConfig;
+  // TODO: Review non-null assertion - consider null safety
   private pwaConfig!: PWAOptimizationConfig;
 
   // State tracking
@@ -71,6 +75,7 @@ export class IOSOptimizer {
   }
 
   public static getInstance(): IOSOptimizer {
+    // TODO: Review non-null assertion - consider null safety
     if (!IOSOptimizer.instance) {
       IOSOptimizer.instance = new IOSOptimizer();
     }
@@ -89,6 +94,7 @@ export class IOSOptimizer {
       this.audioContext = audioContext;
 
       // Only initialize if we're on iOS
+      // TODO: Review non-null assertion - consider null safety
       if (!this.isIOSDevice) {
         console.log(
           'IOSOptimizer: Not running on iOS device, skipping initialization',
@@ -160,6 +166,7 @@ export class IOSOptimizer {
    * Handle background audio optimization for iOS
    */
   public async enableBackgroundAudio(): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isIOSDevice || !this.backgroundAudioConfig.enabled) {
       return;
     }
@@ -234,6 +241,7 @@ export class IOSOptimizer {
    * Activate audio context with iOS-specific user gesture handling
    */
   public async activateAudioContext(throwOnError = false): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.audioContext) {
       return;
     }
@@ -336,6 +344,7 @@ export class IOSOptimizer {
     const userAgent = navigator.userAgent.toLowerCase();
     this.isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
 
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isIOSDevice) {
       return;
     }
@@ -351,6 +360,7 @@ export class IOSOptimizer {
 
     // Detect Safari
     this.isSafari =
+      // TODO: Review non-null assertion - consider null safety
       /safari/.test(userAgent) && !/chrome|crios|fxios/.test(userAgent);
 
     // Detect standalone PWA with proper fallback
@@ -655,6 +665,7 @@ export class IOSOptimizer {
     }
 
     // For non-Safari browsers on iOS, be more permissive
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isSafari) {
       return false;
     }
@@ -682,6 +693,7 @@ export class IOSOptimizer {
     console.log('iOS requires user gesture for audio activation');
 
     // Set up one-time touch handler if not already set
+    // TODO: Review non-null assertion - consider null safety
     if (!this.touchStartHandler) {
       this.touchStartHandler = () => this.handleTouchActivation();
       document.addEventListener('touchstart', this.touchStartHandler, {
@@ -758,6 +770,7 @@ export class IOSOptimizer {
   }
 
   private checkAudioSessionHealth(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.audioContext) return;
 
     // Check for common iOS audio issues

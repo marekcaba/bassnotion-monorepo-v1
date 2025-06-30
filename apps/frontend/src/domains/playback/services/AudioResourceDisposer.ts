@@ -193,6 +193,7 @@ export class AudioResourceDisposer extends EventEmitter {
     config?: Partial<DisposalConfig>,
     timerService?: TimerService,
   ): AudioResourceDisposer {
+    // TODO: Review non-null assertion - consider null safety
     if (!AudioResourceDisposer.instance) {
       AudioResourceDisposer.instance = new AudioResourceDisposer(
         config,
@@ -218,6 +219,7 @@ export class AudioResourceDisposer extends EventEmitter {
     // Process disposal queue in batches
     // Use injected timer service for better testability
     this.batchDisposalHandle = this.timerService.setInterval(() => {
+      // TODO: Review non-null assertion - consider null safety
       if (this.disposalQueue.length > 0 && !this.isDisposing) {
         this.processBatchDisposal();
       }
@@ -239,6 +241,7 @@ export class AudioResourceDisposer extends EventEmitter {
     fadeConfig?: FadeConfig,
   ): Promise<DisposalResult> {
     const resource = this.activeResources.get(resourceId);
+    // TODO: Review non-null assertion - consider null safety
     if (!resource) {
       return {
         success: false,
@@ -329,6 +332,7 @@ export class AudioResourceDisposer extends EventEmitter {
     const fade =
       fadeConfig ?? this.config.fadeConfig ?? this.fadePresets.smooth;
 
+    // TODO: Review non-null assertion - consider null safety
     if (!fade) {
       throw new Error('No fade configuration available');
     }
@@ -763,11 +767,13 @@ export class AudioResourceDisposer extends EventEmitter {
     }
 
     // Update counters
+    // TODO: Review non-null assertion - consider null safety
     if (!this.metrics.disposalsByType[resource.type]) {
       this.metrics.disposalsByType[resource.type] = 0;
     }
     this.metrics.disposalsByType[resource.type]++;
 
+    // TODO: Review non-null assertion - consider null safety
     if (!this.metrics.disposalsByStrategy[strategy]) {
       this.metrics.disposalsByStrategy[strategy] = 0;
     }

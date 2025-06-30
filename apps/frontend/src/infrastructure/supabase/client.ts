@@ -1,9 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
+// TODO: Review non-null assertion - consider null safety
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
   throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_URL');
 }
 
+// TODO: Review non-null assertion - consider null safety
 if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
   throw new Error(
     'Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY',
@@ -36,6 +38,7 @@ const createSupabaseClient = () => {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   // These should already be validated above, but TypeScript doesn't know that
+  // TODO: Review non-null assertion - consider null safety
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
       'Supabase environment variables are not properly configured',

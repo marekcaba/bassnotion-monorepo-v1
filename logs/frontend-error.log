@@ -1,0 +1,1072 @@
+2025-06-23 13:39:31 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts:19:1
+2025-06-23 13:39:31 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:39:31 +02:00:   17 |   DEFAULT_FRETBOARD_DIMENSIONS,
+2025-06-23 13:39:31 +02:00:   18 | } from '../utils/fretboardGeometry';
+2025-06-23 13:39:31 +02:00: > 19 | import { getMusicalNote } from '../utils/noteUtils.js';
+2025-06-23 13:39:31 +02:00:      | ^
+2025-06-23 13:39:31 +02:00:   20 |
+2025-06-23 13:39:31 +02:00:   21 | interface UseFretboardAnimationOptions {
+2025-06-23 13:39:31 +02:00:   22 |   exercise: MockExercise;
+2025-06-23 13:39:31 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:39:31 +02:00: Import trace for requested module:
+2025-06-23 13:39:31 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:39:31 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:39:31 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:39:31 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:39:31 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:39:47 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts:19:1
+2025-06-23 13:39:47 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:39:47 +02:00:   17 |   DEFAULT_FRETBOARD_DIMENSIONS,
+2025-06-23 13:39:47 +02:00:   18 | } from '../utils/fretboardGeometry';
+2025-06-23 13:39:47 +02:00: > 19 | import { getMusicalNote } from '../utils/noteUtils.js';
+2025-06-23 13:39:47 +02:00:      | ^
+2025-06-23 13:39:47 +02:00:   20 |
+2025-06-23 13:39:47 +02:00:   21 | interface UseFretboardAnimationOptions {
+2025-06-23 13:39:47 +02:00:   22 |   exercise: MockExercise;
+2025-06-23 13:39:47 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:39:47 +02:00: Import trace for requested module:
+2025-06-23 13:39:47 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:39:47 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:39:47 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:39:47 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:39:47 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:40:04 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts:19:1
+2025-06-23 13:40:04 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:40:04 +02:00:   17 |   DEFAULT_FRETBOARD_DIMENSIONS,
+2025-06-23 13:40:04 +02:00:   18 | } from '../utils/fretboardGeometry';
+2025-06-23 13:40:04 +02:00: > 19 | import { getMusicalNote } from '../utils/noteUtils.js';
+2025-06-23 13:40:04 +02:00:      | ^
+2025-06-23 13:40:04 +02:00:   20 |
+2025-06-23 13:40:04 +02:00:   21 | interface UseFretboardAnimationOptions {
+2025-06-23 13:40:04 +02:00:   22 |   exercise: MockExercise;
+2025-06-23 13:40:04 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:40:04 +02:00: Import trace for requested module:
+2025-06-23 13:40:04 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:40:04 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:40:04 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:40:04 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:40:04 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:40:50 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts:19:1
+2025-06-23 13:40:50 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:40:50 +02:00:   17 |   DEFAULT_FRETBOARD_DIMENSIONS,
+2025-06-23 13:40:50 +02:00:   18 | } from '../utils/fretboardGeometry';
+2025-06-23 13:40:50 +02:00: > 19 | import { getMusicalNote } from '../utils/noteUtils.js';
+2025-06-23 13:40:50 +02:00:      | ^
+2025-06-23 13:40:50 +02:00:   20 |
+2025-06-23 13:40:50 +02:00:   21 | interface UseFretboardAnimationOptions {
+2025-06-23 13:40:50 +02:00:   22 |   exercise: MockExercise;
+2025-06-23 13:40:50 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:40:50 +02:00: Import trace for requested module:
+2025-06-23 13:40:50 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:40:50 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:40:50 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:40:50 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:40:50 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:42:23 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts:19:1
+2025-06-23 13:42:23 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:42:23 +02:00:   17 |   DEFAULT_FRETBOARD_DIMENSIONS,
+2025-06-23 13:42:23 +02:00:   18 | } from '../utils/fretboardGeometry';
+2025-06-23 13:42:23 +02:00: > 19 | import { getMusicalNote } from '../utils/noteUtils.js';
+2025-06-23 13:42:23 +02:00:      | ^
+2025-06-23 13:42:23 +02:00:   20 |
+2025-06-23 13:42:23 +02:00:   21 | interface UseFretboardAnimationOptions {
+2025-06-23 13:42:23 +02:00:   22 |   exercise: MockExercise;
+2025-06-23 13:42:23 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:42:23 +02:00: Import trace for requested module:
+2025-06-23 13:42:23 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:42:23 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:42:23 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:42:23 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:42:23 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:42:27 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts:19:1
+2025-06-23 13:42:27 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:42:27 +02:00:   17 |   DEFAULT_FRETBOARD_DIMENSIONS,
+2025-06-23 13:42:27 +02:00:   18 | } from '../utils/fretboardGeometry';
+2025-06-23 13:42:27 +02:00: > 19 | import { getMusicalNote } from '../utils/noteUtils.js';
+2025-06-23 13:42:27 +02:00:      | ^
+2025-06-23 13:42:27 +02:00:   20 |
+2025-06-23 13:42:27 +02:00:   21 | interface UseFretboardAnimationOptions {
+2025-06-23 13:42:27 +02:00:   22 |   exercise: MockExercise;
+2025-06-23 13:42:27 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:42:27 +02:00: Import trace for requested module:
+2025-06-23 13:42:27 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:42:27 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:42:27 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:42:27 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:42:27 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:42:50 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts:19:1
+2025-06-23 13:42:50 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:42:50 +02:00:   17 |   DEFAULT_FRETBOARD_DIMENSIONS,
+2025-06-23 13:42:50 +02:00:   18 | } from '../utils/fretboardGeometry';
+2025-06-23 13:42:50 +02:00: > 19 | import { getMusicalNote } from '../utils/noteUtils.js';
+2025-06-23 13:42:50 +02:00:      | ^
+2025-06-23 13:42:50 +02:00:   20 |
+2025-06-23 13:42:50 +02:00:   21 | interface UseFretboardAnimationOptions {
+2025-06-23 13:42:50 +02:00:   22 |   exercise: MockExercise;
+2025-06-23 13:42:50 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:42:50 +02:00: Import trace for requested module:
+2025-06-23 13:42:50 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:42:50 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:42:50 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:42:50 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:42:50 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:43:05 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts:19:1
+2025-06-23 13:43:05 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:43:05 +02:00:   17 |   DEFAULT_FRETBOARD_DIMENSIONS,
+2025-06-23 13:43:05 +02:00:   18 | } from '../utils/fretboardGeometry';
+2025-06-23 13:43:05 +02:00: > 19 | import { getMusicalNote } from '../utils/noteUtils.js';
+2025-06-23 13:43:05 +02:00:      | ^
+2025-06-23 13:43:05 +02:00:   20 |
+2025-06-23 13:43:05 +02:00:   21 | interface UseFretboardAnimationOptions {
+2025-06-23 13:43:05 +02:00:   22 |   exercise: MockExercise;
+2025-06-23 13:43:05 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:43:05 +02:00: Import trace for requested module:
+2025-06-23 13:43:05 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:43:05 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:43:05 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:43:05 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:43:05 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:43:20 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts:19:1
+2025-06-23 13:43:20 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:43:20 +02:00:   17 |   DEFAULT_FRETBOARD_DIMENSIONS,
+2025-06-23 13:43:20 +02:00:   18 | } from '../utils/fretboardGeometry';
+2025-06-23 13:43:20 +02:00: > 19 | import { getMusicalNote } from '../utils/noteUtils.js';
+2025-06-23 13:43:20 +02:00:      | ^
+2025-06-23 13:43:20 +02:00:   20 |
+2025-06-23 13:43:20 +02:00:   21 | interface UseFretboardAnimationOptions {
+2025-06-23 13:43:20 +02:00:   22 |   exercise: MockExercise;
+2025-06-23 13:43:20 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:43:20 +02:00: Import trace for requested module:
+2025-06-23 13:43:20 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:43:20 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:43:20 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:43:20 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:43:20 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:43:37 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts:19:1
+2025-06-23 13:43:37 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:43:37 +02:00:   17 |   DEFAULT_FRETBOARD_DIMENSIONS,
+2025-06-23 13:43:37 +02:00:   18 | } from '../utils/fretboardGeometry';
+2025-06-23 13:43:37 +02:00: > 19 | import { getMusicalNote } from '../utils/noteUtils.js';
+2025-06-23 13:43:37 +02:00:      | ^
+2025-06-23 13:43:37 +02:00:   20 |
+2025-06-23 13:43:37 +02:00:   21 | interface UseFretboardAnimationOptions {
+2025-06-23 13:43:37 +02:00:   22 |   exercise: MockExercise;
+2025-06-23 13:43:37 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:43:37 +02:00: Import trace for requested module:
+2025-06-23 13:43:37 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:43:37 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:43:37 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:43:37 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:43:37 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:43:53 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts:19:1
+2025-06-23 13:43:53 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:43:53 +02:00:   17 |   DEFAULT_FRETBOARD_DIMENSIONS,
+2025-06-23 13:43:53 +02:00:   18 | } from '../utils/fretboardGeometry';
+2025-06-23 13:43:53 +02:00: > 19 | import { getMusicalNote } from '../utils/noteUtils.js';
+2025-06-23 13:43:53 +02:00:      | ^
+2025-06-23 13:43:53 +02:00:   20 |
+2025-06-23 13:43:53 +02:00:   21 | interface UseFretboardAnimationOptions {
+2025-06-23 13:43:53 +02:00:   22 |   exercise: MockExercise;
+2025-06-23 13:43:53 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:43:53 +02:00: Import trace for requested module:
+2025-06-23 13:43:53 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:43:53 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:43:53 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:43:53 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:43:53 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:44:08 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts:19:1
+2025-06-23 13:44:08 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:44:08 +02:00:   17 |   DEFAULT_FRETBOARD_DIMENSIONS,
+2025-06-23 13:44:08 +02:00:   18 | } from '../utils/fretboardGeometry';
+2025-06-23 13:44:08 +02:00: > 19 | import { getMusicalNote } from '../utils/noteUtils.js';
+2025-06-23 13:44:08 +02:00:      | ^
+2025-06-23 13:44:08 +02:00:   20 |
+2025-06-23 13:44:08 +02:00:   21 | interface UseFretboardAnimationOptions {
+2025-06-23 13:44:08 +02:00:   22 |   exercise: MockExercise;
+2025-06-23 13:44:08 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:44:08 +02:00: Import trace for requested module:
+2025-06-23 13:44:08 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:44:08 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:44:08 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:44:08 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:44:08 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:44:25 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:5:1
+2025-06-23 13:44:25 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../constants.js[39m'
+2025-06-23 13:44:25 +02:00:   3 | import React, { useState } from 'react';
+2025-06-23 13:44:25 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:44:25 +02:00: > 5 | import { BASS_STRING_CONFIGS } from '../constants.js';
+2025-06-23 13:44:25 +02:00:     | ^
+2025-06-23 13:44:25 +02:00:   6 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:44:25 +02:00:   7 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:44:25 +02:00:   8 |
+2025-06-23 13:44:25 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:44:25 +02:00: Import trace for requested module:
+2025-06-23 13:44:25 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:44:25 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:44:25 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:44:25 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:44:25 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:44:31 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:5:1
+2025-06-23 13:44:31 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../constants.js[39m'
+2025-06-23 13:44:31 +02:00:   3 | import React, { useState } from 'react';
+2025-06-23 13:44:31 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:44:31 +02:00: > 5 | import { BASS_STRING_CONFIGS } from '../constants.js';
+2025-06-23 13:44:31 +02:00:     | ^
+2025-06-23 13:44:31 +02:00:   6 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:44:31 +02:00:   7 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:44:31 +02:00:   8 |
+2025-06-23 13:44:31 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:44:31 +02:00: Import trace for requested module:
+2025-06-23 13:44:31 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:44:31 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:44:31 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:44:31 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:44:31 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:44:34 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:5:1
+2025-06-23 13:44:34 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../constants.js[39m'
+2025-06-23 13:44:34 +02:00:   3 | import React, { useState } from 'react';
+2025-06-23 13:44:34 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:44:34 +02:00: > 5 | import { BASS_STRING_CONFIGS } from '../constants.js';
+2025-06-23 13:44:34 +02:00:     | ^
+2025-06-23 13:44:34 +02:00:   6 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:44:34 +02:00:   7 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:44:34 +02:00:   8 |
+2025-06-23 13:44:34 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:44:34 +02:00: Import trace for requested module:
+2025-06-23 13:44:34 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:44:34 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:44:34 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:44:34 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:44:34 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:44:49 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:5:1
+2025-06-23 13:44:49 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../constants.js[39m'
+2025-06-23 13:44:49 +02:00:   3 | import React, { useState } from 'react';
+2025-06-23 13:44:49 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:44:49 +02:00: > 5 | import { BASS_STRING_CONFIGS } from '../constants.js';
+2025-06-23 13:44:49 +02:00:     | ^
+2025-06-23 13:44:49 +02:00:   6 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:44:49 +02:00:   7 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:44:49 +02:00:   8 |
+2025-06-23 13:44:49 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:44:49 +02:00: Import trace for requested module:
+2025-06-23 13:44:49 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:44:49 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:44:49 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:44:49 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:44:49 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:45:04 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:5:1
+2025-06-23 13:45:04 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../constants.js[39m'
+2025-06-23 13:45:04 +02:00:   3 | import React, { useState } from 'react';
+2025-06-23 13:45:04 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:45:04 +02:00: > 5 | import { BASS_STRING_CONFIGS } from '../constants.js';
+2025-06-23 13:45:04 +02:00:     | ^
+2025-06-23 13:45:04 +02:00:   6 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:45:04 +02:00:   7 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:45:04 +02:00:   8 |
+2025-06-23 13:45:04 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:45:04 +02:00: Import trace for requested module:
+2025-06-23 13:45:04 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:45:04 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:45:04 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:45:04 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:45:04 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:45:47 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:5:1
+2025-06-23 13:45:47 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../constants.js[39m'
+2025-06-23 13:45:47 +02:00:   3 | import React, { useState } from 'react';
+2025-06-23 13:45:47 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:45:47 +02:00: > 5 | import { BASS_STRING_CONFIGS } from '../constants.js';
+2025-06-23 13:45:47 +02:00:     | ^
+2025-06-23 13:45:47 +02:00:   6 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:45:47 +02:00:   7 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:45:47 +02:00:   8 |
+2025-06-23 13:45:47 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:45:47 +02:00: Import trace for requested module:
+2025-06-23 13:45:47 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:45:47 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:45:47 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:45:47 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:45:47 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:46:28 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:5:1
+2025-06-23 13:46:28 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../constants.js[39m'
+2025-06-23 13:46:28 +02:00:   3 | import React, { useState } from 'react';
+2025-06-23 13:46:28 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:46:28 +02:00: > 5 | import { BASS_STRING_CONFIGS } from '../constants.js';
+2025-06-23 13:46:28 +02:00:     | ^
+2025-06-23 13:46:28 +02:00:   6 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:46:28 +02:00:   7 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:46:28 +02:00:   8 |
+2025-06-23 13:46:28 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:46:28 +02:00: Import trace for requested module:
+2025-06-23 13:46:28 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:46:28 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:46:28 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:46:28 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:46:28 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:46:39 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:5:1
+2025-06-23 13:46:39 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../constants.js[39m'
+2025-06-23 13:46:39 +02:00:   3 | import React, { useState } from 'react';
+2025-06-23 13:46:39 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:46:39 +02:00: > 5 | import { BASS_STRING_CONFIGS } from '../constants.js';
+2025-06-23 13:46:39 +02:00:     | ^
+2025-06-23 13:46:39 +02:00:   6 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:46:39 +02:00:   7 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:46:39 +02:00:   8 |
+2025-06-23 13:46:39 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:46:39 +02:00: Import trace for requested module:
+2025-06-23 13:46:39 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:46:39 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:46:39 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:46:39 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:46:39 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:47:17 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:5:1
+2025-06-23 13:47:17 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../constants.js[39m'
+2025-06-23 13:47:17 +02:00:   3 | import React, { useState } from 'react';
+2025-06-23 13:47:17 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:47:17 +02:00: > 5 | import { BASS_STRING_CONFIGS } from '../constants.js';
+2025-06-23 13:47:17 +02:00:     | ^
+2025-06-23 13:47:17 +02:00:   6 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:47:17 +02:00:   7 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:47:17 +02:00:   8 |
+2025-06-23 13:47:17 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:47:17 +02:00: Import trace for requested module:
+2025-06-23 13:47:17 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:47:17 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:47:17 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:47:17 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:47:17 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:48:03 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:48:03 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:48:03 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:48:03 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:48:03 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:48:03 +02:00:     | ^
+2025-06-23 13:48:03 +02:00:   7 |
+2025-06-23 13:48:03 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:48:03 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:48:03 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:48:03 +02:00: Import trace for requested module:
+2025-06-23 13:48:03 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:48:03 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:48:03 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:48:03 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:48:03 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:48:42 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:48:42 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:48:42 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:48:42 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:48:42 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:48:42 +02:00:     | ^
+2025-06-23 13:48:42 +02:00:   7 |
+2025-06-23 13:48:42 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:48:42 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:48:42 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:48:42 +02:00: Import trace for requested module:
+2025-06-23 13:48:42 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:48:42 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:48:42 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:48:42 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:48:42 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:48:57 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:48:57 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:48:57 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:48:57 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:48:57 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:48:57 +02:00:     | ^
+2025-06-23 13:48:57 +02:00:   7 |
+2025-06-23 13:48:57 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:48:57 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:48:57 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:48:57 +02:00: Import trace for requested module:
+2025-06-23 13:48:57 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:48:57 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:48:57 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:48:57 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:48:57 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:49:11 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-06-23 13:49:32 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/hooks/useFretboardAnimation.ts:9:1
+2025-06-23 13:49:32 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:49:32 +02:00:    7 |   PlayStripState,
+2025-06-23 13:49:32 +02:00:    8 | } from '../types/fretboard.js';
+2025-06-23 13:49:32 +02:00: >  9 | import { getMusicalNote } from '../utils/noteUtils.js';
+2025-06-23 13:49:32 +02:00:      | ^
+2025-06-23 13:49:32 +02:00:   10 |
+2025-06-23 13:49:32 +02:00:   11 | interface UseFretboardAnimationOptions {
+2025-06-23 13:49:32 +02:00:   12 |   exercise: MockExercise;
+2025-06-23 13:49:32 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:49:32 +02:00: Import trace for requested module:
+2025-06-23 13:49:32 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:49:32 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:49:32 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:49:32 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:49:32 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:49:46 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:49:46 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:49:46 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:49:46 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:49:46 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:49:46 +02:00:     | ^
+2025-06-23 13:49:46 +02:00:   7 |
+2025-06-23 13:49:46 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:49:46 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:49:46 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:49:46 +02:00: Import trace for requested module:
+2025-06-23 13:49:46 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:49:46 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:49:46 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:49:46 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:49:46 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:50:35 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:50:35 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:50:35 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:50:35 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:50:35 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:50:35 +02:00:     | ^
+2025-06-23 13:50:35 +02:00:   7 |
+2025-06-23 13:50:35 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:50:35 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:50:35 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:50:35 +02:00: Import trace for requested module:
+2025-06-23 13:50:35 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:50:35 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:50:35 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:50:35 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:50:35 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:50:53 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:50:53 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:50:53 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:50:53 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:50:53 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:50:53 +02:00:     | ^
+2025-06-23 13:50:53 +02:00:   7 |
+2025-06-23 13:50:53 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:50:53 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:50:53 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:50:53 +02:00: Import trace for requested module:
+2025-06-23 13:50:53 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:50:53 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:50:53 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:50:53 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:50:53 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:51:08 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:51:08 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:51:08 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:51:08 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:51:08 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:51:08 +02:00:     | ^
+2025-06-23 13:51:08 +02:00:   7 |
+2025-06-23 13:51:08 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:51:08 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:51:08 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:51:08 +02:00: Import trace for requested module:
+2025-06-23 13:51:08 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:51:08 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:51:08 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:51:08 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:51:08 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:51:27 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:51:27 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:51:27 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:51:27 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:51:27 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:51:27 +02:00:     | ^
+2025-06-23 13:51:27 +02:00:   7 |
+2025-06-23 13:51:27 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:51:27 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:51:27 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:51:27 +02:00: Import trace for requested module:
+2025-06-23 13:51:27 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:51:27 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:51:27 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:51:27 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:51:27 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:51:44 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:51:44 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:51:44 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:51:44 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:51:44 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:51:44 +02:00:     | ^
+2025-06-23 13:51:44 +02:00:   7 |
+2025-06-23 13:51:44 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:51:44 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:51:44 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:51:44 +02:00: Import trace for requested module:
+2025-06-23 13:51:44 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:51:44 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:51:44 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:51:44 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:51:44 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:52:00 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:52:00 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:52:00 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:52:00 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:52:00 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:52:00 +02:00:     | ^
+2025-06-23 13:52:00 +02:00:   7 |
+2025-06-23 13:52:00 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:52:00 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:52:00 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:52:00 +02:00: Import trace for requested module:
+2025-06-23 13:52:00 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:52:00 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:52:00 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:52:00 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:52:00 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:52:14 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:52:14 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:52:14 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:52:14 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:52:14 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:52:14 +02:00:     | ^
+2025-06-23 13:52:14 +02:00:   7 |
+2025-06-23 13:52:14 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:52:14 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:52:14 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:52:14 +02:00: Import trace for requested module:
+2025-06-23 13:52:14 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:52:14 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:52:14 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:52:14 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:52:14 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:52:29 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:52:29 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:52:29 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:52:29 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:52:29 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:52:29 +02:00:     | ^
+2025-06-23 13:52:29 +02:00:   7 |
+2025-06-23 13:52:29 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:52:29 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:52:29 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:52:29 +02:00: Import trace for requested module:
+2025-06-23 13:52:29 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:52:29 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:52:29 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:52:29 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:52:29 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:52:43 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:52:43 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:52:43 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:52:43 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:52:43 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:52:43 +02:00:     | ^
+2025-06-23 13:52:43 +02:00:   7 |
+2025-06-23 13:52:43 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:52:43 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:52:43 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:52:43 +02:00: Import trace for requested module:
+2025-06-23 13:52:43 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:52:43 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:52:43 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:52:43 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:52:43 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:52:52 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:52:52 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:52:52 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:52:52 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:52:52 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:52:52 +02:00:     | ^
+2025-06-23 13:52:52 +02:00:   7 |
+2025-06-23 13:52:52 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:52:52 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:52:52 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:52:52 +02:00: Import trace for requested module:
+2025-06-23 13:52:52 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:52:52 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:52:52 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:52:52 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:52:52 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:52:53 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:52:53 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:52:53 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:52:53 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:52:53 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:52:53 +02:00:     | ^
+2025-06-23 13:52:53 +02:00:   7 |
+2025-06-23 13:52:53 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:52:53 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:52:53 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:52:53 +02:00: Import trace for requested module:
+2025-06-23 13:52:53 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:52:53 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:52:53 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:52:53 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:52:53 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:53:48 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:53:48 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:53:48 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:53:48 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:53:48 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:53:48 +02:00:     | ^
+2025-06-23 13:53:48 +02:00:   7 |
+2025-06-23 13:53:48 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:53:48 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:53:48 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:53:48 +02:00: Import trace for requested module:
+2025-06-23 13:53:48 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:53:48 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:53:48 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:53:48 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:53:48 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:54:38 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:54:38 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:54:38 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:54:38 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:54:38 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:54:38 +02:00:     | ^
+2025-06-23 13:54:38 +02:00:   7 |
+2025-06-23 13:54:38 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:54:38 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:54:38 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:54:38 +02:00: Import trace for requested module:
+2025-06-23 13:54:38 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:54:38 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:54:38 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:54:38 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:54:38 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:54:40 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:54:40 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:54:40 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:54:40 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:54:40 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:54:40 +02:00:     | ^
+2025-06-23 13:54:40 +02:00:   7 |
+2025-06-23 13:54:40 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:54:40 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:54:40 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:54:40 +02:00: Import trace for requested module:
+2025-06-23 13:54:40 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:54:40 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:54:40 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:54:40 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:54:40 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:54:55 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:54:55 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:54:55 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:54:55 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:54:55 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:54:55 +02:00:     | ^
+2025-06-23 13:54:55 +02:00:   7 |
+2025-06-23 13:54:55 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:54:55 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:54:55 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:54:55 +02:00: Import trace for requested module:
+2025-06-23 13:54:55 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:54:55 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:54:55 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:54:55 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:54:55 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:55:09 +02:00:  [31m[1m⨯[22m[39m ../../node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.52.0_babel-plugin-macros@3.1.0_react-_b7be479e30050347a0a99f4e0c60c694/node_modules/next/dist/lib/require-instrumentation-client.js:10:1
+2025-06-23 13:55:09 +02:00: [31m[1mModule not found[22m[39m: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/package.json (directory description file): SyntaxError: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/package.json (directory description file): SyntaxError: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/package.json (directory description file): SyntaxError: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/package.json (directory description file): SyntaxError: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/package.json (directory description file): SyntaxError: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/package.json (directory description file): SyntaxError: Unexpected end of JSON input
+2025-06-23 13:55:09 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:55:09 +02:00: Import trace for requested module:
+2025-06-23 13:55:09 +02:00: ../../node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.52.0_babel-plugin-macros@3.1.0_react-_b7be479e30050347a0a99f4e0c60c694/node_modules/next/dist/client/app-next-dev.js
+2025-06-23 13:55:11 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:55:11 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:55:11 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:55:11 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:55:11 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:55:11 +02:00:     | ^
+2025-06-23 13:55:11 +02:00:   7 |
+2025-06-23 13:55:11 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:55:11 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:55:11 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:55:11 +02:00: Import trace for requested module:
+2025-06-23 13:55:11 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:55:11 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:55:11 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:55:11 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:55:11 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:55:58 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:55:58 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:55:58 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:55:58 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:55:58 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:55:58 +02:00:     | ^
+2025-06-23 13:55:58 +02:00:   7 |
+2025-06-23 13:55:58 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:55:58 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:55:58 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:55:58 +02:00: Import trace for requested module:
+2025-06-23 13:55:58 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:55:58 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:55:58 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:55:58 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:55:58 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:56:31 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 13:56:31 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 13:56:31 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:56:31 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 13:56:31 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 13:56:31 +02:00:     | ^
+2025-06-23 13:56:31 +02:00:   7 |
+2025-06-23 13:56:31 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 13:56:31 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 13:56:31 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:56:31 +02:00: Import trace for requested module:
+2025-06-23 13:56:31 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:56:31 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:56:31 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:56:31 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:56:31 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:56:45 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 13:56:45 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/Fretboard3D.js[39m'
+2025-06-23 13:56:45 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:56:45 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 13:56:45 +02:00: > 6 | import { Fretboard3D } from './components/Fretboard3D.js';
+2025-06-23 13:56:45 +02:00:     | ^
+2025-06-23 13:56:45 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 13:56:45 +02:00:   8 | import { MockExercise, FretboardNote } from './types/fretboard.js';
+2025-06-23 13:56:45 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 13:56:45 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:56:45 +02:00: Import trace for requested module:
+2025-06-23 13:56:45 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:56:45 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:56:45 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:56:45 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:56:45 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:56:59 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 13:56:59 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/Fretboard3D.js[39m'
+2025-06-23 13:56:59 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:56:59 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 13:56:59 +02:00: > 6 | import { Fretboard3D } from './components/Fretboard3D.js';
+2025-06-23 13:56:59 +02:00:     | ^
+2025-06-23 13:56:59 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 13:56:59 +02:00:   8 | import type { FretboardNote, MockExercise } from './types/fretboard.js';
+2025-06-23 13:56:59 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 13:56:59 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:56:59 +02:00: Import trace for requested module:
+2025-06-23 13:56:59 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:56:59 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:56:59 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:56:59 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:56:59 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:57:28 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 13:57:28 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/Fretboard3D.js[39m'
+2025-06-23 13:57:28 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:57:28 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 13:57:28 +02:00: > 6 | import { Fretboard3D } from './components/Fretboard3D.js';
+2025-06-23 13:57:28 +02:00:     | ^
+2025-06-23 13:57:28 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 13:57:28 +02:00:   8 | import type { FretboardNote, MockExercise } from './types/fretboard.js';
+2025-06-23 13:57:28 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 13:57:28 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:57:28 +02:00: Import trace for requested module:
+2025-06-23 13:57:28 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:57:28 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:57:28 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:57:28 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:57:28 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:57:48 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 13:57:48 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/Fretboard3D.js[39m'
+2025-06-23 13:57:48 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:57:48 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 13:57:48 +02:00: > 6 | import { Fretboard3D } from './components/Fretboard3D.js';
+2025-06-23 13:57:48 +02:00:     | ^
+2025-06-23 13:57:48 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 13:57:48 +02:00:   8 | import type { FretboardNote, MockExercise } from './types/fretboard.js';
+2025-06-23 13:57:48 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 13:57:48 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:57:48 +02:00: Import trace for requested module:
+2025-06-23 13:57:48 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:57:48 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:57:48 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:57:48 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:57:48 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:59:21 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 13:59:21 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/Fretboard3D.js[39m'
+2025-06-23 13:59:21 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:59:21 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 13:59:21 +02:00: > 6 | import { Fretboard3D } from './components/Fretboard3D.js';
+2025-06-23 13:59:21 +02:00:     | ^
+2025-06-23 13:59:21 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 13:59:21 +02:00:   8 | import type { FretboardNote, MockExercise } from './types/fretboard.js';
+2025-06-23 13:59:21 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 13:59:21 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:59:21 +02:00: Import trace for requested module:
+2025-06-23 13:59:21 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:59:21 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:59:21 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:59:21 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:59:21 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 13:59:36 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 13:59:36 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/Fretboard3D.js[39m'
+2025-06-23 13:59:36 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 13:59:36 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 13:59:36 +02:00: > 6 | import { Fretboard3D } from './components/Fretboard3D.js';
+2025-06-23 13:59:36 +02:00:     | ^
+2025-06-23 13:59:36 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 13:59:36 +02:00:   8 | import type { FretboardNote, MockExercise } from './types/fretboard.js';
+2025-06-23 13:59:36 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 13:59:36 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 13:59:36 +02:00: Import trace for requested module:
+2025-06-23 13:59:36 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 13:59:36 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 13:59:36 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 13:59:36 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 13:59:36 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 14:00:01 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 14:00:01 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/Fretboard3D.js[39m'
+2025-06-23 14:00:01 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 14:00:01 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 14:00:01 +02:00: > 6 | import { Fretboard3D } from './components/Fretboard3D.js';
+2025-06-23 14:00:01 +02:00:     | ^
+2025-06-23 14:00:01 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 14:00:01 +02:00:   8 | import type { FretboardNote, MockExercise } from './types/fretboard.js';
+2025-06-23 14:00:01 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 14:00:01 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 14:00:01 +02:00: Import trace for requested module:
+2025-06-23 14:00:01 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 14:00:01 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 14:00:01 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 14:00:01 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 14:00:01 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 14:08:49 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 14:08:49 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/Fretboard3D.js[39m'
+2025-06-23 14:08:49 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 14:08:49 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 14:08:49 +02:00: > 6 | import { Fretboard3D } from './components/Fretboard3D.js';
+2025-06-23 14:08:49 +02:00:     | ^
+2025-06-23 14:08:49 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 14:08:49 +02:00:   8 | import type { FretboardNote, MockExercise } from './types/fretboard.js';
+2025-06-23 14:08:49 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 14:08:49 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 14:08:49 +02:00: Import trace for requested module:
+2025-06-23 14:08:49 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 14:08:49 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 14:08:49 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 14:08:49 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 14:08:49 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 14:08:50 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 14:08:50 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/Fretboard3D.js[39m'
+2025-06-23 14:08:50 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 14:08:50 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 14:08:50 +02:00: > 6 | import { Fretboard3D } from './components/Fretboard3D.js';
+2025-06-23 14:08:50 +02:00:     | ^
+2025-06-23 14:08:50 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 14:08:50 +02:00:   8 | import type { FretboardNote, MockExercise } from './types/fretboard.js';
+2025-06-23 14:08:50 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 14:08:50 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 14:08:50 +02:00: Import trace for requested module:
+2025-06-23 14:08:50 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 14:08:50 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 14:08:50 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 14:08:50 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 14:08:50 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 14:14:17 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 14:14:17 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/Fretboard3D.js[39m'
+2025-06-23 14:14:17 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 14:14:17 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 14:14:17 +02:00: > 6 | import { Fretboard3D } from './components/Fretboard3D.js';
+2025-06-23 14:14:17 +02:00:     | ^
+2025-06-23 14:14:17 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 14:14:17 +02:00:   8 | import type { FretboardNote, MockExercise } from './types/fretboard.js';
+2025-06-23 14:14:17 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 14:14:17 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 14:14:17 +02:00: Import trace for requested module:
+2025-06-23 14:14:17 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 14:14:17 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 14:14:17 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 14:14:17 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 14:14:17 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 14:20:40 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 14:20:40 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/Fretboard3D.js[39m'
+2025-06-23 14:20:40 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 14:20:40 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 14:20:40 +02:00: > 6 | import { Fretboard3D } from './components/Fretboard3D.js';
+2025-06-23 14:20:40 +02:00:     | ^
+2025-06-23 14:20:40 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 14:20:40 +02:00:   8 | import type { FretboardNote, MockExercise } from './types/fretboard.js';
+2025-06-23 14:20:40 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 14:20:40 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 14:20:40 +02:00: Import trace for requested module:
+2025-06-23 14:20:40 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 14:20:40 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 14:20:40 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 14:20:40 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 14:20:40 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 14:24:06 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 14:24:06 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/Fretboard3D.js[39m'
+2025-06-23 14:24:06 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 14:24:06 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 14:24:06 +02:00: > 6 | import { Fretboard3D } from './components/Fretboard3D.js';
+2025-06-23 14:24:06 +02:00:     | ^
+2025-06-23 14:24:06 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 14:24:06 +02:00:   8 | import type { FretboardNote, MockExercise } from './types/fretboard.js';
+2025-06-23 14:24:06 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 14:24:06 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 14:24:06 +02:00: Import trace for requested module:
+2025-06-23 14:24:06 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 14:24:06 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 14:24:06 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 14:24:06 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 14:24:06 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 14:24:07 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 14:24:07 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/Fretboard3D.js[39m'
+2025-06-23 14:24:07 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 14:24:07 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 14:24:07 +02:00: > 6 | import { Fretboard3D } from './components/Fretboard3D.js';
+2025-06-23 14:24:07 +02:00:     | ^
+2025-06-23 14:24:07 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 14:24:07 +02:00:   8 | import type { FretboardNote, MockExercise } from './types/fretboard.js';
+2025-06-23 14:24:07 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 14:24:07 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 14:24:07 +02:00: Import trace for requested module:
+2025-06-23 14:24:07 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 14:24:07 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 14:24:07 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 14:24:07 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 14:24:07 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 14:24:25 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 14:24:25 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/index.js[39m'
+2025-06-23 14:24:25 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 14:24:25 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 14:24:25 +02:00: > 6 | import { Fretboard3D } from './components/index.js';
+2025-06-23 14:24:25 +02:00:     | ^
+2025-06-23 14:24:25 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 14:24:25 +02:00:   8 | import type { FretboardNote, MockExercise } from './types/fretboard.js';
+2025-06-23 14:24:25 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 14:24:25 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 14:24:25 +02:00: Import trace for requested module:
+2025-06-23 14:24:25 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 14:24:25 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 14:24:25 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 14:24:25 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 14:24:25 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 14:32:49 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/FretboardVisualizer.tsx:6:1
+2025-06-23 14:32:49 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./components/index.js[39m'
+2025-06-23 14:32:49 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 14:32:49 +02:00:   5 | import { useQuery } from '@tanstack/react-query';
+2025-06-23 14:32:49 +02:00: > 6 | import { Fretboard3D } from './components/index.js';
+2025-06-23 14:32:49 +02:00:     | ^
+2025-06-23 14:32:49 +02:00:   7 | import { useFretboardAnimation } from './hooks/useFretboardAnimation.js';
+2025-06-23 14:32:49 +02:00:   8 | import type { FretboardNote, MockExercise } from './types/fretboard.js';
+2025-06-23 14:32:49 +02:00:   9 | import { DEFAULT_FRETBOARD_DIMENSIONS } from './utils/fretboardGeometry.js';
+2025-06-23 14:32:49 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 14:32:49 +02:00: Import trace for requested module:
+2025-06-23 14:32:49 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 14:32:49 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 14:32:49 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 14:32:49 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 14:32:49 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 15:23:10 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 15:23:10 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 15:23:10 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 15:23:10 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 15:23:10 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 15:23:10 +02:00:     | ^
+2025-06-23 15:23:10 +02:00:   7 |
+2025-06-23 15:23:10 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 15:23:10 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 15:23:10 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 15:23:10 +02:00: Import trace for requested module:
+2025-06-23 15:23:10 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 15:23:10 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 15:23:10 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 15:23:10 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 15:23:10 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 15:23:12 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 15:23:12 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 15:23:12 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 15:23:12 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 15:23:12 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 15:23:12 +02:00:     | ^
+2025-06-23 15:23:12 +02:00:   7 |
+2025-06-23 15:23:12 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 15:23:12 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 15:23:12 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 15:23:12 +02:00: Import trace for requested module:
+2025-06-23 15:23:12 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 15:23:12 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 15:23:12 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 15:23:12 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 15:23:12 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 15:23:12 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:6:1
+2025-06-23 15:23:12 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../utils/noteUtils.js[39m'
+2025-06-23 15:23:12 +02:00:   4 | import { motion } from 'framer-motion';
+2025-06-23 15:23:12 +02:00:   5 | import type { FretboardNote } from '../types/fretboard.js';
+2025-06-23 15:23:12 +02:00: > 6 | import { calculateNoteColor } from '../utils/noteUtils.js';
+2025-06-23 15:23:12 +02:00:     | ^
+2025-06-23 15:23:12 +02:00:   7 |
+2025-06-23 15:23:12 +02:00:   8 | const BASS_STRING_CONFIGS = {
+2025-06-23 15:23:12 +02:00:   9 |   4: [1, 2, 3, 4] as const, // Standard 4-string bass: E, A, D, G
+2025-06-23 15:23:12 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 15:23:12 +02:00: Import trace for requested module:
+2025-06-23 15:23:12 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 15:23:12 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 15:23:12 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 15:23:12 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 15:23:12 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 15:23:12 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:4:1
+2025-06-23 15:23:12 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32mmotion/react[39m'
+2025-06-23 15:23:12 +02:00:   2 |
+2025-06-23 15:23:12 +02:00:   3 | import React, { useState } from 'react';
+2025-06-23 15:23:12 +02:00: > 4 | import { motion } from 'motion/react';
+2025-06-23 15:23:12 +02:00:     | ^
+2025-06-23 15:23:12 +02:00:   5 | import { FretboardNote, FretboardDimensions } from '../types';
+2025-06-23 15:23:12 +02:00:   6 | import { BASS_STRING_CONFIGS, FRET_COUNT } from '../utils/fretboardGeometry';
+2025-06-23 15:23:12 +02:00:   7 | import { calculateNoteColor } from '../utils/animationHelpers';
+2025-06-23 15:23:12 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 15:23:12 +02:00: Import trace for requested module:
+2025-06-23 15:23:12 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 15:23:12 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 15:23:12 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 15:23:12 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 15:23:12 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 15:23:20 +02:00:  [31m[1m⨯[22m[39m ./src/shared/components/music/FretboardVisualizer/components/Fretboard3D.tsx:4:1
+2025-06-23 15:23:20 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32mmotion/react[39m'
+2025-06-23 15:23:20 +02:00:   2 |
+2025-06-23 15:23:20 +02:00:   3 | import React, { useState } from 'react';
+2025-06-23 15:23:20 +02:00: > 4 | import { motion } from 'motion/react';
+2025-06-23 15:23:20 +02:00:     | ^
+2025-06-23 15:23:20 +02:00:   5 | import { FretboardNote, FretboardDimensions } from '../types';
+2025-06-23 15:23:20 +02:00:   6 | import { BASS_STRING_CONFIGS, FRET_COUNT } from '../utils/fretboardGeometry';
+2025-06-23 15:23:20 +02:00:   7 | import { calculateNoteColor } from '../utils/animationHelpers';
+2025-06-23 15:23:20 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 15:23:20 +02:00: Import trace for requested module:
+2025-06-23 15:23:20 +02:00: ./src/shared/components/music/FretboardVisualizer/index.tsx
+2025-06-23 15:23:20 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardVisualizerCard.tsx
+2025-06-23 15:23:20 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-06-23 15:23:20 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/index.tsx
+2025-06-23 15:23:20 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-06-23 15:24:30 +02:00:  [31m[1m⨯[22m[39m ./src/domains/user/components/auth/LoginForm.tsx:4:1
+2025-06-23 15:24:30 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m@bassnotion/contracts[39m'
+2025-06-23 15:24:30 +02:00:   2 |
+2025-06-23 15:24:30 +02:00:   3 | import { zodResolver } from '@hookform/resolvers/zod';
+2025-06-23 15:24:30 +02:00: > 4 | import { loginSchema, type LoginData } from '@bassnotion/contracts';
+2025-06-23 15:24:30 +02:00:     | ^
+2025-06-23 15:24:30 +02:00:   5 | import { Eye, EyeOff, Loader2 } from 'lucide-react';
+2025-06-23 15:24:30 +02:00:   6 | import { useState } from 'react';
+2025-06-23 15:24:30 +02:00:   7 | import { useForm } from 'react-hook-form';
+2025-06-23 15:24:30 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 15:24:34 +02:00:  [31m[1m⨯[22m[39m ./src/domains/user/components/auth/LoginForm.tsx:4:1
+2025-06-23 15:24:34 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m@bassnotion/contracts[39m'
+2025-06-23 15:24:34 +02:00:   2 |
+2025-06-23 15:24:34 +02:00:   3 | import { zodResolver } from '@hookform/resolvers/zod';
+2025-06-23 15:24:34 +02:00: > 4 | import { loginSchema, type LoginData } from '@bassnotion/contracts';
+2025-06-23 15:24:34 +02:00:     | ^
+2025-06-23 15:24:34 +02:00:   5 | import { Eye, EyeOff, Loader2 } from 'lucide-react';
+2025-06-23 15:24:34 +02:00:   6 | import { useState } from 'react';
+2025-06-23 15:24:34 +02:00:   7 | import { useForm } from 'react-hook-form';
+2025-06-23 15:24:34 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 15:24:34 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-06-23 15:24:35 +02:00: <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development-fallback/5.pack.gz_' -> '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development-fallback/5.pack.gz'
+2025-06-23 15:25:36 +02:00:  [31m[1m⨯[22m[39m ./src/domains/user/components/auth/LoginForm.tsx:4:1
+2025-06-23 15:25:36 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m@bassnotion/contracts[39m'
+2025-06-23 15:25:36 +02:00:   2 |
+2025-06-23 15:25:36 +02:00:   3 | import { zodResolver } from '@hookform/resolvers/zod';
+2025-06-23 15:25:36 +02:00: > 4 | import { loginSchema, type LoginData } from '@bassnotion/contracts';
+2025-06-23 15:25:36 +02:00:     | ^
+2025-06-23 15:25:36 +02:00:   5 | import { Eye, EyeOff, Loader2 } from 'lucide-react';
+2025-06-23 15:25:36 +02:00:   6 | import { useState } from 'react';
+2025-06-23 15:25:36 +02:00:   7 | import { useForm } from 'react-hook-form';
+2025-06-23 15:25:36 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-06-23 15:25:44 +02:00:  [31m[1m⨯[22m[39m ./src/domains/user/components/auth/LoginForm.tsx:4:1
+2025-06-23 15:25:44 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m@bassnotion/contracts[39m'
+2025-06-23 15:25:44 +02:00:   2 |
+2025-06-23 15:25:44 +02:00:   3 | import { zodResolver } from '@hookform/resolvers/zod';
+2025-06-23 15:25:44 +02:00: > 4 | import { loginSchema, type LoginData } from '@bassnotion/contracts';
+2025-06-23 15:25:44 +02:00:     | ^
+2025-06-23 15:25:44 +02:00:   5 | import { Eye, EyeOff, Loader2 } from 'lucide-react';
+2025-06-23 15:25:44 +02:00:   6 | import { useState } from 'react';
+2025-06-23 15:25:44 +02:00:   7 | import { useForm } from 'react-hook-form';
+2025-06-23 15:25:44 +02:00: https://nextjs.org/docs/messages/module-not-found

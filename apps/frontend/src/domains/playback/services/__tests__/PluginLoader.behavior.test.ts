@@ -730,16 +730,15 @@ describe('PluginLoader Behavior', () => {
       expect(successful.length).toBeGreaterThan(0);
     });
 
-    it('should queue plugins when at max concurrent loads', async () => {
-      // Mock slow loading to test queuing
-      mockEnv.globalObj.import = vi
-        .fn()
-        .mockImplementation(
-          () =>
-            new Promise((resolve) =>
-              setTimeout(() => resolve(createMockModule('slow')), 100),
-            ),
-        );
+    it('should handle concurrent loading limitations', async () => {
+      // Mock slow loading plugins with actual delays
+      mockEnv.globalObj.import = vi.fn().mockImplementation(
+        (_url) =>
+          new Promise((resolve) =>
+            // Make each plugin load take at least 100ms to properly test concurrent limiting
+            setTimeout(() => resolve(createMockModule('slow')), 100),
+          ),
+      );
 
       const urls = Array(5)
         .fill(0)
@@ -750,11 +749,15 @@ describe('PluginLoader Behavior', () => {
         urls.map((url) => pluginLoader.loadPlugin(url)),
       );
       const endTime = Date.now();
+      const totalTime = endTime - startTime;
 
       results.forEach((result) => expectPluginLoadResult(result, true));
 
       // Should take some time due to queuing
-      expect(endTime - startTime).toBeGreaterThan(50);
+      // With maxConcurrentLoads = 3, and 5 plugins taking 100ms each:
+      // First 3 load concurrently (100ms), then 2 more load (another 100ms)
+      // Total should be at least 150ms (accounting for some overhead)
+      expect(totalTime).toBeGreaterThan(150);
     });
 
     it('should handle concurrent loading of same plugin', async () => {

@@ -18,7 +18,28 @@ import {
 } from '../GarbageCollectionOptimizer.js';
 
 // Test Environment Setup
+let originalGlobals: {
+  performance?: any;
+  PerformanceObserver?: any;
+  requestIdleCallback?: any;
+  requestAnimationFrame?: any;
+  document?: any;
+  window?: any;
+  setInterval?: any;
+} = {};
+
 const setupTestEnvironment = () => {
+  // CRITICAL: Store original global objects for restoration
+  originalGlobals = {
+    performance: (global as any).performance,
+    PerformanceObserver: (global as any).PerformanceObserver,
+    requestIdleCallback: (global as any).requestIdleCallback,
+    requestAnimationFrame: (global as any).requestAnimationFrame,
+    document: (global as any).document,
+    window: (global as any).window,
+    setInterval: global.setInterval,
+  };
+
   // Setup proper spies before other mocks
   const setIntervalSpy = vi.fn().mockImplementation((callback, delay) => {
     return setTimeout(callback, delay) as any;
@@ -67,23 +88,58 @@ const setupTestEnvironment = () => {
       return 1;
     });
 
-  // Mock document for event listeners
-  (global as any).document = {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-  };
+  // CRITICAL: Instead of completely replacing document, extend the original
+  // This preserves JSDOM's document.body and other essential properties
+  if (originalGlobals.document) {
+    (global as any).document = {
+      ...originalGlobals.document,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+  }
 
-  (global as any).window = {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    setInterval: setIntervalSpy,
-    setTimeout: global.setTimeout,
-    clearTimeout: global.clearTimeout,
-    clearInterval: global.clearInterval,
-  };
+  // CRITICAL: Instead of completely replacing window, extend the original
+  if (originalGlobals.window) {
+    (global as any).window = {
+      ...originalGlobals.window,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      setInterval: setIntervalSpy,
+      setTimeout: global.setTimeout,
+      clearTimeout: global.clearTimeout,
+      clearInterval: global.clearInterval,
+    };
+  }
 
   // Also ensure window.setInterval is the same spy for implementation usage
   (globalThis as any).window = (global as any).window;
+};
+
+const restoreTestEnvironment = () => {
+  // CRITICAL: Restore all original global objects to prevent DOM pollution
+  if (originalGlobals.performance) {
+    (global as any).performance = originalGlobals.performance;
+  }
+  if (originalGlobals.PerformanceObserver) {
+    (global as any).PerformanceObserver = originalGlobals.PerformanceObserver;
+  }
+  if (originalGlobals.requestIdleCallback) {
+    (global as any).requestIdleCallback = originalGlobals.requestIdleCallback;
+  }
+  if (originalGlobals.requestAnimationFrame) {
+    (global as any).requestAnimationFrame =
+      originalGlobals.requestAnimationFrame;
+  }
+  if (originalGlobals.document) {
+    (global as any).document = originalGlobals.document;
+  }
+  if (originalGlobals.window) {
+    (global as any).window = originalGlobals.window;
+    (globalThis as any).window = originalGlobals.window;
+  }
+  if (originalGlobals.setInterval) {
+    global.setInterval = originalGlobals.setInterval;
+  }
 };
 
 // Scenario Builders
@@ -281,6 +337,7 @@ describe('GarbageCollectionOptimizer Behaviors', () => {
   let optimizer: GarbageCollectionOptimizer;
 
   beforeEach(() => {
+    vi.useRealTimers(); // Clear any existing timer mocks first
     vi.useFakeTimers();
     setupTestEnvironment();
     // Clear singleton instance
@@ -295,6 +352,7 @@ describe('GarbageCollectionOptimizer Behaviors', () => {
     vi.useRealTimers();
     vi.clearAllMocks();
     vi.clearAllTimers();
+    restoreTestEnvironment();
   });
 
   describe('Initialization Behaviors', () => {
@@ -730,15 +788,26 @@ describe('GarbageCollectionOptimizer Behaviors', () => {
 
   describe('Error Handling Behaviors', () => {
     test('should handle PerformanceObserver unavailability', () => {
+      // Store original for restoration
+      const originalPerformanceObserver = (global as any).PerformanceObserver;
+
       delete (global as any).PerformanceObserver;
 
       const config = createGCConfig({ enablePerformanceMonitoring: true });
       expect(() =>
         GarbageCollectionOptimizer.getInstance(config),
       ).not.toThrow();
+
+      // CRITICAL: Restore original to prevent global pollution
+      if (originalPerformanceObserver) {
+        (global as any).PerformanceObserver = originalPerformanceObserver;
+      }
     });
 
     test('should handle requestIdleCallback unavailability', async () => {
+      // Store original for restoration
+      const originalRequestIdleCallback = (global as any).requestIdleCallback;
+
       delete (global as any).requestIdleCallback;
 
       optimizer.updateConfig({ strategy: GCStrategy.BALANCED });
@@ -746,9 +815,17 @@ describe('GarbageCollectionOptimizer Behaviors', () => {
       expect(() =>
         optimizer.optimizedGarbageCollection(GCTrigger.IDLE_DETECTION),
       ).not.toThrow();
+
+      // CRITICAL: Restore original to prevent global pollution
+      if (originalRequestIdleCallback) {
+        (global as any).requestIdleCallback = originalRequestIdleCallback;
+      }
     });
 
     test('should handle global gc function absence', async () => {
+      // Store original for restoration
+      const originalGc = (global as any).gc;
+
       // Ensure global.gc is not available
       delete (global as any).gc;
 
@@ -757,16 +834,33 @@ describe('GarbageCollectionOptimizer Behaviors', () => {
       expect(() =>
         optimizer.optimizedGarbageCollection(GCTrigger.MANUAL),
       ).not.toThrow();
+
+      // CRITICAL: Restore original to prevent global pollution
+      if (originalGc) {
+        (global as any).gc = originalGc;
+      }
     });
 
     test('should handle performance.memory unavailability', () => {
+      // Store original for restoration
+      const originalPerformanceMemory = (global as any).performance.memory;
+
       delete (global as any).performance.memory;
 
       expect(() => optimizer.getMetrics()).not.toThrow();
       expect(optimizer.getMetrics().memoryFreed).toBe(0);
+
+      // CRITICAL: Restore original to prevent global pollution
+      if (originalPerformanceMemory) {
+        (global as any).performance.memory = originalPerformanceMemory;
+      }
     });
 
     test('should handle event listener setup failures gracefully', () => {
+      // Store original method for restoration
+      const originalAddEventListener = (global as any).document
+        .addEventListener;
+
       (global as any).document.addEventListener = vi
         .fn()
         .mockImplementation(() => {
@@ -774,6 +868,9 @@ describe('GarbageCollectionOptimizer Behaviors', () => {
         });
 
       expect(() => GarbageCollectionOptimizer.getInstance()).not.toThrow();
+
+      // CRITICAL: Restore original method to prevent DOM pollution
+      (global as any).document.addEventListener = originalAddEventListener;
     });
   });
 
@@ -796,6 +893,10 @@ describe('GarbageCollectionOptimizer Behaviors', () => {
     });
 
     test('should remove event listeners on destroy', () => {
+      // Store original method for restoration
+      const originalRemoveEventListener = (global as any).document
+        .removeEventListener;
+
       const removeEventListenerSpy = vi.fn();
       (global as any).document.removeEventListener = removeEventListenerSpy;
 
@@ -803,6 +904,10 @@ describe('GarbageCollectionOptimizer Behaviors', () => {
 
       // Should handle cleanup without errors
       expect(() => optimizer.destroy()).not.toThrow();
+
+      // CRITICAL: Restore original method to prevent DOM pollution
+      (global as any).document.removeEventListener =
+        originalRemoveEventListener;
     });
 
     test('should handle destroy when already destroyed', () => {

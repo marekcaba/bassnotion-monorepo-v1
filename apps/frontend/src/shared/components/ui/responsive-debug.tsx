@@ -45,6 +45,7 @@ export function ResponsiveDebug({
   }, []);
 
   // Only show in development or when explicitly enabled
+  // TODO: Review non-null assertion - consider null safety
   if (!showAlways && process.env.NODE_ENV === 'production') {
     return null;
   }

@@ -185,6 +185,7 @@ export abstract class BaseAudioPlugin implements AudioPlugin {
     value: unknown,
   ): Promise<void> {
     const parameter = this._parameters.get(parameterId);
+    // TODO: Review non-null assertion - consider null safety
     if (!parameter) {
       throw new Error(`Parameter ${parameterId} not found`);
     }
@@ -259,6 +260,7 @@ export abstract class BaseAudioPlugin implements AudioPlugin {
     event: K,
     handler: PluginEvents[K],
   ): () => void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this._eventHandlers.has(event)) {
       this._eventHandlers.set(event, new Set());
     }
@@ -384,6 +386,7 @@ export abstract class BaseAudioPlugin implements AudioPlugin {
       case 'enum':
         if (
           parameter.options &&
+          // TODO: Review non-null assertion - consider null safety
           !parameter.options.some((opt) => opt.value === value)
         ) {
           throw new Error(

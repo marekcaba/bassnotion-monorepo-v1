@@ -1,4 +1,3 @@
-import type { User } from '@bassnotion/contracts';
 import {
   Controller,
   Post,
@@ -11,9 +10,14 @@ import {
   Req,
   Res,
   Query,
+  forwardRef,
+  Inject,
+  HttpException,
+  UsePipes,
 } from '@nestjs/common';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 
+import type { User } from '@bassnotion/contracts';
 import { AuthService } from './auth.service.js';
 import { SignInDto } from './dto/sign-in.dto.js';
 import { SignUpDto } from './dto/sign-up.dto.js';
@@ -23,78 +27,107 @@ import { DatabaseService } from '../../../infrastructure/database/database.servi
 import { ApiResponse } from '../../../shared/types/api.types.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { PasswordSecurityService } from './services/password-security.service.js';
+import { ZodValidationPipe } from '../../../shared/pipes/zod-validation.pipe.js';
+import { signUpSchema, signInSchema } from '@bassnotion/contracts';
 
 @Controller('auth')
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
   constructor(
+    @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
+    @Inject(forwardRef(() => DatabaseService))
     private readonly db: DatabaseService,
+    @Inject(forwardRef(() => PasswordSecurityService))
     private readonly passwordSecurity: PasswordSecurityService,
   ) {
     this.logger.debug('AuthController constructor called');
 
-    // Defensive check for test environment
+    // Defensive check for dependency injection issues
     if (!this.authService) {
-      this.logger.error('AuthService is undefined in constructor!');
+      this.logger.error('AuthService is undefined - DI failure detected');
     }
   }
 
+  // ==================== DEFENSIVE PROGRAMMING HELPER ====================
+
+  private checkServiceAvailability(): boolean {
+    if (!this.authService) {
+      this.logger.error('AuthService is undefined - DI failure detected');
+      return false;
+    }
+    return true;
+  }
+
+  private getMockAuthResponse(): AuthResponse {
+    return {
+      success: false,
+      message: 'Service temporarily unavailable - please try again later',
+      error: {
+        code: 'SERVICE_UNAVAILABLE',
+        details:
+          'Authentication service is currently unavailable due to system maintenance',
+      },
+    };
+  }
+
   @Post('signup')
+  @UsePipes(new ZodValidationPipe(signUpSchema))
   @HttpCode(HttpStatus.CREATED)
   async signup(@Body() signUpDto: SignUpDto): Promise<AuthResponse> {
     this.logger.debug(`Signup request received for email: ${signUpDto.email}`);
 
-    // Defensive check for test environment
-    if (!this.authService) {
-      this.logger.error('AuthService is undefined in signup method!');
-      return {
-        success: false,
-        message: 'Authentication service unavailable',
-        error: {
-          code: 'SERVICE_UNAVAILABLE',
-          details: 'AuthService is not properly injected',
-        },
-      };
+    // Defensive programming: handle DI failure gracefully
+    if (!this.checkServiceAvailability()) {
+      this.logger.warn(
+        'Returning mock response due to AuthService unavailability',
+      );
+      const mockResponse = this.getMockAuthResponse();
+      throw new HttpException(mockResponse, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
-    return this.authService.registerUser(signUpDto);
+    const result = await this.authService.registerUser(signUpDto);
+
+    // Return appropriate HTTP status codes based on the result
+    if (!result.success) {
+      let statusCode = HttpStatus.BAD_REQUEST; // Default to 400
+
+      // Map specific error codes to appropriate HTTP status codes
+      if (result.error?.code === 'USER_EXISTS') {
+        statusCode = HttpStatus.CONFLICT; // 409
+      } else if (result.error?.code === 'SERVICE_UNAVAILABLE') {
+        statusCode = HttpStatus.SERVICE_UNAVAILABLE; // 503
+      } else if (
+        result.error?.code === 'COMPROMISED_PASSWORD' ||
+        result.error?.code === 'WEAK_PASSWORD'
+      ) {
+        statusCode = HttpStatus.BAD_REQUEST; // 400
+      }
+
+      throw new HttpException(result, statusCode);
+    }
+
+    // Success case - return the result directly
+    return result;
   }
 
   @Post('signin')
+  @UsePipes(new ZodValidationPipe(signInSchema))
   @HttpCode(HttpStatus.OK)
   async signin(
     @Body() signInDto: SignInDto,
     @Req() request: FastifyRequest,
   ): Promise<AuthResponse> {
-    // Validate input to prevent crashes from malformed requests
-    if (!signInDto || !signInDto.email || !signInDto.password) {
-      this.logger.warn(`Invalid signin request: missing email or password`);
-      return {
-        success: false,
-        message: 'Email and password are required',
-        error: {
-          code: 'INVALID_INPUT',
-          details: 'Missing email or password',
-        },
-      };
-    }
-
     this.logger.debug(`Signin request received for email: ${signInDto.email}`);
 
-    // Defensive check for test environment
-    if (!this.authService) {
-      this.logger.error('AuthService is undefined in signin method!');
-      return {
-        success: false,
-        message: 'Authentication service unavailable',
-        error: {
-          code: 'SERVICE_UNAVAILABLE',
-          details: 'AuthService is not properly injected',
-        },
-      };
-    }
+    // Temporarily disable defensive programming to see actual error
+    // if (!this.checkServiceAvailability()) {
+    //   this.logger.warn(
+    //     'Returning mock response due to AuthService unavailability',
+    //   );
+    //   return this.getMockAuthResponse();
+    // }
 
     // Extract client IP address
     const clientIp = this.extractClientIp(request);
@@ -106,7 +139,45 @@ export class AuthController {
       `Login attempt from IP: ${clientIp}, User-Agent: ${userAgent}`,
     );
 
-    return this.authService.authenticateUser(signInDto, clientIp, userAgent);
+    const result = await this.authService.authenticateUser(
+      signInDto,
+      clientIp,
+      userAgent,
+    );
+
+    // Handle authentication errors with appropriate HTTP status codes
+    if (!result.success) {
+      let statusCode = HttpStatus.UNAUTHORIZED; // Default to 401
+
+      // Map specific error messages to appropriate HTTP status codes
+      const errorMessage =
+        typeof result.error === 'string' ? result.error : result.message;
+
+      if (
+        errorMessage.includes('Too many login attempts') ||
+        errorMessage.includes('rate limit')
+      ) {
+        statusCode = HttpStatus.TOO_MANY_REQUESTS; // 429
+      } else if (
+        errorMessage.includes('Account is temporarily locked') ||
+        errorMessage.includes('account locked') ||
+        errorMessage.includes('Account locked')
+      ) {
+        statusCode = HttpStatus.LOCKED; // 423
+      } else if (
+        errorMessage.includes('Invalid') ||
+        errorMessage.includes('Authentication failed')
+      ) {
+        statusCode = HttpStatus.UNAUTHORIZED; // 401
+      } else if (result.message === 'An unexpected error occurred') {
+        statusCode = HttpStatus.INTERNAL_SERVER_ERROR; // 500
+      }
+
+      throw new HttpException(result, statusCode);
+    }
+
+    // Success case - return the result directly
+    return result;
   }
 
   @Get('me')
@@ -115,6 +186,17 @@ export class AuthController {
   async getCurrentUser(): Promise<User> {
     this.logger.debug('Get current user request received');
     return this.authService.getCurrentUser();
+  }
+
+  @Get('profile')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getProfile(
+    @Req() request: FastifyRequest & { user: any },
+  ): Promise<User> {
+    this.logger.debug('Get profile request received');
+    // Return the user from the request (set by AuthGuard)
+    return request.user;
   }
 
   @Get('google')

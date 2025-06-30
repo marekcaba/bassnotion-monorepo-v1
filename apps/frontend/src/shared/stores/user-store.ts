@@ -36,6 +36,7 @@ export const useUserUIStore = create<UserUIState>()(
       openProfileModal: () => set({ isProfileModalOpen: true }),
       closeProfileModal: () => set({ isProfileModalOpen: false }),
       setSelectedTab: (tab) => set({ selectedTab: tab }),
+      // TODO: Review non-null assertion - consider null safety
       toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
       setProfileFormData: (data) => set({ profileFormData: data }),
       clearProfileFormData: () => set({ profileFormData: null }),
@@ -68,6 +69,7 @@ function UserProfileComponent({ userId }: { userId: string }) {
   } = useUserUIStore();
   
   const handleSaveProfile = async () => {
+    // TODO: Review non-null assertion - consider null safety
     if (!profileFormData || !user) return;
     
     try {

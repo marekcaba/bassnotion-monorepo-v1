@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
 import { DatabaseService } from '../../../../infrastructure/database/database.service.js';
 
 export interface LoginAttempt {
@@ -41,13 +41,17 @@ export class AuthSecurityService {
     { attempts: 10, duration: 24 * 60 * 60 * 1000 }, // 24 hours after 10 attempts
   ];
 
-  constructor(private readonly db: DatabaseService) {
-    // Defensive check for DatabaseService
-    if (!this.db) {
-      this.logger.error(
-        'DatabaseService is undefined in AuthSecurityService constructor!',
-      );
-    }
+  constructor(
+    @Inject(forwardRef(() => DatabaseService))
+    private readonly db: DatabaseService,
+  ) {
+    console.log('🔧 [AuthSecurityService] Constructor called');
+    console.log('🔧 [AuthSecurityService] DatabaseService:', {
+      exists: !!this.db,
+      type: this.db?.constructor?.name,
+      hasSupabase: !!this.db?.supabase,
+    });
+    // DatabaseService is properly injected - removed faulty defensive check
   }
 
   /**

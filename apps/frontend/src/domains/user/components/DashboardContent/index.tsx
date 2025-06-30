@@ -54,6 +54,7 @@ const extraCards: DashboardCard[] = [
   {
     id: '4',
     title: 'Practice Streak',
+    // TODO: Review non-null assertion - consider null safety
     content: '3 days in a row! Keep it up!',
     color:
       'bg-orange-50 border-orange-200 dark:bg-orange-950/30 dark:border-orange-900',
@@ -68,6 +69,7 @@ const extraCards: DashboardCard[] = [
   {
     id: '6',
     title: 'Achievements',
+    // TODO: Review non-null assertion - consider null safety
     content: '🎸 First Song Completed!',
     color:
       'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-900',
@@ -80,6 +82,7 @@ export function DashboardContent() {
 
   const addRandomCard = () => {
     const availableCards = extraCards.filter(
+      // TODO: Review non-null assertion - consider null safety
       (extraCard) => !cards.find((card) => card.id === extraCard.id),
     );
 
@@ -136,7 +139,8 @@ export function DashboardContent() {
           🔀 Shuffle
         </Button>
         <p className="text-sm text-muted-foreground self-center">
-          Try adding/removing cards to see AutoAnimate in action!
+          // TODO: Review non-null assertion - consider null safety Try
+          adding/removing cards to see AutoAnimate in action!
         </p>
       </div>
 
@@ -179,7 +183,8 @@ export function DashboardContent() {
       {cards.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
           <p>
-            No cards available. Add some cards to see AutoAnimate in action!
+            // TODO: Review non-null assertion - consider null safety No cards
+            available. Add some cards to see AutoAnimate in action!
           </p>
         </div>
       )}

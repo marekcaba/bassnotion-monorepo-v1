@@ -153,6 +153,7 @@ export function useCorePlaybackEngine(
       setError(null);
 
       // Get engine instance
+      // TODO: Review non-null assertion - consider null safety
       if (!engineRef.current) {
         engineRef.current = CorePlaybackEngine.getInstance();
       }
@@ -254,6 +255,7 @@ export function useCorePlaybackEngine(
 
   // Dispose engine
   const dispose = useCallback(async () => {
+    // TODO: Review non-null assertion - consider null safety
     if (!engineRef.current || !isInitialized) return;
 
     try {
@@ -284,22 +286,26 @@ export function useCorePlaybackEngine(
   // Playback controls
   const controls: PlaybackControls = {
     play: useCallback(async () => {
+      // TODO: Review non-null assertion - consider null safety
       if (!engineRef.current || !canPlay) return;
       await engineRef.current.play();
     }, [canPlay]),
 
     pause: useCallback(async () => {
+      // TODO: Review non-null assertion - consider null safety
       if (!engineRef.current || !isInitialized) return;
       await engineRef.current.pause();
     }, [isInitialized]),
 
     stop: useCallback(async () => {
+      // TODO: Review non-null assertion - consider null safety
       if (!engineRef.current || !isInitialized) return;
       await engineRef.current.stop();
     }, [isInitialized]),
 
     setMasterVolume: useCallback(
       (volume: number) => {
+        // TODO: Review non-null assertion - consider null safety
         if (!engineRef.current || !isInitialized) return;
         engineRef.current.setMasterVolume(volume);
       },
@@ -308,6 +314,7 @@ export function useCorePlaybackEngine(
 
     setTempo: useCallback(
       (bpm: number) => {
+        // TODO: Review non-null assertion - consider null safety
         if (!engineRef.current || !isInitialized) return;
         engineRef.current.setTempo(bpm);
       },
@@ -316,6 +323,7 @@ export function useCorePlaybackEngine(
 
     setPitch: useCallback(
       (semitones: number) => {
+        // TODO: Review non-null assertion - consider null safety
         if (!engineRef.current || !isInitialized) return;
         engineRef.current.setPitch(semitones);
       },
@@ -324,6 +332,7 @@ export function useCorePlaybackEngine(
 
     setSwingFactor: useCallback(
       (factor: number) => {
+        // TODO: Review non-null assertion - consider null safety
         if (!engineRef.current || !isInitialized) return;
         updateConfig({ swingFactor: factor });
       },
@@ -332,6 +341,7 @@ export function useCorePlaybackEngine(
 
     registerAudioSource: useCallback(
       async (sourceConfig: AudioSourceConfig) => {
+        // TODO: Review non-null assertion - consider null safety
         if (!engineRef.current || !isInitialized) return;
 
         engineRef.current.registerAudioSource(sourceConfig);
@@ -342,6 +352,7 @@ export function useCorePlaybackEngine(
 
     unregisterAudioSource: useCallback(
       (sourceId: string) => {
+        // TODO: Review non-null assertion - consider null safety
         if (!engineRef.current || !isInitialized) return;
 
         engineRef.current.unregisterAudioSource(sourceId);
@@ -352,6 +363,7 @@ export function useCorePlaybackEngine(
 
     setSourceVolume: useCallback(
       (sourceId: string, volume: number) => {
+        // TODO: Review non-null assertion - consider null safety
         if (!engineRef.current || !isInitialized) return;
 
         engineRef.current.setSourceVolume(sourceId, volume);
@@ -362,6 +374,7 @@ export function useCorePlaybackEngine(
 
     setSourceMute: useCallback(
       (sourceId: string, muted: boolean) => {
+        // TODO: Review non-null assertion - consider null safety
         if (!engineRef.current || !isInitialized) return;
 
         engineRef.current.setSourceMute(sourceId, muted);
@@ -372,6 +385,7 @@ export function useCorePlaybackEngine(
 
     setSourceSolo: useCallback(
       (sourceId: string, solo: boolean) => {
+        // TODO: Review non-null assertion - consider null safety
         if (!engineRef.current || !isInitialized) return;
 
         engineRef.current.setSourceSolo(sourceId, solo);
@@ -383,6 +397,7 @@ export function useCorePlaybackEngine(
 
   // Auto-initialize on mount if enabled
   useEffect(() => {
+    // TODO: Review non-null assertion - consider null safety
     if (autoInitialize && !isInitialized && !isLoading) {
       // Wait for first user interaction to initialize
       const handleFirstInteraction = () => {

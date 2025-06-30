@@ -244,6 +244,7 @@ export class ResourceUsageMonitor extends EventEmitter {
   public static getInstance(
     config?: Partial<MonitoringConfig>,
   ): ResourceUsageMonitor {
+    // TODO: Review non-null assertion - consider null safety
     if (!ResourceUsageMonitor.instance) {
       ResourceUsageMonitor.instance = new ResourceUsageMonitor(config);
     }
@@ -404,6 +405,7 @@ export class ResourceUsageMonitor extends EventEmitter {
   }
 
   public stopMonitoring(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isMonitoring) return;
 
     this.isMonitoring = false;
@@ -469,6 +471,7 @@ export class ResourceUsageMonitor extends EventEmitter {
     usage: number,
   ): void {
     const metrics = this.metrics.get(resourceType);
+    // TODO: Review non-null assertion - consider null safety
     if (!metrics) return;
 
     metrics.currentUsage = usage;
@@ -502,6 +505,7 @@ export class ResourceUsageMonitor extends EventEmitter {
   private async collectCPUUsage(): Promise<number> {
     // Estimate CPU usage using frame timing
     const perf = this.getPerformanceSafely();
+    // TODO: Review non-null assertion - consider null safety
     if (!perf) {
       return 0.1; // Default low CPU usage for non-browser environments
     }
@@ -730,6 +734,7 @@ export class ResourceUsageMonitor extends EventEmitter {
     resourceType: ResourceType,
     level: AlertLevel,
   ): string | undefined {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enableAutoOptimization) return undefined;
 
     const actions: Record<
@@ -755,6 +760,7 @@ export class ResourceUsageMonitor extends EventEmitter {
 
   private executeAutomaticAction(alert: Alert): void {
     const action = alert.details.automaticAction;
+    // TODO: Review non-null assertion - consider null safety
     if (!action) return;
 
     this.emit('automaticActionTriggered', {
@@ -1057,6 +1063,7 @@ export class ResourceUsageMonitor extends EventEmitter {
     this.stats.totalAlerts++;
     this.stats.alertsByLevel[alert.level]++;
 
+    // TODO: Review non-null assertion - consider null safety
     if (!this.stats.alertsByType[alert.type]) {
       this.stats.alertsByType[alert.type] = 0;
     }
@@ -1091,6 +1098,7 @@ export class ResourceUsageMonitor extends EventEmitter {
   }
 
   public getActiveAlerts(): Alert[] {
+    // TODO: Review non-null assertion - consider null safety
     return Array.from(this.alerts.values()).filter((alert) => !alert.resolved);
   }
 

@@ -1,0 +1,1164 @@
+2025-06-22 18:19:16 +02:00:  GET /test-exercises [32m200[39m in 48ms
+2025-06-22 18:19:29 +02:00:  [32m[1m✓[22m[39m Compiled in 1003ms (1215 modules)
+2025-06-22 18:19:40 +02:00: 
+2025-06-22 18:19:40 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 18:19:40 +02:00: 
+2025-06-22 18:19:41 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 18:19:41 +02:00:    - Local:        http://localhost:3001
+2025-06-22 18:19:41 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 18:19:41 +02:00:    - Environments: .env.local, .env
+2025-06-22 18:19:41 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 18:19:42 +02:00:  [32m[1m✓[22m[39m Ready in 1717ms
+2025-06-22 18:20:22 +02:00:  [37m[1m○[22m[39m Compiling /test-exercises ...
+2025-06-22 18:20:25 +02:00:  [32m[1m✓[22m[39m Compiled /test-exercises in 3.6s (1215 modules)
+2025-06-22 18:20:26 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 18:20:26 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 18:20:26 +02:00:  GET /test-exercises [32m200[39m in 3931ms
+2025-06-22 18:20:26 +02:00:  [32m[1m✓[22m[39m Compiled in 459ms (573 modules)
+2025-06-22 18:21:08 +02:00:  [32m[1m✓[22m[39m Compiled in 1025ms (1215 modules)
+2025-06-22 18:21:56 +02:00: 
+2025-06-22 18:21:56 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 18:21:56 +02:00: 
+2025-06-22 18:21:57 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 18:21:57 +02:00:    - Local:        http://localhost:3001
+2025-06-22 18:21:57 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 18:21:57 +02:00:    - Environments: .env.local, .env
+2025-06-22 18:21:57 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 18:21:59 +02:00:  [32m[1m✓[22m[39m Ready in 1887ms
+2025-06-22 18:22:22 +02:00:  [37m[1m○[22m[39m Compiling /test-exercises ...
+2025-06-22 18:22:23 +02:00:  [32m[1m✓[22m[39m Compiled /test-exercises in 1782ms (1201 modules)
+2025-06-22 18:22:23 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 18:22:23 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 18:22:23 +02:00:  GET /test-exercises [32m200[39m in 2142ms
+2025-06-22 18:22:23 +02:00:  [32m[1m✓[22m[39m Compiled in 448ms (559 modules)
+2025-06-22 18:23:13 +02:00:  [32m[1m✓[22m[39m Compiled in 3.2s (1215 modules)
+2025-06-22 18:23:27 +02:00: 
+2025-06-22 18:23:27 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 18:23:27 +02:00: 
+2025-06-22 18:23:27 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 18:23:27 +02:00:    - Local:        http://localhost:3001
+2025-06-22 18:23:27 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 18:23:27 +02:00:    - Environments: .env.local, .env
+2025-06-22 18:23:27 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 18:23:29 +02:00:  [32m[1m✓[22m[39m Ready in 1948ms
+2025-06-22 18:23:37 +02:00:  [37m[1m○[22m[39m Compiling /test-exercises ...
+2025-06-22 18:23:38 +02:00:  [32m[1m✓[22m[39m Compiled /test-exercises in 1656ms (1201 modules)
+2025-06-22 18:23:38 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 18:23:38 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 18:23:38 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 18:23:38 +02:00:  GET /test-exercises [32m200[39m in 2029ms
+2025-06-22 18:23:39 +02:00:  [32m[1m✓[22m[39m Compiled in 459ms (559 modules)
+2025-06-22 18:23:53 +02:00:  [32m[1m✓[22m[39m Compiled in 2.6s (1215 modules)
+2025-06-22 18:24:00 +02:00: 
+2025-06-22 18:24:00 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 18:24:00 +02:00: 
+2025-06-22 18:24:02 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 18:24:02 +02:00:    - Local:        http://localhost:3001
+2025-06-22 18:24:02 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 18:24:02 +02:00:    - Environments: .env.local, .env
+2025-06-22 18:24:02 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 18:24:03 +02:00:  [32m[1m✓[22m[39m Ready in 1879ms
+2025-06-22 18:24:46 +02:00:  [37m[1m○[22m[39m Compiling /test-exercises ...
+2025-06-22 18:24:47 +02:00:  [32m[1m✓[22m[39m Compiled /test-exercises in 1800ms (1201 modules)
+2025-06-22 18:24:47 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 18:24:47 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 18:24:47 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 18:24:47 +02:00:  GET /test-exercises [32m200[39m in 2185ms
+2025-06-22 18:24:47 +02:00:  [32m[1m✓[22m[39m Compiled in 462ms (559 modules)
+2025-06-22 18:25:11 +02:00:  [32m[1m✓[22m[39m Compiled in 2.8s (1215 modules)
+2025-06-22 18:25:45 +02:00: 
+2025-06-22 18:25:45 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 18:25:45 +02:00: 
+2025-06-22 18:25:46 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 18:25:46 +02:00:    - Local:        http://localhost:3001
+2025-06-22 18:25:46 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 18:25:46 +02:00:    - Environments: .env.local, .env
+2025-06-22 18:25:46 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 18:25:48 +02:00:  [32m[1m✓[22m[39m Ready in 1661ms
+2025-06-22 18:26:54 +02:00:  [37m[1m○[22m[39m Compiling /test-exercises ...
+2025-06-22 18:26:56 +02:00:  [32m[1m✓[22m[39m Compiled /test-exercises in 2.2s (1201 modules)
+2025-06-22 18:26:56 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 18:26:56 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 18:26:56 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 18:26:56 +02:00:  GET /test-exercises [32m200[39m in 2546ms
+2025-06-22 18:26:56 +02:00:  [32m[1m✓[22m[39m Compiled in 346ms (559 modules)
+2025-06-22 18:28:07 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 18:28:10 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 3.3s (2049 modules)
+2025-06-22 18:28:11 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 18:28:11 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 18:28:11 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 18:28:11 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 4141ms
+2025-06-22 18:28:12 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 18:28:12 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 718ms (2050 modules)
+2025-06-22 18:28:13 +02:00:  GET /meta.json [33m404[39m in 944ms
+2025-06-22 18:28:13 +02:00:  GET /meta.json [33m404[39m in 938ms
+2025-06-22 18:28:13 +02:00:  GET /meta.json [33m404[39m in 41ms
+2025-06-22 18:28:15 +02:00:  [37m[1m○[22m[39m Compiling /library ...
+2025-06-22 18:28:15 +02:00:  [32m[1m✓[22m[39m Compiled /library in 832ms (2063 modules)
+2025-06-22 18:28:15 +02:00:  GET /library [32m200[39m in 929ms
+2025-06-22 18:28:16 +02:00:  GET /library [32m200[39m in 98ms
+2025-06-22 18:28:17 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-22 18:28:17 +02:00:  [32m[1m✓[22m[39m Compiled / in 530ms (2072 modules)
+2025-06-22 18:28:17 +02:00:  GET / [32m200[39m in 586ms
+2025-06-22 18:28:19 +02:00:  GET / [32m200[39m in 117ms
+2025-06-22 18:28:20 +02:00:  GET /meta.json [33m404[39m in 49ms
+2025-06-22 18:28:21 +02:00:  GET /library [32m200[39m in 24ms
+2025-06-22 18:28:24 +02:00:  GET /library/billie-jean [32m200[39m in 26ms
+2025-06-22 18:29:00 +02:00:  GET /library/billie-jean [32m200[39m in 64ms
+2025-06-22 18:29:51 +02:00: 
+2025-06-22 18:29:51 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 18:29:51 +02:00: 
+2025-06-22 18:29:52 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 18:29:52 +02:00:    - Local:        http://localhost:3001
+2025-06-22 18:29:52 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 18:29:52 +02:00:    - Environments: .env.local, .env
+2025-06-22 18:29:52 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 18:29:54 +02:00:  [32m[1m✓[22m[39m Ready in 1853ms
+2025-06-22 18:30:03 +02:00:  [37m[1m○[22m[39m Compiling /test-exercises ...
+2025-06-22 18:30:04 +02:00:  [32m[1m✓[22m[39m Compiled /test-exercises in 1772ms (1201 modules)
+2025-06-22 18:30:05 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 18:30:05 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 18:30:05 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 18:30:05 +02:00:  GET /test-exercises [32m200[39m in 2175ms
+2025-06-22 18:30:05 +02:00:  [32m[1m✓[22m[39m Compiled in 693ms (559 modules)
+2025-06-22 18:30:37 +02:00:  [32m[1m✓[22m[39m Compiled in 951ms (1203 modules)
+2025-06-22 18:31:13 +02:00: 
+2025-06-22 18:31:13 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 18:31:13 +02:00: 
+2025-06-22 18:31:14 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 18:31:14 +02:00:    - Local:        http://localhost:3001
+2025-06-22 18:31:14 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 18:31:14 +02:00:    - Environments: .env.local, .env
+2025-06-22 18:31:14 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 18:31:17 +02:00:  [32m[1m✓[22m[39m Ready in 2.7s
+2025-06-22 18:32:27 +02:00:  [37m[1m○[22m[39m Compiling /library ...
+2025-06-22 18:32:29 +02:00:  [32m[1m✓[22m[39m Compiled /library in 2.5s (1207 modules)
+2025-06-22 18:32:29 +02:00:  GET /library [32m200[39m in 2785ms
+2025-06-22 18:32:29 +02:00:  [32m[1m✓[22m[39m Compiled in 264ms (562 modules)
+2025-06-22 18:32:29 +02:00:  GET /library [32m200[39m in 75ms
+2025-06-22 18:32:30 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 18:32:30 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 586ms (1208 modules)
+2025-06-22 18:32:30 +02:00:  GET /meta.json [33m404[39m in 763ms
+2025-06-22 18:32:30 +02:00:  GET /meta.json [33m404[39m in 26ms
+2025-06-22 18:32:30 +02:00:  GET /meta.json [33m404[39m in 27ms
+2025-06-22 18:32:31 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-06-22 18:32:32 +02:00:  [32m[1m✓[22m[39m Compiled / in 842ms (1217 modules)
+2025-06-22 18:32:32 +02:00:  GET / [32m200[39m in 895ms
+2025-06-22 18:32:33 +02:00:  GET /library [32m200[39m in 16ms
+2025-06-22 18:32:35 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 18:32:36 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 1396ms (2072 modules)
+2025-06-22 18:32:37 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 2024ms
+2025-06-22 18:33:29 +02:00:  [32m[1m✓[22m[39m Compiled in 2.7s (2086 modules)
+2025-06-22 18:33:39 +02:00:  [32m[1m✓[22m[39m Compiled in 793ms (2071 modules)
+2025-06-22 18:33:48 +02:00:  [32m[1m✓[22m[39m Compiled in 961ms (1005 modules)
+2025-06-22 18:33:58 +02:00:  [32m[1m✓[22m[39m Compiled in 649ms (1005 modules)
+2025-06-22 18:33:58 +02:00:  [32m[1m✓[22m[39m Compiled in 191ms (1005 modules)
+2025-06-22 18:34:07 +02:00:  [32m[1m✓[22m[39m Compiled in 220ms (1005 modules)
+2025-06-22 18:34:08 +02:00:  [32m[1m✓[22m[39m Compiled in 229ms (1005 modules)
+2025-06-22 18:34:17 +02:00:  [32m[1m✓[22m[39m Compiled in 234ms (1005 modules)
+2025-06-22 18:34:17 +02:00:  [32m[1m✓[22m[39m Compiled in 239ms (1005 modules)
+2025-06-22 18:34:58 +02:00: 
+2025-06-22 18:34:58 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 18:34:58 +02:00: 
+2025-06-22 18:34:58 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 18:34:58 +02:00:    - Local:        http://localhost:3001
+2025-06-22 18:34:58 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 18:34:58 +02:00:    - Environments: .env.local, .env
+2025-06-22 18:34:58 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 18:35:00 +02:00:  [32m[1m✓[22m[39m Ready in 1755ms
+2025-06-22 18:35:10 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 18:35:14 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 4.6s (2063 modules)
+2025-06-22 18:35:15 +02:00:  [32m[1m✓[22m[39m Compiled in 381ms (997 modules)
+2025-06-22 18:35:15 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 18:35:15 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 18:35:15 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 18:35:15 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 5442ms
+2025-06-22 18:35:17 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 18:35:18 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1354ms (2050 modules)
+2025-06-22 18:35:18 +02:00:  GET /meta.json [33m404[39m in 1614ms
+2025-06-22 18:35:18 +02:00:  GET /meta.json [33m404[39m in 1612ms
+2025-06-22 18:35:18 +02:00:  GET /meta.json [33m404[39m in 32ms
+2025-06-22 18:36:11 +02:00:  [37m[1m○[22m[39m Compiling /test-exercises ...
+2025-06-22 18:36:11 +02:00:  [32m[1m✓[22m[39m Compiled /test-exercises in 563ms (2057 modules)
+2025-06-22 18:36:11 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 18:36:11 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 18:36:11 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 18:36:11 +02:00:  GET /test-exercises [32m200[39m in 740ms
+2025-06-22 18:37:14 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 48ms
+2025-06-22 18:37:15 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 186ms
+2025-06-22 18:37:15 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 44ms
+2025-06-22 18:37:17 +02:00:  GET /meta.json [33m404[39m in 72ms
+2025-06-22 18:37:17 +02:00:  GET /meta.json [33m404[39m in 72ms
+2025-06-22 18:39:55 +02:00:  [32m[1m✓[22m[39m Compiled in 1500ms (2065 modules)
+2025-06-22 18:39:56 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 85ms
+2025-06-22 18:40:32 +02:00:  [32m[1m✓[22m[39m Compiled in 657ms (2065 modules)
+2025-06-22 18:40:32 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 72ms
+2025-06-22 18:40:37 +02:00:  [32m[1m✓[22m[39m Compiled in 605ms (2065 modules)
+2025-06-22 18:40:37 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 49ms
+2025-06-22 18:41:09 +02:00:  [32m[1m✓[22m[39m Compiled in 1094ms (2065 modules)
+2025-06-22 18:41:09 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 51ms
+2025-06-22 18:42:57 +02:00:  [32m[1m✓[22m[39m Compiled in 1666ms (2065 modules)
+2025-06-22 18:42:57 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 74ms
+2025-06-22 18:47:43 +02:00:  [32m[1m✓[22m[39m Compiled in 1461ms (2065 modules)
+2025-06-22 18:47:43 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 75ms
+2025-06-22 18:47:54 +02:00:  [32m[1m✓[22m[39m Compiled in 371ms (2065 modules)
+2025-06-22 18:47:54 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 52ms
+2025-06-22 18:48:53 +02:00:  [32m[1m✓[22m[39m Compiled in 1189ms (2065 modules)
+2025-06-22 18:48:53 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 64ms
+2025-06-22 18:48:54 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 306ms (1067 modules)
+2025-06-22 18:48:54 +02:00:  GET /meta.json [33m404[39m in 515ms
+2025-06-22 18:48:54 +02:00:  GET /meta.json [33m404[39m in 36ms
+2025-06-22 18:48:54 +02:00:  GET /meta.json [33m404[39m in 34ms
+2025-06-22 18:49:38 +02:00:  [32m[1m✓[22m[39m Compiled in 649ms (2066 modules)
+2025-06-22 18:49:38 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 47ms
+2025-06-22 18:49:48 +02:00:  [32m[1m✓[22m[39m Compiled in 828ms (2066 modules)
+2025-06-22 18:49:48 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 43ms
+2025-06-22 18:50:01 +02:00:  [32m[1m✓[22m[39m Compiled in 621ms (2065 modules)
+2025-06-22 18:50:01 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 43ms
+2025-06-22 18:50:11 +02:00:  [32m[1m✓[22m[39m Compiled in 391ms (2065 modules)
+2025-06-22 18:50:11 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 77ms
+2025-06-22 18:50:24 +02:00:  [32m[1m✓[22m[39m Compiled in 599ms (2065 modules)
+2025-06-22 18:50:24 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 67ms
+2025-06-22 18:50:48 +02:00:  [32m[1m✓[22m[39m Compiled in 578ms (2065 modules)
+2025-06-22 18:50:48 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 59ms
+2025-06-22 18:52:42 +02:00:  [32m[1m✓[22m[39m Compiled in 843ms (2065 modules)
+2025-06-22 18:52:42 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 58ms
+2025-06-22 18:52:54 +02:00:  [32m[1m✓[22m[39m Compiled in 825ms (2065 modules)
+2025-06-22 18:52:54 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 65ms
+2025-06-22 18:52:55 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 388ms (1067 modules)
+2025-06-22 18:52:55 +02:00:  GET /meta.json [33m404[39m in 608ms
+2025-06-22 18:52:55 +02:00:  GET /meta.json [33m404[39m in 40ms
+2025-06-22 18:52:55 +02:00:  GET /meta.json [33m404[39m in 39ms
+2025-06-22 18:52:57 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 18:52:57 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 18:52:57 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 18:52:57 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 148ms
+2025-06-22 18:52:58 +02:00:  GET /meta.json [33m404[39m in 48ms
+2025-06-22 18:53:34 +02:00:  [32m[1m✓[22m[39m Compiled in 677ms (2066 modules)
+2025-06-22 18:53:34 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 102ms
+2025-06-22 18:53:34 +02:00:  GET /meta.json [33m404[39m in 327ms
+2025-06-22 18:55:24 +02:00:  GET /meta.json [33m404[39m in 93ms
+2025-06-22 18:55:45 +02:00:  [32m[1m✓[22m[39m Compiled in 1503ms (2066 modules)
+2025-06-22 18:55:45 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 64ms
+2025-06-22 18:55:55 +02:00:  [32m[1m✓[22m[39m Compiled in 832ms (2066 modules)
+2025-06-22 18:55:55 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 73ms
+2025-06-22 18:59:03 +02:00:  [32m[1m✓[22m[39m Compiled in 1015ms (2065 modules)
+2025-06-22 18:59:03 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 62ms
+2025-06-22 19:04:27 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 19:04:28 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1082ms (1067 modules)
+2025-06-22 19:04:28 +02:00:  GET /meta.json [33m404[39m in 1313ms
+2025-06-22 19:05:21 +02:00:  [32m[1m✓[22m[39m Compiled in 744ms (2066 modules)
+2025-06-22 19:05:21 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 38ms
+2025-06-22 19:05:31 +02:00:  [32m[1m✓[22m[39m Compiled in 660ms (2066 modules)
+2025-06-22 19:05:31 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 54ms
+2025-06-22 19:05:48 +02:00:  [32m[1m✓[22m[39m Compiled in 350ms (2065 modules)
+2025-06-22 19:05:49 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 61ms
+2025-06-22 19:09:40 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 19:09:40 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1132ms (1067 modules)
+2025-06-22 19:09:40 +02:00:  GET /meta.json [33m404[39m in 1279ms
+2025-06-22 19:10:06 +02:00:  [32m[1m✓[22m[39m Compiled in 746ms (2066 modules)
+2025-06-22 19:10:06 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 41ms
+2025-06-22 19:10:22 +02:00:  [32m[1m✓[22m[39m Compiled in 496ms (2066 modules)
+2025-06-22 19:10:22 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 75ms
+2025-06-22 19:10:35 +02:00:  [32m[1m✓[22m[39m Compiled in 835ms (2066 modules)
+2025-06-22 19:10:35 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 98ms
+2025-06-22 19:10:46 +02:00:  [32m[1m✓[22m[39m Compiled in 1095ms (2065 modules)
+2025-06-22 19:10:46 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 37ms
+2025-06-22 19:11:00 +02:00:  [32m[1m✓[22m[39m Compiled in 244ms (999 modules)
+2025-06-22 19:11:00 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 20ms
+2025-06-22 19:11:10 +02:00:  [32m[1m✓[22m[39m Compiled in 718ms (2065 modules)
+2025-06-22 19:11:10 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 60ms
+2025-06-22 19:11:17 +02:00:  [32m[1m✓[22m[39m Compiled in 443ms (2065 modules)
+2025-06-22 19:11:17 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 41ms
+2025-06-22 19:11:24 +02:00:  [32m[1m✓[22m[39m Compiled in 634ms (2065 modules)
+2025-06-22 19:11:24 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 50ms
+2025-06-22 19:11:34 +02:00:  [32m[1m✓[22m[39m Compiled in 963ms (2065 modules)
+2025-06-22 19:11:34 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 37ms
+2025-06-22 19:11:41 +02:00:  [32m[1m✓[22m[39m Compiled in 555ms (2065 modules)
+2025-06-22 19:11:41 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 40ms
+2025-06-22 19:11:50 +02:00:  [32m[1m✓[22m[39m Compiled in 1272ms (2065 modules)
+2025-06-22 19:11:50 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 190ms
+2025-06-22 19:11:56 +02:00:  [32m[1m✓[22m[39m Compiled in 1161ms (2065 modules)
+2025-06-22 19:11:57 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 41ms
+2025-06-22 19:12:03 +02:00:  [32m[1m✓[22m[39m Compiled in 964ms (2065 modules)
+2025-06-22 19:12:03 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 51ms
+2025-06-22 19:12:33 +02:00:  [32m[1m✓[22m[39m Compiled in 992ms (2065 modules)
+2025-06-22 19:12:34 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 59ms
+2025-06-22 19:12:43 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 19:12:43 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 19:12:43 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 19:12:44 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 309ms
+2025-06-22 19:12:45 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 409ms (1067 modules)
+2025-06-22 19:12:45 +02:00:  GET /meta.json [33m404[39m in 580ms
+2025-06-22 19:13:45 +02:00:  [32m[1m✓[22m[39m Compiled in 1272ms (2066 modules)
+2025-06-22 19:13:45 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 40ms
+2025-06-22 19:13:45 +02:00:  GET /meta.json [33m404[39m in 148ms
+2025-06-22 19:13:54 +02:00:  [32m[1m✓[22m[39m Compiled in 745ms (2066 modules)
+2025-06-22 19:13:54 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 53ms
+2025-06-22 19:14:05 +02:00:  [32m[1m✓[22m[39m Compiled in 775ms (2066 modules)
+2025-06-22 19:14:05 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 55ms
+2025-06-22 19:14:13 +02:00:  [32m[1m✓[22m[39m Compiled in 882ms (2066 modules)
+2025-06-22 19:14:13 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 50ms
+2025-06-22 19:14:26 +02:00:  [32m[1m✓[22m[39m Compiled in 840ms (2066 modules)
+2025-06-22 19:14:26 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 48ms
+2025-06-22 19:15:01 +02:00:  [32m[1m✓[22m[39m Compiled in 1261ms (2065 modules)
+2025-06-22 19:15:01 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 71ms
+2025-06-22 19:15:01 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 282ms (1067 modules)
+2025-06-22 19:15:02 +02:00:  GET /meta.json [33m404[39m in 932ms
+2025-06-22 19:15:02 +02:00:  GET /meta.json [33m404[39m in 213ms
+2025-06-22 19:15:02 +02:00:  GET /meta.json [33m404[39m in 70ms
+2025-06-22 19:16:22 +02:00:  [32m[1m✓[22m[39m Compiled in 1533ms (2065 modules)
+2025-06-22 19:16:22 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 718ms
+2025-06-22 19:16:23 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 279ms (1067 modules)
+2025-06-22 19:16:23 +02:00:  GET /meta.json [33m404[39m in 585ms
+2025-06-22 19:16:23 +02:00:  GET /meta.json [33m404[39m in 29ms
+2025-06-22 19:16:23 +02:00:  GET /meta.json [33m404[39m in 37ms
+2025-06-22 19:16:32 +02:00:  [32m[1m✓[22m[39m Compiled in 866ms (2066 modules)
+2025-06-22 19:16:32 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 60ms
+2025-06-22 19:16:47 +02:00:  [32m[1m✓[22m[39m Compiled in 763ms (2066 modules)
+2025-06-22 19:16:47 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 60ms
+2025-06-22 19:16:55 +02:00:  [32m[1m✓[22m[39m Compiled in 936ms (2066 modules)
+2025-06-22 19:16:55 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 41ms
+2025-06-22 19:17:08 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 19:17:08 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 19:17:08 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 19:17:08 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 203ms
+2025-06-22 19:17:09 +02:00:  GET /meta.json [33m404[39m in 84ms
+2025-06-22 19:20:41 +02:00:  [32m[1m✓[22m[39m Compiled in 1337ms (2065 modules)
+2025-06-22 19:20:41 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 56ms
+2025-06-22 19:20:42 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 196ms (1067 modules)
+2025-06-22 19:20:42 +02:00:  GET /meta.json [33m404[39m in 331ms
+2025-06-22 19:20:59 +02:00:  [32m[1m✓[22m[39m Compiled in 1406ms (2066 modules)
+2025-06-22 19:20:59 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 50ms
+2025-06-22 19:21:11 +02:00:  [32m[1m✓[22m[39m Compiled in 1936ms (2066 modules)
+2025-06-22 19:21:11 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 40ms
+2025-06-22 19:21:52 +02:00:  [32m[1m✓[22m[39m Compiled in 1081ms (2065 modules)
+2025-06-22 19:21:52 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 61ms
+2025-06-22 19:21:53 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 240ms (1067 modules)
+2025-06-22 19:21:53 +02:00:  GET /meta.json [33m404[39m in 401ms
+2025-06-22 19:21:53 +02:00:  GET /meta.json [33m404[39m in 35ms
+2025-06-22 19:21:53 +02:00:  GET /meta.json [33m404[39m in 29ms
+2025-06-22 19:22:12 +02:00:  [32m[1m✓[22m[39m Compiled in 876ms (2066 modules)
+2025-06-22 19:22:12 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 62ms
+2025-06-22 19:22:47 +02:00:  [32m[1m✓[22m[39m Compiled in 1016ms (2066 modules)
+2025-06-22 19:22:47 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 45ms
+2025-06-22 19:22:47 +02:00:  GET /meta.json [33m404[39m in 181ms
+2025-06-22 19:22:47 +02:00:  GET /meta.json [33m404[39m in 34ms
+2025-06-22 19:22:47 +02:00:  GET /meta.json [33m404[39m in 35ms
+2025-06-22 19:23:02 +02:00:  [32m[1m✓[22m[39m Compiled in 1039ms (2066 modules)
+2025-06-22 19:23:02 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 64ms
+2025-06-22 19:34:30 +02:00:  GET /meta.json [33m404[39m in 177ms
+2025-06-22 20:22:39 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 20:22:39 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 20:22:39 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 20:22:39 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 330ms
+2025-06-22 20:22:40 +02:00:  GET /meta.json [33m404[39m in 77ms
+2025-06-22 20:22:40 +02:00:  GET /meta.json [33m404[39m in 76ms
+2025-06-22 20:22:40 +02:00:  GET /meta.json [33m404[39m in 39ms
+2025-06-22 20:25:31 +02:00:  [32m[1m✓[22m[39m Compiled in 1463ms (2065 modules)
+2025-06-22 20:25:31 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 93ms
+2025-06-22 20:25:41 +02:00:  [32m[1m✓[22m[39m Compiled in 1054ms (2065 modules)
+2025-06-22 20:25:41 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 81ms
+2025-06-22 20:25:54 +02:00:  [32m[1m✓[22m[39m Compiled in 649ms (2065 modules)
+2025-06-22 20:25:54 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 40ms
+2025-06-22 20:26:01 +02:00:  [32m[1m✓[22m[39m Compiled in 767ms (2065 modules)
+2025-06-22 20:26:01 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 39ms
+2025-06-22 20:27:09 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 20:27:09 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 20:27:09 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 20:27:09 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 289ms
+2025-06-22 20:27:10 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 20:27:11 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1164ms (1067 modules)
+2025-06-22 20:27:12 +02:00:  GET /meta.json [33m404[39m in 1738ms
+2025-06-22 20:27:12 +02:00:  GET /meta.json [33m404[39m in 1442ms
+2025-06-22 20:27:12 +02:00:  GET /meta.json [33m404[39m in 39ms
+2025-06-22 20:28:49 +02:00:  [32m[1m✓[22m[39m Compiled in 811ms (999 modules)
+2025-06-22 20:28:49 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 25ms
+2025-06-22 20:28:50 +02:00:  [32m[1m✓[22m[39m Compiled in 196ms (999 modules)
+2025-06-22 20:28:50 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 12ms
+2025-06-22 20:28:51 +02:00:  [32m[1m✓[22m[39m Compiled in 197ms (999 modules)
+2025-06-22 20:28:51 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 12ms
+2025-06-22 20:29:31 +02:00:  [32m[1m✓[22m[39m Compiled in 335ms (999 modules)
+2025-06-22 20:29:31 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 42ms
+2025-06-22 20:29:33 +02:00:  [32m[1m✓[22m[39m Compiled in 185ms (999 modules)
+2025-06-22 20:29:33 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 14ms
+2025-06-22 20:33:29 +02:00:  [32m[1m✓[22m[39m Compiled in 760ms (999 modules)
+2025-06-22 20:33:29 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 16ms
+2025-06-22 20:33:36 +02:00:  [32m[1m✓[22m[39m Compiled in 497ms (999 modules)
+2025-06-22 20:33:36 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 21ms
+2025-06-22 20:33:44 +02:00:  [32m[1m✓[22m[39m Compiled in 187ms (999 modules)
+2025-06-22 20:33:44 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 11ms
+2025-06-22 20:33:44 +02:00:  [32m[1m✓[22m[39m Compiled in 205ms (999 modules)
+2025-06-22 20:33:44 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 18ms
+2025-06-22 20:35:52 +02:00:  [32m[1m✓[22m[39m Compiled in 1147ms (999 modules)
+2025-06-22 20:35:52 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 17ms
+2025-06-22 20:35:54 +02:00:  [32m[1m✓[22m[39m Compiled in 222ms (999 modules)
+2025-06-22 20:35:54 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 12ms
+2025-06-22 20:36:07 +02:00:  [32m[1m✓[22m[39m Compiled in 287ms (999 modules)
+2025-06-22 20:36:07 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 72ms
+2025-06-22 20:36:07 +02:00:  [32m[1m✓[22m[39m Compiled in 243ms (999 modules)
+2025-06-22 20:36:07 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 12ms
+2025-06-22 20:36:23 +02:00:  [32m[1m✓[22m[39m Compiled in 191ms (999 modules)
+2025-06-22 20:36:23 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 12ms
+2025-06-22 20:36:24 +02:00:  [32m[1m✓[22m[39m Compiled in 202ms (999 modules)
+2025-06-22 20:36:24 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 14ms
+2025-06-22 20:38:11 +02:00:  [32m[1m✓[22m[39m Compiled in 1528ms (2065 modules)
+2025-06-22 20:38:11 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 102ms
+2025-06-22 20:38:14 +02:00:  [32m[1m✓[22m[39m Compiled in 214ms (999 modules)
+2025-06-22 20:38:14 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 11ms
+2025-06-22 20:39:30 +02:00:  [32m[1m✓[22m[39m Compiled in 499ms (999 modules)
+2025-06-22 20:39:30 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 19ms
+2025-06-22 20:39:33 +02:00:  [32m[1m✓[22m[39m Compiled in 276ms (999 modules)
+2025-06-22 20:39:33 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 23ms
+2025-06-22 20:39:40 +02:00:  [32m[1m✓[22m[39m Compiled in 213ms (999 modules)
+2025-06-22 20:39:40 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 15ms
+2025-06-22 20:39:40 +02:00:  [32m[1m✓[22m[39m Compiled in 313ms (999 modules)
+2025-06-22 20:39:40 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 24ms
+2025-06-22 20:39:49 +02:00:  [32m[1m✓[22m[39m Compiled in 183ms (999 modules)
+2025-06-22 20:39:49 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 13ms
+2025-06-22 20:39:50 +02:00:  [32m[1m✓[22m[39m Compiled in 186ms (999 modules)
+2025-06-22 20:39:50 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 10ms
+2025-06-22 20:39:59 +02:00:  [32m[1m✓[22m[39m Compiled in 270ms (999 modules)
+2025-06-22 20:39:59 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 33ms
+2025-06-22 20:39:59 +02:00:  [32m[1m✓[22m[39m Compiled in 212ms (999 modules)
+2025-06-22 20:39:59 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 12ms
+2025-06-22 20:44:41 +02:00:  [32m[1m✓[22m[39m Compiled in 822ms (999 modules)
+2025-06-22 20:44:41 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 17ms
+2025-06-22 20:45:53 +02:00:  [32m[1m✓[22m[39m Compiled in 497ms (999 modules)
+2025-06-22 20:45:53 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 14ms
+2025-06-22 20:45:56 +02:00:  [32m[1m✓[22m[39m Compiled in 191ms (999 modules)
+2025-06-22 20:45:56 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 12ms
+2025-06-22 20:46:05 +02:00:  [32m[1m✓[22m[39m Compiled in 413ms (999 modules)
+2025-06-22 20:46:05 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 26ms
+2025-06-22 20:46:05 +02:00:  [32m[1m✓[22m[39m Compiled in 228ms (999 modules)
+2025-06-22 20:46:05 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 14ms
+2025-06-22 20:46:13 +02:00:  [32m[1m✓[22m[39m Compiled in 234ms (999 modules)
+2025-06-22 20:46:13 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 22ms
+2025-06-22 20:46:14 +02:00:  [32m[1m✓[22m[39m Compiled in 266ms (999 modules)
+2025-06-22 20:46:14 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 14ms
+2025-06-22 20:46:56 +02:00:  [32m[1m✓[22m[39m Compiled in 373ms (999 modules)
+2025-06-22 20:46:56 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 27ms
+2025-06-22 20:47:06 +02:00:  [32m[1m✓[22m[39m Compiled in 328ms (999 modules)
+2025-06-22 20:47:06 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 24ms
+2025-06-22 20:47:06 +02:00:  [32m[1m✓[22m[39m Compiled in 387ms (999 modules)
+2025-06-22 20:47:07 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 17ms
+2025-06-22 20:48:31 +02:00:  [32m[1m✓[22m[39m Compiled in 918ms (999 modules)
+2025-06-22 20:48:31 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 15ms
+2025-06-22 20:49:02 +02:00:  [32m[1m✓[22m[39m Compiled in 399ms (999 modules)
+2025-06-22 20:49:03 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 26ms
+2025-06-22 20:49:09 +02:00:  [32m[1m✓[22m[39m Compiled in 187ms (999 modules)
+2025-06-22 20:49:09 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 9ms
+2025-06-22 20:49:17 +02:00:  [32m[1m✓[22m[39m Compiled in 202ms (999 modules)
+2025-06-22 20:49:17 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 29ms
+2025-06-22 20:49:24 +02:00:  [32m[1m✓[22m[39m Compiled in 213ms (999 modules)
+2025-06-22 20:49:24 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 10ms
+2025-06-22 20:49:31 +02:00:  [32m[1m✓[22m[39m Compiled in 213ms (999 modules)
+2025-06-22 20:49:31 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 11ms
+2025-06-22 20:49:50 +02:00:  [32m[1m✓[22m[39m Compiled in 338ms (999 modules)
+2025-06-22 20:49:50 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 29ms
+2025-06-22 20:49:56 +02:00:  [32m[1m✓[22m[39m Compiled in 552ms (999 modules)
+2025-06-22 20:49:56 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 13ms
+2025-06-22 20:50:03 +02:00:  [32m[1m✓[22m[39m Compiled in 226ms (999 modules)
+2025-06-22 20:50:03 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 16ms
+2025-06-22 20:56:28 +02:00:  [32m[1m✓[22m[39m Compiled in 1885ms (2065 modules)
+2025-06-22 20:56:28 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 79ms
+2025-06-22 20:56:41 +02:00:  [32m[1m✓[22m[39m Compiled in 631ms (2065 modules)
+2025-06-22 20:56:41 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 61ms
+2025-06-22 20:56:53 +02:00:  [32m[1m✓[22m[39m Compiled in 438ms (2065 modules)
+2025-06-22 20:56:53 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 41ms
+2025-06-22 21:00:24 +02:00:  [32m[1m✓[22m[39m Compiled in 1281ms (2065 modules)
+2025-06-22 21:00:24 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 56ms
+2025-06-22 21:00:35 +02:00:  [32m[1m✓[22m[39m Compiled in 944ms (2065 modules)
+2025-06-22 21:00:35 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 53ms
+2025-06-22 21:01:26 +02:00:  [32m[1m✓[22m[39m Compiled in 1033ms (2065 modules)
+2025-06-22 21:01:26 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 45ms
+2025-06-22 21:02:25 +02:00:  [32m[1m✓[22m[39m Compiled in 652ms (999 modules)
+2025-06-22 21:02:25 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 29ms
+2025-06-22 21:02:28 +02:00:  [32m[1m✓[22m[39m Compiled in 482ms (999 modules)
+2025-06-22 21:02:28 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 12ms
+2025-06-22 21:02:51 +02:00:  [32m[1m✓[22m[39m Compiled in 1159ms (2065 modules)
+2025-06-22 21:02:51 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 53ms
+2025-06-22 21:03:40 +02:00:  [32m[1m✓[22m[39m Compiled in 766ms (2065 modules)
+2025-06-22 21:03:40 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 68ms
+2025-06-22 21:04:17 +02:00:  [32m[1m✓[22m[39m Compiled in 912ms (999 modules)
+2025-06-22 21:04:17 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 38ms
+2025-06-22 21:04:50 +02:00:  [32m[1m✓[22m[39m Compiled in 1279ms (2065 modules)
+2025-06-22 21:04:50 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 55ms
+2025-06-22 21:04:58 +02:00:  [32m[1m✓[22m[39m Compiled in 768ms (2065 modules)
+2025-06-22 21:04:58 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 75ms
+2025-06-22 21:05:34 +02:00:  [32m[1m✓[22m[39m Compiled in 610ms (2065 modules)
+2025-06-22 21:05:34 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 52ms
+2025-06-22 21:06:00 +02:00:  [32m[1m✓[22m[39m Compiled in 969ms (2065 modules)
+2025-06-22 21:06:00 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 99ms
+2025-06-22 21:06:09 +02:00:  [32m[1m✓[22m[39m Compiled in 903ms (2065 modules)
+2025-06-22 21:06:09 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 46ms
+2025-06-22 21:06:44 +02:00:  [32m[1m✓[22m[39m Compiled in 1623ms (2065 modules)
+2025-06-22 21:06:44 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 37ms
+2025-06-22 21:06:53 +02:00:  [32m[1m✓[22m[39m Compiled in 905ms (2065 modules)
+2025-06-22 21:06:53 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 45ms
+2025-06-22 21:07:02 +02:00:  [32m[1m✓[22m[39m Compiled in 779ms (2065 modules)
+2025-06-22 21:07:02 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 82ms
+2025-06-22 21:07:14 +02:00:  [32m[1m✓[22m[39m Compiled in 581ms (2065 modules)
+2025-06-22 21:07:14 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 44ms
+2025-06-22 21:07:59 +02:00:  [32m[1m✓[22m[39m Compiled in 772ms (2065 modules)
+2025-06-22 21:08:00 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 111ms
+2025-06-22 21:09:37 +02:00:  [32m[1m✓[22m[39m Compiled in 903ms (999 modules)
+2025-06-22 21:09:37 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 23ms
+2025-06-22 21:20:37 +02:00:  [32m[1m✓[22m[39m Compiled in 1169ms (2065 modules)
+2025-06-22 21:20:37 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 106ms
+2025-06-22 21:20:43 +02:00:  [32m[1m✓[22m[39m Compiled in 341ms (999 modules)
+2025-06-22 21:20:43 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 34ms
+2025-06-22 21:20:52 +02:00:  [32m[1m✓[22m[39m Compiled in 485ms (2065 modules)
+2025-06-22 21:20:52 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 57ms
+2025-06-22 21:20:59 +02:00:  [32m[1m✓[22m[39m Compiled in 217ms (999 modules)
+2025-06-22 21:20:59 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 13ms
+2025-06-22 21:21:07 +02:00:  [32m[1m✓[22m[39m Compiled in 720ms (2065 modules)
+2025-06-22 21:21:07 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 85ms
+2025-06-22 21:21:14 +02:00:  [32m[1m✓[22m[39m Compiled in 211ms (999 modules)
+2025-06-22 21:21:14 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 22ms
+2025-06-22 21:21:21 +02:00:  [32m[1m✓[22m[39m Compiled in 701ms (999 modules)
+2025-06-22 21:21:21 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 17ms
+2025-06-22 21:21:52 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 21:21:52 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 21:21:52 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 21:21:52 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 450ms
+2025-06-22 21:21:54 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 346ms (1067 modules)
+2025-06-22 21:21:54 +02:00:  GET /meta.json [33m404[39m in 668ms
+2025-06-22 21:21:54 +02:00:  GET /meta.json [33m404[39m in 668ms
+2025-06-22 21:21:54 +02:00:  GET /meta.json [33m404[39m in 30ms
+2025-06-22 21:22:16 +02:00:  [32m[1m✓[22m[39m Compiled in 627ms (999 modules)
+2025-06-22 21:22:16 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 48ms
+2025-06-22 21:22:27 +02:00:  [32m[1m✓[22m[39m Compiled in 304ms (999 modules)
+2025-06-22 21:22:27 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 15ms
+2025-06-22 21:22:30 +02:00:  [32m[1m✓[22m[39m Compiled in 215ms (999 modules)
+2025-06-22 21:22:30 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 20ms
+2025-06-22 21:22:36 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 21:22:36 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 21:22:36 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 21:22:36 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 169ms
+2025-06-22 21:22:37 +02:00:  GET /meta.json [33m404[39m in 56ms
+2025-06-22 21:24:12 +02:00:  [32m[1m✓[22m[39m Compiled in 1670ms (2065 modules)
+2025-06-22 21:24:12 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 56ms
+2025-06-22 21:24:13 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 195ms (1067 modules)
+2025-06-22 21:24:13 +02:00:  GET /meta.json [33m404[39m in 364ms
+2025-06-22 21:24:37 +02:00:  [32m[1m✓[22m[39m Compiled in 1187ms (2066 modules)
+2025-06-22 21:24:37 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 81ms
+2025-06-22 21:25:03 +02:00:  [32m[1m✓[22m[39m Compiled in 1396ms (2066 modules)
+2025-06-22 21:25:03 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 66ms
+2025-06-22 21:25:19 +02:00:  [32m[1m✓[22m[39m Compiled in 797ms (2065 modules)
+2025-06-22 21:25:19 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 88ms
+2025-06-22 21:25:25 +02:00:  [32m[1m✓[22m[39m Compiled in 476ms (2065 modules)
+2025-06-22 21:25:25 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 39ms
+2025-06-22 21:25:35 +02:00:  [32m[1m✓[22m[39m Compiled in 1299ms (2065 modules)
+2025-06-22 21:25:35 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 50ms
+2025-06-22 21:26:10 +02:00:  [32m[1m✓[22m[39m Compiled in 832ms (2065 modules)
+2025-06-22 21:26:10 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 57ms
+2025-06-22 21:26:11 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 21:26:11 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 544ms (1067 modules)
+2025-06-22 21:26:11 +02:00:  GET /meta.json [33m404[39m in 795ms
+2025-06-22 21:26:11 +02:00:  GET /meta.json [33m404[39m in 35ms
+2025-06-22 21:26:11 +02:00:  GET /meta.json [33m404[39m in 24ms
+2025-06-22 21:26:16 +02:00:  [32m[1m✓[22m[39m Compiled in 503ms (2066 modules)
+2025-06-22 21:26:16 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 35ms
+2025-06-22 21:27:24 +02:00: 
+2025-06-22 21:27:24 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 21:27:24 +02:00: 
+2025-06-22 21:27:25 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 21:27:25 +02:00:    - Local:        http://localhost:3001
+2025-06-22 21:27:25 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 21:27:25 +02:00:    - Environments: .env.local, .env
+2025-06-22 21:27:25 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 21:27:27 +02:00:  [32m[1m✓[22m[39m Ready in 1721ms
+2025-06-22 21:27:37 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 21:27:39 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 3.2s (2049 modules)
+2025-06-22 21:27:40 +02:00:  [32m[1m✓[22m[39m Compiled in 260ms (983 modules)
+2025-06-22 21:27:40 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 21:27:40 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 21:27:40 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 21:27:40 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 4012ms
+2025-06-22 21:27:42 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 21:27:42 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 687ms (2050 modules)
+2025-06-22 21:27:42 +02:00:  GET /meta.json [33m404[39m in 880ms
+2025-06-22 21:27:42 +02:00:  GET /meta.json [33m404[39m in 882ms
+2025-06-22 21:27:42 +02:00:  GET /meta.json [33m404[39m in 30ms
+2025-06-22 21:30:45 +02:00:  [32m[1m✓[22m[39m Compiled in 3s (2063 modules)
+2025-06-22 21:30:45 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 69ms
+2025-06-22 21:30:45 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 214ms (1067 modules)
+2025-06-22 21:30:45 +02:00:  GET /meta.json [33m404[39m in 385ms
+2025-06-22 21:30:55 +02:00:  [32m[1m✓[22m[39m Compiled in 968ms (2064 modules)
+2025-06-22 21:30:55 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 46ms
+2025-06-22 21:31:16 +02:00:  [32m[1m✓[22m[39m Compiled in 628ms (2064 modules)
+2025-06-22 21:31:16 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 47ms
+2025-06-22 21:32:31 +02:00:  [32m[1m✓[22m[39m Compiled in 1330ms (2063 modules)
+2025-06-22 21:32:31 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 52ms
+2025-06-22 21:32:41 +02:00:  [32m[1m✓[22m[39m Compiled in 570ms (2063 modules)
+2025-06-22 21:32:41 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 57ms
+2025-06-22 21:32:58 +02:00:  [32m[1m✓[22m[39m Compiled in 475ms (2063 modules)
+2025-06-22 21:32:58 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 80ms
+2025-06-22 21:33:08 +02:00:  [32m[1m✓[22m[39m Compiled in 486ms (2063 modules)
+2025-06-22 21:33:08 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 39ms
+2025-06-22 21:33:40 +02:00: 
+2025-06-22 21:33:40 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 21:33:40 +02:00: 
+2025-06-22 21:33:41 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 21:33:41 +02:00:    - Local:        http://localhost:3001
+2025-06-22 21:33:41 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 21:33:41 +02:00:    - Environments: .env.local, .env
+2025-06-22 21:33:41 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 21:33:42 +02:00:  [32m[1m✓[22m[39m Ready in 1703ms
+2025-06-22 21:34:11 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 21:34:17 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 6.5s (2064 modules)
+2025-06-22 21:34:17 +02:00:  GET /meta.json [33m404[39m in 6911ms
+2025-06-22 21:34:18 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 21:34:18 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 21:34:18 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 21:34:18 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 6050ms
+2025-06-22 21:34:19 +02:00:  GET /meta.json [33m404[39m in 37ms
+2025-06-22 21:35:54 +02:00:  [32m[1m✓[22m[39m Compiled in 1115ms (2063 modules)
+2025-06-22 21:35:55 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 81ms
+2025-06-22 21:35:55 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 176ms (1067 modules)
+2025-06-22 21:35:55 +02:00:  GET /meta.json [33m404[39m in 340ms
+2025-06-22 21:36:13 +02:00:  [32m[1m✓[22m[39m Compiled in 718ms (2064 modules)
+2025-06-22 21:36:14 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 44ms
+2025-06-22 21:36:31 +02:00:  [32m[1m✓[22m[39m Compiled in 504ms (2064 modules)
+2025-06-22 21:36:31 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 40ms
+2025-06-22 21:36:55 +02:00:  [32m[1m✓[22m[39m Compiled in 909ms (2064 modules)
+2025-06-22 21:36:55 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 40ms
+2025-06-22 21:37:05 +02:00:  [32m[1m✓[22m[39m Compiled in 828ms (2063 modules)
+2025-06-22 21:37:05 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 52ms
+2025-06-22 21:37:14 +02:00:  [32m[1m✓[22m[39m Compiled in 629ms (2063 modules)
+2025-06-22 21:37:14 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 38ms
+2025-06-22 21:38:41 +02:00: 
+2025-06-22 21:38:41 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 21:38:41 +02:00: 
+2025-06-22 21:38:42 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 21:38:42 +02:00:    - Local:        http://localhost:3001
+2025-06-22 21:38:42 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 21:38:42 +02:00:    - Environments: .env.local, .env
+2025-06-22 21:38:42 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 21:38:43 +02:00:  [32m[1m✓[22m[39m Ready in 1802ms
+2025-06-22 21:41:24 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 21:41:27 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 3.5s (2049 modules)
+2025-06-22 21:41:28 +02:00:  [32m[1m✓[22m[39m Compiled in 269ms (983 modules)
+2025-06-22 21:41:28 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 21:41:28 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 21:41:28 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 21:41:28 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 4514ms
+2025-06-22 21:41:30 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 21:41:30 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 707ms (2050 modules)
+2025-06-22 21:41:30 +02:00:  GET /meta.json [33m404[39m in 910ms
+2025-06-22 21:41:30 +02:00:  GET /meta.json [33m404[39m in 907ms
+2025-06-22 21:41:30 +02:00:  GET /meta.json [33m404[39m in 32ms
+2025-06-22 21:45:06 +02:00:  [32m[1m✓[22m[39m Compiled in 3.4s (2063 modules)
+2025-06-22 21:45:06 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 80ms
+2025-06-22 21:45:07 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 224ms (1067 modules)
+2025-06-22 21:45:07 +02:00:  GET /meta.json [33m404[39m in 397ms
+2025-06-22 21:45:18 +02:00:  [32m[1m✓[22m[39m Compiled in 1084ms (2064 modules)
+2025-06-22 21:45:18 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 71ms
+2025-06-22 21:45:38 +02:00:  [32m[1m✓[22m[39m Compiled in 742ms (2064 modules)
+2025-06-22 21:45:38 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 55ms
+2025-06-22 21:45:48 +02:00:  [32m[1m✓[22m[39m Compiled in 1099ms (2064 modules)
+2025-06-22 21:45:49 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 52ms
+2025-06-22 21:46:20 +02:00: 
+2025-06-22 21:46:20 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 21:46:20 +02:00: 
+2025-06-22 21:46:21 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 21:46:21 +02:00:    - Local:        http://localhost:3001
+2025-06-22 21:46:21 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 21:46:21 +02:00:    - Environments: .env.local, .env
+2025-06-22 21:46:21 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 21:46:23 +02:00:  [32m[1m✓[22m[39m Ready in 2s
+2025-06-22 21:48:03 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 21:48:07 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 4.9s (2063 modules)
+2025-06-22 21:48:08 +02:00:  [32m[1m✓[22m[39m Compiled in 391ms (997 modules)
+2025-06-22 21:48:08 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 21:48:08 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 21:48:08 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 21:48:08 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 5808ms
+2025-06-22 21:48:10 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 21:48:10 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 902ms (2050 modules)
+2025-06-22 21:48:10 +02:00:  GET /meta.json [33m404[39m in 1110ms
+2025-06-22 21:48:10 +02:00:  GET /meta.json [33m404[39m in 1114ms
+2025-06-22 21:48:10 +02:00:  GET /meta.json [33m404[39m in 29ms
+2025-06-22 21:51:24 +02:00:  [32m[1m✓[22m[39m Compiled in 1100ms (2063 modules)
+2025-06-22 21:51:24 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 71ms
+2025-06-22 21:51:24 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 183ms (1067 modules)
+2025-06-22 21:51:24 +02:00:  GET /meta.json [33m404[39m in 373ms
+2025-06-22 21:51:35 +02:00:  [32m[1m✓[22m[39m Compiled in 611ms (2064 modules)
+2025-06-22 21:51:35 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 46ms
+2025-06-22 21:51:48 +02:00:  [32m[1m✓[22m[39m Compiled in 543ms (2064 modules)
+2025-06-22 21:51:48 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 38ms
+2025-06-22 21:52:01 +02:00: 
+2025-06-22 21:52:01 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 21:52:01 +02:00: 
+2025-06-22 21:52:02 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 21:52:02 +02:00:    - Local:        http://localhost:3001
+2025-06-22 21:52:02 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 21:52:02 +02:00:    - Environments: .env.local, .env
+2025-06-22 21:52:02 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 21:52:04 +02:00:  [32m[1m✓[22m[39m Ready in 1698ms
+2025-06-22 21:52:05 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 21:52:10 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 5.4s (2063 modules)
+2025-06-22 21:52:11 +02:00:  [32m[1m✓[22m[39m Compiled in 503ms (997 modules)
+2025-06-22 21:52:11 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 21:52:11 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 21:52:11 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 21:52:11 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 6299ms
+2025-06-22 21:52:13 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 21:52:14 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1706ms (2050 modules)
+2025-06-22 21:52:14 +02:00:  GET /meta.json [33m404[39m in 1944ms
+2025-06-22 21:53:26 +02:00:  [32m[1m✓[22m[39m Compiled in 874ms (2063 modules)
+2025-06-22 21:53:26 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 100ms
+2025-06-22 21:53:27 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 247ms (1067 modules)
+2025-06-22 21:53:27 +02:00:  GET /meta.json [33m404[39m in 424ms
+2025-06-22 21:53:42 +02:00:  [32m[1m✓[22m[39m Compiled in 657ms (2064 modules)
+2025-06-22 21:53:42 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 56ms
+2025-06-22 21:54:47 +02:00: 
+2025-06-22 21:54:47 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 21:54:47 +02:00: 
+2025-06-22 21:54:48 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 21:54:48 +02:00:    - Local:        http://localhost:3001
+2025-06-22 21:54:48 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 21:54:48 +02:00:    - Environments: .env.local, .env
+2025-06-22 21:54:48 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 21:54:49 +02:00:  [32m[1m✓[22m[39m Ready in 1699ms
+2025-06-22 21:55:32 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 21:55:35 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 3.2s (2049 modules)
+2025-06-22 21:55:35 +02:00:  [32m[1m✓[22m[39m Compiled in 277ms (983 modules)
+2025-06-22 21:55:36 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 21:55:36 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 21:55:36 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 21:55:36 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 4104ms
+2025-06-22 21:55:37 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 21:55:37 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 704ms (2050 modules)
+2025-06-22 21:55:38 +02:00:  GET /meta.json [33m404[39m in 909ms
+2025-06-22 21:55:38 +02:00:  GET /meta.json [33m404[39m in 909ms
+2025-06-22 21:55:38 +02:00:  GET /meta.json [33m404[39m in 39ms
+2025-06-22 21:58:24 +02:00:  [32m[1m✓[22m[39m Compiled in 4.8s (2063 modules)
+2025-06-22 21:58:24 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 72ms
+2025-06-22 21:58:24 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 311ms (1067 modules)
+2025-06-22 21:58:25 +02:00:  GET /meta.json [33m404[39m in 504ms
+2025-06-22 21:58:29 +02:00:  [32m[1m✓[22m[39m Compiled in 641ms (2064 modules)
+2025-06-22 21:58:29 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 55ms
+2025-06-22 22:01:22 +02:00: 
+2025-06-22 22:01:22 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 22:01:22 +02:00: 
+2025-06-22 22:01:23 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 22:01:23 +02:00:    - Local:        http://localhost:3001
+2025-06-22 22:01:23 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 22:01:23 +02:00:    - Environments: .env.local, .env
+2025-06-22 22:01:23 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 22:01:25 +02:00:  [32m[1m✓[22m[39m Ready in 2.1s
+2025-06-22 22:01:29 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 22:01:31 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 2.9s (2049 modules)
+2025-06-22 22:01:32 +02:00:  [32m[1m✓[22m[39m Compiled in 309ms (983 modules)
+2025-06-22 22:01:32 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 22:01:32 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 22:01:32 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 22:01:32 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 3810ms
+2025-06-22 22:01:34 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 22:01:34 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 729ms (2050 modules)
+2025-06-22 22:01:34 +02:00:  GET /meta.json [33m404[39m in 931ms
+2025-06-22 22:01:34 +02:00:  GET /meta.json [33m404[39m in 930ms
+2025-06-22 22:01:34 +02:00:  GET /meta.json [33m404[39m in 33ms
+2025-06-22 22:04:40 +02:00:  [32m[1m✓[22m[39m Compiled in 3.7s (2063 modules)
+2025-06-22 22:04:40 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 182ms
+2025-06-22 22:04:40 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 255ms (1067 modules)
+2025-06-22 22:04:41 +02:00:  GET /meta.json [33m404[39m in 891ms
+2025-06-22 22:04:41 +02:00:  GET /meta.json [33m404[39m in 57ms
+2025-06-22 22:04:41 +02:00:  GET /meta.json [33m404[39m in 34ms
+2025-06-22 22:05:00 +02:00:  [32m[1m✓[22m[39m Compiled in 855ms (2064 modules)
+2025-06-22 22:05:00 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 86ms
+2025-06-22 22:05:12 +02:00:  [32m[1m✓[22m[39m Compiled in 572ms (2064 modules)
+2025-06-22 22:05:13 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 60ms
+2025-06-22 22:05:21 +02:00:  [32m[1m✓[22m[39m Compiled in 646ms (2064 modules)
+2025-06-22 22:05:21 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 49ms
+2025-06-22 22:05:38 +02:00:  [32m[1m✓[22m[39m Compiled in 768ms (2064 modules)
+2025-06-22 22:05:38 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 64ms
+2025-06-22 22:06:33 +02:00: 
+2025-06-22 22:06:33 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 22:06:33 +02:00: 
+2025-06-22 22:06:34 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 22:06:34 +02:00:    - Local:        http://localhost:3001
+2025-06-22 22:06:34 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 22:06:34 +02:00:    - Environments: .env.local, .env
+2025-06-22 22:06:34 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 22:06:37 +02:00:  [32m[1m✓[22m[39m Ready in 2.5s
+2025-06-22 22:06:37 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 22:06:42 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 5.4s (2063 modules)
+2025-06-22 22:06:43 +02:00:  [32m[1m✓[22m[39m Compiled in 423ms (997 modules)
+2025-06-22 22:06:43 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 22:06:43 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 22:06:43 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 22:06:43 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 6285ms
+2025-06-22 22:06:44 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 22:06:45 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 990ms (2050 modules)
+2025-06-22 22:06:45 +02:00:  GET /meta.json [33m404[39m in 1223ms
+2025-06-22 22:06:45 +02:00:  GET /meta.json [33m404[39m in 1221ms
+2025-06-22 22:06:45 +02:00:  GET /meta.json [33m404[39m in 50ms
+2025-06-22 22:08:20 +02:00:  [32m[1m✓[22m[39m Compiled in 1050ms (2063 modules)
+2025-06-22 22:08:21 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 91ms
+2025-06-22 22:08:21 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 193ms (1067 modules)
+2025-06-22 22:08:21 +02:00:  GET /meta.json [33m404[39m in 360ms
+2025-06-22 22:08:51 +02:00: 
+2025-06-22 22:08:51 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 22:08:51 +02:00: 
+2025-06-22 22:08:52 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 22:08:52 +02:00:    - Local:        http://localhost:3001
+2025-06-22 22:08:52 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 22:08:52 +02:00:    - Environments: .env.local, .env
+2025-06-22 22:08:52 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 22:08:54 +02:00:  [32m[1m✓[22m[39m Ready in 1872ms
+2025-06-22 22:10:06 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 22:10:11 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 5.5s (2063 modules)
+2025-06-22 22:10:12 +02:00:  [32m[1m✓[22m[39m Compiled in 423ms (997 modules)
+2025-06-22 22:10:12 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 22:10:12 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 22:10:12 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 22:10:12 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 6637ms
+2025-06-22 22:10:13 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 22:10:14 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 990ms (2050 modules)
+2025-06-22 22:10:14 +02:00:  GET /meta.json [33m404[39m in 1234ms
+2025-06-22 22:10:14 +02:00:  GET /meta.json [33m404[39m in 841ms
+2025-06-22 22:10:14 +02:00:  GET /meta.json [33m404[39m in 27ms
+2025-06-22 22:10:23 +02:00:  [32m[1m✓[22m[39m Compiled in 465ms (2064 modules)
+2025-06-22 22:10:23 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 102ms
+2025-06-22 22:10:31 +02:00:  [32m[1m✓[22m[39m Compiled in 584ms (1276 modules)
+2025-06-22 22:10:31 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 51ms
+2025-06-22 22:10:32 +02:00:  [32m[1m✓[22m[39m Compiled in 985ms (2064 modules)
+2025-06-22 22:10:32 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 55ms
+2025-06-22 22:10:40 +02:00:  [32m[1m✓[22m[39m Compiled in 451ms (2064 modules)
+2025-06-22 22:10:40 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 61ms
+2025-06-22 22:10:50 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 22:10:50 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 22:10:50 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 22:10:50 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 278ms
+2025-06-22 22:10:51 +02:00:  GET /meta.json [33m404[39m in 109ms
+2025-06-22 22:10:56 +02:00:  [32m[1m✓[22m[39m Compiled in 395ms (2064 modules)
+2025-06-22 22:10:56 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 63ms
+2025-06-22 22:11:09 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 22:11:09 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 22:11:09 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 22:11:09 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 264ms
+2025-06-22 22:11:09 +02:00:  GET /meta.json [33m404[39m in 66ms
+2025-06-22 22:11:42 +02:00:  [32m[1m✓[22m[39m Compiled in 733ms (2064 modules)
+2025-06-22 22:11:43 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 66ms
+2025-06-22 22:12:09 +02:00:  [32m[1m✓[22m[39m Compiled in 895ms (2064 modules)
+2025-06-22 22:12:10 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 59ms
+2025-06-22 22:16:48 +02:00:  [32m[1m✓[22m[39m Compiled in 1253ms (2063 modules)
+2025-06-22 22:16:48 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 74ms
+2025-06-22 22:16:48 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 335ms (1067 modules)
+2025-06-22 22:16:48 +02:00:  GET /meta.json [33m404[39m in 557ms
+2025-06-22 22:16:49 +02:00:  GET /meta.json [33m404[39m in 49ms
+2025-06-22 22:16:49 +02:00:  GET /meta.json [33m404[39m in 32ms
+2025-06-22 22:20:44 +02:00:  [32m[1m✓[22m[39m Compiled in 958ms (2063 modules)
+2025-06-22 22:20:45 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 45ms
+2025-06-22 22:20:45 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 288ms (1067 modules)
+2025-06-22 22:20:45 +02:00:  GET /meta.json [33m404[39m in 453ms
+2025-06-22 22:20:45 +02:00:  GET /meta.json [33m404[39m in 48ms
+2025-06-22 22:20:45 +02:00:  GET /meta.json [33m404[39m in 73ms
+2025-06-22 22:25:15 +02:00:  [32m[1m✓[22m[39m Compiled in 1187ms (2063 modules)
+2025-06-22 22:25:15 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 77ms
+2025-06-22 22:25:16 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 229ms (1067 modules)
+2025-06-22 22:25:16 +02:00:  GET /meta.json [33m404[39m in 473ms
+2025-06-22 22:25:16 +02:00:  GET /meta.json [33m404[39m in 31ms
+2025-06-22 22:25:16 +02:00:  GET /meta.json [33m404[39m in 44ms
+2025-06-22 22:25:27 +02:00:  [32m[1m✓[22m[39m Compiled in 774ms (2064 modules)
+2025-06-22 22:25:27 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 55ms
+2025-06-22 22:25:45 +02:00:  [32m[1m✓[22m[39m Compiled in 558ms (2064 modules)
+2025-06-22 22:25:45 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 89ms
+2025-06-22 22:27:51 +02:00:  GET /meta.json [33m404[39m in 270ms
+2025-06-22 22:28:30 +02:00:  GET /meta.json [33m404[39m in 172ms
+2025-06-22 22:28:58 +02:00:  [32m[1m✓[22m[39m Compiled in 1264ms (2064 modules)
+2025-06-22 22:28:58 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 67ms
+2025-06-22 22:29:10 +02:00:  [32m[1m✓[22m[39m Compiled in 544ms (2064 modules)
+2025-06-22 22:29:10 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 64ms
+2025-06-22 22:29:21 +02:00:  [32m[1m✓[22m[39m Compiled in 643ms (2064 modules)
+2025-06-22 22:29:21 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 39ms
+2025-06-22 22:29:33 +02:00:  [32m[1m✓[22m[39m Compiled in 966ms (2064 modules)
+2025-06-22 22:29:33 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 58ms
+2025-06-22 22:29:49 +02:00:  [32m[1m✓[22m[39m Compiled in 784ms (2063 modules)
+2025-06-22 22:29:49 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 84ms
+2025-06-22 22:30:00 +02:00:  [32m[1m✓[22m[39m Compiled in 625ms (2063 modules)
+2025-06-22 22:30:00 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 48ms
+2025-06-22 22:30:11 +02:00:  [32m[1m✓[22m[39m Compiled in 826ms (2063 modules)
+2025-06-22 22:30:12 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 82ms
+2025-06-22 22:30:53 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 440ms (1067 modules)
+2025-06-22 22:30:54 +02:00:  GET /meta.json [33m404[39m in 720ms
+2025-06-22 22:30:57 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 22:30:57 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 22:30:57 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 22:30:57 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 167ms
+2025-06-22 22:30:58 +02:00:  GET /meta.json [33m404[39m in 582ms
+2025-06-22 22:31:02 +02:00:  [32m[1m✓[22m[39m Compiled in 851ms (2064 modules)
+2025-06-22 22:31:02 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 65ms
+2025-06-22 22:31:38 +02:00:  GET /meta.json [33m404[39m in 615ms
+2025-06-22 22:31:58 +02:00:  [32m[1m✓[22m[39m Compiled in 727ms (2064 modules)
+2025-06-22 22:31:58 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 75ms
+2025-06-22 22:32:08 +02:00:  [32m[1m✓[22m[39m Compiled in 582ms (2064 modules)
+2025-06-22 22:32:08 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 72ms
+2025-06-22 22:32:18 +02:00:  [32m[1m✓[22m[39m Compiled in 645ms (2064 modules)
+2025-06-22 22:32:18 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 47ms
+2025-06-22 22:32:34 +02:00:  [32m[1m✓[22m[39m Compiled in 755ms (2064 modules)
+2025-06-22 22:32:34 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 52ms
+2025-06-22 22:33:33 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 22:33:33 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 22:33:33 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 22:33:33 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 418ms
+2025-06-22 22:33:35 +02:00:  GET /meta.json [33m404[39m in 623ms
+2025-06-22 22:33:35 +02:00:  GET /meta.json [33m404[39m in 81ms
+2025-06-22 22:33:35 +02:00:  GET /meta.json [33m404[39m in 36ms
+2025-06-22 22:34:01 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 147ms
+2025-06-22 22:34:02 +02:00:  GET /meta.json [33m404[39m in 53ms
+2025-06-22 22:35:02 +02:00:  GET /meta.json [33m404[39m in 119ms
+2025-06-22 22:35:21 +02:00:  [32m[1m✓[22m[39m Compiled in 1434ms (2064 modules)
+2025-06-22 22:35:21 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 159ms
+2025-06-22 22:36:41 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 22:36:41 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 22:36:41 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 22:36:42 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 383ms
+2025-06-22 22:36:42 +02:00:  GET /meta.json [33m404[39m in 169ms
+2025-06-22 22:36:42 +02:00:  GET /meta.json [33m404[39m in 68ms
+2025-06-22 22:38:03 +02:00:  [32m[1m✓[22m[39m Compiled in 1091ms (2063 modules)
+2025-06-22 22:38:03 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 69ms
+2025-06-22 22:38:04 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 326ms (1067 modules)
+2025-06-22 22:38:04 +02:00:  GET /meta.json [33m404[39m in 625ms
+2025-06-22 22:38:15 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 22:38:15 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 22:38:15 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 22:38:15 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 228ms
+2025-06-22 22:38:16 +02:00:  GET /meta.json [33m404[39m in 32ms
+2025-06-22 22:41:55 +02:00:  [32m[1m✓[22m[39m Compiled in 1267ms (2063 modules)
+2025-06-22 22:41:56 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 82ms
+2025-06-22 22:41:56 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 22:41:56 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 551ms (1067 modules)
+2025-06-22 22:41:56 +02:00:  GET /meta.json [33m404[39m in 780ms
+2025-06-22 22:42:07 +02:00:  [32m[1m✓[22m[39m Compiled in 308ms (997 modules)
+2025-06-22 22:42:07 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 32ms
+2025-06-22 22:42:20 +02:00:  [32m[1m✓[22m[39m Compiled in 352ms (997 modules)
+2025-06-22 22:42:20 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 23ms
+2025-06-22 22:42:29 +02:00:  [32m[1m✓[22m[39m Compiled in 234ms (997 modules)
+2025-06-22 22:42:29 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 16ms
+2025-06-22 22:42:40 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 22:42:40 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 22:42:40 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 22:42:41 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 184ms
+2025-06-22 22:42:41 +02:00:  GET /meta.json [33m404[39m in 31ms
+2025-06-22 22:44:24 +02:00:  [32m[1m✓[22m[39m Compiled in 1506ms (2063 modules)
+2025-06-22 22:44:24 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 123ms
+2025-06-22 22:44:25 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 197ms (1067 modules)
+2025-06-22 22:44:25 +02:00:  GET /meta.json [33m404[39m in 361ms
+2025-06-22 22:45:55 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 22:45:55 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 22:45:55 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 22:45:55 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 277ms
+2025-06-22 22:45:55 +02:00:  GET /meta.json [33m404[39m in 68ms
+2025-06-22 22:45:55 +02:00:  GET /meta.json [33m404[39m in 70ms
+2025-06-22 22:45:55 +02:00:  GET /meta.json [33m404[39m in 31ms
+2025-06-22 22:47:48 +02:00:  [32m[1m✓[22m[39m Compiled in 1374ms (2063 modules)
+2025-06-22 22:47:48 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 59ms
+2025-06-22 22:47:49 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 237ms (1067 modules)
+2025-06-22 22:47:50 +02:00:  GET /meta.json [33m404[39m in 1027ms
+2025-06-22 22:47:58 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 22:47:58 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 22:47:58 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 22:47:58 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 160ms
+2025-06-22 22:47:58 +02:00:  GET /meta.json [33m404[39m in 42ms
+2025-06-22 22:49:19 +02:00:  [32m[1m✓[22m[39m Compiled in 1163ms (2063 modules)
+2025-06-22 22:49:19 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 63ms
+2025-06-22 22:49:19 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 256ms (1067 modules)
+2025-06-22 22:49:19 +02:00:  GET /meta.json [33m404[39m in 447ms
+2025-06-22 23:09:49 +02:00: 
+2025-06-22 23:09:49 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 23:09:49 +02:00: 
+2025-06-22 23:09:50 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 23:09:50 +02:00:    - Local:        http://localhost:3001
+2025-06-22 23:09:50 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 23:09:50 +02:00:    - Environments: .env.local, .env
+2025-06-22 23:09:50 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 23:09:52 +02:00:  [32m[1m✓[22m[39m Ready in 1993ms
+2025-06-22 23:12:13 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 23:12:18 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 5.6s (2063 modules)
+2025-06-22 23:12:19 +02:00:  [32m[1m✓[22m[39m Compiled in 394ms (997 modules)
+2025-06-22 23:12:19 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 23:12:19 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 23:12:19 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 23:12:19 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 6504ms
+2025-06-22 23:12:20 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 23:12:21 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 837ms (2050 modules)
+2025-06-22 23:12:21 +02:00:  GET /meta.json [33m404[39m in 1071ms
+2025-06-22 23:12:21 +02:00:  GET /meta.json [33m404[39m in 1068ms
+2025-06-22 23:12:21 +02:00:  GET /meta.json [33m404[39m in 37ms
+2025-06-22 23:13:10 +02:00:  [32m[1m✓[22m[39m Compiled in 968ms (2064 modules)
+2025-06-22 23:13:10 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 73ms
+2025-06-22 23:13:10 +02:00:  GET /meta.json [33m404[39m in 176ms
+2025-06-22 23:15:18 +02:00:  [32m[1m✓[22m[39m Compiled in 920ms (2063 modules)
+2025-06-22 23:15:18 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 53ms
+2025-06-22 23:15:18 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 209ms (1067 modules)
+2025-06-22 23:15:19 +02:00:  GET /meta.json [33m404[39m in 312ms
+2025-06-22 23:15:19 +02:00:  GET /meta.json [33m404[39m in 33ms
+2025-06-22 23:15:19 +02:00:  GET /meta.json [33m404[39m in 46ms
+2025-06-22 23:16:37 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (2063 modules)
+2025-06-22 23:16:37 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 110ms
+2025-06-22 23:16:38 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 331ms (1067 modules)
+2025-06-22 23:16:38 +02:00:  GET /meta.json [33m404[39m in 557ms
+2025-06-22 23:16:38 +02:00:  GET /meta.json [33m404[39m in 41ms
+2025-06-22 23:16:38 +02:00:  GET /meta.json [33m404[39m in 42ms
+2025-06-22 23:17:19 +02:00:  [32m[1m✓[22m[39m Compiled in 962ms (2064 modules)
+2025-06-22 23:17:19 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 82ms
+2025-06-22 23:17:20 +02:00:  GET /meta.json [33m404[39m in 302ms
+2025-06-22 23:17:20 +02:00:  GET /meta.json [33m404[39m in 51ms
+2025-06-22 23:17:20 +02:00:  GET /meta.json [33m404[39m in 30ms
+2025-06-22 23:17:36 +02:00: 
+2025-06-22 23:17:36 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 23:17:36 +02:00: 
+2025-06-22 23:17:37 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 23:17:37 +02:00:    - Local:        http://localhost:3001
+2025-06-22 23:17:37 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 23:17:37 +02:00:    - Environments: .env.local, .env
+2025-06-22 23:17:37 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 23:17:40 +02:00:  [32m[1m✓[22m[39m Ready in 3.7s
+2025-06-22 23:17:47 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 23:17:51 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 5.2s (2063 modules)
+2025-06-22 23:17:52 +02:00:  [32m[1m✓[22m[39m Compiled in 478ms (997 modules)
+2025-06-22 23:17:52 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 23:17:52 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 23:17:52 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 23:17:52 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 6221ms
+2025-06-22 23:17:53 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 23:17:55 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1710ms (2050 modules)
+2025-06-22 23:17:55 +02:00:  GET /meta.json [33m404[39m in 1956ms
+2025-06-22 23:17:55 +02:00:  GET /meta.json [33m404[39m in 1962ms
+2025-06-22 23:17:55 +02:00:  GET /meta.json [33m404[39m in 35ms
+2025-06-22 23:18:50 +02:00:  [32m[1m✓[22m[39m Compiled in 786ms (2064 modules)
+2025-06-22 23:18:50 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 85ms
+2025-06-22 23:18:51 +02:00:  GET /meta.json [33m404[39m in 201ms
+2025-06-22 23:18:57 +02:00:  [32m[1m✓[22m[39m Compiled in 729ms (2064 modules)
+2025-06-22 23:18:57 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 91ms
+2025-06-22 23:19:11 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 23:19:11 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 23:19:11 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 23:19:11 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 255ms
+2025-06-22 23:19:12 +02:00:  GET /meta.json [33m404[39m in 114ms
+2025-06-22 23:19:20 +02:00: 
+2025-06-22 23:19:20 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 23:19:20 +02:00: 
+2025-06-22 23:19:21 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 23:19:21 +02:00:    - Local:        http://localhost:3001
+2025-06-22 23:19:21 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 23:19:21 +02:00:    - Environments: .env.local, .env
+2025-06-22 23:19:21 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 23:19:23 +02:00:  [32m[1m✓[22m[39m Ready in 2.1s
+2025-06-22 23:19:36 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 23:19:40 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 5.2s (2063 modules)
+2025-06-22 23:19:41 +02:00:  [32m[1m✓[22m[39m Compiled in 504ms (997 modules)
+2025-06-22 23:19:41 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 23:19:41 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 23:19:41 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 23:19:41 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 6116ms
+2025-06-22 23:19:43 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 23:19:43 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 943ms (2050 modules)
+2025-06-22 23:19:43 +02:00:  GET /meta.json [33m404[39m in 1205ms
+2025-06-22 23:21:10 +02:00:  [32m[1m✓[22m[39m Compiled in 944ms (2063 modules)
+2025-06-22 23:21:10 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 102ms
+2025-06-22 23:21:10 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 255ms (1067 modules)
+2025-06-22 23:21:10 +02:00:  GET /meta.json [33m404[39m in 455ms
+2025-06-22 23:24:45 +02:00:  [32m[1m✓[22m[39m Compiled in 1826ms (2063 modules)
+2025-06-22 23:24:46 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 72ms
+2025-06-22 23:24:46 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 279ms (1067 modules)
+2025-06-22 23:24:47 +02:00:  GET /meta.json [33m404[39m in 636ms
+2025-06-22 23:24:47 +02:00:  GET /meta.json [33m404[39m in 49ms
+2025-06-22 23:24:47 +02:00:  GET /meta.json [33m404[39m in 51ms
+2025-06-22 23:24:54 +02:00:  [32m[1m✓[22m[39m Compiled in 662ms (2064 modules)
+2025-06-22 23:24:54 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 53ms
+2025-06-22 23:25:01 +02:00: 
+2025-06-22 23:25:01 +02:00: > nx run @bassnotion/frontend:serve
+2025-06-22 23:25:01 +02:00: 
+2025-06-22 23:25:02 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-06-22 23:25:02 +02:00:    - Local:        http://localhost:3001
+2025-06-22 23:25:02 +02:00:    - Network:      http://10.0.0.6:3001
+2025-06-22 23:25:02 +02:00:    - Environments: .env.local, .env
+2025-06-22 23:25:02 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-06-22 23:25:06 +02:00:  [32m[1m✓[22m[39m Ready in 3.3s
+2025-06-22 23:25:55 +02:00:  [37m[1m○[22m[39m Compiling /library/[tutorialId] ...
+2025-06-22 23:26:00 +02:00:  [32m[1m✓[22m[39m Compiled /library/[tutorialId] in 5.2s (2063 modules)
+2025-06-22 23:26:00 +02:00:  [32m[1m✓[22m[39m Compiled in 533ms (997 modules)
+2025-06-22 23:26:00 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 23:26:00 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 23:26:00 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 23:26:01 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 6267ms
+2025-06-22 23:26:02 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-06-22 23:26:03 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1157ms (2050 modules)
+2025-06-22 23:26:04 +02:00:  GET /meta.json [33m404[39m in 2475ms
+2025-06-22 23:26:04 +02:00:  GET /meta.json [33m404[39m in 2474ms
+2025-06-22 23:26:04 +02:00:  GET /meta.json [33m404[39m in 134ms
+2025-06-22 23:28:02 +02:00:  [32m[1m✓[22m[39m Compiled in 1197ms (2063 modules)
+2025-06-22 23:28:02 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 81ms
+2025-06-22 23:28:03 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 231ms (1067 modules)
+2025-06-22 23:28:03 +02:00:  GET /meta.json [33m404[39m in 501ms
+2025-06-22 23:29:13 +02:00:  [32m[1m✓[22m[39m Compiled in 1063ms (2063 modules)
+2025-06-22 23:29:13 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 175ms
+2025-06-22 23:29:13 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 257ms (1067 modules)
+2025-06-22 23:29:14 +02:00:  GET /meta.json [33m404[39m in 451ms
+2025-06-22 23:29:14 +02:00:  GET /meta.json [33m404[39m in 36ms
+2025-06-22 23:29:14 +02:00:  GET /meta.json [33m404[39m in 40ms
+2025-06-22 23:29:36 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 23:29:36 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 23:29:36 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 23:29:36 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 260ms
+2025-06-22 23:29:37 +02:00:  GET /meta.json [33m404[39m in 31ms
+2025-06-22 23:33:33 +02:00:  [32m[1m✓[22m[39m Compiled in 1678ms (2063 modules)
+2025-06-22 23:33:33 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 94ms
+2025-06-22 23:33:34 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 438ms (1067 modules)
+2025-06-22 23:33:34 +02:00:  GET /meta.json [33m404[39m in 748ms
+2025-06-22 23:33:46 +02:00:  [32m[1m✓[22m[39m Compiled in 784ms (2064 modules)
+2025-06-22 23:33:47 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 62ms
+2025-06-22 23:33:58 +02:00:  [32m[1m✓[22m[39m Compiled in 484ms (2064 modules)
+2025-06-22 23:33:58 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 56ms
+2025-06-22 23:34:05 +02:00:  [32m[1m✓[22m[39m Compiled in 822ms (2064 modules)
+2025-06-22 23:34:05 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 60ms
+2025-06-22 23:34:29 +02:00:  [32m[1m✓[22m[39m Compiled in 690ms (2064 modules)
+2025-06-22 23:34:29 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 148ms
+2025-06-22 23:35:03 +02:00:  [32m[1m✓[22m[39m Compiled in 1154ms (2063 modules)
+2025-06-22 23:35:03 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 96ms
+2025-06-22 23:35:03 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 287ms (1067 modules)
+2025-06-22 23:35:04 +02:00:  GET /meta.json [33m404[39m in 492ms
+2025-06-22 23:35:04 +02:00:  GET /meta.json [33m404[39m in 47ms
+2025-06-22 23:35:04 +02:00:  GET /meta.json [33m404[39m in 34ms
+2025-06-22 23:35:15 +02:00:  [32m[1m✓[22m[39m Compiled in 659ms (2064 modules)
+2025-06-22 23:35:15 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 87ms
+2025-06-22 23:35:28 +02:00:  [32m[1m✓[22m[39m Compiled in 741ms (2064 modules)
+2025-06-22 23:35:28 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 73ms
+2025-06-22 23:36:26 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 23:36:26 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 23:36:26 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 23:36:26 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 300ms
+2025-06-22 23:36:27 +02:00:  GET /meta.json [33m404[39m in 80ms
+2025-06-22 23:36:27 +02:00:  GET /meta.json [33m404[39m in 79ms
+2025-06-22 23:36:27 +02:00:  GET /meta.json [33m404[39m in 33ms
+2025-06-22 23:40:49 +02:00:  [32m[1m✓[22m[39m Compiled in 1900ms (2063 modules)
+2025-06-22 23:40:49 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 104ms
+2025-06-22 23:40:49 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 300ms (1067 modules)
+2025-06-22 23:40:50 +02:00:  GET /meta.json [33m404[39m in 539ms
+2025-06-22 23:41:32 +02:00:  [32m[1m✓[22m[39m Compiled in 816ms (2064 modules)
+2025-06-22 23:41:32 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 586ms
+2025-06-22 23:41:34 +02:00:  GET /meta.json [33m404[39m in 713ms
+2025-06-22 23:41:34 +02:00:  GET /meta.json [33m404[39m in 55ms
+2025-06-22 23:41:34 +02:00:  GET /meta.json [33m404[39m in 58ms
+2025-06-22 23:42:02 +02:00:  [32m[1m✓[22m[39m Compiled in 897ms (2064 modules)
+2025-06-22 23:42:02 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 112ms
+2025-06-22 23:42:15 +02:00: 🔧 USE_BACKEND_API: [33mtrue[39m
+2025-06-22 23:42:15 +02:00: 🔧 NEXT_PUBLIC_USE_BACKEND_API: true
+2025-06-22 23:42:15 +02:00: 🔧 apiClient imported: [33mtrue[39m
+2025-06-22 23:42:15 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 420ms
+2025-06-22 23:42:16 +02:00:  GET /meta.json [33m404[39m in 86ms
+2025-06-22 23:44:28 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (2063 modules)
+2025-06-22 23:44:28 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 71ms
+2025-06-22 23:44:28 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 285ms (1067 modules)
+2025-06-22 23:44:28 +02:00:  GET /meta.json [33m404[39m in 500ms
+2025-06-22 23:44:37 +02:00:  [32m[1m✓[22m[39m Compiled in 631ms (2064 modules)
+2025-06-22 23:44:37 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 96ms
+2025-06-22 23:44:55 +02:00:  [32m[1m✓[22m[39m Compiled in 593ms (2064 modules)
+2025-06-22 23:44:55 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 120ms
+2025-06-22 23:45:23 +02:00:  [32m[1m✓[22m[39m Compiled in 565ms (2064 modules)
+2025-06-22 23:45:23 +02:00:  GET /library/never-gonna-give-you-up [32m200[39m in 44ms

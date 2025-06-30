@@ -22,7 +22,8 @@ export default function Error({
         <div className="mb-6">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Something went wrong!
+            // TODO: Review non-null assertion - consider null safety Something
+            went wrong!
           </h1>
           <p className="text-gray-600">
             We apologize for the inconvenience. Please try again.

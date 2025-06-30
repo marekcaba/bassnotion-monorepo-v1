@@ -217,6 +217,9 @@ describe('AudioResourceDisposer Behaviors', () => {
 
   beforeEach(() => {
     setupTestEnvironment();
+
+    // Ensure clean timer state before setting up fake timers
+    vi.useRealTimers();
     vi.useFakeTimers();
 
     // Create mocked timer service for dependency injection
@@ -232,7 +235,14 @@ describe('AudioResourceDisposer Behaviors', () => {
   });
 
   afterEach(() => {
-    disposer.destroy();
+    try {
+      if (disposer && typeof disposer.destroy === 'function') {
+        disposer.destroy();
+      }
+    } catch (error) {
+      console.warn('AudioResourceDisposer cleanup warning:', error);
+    }
+
     vi.useRealTimers();
     vi.clearAllMocks();
   });

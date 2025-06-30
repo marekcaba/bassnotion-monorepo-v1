@@ -146,6 +146,7 @@ export function MagicLinkSignIn() {
 
       if (checkError) throw checkError;
 
+      // TODO: Review non-null assertion - consider null safety
       if (!exists) {
         // Show inline message for new user
         setNoAccountFound(true);

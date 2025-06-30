@@ -19,6 +19,32 @@ import { PluginManager } from '../PluginManager.js';
 import type { AudioPlugin, PluginManagerConfig } from '../../types/plugin.js';
 import { PluginCategory, PluginState } from '../../types/plugin.js';
 
+// CRITICAL: Mock Tone.js to prevent AudioContext creation issues
+vi.mock('tone', () => ({
+  default: {},
+  Tone: {},
+  Transport: {
+    start: vi.fn(),
+    stop: vi.fn(),
+    pause: vi.fn(),
+    bpm: { value: 120 },
+  },
+  getContext: vi.fn(() => ({
+    currentTime: 0,
+    sampleRate: 44100,
+    state: 'running',
+  })),
+  getTransport: vi.fn(() => ({
+    start: vi.fn(),
+    stop: vi.fn(),
+    pause: vi.fn(),
+    bpm: { value: 120 },
+  })),
+  setContext: vi.fn(),
+  start: vi.fn(),
+  now: vi.fn(() => 0),
+}));
+
 // Safe browser environment setup for plugin manager
 const createMockEnvironment = () => {
   const globalObj = global as any;
@@ -45,12 +71,16 @@ const createMockEnvironment = () => {
         connect: vi.fn(),
         disconnect: vi.fn(),
       }),
-      createBuffer: vi.fn().mockReturnValue({
-        length: 1024,
-        sampleRate: 44100,
-        numberOfChannels: 2,
-        getChannelData: vi.fn().mockReturnValue(new Float32Array(1024)),
-      }),
+      createBuffer: vi
+        .fn()
+        .mockImplementation(
+          (channels: number, length: number, sampleRate: number) => ({
+            length,
+            sampleRate,
+            numberOfChannels: channels,
+            getChannelData: vi.fn().mockReturnValue(new Float32Array(length)),
+          }),
+        ),
       decodeAudioData: vi.fn().mockResolvedValue({
         length: 1024,
         sampleRate: 44100,
@@ -520,8 +550,64 @@ describe('PluginManager Behavior', () => {
     // Reset singleton
     (PluginManager as any).instance = undefined;
 
-    // Create mock audio context
-    mockAudioContext = new globalObj.AudioContext();
+    // Create mock audio context with enhanced safety
+    try {
+      mockAudioContext = new globalObj.AudioContext();
+
+      // Ensure all required methods are available with defensive programming
+      if (!mockAudioContext.createBuffer) {
+        console.warn(
+          '⚠️ AudioContext mock missing createBuffer, adding fallback',
+        );
+        mockAudioContext.createBuffer = vi
+          .fn()
+          .mockImplementation(
+            (channels: number, length: number, sampleRate: number) => ({
+              length,
+              sampleRate,
+              numberOfChannels: channels,
+              getChannelData: vi.fn().mockReturnValue(new Float32Array(length)),
+            }),
+          );
+      }
+
+      // Ensure other critical methods exist
+      if (!mockAudioContext.createGain) {
+        mockAudioContext.createGain = vi.fn().mockReturnValue({
+          gain: { value: 1, setValueAtTime: vi.fn() },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        });
+      }
+    } catch (error) {
+      console.warn(
+        '⚠️ Failed to create AudioContext mock, using fallback:',
+        error,
+      );
+      // Fallback mock for test environments
+      mockAudioContext = {
+        state: 'running',
+        sampleRate: 44100,
+        currentTime: 0,
+        destination: { connect: vi.fn(), disconnect: vi.fn() },
+        createBuffer: vi
+          .fn()
+          .mockImplementation(
+            (channels: number, length: number, sampleRate: number) => ({
+              length,
+              sampleRate,
+              numberOfChannels: channels,
+              getChannelData: vi.fn().mockReturnValue(new Float32Array(length)),
+            }),
+          ),
+        createGain: vi.fn().mockReturnValue({
+          gain: { value: 1, setValueAtTime: vi.fn() },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        }),
+        close: vi.fn().mockResolvedValue(undefined),
+      } as any;
+    }
 
     pluginManager = PluginManager.getInstance(scenarios.pluginManagerConfig);
 

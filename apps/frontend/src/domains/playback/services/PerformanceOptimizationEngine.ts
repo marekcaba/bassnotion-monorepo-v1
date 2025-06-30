@@ -63,13 +63,19 @@ export class PerformanceOptimizationEngine {
   private static instance: PerformanceOptimizationEngine;
 
   // Core dependencies
+  // TODO: Review non-null assertion - consider null safety
   private coreEngine!: CorePlaybackEngine;
+  // TODO: Review non-null assertion - consider null safety
   private audioContextManager!: AudioContextManager;
 
   // Performance monitoring
+  // TODO: Review non-null assertion - consider null safety
   private performanceMonitor!: RealTimePerformanceMonitor;
+  // TODO: Review non-null assertion - consider null safety
   private hardwareAccelerator!: HardwareAudioAccelerator;
+  // TODO: Review non-null assertion - consider null safety
   private qualityScaler!: AdaptiveQualityScaler;
+  // TODO: Review non-null assertion - consider null safety
   private diagnosticsEngine!: PerformanceDiagnosticsEngine;
 
   // Configuration
@@ -81,12 +87,16 @@ export class PerformanceOptimizationEngine {
   // Event handling
   private eventListeners: Map<string, EventCallback[]> = new Map();
 
+  // Interval management - CRITICAL FIX
+  private optimizationInterval?: NodeJS.Timeout;
+
   private constructor() {
     this.targets = this.getDefaultTargets();
     this.currentQuality = this.getDefaultQuality();
   }
 
   public static getInstance(): PerformanceOptimizationEngine {
+    // TODO: Review non-null assertion - consider null safety
     if (!PerformanceOptimizationEngine.instance) {
       PerformanceOptimizationEngine.instance =
         new PerformanceOptimizationEngine();
@@ -189,7 +199,7 @@ export class PerformanceOptimizationEngine {
     this.isOptimizing = true;
 
     // Start continuous optimization
-    setInterval(() => {
+    this.optimizationInterval = setInterval(() => {
       this.optimizationCycle();
     }, 100); // 100ms optimization cycle
   }
@@ -366,6 +376,10 @@ export class PerformanceOptimizationEngine {
     return { ...this.targets };
   }
 
+  public getIsOptimizing(): boolean {
+    return this.isOptimizing;
+  }
+
   public setPerformanceTargets(targets: Partial<PerformanceTargets>): void {
     this.targets = { ...this.targets, ...targets };
 
@@ -376,10 +390,16 @@ export class PerformanceOptimizationEngine {
 
   // Event system
   public on(event: string, callback: EventCallback): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
-    this.eventListeners.get(event)!.push(callback);
+    const listeners =
+      this.eventListeners.get(event) ??
+      (() => {
+        throw new Error('Expected eventListeners to contain event');
+      })();
+    listeners.push(callback);
   }
 
   public off(event: string, callback: EventCallback): void {
@@ -413,6 +433,7 @@ export class PerformanceOptimizationEngine {
   }
 
   private ensureInitialized(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isInitialized) {
       throw new Error(
         'PerformanceOptimizationEngine not initialized. Call initialize() first.',
@@ -466,6 +487,10 @@ export class PerformanceOptimizationEngine {
       this.isInitialized = false;
 
       console.log('PerformanceOptimizationEngine disposed');
+
+      if (this.optimizationInterval) {
+        clearInterval(this.optimizationInterval);
+      }
     } catch (error) {
       console.error('Error disposing PerformanceOptimizationEngine:', error);
     }
@@ -474,7 +499,9 @@ export class PerformanceOptimizationEngine {
 
 // Stub implementations for specialized components
 class RealTimePerformanceMonitor {
+  // TODO: Review non-null assertion - consider null safety
   private targets!: PerformanceTargets;
+  // TODO: Review non-null assertion - consider null safety
   private monitoringInterval!: number;
   private eventListeners: Map<string, EventCallback[]> = new Map();
 
@@ -502,10 +529,16 @@ class RealTimePerformanceMonitor {
   }
 
   on(event: string, callback: EventCallback): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
-    this.eventListeners.get(event)!.push(callback);
+    const listeners =
+      this.eventListeners.get(event) ??
+      (() => {
+        throw new Error('Expected eventListeners to contain event');
+      })();
+    listeners.push(callback);
   }
 
   async dispose(): Promise<void> {

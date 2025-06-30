@@ -272,7 +272,8 @@ describe('MetronomeInstrumentProcessor', () => {
 
     test('should handle tap tempo functionality', () => {
       // Simulate multiple taps
-      const now = Date.now();
+      const now = 1000;
+      // Mock Date.now for tap tempo functionality
       vi.spyOn(Date, 'now')
         .mockReturnValueOnce(now)
         .mockReturnValueOnce(now + 500) // 120 BPM
@@ -286,6 +287,8 @@ describe('MetronomeInstrumentProcessor', () => {
 
       // Should have calculated and set new tempo
       expect(Tone.Transport.bpm.rampTo).toHaveBeenCalled();
+
+      vi.unstubAllGlobals();
     });
 
     test('should reset tap tempo', () => {

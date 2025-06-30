@@ -386,9 +386,13 @@ export class InstrumentLifecycleManager {
 
   // Core management systems
   private instruments: Map<string, InstrumentInstance> = new Map();
+  // TODO: Review non-null assertion - consider null safety
   private resourcePool!: ResourcePool;
+  // TODO: Review non-null assertion - consider null safety
   private memoryOptimizer!: MemoryOptimizer;
+  // TODO: Review non-null assertion - consider null safety
   private performanceMonitor!: PerformanceMonitor;
+  // TODO: Review non-null assertion - consider null safety
   private cleanupScheduler!: CleanupScheduler;
 
   // Configuration and state
@@ -411,6 +415,7 @@ export class InstrumentLifecycleManager {
    * Singleton pattern for enterprise resource management
    */
   public static getInstance(): InstrumentLifecycleManager {
+    // TODO: Review non-null assertion - consider null safety
     if (!InstrumentLifecycleManager.instance) {
       InstrumentLifecycleManager.instance = new InstrumentLifecycleManager();
     }
@@ -537,6 +542,7 @@ export class InstrumentLifecycleManager {
     fadeOutDuration = 100,
   ): Promise<void> {
     const instrument = this.instruments.get(instrumentId);
+    // TODO: Review non-null assertion - consider null safety
     if (!instrument) {
       console.warn(`⚠️ Instrument not found for disposal: ${instrumentId}`);
       return;
@@ -1191,6 +1197,7 @@ class PerformanceMonitor {
   }
 
   async stop(): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isRunning) return;
 
     this.isRunning = false;

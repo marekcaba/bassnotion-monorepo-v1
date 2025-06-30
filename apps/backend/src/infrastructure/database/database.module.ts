@@ -1,14 +1,20 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseService } from './database.service.js';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-  ],
+  imports: [ConfigModule],
   providers: [DatabaseService],
   exports: [DatabaseService],
 })
-export class DatabaseModule {}
+export class DatabaseModule {
+  private readonly logger = new Logger(DatabaseModule.name);
+
+  constructor() {
+    this.logger.debug('DatabaseModule constructor called');
+  }
+
+  onModuleInit() {
+    this.logger.debug('DatabaseModule initialized');
+  }
+}

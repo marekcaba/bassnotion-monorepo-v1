@@ -11,8 +11,8 @@ import {
   FormProvider,
 } from 'react-hook-form';
 
-import { Label } from '@/shared/components/ui/label';
-import { cn } from '@/shared/utils';
+import { Label } from './label';
+import { cn } from '../../../shared/utils/index';
 
 import { FormFieldContext, FormItemContext, useFormField } from './form.utils';
 
@@ -74,10 +74,12 @@ const FormControl = React.forwardRef<
       ref={ref}
       id={formItemId}
       aria-describedby={
+        // TODO: Review non-null assertion - consider null safety
         !error
           ? `${formDescriptionId}`
           : `${formDescriptionId} ${formMessageId}`
       }
+      // TODO: Review non-null assertion - consider null safety
       aria-invalid={!!error}
       {...props}
     />
@@ -109,6 +111,7 @@ const FormMessage = React.forwardRef<
   const { error, formMessageId } = useFormField();
   const body = error ? String(error?.message) : children;
 
+  // TODO: Review non-null assertion - consider null safety
   if (!body) {
     return null;
   }

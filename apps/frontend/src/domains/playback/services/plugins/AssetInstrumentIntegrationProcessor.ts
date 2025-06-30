@@ -164,6 +164,7 @@ export class AssetInstrumentIntegrationProcessor {
       }
 
       this.isInitialized = true;
+      // TODO: Review non-null assertion - consider null safety
       console.log('🎵 Asset-instrument integration complete!');
     } catch (error) {
       console.error('❌ Asset-instrument integration failed:', error);
@@ -181,6 +182,7 @@ export class AssetInstrumentIntegrationProcessor {
     failed: any[];
   }> {
     // Handle case where no asset manifest is provided
+    // TODO: Review non-null assertion - consider null safety
     if (!payload.assetManifest || !payload.assetManifest.assets.length) {
       console.warn('No assets to load from payload');
       return {

@@ -26,13 +26,16 @@ export class BackgroundProcessor {
   private static instance: BackgroundProcessor;
 
   // Core dependencies
+  // TODO: Review non-null assertion - consider null safety
   private workerPoolManager!: WorkerPoolManager;
   private mobileOptimizer: MobileOptimizer;
 
   // Processing state
   private isInitialized = false;
   private isBackgroundActive = true;
+  // TODO: Review non-null assertion - consider null safety
   private currentStrategy!: BackgroundProcessingStrategy;
+  // TODO: Review non-null assertion - consider null safety
   private schedulingConfig!: SmartSchedulingConfig;
 
   // Job management
@@ -47,7 +50,9 @@ export class BackgroundProcessor {
   private completedJobs: ProcessingJob[] = [];
 
   // Performance monitoring
+  // TODO: Review non-null assertion - consider null safety
   private cpuMetrics!: CPUUsageMetrics;
+  // TODO: Review non-null assertion - consider null safety
   private processingStats!: BackgroundProcessingStats;
   private performanceHistory: AudioPerformanceMetrics[] = [];
 
@@ -65,6 +70,7 @@ export class BackgroundProcessor {
   }
 
   public static getInstance(): BackgroundProcessor {
+    // TODO: Review non-null assertion - consider null safety
     if (!BackgroundProcessor.instance) {
       BackgroundProcessor.instance = new BackgroundProcessor();
     }
@@ -83,6 +89,7 @@ export class BackgroundProcessor {
 
     try {
       // Initialize WorkerPoolManager (delayed to allow proper test mocking)
+      // TODO: Review non-null assertion - consider null safety
       if (!this.workerPoolManager) {
         this.workerPoolManager = WorkerPoolManager.getInstance();
       }
@@ -135,6 +142,7 @@ export class BackgroundProcessor {
     } = {},
   ): Promise<any> {
     // Check if disposed
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isInitialized) {
       throw new Error(
         'BackgroundProcessor is not initialized or has been disposed',
@@ -226,6 +234,7 @@ export class BackgroundProcessor {
     } = {},
   ): Promise<Float32Array[]> {
     // Check if disposed
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isInitialized) {
       throw new Error(
         'BackgroundProcessor is not initialized or has been disposed',
@@ -269,6 +278,7 @@ export class BackgroundProcessor {
     } = {},
   ): Promise<void> {
     // Check if disposed
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isInitialized) {
       throw new Error(
         'BackgroundProcessor is not initialized or has been disposed',
@@ -330,6 +340,7 @@ export class BackgroundProcessor {
   public setBackgroundActive(active: boolean): void {
     this.isBackgroundActive = active;
 
+    // TODO: Review non-null assertion - consider null safety
     if (!active) {
       // Pause background and low priority jobs
       this.pauseBackgroundJobs();
@@ -415,6 +426,7 @@ export class BackgroundProcessor {
         batchSize: this.calculateBatchSize(config),
         priorityScheduling: true,
         thermalThrottling: config.thermalManagement,
+        // TODO: Review non-null assertion - consider null safety
         backgroundThrottling: !this.isBackgroundActive,
         cpuBudget: cpuBudget, // Use the configured CPU budget
       };
@@ -536,7 +548,10 @@ export class BackgroundProcessor {
       // Check for throttling conditions
       this.checkThrottlingConditions();
 
-      setTimeout(monitorCpu, 100); // Monitor every 100ms
+      // Only continue monitoring if processor is active and initialized
+      if (this.isInitialized && this.isBackgroundActive) {
+        this.cpuMonitorTimer = setTimeout(monitorCpu, 100); // Monitor every 100ms
+      }
     };
 
     monitorCpu();
@@ -580,8 +595,10 @@ export class BackgroundProcessor {
       this.cpuMetrics.currentUsage > this.cpuMetrics.targetUsage ||
       this.cpuMetrics.averageUsage > this.cpuMetrics.targetUsage * 0.9;
 
+    // TODO: Review non-null assertion - consider null safety
     if (shouldThrottle && !this.cpuMetrics.throttlingActive) {
       this.enableThrottling();
+      // TODO: Review non-null assertion - consider null safety
     } else if (!shouldThrottle && this.cpuMetrics.throttlingActive) {
       this.disableThrottling();
     }
@@ -622,7 +639,10 @@ export class BackgroundProcessor {
           ? 10 // 10ms for tests
           : this.currentStrategy.processingInterval;
 
-      setTimeout(scheduleJobs, interval);
+      // Only continue scheduling if processor is active and initialized
+      if (this.isInitialized && this.isBackgroundActive) {
+        this.processingTimer = setTimeout(scheduleJobs, interval);
+      }
     };
 
     scheduleJobs();

@@ -48,6 +48,7 @@ export class AssetManifestProcessor {
   }
 
   public static getInstance(): AssetManifestProcessor {
+    // TODO: Review non-null assertion - consider null safety
     if (!AssetManifestProcessor.instance) {
       AssetManifestProcessor.instance = new AssetManifestProcessor();
     }
@@ -489,6 +490,7 @@ export class AssetManifestProcessor {
     };
 
     dependencies.forEach((dep) => {
+      // TODO: Review non-null assertion - consider null safety
       if (!visited.has(dep.assetUrl)) {
         dfs(dep.assetUrl);
       }

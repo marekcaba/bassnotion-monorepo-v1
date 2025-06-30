@@ -26,27 +26,29 @@ const setupCircuitBreakerEnvironment = () => {
     error: vi.fn(),
   };
 
-  global.Date = {
-    ...Date,
-    now: vi.fn(() => 1000),
-  } as unknown as DateConstructor;
+  // Use safer mocking approach that doesn't break core functionality
+  vi.spyOn(Date, 'now').mockReturnValue(1000);
 
-  global.performance = {
-    now: vi.fn(() => 1000),
-    mark: vi.fn(),
-    measure: vi.fn(),
-  } as any;
+  Object.defineProperty(performance, 'now', {
+    value: vi.fn(() => 1000),
+    writable: true,
+    configurable: true,
+  });
 
-  global.Math = {
-    ...Math,
-    random: vi.fn(() => 0.5),
-    pow: Math.pow, // Preserve essential Math functions
-    min: Math.min,
-    max: Math.max,
-    floor: Math.floor,
-    ceil: Math.ceil,
-    round: Math.round,
-  };
+  Object.defineProperty(performance, 'mark', {
+    value: vi.fn(),
+    writable: true,
+    configurable: true,
+  });
+
+  Object.defineProperty(performance, 'measure', {
+    value: vi.fn(),
+    writable: true,
+    configurable: true,
+  });
+
+  // Use spyOn for Math.random to preserve other Math functions
+  vi.spyOn(Math, 'random').mockReturnValue(0.5);
 
   return {};
 };
@@ -1142,7 +1144,12 @@ describe('CircuitBreaker Behaviors', () => {
     }, 10000);
 
     test('should transition states with precise recovery timeout timing', async () => {
-      // Use the working pattern from other recovery tests
+      // Set up time mock BEFORE creating the circuit breaker
+      let currentTime = 1000;
+      const dateSpy = vi
+        .spyOn(Date, 'now')
+        .mockImplementation(() => currentTime);
+
       const circuitBreaker = new CircuitBreaker('recovery-timing', {
         ...scenarios.configs.fast,
         recoveryTimeout: 100, // Short recovery timeout for fast testing
@@ -1163,12 +1170,8 @@ describe('CircuitBreaker Behaviors', () => {
 
       expect(circuitBreaker.getState()).toBe(CircuitState.OPEN);
 
-      // Mock time advancement (same pattern as working recovery tests)
-      let currentTime = 1000;
-      (Date.now as any).mockImplementation(() => {
-        currentTime += scenarios.configs.fast.recoveryTimeout + 100;
-        return currentTime;
-      });
+      // Advance time past recovery timeout
+      currentTime += scenarios.configs.fast.recoveryTimeout + 50; // Add some buffer
 
       // Next call should attempt recovery
       const successOperation = vi.fn().mockResolvedValue('recovery-success');
@@ -1176,6 +1179,9 @@ describe('CircuitBreaker Behaviors', () => {
 
       expect(result).toBe('recovery-success');
       expect(circuitBreaker.getState()).toBe(CircuitState.CLOSED);
+
+      // Clean up
+      dateSpy.mockRestore();
     }, 10000);
 
     test('should handle exponential backoff timing precisely', async () => {

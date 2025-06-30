@@ -414,7 +414,9 @@ export class ErrorClassifier {
     if (category === ErrorCategory.AUDIO_CONTEXT) {
       const message = this.normalizeText(error.message);
       if (
+        // TODO: Review non-null assertion - consider null safety
         !message.includes('not supported') &&
+        // TODO: Review non-null assertion - consider null safety
         !message.includes('api not available')
       ) {
         return true;
@@ -430,7 +432,9 @@ export class ErrorClassifier {
     if (category === ErrorCategory.RESOURCE) {
       const message = this.normalizeText(error.message);
       if (
+        // TODO: Review non-null assertion - consider null safety
         !message.includes('allocation failed') &&
+        // TODO: Review non-null assertion - consider null safety
         !message.includes('buffer overflow')
       ) {
         return true;

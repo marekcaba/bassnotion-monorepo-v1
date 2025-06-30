@@ -169,6 +169,7 @@ export function ProfileEditForm({
           <div className="flex gap-3 pt-4">
             <Button
               type="submit"
+              // TODO: Review non-null assertion - consider null safety
               disabled={isLoading || !isDirty}
               className="flex-1"
             >

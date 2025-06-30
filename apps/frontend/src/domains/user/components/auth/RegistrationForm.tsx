@@ -72,8 +72,10 @@ export function RegistrationForm({
     }
   };
 
+  // TODO: Review non-null assertion - consider null safety
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () =>
+    // TODO: Review non-null assertion - consider null safety
     setShowConfirmPassword(!showConfirmPassword);
 
   return (

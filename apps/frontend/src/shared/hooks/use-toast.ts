@@ -97,6 +97,7 @@ export const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         toasts: state.toasts.map((t) =>
+          // TODO: Review non-null assertion - consider null safety
           t.id === toastId || !toastId
             ? {
                 ...t,

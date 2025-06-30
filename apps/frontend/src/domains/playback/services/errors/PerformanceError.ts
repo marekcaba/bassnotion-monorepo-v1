@@ -87,6 +87,7 @@ export class PerformanceError extends PlaybackError {
     context: Partial<ErrorContext>,
   ): void {
     const metrics = context.performanceMetrics;
+    // TODO: Review non-null assertion - consider null safety
     if (!metrics) return;
 
     switch (code) {

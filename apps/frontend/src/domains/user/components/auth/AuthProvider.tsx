@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
-import { authService } from '@/domains/user/api/auth';
-import { useAuth } from '@/domains/user/hooks/use-auth';
-import { useIdleTimeout } from '@/domains/user/hooks/use-idle-timeout';
+import { authService } from '../../api/auth';
+import { useAuth } from '../../hooks/use-auth';
+import { useIdleTimeout } from '../../hooks/use-idle-timeout';
 import { IdleWarningDialog } from './IdleWarningDialog';
 import { useToast } from '@/shared/hooks/use-toast';
 import { supabase } from '@/infrastructure/supabase/client';
@@ -85,6 +85,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Get initial session
     const initializeAuth = async () => {
+      // TODO: Review non-null assertion - consider null safety
       if (!mounted) return;
 
       // For E2E testing, use immediate fallback to prevent crashes
@@ -122,6 +123,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           clearTimeout(initTimeoutId);
         }
 
+        // TODO: Review non-null assertion - consider null safety
         if (!mounted) return;
 
         if (session) {
@@ -168,12 +170,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Listen for auth state changes with error handling
     // Skip auth state listener only for E2E testing to prevent issues
     let subscription: any;
+    // TODO: Review non-null assertion - consider null safety
     if (!isE2ETesting) {
       try {
         const {
           data: { subscription: authSubscription },
         } = supabase.auth.onAuthStateChange(
           async (event: AuthChangeEvent, session: Session | null) => {
+            // TODO: Review non-null assertion - consider null safety
             if (!mounted) return;
 
             if (process.env.NODE_ENV === 'development') {
@@ -225,6 +229,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []); // Empty dependency array since we're handling cleanup properly
 
   // Don't render children until auth is initialized - CHANGE THIS to non-blocking
+  // TODO: Review non-null assertion - consider null safety
   if (!isReady) {
     // Instead of blocking, render children immediately with auth state loading in background
     return (

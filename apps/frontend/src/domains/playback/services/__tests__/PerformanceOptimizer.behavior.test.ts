@@ -46,16 +46,31 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
   let optimizer: PerformanceOptimizer;
 
   beforeEach(async () => {
-    // Reset singleton
+    // Use fake timers for deterministic test execution
+    vi.useFakeTimers();
+
+    // Reset singleton instance for proper test isolation
     (PerformanceOptimizer as any).instance = null;
+
+    // Create fresh instance
     optimizer = PerformanceOptimizer.getInstance();
     await optimizer.initialize();
   });
 
   afterEach(async () => {
+    // Dispose of optimizer to clear all timers and state
     if (optimizer) {
       await optimizer.dispose();
     }
+
+    // Reset singleton instance for proper test isolation
+    (PerformanceOptimizer as any).instance = null;
+
+    // Reset mock platform
+    (global.navigator as any).mockPlatform = undefined;
+
+    // Restore real timers and clear all mocks
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
 
@@ -143,7 +158,15 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
     });
 
     it('should optimize for mobile constraints', async () => {
-      const result = await optimizer.optimizeForMobile();
+      // Ensure device is detected as mobile for this test
+      (global.navigator as any).mockPlatform = 'mobile';
+
+      // Reinitialize to pick up new mocks
+      await optimizer.dispose();
+      const newOptimizer = PerformanceOptimizer.getInstance();
+      await newOptimizer.initialize();
+
+      const result = await newOptimizer.optimizeForMobile();
 
       expect(result).toMatchObject({
         performanceGain: expect.any(Number),
@@ -154,12 +177,15 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
 
       expect(result.performanceGain).toBeGreaterThan(0);
       expect(result.appliedOptimizations.length).toBeGreaterThan(0);
+
+      await newOptimizer.dispose();
+      (global.navigator as any).mockPlatform = undefined;
     });
 
     it('should handle battery-aware optimization', async () => {
       // Mock mobile platform and low battery
-      mockNavigator.mockPlatform = 'mobile';
-      mockNavigator.getBattery = vi.fn().mockResolvedValue({
+      (global.navigator as any).mockPlatform = 'mobile';
+      (global.navigator as any).getBattery = vi.fn().mockResolvedValue({
         level: 0.15, // 15% battery
         charging: false,
       });
@@ -177,12 +203,13 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
       );
 
       await newOptimizer.dispose();
+      (global.navigator as any).mockPlatform = undefined;
     });
 
     it('should adapt to network conditions', async () => {
       // Mock mobile platform and cellular network
-      (mockNavigator as any).mockPlatform = 'mobile';
-      mockNavigator.connection = {
+      (global.navigator as any).mockPlatform = 'mobile';
+      (global.navigator as any).connection = {
         effectiveType: '2g',
         type: 'cellular',
         downlink: 0.5,
@@ -200,6 +227,7 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
       );
 
       await newOptimizer.dispose();
+      (global.navigator as any).mockPlatform = undefined;
     });
 
     it('should handle thermal optimization', async () => {
@@ -214,7 +242,13 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
 
   describe('Subtask 10.3: Performance Benchmarking', () => {
     it('should run comprehensive benchmark suite', async () => {
+      // Use real timers for benchmark tests since they have setTimeout delays
+      vi.useRealTimers();
+
       const results = await optimizer.runBenchmarks();
+
+      // Restore fake timers for other tests
+      vi.useFakeTimers();
 
       expect(results).toBeInstanceOf(Array);
       expect(results.length).toBeGreaterThan(0);
@@ -241,7 +275,10 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
     });
 
     it('should measure audio latency accurately', async () => {
+      vi.useRealTimers();
       const results = await optimizer.runBenchmarks();
+      vi.useFakeTimers();
+
       const audioTest = results.find((r) => r.testName.includes('Audio'));
 
       expect(audioTest).toBeDefined();
@@ -250,7 +287,10 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
     });
 
     it('should assess CPU performance', async () => {
+      vi.useRealTimers();
       const results = await optimizer.runBenchmarks();
+      vi.useFakeTimers();
+
       const cpuTest = results.find((r) => r.testName.includes('CPU'));
 
       expect(cpuTest).toBeDefined();
@@ -259,7 +299,10 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
     });
 
     it('should evaluate memory usage', async () => {
+      vi.useRealTimers();
       const results = await optimizer.runBenchmarks();
+      vi.useFakeTimers();
+
       const memoryTest = results.find((r) => r.testName.includes('Memory'));
 
       expect(memoryTest).toBeDefined();
@@ -268,7 +311,10 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
     });
 
     it('should test network performance', async () => {
+      vi.useRealTimers();
       const results = await optimizer.runBenchmarks();
+      vi.useFakeTimers();
+
       const networkTest = results.find((r) => r.testName.includes('Network'));
 
       expect(networkTest).toBeDefined();
@@ -278,7 +324,10 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
     });
 
     it('should validate battery efficiency', async () => {
+      vi.useRealTimers();
       const results = await optimizer.runBenchmarks();
+      vi.useFakeTimers();
+
       const batteryTest = results.find((r) => r.testName.includes('Battery'));
 
       expect(batteryTest).toBeDefined();
@@ -286,7 +335,10 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
     });
 
     it('should assess overall quality stability', async () => {
+      vi.useRealTimers();
       const results = await optimizer.runBenchmarks();
+      vi.useFakeTimers();
+
       const qualityTest = results.find((r) => r.testName.includes('Quality'));
 
       expect(qualityTest).toBeDefined();
@@ -317,8 +369,9 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
 
       await optimizer.startRealTimeMonitoring();
 
-      // Wait for at least one metrics update
-      await new Promise((resolve) => setTimeout(resolve, 1100));
+      // Advance fake timers to trigger metrics updates
+      // The PerformanceOptimizer updates metrics every 1000ms
+      vi.advanceTimersByTime(1100);
 
       expect(metricsSpy).toHaveBeenCalled();
 
@@ -339,8 +392,8 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
 
       await optimizer.startRealTimeMonitoring();
 
-      // Wait for monitoring to potentially detect issues
-      await new Promise((resolve) => setTimeout(resolve, 1100));
+      // Advance timers to resolve setTimeout in monitoring
+      vi.advanceTimersByTime(1100);
 
       // May or may not be called depending on simulated metrics
       if (optimizationSpy.mock.calls.length > 0) {
@@ -387,7 +440,9 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
 
   describe('Subtask 10.5: Production Validation', () => {
     it('should validate production readiness', async () => {
+      vi.useRealTimers();
       const results = await optimizer.validateProductionReadiness();
+      vi.useFakeTimers();
 
       expect(results).toBeInstanceOf(Array);
       expect(results.length).toBeGreaterThan(0);
@@ -407,7 +462,9 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
     });
 
     it('should run regression tests', async () => {
+      vi.useRealTimers();
       const results = await optimizer.runRegressionTests();
+      vi.useFakeTimers();
 
       expect(results).toBeInstanceOf(Array);
       expect(results.length).toBeGreaterThan(0);
@@ -428,7 +485,9 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
     });
 
     it('should validate all critical components', async () => {
+      vi.useRealTimers();
       const results = await optimizer.validateProductionReadiness();
+      vi.useFakeTimers();
 
       const expectedComponents = [
         'Audio Engine',
@@ -447,7 +506,10 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
     });
 
     it('should provide comprehensive validation report', async () => {
+      vi.useRealTimers();
       const results = await optimizer.validateProductionReadiness();
+      vi.useFakeTimers();
+
       const overallScore =
         results.reduce((sum, r) => sum + r.score, 0) / results.length;
 
@@ -460,7 +522,9 @@ describe('PerformanceOptimizer - Task 10: Performance Optimization & Quality Ass
     });
 
     it('should detect performance regressions', async () => {
+      vi.useRealTimers();
       const results = await optimizer.runRegressionTests();
+      vi.useFakeTimers();
 
       // Should have various regression tests
       const testTypes = results.map((r) => r.testName);

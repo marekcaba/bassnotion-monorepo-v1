@@ -84,6 +84,7 @@ export function DeleteAccountDialog({
         .fixed.inset-0.z-50.bg-black\\/80[data-state="open"],
         [data-state="open"].fixed.inset-0.z-50.bg-black\\/80,
         .fixed.inset-0.z-50[data-state="open"].bg-black\\/80 {
+          // TODO: Review non-null assertion - consider null safety
           animation: overlayShow 500ms ease-out forwards !important;
         }
         
@@ -91,6 +92,7 @@ export function DeleteAccountDialog({
         .fixed.inset-0.z-50.bg-black\\/80[data-state="closed"],
         [data-state="closed"].fixed.inset-0.z-50.bg-black\\/80,
         .fixed.inset-0.z-50[data-state="closed"].bg-black\\/80 {
+          // TODO: Review non-null assertion - consider null safety
           animation: overlayHide 400ms ease-out forwards !important;
         }
         
@@ -98,6 +100,7 @@ export function DeleteAccountDialog({
         [data-state="open"].fade-in-0,
         .fade-in-0[data-state="open"],
         [data-state="open"].animate-in.fade-in-0 {
+          // TODO: Review non-null assertion - consider null safety
           animation: overlayShow 500ms ease-out forwards !important;
         }
         
@@ -105,6 +108,7 @@ export function DeleteAccountDialog({
         [data-state="closed"].fade-in-0,
         .fade-in-0[data-state="closed"],
         [data-state="closed"].animate-in.fade-in-0 {
+          // TODO: Review non-null assertion - consider null safety
           animation: overlayHide 400ms ease-out forwards !important;
         }
         
@@ -222,6 +226,7 @@ export function DeleteAccountDialog({
                             variant="ghost"
                             size="sm"
                             className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            // TODO: Review non-null assertion - consider null safety
                             onClick={() => setShowPassword(!showPassword)}
                             disabled={isLoading}
                           >
@@ -255,6 +260,7 @@ export function DeleteAccountDialog({
                 <Button
                   type="submit"
                   variant="destructive"
+                  // TODO: Review non-null assertion - consider null safety
                   disabled={isLoading || !form.formState.isValid}
                   className="bg-red-600 hover:bg-red-700 text-white"
                 >

@@ -17,6 +17,26 @@ import {
   type SessionSnapshot,
 } from '../ComprehensiveStateManager.js';
 
+// CRITICAL: Mock Tone.js to prevent AudioContext creation issues
+vi.mock('tone', () => ({
+  default: {},
+  Tone: {},
+  Transport: {
+    start: vi.fn(),
+    stop: vi.fn(),
+    pause: vi.fn(),
+    bpm: { value: 120 },
+  },
+  getContext: vi.fn(() => ({
+    currentTime: 0,
+    sampleRate: 44100,
+    state: 'running',
+  })),
+  setContext: vi.fn(),
+  start: vi.fn(),
+  now: vi.fn(() => 0),
+}));
+
 // Mock the controllers
 vi.mock('../ProfessionalPlaybackController.js', () => ({
   ProfessionalPlaybackController: {
@@ -30,14 +50,18 @@ vi.mock('../ProfessionalPlaybackController.js', () => ({
   },
 }));
 
-vi.mock('../IntelligentTempoController.js', () => ({
-  IntelligentTempoController: vi.fn().mockImplementation(() => ({
+vi.mock('../IntelligentTempoController.js', () => {
+  const mockInstance = {
     getCurrentTempo: vi.fn().mockReturnValue(120),
     getTargetTempo: vi.fn().mockReturnValue(120),
     getConfig: vi.fn().mockReturnValue({ currentBPM: 120 }),
     setTempo: vi.fn(),
-  })),
-}));
+  };
+
+  return {
+    IntelligentTempoController: vi.fn().mockImplementation(() => mockInstance),
+  };
+});
 
 vi.mock('../TranspositionController.js', () => ({
   TranspositionController: vi.fn().mockImplementation(() => ({

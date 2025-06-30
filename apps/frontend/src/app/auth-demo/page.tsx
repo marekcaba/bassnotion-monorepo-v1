@@ -27,6 +27,7 @@ export default function AuthDemoPage() {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       setRegistrationResult(
+        // TODO: Review non-null assertion - consider null safety
         `✅ Registration successful!\nEmail: ${data.email}\nPassword: ${data.password.substring(0, 3)}***`,
       );
     } catch (error) {
@@ -45,6 +46,7 @@ export default function AuthDemoPage() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       setLoginResult(
+        // TODO: Review non-null assertion - consider null safety
         `✅ Login successful!\nEmail: ${data.email}\nPassword: ${data.password.substring(0, 3)}***`,
       );
     } catch (error) {
@@ -63,7 +65,9 @@ export default function AuthDemoPage() {
       // In a real app, this would redirect to the backend Google OAuth endpoint
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
+      // TODO: Review non-null assertion - consider null safety
       setRegistrationResult('✅ Google OAuth successful! (Demo)');
+      // TODO: Review non-null assertion - consider null safety
       setLoginResult('✅ Google OAuth successful! (Demo)');
     } catch (error) {
       setRegistrationResult(`❌ Google OAuth failed: ${error}`);

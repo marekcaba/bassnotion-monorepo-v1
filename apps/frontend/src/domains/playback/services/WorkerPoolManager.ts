@@ -28,6 +28,7 @@ import {
   MidiProcessingPayload,
   WorkerInitPayload,
 } from '../types/audio.js';
+import { DeviceInfoService } from './DeviceInfoService.js';
 
 export class WorkerPoolManager {
   private static instance: WorkerPoolManager;
@@ -35,6 +36,7 @@ export class WorkerPoolManager {
   private config: BackgroundProcessingConfig;
   private isInitialized = false;
   private messageId = 0;
+  private deviceInfoService: DeviceInfoService;
 
   // Performance monitoring
   private metrics: WorkerPoolMetrics = {
@@ -51,6 +53,7 @@ export class WorkerPoolManager {
   };
 
   private constructor() {
+    this.deviceInfoService = DeviceInfoService.getInstance();
     this.pool = {
       workers: new Map(),
       availableWorkers: new Set(),
@@ -81,6 +84,7 @@ export class WorkerPoolManager {
 
     this.config = { ...this.config, ...config };
 
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enableWorkerThreads) {
       console.log('Worker threads disabled in configuration');
       return;
@@ -88,6 +92,7 @@ export class WorkerPoolManager {
 
     try {
       // Check browser support
+      // TODO: Review non-null assertion - consider null safety
       if (!this.checkWorkerSupport()) {
         throw new Error('Worker threads not supported in this environment');
       }
@@ -123,6 +128,7 @@ export class WorkerPoolManager {
       workerType?: WorkerThreadType;
     } = {},
   ): Promise<T> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.isInitialized) {
       throw new Error('Worker pool not initialized');
     }
@@ -236,7 +242,10 @@ export class WorkerPoolManager {
   // Private implementation methods
 
   private getDefaultConfig(): BackgroundProcessingConfig {
-    const maxWorkers = Math.min(navigator.hardwareConcurrency || 4, 8);
+    const maxWorkers = Math.min(
+      this.deviceInfoService.getHardwareConcurrency() || 4,
+      8,
+    );
 
     return {
       enableWorkerThreads: true,

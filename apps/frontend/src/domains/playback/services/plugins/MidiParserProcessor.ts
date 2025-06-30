@@ -299,6 +299,7 @@ export class MidiParserProcessor {
   private async initializeWebMidi(): Promise<void> {
     try {
       await WebMidi.enable({ sysex: true });
+      // TODO: Review non-null assertion - consider null safety
       console.log('WebMidi enabled successfully!');
 
       // Setup input device handling
@@ -331,6 +332,7 @@ export class MidiParserProcessor {
    */
   private handleInputConnected(input: Input): void {
     this.inputs.push(input);
+    // TODO: Review non-null assertion - consider null safety
     if (!this.activeInput) {
       this.activeInput = input;
       this.setupInputListeners(input);
@@ -584,6 +586,7 @@ export class MidiParserProcessor {
    * Update tempo from meta event
    */
   private updateTempo(data: number[]): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData || data.length < 3) return;
 
     const byte0 = data[0] ?? 0;
@@ -601,6 +604,7 @@ export class MidiParserProcessor {
    * Update time signature from meta event
    */
   private updateTimeSignature(data: number[]): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData || data.length < 2) return;
 
     this.parsedData.metadata.timeSignature = {
@@ -613,6 +617,7 @@ export class MidiParserProcessor {
    * Update key signature from meta event
    */
   private updateKeySignature(data: number[]): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData || data.length < 2) return;
 
     const sharpsFlats = data[0] ?? 0;
@@ -651,6 +656,7 @@ export class MidiParserProcessor {
    * Update track name from meta event
    */
   private updateTrackName(trackName: string): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData || !trackName) return;
 
     // Update the most recently created track with the name
@@ -674,6 +680,7 @@ export class MidiParserProcessor {
    * Update track instrument information
    */
   private updateTrackInstrument(channel: number, program: number): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData) return;
 
     // General MIDI instrument mapping
@@ -869,6 +876,7 @@ export class MidiParserProcessor {
    * Get time since the last note on the same channel
    */
   private getTimeSincePreviousNote(channel: number): number {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData) return Infinity;
 
     let lastNoteTime = 0;
@@ -890,6 +898,7 @@ export class MidiParserProcessor {
    * Check if there are overlapping notes on the same channel
    */
   private hasOverlappingNotes(channel: number): boolean {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData) return false;
 
     let activeNotes = 0;
@@ -935,6 +944,7 @@ export class MidiParserProcessor {
    */
   private updateTrackData(channel: number, note: ParsedNote): void {
     // Implementation for updating track data
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData) {
       this.initializeParsedData();
     }
@@ -1055,6 +1065,7 @@ export class MidiParserProcessor {
    * Analyze note patterns to identify track type
    */
   private analyzeNotePattern(channel: number): number {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData) return 0;
 
     let patternConfidence = 0;
@@ -1062,6 +1073,7 @@ export class MidiParserProcessor {
 
     // Collect recent notes for the channel
     Object.entries(this.parsedData.tracks).forEach(([_key, tracks]) => {
+      // TODO: Review non-null assertion - consider null safety
       if (!Array.isArray(tracks)) return;
       tracks.forEach((track: ParsedTrack) => {
         if (track?.channel === channel && Array.isArray(track.notes)) {
@@ -1129,6 +1141,7 @@ export class MidiParserProcessor {
 
     for (let i = 0; i < notes.length; i++) {
       const currentNote = notes[i];
+      // TODO: Review non-null assertion - consider null safety
       if (!currentNote) continue;
 
       const simultaneousNotes = notes.filter(
@@ -1203,6 +1216,7 @@ export class MidiParserProcessor {
       const currentNote = notes[i];
       const previousNote = notes[i - 1];
 
+      // TODO: Review non-null assertion - consider null safety
       if (!currentNote || !previousNote) continue;
 
       const simultaneousNotes = notes.filter(
@@ -1263,9 +1277,11 @@ export class MidiParserProcessor {
     channel: number,
     confidence: TrackConfidence['byFeature'],
   ): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData) return;
 
     Object.entries(this.parsedData.tracks).forEach(([_key, tracks]) => {
+      // TODO: Review non-null assertion - consider null safety
       if (!Array.isArray(tracks)) return;
       tracks.forEach((track: ParsedTrack) => {
         if (track?.channel === channel && track.confidence) {
@@ -1290,14 +1306,17 @@ export class MidiParserProcessor {
     channel: number,
     note: ParsedNote,
   ): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData) return;
 
     const trackKey = trackType.toLowerCase() as keyof ParsedTrackCollection;
     const tracks = this.parsedData.tracks[trackKey];
+    // TODO: Review non-null assertion - consider null safety
     if (!Array.isArray(tracks)) return;
 
     let track = tracks.find((t: ParsedTrack) => t.channel === channel);
 
+    // TODO: Review non-null assertion - consider null safety
     if (!track) {
       track = {
         id: `${trackType}-${channel}`,
@@ -1336,6 +1355,7 @@ export class MidiParserProcessor {
     octave: number,
     endTime: number,
   ): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData) return;
 
     // Update note end time in all track types
@@ -1364,6 +1384,7 @@ export class MidiParserProcessor {
     channel: number,
     controller: ControllerEvent,
   ): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData) return;
 
     // Update controller data in all relevant tracks
@@ -1383,6 +1404,7 @@ export class MidiParserProcessor {
     channel: number,
     articulation: ArticulationEvent,
   ): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData) return;
 
     // Update expression data in relevant tracks
@@ -1399,9 +1421,11 @@ export class MidiParserProcessor {
    * Update performance metrics with new note data
    */
   private updatePerformanceMetrics(note: ParsedNote): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData) return;
 
     const metrics = this.parsedData.performance;
+    // TODO: Review non-null assertion - consider null safety
     if (!metrics) return;
 
     // Update velocity range
@@ -1472,6 +1496,7 @@ export class MidiParserProcessor {
    * Perform comprehensive music theory analysis
    */
   public performMusicTheoryAnalysis(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.parsedData) return;
 
     this.musicTheoryAnalyzer.analyzeHarmony(this.parsedData);

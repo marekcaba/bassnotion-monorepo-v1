@@ -291,6 +291,7 @@ export class MemoryLeakDetector {
   public static getInstance(
     config?: Partial<LeakDetectorConfig>,
   ): MemoryLeakDetector {
+    // TODO: Review non-null assertion - consider null safety
     if (!MemoryLeakDetector.instance) {
       MemoryLeakDetector.instance = new MemoryLeakDetector(config);
     }
@@ -327,8 +328,10 @@ export class MemoryLeakDetector {
    * Register a resource for leak monitoring
    */
   public registerResource(resource: ManagedResource): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enabled) return;
     // Gracefully handle null or invalid resources
+    // TODO: Review non-null assertion - consider null safety
     if (!resource || !resource.weakRefs) {
       console.warn('Cannot register invalid resource:', resource);
       return;
@@ -397,12 +400,14 @@ export class MemoryLeakDetector {
   public async remediateLeak(leakId: string, force = false): Promise<boolean> {
     const leak =
       this.suspectedLeaks.get(leakId) || this.confirmedLeaks.get(leakId);
+    // TODO: Review non-null assertion - consider null safety
     if (!leak) {
       console.warn(`Cannot remediate: leak ${leakId} not found`);
       return false;
     }
 
     if (
+      // TODO: Review non-null assertion - consider null safety
       !force &&
       leak.remediationAttempts >= this.config.remediation.maxRemediationAttempts
     ) {
@@ -414,6 +419,7 @@ export class MemoryLeakDetector {
 
     const now = Date.now();
     if (
+      // TODO: Review non-null assertion - consider null safety
       !force &&
       leak.lastRemediationAttempt &&
       now - leak.lastRemediationAttempt < this.config.remediation.cooldownPeriod
@@ -498,6 +504,7 @@ export class MemoryLeakDetector {
     event: K,
     handler: MemoryLeakDetectorEvents[K],
   ): () => void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
     }
@@ -963,6 +970,7 @@ export class MemoryLeakDetector {
 
       for (const resource of matchingResources) {
         const existingLeak = this.findExistingLeak(resource.id);
+        // TODO: Review non-null assertion - consider null safety
         if (!existingLeak) {
           const leak = this.createSuspectedLeak(
             resource,
@@ -1047,6 +1055,7 @@ export class MemoryLeakDetector {
     const latest = this.memorySnapshots[this.memorySnapshots.length - 1];
     const previous = this.memorySnapshots[this.memorySnapshots.length - 2];
 
+    // TODO: Review non-null assertion - consider null safety
     if (!latest || !previous) return 0;
 
     const memoryDelta = latest.totalMemory - previous.totalMemory;
@@ -1163,6 +1172,7 @@ export class MemoryLeakDetector {
   private markLeakAsResolved(leakId: string, method: string): void {
     const leak =
       this.suspectedLeaks.get(leakId) || this.confirmedLeaks.get(leakId);
+    // TODO: Review non-null assertion - consider null safety
     if (!leak) return;
 
     leak.remediationSuccess = true;
@@ -1211,6 +1221,7 @@ export class MemoryLeakDetector {
   }
 
   private startBackgroundDetection(): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.scanning.backgroundScanning) return;
 
     // Use window.setInterval if available (for proper test mocking), otherwise fallback
@@ -1285,6 +1296,7 @@ export class MemoryLeakDetector {
 
   public isLeakConfirmed(resourceId: string): SuspectedLeak | null {
     const suspectedLeak = this.suspectedLeaks.get(resourceId);
+    // TODO: Review non-null assertion - consider null safety
     if (!suspectedLeak) return null;
 
     // For now, simple confidence-based confirmation

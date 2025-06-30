@@ -23,37 +23,52 @@ import {
 } from '../plugins/ChordInstrumentProcessor.js';
 
 // Mock Tone.js since it requires browser environment
-vi.mock('tone', () => ({
-  PolySynth: vi.fn().mockImplementation(() => ({
-    set: vi.fn(),
-    triggerAttackRelease: vi.fn(),
-    releaseAll: vi.fn(),
-    dispose: vi.fn(),
-    chain: vi.fn().mockReturnThis(),
-    toDestination: vi.fn().mockReturnThis(),
-    maxPolyphony: 8,
-  })),
-  Synth: vi.fn(),
-  Reverb: vi.fn().mockImplementation(() => ({
-    set: vi.fn(),
-    dispose: vi.fn(),
-  })),
-  Chorus: vi.fn().mockImplementation(() => ({
-    set: vi.fn(),
-    dispose: vi.fn(),
-  })),
-  StereoWidener: vi.fn().mockImplementation(() => ({
-    width: { value: 0 },
-    dispose: vi.fn(),
-  })),
-  EQ3: vi.fn().mockImplementation(() => ({
-    set: vi.fn(),
-    dispose: vi.fn(),
-  })),
-  Transport: {
-    scheduleOnce: vi.fn(),
-  },
-}));
+vi.mock('tone', () => {
+  const createMockPolySynth = () => {
+    const mockPolySynth: any = {
+      set: vi.fn(),
+      triggerAttackRelease: vi.fn(),
+      releaseAll: vi.fn(),
+      dispose: vi.fn(),
+      maxPolyphony: 8,
+    };
+    // Add chain and toDestination methods that return the mock itself
+    mockPolySynth.chain = vi.fn().mockReturnValue(mockPolySynth);
+    mockPolySynth.toDestination = vi.fn().mockReturnValue(mockPolySynth);
+    return mockPolySynth;
+  };
+
+  return {
+    PolySynth: vi.fn().mockImplementation(createMockPolySynth),
+    Synth: vi.fn(),
+    Reverb: vi.fn().mockImplementation(() => ({
+      set: vi.fn(), // Critical for effect configuration
+      dispose: vi.fn(),
+      wet: { value: 0 }, // Add wet property for reverb
+    })),
+    Chorus: vi.fn().mockImplementation(() => ({
+      set: vi.fn(), // Critical for effect configuration
+      dispose: vi.fn(),
+      frequency: { value: 0 }, // Add frequency property for chorus
+      depth: { value: 0 }, // Add depth property for chorus
+      wet: { value: 0 }, // Add wet property for chorus
+    })),
+    StereoWidener: vi.fn().mockImplementation(() => ({
+      width: { value: 0 },
+      dispose: vi.fn(),
+    })),
+    EQ3: vi.fn().mockImplementation(() => ({
+      set: vi.fn(), // Critical for EQ configuration
+      dispose: vi.fn(),
+      low: { value: 0 }, // Add low frequency control
+      mid: { value: 0 }, // Add mid frequency control
+      high: { value: 0 }, // Add high frequency control
+    })),
+    Transport: {
+      scheduleOnce: vi.fn(),
+    },
+  };
+});
 
 // Mock setTimeout to prevent actual delays
 vi.stubGlobal(
@@ -69,7 +84,10 @@ describe('ChordInstrumentProcessor', () => {
   });
 
   afterEach(() => {
-    processor.dispose();
+    // Safely dispose processor if it was created successfully
+    if (processor && typeof processor.dispose === 'function') {
+      processor.dispose();
+    }
   });
 
   describe('Initialization', () => {

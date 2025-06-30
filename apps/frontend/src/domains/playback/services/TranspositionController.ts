@@ -348,6 +348,7 @@ export class KeySignatureAnalyzer {
 
     // Check major keys
     Array.from(this.keyProfiles.entries()).forEach(([key, profile]) => {
+      // TODO: Review non-null assertion - consider null safety
       if (!key.endsWith('m')) {
         const correlation = this.calculateCorrelation(noteHistogram, profile);
         if (correlation > bestConfidence) {
@@ -456,6 +457,7 @@ export class KeySignatureAnalyzer {
     mode: MusicalMode;
     primaryKey: string;
   } {
+    // TODO: Review non-null assertion - consider null safety
     if (!midiAnalysis)
       return { ...chordAnalysis, primaryKey: chordAnalysis.key };
 
@@ -774,6 +776,7 @@ export class TranspositionController {
    * Analyze key progression and detect modulations
    */
   public analyzeKeyProgression(): KeyAnalysis {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.currentKeyAnalysis) {
       // Perform initial analysis
       this.updateKeyAnalysis();
@@ -809,6 +812,7 @@ export class TranspositionController {
     event: string,
     handler: (event: TranspositionEvent) => void,
   ): () => void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
     }

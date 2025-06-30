@@ -19,9 +19,10 @@ import {
 import { usePlaybackStore } from '../playbackStore.js';
 import type { AudioSourceConfig } from '../../types/audio.js';
 
-// Mock performance for consistent testing
+// Mock performance with a safe implementation
+const mockPerformanceNow = vi.fn(() => 1000);
 Object.defineProperty(performance, 'now', {
-  value: vi.fn(() => Date.now()),
+  value: mockPerformanceNow,
   configurable: true,
 });
 

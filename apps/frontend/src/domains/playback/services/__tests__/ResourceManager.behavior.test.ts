@@ -5,6 +5,11 @@
  * Following the successful pattern from ResourceUsageMonitor, WorkerPoolManager,
  * PerformanceMonitor, StatePersistenceManager, ABTestFramework, MemoryLeakDetector,
  * and AudioResourceDisposer.
+ *
+ * Tests the ResourceManager's ability to efficiently manage audio resources,
+ * memory allocation, and resource cleanup in professional audio applications.
+ *
+ * Part of Story 2.1: Task 5, Subtask 5.1
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -22,6 +27,32 @@ import type {
   BatteryStatus,
   ThermalStatus,
 } from '../../types/audio.js';
+
+// CRITICAL: Mock Tone.js to prevent AudioContext creation issues
+vi.mock('tone', () => ({
+  default: {},
+  Tone: {},
+  Transport: {
+    start: vi.fn(),
+    stop: vi.fn(),
+    pause: vi.fn(),
+    bpm: { value: 120 },
+  },
+  getContext: vi.fn(() => ({
+    currentTime: 0,
+    sampleRate: 44100,
+    state: 'running',
+  })),
+  getTransport: vi.fn(() => ({
+    start: vi.fn(),
+    stop: vi.fn(),
+    pause: vi.fn(),
+    bpm: { value: 120 },
+  })),
+  setContext: vi.fn(),
+  start: vi.fn(),
+  now: vi.fn(() => 0),
+}));
 
 // Mock fetch and fix markResourceTiming issue
 const mockFetch = vi.fn();
@@ -1186,10 +1217,16 @@ describe('ResourceManager - Behavior', () => {
       // Arrange
       await manager.initialize();
 
-      // Mock high memory usage
-      if (performance.memory) {
-        vi.mocked(performance.memory).usedJSHeapSize = 1.9 * 1024 * 1024 * 1024; // Close to limit
-      }
+      // Mock high memory usage safely
+      const mockPerformance = {
+        ...performance,
+        memory: {
+          usedJSHeapSize: 1.9 * 1024 * 1024 * 1024, // Close to limit
+          totalJSHeapSize: 2 * 1024 * 1024 * 1024,
+          jsHeapSizeLimit: 2 * 1024 * 1024 * 1024,
+        },
+      };
+      vi.stubGlobal('performance', mockPerformance);
 
       // Act & Assert: Should handle memory pressure without throwing
       const report = manager.generateUsageReport();
@@ -1197,6 +1234,8 @@ describe('ResourceManager - Behavior', () => {
 
       const cleanupReport = await manager.cleanupResources({ force: true });
       expectations.shouldPerformCleanup(cleanupReport);
+
+      vi.unstubAllGlobals();
     });
   });
 });

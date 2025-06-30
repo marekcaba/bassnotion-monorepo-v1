@@ -261,6 +261,7 @@ export class N8nAssetPipelineProcessor {
   private async enhanceAssetManifest(
     manifest?: AssetManifest,
   ): Promise<ProcessedAssetManifest | null> {
+    // TODO: Review non-null assertion - consider null safety
     if (!manifest || !this.config.enableCdnOptimization) {
       return null;
     }
@@ -341,6 +342,7 @@ export class N8nAssetPipelineProcessor {
     }
 
     const selectedRoute = availableRoutes[0];
+    // TODO: Review non-null assertion - consider null safety
     if (!selectedRoute) {
       throw new Error('No route selected');
     }
@@ -387,6 +389,7 @@ export class N8nAssetPipelineProcessor {
     routingDecision: N8nRoutingDecision,
   ): string {
     const route = this.assetRoutes.get(routingDecision.selectedRoute);
+    // TODO: Review non-null assertion - consider null safety
     if (!route) return originalUrl;
 
     // Extract asset path from original URL
@@ -524,6 +527,7 @@ export class N8nAssetPipelineProcessor {
       payload.audioSamples?.ambienceTrack;
 
     // Return null if no meaningful musical content to analyze
+    // TODO: Review non-null assertion - consider null safety
     if (!hasMidiContent && !hasAudioContent) {
       console.log('🎼 No musical content found - skipping analysis');
       return null;
@@ -859,6 +863,7 @@ export class N8nAssetPipelineProcessor {
     success: boolean,
   ): void {
     const route = this.assetRoutes.get(routeId);
+    // TODO: Review non-null assertion - consider null safety
     if (!route) return;
 
     // Update latency (rolling average)
@@ -940,6 +945,7 @@ export class N8nAssetPipelineProcessor {
    */
   private optimizeUrlForRoute(originalUrl: string, routeId: string): string {
     const route = this.assetRoutes.get(routeId);
+    // TODO: Review non-null assertion - consider null safety
     if (!route) return originalUrl;
 
     try {
@@ -1070,6 +1076,7 @@ export class N8nAssetPipelineProcessor {
 
       const fallbackRoute =
         degradedRoutes[0] || Array.from(this.assetRoutes.values())[0];
+      // TODO: Review non-null assertion - consider null safety
       if (!fallbackRoute) {
         throw new Error('No routes available');
       }
@@ -1092,6 +1099,7 @@ export class N8nAssetPipelineProcessor {
     }
 
     const fallbackRoute = availableRoutes[0];
+    // TODO: Review non-null assertion - consider null safety
     if (!fallbackRoute) {
       throw new Error('No available routes for load balancing');
     }
@@ -1109,6 +1117,7 @@ export class N8nAssetPipelineProcessor {
     return {
       lowEnd: cores <= 2 || memory <= 2,
       premium: cores >= 8 && memory >= 8,
+      // TODO: Review non-null assertion - consider null safety
       webGL: !!window.WebGLRenderingContext,
       cores,
       memory,
@@ -1120,6 +1129,7 @@ export class N8nAssetPipelineProcessor {
    */
   private detectNetworkQuality(): 'slow' | 'medium' | 'fast' {
     const connection = (navigator as any).connection;
+    // TODO: Review non-null assertion - consider null safety
     if (!connection) return 'medium';
 
     const effectiveType = connection.effectiveType;
@@ -1133,6 +1143,7 @@ export class N8nAssetPipelineProcessor {
    */
   private shouldUseRoute(routeId: string): boolean {
     const route = this.assetRoutes.get(routeId);
+    // TODO: Review non-null assertion - consider null safety
     if (!route) return false;
 
     // Circuit breaker logic

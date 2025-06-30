@@ -544,6 +544,7 @@ export class SyncProcessor extends BaseAudioPlugin {
     buffer: AudioBuffer,
     currentTime: number,
   ): TempoDetectionResult {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.analyser || !this.frequencyData || !this.timeDomainData) {
       return {
         detectedTempo: this.tempoDetectionState.currentTempo,
@@ -593,6 +594,7 @@ export class SyncProcessor extends BaseAudioPlugin {
     buffer: AudioBuffer,
     _currentTime: number,
   ): PhaseAlignmentResult {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.correlationBuffer || !this.referenceBuffer) {
       return {
         phaseOffset: 0,
@@ -767,6 +769,7 @@ export class SyncProcessor extends BaseAudioPlugin {
   }
 
   private storeBufferForAlignment(buffer: AudioBuffer): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.alignmentBuffer) return;
 
     // Copy buffer data to alignment buffer (mono)
@@ -788,8 +791,11 @@ export class SyncProcessor extends BaseAudioPlugin {
 
   private performCrossCorrelation(): Float32Array {
     if (
+      // TODO: Review non-null assertion - consider null safety
       !this.correlationBuffer ||
+      // TODO: Review non-null assertion - consider null safety
       !this.referenceBuffer ||
+      // TODO: Review non-null assertion - consider null safety
       !this.alignmentBuffer
     ) {
       return new Float32Array(0);
@@ -888,6 +894,7 @@ export class SyncProcessor extends BaseAudioPlugin {
   }
 
   private storeReferenceAudio(assetId: string, buffer: AudioBuffer): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.referenceBuffer) return;
 
     // Store reference audio for alignment

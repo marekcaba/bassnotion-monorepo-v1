@@ -369,6 +369,21 @@ describe('AuthSecurityService', () => {
   });
 
   describe('login attempt recording', () => {
+    beforeEach(() => {
+      // Reset all mocks and ensure proper setup for these tests
+      vi.clearAllMocks();
+
+      // Create a fresh mock database service that will be properly detected
+      mockDatabaseService = {
+        supabase: {
+          from: vi.fn(),
+        },
+      };
+
+      // Recreate the service with the fresh mock
+      service = new AuthSecurityService(mockDatabaseService);
+    });
+
     it('should record successful login attempts', async () => {
       const mockQuery = {
         insert: vi.fn().mockResolvedValue({ error: null }),

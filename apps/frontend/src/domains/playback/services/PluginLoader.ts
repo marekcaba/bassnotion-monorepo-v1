@@ -135,6 +135,7 @@ export class PluginLoader {
   public static getInstance(
     config?: Partial<PluginLoaderConfig>,
   ): PluginLoader {
+    // TODO: Review non-null assertion - consider null safety
     if (!PluginLoader.instance) {
       PluginLoader.instance = new PluginLoader(config);
     }
@@ -153,7 +154,12 @@ export class PluginLoader {
     // Check if already loading
     const loadingKey = pluginId || url;
     if (this.loadingQueue.has(loadingKey)) {
-      return this.loadingQueue.get(loadingKey)!;
+      return (
+        this.loadingQueue.get(loadingKey) ??
+        (() => {
+          throw new Error('Expected loadingQueue to contain loadingKey');
+        })()
+      );
     }
 
     // For security violations, we want to throw exceptions immediately
@@ -162,6 +168,7 @@ export class PluginLoader {
     const isTrustedPlugin =
       pluginId && this.config.trustedPlugins?.includes(pluginId);
 
+    // TODO: Review non-null assertion - consider null safety
     if (!isTrustedPlugin) {
       try {
         this.validatePluginUrl(url);
@@ -208,6 +215,7 @@ export class PluginLoader {
    */
   public async reloadPlugin(pluginId: string): Promise<PluginLoadResult> {
     const watchedPlugin = this.watchedPlugins.get(pluginId);
+    // TODO: Review non-null assertion - consider null safety
     if (!watchedPlugin) {
       throw createResourceError(
         ResourceErrorCode.NOT_FOUND,
@@ -293,6 +301,7 @@ export class PluginLoader {
     }
 
     const loadPromises = dependencies.map(async (dep) => {
+      // TODO: Review non-null assertion - consider null safety
       if (!this.dependencyCache.has(dep)) {
         try {
           const module = await dynamicImport(dep);
@@ -314,6 +323,7 @@ export class PluginLoader {
    * Enable hot reload for a plugin
    */
   public enableHotReload(pluginId: string, url: string): void {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enableHotReload || !this.config.developmentMode) {
       return;
     }
@@ -339,6 +349,7 @@ export class PluginLoader {
     plugin: AudioPlugin,
     context: PluginLoadContext,
   ): Promise<boolean> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.config.enableValidation) {
       return true;
     }
@@ -351,6 +362,7 @@ export class PluginLoader {
       );
     }
 
+    // TODO: Review non-null assertion - consider null safety
     if (!plugin.metadata) {
       throw createValidationError(
         ValidationErrorCode.INVALID_FORMAT,
@@ -374,6 +386,7 @@ export class PluginLoader {
       context.pluginId &&
       this.config.trustedPlugins?.includes(context.pluginId);
     // Check plugin ID matches context (but be more flexible)
+    // TODO: Review non-null assertion - consider null safety
     if (context.pluginId && plugin.metadata.id && !isTrustedPlugin) {
       const expectedId = context.pluginId.toLowerCase();
       const actualId = plugin.metadata.id.toLowerCase();
@@ -384,6 +397,7 @@ export class PluginLoader {
         expectedId.includes(actualId) ||
         actualId.includes(expectedId);
 
+      // TODO: Review non-null assertion - consider null safety
       if (!isCompatible) {
         throw createValidationError(
           ValidationErrorCode.INVALID_FORMAT,
@@ -609,6 +623,7 @@ export class PluginLoader {
     else if (
       module.default &&
       typeof module.default === 'object' &&
+      // TODO: Review non-null assertion - consider null safety
       !module.default.prototype // Not a constructor function
     ) {
       plugin = module.default;
@@ -635,6 +650,7 @@ export class PluginLoader {
       }
     }
 
+    // TODO: Review non-null assertion - consider null safety
     if (!PluginClass && !plugin) {
       throw createValidationError(
         ValidationErrorCode.INVALID_FORMAT,
@@ -642,6 +658,7 @@ export class PluginLoader {
       );
     }
 
+    // TODO: Review non-null assertion - consider null safety
     if (!plugin) {
       try {
         // Create plugin instance
@@ -688,6 +705,7 @@ export class PluginLoader {
         (origin) => parsedUrl.origin === origin || url.startsWith(origin),
       );
 
+      // TODO: Review non-null assertion - consider null safety
       if (!isAllowed) {
         throw createValidationError(
           ValidationErrorCode.INVALID_FORMAT,
@@ -721,6 +739,7 @@ export class PluginLoader {
     const missingDeps: string[] = [];
 
     for (const dep of dependencies) {
+      // TODO: Review non-null assertion - consider null safety
       if (!this.dependencyCache.has(dep)) {
         try {
           await dynamicImport(dep);

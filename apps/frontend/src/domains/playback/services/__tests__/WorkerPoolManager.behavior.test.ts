@@ -18,6 +18,13 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { WorkerPoolManager } from '../WorkerPoolManager.js';
 
+// Mock DeviceInfoService at module level
+vi.mock('../DeviceInfoService.js', () => ({
+  DeviceInfoService: {
+    getInstance: vi.fn(),
+  },
+}));
+
 // Suppress expected shutdown errors during test cleanup
 if (typeof process !== 'undefined' && process.on) {
   process.on('unhandledRejection', (reason: any) => {
@@ -312,16 +319,29 @@ describe('WorkerPoolManager Behaviors', () => {
   beforeEach(async () => {
     // Reset Worker support flag for tests
     delete (global as any).__workerDisabled;
-    // Ensure navigator is available and mutable
-    if (!(global as any).navigator) {
-      (global as any).navigator = {};
-    }
-    // Reset navigator properties to defaults
-    (global as any).navigator.hardwareConcurrency = 2;
-    (global as any).navigator.deviceMemory = 4;
-    (global as any).navigator.userAgent =
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
-    (global as any).navigator.onLine = true;
+
+    // Mock DeviceInfoService for WorkerPoolManager
+    const mockDeviceInfoService = {
+      getHardwareConcurrency: vi.fn().mockReturnValue(2),
+      getDeviceInfo: vi.fn().mockReturnValue({
+        userAgent:
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        hardwareConcurrency: 2,
+        deviceMemory: 4,
+        platform: 'desktop',
+        onLine: true,
+      }),
+      isMobile: vi.fn().mockReturnValue(false),
+      isTablet: vi.fn().mockReturnValue(false),
+      isLowEndDevice: vi.fn().mockReturnValue(false),
+      getNetworkSpeed: vi.fn().mockReturnValue('medium'),
+    };
+
+    // Set up DeviceInfoService mock
+    const { DeviceInfoService } = await import('../DeviceInfoService.js');
+    vi.mocked(DeviceInfoService.getInstance).mockReturnValue(
+      mockDeviceInfoService as any,
+    );
     // Setup console spies for tests that expect console output
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
@@ -401,7 +421,12 @@ describe('WorkerPoolManager Behaviors', () => {
     });
 
     test('should create worker pool based on device capabilities', async () => {
-      (global as any).navigator.hardwareConcurrency = 1;
+      // Update DeviceInfoService mock to return constrained device
+      const { DeviceInfoService } = await import('../DeviceInfoService.js');
+      const mockDeviceInfoService = vi.mocked(
+        DeviceInfoService.getInstance,
+      )() as any;
+      mockDeviceInfoService.getHardwareConcurrency.mockReturnValue(1);
 
       await manager.initialize();
 
@@ -832,9 +857,19 @@ describe('WorkerPoolManager Behaviors', () => {
     }, 15000);
 
     test('should optimize for mobile devices', async () => {
-      // Simulate mobile device
-      (global as any).navigator.userAgent =
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X)';
+      // Update DeviceInfoService mock to simulate mobile device
+      const { DeviceInfoService } = await import('../DeviceInfoService.js');
+      const mockDeviceInfoService = vi.mocked(
+        DeviceInfoService.getInstance,
+      )() as any;
+      mockDeviceInfoService.isMobile.mockReturnValue(true);
+      mockDeviceInfoService.getDeviceInfo.mockReturnValue({
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X)',
+        hardwareConcurrency: 4,
+        deviceMemory: 3,
+        platform: 'mobile',
+        onLine: true,
+      });
 
       await manager.dispose();
       WorkerPoolManager.resetInstance();

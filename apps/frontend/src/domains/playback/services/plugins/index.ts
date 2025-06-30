@@ -25,11 +25,6 @@ export { MetronomeInstrumentProcessor } from './MetronomeInstrumentProcessor.js'
 import { BassProcessor } from './BassProcessor.js';
 import { DrumProcessor } from './DrumProcessor.js';
 import { SyncProcessor } from './SyncProcessor.js';
-import { MidiParserProcessor } from './MidiParserProcessor.js';
-import { BassInstrumentProcessor } from './BassInstrumentProcessor.js';
-import { DrumInstrumentProcessor } from './DrumInstrumentProcessor.js';
-import { ChordInstrumentProcessor } from './ChordInstrumentProcessor.js';
-import { MetronomeInstrumentProcessor } from './MetronomeInstrumentProcessor.js';
 import type { AudioPlugin } from '../../types/plugin.js';
 
 /**
@@ -168,11 +163,13 @@ export async function applyPluginPreset(
 ): Promise<void> {
   const presets =
     PLUGIN_PRESETS[plugin.metadata.id as keyof typeof PLUGIN_PRESETS];
+  // TODO: Review non-null assertion - consider null safety
   if (!presets) {
     throw new Error(`No presets available for plugin ${plugin.metadata.id}`);
   }
 
   const preset = presets[presetName as keyof typeof presets];
+  // TODO: Review non-null assertion - consider null safety
   if (!preset) {
     throw new Error(
       `Preset '${presetName}' not found for plugin ${plugin.metadata.id}`,

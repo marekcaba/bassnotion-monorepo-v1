@@ -128,11 +128,13 @@ export function ProfileEditDialog({
       <style>{`
         /* Enhanced overlay animation - ENTRANCE */
         [data-state="open"].fixed.inset-0.z-50 {
+          // TODO: Review non-null assertion - consider null safety
           animation: overlayShow 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
         }
         
         /* Enhanced overlay animation - EXIT */
         [data-state="closed"].fixed.inset-0.z-50 {
+          // TODO: Review non-null assertion - consider null safety
           animation: overlayHide 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
         }
         
@@ -272,6 +274,7 @@ export function ProfileEditDialog({
                 </Button>
                 <Button
                   type="submit"
+                  // TODO: Review non-null assertion - consider null safety
                   disabled={isLoading || !isDirty}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >

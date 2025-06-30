@@ -427,16 +427,47 @@ export const createAudioLibraryMocks = (
     // Core
     context: mockContext,
     Destination: vi.fn(() => mockDestination),
+    getDestination: vi.fn(() => mockDestination),
     Transport: mockTransport,
+    getTransport: vi.fn(() => mockTransport),
     Master: mockDestination,
 
     // Sources
     Player: vi.fn(() => mockPlayer),
     Synth: vi.fn(() => mockSynth),
     Oscillator: vi.fn(() => mockOscillator),
+    PolySynth: vi.fn(() => ({
+      ...createAudioNodeMock('PolySynth'),
+      triggerAttack: vi.fn(),
+      triggerRelease: vi.fn(),
+      triggerAttackRelease: vi.fn(),
+      set: vi.fn(),
+      get: vi.fn(),
+      releaseAll: vi.fn(),
+    })),
+    Sampler: vi.fn(() => ({
+      ...createAudioNodeMock('Sampler'),
+      triggerAttack: vi.fn(),
+      triggerRelease: vi.fn(),
+      triggerAttackRelease: vi.fn(),
+      loaded: true,
+      load: vi.fn().mockResolvedValue(undefined),
+    })),
 
     // Effects
     Volume: vi.fn(() => mockVolume),
+    Gain: vi.fn(() => ({
+      ...createAudioNodeMock('Gain'),
+      gain: createAudioParamMock(1),
+    })),
+    PitchShift: vi.fn(() => ({
+      ...createAudioNodeMock('PitchShift'),
+      pitch: 0,
+      windowSize: 0.1,
+      delayTime: createAudioParamMock(0),
+      feedback: createAudioParamMock(0),
+      wet: createAudioParamMock(1),
+    })),
     Panner: vi.fn(() => mockPanner),
     Filter: vi.fn(() => mockFilter),
     Distortion: vi.fn(() => mockDistortion),
@@ -444,10 +475,54 @@ export const createAudioLibraryMocks = (
     Delay: vi.fn(() => mockDelay),
     Chorus: vi.fn(() => mockChorus),
     Compressor: vi.fn(() => mockCompressor),
+    Limiter: vi.fn(() => ({
+      ...createAudioNodeMock('Limiter'),
+      threshold: createAudioParamMock(-6),
+    })),
+    Gate: vi.fn(() => ({
+      ...createAudioNodeMock('Gate'),
+      threshold: createAudioParamMock(-40),
+      attack: createAudioParamMock(0.01),
+      release: createAudioParamMock(0.1),
+    })),
+    StereoWidener: vi.fn(() => ({
+      ...createAudioNodeMock('StereoWidener'),
+      width: createAudioParamMock(0),
+    })),
+    CrossFade: vi.fn(() => ({
+      ...createAudioNodeMock('CrossFade'),
+      fade: createAudioParamMock(0.5),
+      a: createAudioNodeMock('CrossFadeA'),
+      b: createAudioNodeMock('CrossFadeB'),
+    })),
     EQ3: vi.fn(() => mockEQ3),
 
     // Envelopes
     Envelope: vi.fn(() => mockEnvelope),
+    AmplitudeEnvelope: vi.fn(() => ({
+      ...mockEnvelope,
+      attack: 0.01,
+      decay: 0.1,
+      sustain: 1,
+      release: 1,
+    })),
+
+    // Sequencing
+    Sequence: vi.fn(() => ({
+      start: vi.fn(),
+      stop: vi.fn(),
+      dispose: vi.fn(),
+      add: vi.fn(),
+      remove: vi.fn(),
+      removeAll: vi.fn(),
+      events: [],
+      callback: vi.fn(),
+      interval: '8n',
+      humanize: false,
+      probability: 1,
+      mute: false,
+      playbackRate: 1,
+    })),
 
     // Analysis
     Analyser: vi.fn(() => mockAnalyser),
@@ -493,6 +568,8 @@ export const createAudioLibraryMocks = (
       loaded: true,
       load: vi.fn().mockResolvedValue(undefined),
     })),
+
+    ToneAudioNode: vi.fn(() => createAudioNodeMock('ToneAudioNode')),
 
     // Effects chains
     Chain: vi.fn(() => ({

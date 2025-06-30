@@ -27,6 +27,7 @@ export function useFormField() {
 
   const fieldState = getFieldState(fieldContext.name, formState);
 
+  // TODO: Review non-null assertion - consider null safety
   if (!fieldContext) {
     throw new Error('useFormField should be used within <FormField>');
   }

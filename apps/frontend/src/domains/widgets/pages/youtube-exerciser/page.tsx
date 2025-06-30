@@ -12,6 +12,7 @@ export default function YouTubeExerciserPage() {
     return <Loading />;
   }
 
+  // TODO: Review non-null assertion - consider null safety
   if (!user) {
     return (
       <ErrorMessage

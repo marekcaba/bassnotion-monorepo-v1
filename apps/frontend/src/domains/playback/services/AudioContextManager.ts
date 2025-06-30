@@ -35,6 +35,7 @@ export class AudioContextManager {
   }
 
   public static getInstance(): AudioContextManager {
+    // TODO: Review non-null assertion - consider null safety
     if (!AudioContextManager.instance) {
       AudioContextManager.instance = new AudioContextManager();
     }
@@ -69,6 +70,7 @@ export class AudioContextManager {
   private async performInitialization(): Promise<void> {
     try {
       // Check browser support
+      // TODO: Review non-null assertion - consider null safety
       if (!this.isBrowserSupported()) {
         throw new Error('Web Audio API not supported in this browser');
       }
@@ -113,6 +115,7 @@ export class AudioContextManager {
    * Throws error if not initialized
    */
   public getContext(): AudioContext {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.audioContext || !this.isInitialized) {
       throw new Error(
         'AudioContext not initialized. Call initialize() first from a user gesture.',
@@ -132,6 +135,7 @@ export class AudioContextManager {
    * Resume audio context from suspended state
    */
   public async resume(): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.audioContext) {
       throw new Error('AudioContext not initialized');
     }
@@ -160,6 +164,7 @@ export class AudioContextManager {
    * Suspend audio context (for battery saving)
    */
   public async suspend(): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.audioContext) return;
 
     try {
@@ -188,6 +193,7 @@ export class AudioContextManager {
    * Should be called on app unmount or navigation away
    */
   public async dispose(): Promise<void> {
+    // TODO: Review non-null assertion - consider null safety
     if (!this.audioContext) return;
 
     try {
@@ -216,6 +222,7 @@ export class AudioContextManager {
    * Check if Web Audio API is supported
    */
   public isBrowserSupported(): boolean {
+    // TODO: Review non-null assertion - consider null safety
     return !!(window.AudioContext || (window as any).webkitAudioContext);
   }
 

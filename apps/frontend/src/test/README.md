@@ -29,7 +29,10 @@ Our `audioLibraryMocks.ts` provides comprehensive Tone.js mocking for audio proc
 ### Basic Usage
 
 ```typescript
-import { createAudioLibraryMocks, audioPresets } from '../test/mocks/audioLibraryMocks.js';
+import {
+  createAudioLibraryMocks,
+  audioPresets,
+} from '../test/mocks/audioLibraryMocks.js';
 
 describe('AudioService', () => {
   let audioMocks: ReturnType<typeof createAudioLibraryMocks>;
@@ -58,28 +61,28 @@ audioPresets.fullToneJS = {
   enableWebAudio: true,
   enableAnalyzer: true,
   enableRecorder: true,
-  timing: { contextStarted: true, contextState: 'running' }
-}
+  timing: { contextStarted: true, contextState: 'running' },
+};
 
 // Minimal setup for basic audio tests
 audioPresets.minimal = {
   enableWebAudio: false,
   enableMIDI: false,
-}
+};
 
 // MIDI-enabled setup
 audioPresets.withMIDI = {
   enableWebAudio: true,
   enableMIDI: true,
   enableAnalyzer: true,
-}
+};
 
 // Analysis-focused setup
 audioPresets.analysis = {
   enableWebAudio: true,
   enableAnalyzer: true,
   enableRecorder: true,
-}
+};
 ```
 
 ## Test Classification & Strategy
@@ -121,7 +124,7 @@ These tests need only basic global mocks provided by setup.ts:
 The `setup.ts` file provides essential global mocks for:
 
 - **Web Audio API** (AudioContext, audio nodes)
-- **Web Workers** (Worker, MessageChannel)  
+- **Web Workers** (Worker, MessageChannel)
 - **Tone.js** (Transport, instruments, effects)
 - **Testing Library** integration
 
@@ -132,7 +135,10 @@ These are automatically available in all tests.
 #### Audio Processing Service Test
 
 ```typescript
-import { createAudioLibraryMocks, audioPresets } from '../test/mocks/audioLibraryMocks.js';
+import {
+  createAudioLibraryMocks,
+  audioPresets,
+} from '../test/mocks/audioLibraryMocks.js';
 
 describe('BassProcessor', () => {
   let audioMocks: ReturnType<typeof createAudioLibraryMocks>;
@@ -151,13 +157,13 @@ describe('BassProcessor', () => {
   test('should generate bass line with correct pattern', () => {
     const pattern = ['C2', 'E2', 'G2', 'C3'];
     processor.generatePattern(pattern);
-    
+
     expect(audioMocks.mockSynth.triggerAttackRelease).toHaveBeenCalledTimes(4);
   });
 
   test('should apply bass-specific effects', () => {
     processor.applyBassEffects();
-    
+
     expect(audioMocks.mockFilter.frequency.value).toBe(200); // Low-pass for bass
     expect(audioMocks.mockCompressor.threshold.value).toBe(-12);
   });
@@ -172,7 +178,7 @@ describe('WorkerPoolManager', () => {
   test('should create workers', () => {
     const manager = new WorkerPoolManager();
     manager.createWorker('test-worker.js');
-    
+
     expect(global.Worker).toHaveBeenCalledWith('test-worker.js');
   });
 });
@@ -184,12 +190,14 @@ describe('WorkerPoolManager', () => {
 
 1. **Identify audio dependencies** - Does your service use Tone.js, Web Audio API?
 2. **Choose appropriate preset**:
+
    - `fullToneJS` - Complex audio processing, effects, analysis
    - `minimal` - Basic audio functionality testing
    - `withMIDI` - MIDI input/output required
    - `analysis` - Audio analysis and recording features
 
 3. **Update test structure**:
+
 ```typescript
 // Before - Manual Tone.js mocking
 const mockSynth = { triggerAttackRelease: vi.fn() };
@@ -220,7 +228,9 @@ afterEach(() => {
 });
 
 // ❌ Avoid - Manual Tone.js mocking
-vi.mock('tone', () => ({ /* manual setup */ }));
+vi.mock('tone', () => ({
+  /* manual setup */
+}));
 ```
 
 ### Test Performance
@@ -238,21 +248,25 @@ vi.mock('tone', () => ({ /* manual setup */ }));
 ## Available Audio Mock APIs
 
 ### Core Audio Nodes
+
 - `mockSynth` - Tone.js synthesizer with trigger methods
 - `mockPlayer` - Audio sample player with loading simulation
 - `mockTransport` - Timing and scheduling system
 - `mockDestination` - Audio output destination
 
 ### Effects and Processing
+
 - `mockReverb`, `mockDelay`, `mockChorus` - Audio effects
 - `mockCompressor`, `mockEQ3` - Audio processing
 - `mockFilter`, `mockDistortion` - Audio shaping
 
 ### Analysis and Recording
+
 - `mockAnalyser` - Frequency and waveform analysis
 - `mockRecorder` - Audio recording simulation
 
 ### Parameter Control
+
 - All audio parameters support realistic AudioParam API:
   - `setValueAtTime()`, `rampTo()`, `linearRampTo()`
   - Proper value tracking and automation
@@ -262,10 +276,12 @@ vi.mock('tone', () => ({ /* manual setup */ }));
 ### Common Issues
 
 1. **"Cannot read properties of undefined"**
+
    - Check that you're using the correct preset for your test needs
    - Verify cleanup is called in afterEach
 
 2. **"Mock function not called"**
+
    - Ensure your service is using the mocked Tone.js instances
    - Check that audio mocks are set up before service initialization
 
@@ -276,6 +292,7 @@ vi.mock('tone', () => ({ /* manual setup */ }));
 ### Support
 
 For questions about testing infrastructure:
+
 1. Check this guide first
 2. Look at existing test examples in `domains/playback/services/__tests__/`
-3. Review the audio mock source code in `mocks/audioLibraryMocks.ts` 
+3. Review the audio mock source code in `mocks/audioLibraryMocks.ts`
