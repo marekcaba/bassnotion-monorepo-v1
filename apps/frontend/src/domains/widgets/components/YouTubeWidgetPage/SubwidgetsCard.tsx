@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Volume2 } from 'lucide-react';
+import { SyncedWidget } from '../base/SyncedWidget.js';
+import type { SyncedWidgetRenderProps } from '../base/SyncedWidget.js';
 
 interface MetronomeDot {
   id: number;
@@ -41,13 +43,47 @@ const basslineNotes = [
 const harmonyChords = ['C', 'Am', 'F', 'G'];
 
 export function SubwidgetsCard() {
+  return (
+    <SyncedWidget
+      widgetId="subwidgets-card"
+      widgetName="Practice Subwidgets"
+      debugMode={process.env.NODE_ENV === 'development'}
+    >
+      {(syncProps: SyncedWidgetRenderProps) => (
+        <SubwidgetsCardContent syncProps={syncProps} />
+      )}
+    </SyncedWidget>
+  );
+}
+
+interface SubwidgetsCardContentProps {
+  syncProps: SyncedWidgetRenderProps;
+}
+
+function SubwidgetsCardContent({ syncProps }: SubwidgetsCardContentProps) {
   const [metronomeDots, setMetronomeDots] = useState(initialDots);
   const [currentChord, setCurrentChord] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Simulate metronome animation
+  // Sync with global playback state
   useEffect(() => {
-    // TODO: Review non-null assertion - consider null safety
+    const globalIsPlaying = syncProps.isPlaying;
+    if (globalIsPlaying !== isPlaying) {
+      setIsPlaying(globalIsPlaying);
+    }
+  }, [syncProps.isPlaying, isPlaying]);
+
+  // Sync tempo with global state
+  useEffect(() => {
+    const globalTempo = syncProps.tempo;
+    if (globalTempo && globalTempo !== 100) {
+      // Update metronome tempo display or BPM logic here
+      console.log(`🎵 SubwidgetsCard: Tempo synced to ${globalTempo} BPM`);
+    }
+  }, [syncProps.tempo]);
+
+  // Simulate metronome animation synced with global playback
+  useEffect(() => {
     if (!isPlaying) return;
 
     const interval = setInterval(() => {
@@ -66,13 +102,34 @@ export function SubwidgetsCard() {
     return () => clearInterval(interval);
   }, [isPlaying]);
 
+  const handleMetronomeToggle = () => {
+    const newPlayingState = !isPlaying;
+    setIsPlaying(newPlayingState);
+
+    // Emit sync event for playback state change
+    syncProps.sync.actions.emitEvent(
+      'PLAYBACK_STATE',
+      { isPlaying: newPlayingState },
+      'normal',
+    );
+  };
+
+  const _handleTempoChange = (newTempo: number) => {
+    // Emit sync event for tempo change
+    syncProps.sync.actions.emitEvent(
+      'TEMPO_CHANGE',
+      { tempo: newTempo },
+      'normal',
+    );
+  };
+
   return (
     <div className="grid grid-cols-2 gap-4">
       {/* Metronome Widget */}
       <Card
         className="bg-emerald-900/30 backdrop-blur-xl border border-emerald-700/50 shadow-lg hover:shadow-emerald-500/10 transition-all duration-300 cursor-pointer"
         // TODO: Review non-null assertion - consider null safety
-        onClick={() => setIsPlaying(!isPlaying)}
+        onClick={handleMetronomeToggle}
       >
         <CardContent className="p-5">
           <div className="flex items-center gap-3 mb-4">

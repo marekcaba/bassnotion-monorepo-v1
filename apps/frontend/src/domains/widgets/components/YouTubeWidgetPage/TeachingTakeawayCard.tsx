@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { CheckCircle, Lightbulb, Target, TrendingUp } from 'lucide-react';
+import { SyncedWidget } from '../base/SyncedWidget.js';
+import type { SyncedWidgetRenderProps } from '../base/SyncedWidget.js';
 
 interface Concept {
   id: number;
@@ -60,6 +62,43 @@ const difficultyColors = {
 export function TeachingTakeawayCard({
   tutorialData: _tutorialData,
 }: TeachingTakeawayCardProps) {
+  return (
+    <SyncedWidget
+      widgetId="teaching-takeaway"
+      widgetName="Teaching Takeaway"
+      debugMode={process.env.NODE_ENV === 'development'}
+    >
+      {(syncProps: SyncedWidgetRenderProps) => (
+        <TeachingTakeawayCardContent
+          tutorialData={_tutorialData}
+          syncProps={syncProps}
+        />
+      )}
+    </SyncedWidget>
+  );
+}
+
+interface TeachingTakeawayCardContentProps {
+  tutorialData?: TutorialData;
+  syncProps: SyncedWidgetRenderProps;
+}
+
+function TeachingTakeawayCardContent({
+  tutorialData: _tutorialData,
+  syncProps,
+}: TeachingTakeawayCardContentProps) {
+  // Sync with selected exercise to update teaching content
+  useEffect(() => {
+    const selectedExercise = syncProps.selectedExercise;
+    if (selectedExercise) {
+      console.log(
+        `💡 TeachingTakeaway: Updated for exercise: ${selectedExercise.title || selectedExercise.id}`,
+      );
+      // Here you could update the teaching content based on the selected exercise
+      // For now, we just log the sync event
+    }
+  }, [syncProps.selectedExercise]);
+
   return (
     <Card className="bg-emerald-900/20 backdrop-blur-xl border border-emerald-700/30 shadow-2xl">
       <CardContent className="p-6">

@@ -53,6 +53,33 @@ vi.mock('@/shared/utils', () => ({
   cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
 }));
 
+// Mock the SyncedWidget to prevent sync system dependencies
+vi.mock('../../base/SyncedWidget.js', () => ({
+  SyncedWidget: ({
+    children,
+    widgetId,
+  }: {
+    children: any;
+    widgetId: string;
+  }) => {
+    const mockSyncProps = {
+      isConnected: true,
+      tempo: 100,
+      isPlaying: false,
+      sync: {
+        actions: {
+          emitEvent: vi.fn(),
+        },
+      },
+    };
+    return (
+      <div data-testid={`synced-widget-${widgetId}`}>
+        {typeof children === 'function' ? children(mockSyncProps) : children}
+      </div>
+    );
+  },
+}));
+
 import { BassLineWidget } from '../BassLineWidget.js';
 
 describe('BassLineWidget', () => {

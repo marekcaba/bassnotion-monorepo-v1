@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -9,6 +9,8 @@ import {
 } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Music, RotateCw } from 'lucide-react';
+import { SyncedWidget } from '../base/SyncedWidget.js';
+import type { SyncedWidgetRenderProps } from '../base/SyncedWidget.js';
 
 interface Note {
   id: number;
@@ -38,9 +40,62 @@ const staffLines = [
 ];
 
 export function SheetPlayerVisualizerCard() {
+  return (
+    <SyncedWidget
+      widgetId="sheet-player"
+      widgetName="Sheet Music Player"
+      debugMode={process.env.NODE_ENV === 'development'}
+    >
+      {(syncProps: SyncedWidgetRenderProps) => (
+        <SheetPlayerVisualizerCardContent syncProps={syncProps} />
+      )}
+    </SyncedWidget>
+  );
+}
+
+interface SheetPlayerVisualizerCardContentProps {
+  syncProps: SyncedWidgetRenderProps;
+}
+
+function SheetPlayerVisualizerCardContent({
+  syncProps,
+}: SheetPlayerVisualizerCardContentProps) {
   const [currentPosition, setCurrentPosition] = useState(2);
   const [isLooping, setIsLooping] = useState(true);
   const [tempo] = useState(100);
+
+  // Sync with global playback state for timeline position
+  useEffect(() => {
+    const globalCurrentTime = syncProps.currentTime;
+    if (globalCurrentTime >= 0) {
+      // Convert time to sheet music position (simplified mapping)
+      const newPosition = Math.floor((globalCurrentTime % 8000) / 1000) + 1;
+      if (newPosition !== currentPosition) {
+        setCurrentPosition(newPosition);
+      }
+    }
+  }, [syncProps.currentTime, currentPosition]);
+
+  // Sync tempo with global state
+  useEffect(() => {
+    const globalTempo = syncProps.tempo;
+    if (globalTempo && globalTempo !== tempo) {
+      console.log(`🎼 SheetPlayer: Tempo synced to ${globalTempo} BPM`);
+      // Update local tempo state if needed
+    }
+  }, [syncProps.tempo, tempo]);
+
+  // Emit timeline events when position changes
+  useEffect(() => {
+    if (syncProps.isPlaying) {
+      // Emit timeline update for synchronization
+      syncProps.sync.actions.emitEvent(
+        'TIMELINE_UPDATE',
+        { currentTime: (currentPosition - 1) * 1000 },
+        'high',
+      );
+    }
+  }, [currentPosition, syncProps.isPlaying, syncProps.sync.actions]);
 
   const getNoteYPosition = (pitch: string) => {
     // Simple mapping for bass clef positions

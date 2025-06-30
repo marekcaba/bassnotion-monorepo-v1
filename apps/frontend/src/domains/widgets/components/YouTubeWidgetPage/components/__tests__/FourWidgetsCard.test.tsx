@@ -72,6 +72,86 @@ vi.mock('@/shared/utils', () => ({
   cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
 }));
 
+// Mock the SyncedWidget to prevent sync system dependencies
+vi.mock('../../base/SyncedWidget.js', () => ({
+  SyncedWidget: ({
+    children,
+    widgetId,
+  }: {
+    children: any;
+    widgetId: string;
+  }) => {
+    const mockSyncProps = {
+      isConnected: true,
+      tempo: 100,
+      isPlaying: false,
+      sync: {
+        actions: {
+          emitEvent: vi.fn(),
+        },
+      },
+    };
+    return (
+      <div data-testid={`synced-widget-${widgetId}`}>
+        {typeof children === 'function' ? children(mockSyncProps) : children}
+      </div>
+    );
+  },
+}));
+
+// Mock all individual widget components to prevent sync dependencies
+vi.mock('../MetronomeWidget', () => ({
+  MetronomeWidget: ({ bpm, isPlaying, isVisible }: any) => {
+    if (!isVisible) return null;
+    return (
+      <div data-testid="metronome-widget">
+        <h3>🎵 Metronome</h3>
+        <p>{bpm} BPM</p>
+        <p>{isPlaying ? 'Playing' : 'Stopped'}</p>
+      </div>
+    );
+  },
+}));
+
+vi.mock('../DrummerWidget', () => ({
+  DrummerWidget: ({ pattern, isPlaying, isVisible }: any) => {
+    if (!isVisible) return null;
+    return (
+      <div data-testid="drummer-widget">
+        <h3>🥁 Drummer</h3>
+        <p>Pattern: {pattern}</p>
+        <p>{isPlaying ? 'Playing' : 'Stopped'}</p>
+      </div>
+    );
+  },
+}));
+
+vi.mock('../BassLineWidget', () => ({
+  BassLineWidget: ({ pattern, isPlaying, isVisible }: any) => {
+    if (!isVisible) return null;
+    return (
+      <div data-testid="bassline-widget">
+        <h3>🎸 Bass Line</h3>
+        <p>Pattern: {pattern}</p>
+        <p>{isPlaying ? 'Playing' : 'Stopped'}</p>
+      </div>
+    );
+  },
+}));
+
+vi.mock('../HarmonyWidget', () => ({
+  HarmonyWidget: ({ progression, currentChord, isPlaying, isVisible }: any) => {
+    if (!isVisible) return null;
+    return (
+      <div data-testid="harmony-widget">
+        <h3>🎼 Harmony</h3>
+        <p>Chord: {progression?.[currentChord] || 'None'}</p>
+        <p>{isPlaying ? 'Playing' : 'Stopped'}</p>
+      </div>
+    );
+  },
+}));
+
 import { FourWidgetsCard } from '../FourWidgetsCard.js';
 
 describe('FourWidgetsCard', () => {

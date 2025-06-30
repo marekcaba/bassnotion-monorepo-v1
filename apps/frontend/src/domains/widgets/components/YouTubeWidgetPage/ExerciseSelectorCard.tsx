@@ -9,6 +9,8 @@ import {
 } from '@/shared/components/ui/card';
 import { Clock, Target, Music, CheckCircle, Loader2 } from 'lucide-react';
 import { useExerciseSelection } from '../../hooks/useExerciseSelection';
+import { SyncedWidget } from '../base/SyncedWidget.js';
+import type { SyncedWidgetRenderProps } from '../base/SyncedWidget.js';
 
 interface TutorialData {
   id: string;
@@ -51,6 +53,34 @@ export function ExerciseSelectorCard({
   tutorialData: _tutorialData,
   onExerciseSelect,
 }: ExerciseSelectorCardProps) {
+  return (
+    <SyncedWidget
+      widgetId="exercise-selector"
+      widgetName="Exercise Selector"
+      debugMode={process.env.NODE_ENV === 'development'}
+    >
+      {(syncProps: SyncedWidgetRenderProps) => (
+        <ExerciseSelectorCardContent
+          tutorialData={_tutorialData}
+          onExerciseSelect={onExerciseSelect}
+          syncProps={syncProps}
+        />
+      )}
+    </SyncedWidget>
+  );
+}
+
+interface ExerciseSelectorCardContentProps {
+  tutorialData?: TutorialData;
+  onExerciseSelect?: (exerciseId: string) => void;
+  syncProps: SyncedWidgetRenderProps;
+}
+
+function ExerciseSelectorCardContent({
+  tutorialData: _tutorialData,
+  onExerciseSelect,
+  syncProps,
+}: ExerciseSelectorCardContentProps) {
   const {
     exercises,
     isLoading: loading,
@@ -72,9 +102,22 @@ export function ExerciseSelectorCard({
         setSelectedExerciseId(firstExercise.id);
         selectExercise(firstExercise);
         onExerciseSelect?.(firstExercise.id);
+
+        // Emit sync event for exercise change
+        syncProps.sync.actions.emitEvent(
+          'EXERCISE_CHANGE',
+          { exercise: firstExercise },
+          'normal',
+        );
       }
     }
-  }, [exercises, selectedExerciseId, selectExercise, onExerciseSelect]);
+  }, [
+    exercises,
+    selectedExerciseId,
+    selectExercise,
+    onExerciseSelect,
+    syncProps,
+  ]);
 
   const handleExerciseSelect = (exerciseId: string) => {
     const exercise = exercises.find((ex) => ex.id === exerciseId);
@@ -82,6 +125,13 @@ export function ExerciseSelectorCard({
       setSelectedExerciseId(exerciseId);
       selectExercise(exercise);
       onExerciseSelect?.(exerciseId);
+
+      // Emit sync event for exercise change
+      syncProps.sync.actions.emitEvent(
+        'EXERCISE_CHANGE',
+        { exercise },
+        'normal',
+      );
     }
   };
 
