@@ -125,3 +125,107 @@ export type GetExerciseWithNotesResponse = GetExerciseResponse;
 // Note: Removed FretboardNote, MockExercise, and exerciseToMockExercise
 // as they were only used by the old fretboard component.
 // These will be replaced with new types when implementing the new fretboard.
+
+// Story 3.8: Enhanced Bassline Persistence Types
+
+// Bassline Metadata Interface
+export interface BasslineMetadata {
+  tempo: number;
+  timeSignature: string;
+  key: string;
+  difficulty: ExerciseDifficulty;
+  tags: string[];
+}
+
+// Enhanced Saved Bassline Interface (Story 3.8)
+export interface SavedBassline {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  notes: ExerciseNote[];
+  metadata: BasslineMetadata;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Auto-save Configuration Interface
+export interface AutoSaveConfig {
+  interval: number; // Auto-save every N milliseconds
+  changeThreshold: number; // Save after N note changes
+  idleTimeout: number; // Save after N milliseconds of inactivity
+  maxRetries: number; // Retry failed saves N times
+}
+
+// Save Bassline Request Interface
+export interface SaveBasslineRequest {
+  name: string;
+  description?: string;
+  notes: ExerciseNote[];
+  metadata: BasslineMetadata;
+  overwriteExisting: boolean;
+}
+
+// Auto-save Request Interface
+export interface AutoSaveRequest {
+  basslineId?: string; // null for new basslines
+  name: string;
+  notes: ExerciseNote[];
+  metadata: BasslineMetadata;
+  isAutoSave: boolean;
+}
+
+// Bassline Management Interfaces
+export interface RenameBasslineRequest {
+  newName: string;
+}
+
+export interface DuplicateBasslineRequest {
+  newName: string;
+  includeDescription: boolean;
+}
+
+export interface BasslineListFilters {
+  search?: string;
+  difficulty?: ExerciseDifficulty;
+  tags?: string[];
+  sortBy: 'name' | 'createdAt' | 'updatedAt' | 'difficulty';
+  sortOrder: 'asc' | 'desc';
+  page: number;
+  limit: number;
+}
+
+// Response Interfaces
+export interface SavedBasslinesResponse {
+  basslines: SavedBassline[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface SaveBasslineResponse {
+  bassline: SavedBassline;
+  message: string;
+}
+
+export interface AutoSaveResponse {
+  basslineId: string;
+  lastSaved: string;
+  message: string;
+}
+
+// Sharing Capabilities (Epic 5 preparation)
+export interface SharingOptions {
+  isPublic: boolean;
+  shareLink?: string;
+  allowComments: boolean;
+  allowRemixing: boolean;
+  expiresAt?: string;
+}
+
+export interface SharedBassline extends SavedBassline {
+  sharingOptions?: SharingOptions;
+  shareCount: number;
+  remixCount: number;
+}

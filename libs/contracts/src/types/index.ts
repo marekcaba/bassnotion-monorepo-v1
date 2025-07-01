@@ -22,6 +22,20 @@ export type {
   GetCustomBasslinesResponse,
   CreateExerciseRequest,
   UpdateExerciseRequest,
+  // Story 3.8: Enhanced Bassline Persistence Types
+  BasslineMetadata,
+  SavedBassline,
+  AutoSaveConfig,
+  SaveBasslineRequest,
+  AutoSaveRequest,
+  RenameBasslineRequest,
+  DuplicateBasslineRequest,
+  BasslineListFilters,
+  SavedBasslinesResponse,
+  SaveBasslineResponse,
+  AutoSaveResponse,
+  SharingOptions,
+  SharedBassline,
 } from './exercise.js';
 export { TechniqueTypes } from './exercise.js';
 

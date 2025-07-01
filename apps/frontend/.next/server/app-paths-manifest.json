@@ -1,3 +1,12 @@
 {
-  "/library/[tutorialId]/page": "app/library/[tutorialId]/page.js"
+  "/library/page": "app/library/page.js",
+  "/auth-demo/page": "app/auth-demo/page.js",
+  "/login/page": "app/login/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/page": "app/page.js",
+  "/library/[tutorialId]/page": "app/library/[tutorialId]/page.js",
+  "/auth/callback/page": "app/auth/callback/page.js",
+  "/test-exercises/page": "app/test-exercises/page.js",
+  "/register/page": "app/register/page.js"
 }

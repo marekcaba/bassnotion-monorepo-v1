@@ -115,9 +115,10 @@ export const CreateExerciseRequestSchema = z.object({
     .optional(),
 });
 
-export const UpdateExerciseRequestSchema = CreateExerciseRequestSchema.partial().extend({
-  id: z.string().min(1, 'Exercise ID is required'),
-});
+export const UpdateExerciseRequestSchema =
+  CreateExerciseRequestSchema.partial().extend({
+    id: z.string().min(1, 'Exercise ID is required'),
+  });
 
 // Epic 3 Widget-Specific Schemas
 export const SaveCustomBasslineRequestSchema = z.object({
@@ -169,6 +170,145 @@ export const ValidatedExerciseSchema = ExerciseSchema.extend({
 export type ExerciseNoteInput = z.infer<typeof ExerciseNoteSchema>;
 export type ExerciseInput = z.infer<typeof ExerciseSchema>;
 export type CustomBasslineInput = z.infer<typeof CustomBasslineSchema>;
-export type CreateExerciseRequestInput = z.infer<typeof CreateExerciseRequestSchema>;
-export type UpdateExerciseRequestInput = z.infer<typeof UpdateExerciseRequestSchema>;
-export type SaveCustomBasslineRequestInput = z.infer<typeof SaveCustomBasslineRequestSchema>; 
+export type CreateExerciseRequestInput = z.infer<
+  typeof CreateExerciseRequestSchema
+>;
+export type UpdateExerciseRequestInput = z.infer<
+  typeof UpdateExerciseRequestSchema
+>;
+export type SaveCustomBasslineRequestInput = z.infer<
+  typeof SaveCustomBasslineRequestSchema
+>;
+
+// Story 3.8: Enhanced Bassline Persistence Schemas
+
+// Bassline Metadata Schema
+export const BasslineMetadataSchema = z.object({
+  tempo: z.number().int().min(40).max(300, 'Tempo must be between 40-300'),
+  timeSignature: z.string().min(1, 'Time signature is required'),
+  key: z.string().min(1, 'Key is required'),
+  difficulty: ExerciseDifficultySchema,
+  tags: z.array(z.string()).default([]),
+});
+
+// Enhanced Saved Bassline Schema (Story 3.8)
+export const SavedBasslineSchema = z.object({
+  id: z.string().min(1, 'Bassline ID is required'),
+  userId: z.string().min(1, 'User ID is required'),
+  name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
+  description: z.string().max(1000, 'Description too long').optional(),
+  notes: z.array(ExerciseNoteSchema).min(1, 'At least one note is required'),
+  metadata: BasslineMetadataSchema,
+  version: z.number().int().min(1).default(1),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+// Auto-save Configuration Schema
+export const AutoSaveConfigSchema = z.object({
+  interval: z.number().int().min(1000).default(30000), // 30 seconds
+  changeThreshold: z.number().int().min(1).default(5), // 5 note changes
+  idleTimeout: z.number().int().min(1000).default(10000), // 10 seconds
+  maxRetries: z.number().int().min(1).default(3), // 3 retries
+});
+
+// Save Bassline Request Schema (Enhanced)
+export const SaveBasslineRequestSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
+  description: z.string().max(1000, 'Description too long').optional(),
+  notes: z.array(ExerciseNoteSchema).min(1, 'At least one note is required'),
+  metadata: BasslineMetadataSchema,
+  overwriteExisting: z.boolean().default(false),
+});
+
+// Auto-save Request Schema
+export const AutoSaveRequestSchema = z.object({
+  basslineId: z.string().optional(), // null for new basslines
+  name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
+  notes: z.array(ExerciseNoteSchema).min(1, 'At least one note is required'),
+  metadata: BasslineMetadataSchema,
+  isAutoSave: z.boolean().default(true),
+});
+
+// Bassline Management Schemas
+export const RenameBasslineRequestSchema = z.object({
+  newName: z.string().min(1, 'Name is required').max(255, 'Name too long'),
+});
+
+export const DuplicateBasslineRequestSchema = z.object({
+  newName: z.string().min(1, 'Name is required').max(255, 'Name too long'),
+  includeDescription: z.boolean().default(true),
+});
+
+export const BasslineListFiltersSchema = z.object({
+  search: z.string().optional(),
+  difficulty: ExerciseDifficultySchema.optional(),
+  tags: z.array(z.string()).optional(),
+  sortBy: z
+    .enum(['name', 'createdAt', 'updatedAt', 'difficulty'])
+    .default('updatedAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  page: z.number().int().min(1).default(1),
+  limit: z.number().int().min(1).max(100).default(20),
+});
+
+// Response Schemas
+export const SavedBasslinesResponseSchema = z.object({
+  basslines: z.array(SavedBasslineSchema),
+  total: z.number().int().min(0),
+  page: z.number().int().min(1),
+  limit: z.number().int().min(1),
+});
+
+export const SaveBasslineResponseSchema = z.object({
+  bassline: SavedBasslineSchema,
+  message: z.string(),
+});
+
+export const AutoSaveResponseSchema = z.object({
+  basslineId: z.string(),
+  lastSaved: z.string(),
+  message: z.string(),
+});
+
+// Sharing Capabilities (Epic 5 preparation)
+export const SharingOptionsSchema = z.object({
+  isPublic: z.boolean().default(false),
+  shareLink: z.string().optional(),
+  allowComments: z.boolean().default(false),
+  allowRemixing: z.boolean().default(false),
+  expiresAt: z.string().optional(),
+});
+
+export const SharedBasslineSchema = SavedBasslineSchema.extend({
+  sharingOptions: SharingOptionsSchema.optional(),
+  shareCount: z.number().int().min(0).default(0),
+  remixCount: z.number().int().min(0).default(0),
+});
+
+// Type inference for Story 3.8 schemas
+export type BasslineMetadataInput = z.infer<typeof BasslineMetadataSchema>;
+export type SavedBasslineInput = z.infer<typeof SavedBasslineSchema>;
+export type AutoSaveConfigInput = z.infer<typeof AutoSaveConfigSchema>;
+export type SaveBasslineRequestInput = z.infer<
+  typeof SaveBasslineRequestSchema
+>;
+export type AutoSaveRequestInput = z.infer<typeof AutoSaveRequestSchema>;
+export type RenameBasslineRequestInput = z.infer<
+  typeof RenameBasslineRequestSchema
+>;
+export type DuplicateBasslineRequestInput = z.infer<
+  typeof DuplicateBasslineRequestSchema
+>;
+export type BasslineListFiltersInput = z.infer<
+  typeof BasslineListFiltersSchema
+>;
+export type SavedBasslinesResponseInput = z.infer<
+  typeof SavedBasslinesResponseSchema
+>;
+export type SaveBasslineResponseInput = z.infer<
+  typeof SaveBasslineResponseSchema
+>;
+export type AutoSaveResponseInput = z.infer<typeof AutoSaveResponseSchema>;
+export type SharingOptionsInput = z.infer<typeof SharingOptionsSchema>;
+export type SharedBasslineInput = z.infer<typeof SharedBasslineSchema>;
