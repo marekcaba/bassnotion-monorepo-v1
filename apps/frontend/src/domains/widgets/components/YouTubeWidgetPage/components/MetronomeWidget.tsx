@@ -5,8 +5,8 @@ import { Card, CardContent } from '../../../../../shared/components/ui/card';
 import { Button } from '../../../../../shared/components/ui/button';
 import { Play, Pause, Volume2 } from 'lucide-react';
 import { UsePlaybackIntegrationReturn } from '../../../hooks/usePlaybackIntegration';
-import { SyncedWidget } from '../../base/SyncedWidget.js';
-import type { SyncedWidgetRenderProps } from '../../base/SyncedWidget.js';
+import { SyncedWidget } from '../../base';
+import type { SyncedWidgetRenderProps } from '../../base';
 
 interface MetronomeWidgetProps {
   bpm: number;
@@ -49,7 +49,7 @@ export function MetronomeWidget({
       widgetName="Metronome"
       syncOptions={{
         subscribeTo: ['PLAYBACK_STATE', 'TEMPO_CHANGE'],
-        debugMode: process.env.NODE_ENV === 'development',
+        debugMode: false,
       }}
     >
       {(syncProps: SyncedWidgetRenderProps) => {
@@ -62,6 +62,16 @@ export function MetronomeWidget({
           syncProps.isPlaying ||
           playbackIntegration?.state.isPlaying ||
           isPlaying;
+
+        // Debug log (disabled to reduce console noise)
+        // console.log('🎵 MetronomeWidget: Sync state updated:', {
+        //   syncTempo,
+        //   currentTempo,
+        //   propBpm,
+        //   playbackTempo: syncProps.sync.tempo,
+        //   isConnected: syncProps.sync.isConnected,
+        //   source: 'useEffect',
+        // });
 
         // Calculate interval based on BPM
         const beatInterval = 60000 / currentTempo; // milliseconds per beat

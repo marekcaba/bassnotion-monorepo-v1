@@ -16,8 +16,8 @@ import {
   TabsTrigger,
 } from '@/shared/components/ui/tabs';
 import { useToast } from '@/shared/hooks/use-toast';
-import { SaveBasslineDialog } from './SaveBasslineDialog.js';
-import { BasslineList } from './BasslineList.js';
+import { SaveBasslineDialog } from './SaveBasslineDialog';
+import { BasslineList } from './BasslineList';
 import {
   AutoSaveService,
   type AutoSaveState,

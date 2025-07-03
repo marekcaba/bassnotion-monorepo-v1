@@ -8,6 +8,16 @@ export type {
   AuthCredentials,
 } from './user.js';
 export type { Content, Exercise, ExerciseMetadata } from './content.js';
+export type {
+  Tutorial,
+  TutorialWithExercises,
+  TutorialSummary,
+  TutorialsResponse,
+  TutorialResponse,
+  TutorialExercisesResponse,
+  CreateTutorialDto,
+  UpdateTutorialDto,
+} from './tutorial.js';
 
 // Epic 3 & 4 Compatible Exercise Types
 export type {

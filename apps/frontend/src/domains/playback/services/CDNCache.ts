@@ -588,6 +588,7 @@ export class CDNCache {
       source: 'cache',
       loadTime: 0,
       compressionUsed: entry.compressionUsed,
+      success: true,
     };
   }
 

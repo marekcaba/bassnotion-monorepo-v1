@@ -8,13 +8,13 @@
  */
 
 // Core synchronization components
-export { SyncedWidget, SimpleSyncedWidget } from './SyncedWidget.js';
+export { SyncedWidget, SimpleSyncedWidget } from './SyncedWidget';
 export type {
   SyncedWidgetProps,
   SyncedWidgetRenderProps,
   SyncedWidgetState,
   SimpleSyncedWidgetProps,
-} from './SyncedWidget.js';
+} from './SyncedWidget';
 
 // Container components
 export {
@@ -22,11 +22,11 @@ export {
   StyledWidgetContainer,
   WidgetLoading,
   WidgetError,
-} from './WidgetContainer.js';
+} from './WidgetContainer';
 export type {
   WidgetContainerProps,
   WidgetHeaderProps,
-} from './WidgetContainer.js';
+} from './WidgetContainer';
 
 // Context provider and hooks
 export {
@@ -38,9 +38,9 @@ export {
   useSyncConnection,
   useSyncEmitter,
   SyncDebugPanel,
-} from './SyncProvider.js';
+} from './SyncProvider';
 export type {
   SyncContextValue,
   SyncProviderProps,
   WithSyncProps,
-} from './SyncProvider.js';
+} from './SyncProvider';

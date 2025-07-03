@@ -45,7 +45,6 @@ describe('AutoSaveService', () => {
     duration: 500,
     note: 'G',
     color: '#FF6B6B',
-    velocity: 80,
   };
 
   const mockBasslineMetadata: BasslineMetadata = {
@@ -449,7 +448,7 @@ describe('AutoSaveService', () => {
 
     it('should clean up timers on destroy', () => {
       const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
-      const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+      const _clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
       // Start timer to create timers to clean up
       autoSaveService.initialize('bassline-1');

@@ -1372,6 +1372,7 @@ export class ResourceManager {
           source: 'cache' as const,
           compressionUsed: false,
           loadTime: 100,
+          success: true,
         })),
         failed: [],
         progress: {

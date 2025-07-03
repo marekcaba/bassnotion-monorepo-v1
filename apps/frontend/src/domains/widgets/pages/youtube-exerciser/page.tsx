@@ -1,9 +1,8 @@
+import React from 'react';
+import { YouTubeExerciser } from '@/domains/widgets/components/YouTubeExerciser';
+import { useAuth } from '@/domains/user/hooks/use-auth';
 import { ErrorMessage } from '@/shared/components/ui/error-message';
 import { Loading } from '@/shared/components/ui/loading';
-
-import { useAuth } from '@/domains/user/hooks/useAuth';
-
-import { YouTubeExerciser } from '../../components/YouTubeExerciser';
 
 export default function YouTubeExerciserPage() {
   const { user, isLoading } = useAuth();

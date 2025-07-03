@@ -223,9 +223,9 @@ export class WidgetSyncService {
     // Tempo changes are less frequent but important
     this.throttleConfigs.set('TEMPO_CHANGE', {
       eventType: 'TEMPO_CHANGE',
-      throttleMs: 100,
+      throttleMs: 0, // No throttling for immediate tempo updates
       batchSize: 1,
-      maxAge: 200,
+      maxAge: 0,
     });
 
     // Volume changes can be throttled

@@ -9,11 +9,11 @@
  */
 
 import React, { ReactNode, useRef, useEffect } from 'react';
-import { SyncedWidget } from './SyncedWidget.js';
+import { SyncedWidget } from './SyncedWidget';
 import type {
   SyncedWidgetProps,
   SyncedWidgetRenderProps,
-} from './SyncedWidget.js';
+} from './SyncedWidget';
 
 // ============================================================================
 // INTERFACES

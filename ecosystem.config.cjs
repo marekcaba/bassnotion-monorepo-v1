@@ -2,9 +2,10 @@ module.exports = {
   apps: [
     {
       name: 'bassnotion-backend',
-      script: 'npx',
+      script: 'pnpm',
       args: 'nx serve @bassnotion/backend',
       cwd: '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1',
+      env_file: './apps/backend/.env.local',
       env: {
         NODE_ENV: 'development',
         PORT: '3000',
@@ -21,9 +22,10 @@ module.exports = {
     },
     {
       name: 'bassnotion-frontend',
-      script: 'npx',
+      script: 'pnpm',
       args: 'nx serve @bassnotion/frontend',
       cwd: '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1',
+      env_file: './apps/frontend/.env.local',
       env: {
         NODE_ENV: 'development',
         PORT: '3001',

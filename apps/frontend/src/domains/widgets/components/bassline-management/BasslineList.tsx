@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
 import { useToast } from '@/shared/hooks/use-toast';
-import { UserBasslinesAPI } from '../../api/user-basslines.js';
+import { UserBasslinesAPI } from '../../api/user-basslines';
 import type {
   SavedBassline,
   BasslineListFilters,

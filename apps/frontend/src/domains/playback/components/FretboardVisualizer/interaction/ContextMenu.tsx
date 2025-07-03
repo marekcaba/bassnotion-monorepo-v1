@@ -41,6 +41,9 @@ export function ContextMenu({
       return () =>
         document.removeEventListener('mousedown', handleClickOutside);
     }
+
+    // Return undefined for the else case to satisfy TypeScript
+    return undefined;
   }, [isVisible, onClose]);
 
   // Handle keyboard shortcuts
@@ -67,6 +70,9 @@ export function ContextMenu({
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
+
+    // Return undefined for the else case to satisfy TypeScript
+    return undefined;
   }, [isVisible, onClose, onDelete]);
 
   if (!isVisible) return null;

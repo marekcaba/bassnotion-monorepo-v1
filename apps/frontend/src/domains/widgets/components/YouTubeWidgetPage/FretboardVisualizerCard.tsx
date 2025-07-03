@@ -11,8 +11,8 @@ import { Button } from '@/shared/components/ui/button';
 
 import { FretboardVisualizer } from '@/domains/playback/components/FretboardVisualizer/FretboardVisualizer';
 import { UsePlaybackIntegrationReturn } from '../../hooks/usePlaybackIntegration';
-import { SyncedWidget } from '../base/SyncedWidget.js';
-import type { SyncedWidgetRenderProps } from '../base/SyncedWidget.js';
+import { SyncedWidget } from '../base';
+import type { SyncedWidgetRenderProps } from '../base';
 
 // Mock exercise data for testing
 const mockNotes = [
@@ -70,7 +70,7 @@ export function FretboardVisualizerCard({
       widgetName="Fretboard Visualizer"
       syncOptions={{
         subscribeTo: ['PLAYBACK_STATE', 'TIMELINE_UPDATE', 'EXERCISE_CHANGE'],
-        debugMode: process.env.NODE_ENV === 'development',
+        debugMode: false,
       }}
     >
       {(syncProps: SyncedWidgetRenderProps) => {

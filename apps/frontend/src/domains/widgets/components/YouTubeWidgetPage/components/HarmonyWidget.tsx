@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Volume2, SkipForward, Play, Pause } from 'lucide-react';
+import { SyncedWidget } from '../../base';
+import type { SyncedWidgetRenderProps } from '../../base';
 
 interface HarmonyWidgetProps {
   progression: string[];
@@ -25,6 +27,7 @@ const chordProgressions = {
   'Funk Groove': ['Dm7', 'Dm7', 'G7', 'G7'],
 };
 
+// Legacy props interface for backward compatibility
 export function HarmonyWidget({
   progression,
   currentChord,
@@ -35,6 +38,130 @@ export function HarmonyWidget({
   onToggleVisibility,
   onTogglePlay,
 }: HarmonyWidgetProps) {
+  return (
+    <SyncedWidget
+      widgetId="harmony-widget"
+      widgetName="Harmony"
+      debugMode={false}
+    >
+      {(syncProps: SyncedWidgetRenderProps) => (
+        <HarmonyWidgetContent
+          progression={progression}
+          currentChord={currentChord}
+          isPlaying={isPlaying}
+          isVisible={isVisible}
+          onNextChord={onNextChord}
+          onProgressionChange={onProgressionChange}
+          onToggleVisibility={onToggleVisibility}
+          onTogglePlay={onTogglePlay}
+          syncProps={syncProps}
+        />
+      )}
+    </SyncedWidget>
+  );
+}
+
+// Internal content component that handles sync events
+interface HarmonyWidgetContentProps extends HarmonyWidgetProps {
+  syncProps: SyncedWidgetRenderProps;
+}
+
+function HarmonyWidgetContent({
+  progression: initialProgression,
+  currentChord: initialCurrentChord,
+  isPlaying,
+  isVisible,
+  onNextChord,
+  onProgressionChange,
+  onToggleVisibility,
+  onTogglePlay,
+  syncProps,
+}: HarmonyWidgetContentProps) {
+  // Local state for progression and current chord that can be updated by sync events
+  const [progression, setProgression] = useState(initialProgression);
+  const [currentChord, setCurrentChord] = useState(initialCurrentChord);
+
+  // Use refs to track previous values and prevent infinite loops
+  const prevSelectedExerciseRef = useRef<any>(null);
+  const prevProgressionRef = useRef<string[]>(initialProgression);
+
+  // Watch for exercise changes in sync state
+  useEffect(() => {
+    const selectedExercise = syncProps.sync.selectedExercise;
+
+    // Only update if the exercise actually changed
+    if (
+      selectedExercise &&
+      selectedExercise !== prevSelectedExerciseRef.current
+    ) {
+      prevSelectedExerciseRef.current = selectedExercise;
+
+      if (
+        selectedExercise?.chord_progression &&
+        Array.isArray(selectedExercise.chord_progression)
+      ) {
+        const newProgression = selectedExercise.chord_progression;
+
+        // Only update if the progression is actually different
+        if (
+          JSON.stringify(newProgression) !==
+          JSON.stringify(prevProgressionRef.current)
+        ) {
+          console.log(
+            '🎼 HarmonyWidget: Updating progression from exercise:',
+            newProgression,
+          );
+
+          setProgression(newProgression);
+          setCurrentChord(0); // Reset to first chord
+          prevProgressionRef.current = newProgression;
+
+          // Only call onProgressionChange if it's different from current progression
+          if (JSON.stringify(newProgression) !== JSON.stringify(progression)) {
+            onProgressionChange?.(newProgression);
+          }
+        }
+      }
+    }
+  }, [syncProps.sync.selectedExercise]); // Removed onProgressionChange from dependencies
+
+  // Update local state when props change (for backward compatibility)
+  useEffect(() => {
+    if (
+      JSON.stringify(initialProgression) !==
+      JSON.stringify(prevProgressionRef.current)
+    ) {
+      setProgression(initialProgression);
+      prevProgressionRef.current = initialProgression;
+    }
+  }, [initialProgression]);
+
+  useEffect(() => {
+    setCurrentChord(initialCurrentChord);
+  }, [initialCurrentChord]);
+
+  // Enhanced progression change that emits sync events
+  const handleSyncProgressionChange = useCallback(
+    (newProgression: string[]) => {
+      setProgression(newProgression);
+      setCurrentChord(0);
+      onProgressionChange?.(newProgression);
+
+      // Emit sync event for other widgets
+      syncProps.sync.actions.emitEvent(
+        'CUSTOM_BASSLINE',
+        {
+          chordProgression: newProgression,
+          currentChord: 0,
+          source: 'harmony-widget',
+          reason: 'progression-change',
+        },
+        'normal',
+      );
+    },
+    [onProgressionChange, syncProps.sync.actions],
+  );
+
   const currentProgressionName =
     Object.keys(chordProgressions).find(
       (key) =>
@@ -54,11 +181,11 @@ export function HarmonyWidget({
     return () => clearInterval(interval);
   }, [isPlaying, onNextChord]);
 
-  const handleProgressionChange = (progressionName: string) => {
+  const handleProgressionDropdownChange = (progressionName: string) => {
     if (progressionName in chordProgressions) {
-      onProgressionChange(
-        chordProgressions[progressionName as keyof typeof chordProgressions],
-      );
+      const newProgression =
+        chordProgressions[progressionName as keyof typeof chordProgressions];
+      handleSyncProgressionChange(newProgression);
     }
   };
 
@@ -97,7 +224,7 @@ export function HarmonyWidget({
           </label>
           <select
             value={currentProgressionName}
-            onChange={(e) => handleProgressionChange(e.target.value)}
+            onChange={(e) => handleProgressionDropdownChange(e.target.value)}
             className="w-full px-2 py-1 text-xs bg-purple-800 border border-purple-600 rounded text-white"
           >
             {Object.keys(chordProgressions).map((name) => (

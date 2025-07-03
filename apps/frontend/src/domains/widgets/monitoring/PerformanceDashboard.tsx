@@ -23,14 +23,16 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
   showAlerts = true,
   compact = false,
 }) => {
-  const [metrics, setMetrics] = useState<CentralPerformanceMetrics | null>(null);
+  const [metrics, setMetrics] = useState<CentralPerformanceMetrics | null>(
+    null,
+  );
   const [alerts, setAlerts] = useState<MetricsAlert[]>([]);
   const [isCollecting, setIsCollecting] = useState(false);
   const metricsCollectorRef = useRef<MetricsCollector | null>(null);
 
   useEffect(() => {
     metricsCollectorRef.current = MetricsCollector.getInstance();
-    
+
     if (autoRefresh) {
       metricsCollectorRef.current.startCollection();
       setIsCollecting(true);
@@ -39,15 +41,19 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
     const fetchMetrics = async () => {
       if (metricsCollectorRef.current) {
         try {
-          const currentMetrics = await metricsCollectorRef.current.collectMetrics();
+          const currentMetrics =
+            await metricsCollectorRef.current.collectMetrics();
           setMetrics(currentMetrics);
-          
+
           if (showAlerts) {
             const recentAlerts = metricsCollectorRef.current.getRecentAlerts();
             setAlerts(recentAlerts);
           }
         } catch (error) {
-          console.error('[PerformanceDashboard] Failed to collect metrics:', error);
+          console.error(
+            '[PerformanceDashboard] Failed to collect metrics:',
+            error,
+          );
         }
       }
     };
@@ -144,7 +150,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
             {metrics.overall.performanceScore}/100
           </span>
         </div>
-        
+
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div>
             <span className="text-gray-500">FPS:</span>
@@ -211,14 +217,16 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
               Active Optimizations:
             </h4>
             <div className="flex flex-wrap gap-2">
-              {metrics.overall.activeOptimizations.map((optimization, index) => (
-                <span
-                  key={index}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                >
-                  {optimization}
-                </span>
-              ))}
+              {metrics.overall.activeOptimizations.map(
+                (optimization, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                  >
+                    {optimization}
+                  </span>
+                ),
+              )}
             </div>
           </div>
         )}
@@ -411,4 +419,4 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
       </div>
     </div>
   );
-}; 
+};

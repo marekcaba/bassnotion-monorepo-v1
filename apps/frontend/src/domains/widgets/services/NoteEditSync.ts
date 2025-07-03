@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ExerciseNote } from '../../playback/components/FretboardVisualizer/types/fretboard.js';
+import type { ExerciseNote } from '../../playback/components/FretboardVisualizer/types/fretboard';
 
 export interface NoteEditEvent {
   type:

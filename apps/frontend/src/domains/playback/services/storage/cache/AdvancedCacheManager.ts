@@ -918,12 +918,24 @@ export class AdvancedCacheManager {
    */
   private generateCompressionBenefit(_sampleId: string): CompressionBenefit {
     return {
+      worthCompressing: true,
+      projectedCompressionRatio: 0.7,
+      projectedSpaceSavings: 1024,
+      projectedTransferTimeSavings: 200,
+      estimatedCompressionTime: 50,
+      confidence: 0.8,
+      analysisMethod: 'detailed' as const,
+      factors: [],
+      recommendation: 'Compression recommended for better performance',
+      alternativeStrategies: [],
       recommended: true,
       expectedRatio: 0.7,
       qualityImpact: 0.1,
       performanceImpact: 50,
+      networkImpact: 0.2,
+      resourceUsage: 0.3,
+      timeToCompress: 50,
       storageSavings: 1024,
-      confidence: 0.8,
       algorithm: 'gzip',
       analyzedAt: Date.now(),
     };

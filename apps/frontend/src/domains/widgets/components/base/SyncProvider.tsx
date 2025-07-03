@@ -14,12 +14,14 @@ import React, {
   ReactNode,
   useEffect,
   useState,
+  useMemo,
+  useCallback,
 } from 'react';
-import { widgetSyncService } from '../../services/WidgetSyncService.js';
+import { widgetSyncService } from '../../services/WidgetSyncService';
 import type {
   SyncState,
   SyncPerformanceMetrics,
-} from '../../services/WidgetSyncService.js';
+} from '../../services/WidgetSyncService';
 
 // ============================================================================
 // CONTEXT INTERFACES
@@ -99,8 +101,8 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
   const [isConnected, setIsConnected] = useState(true);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
 
-  // Actions
-  const refreshState = () => {
+  // Memoized actions to prevent re-renders
+  const refreshState = useCallback(() => {
     try {
       const currentState = widgetSyncService.getSyncState();
       const currentMetrics = widgetSyncService.getPerformanceMetrics();
@@ -127,9 +129,9 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
       }
       console.error('[SyncProvider] Failed to refresh state:', error);
     }
-  };
+  }, [debugMode, onGlobalError]);
 
-  const resetMetrics = () => {
+  const resetMetrics = useCallback(() => {
     try {
       widgetSyncService.resetMetrics();
       setPerformanceMetrics(widgetSyncService.getPerformanceMetrics());
@@ -145,43 +147,46 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
       }
       console.error('[SyncProvider] Failed to reset metrics:', error);
     }
-  };
+  }, [debugMode, onGlobalError]);
 
-  const emitGlobalEvent = (
-    eventType: SyncContextValue['emitGlobalEvent'] extends (
-      a: infer T,
-      b: any,
-    ) => void
-      ? T
-      : never,
-    payload: any,
-  ) => {
-    try {
-      widgetSyncService.emit({
-        type: eventType,
-        payload,
-        timestamp: Date.now(),
-        source: 'SyncProvider',
-        priority: 'normal',
-      });
-
-      if (debugMode) {
-        console.log('[SyncProvider] Emitted global event', {
-          eventType,
+  const emitGlobalEvent = useCallback(
+    (
+      eventType: SyncContextValue['emitGlobalEvent'] extends (
+        a: infer T,
+        b: any,
+      ) => void
+        ? T
+        : never,
+      payload: any,
+    ) => {
+      try {
+        widgetSyncService.emit({
+          type: eventType,
           payload,
+          timestamp: Date.now(),
+          source: 'SyncProvider',
+          priority: 'normal',
         });
+
+        if (debugMode) {
+          console.log('[SyncProvider] Emitted global event', {
+            eventType,
+            payload,
+          });
+        }
+      } catch (error) {
+        if (onGlobalError) {
+          onGlobalError(
+            error instanceof Error
+              ? error
+              : new Error('Failed to emit global event'),
+          );
+        }
+        console.error('[SyncProvider] Failed to emit global event:', error);
       }
-    } catch (error) {
-      if (onGlobalError) {
-        onGlobalError(
-          error instanceof Error
-            ? error
-            : new Error('Failed to emit global event'),
-        );
-      }
-      console.error('[SyncProvider] Failed to emit global event:', error);
-    }
-  };
+    },
+    [debugMode, onGlobalError],
+  );
 
   // Global monitoring
   useEffect(() => {
@@ -190,7 +195,14 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
     const monitorPerformance = () => {
       try {
         const metrics = widgetSyncService.getPerformanceMetrics();
-        setPerformanceMetrics(metrics);
+
+        // Only update state if metrics have actually changed
+        setPerformanceMetrics((prevMetrics) => {
+          if (JSON.stringify(prevMetrics) !== JSON.stringify(metrics)) {
+            return metrics;
+          }
+          return prevMetrics;
+        });
 
         // Check for performance warnings
         if (onPerformanceWarning) {
@@ -208,13 +220,23 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
           }
         }
 
-        // Update connection status
+        // Update connection status with longer timeout and more stable logic
         const timeSinceLastUpdate = Date.now() - metrics.lastUpdateTime;
-        if (timeSinceLastUpdate > 5000) {
-          setIsConnected(false);
-        } else {
-          setIsConnected(true);
-        }
+        const CONNECTION_TIMEOUT = 30000; // 30 seconds instead of 5 seconds
+        const shouldBeConnected = timeSinceLastUpdate <= CONNECTION_TIMEOUT;
+
+        setIsConnected((prevConnected) => {
+          // Only update if there's a significant change to avoid constant flipping
+          if (prevConnected !== shouldBeConnected) {
+            if (debugMode) {
+              console.log(
+                `[SyncProvider] Connection status changing from ${prevConnected} to ${shouldBeConnected} (${timeSinceLastUpdate}ms since last update)`,
+              );
+            }
+            return shouldBeConnected;
+          }
+          return prevConnected;
+        });
       } catch (error) {
         setIsConnected(false);
         if (debugMode) {
@@ -223,8 +245,22 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
       }
     };
 
-    const interval = setInterval(monitorPerformance, monitoringInterval);
-    return () => clearInterval(interval);
+    // Use longer monitoring interval to reduce unnecessary checks
+    const actualInterval = Math.max(monitoringInterval, 15000); // Minimum 15 seconds
+    const interval = setInterval(monitorPerformance, actualInterval);
+
+    if (debugMode) {
+      console.log(
+        `[SyncProvider] Starting performance monitoring with ${actualInterval}ms interval`,
+      );
+    }
+
+    return () => {
+      clearInterval(interval);
+      if (debugMode) {
+        console.log('[SyncProvider] Stopped performance monitoring');
+      }
+    };
   }, [
     enableGlobalMonitoring,
     monitoringInterval,
@@ -239,7 +275,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
         const newState = widgetSyncService.getSyncState();
         setSyncState(newState);
         setLastUpdateTime(Date.now());
-        setIsConnected(true);
+        setIsConnected(true); // Mark as connected when we receive events
       } catch (error) {
         setIsConnected(false);
         if (debugMode) {
@@ -266,8 +302,28 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
     };
   }, [debugMode]);
 
-  // Context value
-  const contextValue: SyncContextValue = {
+  // Stable context value with better memoization
+  const contextValue: SyncContextValue = useMemo(() => {
+    // Only log context recreation in debug mode and when actually changing
+    if (debugMode) {
+      console.log(`🔄 SyncProvider CONTEXT VALUE RECREATED:`, {
+        isConnected,
+        lastUpdateTime,
+        syncStateKeys: Object.keys(syncState),
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return {
+      syncState,
+      performanceMetrics,
+      isConnected,
+      lastUpdateTime,
+      refreshState,
+      resetMetrics,
+      emitGlobalEvent,
+    };
+  }, [
     syncState,
     performanceMetrics,
     isConnected,
@@ -275,17 +331,27 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
     refreshState,
     resetMetrics,
     emitGlobalEvent,
-  };
+    // Remove debugMode from dependencies as it shouldn't trigger context recreation
+  ]);
 
-  if (debugMode) {
-    // Add debug info to global window for debugging
-    (window as any).__syncProviderDebug = {
-      syncState,
-      performanceMetrics,
-      isConnected,
-      contextValue,
-    };
-  }
+  // Debug info setup (client-side only)
+  useEffect(() => {
+    if (debugMode && typeof window !== 'undefined') {
+      // Add debug info to global window for debugging
+      (window as any).__syncProviderDebug = {
+        syncState,
+        performanceMetrics,
+        isConnected,
+        lastUpdateTime,
+        refreshState,
+        resetMetrics,
+        emitGlobalEvent,
+      };
+
+      // Make widgetSyncService available globally for debugging
+      (window as any).widgetSyncService = widgetSyncService;
+    }
+  }, [debugMode, syncState, performanceMetrics, isConnected, lastUpdateTime]);
 
   return (
     <SyncContext.Provider value={contextValue}>{children}</SyncContext.Provider>

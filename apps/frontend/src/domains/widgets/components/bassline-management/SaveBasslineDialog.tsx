@@ -14,7 +14,7 @@ import { Label } from '@/shared/components/ui/label';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { useToast } from '@/shared/hooks/use-toast';
-import { UserBasslinesAPI } from '../../api/user-basslines.js';
+import { UserBasslinesAPI } from '../../api/user-basslines';
 import type {
   ExerciseNote,
   BasslineMetadata,

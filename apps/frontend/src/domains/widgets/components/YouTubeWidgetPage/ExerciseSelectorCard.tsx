@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -9,21 +9,14 @@ import {
 } from '@/shared/components/ui/card';
 import { Clock, Target, Music, CheckCircle, Loader2 } from 'lucide-react';
 import { useExerciseSelection } from '../../hooks/useExerciseSelection';
-import { SyncedWidget } from '../base/SyncedWidget.js';
-import type { SyncedWidgetRenderProps } from '../base/SyncedWidget.js';
-
-interface TutorialData {
-  id: string;
-  title: string;
-  artist: string;
-  difficulty: string;
-  duration: string;
-  videoUrl: string;
-  concepts: string[];
-}
+import { SyncedWidget } from '../base';
+import type { SyncedWidgetRenderProps } from '../base';
+import type { Tutorial } from '@bassnotion/contracts';
 
 interface ExerciseSelectorCardProps {
-  tutorialData?: TutorialData;
+  tutorialData?: Tutorial;
+  tutorialSlug?: string;
+  exercises?: any[]; // Exercise data from tutorial API
   onExerciseSelect?: (exerciseId: string) => void;
 }
 
@@ -47,21 +40,55 @@ const difficultyConfig = {
     color: 'bg-red-500/20 text-red-300 border-red-500/30',
     label: 'Advanced',
   },
-};
+} as const;
+
+// Helper function to get difficulty config with fallback
+function getDifficultyConfig(difficulty: any) {
+  const normalizedDifficulty = difficulty?.toLowerCase();
+  if (normalizedDifficulty in difficultyConfig) {
+    return difficultyConfig[
+      normalizedDifficulty as keyof typeof difficultyConfig
+    ];
+  }
+  // Fallback for unknown difficulties
+  return {
+    color: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
+    label: 'Unknown',
+  };
+}
 
 export function ExerciseSelectorCard({
   tutorialData: _tutorialData,
+  tutorialSlug,
+  exercises: propExercises,
   onExerciseSelect,
 }: ExerciseSelectorCardProps) {
+  // Debug: Log every render of ExerciseSelectorCard
+  // console.log('🔄 ExerciseSelectorCard RENDER:', {
+  //   tutorialSlug,
+  //   propExercisesCount: propExercises?.length || 0,
+  //   timestamp: new Date().toISOString(),
+  // });
+
+  // Debug: Log mount/unmount
+  React.useEffect(() => {
+    // console.log('🟢 ExerciseSelectorCard MOUNTED');
+    return () => {
+      // console.log('🔴 ExerciseSelectorCard UNMOUNTED');
+    };
+  }, []);
+
   return (
     <SyncedWidget
       widgetId="exercise-selector"
       widgetName="Exercise Selector"
-      debugMode={process.env.NODE_ENV === 'development'}
+      debugMode={false}
     >
       {(syncProps: SyncedWidgetRenderProps) => (
         <ExerciseSelectorCardContent
           tutorialData={_tutorialData}
+          tutorialSlug={tutorialSlug}
+          exercises={propExercises}
           onExerciseSelect={onExerciseSelect}
           syncProps={syncProps}
         />
@@ -71,104 +98,121 @@ export function ExerciseSelectorCard({
 }
 
 interface ExerciseSelectorCardContentProps {
-  tutorialData?: TutorialData;
+  tutorialData?: Tutorial;
+  tutorialSlug?: string;
+  exercises?: any[];
   onExerciseSelect?: (exerciseId: string) => void;
   syncProps: SyncedWidgetRenderProps;
 }
 
 function ExerciseSelectorCardContent({
   tutorialData: _tutorialData,
+  tutorialSlug: _tutorialSlug,
+  exercises: propExercises,
   onExerciseSelect,
   syncProps,
 }: ExerciseSelectorCardContentProps) {
+  // Use tutorial-specific exercises if provided, otherwise fallback to useExerciseSelection
   const {
-    exercises,
+    exercises: fallbackExercises,
     isLoading: loading,
     error,
     selectExercise,
   } = useExerciseSelection();
 
+  // Prefer prop exercises (from tutorial) over fallback exercises
+  const exercises =
+    propExercises && propExercises.length > 0
+      ? propExercises
+      : fallbackExercises;
+
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
+
+  const handleExerciseSelect = useCallback(
+    (exerciseId: string) => {
+      const exercise = exercises.find((ex) => ex.id === exerciseId);
+      if (exercise) {
+        setSelectedExerciseId(exerciseId);
+        selectExercise(exercise);
+        onExerciseSelect?.(exerciseId);
+
+        // Debug log (disabled to reduce console noise)
+        // console.log('🎯 Exercise Selected - Configuring all widgets:', {
+        //   id: exercise.id,
+        //   title: exercise.title,
+        //   bpm: exercise.bpm,
+        //   key: exercise.key,
+        //   chords: exercise.chord_progression,
+        // });
+
+        // Emit comprehensive sync events to configure all widgets
+
+        // 1. Main exercise change event
+        syncProps.sync.actions.emitEvent(
+          'EXERCISE_CHANGE',
+          { exercise },
+          'high',
+        );
+
+        // 2. Tempo change for metronome and global controls
+        if (exercise.bpm && exercise.bpm > 0) {
+          syncProps.sync.actions.emitEvent(
+            'TEMPO_CHANGE',
+            {
+              tempo: exercise.bpm,
+              source: 'exercise-selector',
+              reason: 'exercise-template',
+            },
+            'high',
+          );
+        }
+
+        // 3. Custom bassline pattern if available
+        if (
+          exercise.chord_progression &&
+          Array.isArray(exercise.chord_progression)
+        ) {
+          syncProps.sync.actions.emitEvent(
+            'CUSTOM_BASSLINE',
+            {
+              chordProgression: exercise.chord_progression,
+              key: exercise.key,
+              source: 'exercise-selector',
+              reason: 'exercise-template',
+            },
+            'normal',
+          );
+        }
+
+        // 4. Volume configuration for optimal practice
+        syncProps.sync.actions.emitEvent(
+          'VOLUME_CHANGE',
+          {
+            masterVolume: 0.8,
+            metronomeVolume: 0.7,
+            source: 'exercise-selector',
+            reason: 'exercise-template',
+          },
+          'low',
+        );
+      }
+    },
+    [exercises, selectExercise, onExerciseSelect, syncProps.sync.actions],
+  );
 
   // Auto-select first exercise when exercises load
   useEffect(() => {
+    // Auto-select first exercise if none is selected and exercises are available
     if (exercises.length > 0 && !selectedExerciseId) {
       const firstExercise = exercises[0];
-      if (firstExercise) {
-        console.log(
-          '🎯 ExerciseSelectorCard: Auto-selecting first exercise:',
-          firstExercise.id,
-        );
-        setSelectedExerciseId(firstExercise.id);
-        selectExercise(firstExercise);
-        onExerciseSelect?.(firstExercise.id);
-
-        // Emit sync event for exercise change
-        syncProps.sync.actions.emitEvent(
-          'EXERCISE_CHANGE',
-          { exercise: firstExercise },
-          'normal',
-        );
+      if (firstExercise && firstExercise.id) {
+        handleExerciseSelect(firstExercise.id);
       }
     }
-  }, [
-    exercises,
-    selectedExerciseId,
-    selectExercise,
-    onExerciseSelect,
-    syncProps,
-  ]);
-
-  const handleExerciseSelect = (exerciseId: string) => {
-    const exercise = exercises.find((ex) => ex.id === exerciseId);
-    if (exercise) {
-      setSelectedExerciseId(exerciseId);
-      selectExercise(exercise);
-      onExerciseSelect?.(exerciseId);
-
-      // Emit sync event for exercise change
-      syncProps.sync.actions.emitEvent(
-        'EXERCISE_CHANGE',
-        { exercise },
-        'normal',
-      );
-    }
-  };
+  }, [exercises, selectedExerciseId, handleExerciseSelect]);
 
   return (
     <div className="space-y-6">
-      {/* Core Concept Card */}
-      <Card className="bg-purple-900/30 backdrop-blur-xl border border-purple-700/50 shadow-2xl">
-        <CardContent className="p-6">
-          <h3 className="text-xl font-semibold text-white mb-3">
-            Core Concept
-          </h3>
-          <p className="text-purple-200 leading-relaxed mb-4">
-            Use different modes starting from the same root note (D) over a
-            2-5-1 progression to create intentional tension and release without
-            shifting the root.
-          </p>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-green-300">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span className="text-sm">
-                Modal interchange over static root notes
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-green-300">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span className="text-sm">
-                Advanced tension and release techniques
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-green-300">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span className="text-sm">II-V-I progression variations</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Exercise Selection Card */}
       <Card className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 shadow-2xl">
         <CardHeader>
@@ -199,71 +243,71 @@ function ExerciseSelectorCardContent({
               <p className="text-red-400">{error}</p>
             </div>
           )}
-          // TODO: Review non-null assertion - consider null safety
           {!loading &&
-            // TODO: Review non-null assertion - consider null safety
             !error &&
-            exercises.map((exercise, index) => (
-              <div
-                key={exercise.id}
-                className={`relative p-5 rounded-xl border cursor-pointer transition-all duration-300 group ${
-                  selectedExerciseId === exercise.id
-                    ? 'bg-slate-700/60 border-orange-500/50 shadow-lg shadow-orange-500/10'
-                    : 'bg-slate-800/40 border-slate-600/30 hover:bg-slate-700/40 hover:border-slate-500/50'
-                }`}
-                onClick={() => handleExerciseSelect(exercise.id)}
-              >
-                {/* Exercise Number Badge */}
-                <div className="absolute -left-2 -top-2 w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                  {index + 1}
+            exercises
+              .filter((exercise) => exercise?.id && exercise?.title)
+              .map((exercise, index) => (
+                <div
+                  key={exercise.id}
+                  className={`relative p-5 rounded-xl border cursor-pointer transition-all duration-300 group ${
+                    selectedExerciseId === exercise.id
+                      ? 'bg-slate-700/60 border-orange-500/50 shadow-lg shadow-orange-500/10'
+                      : 'bg-slate-800/40 border-slate-600/30 hover:bg-slate-700/40 hover:border-slate-500/50'
+                  }`}
+                  onClick={() => handleExerciseSelect(exercise.id)}
+                >
+                  {/* Exercise Number Badge */}
+                  <div className="absolute -left-2 -top-2 w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                    {index + 1}
+                  </div>
+
+                  {/* Selected Indicator */}
+                  {selectedExerciseId === exercise.id && (
+                    <div className="absolute -right-2 -top-2">
+                      <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 pr-4">
+                      <h3 className="font-semibold text-white mb-2 group-hover:text-orange-300 transition-colors">
+                        {exercise.title}
+                      </h3>
+                      <p className="text-sm text-slate-300 mb-4 leading-relaxed">
+                        {exercise.description}
+                      </p>
+
+                      <div className="flex items-center gap-4 text-xs">
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{formatDuration(exercise.duration)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                          <Music className="w-3.5 h-3.5" />
+                          <span>{exercise.bpm} BPM</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                          <span className="text-xs">Key:</span>
+                          <span className="font-medium">{exercise.key}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-3">
+                      <div
+                        className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                          getDifficultyConfig(exercise.difficulty).color
+                        }`}
+                      >
+                        {getDifficultyConfig(exercise.difficulty).label}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-
-                {/* Selected Indicator */}
-                {selectedExerciseId === exercise.id && (
-                  <div className="absolute -right-2 -top-2">
-                    <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                      <CheckCircle className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 pr-4">
-                    <h3 className="font-semibold text-white mb-2 group-hover:text-orange-300 transition-colors">
-                      {exercise.title}
-                    </h3>
-                    <p className="text-sm text-slate-300 mb-4 leading-relaxed">
-                      {exercise.description}
-                    </p>
-
-                    <div className="flex items-center gap-4 text-xs">
-                      <div className="flex items-center gap-1.5 text-slate-400">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{formatDuration(exercise.duration)}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-slate-400">
-                        <Music className="w-3.5 h-3.5" />
-                        <span>{exercise.bpm} BPM</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-slate-400">
-                        <span className="text-xs">Key:</span>
-                        <span className="font-medium">{exercise.key}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-end gap-3">
-                    <div
-                      className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                        difficultyConfig[exercise.difficulty].color
-                      }`}
-                    >
-                      {difficultyConfig[exercise.difficulty].label}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))}
         </CardContent>
       </Card>
     </div>

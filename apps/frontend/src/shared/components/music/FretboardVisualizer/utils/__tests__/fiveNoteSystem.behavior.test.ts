@@ -10,10 +10,46 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { MockExercise } from '../../types.js';
+
+// Define MockExercise interface locally for testing
+interface MockNote {
+  id: string;
+  timestamp: number;
+  string: number;
+  fret: number;
+  note: string;
+  duration: number;
+}
+
+interface MockExercise {
+  id: string;
+  bpm: number;
+  duration: number;
+  notes: MockNote[];
+}
+
+interface VisibleNote extends MockNote {
+  opacity: number;
+  color: string;
+}
+
+interface PlayStripState {
+  isActive: boolean;
+  currentNoteId: string | null;
+  nextNoteId: string | null;
+  upcomingNoteIds: string[];
+}
+
+interface FiveNoteSystemResult {
+  visibleNotes: VisibleNote[];
+  playStripState: PlayStripState;
+}
 
 // Core 5-note system logic extracted from the hook
-function getFiveNoteSystem(exercise: MockExercise, currentTime = -1000) {
+function getFiveNoteSystem(
+  exercise: MockExercise,
+  currentTime = -1000,
+): FiveNoteSystemResult {
   if (!exercise.notes || exercise.notes.length === 0) {
     return {
       visibleNotes: [],
@@ -30,7 +66,7 @@ function getFiveNoteSystem(exercise: MockExercise, currentTime = -1000) {
   let currentIndex = 0;
   if (currentTime !== -1000) {
     // During animation, find the note closest to current time
-    currentIndex = exercise.notes.findIndex((note, index) => {
+    currentIndex = exercise.notes.findIndex((note: MockNote, index: number) => {
       const nextNote = exercise.notes[index + 1];
       return (
         currentTime >= note.timestamp &&
@@ -47,19 +83,21 @@ function getFiveNoteSystem(exercise: MockExercise, currentTime = -1000) {
 
   // Apply opacity progression: [1.0, 1.0, 1.0, 0.6, 0.3]
   const opacityProgression = [1.0, 1.0, 1.0, 0.6, 0.3];
-  const visibleNotes = fiveNotes.map((note, index) => ({
-    ...note,
-    opacity:
-      index < opacityProgression.length ? opacityProgression[index] : 0.3,
-    color: index === 0 ? 'red' : index === 1 ? 'blue' : 'green',
-  }));
+  const visibleNotes = fiveNotes.map(
+    (note: MockNote, index: number): VisibleNote => ({
+      ...note,
+      opacity:
+        index < opacityProgression.length ? opacityProgression[index]! : 0.3,
+      color: index === 0 ? 'red' : index === 1 ? 'blue' : 'green',
+    }),
+  );
 
   // Build play strip state
-  const playStripState = {
+  const playStripState: PlayStripState = {
     isActive: currentTime !== -1000,
     currentNoteId: fiveNotes[0]?.id || null,
     nextNoteId: fiveNotes[1]?.id || null,
-    upcomingNoteIds: fiveNotes.slice(2).map((note) => note.id),
+    upcomingNoteIds: fiveNotes.slice(2).map((note: MockNote) => note.id),
   };
 
   return { visibleNotes, playStripState };
@@ -154,7 +192,7 @@ describe('Five-Note System - Core Logic Behavior', () => {
     it('should show first 5 notes in correct order', () => {
       const result = getFiveNoteSystem(testExercise, -1000);
 
-      const noteIds = result.visibleNotes.map((note) => note.id);
+      const noteIds = result.visibleNotes.map((note: VisibleNote) => note.id);
       expect(noteIds).toEqual([
         'note-1',
         'note-2',
@@ -167,7 +205,9 @@ describe('Five-Note System - Core Logic Behavior', () => {
     it('should apply correct opacity progression in static preview', () => {
       const result = getFiveNoteSystem(testExercise, -1000);
 
-      const opacities = result.visibleNotes.map((note) => note.opacity);
+      const opacities = result.visibleNotes.map(
+        (note: VisibleNote) => note.opacity,
+      );
       expect(opacities).toEqual([
         1, // RED current note - 100%
         1, // BLUE next note - 100%

@@ -1,0 +1,87 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# 🚨 MANDATORY ASSISTANT RULES CHECKLIST
+
+**BEFORE ANY COMMAND OR CODE CHANGE, VERIFY:**
+
+## ✅ **PACKAGE MANAGER CHECK**
+- [ ] ✅ CONFIRMED: This is a **pnpm project** (pnpm-lock.yaml exists)
+- [ ] ❌ NEVER use: npm, yarn commands
+
+## ✅ **PROCESS MANAGER CHECK**
+- [ ] ✅ CONFIRMED: This project uses **PM2 EXCLUSIVELY** for serving
+- [ ] ❌ NEVER use: nx serve, pnpm serve, npm run dev commands
+
+## ✅ **IMPORT RULES CHECK**
+- [ ] ✅ Relative imports (./ or ../) → MUST include .js extension
+- [ ] ✅ Alias imports (@/ or @bassnotion/) → NEVER include .js extension
+- [ ] ✅ Package imports → NEVER include extensions
+
+## ✅ **TECHNOLOGY STACK CHECK**
+- [ ] ✅ NX Monorepo (nx.json exists)
+- [ ] ✅ Build tool: Vite (vite.config.ts)
+- [ ] ✅ Process manager: PM2 (ecosystem.config.cjs)
+- [ ] ✅ TypeScript with NodeNext module resolution
+
+## ✅ **PERMISSION CHECK**
+- [ ] ✅ Asked permission before code changes
+- [ ] ✅ Asked permission before layout changes
+
+---
+
+## 🚨 **MANDATORY COMMANDS**
+
+### ✅ **CORRECT COMMANDS:**
+```bash
+# Package management
+pnpm install
+pnpm run build
+pnpm run test
+pnpm audit
+
+# NX commands (build/test only)
+pnpm nx build @bassnotion/backend
+pnpm nx test @bassnotion/backend
+
+# PM2 process management (SERVING ONLY)
+pm2 start ecosystem.config.cjs
+pm2 restart bassnotion-frontend
+pm2 restart bassnotion-backend
+pm2 status
+pm2 logs bassnotion-frontend
+pm2 stop bassnotion-frontend
+```
+
+### ❌ **FORBIDDEN COMMANDS:**
+```bash
+# NEVER use these package managers:
+npm install    # ❌ 
+npm run build  # ❌
+yarn install   # ❌
+
+# NEVER use these serving commands:
+nx serve @bassnotion/frontend     # ❌ FORBIDDEN
+nx serve @bassnotion/backend      # ❌ FORBIDDEN
+pnpm nx serve frontend            # ❌ FORBIDDEN
+pnpm nx serve backend             # ❌ FORBIDDEN
+pnpm serve                        # ❌ FORBIDDEN
+npm run dev                       # ❌ FORBIDDEN
+npm start                         # ❌ FORBIDDEN
+```
+
+---
+
+## 🔍 **VERIFICATION QUESTIONS I MUST ASK MYSELF:**
+
+1. **"Is this a pnpm project?"** → Check for pnpm-lock.yaml
+2. **"What import rules apply?"** → Check file path type (relative vs alias)
+3. **"Do I have permission?"** → Ask user before changes
+4. **"Is this the correct command?"** → Verify against rules
+5. **"Am I using PM2 for serving?"** → NEVER use nx serve or pnpm serve
+
+---
+
+**IF I VIOLATE THESE RULES, STOP AND CORRECT IMMEDIATELY!** 🛑

@@ -1,4 +1,5 @@
-import { useAuth } from '../../hooks/useAuth';
+import React from 'react';
+import { useAuth } from '../../hooks/use-auth';
 
 export function DashboardHeader() {
   const { user } = useAuth();

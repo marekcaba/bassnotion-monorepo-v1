@@ -9,8 +9,8 @@ import {
 } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Music, RotateCw } from 'lucide-react';
-import { SyncedWidget } from '../base/SyncedWidget.js';
-import type { SyncedWidgetRenderProps } from '../base/SyncedWidget.js';
+import { SyncedWidget } from '../base';
+import type { SyncedWidgetRenderProps } from '../base';
 
 interface Note {
   id: number;
@@ -44,7 +44,10 @@ export function SheetPlayerVisualizerCard() {
     <SyncedWidget
       widgetId="sheet-player"
       widgetName="Sheet Music Player"
-      debugMode={process.env.NODE_ENV === 'development'}
+      syncOptions={{
+        subscribeTo: ['PLAYBACK_STATE', 'TEMPO_CHANGE', 'TIMELINE_UPDATE'],
+        debugMode: false,
+      }}
     >
       {(syncProps: SyncedWidgetRenderProps) => (
         <SheetPlayerVisualizerCardContent syncProps={syncProps} />
@@ -62,7 +65,7 @@ function SheetPlayerVisualizerCardContent({
 }: SheetPlayerVisualizerCardContentProps) {
   const [currentPosition, setCurrentPosition] = useState(2);
   const [isLooping, setIsLooping] = useState(true);
-  const [tempo] = useState(100);
+  const [tempo, setTempo] = useState(100);
 
   // Sync with global playback state for timeline position
   useEffect(() => {
@@ -80,8 +83,7 @@ function SheetPlayerVisualizerCardContent({
   useEffect(() => {
     const globalTempo = syncProps.tempo;
     if (globalTempo && globalTempo !== tempo) {
-      console.log(`🎼 SheetPlayer: Tempo synced to ${globalTempo} BPM`);
-      // Update local tempo state if needed
+      setTempo(globalTempo);
     }
   }, [syncProps.tempo, tempo]);
 

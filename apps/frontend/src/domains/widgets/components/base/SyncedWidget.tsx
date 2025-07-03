@@ -8,9 +8,9 @@
  * Task 3.6.3: Widget Base Components
  */
 
-import React, { ErrorInfo, ReactNode } from 'react';
-import { useWidgetSync } from '../../hooks/useWidgetSync.js';
-import type { UseWidgetSyncOptions } from '../../hooks/useWidgetSync.js';
+import React, { ErrorInfo, ReactNode, useEffect } from 'react';
+import { useWidgetSync } from '../../hooks/useWidgetSync';
+import type { UseWidgetSyncOptions } from '../../hooks/useWidgetSync';
 
 // ============================================================================
 // INTERFACES
@@ -173,6 +173,31 @@ export const SyncedWidget: React.FC<SyncedWidgetProps> = ({
   onPerformanceWarning,
   debugMode = false,
 }) => {
+  // Debug: Log every render
+  if (debugMode) {
+    // Debug logs (temporarily disabled to reduce console noise)
+    // console.log(`🔄 SyncedWidget RENDER [${widgetId}]:`, {
+    //   widgetName,
+    //   syncOptions,
+    //   debugMode,
+    //   timestamp: new Date().toISOString(),
+    // });
+  }
+
+  // Debug: Log mount/unmount
+  useEffect(() => {
+    if (debugMode) {
+      // Debug logs (temporarily disabled to reduce console noise)
+      // console.log(`🟢 SyncedWidget MOUNTED [${widgetId}]`);
+    }
+    return () => {
+      if (debugMode) {
+        // Debug logs (temporarily disabled to reduce console noise)
+        // console.log(`🔴 SyncedWidget UNMOUNTED [${widgetId}]`);
+      }
+    };
+  }, [widgetId, debugMode]);
+
   // Merge sync options with defaults
   const mergedSyncOptions: UseWidgetSyncOptions = {
     widgetId,

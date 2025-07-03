@@ -1,4 +1,4 @@
-import { UserBasslinesAPI } from '../api/user-basslines.js';
+import { UserBasslinesAPI } from '../api/user-basslines';
 import type {
   ExerciseNote,
   BasslineMetadata,

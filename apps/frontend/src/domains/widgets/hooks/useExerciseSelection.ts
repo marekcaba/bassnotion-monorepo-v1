@@ -177,12 +177,13 @@ export function useExerciseSelection(): UseExerciseSelectionReturn {
           usingFallback: fallbackUsed,
         }));
 
-        console.log(
-          '🎯 useExerciseSelection: Loaded',
-          exercises.length,
-          'exercises',
-          fallbackUsed ? '(using fallback)' : '',
-        );
+        // Debug log (disabled to reduce console noise)
+        // console.log(
+        //   '🎯 useExerciseSelection: Loaded',
+        //   exercises.length,
+        //   'exercises',
+        //   fallbackUsed ? '(using fallback)' : '',
+        // );
       } catch (err) {
         console.error('🎯 useExerciseSelection: Error loading exercises:', err);
 
@@ -236,11 +237,13 @@ export function useExerciseSelection(): UseExerciseSelectionReturn {
     ) {
       const firstExercise = state.exercises[0];
       if (firstExercise) {
-        console.log(
-          '🎯 useExerciseSelection: Auto-selecting first exercise:',
-          firstExercise.id,
-          state.usingFallback ? '(fallback exercise)' : '',
-        );
+        // Debug log (disabled to reduce console noise)
+        // console.log('🎯 useExerciseSelection: Auto-selecting first exercise:', {
+        //   id: firstExercise.id,
+        //   title: firstExercise.title,
+        //   bpm: firstExercise.bpm,
+        //   usingFallback: state.usingFallback,
+        // });
         setState((prev) => ({ ...prev, selectedExercise: firstExercise }));
       }
     }
@@ -293,7 +296,8 @@ export function useExerciseSelection(): UseExerciseSelectionReturn {
       usingFallback: true,
       error: null,
     }));
-    console.log('🎯 useExerciseSelection: Manually selected default exercise');
+    // Debug log (disabled to reduce console noise)
+    // console.log('🎯 useExerciseSelection: Manually selected default exercise');
   }, []);
 
   return {

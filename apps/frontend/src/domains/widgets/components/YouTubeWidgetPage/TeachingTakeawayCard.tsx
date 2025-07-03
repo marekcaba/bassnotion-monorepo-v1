@@ -3,8 +3,9 @@
 import React, { useEffect } from 'react';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { CheckCircle, Lightbulb, Target, TrendingUp } from 'lucide-react';
-import { SyncedWidget } from '../base/SyncedWidget.js';
-import type { SyncedWidgetRenderProps } from '../base/SyncedWidget.js';
+import { SyncedWidget } from '../base';
+import type { SyncedWidgetRenderProps } from '../base';
+import type { Tutorial } from '@bassnotion/contracts';
 
 interface Concept {
   id: number;
@@ -14,18 +15,8 @@ interface Concept {
   difficulty: 'fundamental' | 'intermediate' | 'advanced';
 }
 
-interface TutorialData {
-  id: string;
-  title: string;
-  artist: string;
-  difficulty: string;
-  duration: string;
-  videoUrl: string;
-  concepts: string[];
-}
-
 interface TeachingTakeawayCardProps {
-  tutorialData?: TutorialData;
+  tutorialData?: Tutorial;
 }
 
 const keyConcepts: Concept[] = [
@@ -66,7 +57,7 @@ export function TeachingTakeawayCard({
     <SyncedWidget
       widgetId="teaching-takeaway"
       widgetName="Teaching Takeaway"
-      debugMode={process.env.NODE_ENV === 'development'}
+      debugMode={false}
     >
       {(syncProps: SyncedWidgetRenderProps) => (
         <TeachingTakeawayCardContent
@@ -79,7 +70,7 @@ export function TeachingTakeawayCard({
 }
 
 interface TeachingTakeawayCardContentProps {
-  tutorialData?: TutorialData;
+  tutorialData?: Tutorial;
   syncProps: SyncedWidgetRenderProps;
 }
 

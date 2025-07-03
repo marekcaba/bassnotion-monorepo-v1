@@ -8,12 +8,9 @@
  * Task 3.6.2: Synchronized State Hook
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { widgetSyncService } from '../services/WidgetSyncService.js';
-import type {
-  WidgetSyncEvent,
-  SyncState,
-} from '../services/WidgetSyncService.js';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { widgetSyncService } from '../services/WidgetSyncService';
+import type { WidgetSyncEvent, SyncState } from '../services/WidgetSyncService';
 
 // ============================================================================
 // HOOK INTERFACES
@@ -142,127 +139,139 @@ export function useWidgetSync(
   // STATE UPDATE OPTIMIZATION
   // ============================================================================
 
-  const shouldUpdateState = useCallback(
-    (newState: SyncState): boolean => {
-      // Apply state filter if provided
-      if (stateFilter) {
-        const filteredPrevious = stateFilter(syncState);
-        const filteredNew = stateFilter(newState);
+  // Use refs to break dependency cycles
+  const shouldUpdateStateRef = useRef<(newState: SyncState) => boolean>(
+    () => false,
+  );
+  const updateStateThrottledRef = useRef<(newState: SyncState) => void>(() => {
+    // Initial no-op function
+  });
 
-        // Deep comparison of filtered state
-        return JSON.stringify(filteredPrevious) !== JSON.stringify(filteredNew);
+  shouldUpdateStateRef.current = (newState: SyncState): boolean => {
+    // Apply state filter if provided
+    if (stateFilter) {
+      const filteredPrevious = stateFilter(syncState);
+      const filteredNew = stateFilter(newState);
+
+      // Deep comparison of filtered state
+      return JSON.stringify(filteredPrevious) !== JSON.stringify(filteredNew);
+    }
+
+    // Default: update if state has changed
+    return JSON.stringify(syncState) !== JSON.stringify(newState);
+  };
+
+  updateStateThrottledRef.current = (newState: SyncState) => {
+    const now = Date.now();
+    const timeSinceLastUpdate = now - lastUpdateTime.current;
+
+    if (!throttleUpdates || timeSinceLastUpdate >= throttleMs) {
+      // Immediate update
+      if (shouldUpdateStateRef.current?.(newState)) {
+        setSyncState(newState);
+        setLastSyncTime(now);
+        lastUpdateTime.current = now;
+
+        if (debugMode) {
+          console.log(`[${widgetId}] State updated immediately`, newState);
+        }
+      }
+    } else {
+      // Throttled update
+      pendingStateUpdate.current = newState;
+
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
       }
 
-      // Default: update if state has changed
-      return JSON.stringify(syncState) !== JSON.stringify(newState);
-    },
-    [syncState, stateFilter],
-  );
-
-  const updateStateThrottled = useCallback(
-    (newState: SyncState) => {
-      const now = Date.now();
-      const timeSinceLastUpdate = now - lastUpdateTime.current;
-
-      if (!throttleUpdates || timeSinceLastUpdate >= throttleMs) {
-        // Immediate update
-        if (shouldUpdateState(newState)) {
-          setSyncState(newState);
-          setLastSyncTime(now);
-          lastUpdateTime.current = now;
+      throttleTimerRef.current = setTimeout(() => {
+        const pendingState = pendingStateUpdate.current;
+        if (pendingState && shouldUpdateStateRef.current?.(pendingState)) {
+          setSyncState(pendingState);
+          setLastSyncTime(Date.now());
+          lastUpdateTime.current = Date.now();
 
           if (debugMode) {
-            console.log(`[${widgetId}] State updated immediately`, newState);
+            console.log(
+              `[${widgetId}] State updated (throttled)`,
+              pendingState,
+            );
           }
         }
-      } else {
-        // Throttled update
-        pendingStateUpdate.current = newState;
+        pendingStateUpdate.current = null;
+        throttleTimerRef.current = null;
+      }, throttleMs - timeSinceLastUpdate);
 
-        if (throttleTimerRef.current) {
-          clearTimeout(throttleTimerRef.current);
-        }
+      droppedUpdatesRef.current++;
+    }
+  };
 
-        throttleTimerRef.current = setTimeout(() => {
-          const pendingState = pendingStateUpdate.current;
-          if (pendingState && shouldUpdateState(pendingState)) {
-            setSyncState(pendingState);
-            setLastSyncTime(Date.now());
-            lastUpdateTime.current = Date.now();
-
-            if (debugMode) {
-              console.log(
-                `[${widgetId}] State updated (throttled)`,
-                pendingState,
-              );
-            }
-          }
-          pendingStateUpdate.current = null;
-          throttleTimerRef.current = null;
-        }, throttleMs - timeSinceLastUpdate);
-
-        droppedUpdatesRef.current++;
-      }
-    },
-    [shouldUpdateState, throttleUpdates, throttleMs, widgetId, debugMode],
-  );
+  const updateStateThrottled = useCallback((newState: SyncState) => {
+    updateStateThrottledRef.current?.(newState);
+  }, []);
 
   // ============================================================================
   // EVENT HANDLING
   // ============================================================================
 
-  const handleSyncEvent = useCallback(
-    (event: WidgetSyncEvent) => {
-      const startTime = performance.now();
+  // Use ref to break dependency cycle and prevent infinite re-renders
+  const handleSyncEventRef = useRef<(event: WidgetSyncEvent) => void>(() => {
+    // Initial no-op function
+  });
 
-      try {
-        // Skip events from same widget to prevent loops
-        if (event.source === widgetId) {
-          return;
-        }
+  handleSyncEventRef.current = (event: WidgetSyncEvent) => {
+    const startTime = performance.now();
 
-        // Update event count
-        setEventCount((prev) => prev + 1);
-
-        // Get updated sync state
-        const newState = widgetSyncService.getSyncState();
-
-        // Update state with optimization
-        updateStateThrottled(newState);
-
-        // Track performance
-        const latency = performance.now() - startTime;
-        latencySamples.current.push(latency);
-        if (latencySamples.current.length > 100) {
-          latencySamples.current.shift();
-        }
-
-        // Clear error state on successful event
-        if (hasError) {
-          setHasError(false);
-          setLastError(null);
-        }
-
-        if (debugMode) {
-          console.log(
-            `[${widgetId}] Processed event ${event.type} in ${latency.toFixed(2)}ms`,
-          );
-        }
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown sync error';
-        setHasError(true);
-        setLastError(errorMessage);
-
-        if (onError) {
-          onError(error instanceof Error ? error : new Error(errorMessage));
-        }
-
-        console.error(`[${widgetId}] Sync event error:`, error);
+    try {
+      // Skip events from same widget to prevent loops
+      if (event.source === widgetId) {
+        return;
       }
-    },
-    [widgetId, updateStateThrottled, hasError, onError, debugMode],
-  );
+
+      // Update event count
+      setEventCount((prev) => prev + 1);
+
+      // Get updated sync state
+      const newState = widgetSyncService.getSyncState();
+
+      // Update state with optimization
+      updateStateThrottled(newState);
+
+      // Track performance
+      const latency = performance.now() - startTime;
+      latencySamples.current.push(latency);
+      if (latencySamples.current.length > 100) {
+        latencySamples.current.shift();
+      }
+
+      // Clear error state on successful event
+      if (hasError) {
+        setHasError(false);
+        setLastError(null);
+      }
+
+      if (debugMode) {
+        console.log(
+          `[${widgetId}] Processed event ${event.type} in ${latency.toFixed(2)}ms`,
+        );
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown sync error';
+      setHasError(true);
+      setLastError(errorMessage);
+
+      if (onError) {
+        onError(error instanceof Error ? error : new Error(errorMessage));
+      }
+
+      console.error(`[${widgetId}] Sync event error:`, error);
+    }
+  };
+
+  const handleSyncEvent = useCallback((event: WidgetSyncEvent) => {
+    handleSyncEventRef.current?.(event);
+  }, []);
 
   // ============================================================================
   // CONNECTION MANAGEMENT
@@ -357,6 +366,11 @@ export function useWidgetSync(
   // EFFECT HOOKS
   // ============================================================================
 
+  // Create stable string representation of subscribeTo array to prevent infinite re-renders
+  const subscribeToString = useMemo(() => {
+    return JSON.stringify(subscribeTo?.sort() || []);
+  }, [subscribeTo]);
+
   // Subscribe to sync events on mount
   useEffect(() => {
     const subscribeToEvents = subscribeToAll ? ['*'] : subscribeTo;
@@ -371,7 +385,13 @@ export function useWidgetSync(
     });
 
     // Initial state sync
-    refreshState();
+    try {
+      const currentState = widgetSyncService.getSyncState();
+      setSyncState(currentState);
+      setLastSyncTime(Date.now());
+    } catch (error) {
+      console.error(`[${widgetId}] Failed to refresh state:`, error);
+    }
 
     if (debugMode) {
       console.log(`[${widgetId}] Subscribed to events:`, subscribeToEvents);
@@ -396,14 +416,7 @@ export function useWidgetSync(
         console.log(`[${widgetId}] Unsubscribed from sync service`);
       }
     };
-  }, [
-    subscribeTo,
-    subscribeToAll,
-    handleSyncEvent,
-    refreshState,
-    widgetId,
-    debugMode,
-  ]);
+  }, [subscribeToString, subscribeToAll, handleSyncEvent, widgetId, debugMode]);
 
   // Monitor connection health
   useEffect(() => {
@@ -411,8 +424,9 @@ export function useWidgetSync(
       const now = Date.now();
       const timeSinceLastSync = now - lastSyncTime;
 
-      // Consider connection lost if no sync for 5 seconds
-      if (timeSinceLastSync > 5000 && isConnected) {
+      // Consider connection lost if no sync for 30 seconds (increased from 5 seconds)
+      const CONNECTION_TIMEOUT = 30000;
+      if (timeSinceLastSync > CONNECTION_TIMEOUT && isConnected) {
         setIsConnected(false);
         if (onSyncLoss) {
           onSyncLoss();
@@ -426,7 +440,8 @@ export function useWidgetSync(
       }
     };
 
-    const interval = setInterval(checkConnection, 1000);
+    // Check connection every 5 seconds instead of every second
+    const interval = setInterval(checkConnection, 5000);
     return () => clearInterval(interval);
   }, [lastSyncTime, isConnected, onSyncLoss, widgetId, debugMode]);
 

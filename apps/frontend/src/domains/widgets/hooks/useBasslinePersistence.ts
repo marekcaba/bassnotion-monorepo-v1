@@ -3,8 +3,8 @@ import {
   AutoSaveService,
   type AutoSaveState,
   type AutoSaveCallbacks,
-} from '../services/AutoSave.js';
-import { UserBasslinesAPI } from '../api/user-basslines.js';
+} from '../services/AutoSave';
+import { UserBasslinesAPI } from '../api/user-basslines';
 import type {
   ExerciseNote,
   BasslineMetadata,

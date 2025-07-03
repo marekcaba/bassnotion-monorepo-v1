@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 // Global State Interface as specified in the story
 export interface WidgetPageState {
@@ -194,16 +194,17 @@ export function useWidgetPageState() {
           };
         }
 
-        console.log(
-          '🎯 useWidgetPageState: Exercise selected, updating widgets:',
-          {
-            exerciseId: exercise.id,
-            title: exercise.title,
-            bpm: exercise.bpm,
-            key: exercise.key,
-            chords: exercise.chord_progression,
-          },
-        );
+        // Debug log (disabled to reduce console noise)
+        // console.log(
+        //   '🎯 useWidgetPageState: Exercise selected, updating widgets:',
+        //   {
+        //     exerciseId: exercise.id,
+        //     title: exercise.title,
+        //     bpm: exercise.bpm,
+        //     key: exercise.key,
+        //     chords: exercise.chord_progression,
+        //   },
+        // );
       }
 
       return newState;
@@ -264,31 +265,47 @@ export function useWidgetPageState() {
     setState(initialState);
   }, []);
 
-  return {
-    // State
-    state,
+  // Memoize the return object to prevent unnecessary re-renders
+  return useMemo(
+    () => ({
+      // State
+      state,
 
-    // Actions
-    togglePlayback,
-    setCurrentTime,
-    setTempo,
-    setVolume,
-    setSelectedExercise,
-    toggleWidgetVisibility,
-    nextChord,
-    toggleSync,
-    toggleFretboardAnimation,
-    resetState,
+      // Actions
+      togglePlayback,
+      setCurrentTime,
+      setTempo,
+      setVolume,
+      setSelectedExercise,
+      toggleWidgetVisibility,
+      nextChord,
+      toggleSync,
+      toggleFretboardAnimation,
+      resetState,
 
-    // Computed values
-    isPlaying: state.isPlaying,
-    currentTime: state.currentTime,
-    tempo: state.tempo,
-    selectedExercise: state.selectedExercise,
-    widgets: state.widgets,
-    syncEnabled: state.syncEnabled,
-    fretboardAnimation: state.fretboardAnimation,
-  };
+      // Computed values
+      isPlaying: state.isPlaying,
+      currentTime: state.currentTime,
+      tempo: state.tempo,
+      selectedExercise: state.selectedExercise,
+      widgets: state.widgets,
+      syncEnabled: state.syncEnabled,
+      fretboardAnimation: state.fretboardAnimation,
+    }),
+    [
+      state,
+      togglePlayback,
+      setCurrentTime,
+      setTempo,
+      setVolume,
+      setSelectedExercise,
+      toggleWidgetVisibility,
+      nextChord,
+      toggleSync,
+      toggleFretboardAnimation,
+      resetState,
+    ],
+  );
 }
 
 export type UseWidgetPageStateReturn = ReturnType<typeof useWidgetPageState>;

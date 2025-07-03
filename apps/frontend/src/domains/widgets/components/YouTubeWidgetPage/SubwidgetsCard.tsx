@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Volume2 } from 'lucide-react';
-import { SyncedWidget } from '../base/SyncedWidget.js';
-import type { SyncedWidgetRenderProps } from '../base/SyncedWidget.js';
+import { SyncedWidget } from '../base';
+import type { SyncedWidgetRenderProps } from '../base';
 
 interface MetronomeDot {
   id: number;
@@ -47,7 +47,7 @@ export function SubwidgetsCard() {
     <SyncedWidget
       widgetId="subwidgets-card"
       widgetName="Practice Subwidgets"
-      debugMode={process.env.NODE_ENV === 'development'}
+      debugMode={false}
     >
       {(syncProps: SyncedWidgetRenderProps) => (
         <SubwidgetsCardContent syncProps={syncProps} />
