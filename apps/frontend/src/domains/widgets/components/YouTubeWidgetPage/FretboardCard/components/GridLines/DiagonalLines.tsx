@@ -4,6 +4,7 @@ import type { StringCount } from '../../types/fretboardTypes';
 interface DiagonalLinesProps {
   stringCount: StringCount;
   frets: number[];
+  gridWidth?: number;
   highlightingFunctions: {
     shouldHighlightBasicLine: (
       lineType: 'diagonal',
@@ -85,6 +86,7 @@ interface DiagonalLinesProps {
 export const DiagonalLines: React.FC<DiagonalLinesProps> = ({
   stringCount,
   frets,
+  gridWidth = 568,
   highlightingFunctions,
 }) => {
   const stringIndices = Array.from({ length: stringCount }, (_, i) => i);
@@ -95,7 +97,7 @@ export const DiagonalLines: React.FC<DiagonalLinesProps> = ({
   const STRING_SPACING = 42;
   const FRET_SPACING = 38;
   const FRET_OFFSET = 46;
-  const CENTER_OFFSET = 17;
+  const CENTER_OFFSET = 15;
 
   const getX = (fret: number) =>
     fret === 0
@@ -406,7 +408,7 @@ export const DiagonalLines: React.FC<DiagonalLinesProps> = ({
     <svg
       className="absolute inset-0 pointer-events-none"
       style={{ zIndex: 1 }}
-      viewBox={`0 0 524 ${stringCount * STRING_SPACING + 26}`}
+      viewBox={`0 0 ${gridWidth} ${stringCount * STRING_SPACING + 26}`}
     >
       {/* Render all diagonal lines from every position */}
       {stringIndices.flatMap((stringIndex) =>

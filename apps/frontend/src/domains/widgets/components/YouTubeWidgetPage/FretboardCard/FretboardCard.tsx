@@ -120,6 +120,8 @@ export function FretboardCard({
   );
 }
 
+let renderCount = 0;
+
 function FretboardCardContent({
   syncProps,
   is3DMode = false,
@@ -140,8 +142,34 @@ function FretboardCardContent({
   cameraMode?: 'overview' | 'action';
   setCameraMode?: (mode: 'overview' | 'action') => void;
 }) {
-  // Zoom state - default to 105%
-  const [zoomLevel, setZoomLevel] = useState(1.05);
+  // Zoom state - default to 100%
+  const [zoomLevel, setZoomLevel] = useState(1.0);
+  
+  // Scroll container ref for auto-scroll functionality
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, scrollLeft: 0 });
+  const [hasUserScrolled, setHasUserScrolled] = useState(false);
+  
+  // Debug: Track renders
+  renderCount++;
+  console.log('🔄 FretboardCardContent RENDER #', renderCount, 'hasUserScrolled:', hasUserScrolled);
+
+  // Only reset scroll to 0 if user hasn't manually scrolled
+  React.useEffect(() => {
+    if (!hasUserScrolled && scrollContainerRef.current && !is3DMode) {
+      console.log('🚨 FORCING SCROLL TO 0 - hasUserScrolled:', hasUserScrolled, 'is3DMode:', is3DMode);
+      scrollContainerRef.current.scrollLeft = 0;
+    }
+  }, [is3DMode, hasUserScrolled]);
+
+  // Set initial scroll position on mount only
+  React.useEffect(() => {
+    if (scrollContainerRef.current && !is3DMode) {
+      console.log('🏠 MOUNT: Setting scroll to 0');
+      scrollContainerRef.current.scrollLeft = 0;
+    }
+  }, []); // Run only on mount
   // Use the main fretboard hook that combines all functionality
   const fretboard = useFretboard(syncProps);
 
@@ -252,10 +280,113 @@ function FretboardCardContent({
     manualSelectionTracking.hasManualSelections,
   ]);
 
+  // Auto-scroll to center a specific fret in view
+  const scrollToFret = React.useCallback((fret: number) => {
+    if (!scrollContainerRef.current) return;
+    
+    const FRET_SPACING = 38;
+    const FRET_OFFSET = 46;
+    const CENTER_OFFSET = 15;
+    const containerWidth = 568;
+    
+    // Calculate the X position of the fret
+    const fretX = CENTER_OFFSET + FRET_OFFSET + (fret - 1) * FRET_SPACING;
+    
+    // Center the fret in the viewport
+    const targetScrollLeft = fretX - containerWidth / 2;
+    
+    scrollContainerRef.current.scrollTo({
+      left: Math.max(0, targetScrollLeft),
+      behavior: 'smooth',
+    });
+  }, []);
+
+  // Auto-scroll during playback to follow current note (only if user hasn't manually scrolled)
+  React.useEffect(() => {
+    if (!is3DMode && !hasUserScrolled && fretboard.exercise.audioIntegration.playbackPosition?.isPlaying) {
+      const currentNote = fretboard.exercise.audioIntegration.playbackPosition.currentNote;
+      if (currentNote && typeof currentNote.fret === 'number') {
+        // Handle open string notes (fret 0) - don't scroll, just ensure we're at position 0
+        if (currentNote.fret === 0) {
+          if (scrollContainerRef.current && scrollContainerRef.current.scrollLeft > 0) {
+            console.log('🎵 AUTO-SCROLL: Scrolling to 0 for open string note');
+            scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+          }
+          return;
+        }
+        
+        // Handle fretted notes (fret > 0)
+        if (currentNote.fret > 0) {
+          // Only scroll if the note is outside the current viewport
+          if (scrollContainerRef.current) {
+            const scrollLeft = scrollContainerRef.current.scrollLeft;
+            const containerWidth = 568;
+            const currentViewStart = scrollLeft;
+            const currentViewEnd = scrollLeft + containerWidth;
+            
+            const FRET_SPACING = 38;
+            const FRET_OFFSET = 46;
+            const CENTER_OFFSET = 15;
+            const fretX = CENTER_OFFSET + FRET_OFFSET + (currentNote.fret - 1) * FRET_SPACING;
+            
+            // Add some buffer so we scroll before the note goes out of view
+            const buffer = 100;
+            if (fretX < currentViewStart + buffer || fretX > currentViewEnd - buffer) {
+              console.log('🎵 AUTO-SCROLL: Scrolling to fret', currentNote.fret);
+              scrollToFret(currentNote.fret);
+            }
+          }
+        }
+      }
+    }
+  }, [
+    is3DMode,
+    hasUserScrolled,
+    fretboard.exercise.audioIntegration.playbackPosition?.isPlaying,
+    fretboard.exercise.audioIntegration.playbackPosition?.currentNote,
+    scrollToFret,
+  ]);
+
   // Determine sync status
   const syncStatus = syncProps.isConnected ? 'Synced' : 'Disconnected';
 
-  // Drag handlers
+  // Horizontal scroll drag handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Don't start scrolling if user is clicking on a dot or interactive element
+    const target = e.target as HTMLElement;
+    if (target.closest('[role="button"]') || target.closest('button')) {
+      return;
+    }
+    
+    if (!scrollContainerRef.current) return;
+    setIsDragging(true);
+    setDragStart({
+      x: e.pageX,
+      scrollLeft: scrollContainerRef.current.scrollLeft,
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX;
+    const walk = (x - dragStart.x) * 2; // Multiply by 2 for faster scrolling
+    scrollContainerRef.current.scrollLeft = dragStart.scrollLeft - walk;
+    
+    // Mark that user has manually scrolled
+    console.log('🐆 USER DRAG: Setting hasUserScrolled to true, scroll position:', scrollContainerRef.current.scrollLeft);
+    setHasUserScrolled(true);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  // Drag handlers for dots (existing)
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };
@@ -415,7 +546,7 @@ function FretboardCardContent({
           <div
             className="flex justify-center items-center mx-auto"
             style={{
-              width: 524,
+              width: 568, // Full container width
               height: 290,
               overflow: 'visible',
             }}
@@ -450,23 +581,61 @@ function FretboardCardContent({
             </div>
           </div>
         ) : (
-          /* 2D Mode Fretboard - With zoom container */
+          /* 2D Mode Fretboard - With zoom and horizontal scroll */
           <div
-            className="flex justify-center items-center mx-auto"
+            className="relative mx-auto"
             style={{
-              width: (46 + 11 * 38 + 60) * zoomLevel,
-              height: 290 * zoomLevel,
-              overflow: 'visible',
+              width: 568, // Full container width // Fixed viewport width
+              height: (sharedStringCount === 4 ? 200 : sharedStringCount === 5 ? 240 : 290) * zoomLevel,
+              overflow: 'visible', // Allow shadows to extend in all directions
+              perspective: '800px', // Add perspective here
             }}
           >
             <div
+              ref={(el) => {
+                scrollContainerRef.current = el;
+                if (el && !is3DMode && !hasUserScrolled) {
+                  // Only set to 0 if user hasn't manually scrolled
+                  el.scrollLeft = 0;
+                  console.log('🔍 REF: Set scroll to 0, hasUserScrolled:', hasUserScrolled);
+                } else if (el && hasUserScrolled) {
+                  console.log('🔍 REF: User has scrolled, NOT resetting position. Current:', el.scrollLeft);
+                }
+              }}
+              className="overflow-x-auto overflow-y-hidden h-full"
               style={{
-                transform: `scale(${zoomLevel})`,
-                transformOrigin: 'center',
-                transition: 'transform 0.2s ease-out',
+                cursor: isDragging ? 'grabbing' : 'grab',
+                scrollbarWidth: 'none', // Firefox
+                msOverflowStyle: 'none', // IE/Edge
+                transform: `rotateX(${fretboard.tiltAngle}deg)`, // Apply tilt to scroll container
+                transformStyle: 'preserve-3d',
+                transformOrigin: 'center center',
+              }}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+              onScroll={() => {
+                // Mark that user has scrolled when any scroll event occurs
+                if (scrollContainerRef.current && scrollContainerRef.current.scrollLeft > 0) {
+                  console.log('📋 SCROLL EVENT: Position', scrollContainerRef.current.scrollLeft, 'setting hasUserScrolled to true');
+                  setHasUserScrolled(true);
+                }
               }}
             >
-              <FretboardGrid
+              <style jsx>{`
+                div::-webkit-scrollbar {
+                  display: none; /* Chrome/Safari/Webkit */
+                }
+              `}</style>
+              <div
+                style={{
+                  transform: `scale(${zoomLevel})`,
+                  transformOrigin: '0 0', // Start zoom from top-left (open strings position)
+                  transition: 'transform 0.2s ease-out',
+                }}
+              >
+                <FretboardGrid
               stringCount={sharedStringCount}
               tiltAngle={fretboard.tiltAngle}
               frets={fretboard.frets}
@@ -500,6 +669,7 @@ function FretboardCardContent({
               segmentFunctions={fretboard.segmentFunctions}
               highlightingFunctions={fretboard.highlightingFunctions}
             />
+              </div>
             </div>
           </div>
         )}

@@ -36,8 +36,8 @@ export const useFretboardState = () => {
     null,
   );
 
-  // Generate frets array (0-12, where 0 represents open string)
-  const frets = useMemo(() => Array.from({ length: 12 }, (_, i) => i + 1), []);
+  // Generate frets array (1-25 for full bass guitar range)
+  const frets = useMemo(() => Array.from({ length: 25 }, (_, i) => i + 1), []);
 
   // Get current fretboard state as a single object
   const fretboardState: FretboardState = useMemo(
