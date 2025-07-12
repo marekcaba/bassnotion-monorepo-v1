@@ -6,7 +6,7 @@ export interface Content {
   updatedAt: string;
 }
 
-export interface Exercise extends Content {
+export interface ContentExercise extends Content {
   type: 'youtube' | 'midi' | 'audio';
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   tempo: number;

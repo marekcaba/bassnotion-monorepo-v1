@@ -3,12 +3,13 @@ import { ExercisesController } from './exercises.controller.js';
 import { ExercisesService } from './exercises.service.js';
 import { UserBasslinesController } from './user-basslines.controller.js';
 import { UserBasslinesService } from './user-basslines.service.js';
+import { FileUploadService } from './services/file-upload.service.js';
 import { AuthModule } from '../user/auth/auth.module.js';
 
 @Module({
   imports: [AuthModule], // SupabaseModule is now global, no need to import it
   controllers: [ExercisesController, UserBasslinesController],
-  providers: [ExercisesService, UserBasslinesService],
+  providers: [ExercisesService, UserBasslinesService, FileUploadService],
   exports: [ExercisesService, UserBasslinesService],
 })
 export class ExercisesModule {

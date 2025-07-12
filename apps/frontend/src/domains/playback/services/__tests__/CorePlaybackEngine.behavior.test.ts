@@ -798,7 +798,8 @@ const createMockEnvironment = () => {
     globalObj,
     // Access the mocked Tone directly using vi.mocked with dynamic import
     get mockTone() {
-      return vi.mocked(require('tone'));
+      // Replace require with dynamic import
+      return import('tone').then((module) => vi.mocked(module));
     },
   };
 };

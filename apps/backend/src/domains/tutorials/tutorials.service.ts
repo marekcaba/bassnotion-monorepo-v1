@@ -62,7 +62,8 @@ export class TutorialsService {
         created_at,
         updated_at,
         is_active,
-        chord_progression
+        chord_progression,
+        notes
       `,
         )
         .eq('tutorial_id', tutorial.id)

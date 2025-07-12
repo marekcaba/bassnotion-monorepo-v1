@@ -7,7 +7,8 @@ export type {
   UserPreferences as UserPreferencesBase,
   AuthCredentials,
 } from './user.js';
-export type { Content, Exercise, ExerciseMetadata } from './content.js';
+// Content management types (high-level metadata)
+export type { Content, ContentExercise, ExerciseMetadata } from './content.js';
 export type {
   Tutorial,
   TutorialWithExercises,
@@ -19,12 +20,12 @@ export type {
   UpdateTutorialDto,
 } from './tutorial.js';
 
-// Epic 3 & 4 Compatible Exercise Types
+// Musical exercise types (detailed exercise data with notes, timing, etc.)
 export type {
   ExerciseDifficulty,
   TechniqueType,
   ExerciseNote,
-  Exercise as DatabaseExercise,
+  Exercise as MusicalExercise, // Full musical exercise with notes and timing
   ExerciseWithNotes,
   CustomBassline,
   GetExercisesResponse,
@@ -358,6 +359,50 @@ export type {
 
 export type { LearningProgress } from './learning.js';
 export type { AnalysisResult, AudioAnalysis, AudioNote } from './analysis.js';
+
+// MusicXML types for sheet music import
+export type {
+  MusicXMLDocument,
+  MusicXMLMetadata,
+  MusicXMLNoteData,
+  MusicXMLConversionResult,
+  MusicXMLConversionConfig,
+  BassString,
+  Note as MusicXMLNote,
+  Pitch as MusicXMLPitch,
+  Technical,
+  Articulations,
+  ScorePartwise,
+  Part,
+  Measure,
+  Attributes,
+  Time,
+  Key,
+} from './musicxml.js';
+export { BASS_TUNINGS, DEFAULT_CONVERSION_CONFIG } from './musicxml.js';
+
+// Musical timing types
+export type {
+  NoteDuration,
+  MusicalPosition,
+  TimeSignature,
+  SwingConfig,
+  MusicalTimingConfig,
+  Articulation,
+  Dynamic,
+  RestDuration,
+  NoteTimingInfo,
+} from './musical-timing.js';
+export {
+  DURATION_BEAT_VALUES,
+  COMMON_TIME_SIGNATURES,
+  isValidPosition,
+  getNextPosition,
+} from './musical-timing.js';
+
+// Musical timing utilities
+export { MusicalTimeConverter } from '../utils/musical-time-converter.js';
+export { ExerciseMigration } from '../utils/exercise-migration.js';
 
 // Story 2.4 Subtask 1.5: Real-time Health Monitoring & Performance Analytics
 export type {

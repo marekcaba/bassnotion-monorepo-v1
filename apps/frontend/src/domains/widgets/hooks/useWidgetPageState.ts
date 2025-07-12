@@ -34,10 +34,20 @@ export interface WidgetPageState {
   // Synchronization
   syncEnabled: boolean;
   fretboardAnimation: boolean;
+
+  // Loop Control
+  loopRegion: LoopRegion | null;
+  isLoopEnabled: boolean;
 }
 
 // Import Exercise type from contracts
 import type { DatabaseExercise as Exercise } from '@bassnotion/contracts';
+
+// Loop region interface
+export interface LoopRegion {
+  startMeasure: number;
+  endMeasure: number;
+}
 
 // Initial state with MVP defaults
 const initialState: WidgetPageState = {
@@ -80,6 +90,10 @@ const initialState: WidgetPageState = {
   // Synchronization
   syncEnabled: true,
   fretboardAnimation: true,
+
+  // Loop Control
+  loopRegion: null,
+  isLoopEnabled: false,
 };
 
 export function useWidgetPageState() {
@@ -260,6 +274,23 @@ export function useWidgetPageState() {
     }));
   }, []);
 
+  // Loop region control
+  const setLoopRegion = useCallback((region: LoopRegion | null) => {
+    setState((prev) => ({
+      ...prev,
+      loopRegion: region,
+      isLoopEnabled: region !== null,
+    }));
+  }, []);
+
+  // Toggle loop enabled state
+  const toggleLoopEnabled = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      isLoopEnabled: !prev.isLoopEnabled,
+    }));
+  }, []);
+
   // Reset to initial state
   const resetState = useCallback(() => {
     setState(initialState);
@@ -281,6 +312,8 @@ export function useWidgetPageState() {
       nextChord,
       toggleSync,
       toggleFretboardAnimation,
+      setLoopRegion,
+      toggleLoopEnabled,
       resetState,
 
       // Computed values
@@ -291,6 +324,8 @@ export function useWidgetPageState() {
       widgets: state.widgets,
       syncEnabled: state.syncEnabled,
       fretboardAnimation: state.fretboardAnimation,
+      loopRegion: state.loopRegion,
+      isLoopEnabled: state.isLoopEnabled,
     }),
     [
       state,
@@ -303,6 +338,8 @@ export function useWidgetPageState() {
       nextChord,
       toggleSync,
       toggleFretboardAnimation,
+      setLoopRegion,
+      toggleLoopEnabled,
       resetState,
     ],
   );

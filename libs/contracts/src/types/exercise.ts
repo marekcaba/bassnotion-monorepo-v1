@@ -1,4 +1,21 @@
-export type ExerciseDifficulty = 'beginner' | 'intermediate' | 'advanced';
+import {
+  NoteDuration,
+  MusicalPosition,
+  TimeSignature,
+} from './musical-timing.js';
+
+// Re-export types from musical-timing for better module independence
+export type {
+  NoteDuration,
+  MusicalPosition,
+  TimeSignature,
+} from './musical-timing.js';
+
+export type ExerciseDifficulty =
+  | 'beginner'
+  | 'intermediate'
+  | 'advanced'
+  | 'expert';
 
 // Epic 4 Advanced Technique Types
 export const TechniqueTypes = [
@@ -20,12 +37,18 @@ export type TechniqueType = (typeof TechniqueTypes)[number];
 export interface ExerciseNote {
   // Epic 3 Core Properties
   id: string; // note identifier within the exercise (e.g., "note-1")
-  timestamp: number; // milliseconds
   string: 1 | 2 | 3 | 4 | 5 | 6; // 1=E, 2=A, 3=D, 4=G (+ 5=B, 6=E for 5/6 string basses)
   fret: number; // 0-24
-  duration: number; // milliseconds
   note: string; // e.g., "A#", "C", "D"
   color: string; // red, green, blue, yellow, purple
+
+  // Musical Timing (NEW)
+  duration: NoteDuration; // 'quarter', 'eighth', etc.
+  position: MusicalPosition; // {measure: 1, beat: 1, subdivision: 0}
+
+  // Legacy timing (DEPRECATED - for backwards compatibility)
+  timestamp?: number; // milliseconds - will be calculated from position
+  duration_ms?: number; // milliseconds - will be calculated from duration
 
   // Epic 4 Advanced Technique Properties (Optional in Epic 3)
   techniques?: TechniqueType[]; // Array of techniques applied to this note
@@ -58,14 +81,15 @@ export interface Exercise {
   title: string;
   description?: string;
   difficulty: ExerciseDifficulty;
-  duration: number; // milliseconds
+  duration: number; // milliseconds - total duration
   bpm: number;
   key: string;
+  timeSignature: TimeSignature; // NEW: e.g., {numerator: 4, denominator: 4}
   chord_progression?: string[]; // Epic 3 Widget integration - array of chord names
   youtube_video_id?: string; // Epic 3 YouTube integration
   start_timestamp?: number; // YouTube start time in seconds
   end_timestamp?: number; // YouTube end time in seconds
-  notes: ExerciseNote[]; // JSON array of Epic 4 compatible notes
+  notes: ExerciseNote[]; // JSON array of Epic 4 compatible notes with musical timing
   teaching_summary?: string; // Epic 3 teaching takeaway
   is_active: boolean;
   created_by?: string;

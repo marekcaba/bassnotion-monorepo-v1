@@ -2,9 +2,9 @@
   "apps": [
     {
       "name": "bassnotion-backend",
-      "script": "npx",
+      "script": "pnpm",
       "args": "nx serve @bassnotion/backend",
-      "cwd": "/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1",
+      "cwd": "/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1",
       "env": {
         "NODE_ENV": "development",
         "PORT": "3000"
@@ -21,9 +21,9 @@
     },
     {
       "name": "bassnotion-frontend",
-      "script": "npx",
+      "script": "pnpm",
       "args": "nx serve @bassnotion/frontend --host 0.0.0.0",
-      "cwd": "/Users/marekcaba/Documents/Projekty 2024/BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1",
+      "cwd": "/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1",
       "env": {
         "NODE_ENV": "development",
         "PORT": "3001"

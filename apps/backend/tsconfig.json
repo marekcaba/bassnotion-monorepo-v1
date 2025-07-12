@@ -20,10 +20,11 @@
     "sourceMap": true,
     "incremental": true,
     "composite": false,
-    "declarationMap": false
+    "declarationMap": false,
+    "declaration": true
   },
   "include": ["src/**/*", "test/**/*", "e2e/**/*"],
-  "exclude": ["node_modules", "dist", "vitest.*.config.ts"],
+  "exclude": ["node_modules", "dist", "vitest.*.config.ts", "vite.config.ts"],
   "references": [
     {
       "path": "../../libs/contracts"

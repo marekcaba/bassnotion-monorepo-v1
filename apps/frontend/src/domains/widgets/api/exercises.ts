@@ -5,6 +5,7 @@ import type {
   GetExercisesResponse,
   GetExerciseResponse,
 } from '@bassnotion/contracts';
+import { MOCK_EXERCISES } from './mockExercises';
 
 // Feature flag for gradual migration
 const USE_BACKEND_API = process.env.NEXT_PUBLIC_USE_BACKEND_API === 'true';
@@ -27,7 +28,80 @@ const DEFAULT_EXERCISE: Exercise = {
   bpm: 80,
   key: 'C',
   chord_progression: ['C', 'F', 'G', 'C'],
-  notes: [],
+  notes: [
+    {
+      id: 'note-1',
+      timestamp: 0,
+      string: 4, // E string (bottom string)
+      fret: 0, // Open E
+      duration: 500,
+      note: 'E',
+      color: 'blue',
+    },
+    {
+      id: 'note-2',
+      timestamp: 500,
+      string: 4,
+      fret: 3, // G note
+      duration: 500,
+      note: 'G',
+      color: 'green',
+    },
+    {
+      id: 'note-3',
+      timestamp: 1000,
+      string: 3, // A string
+      fret: 0, // Open A
+      duration: 500,
+      note: 'A',
+      color: 'yellow',
+    },
+    {
+      id: 'note-4',
+      timestamp: 1500,
+      string: 3,
+      fret: 3, // C note
+      duration: 500,
+      note: 'C',
+      color: 'red',
+    },
+    {
+      id: 'note-5',
+      timestamp: 2000,
+      string: 2, // D string
+      fret: 0, // Open D
+      duration: 500,
+      note: 'D',
+      color: 'purple',
+    },
+    {
+      id: 'note-6',
+      timestamp: 2500,
+      string: 2,
+      fret: 2, // E note
+      duration: 500,
+      note: 'E',
+      color: 'blue',
+    },
+    {
+      id: 'note-7',
+      timestamp: 3000,
+      string: 1, // G string
+      fret: 0, // Open G
+      duration: 500,
+      note: 'G',
+      color: 'green',
+    },
+    {
+      id: 'note-8',
+      timestamp: 3500,
+      string: 1,
+      fret: 2, // A note
+      duration: 500,
+      note: 'A',
+      color: 'yellow',
+    },
+  ],
   is_active: true,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
@@ -105,6 +179,20 @@ export async function getExercises(): Promise<GetExercisesResponse> {
             throw new Error('No exercises returned from backend API');
           }
 
+          // Check if exercises have notes, if not use mock data
+          const hasNotes = response.exercises.some(
+            (ex) => ex.notes && ex.notes.length > 0,
+          );
+
+          if (!hasNotes) {
+            console.log(
+              '🎯 Backend exercises have no notes, using mock exercises with notes',
+            );
+            return {
+              exercises: MOCK_EXERCISES,
+            };
+          }
+
           return {
             exercises: response.exercises,
           };
@@ -130,8 +218,83 @@ export async function getExercises(): Promise<GetExercisesResponse> {
         throw new Error('No exercises found in database');
       }
 
+      console.log('🎯 Raw Supabase data:', {
+        count: data.length,
+        firstExercise: data[0],
+        firstExerciseKeys: Object.keys(data[0] || {}),
+        notesField: data[0]?.notes,
+        notesType: typeof data[0]?.notes,
+        allExerciseKeys: data.map((ex) => Object.keys(ex)),
+      });
+
+      // Parse JSONB notes field from Supabase
+      const exercises = data.map((exercise) => {
+        console.log(
+          '🎯 Processing exercise:',
+          exercise.title,
+          'notes:',
+          exercise.notes,
+          'type:',
+          typeof exercise.notes,
+        );
+
+        if (exercise.notes && typeof exercise.notes === 'string') {
+          try {
+            exercise.notes = JSON.parse(exercise.notes);
+            console.log(
+              '🎯 Successfully parsed notes for exercise:',
+              exercise.title,
+              'count:',
+              exercise.notes.length,
+            );
+          } catch (error) {
+            console.error(
+              '🎯 Failed to parse notes for exercise:',
+              exercise.title,
+              error,
+            );
+            exercise.notes = [];
+          }
+        } else if (!exercise.notes) {
+          console.log(
+            '🎯 No notes found for exercise:',
+            exercise.title,
+            'setting empty array',
+          );
+          exercise.notes = [];
+        } else {
+          console.log(
+            '🎯 Notes already parsed for exercise:',
+            exercise.title,
+            'count:',
+            exercise.notes?.length,
+          );
+        }
+
+        console.log('🎯 Final exercise data:', {
+          id: exercise.id,
+          title: exercise.title,
+          notesCount: exercise.notes?.length || 0,
+          hasNotes: !!(exercise.notes && exercise.notes.length > 0),
+        });
+
+        return exercise;
+      }) as Exercise[];
+
+      // Check if exercises have notes, if not use mock data
+      const hasNotes = exercises.some((ex) => ex.notes && ex.notes.length > 0);
+
+      if (!hasNotes) {
+        console.log(
+          '🎯 Database exercises have no notes, using mock exercises with notes',
+        );
+        return {
+          exercises: MOCK_EXERCISES,
+        };
+      }
+
       return {
-        exercises: data as Exercise[],
+        exercises,
       };
     });
   } catch (error) {
@@ -184,6 +347,22 @@ export async function getExercise(
 
       if (!data) {
         throw new Error(`Exercise with ID ${exerciseId} not found`);
+      }
+
+      // Parse JSONB notes field from Supabase
+      if (data.notes && typeof data.notes === 'string') {
+        try {
+          data.notes = JSON.parse(data.notes);
+        } catch (error) {
+          console.error(
+            '🎯 Failed to parse notes for exercise:',
+            data.title,
+            error,
+          );
+          data.notes = [];
+        }
+      } else if (!data.notes) {
+        data.notes = [];
       }
 
       return {

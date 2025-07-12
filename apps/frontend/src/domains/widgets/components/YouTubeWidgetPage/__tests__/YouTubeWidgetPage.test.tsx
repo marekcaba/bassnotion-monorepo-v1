@@ -5,6 +5,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Create a test wrapper with QueryClient
@@ -208,7 +209,7 @@ describe('YouTubeWidgetPage', () => {
 
     // Verify main component cards are present
     expect(screen.getByText('🎯 Exercise Selector')).toBeInTheDocument();
-    expect(screen.getByText('🎸 3D Fretboard Visualizer')).toBeInTheDocument();
+    expect(screen.getByText('🎸 Interactive Fretboard')).toBeInTheDocument();
     expect(screen.getByText('🎛️ Essential Widgets')).toBeInTheDocument();
     expect(screen.getByText('🎼 Sheet Music Player')).toBeInTheDocument();
     expect(screen.getByText('💡 Teaching Takeaway')).toBeInTheDocument();
@@ -275,10 +276,7 @@ describe('YouTubeWidgetPage', () => {
   it('should display fretboard visualizer', () => {
     render(<YouTubeWidgetPage {...defaultProps} />, { wrapper: Wrapper });
 
-    expect(screen.getByText('🎸 3D Fretboard Visualizer')).toBeInTheDocument();
-    expect(
-      screen.getByText('Interactive bass guitar fretboard with Three.js'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('🎸 Interactive Fretboard')).toBeInTheDocument();
   });
 
   it('should show sheet music player', () => {
@@ -313,7 +311,7 @@ describe('YouTubeWidgetPage', () => {
     // Should still render main components with fallback data
     expect(screen.getByText('Come Together')).toBeInTheDocument(); // Fallback title
     expect(screen.getByText('🎯 Exercise Selector')).toBeInTheDocument();
-    expect(screen.getByText('🎸 3D Fretboard Visualizer')).toBeInTheDocument();
+    expect(screen.getByText('🎸 Interactive Fretboard')).toBeInTheDocument();
     expect(screen.getByText('🎛️ Essential Widgets')).toBeInTheDocument();
   });
 });

@@ -1,15 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 // Import our new components
 import { YouTubeVideoSection } from './YouTubeVideoSection';
 import { TutorialInfoCard } from './TutorialInfoCard';
 import { ExerciseSelectorCard } from './ExerciseSelectorCard';
-import { FretboardVisualizerCard } from './FretboardVisualizerCard';
+import { FretboardCard } from './FretboardCard';
+import Fretboard3D from './Fretboard3D';
+
 import { FourWidgetsCard } from './components/FourWidgetsCard';
-import { SheetPlayerVisualizerCard } from './SheetPlayerVisualizerCard';
+import { GlobalControlsCard } from './components/GlobalControlsCard';
 import { TeachingTakeawayCard } from './TeachingTakeawayCard';
 import { useWidgetPageState } from '@/domains/widgets/hooks/useWidgetPageState';
+import { useAudioFretboard } from '@/domains/widgets/hooks/useAudioFretboard';
 import { Button } from '@/shared/components/ui/button';
 import { Play, Pause, Volume2, Settings } from 'lucide-react';
 import { SyncProvider, useSyncContext } from '../base/SyncProvider';
@@ -35,32 +38,64 @@ function YouTubeWidgetPageContent({
   //   timestamp: new Date().toISOString(),
   // });
 
-  const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
   const widgetState = useWidgetPageState();
   const { emitGlobalEvent, syncState } = useSyncContext();
+  const [is3DMode, setIs3DMode] = React.useState(false);
+  const [selectedDots, setSelectedDots] = React.useState<Map<string, number[]>>(
+    new Map(),
+  );
+  const [stringCount, setStringCount] = React.useState<4 | 5 | 6>(4);
+  const [cameraDistance, _setCameraDistance] = React.useState(7);
+  const [cameraMode, setCameraMode] = React.useState<'overview' | 'action'>(
+    'overview',
+  );
 
   // Use refs to track previous values and prevent infinite loops
   const prevSelectedExerciseRef = useRef<any>(null);
   const prevTempoRef = useRef<number>(120);
   const prevVolumeRef = useRef<number>(80);
 
+  // Audio fretboard integration for 3D mode
+  const { triggerNote } = useAudioFretboard({
+    stringCount,
+    autoPlayOnClick: true,
+    exercise: widgetState.selectedExercise,
+  });
+
   const handleExerciseSelect = useCallback((exerciseId: string) => {
-    setSelectedExerciseId(exerciseId);
+    // Exercise selection logic can be implemented here if needed
+    console.log('Exercise selected:', exerciseId);
   }, []);
 
-  // Enhanced tempo control that emits sync events
-  const handleTempoChange = useCallback(
-    (newTempo: number) => {
-      widgetState.setTempo(newTempo);
+  const handleDotClick = useCallback(
+    (stringIndex: number, fret: number | 'open') => {
+      // Trigger audio using the shared hook (for 3D mode)
+      triggerNote(stringIndex, fret);
 
-      // Emit sync event for all widgets to receive
-      emitGlobalEvent('TEMPO_CHANGE', {
-        tempo: newTempo,
-        source: 'global-controls',
+      const key = `${stringIndex}-${fret}`;
+      setSelectedDots((prev) => {
+        const newMap = new Map(prev);
+        if (newMap.has(key)) {
+          newMap.delete(key);
+        } else {
+          newMap.set(key, newMap.size + 1);
+        }
+        return newMap;
       });
     },
-    [widgetState, emitGlobalEvent],
+    [triggerNote],
   );
+
+  const handleResetSelection = useCallback(() => {
+    setSelectedDots(new Map());
+  }, []);
+
+  const handleStringCountChange = useCallback((newCount: 4 | 5) => {
+    setStringCount(newCount);
+    // Clear selection when changing string count to avoid invalid selections
+    setSelectedDots(new Map());
+  }, []);
+
 
   // Extract specific values from syncState to prevent excessive re-renders
   const selectedExercise = syncState.exercise.selectedExercise;
@@ -158,165 +193,26 @@ function YouTubeWidgetPageContent({
             onExerciseSelect={handleExerciseSelect}
           />
 
-          {/* 3. Fretboard Visualizer Card - Guitar Hero-style container */}
-          <FretboardVisualizerCard exerciseId={selectedExerciseId} />
+          {/* 3. Interactive Fretboard Card - Toggle between 2D and 3D modes */}
+          <FretboardCard
+            is3DMode={is3DMode}
+            onToggle3DMode={() => setIs3DMode(!is3DMode)}
+            selectedDots3D={selectedDots}
+            setSelectedDots3D={setSelectedDots}
+            stringCount3D={stringCount}
+            setStringCount3D={setStringCount}
+            cameraMode={cameraMode}
+            setCameraMode={setCameraMode}
+          />
 
-          {/* 4. Four Widgets Card - 4 essential widgets */}
+          {/* 4. Global Playback Controls Card - Dedicated panel for global controls */}
+          <GlobalControlsCard />
+
+          {/* 5. Four Widgets Card - 4 essential widgets */}
           <FourWidgetsCard widgetState={widgetState} />
-
-          {/* 5. Sheet Player Visualizer Card - Music notation */}
-          <SheetPlayerVisualizerCard />
 
           {/* 6. Teaching Takeaway Card - Lesson summaries */}
           <TeachingTakeawayCard tutorialData={tutorialData} />
-
-          {/* Global Controls & Synchronization */}
-          <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-lg p-4 shadow-lg">
-            <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
-              <Settings className="w-4 h-4" />
-              🎛️ Global Controls
-            </h3>
-
-            {/* Master Play/Pause Button */}
-            <div className="mb-3">
-              <label className="text-xs text-slate-300 block mb-2">
-                Master Playback
-              </label>
-              <div className="flex flex-col gap-2">
-                <Button
-                  onClick={widgetState.togglePlayback}
-                  className={`${
-                    widgetState.isPlaying
-                      ? 'bg-red-600 hover:bg-red-500'
-                      : 'bg-green-600 hover:bg-green-500'
-                  } text-white w-full`}
-                  size="sm"
-                >
-                  {widgetState.isPlaying ? (
-                    <Pause className="w-4 h-4 mr-2" />
-                  ) : (
-                    <Play className="w-4 h-4 mr-2" />
-                  )}
-                  {widgetState.isPlaying ? 'Pause All' : 'Play All'}
-                </Button>
-                <span className="text-xs text-slate-400 text-center">
-                  Controls all widgets & fretboard
-                </span>
-              </div>
-            </div>
-
-            {/* Timeline Scrubber */}
-            <div className="mb-3">
-              <label className="text-xs text-slate-300 block mb-1">
-                Timeline
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400 w-8">0:00</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={widgetState.currentTime}
-                  onChange={(e) =>
-                    widgetState.setCurrentTime(Number(e.target.value))
-                  }
-                  className="flex-1 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                />
-                <span className="text-xs text-slate-400 w-8">4:32</span>
-              </div>
-            </div>
-
-            {/* Tempo Controls */}
-            <div className="mb-3">
-              <label className="text-xs text-slate-300 block mb-1">Tempo</label>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    handleTempoChange(Math.max(60, widgetState.tempo - 5))
-                  }
-                  className="text-slate-300 border-slate-600 px-2"
-                >
-                  -5
-                </Button>
-                <span className="text-sm font-bold text-white flex-1 text-center">
-                  {widgetState.tempo} BPM
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    handleTempoChange(Math.min(200, widgetState.tempo + 5))
-                  }
-                  className="text-slate-300 border-slate-600 px-2"
-                >
-                  +5
-                </Button>
-              </div>
-            </div>
-
-            {/* Volume Controls */}
-            <div className="space-y-2">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs text-slate-300 flex items-center gap-1">
-                    <Volume2 className="w-3 h-3" />
-                    Master
-                  </label>
-                  <span className="text-xs text-slate-400">
-                    {widgetState.state.volume.master}%
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={widgetState.state.volume.master}
-                  onChange={(e) =>
-                    widgetState.setVolume('master', Number(e.target.value))
-                  }
-                  className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                />
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs text-slate-300 flex items-center gap-1">
-                    <Volume2 className="w-3 h-3" />
-                    Metronome
-                  </label>
-                  <span className="text-xs text-slate-400">
-                    {widgetState.state.volume.metronome}%
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={widgetState.state.volume.metronome}
-                  onChange={(e) =>
-                    widgetState.setVolume('metronome', Number(e.target.value))
-                  }
-                  className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                />
-              </div>
-            </div>
-
-            {/* Synchronization Status */}
-            <div className="mt-3 pt-3 border-t border-slate-700">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-300">Sync Status</span>
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-2 h-2 rounded-full ${widgetState.syncEnabled ? 'bg-green-400' : 'bg-red-400'}`}
-                  />
-                  <span className="text-xs text-slate-400">
-                    {widgetState.syncEnabled ? 'Connected' : 'Disconnected'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

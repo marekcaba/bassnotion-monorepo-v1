@@ -99,7 +99,9 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
     );
 
   const [isConnected, setIsConnected] = useState(true);
-  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+
+  // Derive lastUpdateTime from performanceMetrics to avoid separate state updates
+  const lastUpdateTime = performanceMetrics.lastUpdateTime;
 
   // Memoized actions to prevent re-renders
   const refreshState = useCallback(() => {
@@ -109,7 +111,6 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
 
       setSyncState(currentState);
       setPerformanceMetrics(currentMetrics);
-      setLastUpdateTime(Date.now());
       setIsConnected(true);
 
       if (debugMode) {
@@ -148,6 +149,43 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
       console.error('[SyncProvider] Failed to reset metrics:', error);
     }
   }, [debugMode, onGlobalError]);
+
+  // Subscribe to sync state changes
+  useEffect(() => {
+    const handleStateChange = (event: any) => {
+      if (debugMode) {
+        console.log('[SyncProvider] Received state change event:', event);
+      }
+
+      // Skip refreshing state for certain event types that don't change global state
+      // This prevents infinite loops where widgets emit events that trigger re-renders
+      const skipEvents = [
+        'CUSTOM_BASSLINE',
+        'WIDGET_HEARTBEAT',
+        'PERFORMANCE_UPDATE',
+      ];
+      if (skipEvents.includes(event.type)) {
+        if (debugMode) {
+          console.log(
+            `[SyncProvider] Skipping state refresh for ${event.type} event`,
+          );
+        }
+        return;
+      }
+
+      refreshState();
+    };
+
+    // Subscribe to all events to catch state changes
+    widgetSyncService.subscribe('*', handleStateChange);
+
+    // Initial state refresh
+    refreshState();
+
+    return () => {
+      widgetSyncService.unsubscribe('*', handleStateChange);
+    };
+  }, [refreshState, debugMode]);
 
   const emitGlobalEvent = useCallback(
     (
@@ -196,9 +234,17 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
       try {
         const metrics = widgetSyncService.getPerformanceMetrics();
 
-        // Only update state if metrics have actually changed
+        // Only update state if metrics have actually changed (excluding lastUpdateTime)
         setPerformanceMetrics((prevMetrics) => {
-          if (JSON.stringify(prevMetrics) !== JSON.stringify(metrics)) {
+          // Compare metrics excluding lastUpdateTime to prevent constant updates
+          const { lastUpdateTime: prevTime, ...prevWithoutTime } = prevMetrics;
+          const { lastUpdateTime: currentTime, ...currentWithoutTime } =
+            metrics;
+
+          if (
+            JSON.stringify(prevWithoutTime) !==
+            JSON.stringify(currentWithoutTime)
+          ) {
             return metrics;
           }
           return prevMetrics;
@@ -274,7 +320,6 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
       try {
         const newState = widgetSyncService.getSyncState();
         setSyncState(newState);
-        setLastUpdateTime(Date.now());
         setIsConnected(true); // Mark as connected when we receive events
       } catch (error) {
         setIsConnected(false);
@@ -325,9 +370,9 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
     };
   }, [
     syncState,
-    performanceMetrics,
+    // performanceMetrics removed - performance data changes shouldn't trigger context recreation
     isConnected,
-    lastUpdateTime,
+    // lastUpdateTime removed from dependencies to prevent constant context recreation
     refreshState,
     resetMetrics,
     emitGlobalEvent,

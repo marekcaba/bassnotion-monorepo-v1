@@ -310,6 +310,7 @@ export class AuthSecurityService {
   /**
    * Reset failed attempts for an email (called on successful login)
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async resetFailedAttempts(_email: string): Promise<void> {
     // We don't delete records, just record the successful attempt
     // The lockout check looks for consecutive failures, so a success naturally resets it

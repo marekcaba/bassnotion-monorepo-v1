@@ -477,14 +477,17 @@ export function useWidgetSync(
       lastError,
     },
 
-    // Actions
-    actions: {
-      emitEvent,
-      refreshState,
-      resetMetrics,
-      reconnect,
-      disconnect,
-    },
+    // Actions - memoized to prevent constant recreation and cascading re-renders
+    actions: useMemo(
+      () => ({
+        emitEvent,
+        refreshState,
+        resetMetrics,
+        reconnect,
+        disconnect,
+      }),
+      [emitEvent, refreshState, resetMetrics, reconnect, disconnect],
+    ),
 
     // Convenience getters
     isPlaying: syncState.playback.isPlaying,

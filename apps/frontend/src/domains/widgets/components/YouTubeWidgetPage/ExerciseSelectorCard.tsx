@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import '@/domains/widgets/api/clearExerciseCache'; // Make cache clearing available
 import {
   Card,
   CardContent,
@@ -128,77 +129,83 @@ function ExerciseSelectorCardContent({
 
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
 
-  const handleExerciseSelect = useCallback(
-    (exerciseId: string) => {
-      const exercise = exercises.find((ex) => ex.id === exerciseId);
-      if (exercise) {
-        setSelectedExerciseId(exerciseId);
-        selectExercise(exercise);
-        onExerciseSelect?.(exerciseId);
+  const handleExerciseSelect = (exerciseId: string) => {
+    const exercise = exercises.find((ex) => ex.id === exerciseId);
+    if (exercise) {
+      // Check if this exercise is already selected by comparing with sync state
+      // Use the current syncProps.selectedExercise from the current render
+      const wasAlreadySelected = syncProps.selectedExercise?.id === exerciseId;
 
-        // Debug log (disabled to reduce console noise)
-        // console.log('🎯 Exercise Selected - Configuring all widgets:', {
-        //   id: exercise.id,
-        //   title: exercise.title,
-        //   bpm: exercise.bpm,
-        //   key: exercise.key,
-        //   chords: exercise.chord_progression,
-        // });
+      // Add a unique selection timestamp to track user clicks
+      const timestamp = Date.now();
+      const exerciseWithTimestamp = {
+        ...exercise,
+        _selectionTimestamp: timestamp,
+      };
 
-        // Emit comprehensive sync events to configure all widgets
+      setSelectedExerciseId(exerciseId);
+      selectExercise(exerciseWithTimestamp);
+      onExerciseSelect?.(exerciseId);
 
-        // 1. Main exercise change event
+      // Emit comprehensive sync events to configure all widgets
+
+      // 1. Main exercise change event (always emit to ensure all widgets sync)
+      syncProps.sync.actions.emitEvent(
+        'EXERCISE_CHANGE',
+        {
+          exercise,
+          forceReload: wasAlreadySelected,
+          clickTimestamp: timestamp,
+        },
+        'high',
+      );
+
+      // 1b. If same exercise was re-selected, include forceReload flag in the EXERCISE_CHANGE event
+      // (handled by forceReload flag in the event above)
+
+      // 2. Tempo change for metronome and global controls
+      if (exercise.bpm && exercise.bpm > 0) {
         syncProps.sync.actions.emitEvent(
-          'EXERCISE_CHANGE',
-          { exercise },
-          'high',
-        );
-
-        // 2. Tempo change for metronome and global controls
-        if (exercise.bpm && exercise.bpm > 0) {
-          syncProps.sync.actions.emitEvent(
-            'TEMPO_CHANGE',
-            {
-              tempo: exercise.bpm,
-              source: 'exercise-selector',
-              reason: 'exercise-template',
-            },
-            'high',
-          );
-        }
-
-        // 3. Custom bassline pattern if available
-        if (
-          exercise.chord_progression &&
-          Array.isArray(exercise.chord_progression)
-        ) {
-          syncProps.sync.actions.emitEvent(
-            'CUSTOM_BASSLINE',
-            {
-              chordProgression: exercise.chord_progression,
-              key: exercise.key,
-              source: 'exercise-selector',
-              reason: 'exercise-template',
-            },
-            'normal',
-          );
-        }
-
-        // 4. Volume configuration for optimal practice
-        syncProps.sync.actions.emitEvent(
-          'VOLUME_CHANGE',
+          'TEMPO_CHANGE',
           {
-            masterVolume: 0.8,
-            metronomeVolume: 0.7,
+            tempo: exercise.bpm,
             source: 'exercise-selector',
             reason: 'exercise-template',
           },
-          'low',
+          'high',
         );
       }
-    },
-    [exercises, selectExercise, onExerciseSelect, syncProps.sync.actions],
-  );
+
+      // 3. Custom bassline pattern if available
+      if (
+        exercise.chord_progression &&
+        Array.isArray(exercise.chord_progression)
+      ) {
+        syncProps.sync.actions.emitEvent(
+          'CUSTOM_BASSLINE',
+          {
+            chordProgression: exercise.chord_progression,
+            key: exercise.key,
+            source: 'exercise-selector',
+            reason: 'exercise-template',
+          },
+          'normal',
+        );
+      }
+
+      // 4. Volume configuration for optimal practice
+      syncProps.sync.actions.emitEvent(
+        'VOLUME_CHANGE',
+        {
+          masterVolume: 0.8,
+          metronomeVolume: 0.7,
+          source: 'exercise-selector',
+          reason: 'exercise-template',
+        },
+        'low',
+      );
+    }
+  };
 
   // Auto-select first exercise when exercises load
   useEffect(() => {
@@ -209,7 +216,7 @@ function ExerciseSelectorCardContent({
         handleExerciseSelect(firstExercise.id);
       }
     }
-  }, [exercises, selectedExerciseId, handleExerciseSelect]);
+  }, [exercises, selectedExerciseId]); // Remove handleExerciseSelect dependency
 
   return (
     <div className="space-y-6">

@@ -11,7 +11,10 @@ import {
   UseGuards,
   Request,
   BadRequestException,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ExercisesService } from './exercises.service.js';
 import {
   ExercisesResponseDto,
@@ -21,16 +24,30 @@ import {
   CustomBasslinesResponseDto,
   CustomBasslineDto,
 } from './dto/custom-bassline.dto.js';
+import {
+  FileUploadDto,
+  MusicXMLUploadConfigDto,
+  MIDIUploadConfigDto,
+  FileUploadResponseDto,
+  FileUploadErrorDto,
+} from './dto/file-upload.dto.js';
+import { FileUploadService } from './services/file-upload.service.js';
 import { AuthGuard } from '../user/auth/guards/auth.guard.js';
 
 @Controller('api/exercises')
 export class ExercisesController {
   private readonly logger = new Logger(ExercisesController.name);
 
-  constructor(private readonly exercisesService: ExercisesService) {
+  constructor(
+    private readonly exercisesService: ExercisesService,
+    private readonly fileUploadService: FileUploadService,
+  ) {
     // Defensive check for dependency injection issues
     if (!this.exercisesService) {
       this.logger.error('ExercisesService is undefined - DI failure detected');
+    }
+    if (!this.fileUploadService) {
+      this.logger.error('FileUploadService is undefined - DI failure detected');
     }
   }
 
@@ -398,5 +415,215 @@ export class ExercisesController {
       );
       throw error;
     }
+  }
+
+  // ==================== FILE UPLOAD ENDPOINTS ====================
+
+  /**
+   * POST /api/exercises/upload/musicxml
+   * Upload and process MusicXML file to create bass exercise
+   */
+  @Post('upload/musicxml')
+  @UseGuards(AuthGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB limit
+      },
+      fileFilter: (req, file, callback) => {
+        const allowedMimeTypes = [
+          'text/xml',
+          'application/xml',
+          'application/vnd.recordare.musicxml',
+          'application/vnd.recordare.musicxml+xml',
+        ];
+
+        const allowedExtensions = ['.xml', '.musicxml', '.mxl'];
+        const fileExtension = file.originalname.toLowerCase();
+        const hasValidExtension = allowedExtensions.some((ext) =>
+          fileExtension.endsWith(ext),
+        );
+
+        if (allowedMimeTypes.includes(file.mimetype) || hasValidExtension) {
+          callback(null, true);
+        } else {
+          callback(
+            new BadRequestException(
+              'Invalid file type. Only MusicXML files are allowed.',
+            ),
+            false,
+          );
+        }
+      },
+    }),
+  )
+  async uploadMusicXML(
+    @Request() req: any,
+    @UploadedFile() file: any,
+    @Body() uploadDto: FileUploadDto,
+    @Body() configDto?: MusicXMLUploadConfigDto,
+  ): Promise<FileUploadResponseDto | FileUploadErrorDto> {
+    const userId = req.user?.id;
+    this.logger.log(
+      `POST /api/exercises/upload/musicxml - User: ${userId}, File: ${file?.originalname}`,
+    );
+
+    if (!userId) {
+      throw new BadRequestException('User authentication required');
+    }
+
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    try {
+      // Set file type
+      uploadDto.fileType = 'musicxml' as any;
+
+      const result = await this.fileUploadService.processUploadedFile(
+        file,
+        uploadDto,
+        configDto,
+      );
+
+      this.logger.log(
+        `Successfully processed MusicXML file: ${file.originalname}`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error processing MusicXML file ${file.originalname}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * POST /api/exercises/upload/midi
+   * Upload and process MIDI file to create bass exercise
+   */
+  @Post('upload/midi')
+  @UseGuards(AuthGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB limit
+      },
+      fileFilter: (req, file, callback) => {
+        const allowedMimeTypes = [
+          'audio/midi',
+          'audio/x-midi',
+          'application/x-midi',
+        ];
+
+        const allowedExtensions = ['.mid', '.midi'];
+        const fileExtension = file.originalname.toLowerCase();
+        const hasValidExtension = allowedExtensions.some((ext) =>
+          fileExtension.endsWith(ext),
+        );
+
+        if (allowedMimeTypes.includes(file.mimetype) || hasValidExtension) {
+          callback(null, true);
+        } else {
+          callback(
+            new BadRequestException(
+              'Invalid file type. Only MIDI files are allowed.',
+            ),
+            false,
+          );
+        }
+      },
+    }),
+  )
+  async uploadMIDI(
+    @Request() req: any,
+    @UploadedFile() file: any,
+    @Body() uploadDto: FileUploadDto,
+    @Body() configDto?: MIDIUploadConfigDto,
+  ): Promise<FileUploadResponseDto | FileUploadErrorDto> {
+    const userId = req.user?.id;
+    this.logger.log(
+      `POST /api/exercises/upload/midi - User: ${userId}, File: ${file?.originalname}`,
+    );
+
+    if (!userId) {
+      throw new BadRequestException('User authentication required');
+    }
+
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    try {
+      // Set file type
+      uploadDto.fileType = 'midi' as any;
+
+      const result = await this.fileUploadService.processUploadedFile(
+        file,
+        uploadDto,
+        configDto,
+      );
+
+      this.logger.log(`Successfully processed MIDI file: ${file.originalname}`);
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error processing MIDI file ${file.originalname}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * GET /api/exercises/upload/formats
+   * Get supported file upload formats and configurations
+   */
+  @Get('upload/formats')
+  async getSupportedFormats(): Promise<{
+    musicxml: {
+      extensions: string[];
+      mimeTypes: string[];
+      maxSizeBytes: number;
+      features: string[];
+    };
+    midi: {
+      extensions: string[];
+      mimeTypes: string[];
+      maxSizeBytes: number;
+      features: string[];
+    };
+  }> {
+    return {
+      musicxml: {
+        extensions: ['.xml', '.musicxml', '.mxl'],
+        mimeTypes: [
+          'text/xml',
+          'application/xml',
+          'application/vnd.recordare.musicxml',
+          'application/vnd.recordare.musicxml+xml',
+        ],
+        maxSizeBytes: 10 * 1024 * 1024,
+        features: [
+          'Bass tablature conversion',
+          'Articulation detection',
+          'Multiple instrument support',
+          'Automatic difficulty analysis',
+        ],
+      },
+      midi: {
+        extensions: ['.mid', '.midi'],
+        mimeTypes: ['audio/midi', 'audio/x-midi', 'application/x-midi'],
+        maxSizeBytes: 10 * 1024 * 1024,
+        features: [
+          'Automatic bass track detection',
+          'Multiple tuning support',
+          'Rhythm quantization',
+          'Musical analysis',
+          'Multiple bass string configurations',
+        ],
+      },
+    };
   }
 }

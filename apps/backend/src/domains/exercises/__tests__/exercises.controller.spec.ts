@@ -13,10 +13,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { ExercisesController } from '../exercises.controller.js';
 import { ExercisesService } from '../exercises.service.js';
+import { FileUploadService } from '../services/file-upload.service.js';
 
 describe('ExercisesController', () => {
   let controller: ExercisesController;
   let mockExercisesService: ExercisesService;
+  let mockFileUploadService: FileUploadService;
 
   // Mock data
   const mockExercise = {
@@ -53,8 +55,16 @@ describe('ExercisesController', () => {
       updateExercise: vi.fn(),
     } as any;
 
+    // Create mock file upload service
+    mockFileUploadService = {
+      processUploadedFile: vi.fn(),
+    } as any;
+
     // Direct instantiation - following the working pattern from app.controller.spec.ts
-    controller = new ExercisesController(mockExercisesService);
+    controller = new ExercisesController(
+      mockExercisesService,
+      mockFileUploadService,
+    );
   });
 
   describe('Exercise Retrieval Endpoints', () => {

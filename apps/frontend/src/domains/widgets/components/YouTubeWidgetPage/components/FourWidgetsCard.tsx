@@ -4,8 +4,6 @@ import React from 'react';
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from '@/shared/components/ui/card';
 import { MetronomeWidget } from './MetronomeWidget';
 import { DrummerWidget } from './DrummerWidget';
@@ -37,26 +35,11 @@ export function FourWidgetsCard({ widgetState }: FourWidgetsCardProps) {
   };
 
   return (
-    <Card className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 shadow-2xl">
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-            <div className="w-6 h-6 bg-white rounded-sm opacity-90"></div>
-          </div>
-          <div>
-            <CardTitle className="text-xl font-bold text-white">
-              🎛️ Essential Widgets
-            </CardTitle>
-            <p className="text-slate-400">
-              Metronome • Drummer • Bass Line • Harmony
-            </p>
-          </div>
-        </div>
-      </CardHeader>
+    <Card className="bg-transparent border-transparent shadow-none">
 
-      <CardContent className="px-6 pb-6 pt-0">
+      <CardContent className="px-0 pb-6 pt-0">
         {/* 4 Widgets in Vertical Stack (1x4) as specified */}
-        <div className="space-y-4">
+        <div className="space-y-2">
           {/* 1. Metronome Widget */}
           <MetronomeWidget
             bpm={state.widgets.metronome.bpm}
@@ -99,65 +82,6 @@ export function FourWidgetsCard({ widgetState }: FourWidgetsCardProps) {
             onProgressionChange={handleProgressionChange}
             onToggleVisibility={() => toggleWidgetVisibility('harmony')}
           />
-        </div>
-
-        {/* Global Controls Section */}
-        <div className="mt-6 p-4 bg-slate-700/30 rounded-lg">
-          <h4 className="text-sm font-semibold text-white mb-3">
-            Global Controls
-          </h4>
-
-          {/* Master Play/Pause and Sync Status */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-300">Master Playback:</span>
-              <span
-                className={`text-xs font-bold ${state.isPlaying ? 'text-green-400' : 'text-slate-400'}`}
-              >
-                {state.isPlaying ? 'PLAYING' : 'STOPPED'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-300">Sync:</span>
-              <span
-                className={`text-xs font-bold ${state.syncEnabled ? 'text-green-400' : 'text-red-400'}`}
-                data-testid="sync-status"
-              >
-                {state.syncEnabled ? 'ON' : 'OFF'}
-              </span>
-            </div>
-          </div>
-
-          {/* Tempo Display */}
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs text-slate-300">Master Tempo:</span>
-            <span
-              className="text-sm font-bold text-white"
-              data-testid="master-tempo"
-            >
-              {state.tempo} BPM
-            </span>
-          </div>
-
-          {/* Volume Controls */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="text-xs">
-              <span className="text-slate-300">Master:</span>
-              <span className="text-white ml-1">{state.volume.master}%</span>
-            </div>
-            <div className="text-xs">
-              <span className="text-slate-300">Metronome:</span>
-              <span className="text-white ml-1">{state.volume.metronome}%</span>
-            </div>
-            <div className="text-xs">
-              <span className="text-slate-300">Drums:</span>
-              <span className="text-white ml-1">{state.volume.drums}%</span>
-            </div>
-            <div className="text-xs">
-              <span className="text-slate-300">Bass:</span>
-              <span className="text-white ml-1">{state.volume.bass}%</span>
-            </div>
-          </div>
         </div>
 
         {/* Widget Synchronization Status */}

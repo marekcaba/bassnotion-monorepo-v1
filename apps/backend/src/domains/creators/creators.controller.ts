@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Query, Logger } from '@nestjs/common';
-import { CreatorsService } from './creators.service.js';
+import { CreatorsService, type CreatorStats } from './creators.service.js';
 
 @Controller('api/creators')
 export class CreatorsController {
@@ -12,7 +12,15 @@ export class CreatorsController {
    * Get cached creator statistics for a specific channel
    */
   @Get('stats')
-  async getCreatorStats(@Query('channelUrl') channelUrl: string) {
+  async getCreatorStats(@Query('channelUrl') channelUrl: string): Promise<{
+    success?: boolean;
+    data?: CreatorStats;
+    error?: string;
+    fallback?: {
+      creatorName: string;
+      subscriberCountFormatted: string;
+    };
+  }> {
     if (!channelUrl) {
       return { error: 'channelUrl query parameter is required' };
     }

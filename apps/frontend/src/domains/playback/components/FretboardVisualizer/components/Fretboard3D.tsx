@@ -1,106 +1,60 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import {
-  createCompleteFretboardGeometry,
-  BASS_FRETBOARD_DIMENSIONS,
-} from '../utils/fretboardGeometry';
-import {
-  createFretboardMaterial,
-  createFretMaterial,
-  createStringMaterial,
-  createInlayMaterial,
-} from '../utils/colorScheme';
+import React from 'react';
 
 interface Fretboard3DProps {
   visible?: boolean;
+  strings?: number;
 }
 
-// This component will be used inside a Canvas from react-three-fiber
-export function Fretboard3D({ visible = true }: Fretboard3DProps) {
-  // Create fretboard geometry and materials
-  const { fretboardGeometry, fretboardMaterial } = useMemo(() => {
-    const geometry = createCompleteFretboardGeometry();
-    return {
-      fretboardGeometry: geometry,
-      fretboardMaterial: {
-        fretboard: createFretboardMaterial(),
-        frets: createFretMaterial(),
-        strings: createStringMaterial(),
-        inlays: createInlayMaterial(),
-      },
-    };
-  }, []);
-
+export function Fretboard3D({ visible = true, strings = 4 }: Fretboard3DProps) {
   if (!visible) return null;
 
-  // Note: This JSX will work inside a Canvas component from react-three-fiber
-  // The parent FretboardVisualizer component will provide the Canvas context
+  const frets = 13; // 0-12 frets
+  const stringSpacing = 1.0; // Space between strings
+  const fretSpacing = 1.5; // Space between frets
+
+  // Generate dots for each string and fret
+  const dots = [];
+  for (let stringIndex = 0; stringIndex < strings; stringIndex++) {
+    for (let fretIndex = 0; fretIndex < frets; fretIndex++) {
+      // Calculate position
+      const x = fretIndex * fretSpacing - ((frets - 1) * fretSpacing) / 2;
+      const z = (stringIndex - (strings - 1) / 2) * stringSpacing;
+
+      // Perspective scaling - bottom strings bigger, top strings smaller
+      const scale = 1 - stringIndex * 0.1;
+      const dotSize = 0.25 * scale;
+
+      // Zero fret = square, other frets = circle
+      const isZeroFret = fretIndex === 0;
+
+      dots.push(
+        <mesh
+          key={`dot-${stringIndex}-${fretIndex}`}
+          position={[x, 0, z]}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          {isZeroFret ? (
+            <planeGeometry args={[dotSize * 1.5, dotSize * 1.5]} />
+          ) : (
+            <circleGeometry args={[dotSize, 16]} />
+          )}
+          <meshBasicMaterial color="#cccccc" />
+        </mesh>,
+      );
+    }
+  }
+
   return (
     <>
-      <group name="fretboard3d">
-        {/* Main fretboard */}
-        <mesh
-          geometry={fretboardGeometry.fretboard}
-          material={fretboardMaterial.fretboard}
-          castShadow
-          receiveShadow
-        />
-
-        {/* Fret wires */}
-        {fretboardGeometry.frets.map((fretGeometry, index) => (
-          <mesh
-            key={`fret-${index}`}
-            geometry={fretGeometry}
-            material={fretboardMaterial.frets}
-            castShadow
-          />
-        ))}
-
-        {/* Strings */}
-        {fretboardGeometry.strings.map((stringGeometry, index) => (
-          <mesh
-            key={`string-${index}`}
-            geometry={stringGeometry}
-            material={fretboardMaterial.strings}
-            castShadow
-          />
-        ))}
-
-        {/* Inlays (position markers) */}
-        {fretboardGeometry.inlays.map((inlayGeometry, index) => (
-          <mesh
-            key={`inlay-${index}`}
-            geometry={inlayGeometry}
-            material={fretboardMaterial.inlays}
-          />
-        ))}
+      {/* Tilted group for perspective */}
+      <group rotation={[-0.2, 0, 0]} position={[0, 0, 0]}>
+        {dots}
       </group>
 
-      {/* Lighting setup as specified in story */}
-      <ambientLight intensity={0.4} color="#ffffff" />
-
-      <directionalLight
-        position={[10, 10, 5]}
-        intensity={0.8}
-        color="#ffffff"
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-camera-far={50}
-        shadow-camera-left={-50}
-        shadow-camera-right={50}
-        shadow-camera-top={50}
-        shadow-camera-bottom={-50}
-      />
-
-      <pointLight
-        position={[0, 20, -BASS_FRETBOARD_DIMENSIONS.scaleLength * 0.4]}
-        intensity={0.6}
-        color="#fff8e1"
-        distance={500}
-        decay={2}
-      />
+      {/* Bright lighting */}
+      <ambientLight intensity={1.2} />
     </>
   );
 }

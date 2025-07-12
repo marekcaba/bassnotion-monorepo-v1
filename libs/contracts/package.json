@@ -16,6 +16,7 @@
     "typecheck": "npx --package=typescript tsc --noEmit"
   },
   "dependencies": {
+    "@tonejs/midi": "^2.0.28",
     "zod": "^3.25.32"
   }
 }

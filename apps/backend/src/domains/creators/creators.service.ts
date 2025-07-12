@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service.js';
 
-interface CreatorStats {
+export interface CreatorStats {
   channelUrl: string;
   channelId?: string | null;
   creatorName: string;

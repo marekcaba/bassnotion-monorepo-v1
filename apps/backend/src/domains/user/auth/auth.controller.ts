@@ -434,6 +434,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async checkPasswordSecurity(
     @Body() body: { password: string },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @Req() _request: FastifyRequest & { user: any },
   ): Promise<
     ApiResponse<{
