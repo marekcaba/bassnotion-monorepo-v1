@@ -59,6 +59,7 @@ export interface ExerciseState {
 export interface FretboardState {
   stringCount: StringCount;
   tiltAngle: number;
+  maxFrets: number;
   selectedDots: SelectedDotsMap;
   selectionOrder: number;
   draggedDot: DraggedDot | null;

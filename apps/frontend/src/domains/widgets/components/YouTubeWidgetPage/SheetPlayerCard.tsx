@@ -784,7 +784,7 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
         {/* VexFlow Sheet Music - EXACT same styling as FretboardCard */}
         {exerciseNotes.length > 0 ? (
           <div
-            className="w-full overflow-x-auto"
+            className="w-full overflow-x-auto scrollbar-hide"
             style={{ maxHeight: '250px' }}
           >
             <div

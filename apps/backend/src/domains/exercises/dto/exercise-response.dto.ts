@@ -20,6 +20,11 @@ export interface ExerciseDto {
   created_at: string;
   updated_at: string;
   is_active: boolean;
+  created_by?: string;
+  midi_file_path?: string;
+  original_filename?: string;
+  file_size?: number;
+  uploaded_at?: string;
 }
 
 export interface ExercisesResponseDto {

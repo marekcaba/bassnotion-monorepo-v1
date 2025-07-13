@@ -4,10 +4,42 @@
     "**/node_modules/*",
     "**/dist/*",
     "**/coverage/*",
-    "**/.nx/*"
+    "**/.nx/*",
+    "**/vite.config.ts",
+    "**/vitest.config.ts",
+    "**/vitest.config.e2e.ts",
+    "scripts/migrate-exercises-to-musical-timing.ts",
+    "src/test/setup.ts"
   ],
   "plugins": ["@nx", "@typescript-eslint", "prettier"],
   "overrides": [
+    {
+      "files": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts", 
+        "**/*.spec.tsx",
+        "**/__tests__/**/*.ts",
+        "**/__tests__/**/*.tsx"
+      ],
+      "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "ecmaVersion": 2022,
+        "sourceType": "module"
+      },
+      "rules": {
+        "prettier/prettier": "error",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unused-vars": [
+          "error",
+          {
+            "argsIgnorePattern": "^_",
+            "varsIgnorePattern": "^_"
+          }
+        ]
+      }
+    },
     {
       "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
       "rules": {
@@ -18,8 +50,16 @@
             "allow": [],
             "depConstraints": [
               {
-                "sourceTag": "*",
-                "onlyDependOnLibsWithTags": ["*"]
+                "sourceTag": "scope:frontend",
+                "onlyDependOnLibsWithTags": ["scope:shared"]
+              },
+              {
+                "sourceTag": "scope:backend", 
+                "onlyDependOnLibsWithTags": ["scope:shared"]
+              },
+              {
+                "sourceTag": "scope:shared",
+                "onlyDependOnLibsWithTags": ["scope:shared"]
               }
             ]
           }
@@ -28,6 +68,14 @@
     },
     {
       "files": ["*.ts", "*.tsx"],
+      "excludedFiles": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "**/*.spec.tsx",
+        "**/__tests__/**/*.ts",
+        "**/__tests__/**/*.tsx"
+      ],
       "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
@@ -35,7 +83,7 @@
         "prettier"
       ],
       "parserOptions": {
-        "project": ["./tsconfig.json", "./apps/*/tsconfig.json"]
+        "project": ["./tsconfig.json", "./apps/*/tsconfig.json", "./libs/*/tsconfig.json"]
       },
       "rules": {
         "prettier/prettier": "error",

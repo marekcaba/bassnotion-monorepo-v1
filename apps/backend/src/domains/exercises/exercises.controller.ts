@@ -556,20 +556,206 @@ export class ExercisesController {
     }
 
     try {
-      // Set file type
+      // Set file type and enable file storage by default
       uploadDto.fileType = 'midi' as any;
+      if (uploadDto.storeFile === undefined) {
+        uploadDto.storeFile = true;
+      }
 
-      const result = await this.fileUploadService.processUploadedFile(
+      // Process and store the MIDI file
+      const result = await this.fileUploadService.processAndStoreFile(
         file,
         uploadDto,
+        userId,
         configDto,
       );
+
+      // If file processing was successful and an exercise was created, save it to database
+      if (result.success && result.exercise && result.storageInfo) {
+        try {
+          // Create the exercise in the database with file metadata
+          const exerciseData = {
+            id: result.exercise.id,
+            title: result.exercise.title,
+            description: result.exercise.description || '',
+            difficulty: result.exercise.difficulty as any,
+            duration: result.parsingResult?.durationSeconds
+              ? Math.round(result.parsingResult.durationSeconds * 1000)
+              : 30000, // Default 30 seconds if not available
+            bpm: result.exercise.bpm,
+            key: result.exercise.key,
+            notes: [], // We'll need to get the notes from the actual parsed exercise
+            midi_file_path: result.storageInfo.filePath,
+            original_filename: file.originalname,
+            file_size: file.size,
+            uploaded_at: new Date().toISOString(),
+            created_by: userId,
+          };
+
+          // Save to database if service is available
+          if (this.checkServiceAvailability()) {
+            this.logger.log(
+              `Saving exercise to database: ${result.exercise.title}`,
+            );
+
+            // Use the new service method to create exercise with MIDI file metadata
+            await this.exercisesService.createExerciseWithMidiFile(
+              exerciseData,
+            );
+
+            this.logger.log(
+              `Exercise saved successfully with MIDI file: ${result.storageInfo.filePath}`,
+            );
+          }
+        } catch (dbError) {
+          this.logger.error('Error saving exercise to database:', dbError);
+          // Don't fail the upload if database save fails - file is already stored
+          this.logger.warn(
+            'MIDI file processed and stored, but database save failed',
+          );
+        }
+      }
 
       this.logger.log(`Successfully processed MIDI file: ${file.originalname}`);
       return result;
     } catch (error) {
       this.logger.error(
         `Error processing MIDI file ${file.originalname}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * GET /api/exercises/:id/download-midi
+   * Download the MIDI file associated with an exercise
+   */
+  @Get(':id/download-midi')
+  @UseGuards(AuthGuard)
+  async downloadMidiFile(
+    @Param('id') exerciseId: string,
+    @Request() req: any,
+  ): Promise<{ downloadUrl: string; filename: string } | { error: string }> {
+    const userId = req.user?.id;
+    this.logger.log(
+      `GET /api/exercises/${exerciseId}/download-midi - User: ${userId}`,
+    );
+
+    if (!userId) {
+      throw new BadRequestException('User authentication required');
+    }
+
+    try {
+      // Get exercise with MIDI file path
+      if (!this.checkServiceAvailability()) {
+        throw new BadRequestException('Service unavailable');
+      }
+
+      const exerciseResponse =
+        await this.exercisesService.getExerciseById(exerciseId);
+      const exercise = exerciseResponse.exercise;
+
+      if (!exercise.midi_file_path) {
+        return { error: 'No MIDI file associated with this exercise' };
+      }
+
+      // Generate download URL for the MIDI file
+      const supabase = this.exercisesService['supabaseService'].getClient();
+      const { data } = supabase.storage
+        .from('exercise-files')
+        .getPublicUrl(exercise.midi_file_path);
+
+      this.logger.log(`Generated download URL for exercise ${exerciseId}`);
+
+      return {
+        downloadUrl: data.publicUrl,
+        filename: exercise.original_filename || 'exercise.mid',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error generating download URL for exercise ${exerciseId}:`,
+        error,
+      );
+      return { error: 'Failed to generate download URL' };
+    }
+  }
+
+  /**
+   * DELETE /api/exercises/:id/midi-file
+   * Delete the MIDI file associated with an exercise
+   */
+  @Delete(':id/midi-file')
+  @UseGuards(AuthGuard)
+  async deleteMidiFile(
+    @Param('id') exerciseId: string,
+    @Request() req: any,
+  ): Promise<{ success: boolean; message: string }> {
+    const userId = req.user?.id;
+    this.logger.log(
+      `DELETE /api/exercises/${exerciseId}/midi-file - User: ${userId}`,
+    );
+
+    if (!userId) {
+      throw new BadRequestException('User authentication required');
+    }
+
+    try {
+      // Get exercise and verify ownership
+      if (!this.checkServiceAvailability()) {
+        throw new BadRequestException('Service unavailable');
+      }
+
+      const exerciseResponse =
+        await this.exercisesService.getExerciseById(exerciseId);
+      const exercise = exerciseResponse.exercise;
+
+      // Check if user owns the exercise
+      if (exercise.created_by !== userId) {
+        throw new BadRequestException('Not authorized to delete this file');
+      }
+
+      if (!exercise.midi_file_path) {
+        return {
+          success: false,
+          message: 'No MIDI file associated with this exercise',
+        };
+      }
+
+      // Delete file from storage
+      const supabase = this.exercisesService['supabaseService'].getClient();
+      const { error } = await supabase.storage
+        .from('exercise-files')
+        .remove([exercise.midi_file_path]);
+
+      if (error) {
+        this.logger.error('Error deleting MIDI file from storage:', error);
+        throw new BadRequestException('Failed to delete MIDI file');
+      }
+
+      // Update exercise to remove MIDI file references
+      await this.exercisesService.updateExercise(
+        exerciseId,
+        {
+          midi_file_path: null,
+          original_filename: null,
+          file_size: null,
+          uploaded_at: null,
+        },
+        userId,
+      );
+
+      this.logger.log(
+        `Successfully deleted MIDI file for exercise ${exerciseId}`,
+      );
+
+      return {
+        success: true,
+        message: 'MIDI file deleted successfully',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error deleting MIDI file for exercise ${exerciseId}:`,
         error,
       );
       throw error;

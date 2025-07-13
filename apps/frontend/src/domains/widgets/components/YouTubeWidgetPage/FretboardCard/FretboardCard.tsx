@@ -7,6 +7,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/components/ui/card';
+import { Clock, Target, Music, CheckCircle, Loader2 } from 'lucide-react';
+import { useExerciseSelection } from '../../../hooks/useExerciseSelection';
 import { SyncedWidget } from '../../base';
 import type { SyncedWidgetRenderProps } from '../../base';
 import type {
@@ -77,6 +79,11 @@ interface FretboardCardProps {
   setStringCount3D?: (count: 4 | 5 | 6) => void;
   cameraMode?: 'overview' | 'action';
   setCameraMode?: (mode: 'overview' | 'action') => void;
+  // Exercise-related props
+  tutorialData?: any;
+  tutorialSlug?: string;
+  exercises?: any[];
+  onExerciseSelect?: (exerciseId: string) => void;
 }
 
 export function FretboardCard({
@@ -88,6 +95,10 @@ export function FretboardCard({
   setStringCount3D,
   cameraMode,
   setCameraMode,
+  tutorialData,
+  tutorialSlug,
+  exercises,
+  onExerciseSelect,
 }: FretboardCardProps) {
   return (
     <SyncedWidget
@@ -114,10 +125,51 @@ export function FretboardCard({
           setStringCount3D={setStringCount3D}
           cameraMode={cameraMode}
           setCameraMode={setCameraMode}
+          tutorialData={tutorialData}
+          tutorialSlug={tutorialSlug}
+          exercises={exercises}
+          onExerciseSelect={onExerciseSelect}
         />
       )}
     </SyncedWidget>
   );
+}
+
+// Helper function to format duration from milliseconds to mm:ss
+function formatDuration(durationMs: number): string {
+  const minutes = Math.floor(durationMs / (1000 * 60));
+  const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+const difficultyConfig = {
+  beginner: {
+    color: 'bg-green-500/20 text-green-300 border-green-500/30',
+    label: 'Beginner',
+  },
+  intermediate: {
+    color: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+    label: 'Intermediate',
+  },
+  advanced: {
+    color: 'bg-red-500/20 text-red-300 border-red-500/30',
+    label: 'Advanced',
+  },
+} as const;
+
+// Helper function to get difficulty config with fallback
+function getDifficultyConfig(difficulty: any) {
+  const normalizedDifficulty = difficulty?.toLowerCase();
+  if (normalizedDifficulty in difficultyConfig) {
+    return difficultyConfig[
+      normalizedDifficulty as keyof typeof difficultyConfig
+    ];
+  }
+  // Fallback for unknown difficulties
+  return {
+    color: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
+    label: 'Unknown',
+  };
 }
 
 let renderCount = 0;
@@ -132,6 +184,10 @@ function FretboardCardContent({
   setStringCount3D,
   cameraMode,
   setCameraMode,
+  tutorialData,
+  tutorialSlug,
+  exercises,
+  onExerciseSelect,
 }: FretboardCardContentProps & {
   is3DMode?: boolean;
   onToggle3DMode?: () => void;
@@ -141,24 +197,134 @@ function FretboardCardContent({
   setStringCount3D?: (count: 4 | 5 | 6) => void;
   cameraMode?: 'overview' | 'action';
   setCameraMode?: (mode: 'overview' | 'action') => void;
+  tutorialData?: any;
+  tutorialSlug?: string;
+  exercises?: any[];
+  onExerciseSelect?: (exerciseId: string) => void;
 }) {
-  // Zoom state - default to 100%
-  const [zoomLevel, setZoomLevel] = useState(1.0);
-  
+  // Zoom state - default to 115%
+  const [zoomLevel, setZoomLevel] = useState(1.15);
+
   // Scroll container ref for auto-scroll functionality
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, scrollLeft: 0 });
   const [hasUserScrolled, setHasUserScrolled] = useState(false);
-  
+
+  // Exercise selection logic
+  const {
+    exercises: fallbackExercises,
+    isLoading: exerciseLoading,
+    error: exerciseError,
+    selectExercise,
+  } = useExerciseSelection();
+
+  // Prefer prop exercises (from tutorial) over fallback exercises
+  const exercisesList =
+    exercises && exercises.length > 0 ? exercises : fallbackExercises;
+
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
+
+  const handleExerciseSelect = (exerciseId: string) => {
+    const exercise = exercisesList.find((ex) => ex.id === exerciseId);
+    if (exercise) {
+      // Check if this exercise is already selected by comparing with sync state
+      const wasAlreadySelected = syncProps.selectedExercise?.id === exerciseId;
+
+      // Add a unique selection timestamp to track user clicks
+      const timestamp = Date.now();
+      const exerciseWithTimestamp = {
+        ...exercise,
+        _selectionTimestamp: timestamp,
+      };
+
+      setSelectedExerciseId(exerciseId);
+      selectExercise(exerciseWithTimestamp);
+      onExerciseSelect?.(exerciseId);
+
+      // Emit comprehensive sync events to configure all widgets
+      syncProps.sync.actions.emitEvent(
+        'EXERCISE_CHANGE',
+        {
+          exercise,
+          forceReload: wasAlreadySelected,
+          clickTimestamp: timestamp,
+        },
+        'high',
+      );
+
+      // Update tempo for metronome and global controls
+      if (exercise.bpm && exercise.bpm > 0) {
+        syncProps.sync.actions.emitEvent(
+          'TEMPO_CHANGE',
+          {
+            tempo: exercise.bpm,
+            source: 'exercise-selector',
+            reason: 'exercise-template',
+          },
+          'high',
+        );
+      }
+
+      // Custom bassline pattern if available
+      if (
+        exercise.chord_progression &&
+        Array.isArray(exercise.chord_progression)
+      ) {
+        syncProps.sync.actions.emitEvent(
+          'CUSTOM_BASSLINE',
+          {
+            chordProgression: exercise.chord_progression,
+            key: exercise.key,
+            source: 'exercise-selector',
+            reason: 'exercise-template',
+          },
+          'normal',
+        );
+      }
+
+      // Volume configuration for optimal practice
+      syncProps.sync.actions.emitEvent(
+        'VOLUME_CHANGE',
+        {
+          masterVolume: 0.8,
+          metronomeVolume: 0.7,
+          source: 'exercise-selector',
+          reason: 'exercise-template',
+        },
+        'low',
+      );
+    }
+  };
+
+  // Auto-select first exercise when exercises load
+  useEffect(() => {
+    if (exercisesList.length > 0 && !selectedExerciseId) {
+      const firstExercise = exercisesList[0];
+      if (firstExercise && firstExercise.id) {
+        handleExerciseSelect(firstExercise.id);
+      }
+    }
+  }, [exercisesList, selectedExerciseId]);
+
   // Debug: Track renders
   renderCount++;
-  console.log('🔄 FretboardCardContent RENDER #', renderCount, 'hasUserScrolled:', hasUserScrolled);
+  console.log(
+    '🔄 FretboardCardContent RENDER #',
+    renderCount,
+    'hasUserScrolled:',
+    hasUserScrolled,
+  );
 
   // Only reset scroll to 0 if user hasn't manually scrolled
   React.useEffect(() => {
     if (!hasUserScrolled && scrollContainerRef.current && !is3DMode) {
-      console.log('🚨 FORCING SCROLL TO 0 - hasUserScrolled:', hasUserScrolled, 'is3DMode:', is3DMode);
+      console.log(
+        '🚨 FORCING SCROLL TO 0 - hasUserScrolled:',
+        hasUserScrolled,
+        'is3DMode:',
+        is3DMode,
+      );
       scrollContainerRef.current.scrollLeft = 0;
     }
   }, [is3DMode, hasUserScrolled]);
@@ -283,18 +449,18 @@ function FretboardCardContent({
   // Auto-scroll to center a specific fret in view
   const scrollToFret = React.useCallback((fret: number) => {
     if (!scrollContainerRef.current) return;
-    
+
     const FRET_SPACING = 38;
     const FRET_OFFSET = 46;
     const CENTER_OFFSET = 15;
     const containerWidth = 568;
-    
+
     // Calculate the X position of the fret
     const fretX = CENTER_OFFSET + FRET_OFFSET + (fret - 1) * FRET_SPACING;
-    
+
     // Center the fret in the viewport
     const targetScrollLeft = fretX - containerWidth / 2;
-    
+
     scrollContainerRef.current.scrollTo({
       left: Math.max(0, targetScrollLeft),
       behavior: 'smooth',
@@ -303,18 +469,29 @@ function FretboardCardContent({
 
   // Auto-scroll during playback to follow current note (only if user hasn't manually scrolled)
   React.useEffect(() => {
-    if (!is3DMode && !hasUserScrolled && fretboard.exercise.audioIntegration.playbackPosition?.isPlaying) {
-      const currentNote = fretboard.exercise.audioIntegration.playbackPosition.currentNote;
+    if (
+      !is3DMode &&
+      !hasUserScrolled &&
+      fretboard.exercise.audioIntegration.playbackPosition?.isPlaying
+    ) {
+      const currentNote =
+        fretboard.exercise.audioIntegration.playbackPosition.currentNote;
       if (currentNote && typeof currentNote.fret === 'number') {
         // Handle open string notes (fret 0) - don't scroll, just ensure we're at position 0
         if (currentNote.fret === 0) {
-          if (scrollContainerRef.current && scrollContainerRef.current.scrollLeft > 0) {
+          if (
+            scrollContainerRef.current &&
+            scrollContainerRef.current.scrollLeft > 0
+          ) {
             console.log('🎵 AUTO-SCROLL: Scrolling to 0 for open string note');
-            scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+            scrollContainerRef.current.scrollTo({
+              left: 0,
+              behavior: 'smooth',
+            });
           }
           return;
         }
-        
+
         // Handle fretted notes (fret > 0)
         if (currentNote.fret > 0) {
           // Only scroll if the note is outside the current viewport
@@ -323,16 +500,25 @@ function FretboardCardContent({
             const containerWidth = 568;
             const currentViewStart = scrollLeft;
             const currentViewEnd = scrollLeft + containerWidth;
-            
+
             const FRET_SPACING = 38;
             const FRET_OFFSET = 46;
             const CENTER_OFFSET = 15;
-            const fretX = CENTER_OFFSET + FRET_OFFSET + (currentNote.fret - 1) * FRET_SPACING;
-            
+            const fretX =
+              CENTER_OFFSET +
+              FRET_OFFSET +
+              (currentNote.fret - 1) * FRET_SPACING;
+
             // Add some buffer so we scroll before the note goes out of view
             const buffer = 100;
-            if (fretX < currentViewStart + buffer || fretX > currentViewEnd - buffer) {
-              console.log('🎵 AUTO-SCROLL: Scrolling to fret', currentNote.fret);
+            if (
+              fretX < currentViewStart + buffer ||
+              fretX > currentViewEnd - buffer
+            ) {
+              console.log(
+                '🎵 AUTO-SCROLL: Scrolling to fret',
+                currentNote.fret,
+              );
               scrollToFret(currentNote.fret);
             }
           }
@@ -357,7 +543,7 @@ function FretboardCardContent({
     if (target.closest('[role="button"]') || target.closest('button')) {
       return;
     }
-    
+
     if (!scrollContainerRef.current) return;
     setIsDragging(true);
     setDragStart({
@@ -372,9 +558,12 @@ function FretboardCardContent({
     const x = e.pageX;
     const walk = (x - dragStart.x) * 2; // Multiply by 2 for faster scrolling
     scrollContainerRef.current.scrollLeft = dragStart.scrollLeft - walk;
-    
+
     // Mark that user has manually scrolled
-    console.log('🐆 USER DRAG: Setting hasUserScrolled to true, scroll position:', scrollContainerRef.current.scrollLeft);
+    console.log(
+      '🐆 USER DRAG: Setting hasUserScrolled to true, scroll position:',
+      scrollContainerRef.current.scrollLeft,
+    );
     setHasUserScrolled(true);
   };
 
@@ -394,23 +583,117 @@ function FretboardCardContent({
   return (
     <Card className="bg-transparent border-transparent shadow-none overflow-visible">
       <CardContent className="p-0 overflow-visible">
-        {/* Unified Neumorphic Hero Panel */}
-        <div className="bg-slate-800 rounded-2xl p-4 mb-4 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] transition-all duration-300 relative">
-          
-          {/* 3D Mode Toggle Button - Top Right Corner (16px from edges) */}
+        {/* Neumorphic Dark Theme Exercise Panel */}
+        <div className="bg-slate-800 rounded-2xl p-6 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] transition-all duration-300 relative">
+          {/* Exercise Selector Section with Circular Design */}
+          <div className="mb-8">
+            <div className="flex items-center justify-center mb-6">
+              <div className="relative">
+                {/* Outer ring */}
+                <div className="w-16 h-16 rounded-full bg-slate-700 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.5),inset_-3px_-3px_6px_rgba(255,255,255,0.1)] flex items-center justify-center">
+                  {/* Inner circle */}
+                  <div className="w-10 h-10 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] flex items-center justify-center">
+                    {/* Orange indicator dot */}
+                    <div className="w-2 h-2 rounded-full bg-orange-500 shadow-[1px_1px_2px_rgba(0,0,0,0.4)]" />
+                  </div>
+                </div>
+                {/* Title below circle */}
+                <div className="text-center mt-4">
+                  <h3 className="font-semibold text-sm text-white">
+                    Exercise Selector
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Choose practice exercise
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Exercise List with Dark Neumorphic Cards */}
+            <div className="space-y-3">
+              {exerciseLoading && (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
+                  <span className="ml-2 text-xs text-slate-400">
+                    Loading...
+                  </span>
+                </div>
+              )}
+              {exerciseError && (
+                <div className="text-center py-6">
+                  <p className="text-xs text-red-400">{exerciseError}</p>
+                </div>
+              )}
+              {!exerciseLoading &&
+                !exerciseError &&
+                exercisesList
+                  .filter((exercise) => exercise?.id && exercise?.title)
+                  .map((exercise, index) => (
+                    <div
+                      key={exercise.id}
+                      className={`relative p-4 rounded-xl cursor-pointer transition-all duration-200 ${
+                        selectedExerciseId === exercise.id
+                          ? 'bg-orange-500/20 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-1px_-1px_3px_rgba(255,255,255,0.1)] border border-orange-500/30'
+                          : 'bg-slate-700/50 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-2px_-2px_4px_rgba(255,255,255,0.1)] hover:shadow-[inset_1px_1px_3px_rgba(0,0,0,0.4),inset_-1px_-1px_2px_rgba(255,255,255,0.1)]'
+                      }`}
+                      onClick={() => handleExerciseSelect(exercise.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-xs font-bold text-orange-400">
+                              #{index + 1}
+                            </span>
+                            <h4 className="font-medium text-sm text-white truncate">
+                              {exercise.title}
+                            </h4>
+                            {selectedExerciseId === exercise.id && (
+                              <CheckCircle className="w-3 h-3 text-orange-400 flex-shrink-0" />
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-4 text-xs text-slate-400">
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="w-3 h-3" />
+                              <span>{formatDuration(exercise.duration)}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Music className="w-3 h-3" />
+                              <span>{exercise.bpm} BPM</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span>Key: {exercise.key}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
+                            getDifficultyConfig(exercise.difficulty).color
+                          } shadow-[2px_2px_4px_rgba(0,0,0,0.4),-1px_-1px_2px_rgba(255,255,255,0.1)]`}
+                        >
+                          {getDifficultyConfig(exercise.difficulty).label}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+            </div>
+          </div>
+
+          {/* 3D Mode Toggle Button - Top Right Corner with Neumorphic Shadows */}
           <button
             onClick={onToggle3DMode}
-            className={`absolute top-4 right-4 px-4 py-2 rounded-full text-sm font-bold transition-all duration-200 z-10 text-black ${
+            className={`absolute top-6 right-6 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 z-10 ${
               is3DMode
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-2px_-2px_4px_rgba(255,255,255,0.1)]'
-                : 'bg-gradient-to-r from-yellow-400 to-orange-500 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-2px_-2px_4px_rgba(255,255,255,0.1)]'
-            } hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-1px_-1px_3px_rgba(255,255,255,0.1)]`}
+                ? 'bg-purple-500/20 text-purple-300 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] border border-purple-500/30'
+                : 'bg-orange-500/20 text-orange-300 shadow-[2px_2px_4px_rgba(0,0,0,0.5),-2px_-2px_4px_rgba(255,255,255,0.1)] border border-orange-500/30'
+            } hover:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.5),inset_-1px_-1px_2px_rgba(255,255,255,0.1)]`}
           >
             {is3DMode ? '2D Mode' : '3D Mode'}
           </button>
-          
+
           {/* Header Section */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6">
             {/* Left Side - Sync Status & Title */}
             <div className="flex items-center gap-3">
               <div
@@ -418,7 +701,11 @@ function FretboardCardContent({
                   syncProps.isConnected ? 'bg-green-400' : 'bg-red-400'
                 }`}
                 role="img"
-                aria-label={syncProps.isConnected ? 'Widget synchronized' : 'Widget sync error'}
+                aria-label={
+                  syncProps.isConnected
+                    ? 'Widget synchronized'
+                    : 'Widget sync error'
+                }
                 title={syncProps.isConnected ? 'Synced' : 'Sync error'}
               />
               <div>
@@ -426,86 +713,122 @@ function FretboardCardContent({
                   🎸 Interactive Fretboard
                 </h3>
                 <p className="text-xs text-slate-400">
-                  {syncStatus} • {fretboard.checkHasSelectedDots() ? 'Notes Selected' : 'Ready'}
+                  {syncStatus} •{' '}
+                  {fretboard.checkHasSelectedDots()
+                    ? 'Notes Selected'
+                    : 'Ready'}
                 </p>
               </div>
             </div>
 
             {/* Center - Playback Status */}
-            {fretboard.exercise.audioIntegration.playbackPosition?.isPlaying && 
-             fretboard.exercise.audioIntegration.playbackPosition.currentNote && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 rounded-lg border border-blue-500/30">
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-                <div className="text-sm text-blue-300">
-                  <span className="font-medium">
-                    {fretboard.exercise.audioIntegration.playbackPosition.currentNote.note}
-                    {fretboard.exercise.audioIntegration.playbackPosition.currentNote.octave}
-                  </span>
-                  <span className="ml-2 text-xs">
-                    {Math.round(fretboard.exercise.audioIntegration.playbackPosition.progress * 100)}%
-                  </span>
+            {fretboard.exercise.audioIntegration.playbackPosition?.isPlaying &&
+              fretboard.exercise.audioIntegration.playbackPosition
+                .currentNote && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 rounded-lg border border-blue-500/30 shadow-[inset_1px_1px_2px_rgba(0,0,0,0.3),inset_-1px_-1px_2px_rgba(255,255,255,0.1)]">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+                  <div className="text-sm text-blue-300">
+                    <span className="font-medium">
+                      {
+                        fretboard.exercise.audioIntegration.playbackPosition
+                          .currentNote.note
+                      }
+                      {
+                        fretboard.exercise.audioIntegration.playbackPosition
+                          .currentNote.octave
+                      }
+                    </span>
+                    <span className="ml-2 text-xs">
+                      {Math.round(
+                        fretboard.exercise.audioIntegration.playbackPosition
+                          .progress * 100,
+                      )}
+                      %
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Right Side - Empty for 3D Mode Button positioning */}
             <div></div>
           </div>
 
-
           {/* Mode Controls Section */}
           <div className="flex items-center justify-between">
-            {/* String Count Controls */}
-            <div className="flex items-center gap-2">
-              {[4, 5, 6].map((count) => (
-                <button
-                  key={count}
-                  onClick={() => {
+            {/* Left Controls Group */}
+            <div className="flex items-center gap-4">
+              {/* String Count Controls */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={sharedStringCount}
+                  onChange={(e) => {
+                    const count = parseInt(e.target.value) as 4 | 5 | 6;
                     // Update both shared state and fretboard internal state
-                    stringCountHandlers.handleStringCountChangeWithValidation(count as 4 | 5 | 6);
-                    fretboard.state.handleStringCountChange(count as 4 | 5 | 6);
+                    stringCountHandlers.handleStringCountChangeWithValidation(
+                      count,
+                    );
+                    fretboard.state.handleStringCountChange(count);
                   }}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    sharedStringCount === count
-                      ? 'bg-blue-500 text-white shadow-[inset_1px_1px_2px_rgba(0,0,0,0.3)]'
-                      : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
-                  }`}
+                  className="px-3 py-1 rounded-lg bg-slate-700/50 text-slate-300 text-sm font-medium border border-slate-600/50 shadow-[2px_2px_4px_rgba(0,0,0,0.4),-1px_-1px_2px_rgba(255,255,255,0.1)] hover:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.3),inset_-1px_-1px_2px_rgba(255,255,255,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200"
                 >
-                  {count} String
-                </button>
-              ))}
+                  {[4, 5, 6].map((count) => (
+                    <option key={count} value={count}>
+                      {count} String
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Fret Count Controls */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={fretboard.maxFrets || 25}
+                  onChange={(e) =>
+                    fretboard.handleMaxFretsChange?.(parseInt(e.target.value))
+                  }
+                  className="px-3 py-1 rounded-lg bg-slate-700/50 text-slate-300 text-sm font-medium border border-slate-600/50 shadow-[2px_2px_4px_rgba(0,0,0,0.4),-1px_-1px_2px_rgba(255,255,255,0.1)] hover:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.3),inset_-1px_-1px_2px_rgba(255,255,255,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200"
+                >
+                  {Array.from({ length: 7 }, (_, i) => i + 19).map(
+                    (fretCount) => (
+                      <option key={fretCount} value={fretCount}>
+                        {fretCount} Frets
+                      </option>
+                    ),
+                  )}
+                </select>
+              </div>
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons with Metronome Style */}
             <div className="flex items-center gap-2">
               {fretboard.checkHasSelectedDots() && (
                 <button
                   onClick={dotSelectionHandlers.handleUnifiedReset}
-                  className="px-3 py-1 rounded-lg bg-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/30 transition-all duration-200 border border-red-500/30"
+                  className="px-3 py-2 rounded-xl bg-slate-800 shadow-[5px_5px_10px_rgba(0,0,0,0.5),-5px_-5px_10px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] transition-all duration-300 text-red-400 text-sm font-medium"
                 >
                   Reset
                 </button>
               )}
-              
+
               {is3DMode ? (
                 /* 3D Mode: Camera Controls */
                 <>
                   <button
                     onClick={() => sharedSetCameraMode('overview')}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 ${
                       sharedCameraMode === 'overview'
-                        ? 'bg-slate-700 text-white shadow-[inset_1px_1px_2px_rgba(0,0,0,0.3)]'
-                        : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
+                        ? 'shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-blue-400'
+                        : 'shadow-[5px_5px_10px_rgba(0,0,0,0.5),-5px_-5px_10px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-slate-300'
                     }`}
                   >
                     Overview
                   </button>
                   <button
                     onClick={() => sharedSetCameraMode('action')}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 ${
                       sharedCameraMode === 'action'
-                        ? 'bg-slate-700 text-white shadow-[inset_1px_1px_2px_rgba(0,0,0,0.3)]'
-                        : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
+                        ? 'shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-blue-400'
+                        : 'shadow-[5px_5px_10px_rgba(0,0,0,0.5),-5px_-5px_10px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-slate-300'
                     }`}
                   >
                     Action
@@ -516,20 +839,20 @@ function FretboardCardContent({
                 <>
                   <button
                     onClick={() => fretboard.handleTiltAngleChange(35)}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 ${
                       fretboard.tiltAngle === 35
-                        ? 'bg-slate-700 text-white shadow-[inset_1px_1px_2px_rgba(0,0,0,0.3)]'
-                        : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
+                        ? 'shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-green-400'
+                        : 'shadow-[5px_5px_10px_rgba(0,0,0,0.5),-5px_-5px_10px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-slate-300'
                     }`}
                   >
                     Default
                   </button>
                   <button
                     onClick={() => fretboard.handleTiltAngleChange(0)}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 ${
                       fretboard.tiltAngle === 0
-                        ? 'bg-slate-700 text-white shadow-[inset_1px_1px_2px_rgba(0,0,0,0.3)]'
-                        : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
+                        ? 'shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-green-400'
+                        : 'shadow-[5px_5px_10px_rgba(0,0,0,0.5),-5px_-5px_10px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-slate-300'
                     }`}
                   >
                     Flat
@@ -586,7 +909,12 @@ function FretboardCardContent({
             className="relative mx-auto"
             style={{
               width: 568, // Full container width // Fixed viewport width
-              height: (sharedStringCount === 4 ? 200 : sharedStringCount === 5 ? 240 : 290) * zoomLevel,
+              height:
+                (sharedStringCount === 4
+                  ? 220
+                  : sharedStringCount === 5
+                    ? 250
+                    : 290) * zoomLevel,
               overflow: 'visible', // Allow shadows to extend in all directions
               perspective: '800px', // Add perspective here
             }}
@@ -597,12 +925,18 @@ function FretboardCardContent({
                 if (el && !is3DMode && !hasUserScrolled) {
                   // Only set to 0 if user hasn't manually scrolled
                   el.scrollLeft = 0;
-                  console.log('🔍 REF: Set scroll to 0, hasUserScrolled:', hasUserScrolled);
+                  console.log(
+                    '🔍 REF: Set scroll to 0, hasUserScrolled:',
+                    hasUserScrolled,
+                  );
                 } else if (el && hasUserScrolled) {
-                  console.log('🔍 REF: User has scrolled, NOT resetting position. Current:', el.scrollLeft);
+                  console.log(
+                    '🔍 REF: User has scrolled, NOT resetting position. Current:',
+                    el.scrollLeft,
+                  );
                 }
               }}
-              className="overflow-x-auto overflow-y-hidden h-full"
+              className="overflow-x-auto overflow-y-hidden h-full flex items-center"
               style={{
                 cursor: isDragging ? 'grabbing' : 'grab',
                 scrollbarWidth: 'none', // Firefox
@@ -617,8 +951,15 @@ function FretboardCardContent({
               onMouseLeave={handleMouseLeave}
               onScroll={() => {
                 // Mark that user has scrolled when any scroll event occurs
-                if (scrollContainerRef.current && scrollContainerRef.current.scrollLeft > 0) {
-                  console.log('📋 SCROLL EVENT: Position', scrollContainerRef.current.scrollLeft, 'setting hasUserScrolled to true');
+                if (
+                  scrollContainerRef.current &&
+                  scrollContainerRef.current.scrollLeft > 0
+                ) {
+                  console.log(
+                    '📋 SCROLL EVENT: Position',
+                    scrollContainerRef.current.scrollLeft,
+                    'setting hasUserScrolled to true',
+                  );
                   setHasUserScrolled(true);
                 }
               }}
@@ -636,45 +977,47 @@ function FretboardCardContent({
                 }}
               >
                 <FretboardGrid
-              stringCount={sharedStringCount}
-              tiltAngle={fretboard.tiltAngle}
-              frets={fretboard.frets}
-              selectedDots={fretboard.selectedDots}
-              draggedDot={fretboard.state.draggedDot}
-              dragOverTarget={fretboard.state.dragOverTarget}
-              isExerciseNote={fretboard.isExerciseNote}
-              isCurrentNote={fretboard.isCurrentNote}
-              onDragStart={(e, stringIndex, fret) => {
-                const orders = fretboard.checkGetDotOrder(stringIndex, fret);
-                const order = orders.length > 0 ? orders[0] : 0;
-                if (order !== undefined) {
-                  fretboard.handleDragStart(stringIndex, fret, order);
-                }
-              }}
-              onDragOver={handleDragOver}
-              onDragEnter={fretboard.handleDragEnter}
-              onDragLeave={fretboard.handleDragLeave}
-              onDrop={(e, targetStringIndex, targetFret) => {
-                dotSelectionHandlers.handleDragDrop(
-                  targetStringIndex,
-                  targetFret,
-                );
-              }}
-              onDragEnd={fretboard.handleDragEnd}
-              onDotClick={dotSelectionHandlers.handleDotClick2D}
-              onDotSecondSelection={
-                dotSelectionHandlers.handleDotSecondSelection2D
-              }
-              onDotRemoval={dotSelectionHandlers.handleDotRemoval2D}
-              segmentFunctions={fretboard.segmentFunctions}
-              highlightingFunctions={fretboard.highlightingFunctions}
-            />
+                  stringCount={sharedStringCount}
+                  tiltAngle={fretboard.tiltAngle}
+                  frets={fretboard.frets}
+                  selectedDots={fretboard.selectedDots}
+                  draggedDot={fretboard.state.draggedDot}
+                  dragOverTarget={fretboard.state.dragOverTarget}
+                  isExerciseNote={fretboard.isExerciseNote}
+                  isCurrentNote={fretboard.isCurrentNote}
+                  zoomLevel={zoomLevel}
+                  onDragStart={(e, stringIndex, fret) => {
+                    const orders = fretboard.checkGetDotOrder(
+                      stringIndex,
+                      fret,
+                    );
+                    const order = orders.length > 0 ? orders[0] : 0;
+                    if (order !== undefined) {
+                      fretboard.handleDragStart(stringIndex, fret, order);
+                    }
+                  }}
+                  onDragOver={handleDragOver}
+                  onDragEnter={fretboard.handleDragEnter}
+                  onDragLeave={fretboard.handleDragLeave}
+                  onDrop={(e, targetStringIndex, targetFret) => {
+                    dotSelectionHandlers.handleDragDrop(
+                      targetStringIndex,
+                      targetFret,
+                    );
+                  }}
+                  onDragEnd={fretboard.handleDragEnd}
+                  onDotClick={dotSelectionHandlers.handleDotClick2D}
+                  onDotSecondSelection={
+                    dotSelectionHandlers.handleDotSecondSelection2D
+                  }
+                  onDotRemoval={dotSelectionHandlers.handleDotRemoval2D}
+                  segmentFunctions={fretboard.segmentFunctions}
+                  highlightingFunctions={fretboard.highlightingFunctions}
+                />
               </div>
             </div>
           </div>
         )}
-
-
 
         {/* Audio status display */}
         {fretboard.exercise.audioIntegration.audioError && (

@@ -29,7 +29,6 @@ export const FretboardHeader: React.FC<FretboardHeaderProps> = ({
       {/* Neumorphic Header Panel */}
       <div className="bg-slate-800 rounded-2xl px-4 py-3 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] transition-all duration-300">
         <div className="flex items-center justify-between">
-          
           {/* Left Side - Sync Status */}
           <div className="flex items-center gap-3">
             <div
@@ -37,7 +36,9 @@ export const FretboardHeader: React.FC<FretboardHeaderProps> = ({
                 isConnected ? 'bg-green-400' : 'bg-red-400'
               }`}
               role="img"
-              aria-label={isConnected ? 'Widget synchronized' : 'Widget sync error'}
+              aria-label={
+                isConnected ? 'Widget synchronized' : 'Widget sync error'
+              }
               title={isConnected ? 'Synced' : 'Sync error'}
             />
             <div>
@@ -95,9 +96,7 @@ export const FretboardHeader: React.FC<FretboardHeaderProps> = ({
             {/* Tilt Info */}
             <div className="flex items-center gap-1">
               <Settings className="w-4 h-4 text-slate-400" />
-              <span className="text-xs text-slate-400">
-                {tiltAngle}°
-              </span>
+              <span className="text-xs text-slate-400">{tiltAngle}°</span>
             </div>
           </div>
         </div>

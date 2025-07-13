@@ -25,6 +25,7 @@ export const useFretboardState = () => {
   // Basic fretboard configuration
   const [stringCount, setStringCount] = useState<StringCount>(4);
   const [tiltAngle, setTiltAngle] = useState<number>(35);
+  const [maxFrets, setMaxFrets] = useState<number>(25);
 
   // Selected dots state - stores position keys with order numbers
   const [selectedDots, setSelectedDots] = useState<SelectedDotsMap>(new Map());
@@ -36,14 +37,18 @@ export const useFretboardState = () => {
     null,
   );
 
-  // Generate frets array (1-25 for full bass guitar range)
-  const frets = useMemo(() => Array.from({ length: 25 }, (_, i) => i + 1), []);
+  // Generate frets array based on maxFrets setting
+  const frets = useMemo(
+    () => Array.from({ length: maxFrets }, (_, i) => i + 1),
+    [maxFrets],
+  );
 
   // Get current fretboard state as a single object
   const fretboardState: FretboardState = useMemo(
     () => ({
       stringCount,
       tiltAngle,
+      maxFrets,
       selectedDots,
       selectionOrder,
       draggedDot,
@@ -52,6 +57,7 @@ export const useFretboardState = () => {
     [
       stringCount,
       tiltAngle,
+      maxFrets,
       selectedDots,
       selectionOrder,
       draggedDot,
@@ -117,6 +123,11 @@ export const useFretboardState = () => {
   // Tilt angle handlers
   const handleTiltAngleChange = useCallback((newTiltAngle: number) => {
     setTiltAngle(newTiltAngle);
+  }, []);
+
+  // Max frets handlers
+  const handleMaxFretsChange = useCallback((newMaxFrets: number) => {
+    setMaxFrets(newMaxFrets);
   }, []);
 
   // Selected dots handlers
@@ -280,6 +291,7 @@ export const useFretboardState = () => {
     // State values
     stringCount,
     tiltAngle,
+    maxFrets,
     selectedDots,
     selectionOrder,
     draggedDot,
@@ -293,6 +305,9 @@ export const useFretboardState = () => {
 
     // Tilt angle handlers
     handleTiltAngleChange,
+
+    // Max frets handlers
+    handleMaxFretsChange,
 
     // Selected dots handlers
     handleDotClick,

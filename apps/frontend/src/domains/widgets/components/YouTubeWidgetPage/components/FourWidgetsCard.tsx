@@ -1,10 +1,7 @@
 'use client';
 
 import React from 'react';
-import {
-  Card,
-  CardContent,
-} from '@/shared/components/ui/card';
+import { Card, CardContent } from '@/shared/components/ui/card';
 import { MetronomeWidget } from './MetronomeWidget';
 import { DrummerWidget } from './DrummerWidget';
 import { BassLineWidget } from './BassLineWidget';
@@ -36,7 +33,6 @@ export function FourWidgetsCard({ widgetState }: FourWidgetsCardProps) {
 
   return (
     <Card className="bg-transparent border-transparent shadow-none">
-
       <CardContent className="px-0 pb-6 pt-0">
         {/* 4 Widgets in Vertical Stack (1x4) as specified */}
         <div className="space-y-2">

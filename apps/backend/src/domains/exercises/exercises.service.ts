@@ -633,6 +633,86 @@ export class ExercisesService {
   }
 
   /**
+   * Create exercise with MIDI file metadata
+   */
+  async createExerciseWithMidiFile(exerciseData: {
+    id: string;
+    title: string;
+    description?: string;
+    difficulty: string;
+    duration: number;
+    bpm: number;
+    key: string;
+    notes: any[];
+    midi_file_path: string;
+    original_filename: string;
+    file_size: number;
+    uploaded_at: string;
+    created_by: string;
+  }): Promise<ExerciseDto> {
+    try {
+      this.logger.debug(
+        `Creating exercise with MIDI file: ${exerciseData.title}`,
+      );
+
+      const supabase = this.supabaseService.getClient();
+
+      if (!this.supabaseService.isReady()) {
+        this.logger.error('Supabase service is not ready');
+        throw new InternalServerErrorException('Database service unavailable');
+      }
+
+      // Insert the exercise with MIDI file metadata
+      const { data, error } = await supabase
+        .from('exercises')
+        .insert({
+          id: exerciseData.id,
+          title: exerciseData.title,
+          description: exerciseData.description || '',
+          difficulty: exerciseData.difficulty,
+          duration: exerciseData.duration,
+          bpm: exerciseData.bpm,
+          key: exerciseData.key,
+          notes: exerciseData.notes,
+          midi_file_path: exerciseData.midi_file_path,
+          original_filename: exerciseData.original_filename,
+          file_size: exerciseData.file_size,
+          uploaded_at: exerciseData.uploaded_at,
+          created_by: exerciseData.created_by,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        this.logger.error('Supabase error creating exercise with MIDI:', error);
+        throw new InternalServerErrorException(
+          `Failed to create exercise with MIDI file: ${error.message}`,
+        );
+      }
+
+      if (!data) {
+        throw new InternalServerErrorException(
+          'Failed to create exercise with MIDI file - no data returned',
+        );
+      }
+
+      this.logger.debug(`Successfully created exercise with MIDI: ${data.id}`);
+
+      // Validate and return the created exercise
+      return ExerciseSchema.parse(data);
+    } catch (error) {
+      this.logger.error('Error in createExerciseWithMidiFile:', error);
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Failed to create exercise with MIDI file',
+      );
+    }
+  }
+
+  /**
    * Update an existing exercise (Epic 5 preparation)
    */
   async updateExercise(

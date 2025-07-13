@@ -49,6 +49,7 @@ interface FretboardGridProps {
   onDotClick: DotClickHandler;
   onDotSecondSelection?: (stringIndex: number, fret: Fret) => void;
   onDotRemoval?: (stringIndex: number, fret: Fret) => void;
+  zoomLevel?: number; // Add zoom level for fade calculations
   segmentFunctions: {
     getHorizontalSegments: (
       stringIndex: number,
@@ -78,6 +79,7 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
   onDotClick,
   onDotSecondSelection,
   onDotRemoval,
+  zoomLevel = 1.0,
   segmentFunctions,
   highlightingFunctions,
 }) => {
@@ -100,10 +102,10 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
     const scrollContainer = document.querySelector('.overflow-x-auto');
     if (scrollContainer) {
       scrollContainer.addEventListener('scroll', handleScroll);
-      
+
       // Initialize scroll position state (position is managed by parent component)
       setScrollLeft(scrollContainer.scrollLeft);
-      
+
       return () => {
         scrollContainer.removeEventListener('scroll', handleScroll);
       };
@@ -181,24 +183,29 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
   };
 
   // Grid constants - exact original measurements
-  const STRING_SPACING = 42; // px between string centers
-  const FRET_SPACING = 38; // px between fret centers
+  const STRING_SPACING = 32; // px between string centers
+  const FRET_SPACING = 36; // px between fret centers
   const DOT_SIZE = 26; // px diameter
   const DOT_RADIUS = 13; // px radius
-  const FRET_OFFSET = 46; // px from open string to first fret center
+  const FRET_OFFSET = 38; // px from open string to first fret center - reduced gap
   const CENTER_OFFSET = 15; // px minimal offset for open strings visibility
 
   // Calculate exact grid positions
   const getStringY = (stringIndex: number) => stringIndex * STRING_SPACING;
   const getFretX = (fret: Fret) =>
-    fret === 'open' ? CENTER_OFFSET : CENTER_OFFSET + FRET_OFFSET + (fret - 1) * FRET_SPACING;
+    fret === 'open'
+      ? CENTER_OFFSET
+      : CENTER_OFFSET + FRET_OFFSET + (fret - 1) * FRET_SPACING;
   const getOpenStringX = () => CENTER_OFFSET;
 
   const visibleStrings = getVisibleStrings(stringCount);
   const stringIndexOffset = getStringIndexOffset(stringCount);
-  
+
   // Use all frets for scrollable view (no filtering)
   const visibleFrets = frets;
+
+  // Get the highest fret number for grid width calculation
+  const maxFretNumber = Math.max(...frets);
 
   // Calculate Y positions for the visible string range using the same logic as dots
   // Get the actual visual positions of the first and last visible strings
@@ -212,8 +219,13 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
   const bottomVisibleStringY = getStringY(bottomVisibleStringPosition); // Bottom string Y coordinate
   const visibleStringSpan = bottomVisibleStringY - topVisibleStringY; // Height span of visible strings
 
-  // Grid dimensions - calculate for all 25 frets with extra space to show 25th fret fully
-  const gridWidth = CENTER_OFFSET + FRET_OFFSET + (25 - 1) * FRET_SPACING + DOT_RADIUS + 40; // Extra 40px padding beyond 25th fret
+  // Grid dimensions - calculate based on actual max fret count with extra space to show last fret fully
+  const gridWidth =
+    CENTER_OFFSET +
+    FRET_OFFSET +
+    (maxFretNumber - 1) * FRET_SPACING +
+    DOT_RADIUS +
+    40; // Extra 40px padding beyond last fret
   const visibleStringHeight = (stringCount - 1) * STRING_SPACING + DOT_SIZE; // Height for visible strings only
   const gridHeight = 5 * STRING_SPACING + DOT_SIZE + 10; // Extra 10px bottom padding for shadows
 
@@ -231,35 +243,44 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
 
   // Calculate fade opacity based on dot position relative to viewport
   const calculateFadeOpacity = (fret: Fret) => {
-    const containerWidth = 568; // Viewport width
+    const containerWidth = 568; // Viewport width (physical container)
     const fadeZoneWidth = 40; // Fade zone width for both sides
-    
+
     // Calculate dot X position (including dot radius for accurate edge detection)
-    const dotX = fret === 'open' ? getOpenStringX() + DOT_RADIUS : getFretX(fret) + DOT_RADIUS;
-    
-    // Calculate visible area boundaries
+    // Scale the dot position to match the zoom level
+    const rawDotX =
+      fret === 'open'
+        ? getOpenStringX() + DOT_RADIUS
+        : getFretX(fret) + DOT_RADIUS;
+    const dotX = rawDotX * zoomLevel;
+
+    // Calculate visible area boundaries (scaled by zoom)
     const viewportLeft = scrollLeft;
     const viewportRight = scrollLeft + containerWidth;
     const leftFadeEndX = viewportLeft + fadeZoneWidth; // Left fade zone (only when scrolled)
     const rightFadeStartX = viewportRight - fadeZoneWidth; // Right fade zone
-    
+
     // If dot is completely outside viewport, hide it
-    if (dotX < viewportLeft - DOT_SIZE || dotX > viewportRight + DOT_SIZE) {
+    const scaledDotSize = DOT_SIZE * zoomLevel;
+    if (
+      dotX < viewportLeft - scaledDotSize ||
+      dotX > viewportRight + scaledDotSize
+    ) {
       return 0;
     }
-    
+
     // Left side fade - only apply when user has scrolled (scrollLeft > 0)
     if (scrollLeft > 0 && dotX < leftFadeEndX) {
       const fadeProgress = (leftFadeEndX - dotX) / fadeZoneWidth;
       return Math.max(0, 1 - fadeProgress);
     }
-    
+
     // Right side fade - always apply
     if (dotX > rightFadeStartX) {
       const fadeProgress = (dotX - rightFadeStartX) / fadeZoneWidth;
       return Math.max(0, 1 - fadeProgress);
     }
-    
+
     // Normal visibility for dots not in fade zones
     return 1;
   };
@@ -291,9 +312,11 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
 
     // Determine dot styling
     const getDotClassName = () => {
-      const neumorphicShadow = 'shadow-[2px_2px_4px_rgba(0,0,0,0.4),-1px_-1px_3px_rgba(255,255,255,0.1)]';
-      const neumorphicShadowPressed = 'shadow-[inset_1px_1px_3px_rgba(0,0,0,0.4),inset_-1px_-1px_2px_rgba(255,255,255,0.1)]';
-      
+      const neumorphicShadow =
+        'shadow-[2px_2px_4px_rgba(0,0,0,0.4),-1px_-1px_3px_rgba(255,255,255,0.1)]';
+      const neumorphicShadowPressed =
+        'shadow-[inset_1px_1px_3px_rgba(0,0,0,0.4),inset_-1px_-1px_2px_rgba(255,255,255,0.1)]';
+
       if (isSelected) {
         // If dot has multiple selections, add orange ring
         const multipleSelectionRing = hasMultipleSelections
@@ -304,8 +327,14 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
         return `bg-blue-500 text-white border-2 border-blue-300 ${neumorphicShadow}`;
       } else if (isCurrentNoteAtPos) {
         return `bg-orange-500 text-white animate-pulse ${neumorphicShadow} ring-2 ring-orange-300`;
-      } else if (fret !== 'open' && [3, 5, 7, 9, 12, 15, 17, 19, 21, 24].includes(fret)) {
+      } else if (
+        fret !== 'open' &&
+        fret !== 12 &&
+        [3, 5, 7, 9, 15, 17, 19, 21, 24].includes(fret)
+      ) {
         return `bg-slate-500 hover:bg-blue-400 text-white ${neumorphicShadow} hover:${neumorphicShadowPressed}`;
+      } else if (fret === 12) {
+        return `bg-slate-500/80 hover:bg-blue-400 text-white ${neumorphicShadow} hover:${neumorphicShadowPressed}`;
       } else {
         return `bg-slate-600 hover:bg-blue-400 text-white ${neumorphicShadow} hover:${neumorphicShadowPressed}`;
       }
@@ -318,7 +347,7 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
 
     const dotKey = `${stringIndex},${fret}`;
     const isDropdownOpen = openDropdown === dotKey;
-    
+
     // Calculate fade opacity for this dot
     const fadeOpacity = calculateFadeOpacity(fret);
     const finalOpacity = isBeingDragged ? 0.5 * fadeOpacity : fadeOpacity;
@@ -333,7 +362,8 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
           height: DOT_SIZE,
           zIndex: 20,
           pointerEvents: 'auto',
-          transition: 'background-color 0.15s ease-in-out, opacity 0.3s ease-out',
+          transition:
+            'background-color 0.15s ease-in-out, opacity 0.3s ease-out',
           opacity: finalOpacity,
           transform: 'rotateX(0deg)',
         }}
@@ -371,7 +401,13 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
         ) : isCurrentNoteAtPos ? (
           <span className="text-xs text-white">♫</span>
         ) : fret === 'open' ? (
-          <span className="text-xs font-semibold text-white select-none">{stringName}</span>
+          <span className="text-xs font-semibold text-white select-none">
+            {stringName}
+          </span>
+        ) : fret === 12 ? (
+          <span className="text-xs font-semibold text-white select-none opacity-50">
+            {stringName}
+          </span>
         ) : null}
       </div>
     );
@@ -429,6 +465,8 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
             style={{
               width: gridWidth,
               height: gridHeight,
+              // Adjust vertical offset to center visible strings only
+              transform: stringCount === 5 ? 'translateY(-16px)' : 'none', // Move up by half string spacing for 5-string (16px = 32px/2)
             }}
           >
             {/* Horizontal grid lines */}
@@ -565,12 +603,16 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
                   const x1 =
                     pos1.fret === 'open'
                       ? CENTER_OFFSET
-                      : CENTER_OFFSET + FRET_OFFSET + (pos1.fret - 1) * FRET_SPACING;
+                      : CENTER_OFFSET +
+                        FRET_OFFSET +
+                        (pos1.fret - 1) * FRET_SPACING;
                   const y1 = absoluteVisualPosition1 * STRING_SPACING; // Use absolute visual position for Y position
                   const x2 =
                     pos2.fret === 'open'
                       ? CENTER_OFFSET
-                      : CENTER_OFFSET + FRET_OFFSET + (pos2.fret - 1) * FRET_SPACING;
+                      : CENTER_OFFSET +
+                        FRET_OFFSET +
+                        (pos2.fret - 1) * FRET_SPACING;
                   const y2 = absoluteVisualPosition2 * STRING_SPACING; // Use absolute visual position for Y position
 
                   // Add DOT_RADIUS to get center positions
@@ -646,6 +688,55 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
                   const offsetY2 =
                     lineY2 + (isOverlapping ? offset * offsetDirection : 0);
 
+                  // Connection lines should not fade with dots to avoid visual chaos
+                  // Only fade lines when the line itself extends into fade zones
+                  const calculateLineFadeOpacity = () => {
+                    const containerWidth = 568; // Viewport width (physical container)
+                    const fadeZoneWidth = 40; // Fade zone width for both sides
+
+                    // Scale line positions to match zoom level
+                    const scaledLineX1 = lineX1 * zoomLevel;
+                    const scaledLineX2 = lineX2 * zoomLevel;
+
+                    // Calculate visible area boundaries
+                    const viewportLeft = scrollLeft;
+                    const viewportRight = scrollLeft + containerWidth;
+                    const leftFadeEndX = viewportLeft + fadeZoneWidth;
+                    const rightFadeStartX = viewportRight - fadeZoneWidth;
+
+                    // Get the center point of the line for fade calculation
+                    const lineCenterX = (scaledLineX1 + scaledLineX2) / 2;
+
+                    let fadeOpacity = 1;
+
+                    // Only fade the line if its CENTER is in a fade zone
+                    // This prevents visible dots from appearing disconnected
+
+                    // Left side fade - only apply when user has scrolled
+                    if (scrollLeft > 0 && lineCenterX < leftFadeEndX) {
+                      const fadeProgress =
+                        (leftFadeEndX - lineCenterX) / fadeZoneWidth;
+                      fadeOpacity = Math.min(
+                        fadeOpacity,
+                        Math.max(0, 1 - fadeProgress),
+                      );
+                    }
+
+                    // Right side fade - always apply
+                    if (lineCenterX > rightFadeStartX) {
+                      const fadeProgress =
+                        (lineCenterX - rightFadeStartX) / fadeZoneWidth;
+                      fadeOpacity = Math.min(
+                        fadeOpacity,
+                        Math.max(0, 1 - fadeProgress),
+                      );
+                    }
+
+                    return fadeOpacity;
+                  };
+
+                  const lineFadeOpacity = calculateLineFadeOpacity();
+
                   // Add the line element
                   connectionElements.push(
                     <line
@@ -657,6 +748,7 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
                       stroke={lineColor}
                       strokeWidth="3"
                       strokeLinecap="round"
+                      opacity={lineFadeOpacity}
                     />,
                   );
 

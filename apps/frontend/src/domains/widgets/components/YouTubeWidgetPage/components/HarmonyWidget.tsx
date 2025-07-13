@@ -81,6 +81,8 @@ function HarmonyWidgetContent({
   const [isExpanded, setIsExpanded] = useState(false);
   const [volume, setVolume] = useState(80);
   const [isMuted, setIsMuted] = useState(false);
+  const [canAddLeft, setCanAddLeft] = useState(true);
+  const [canAddRight, setCanAddRight] = useState(true);
 
   // Use refs to track previous values and prevent infinite loops
   const prevSelectedExerciseRef = useRef<any>(null);
@@ -193,126 +195,165 @@ function HarmonyWidgetContent({
   if (!isVisible) return null;
 
   return (
-    <div className={`relative bg-slate-800 rounded-2xl px-4 py-1 h-24 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] transition-all duration-300 select-none ${
-      volume === 0 || isMuted ? 'bg-slate-850 grayscale brightness-100' : ''
-    }`}>
-        <div className="flex items-center justify-between h-full">
-          {/* Volume Knob */}
-          <div className="flex justify-center items-center w-20 h-16">
-            <VolumeKnob 
-              value={volume} 
-              onChange={(val) => {
-                console.log('Harmony volume:', val);
-                setVolume(val);
-                if (val > 0) {
-                  setIsMuted(false);
-                }
-              }} 
-              color="bg-blue-400"
-              size={45}
-              isMuted={isMuted}
-              onMuteToggle={() => {
-                setIsMuted(!isMuted);
-              }}
-            />
-          </div>
-          
-          {/* Title/Subtitle OR Settings Panel */}
-          <div className="flex-1">
-            <div className="flex items-center justify-between px-4 py-2">
-              {!isExpanded ? (
-                <>
-                  {/* Title and Subtitle */}
-                  <div className="flex-1">
-                    <h3 className={`font-semibold text-sm transition-all duration-300 ${
-                      volume === 0 ? 'text-slate-600' : 'text-white'
-                    }`}>
-                      Harmony
-                    </h3>
-                    <p className={`text-xs transition-all duration-300 ${
-                      volume === 0 ? 'text-slate-600' : 'text-slate-400'
-                    }`}>
-                      {progression[currentChord]} - {currentProgressionName.length > 12 ? currentProgressionName.substring(0, 12) + '...' : currentProgressionName}
-                    </p>
-                  </div>
-                  
-                  {/* Clickable Indicator */}
-                  <button
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800 shadow-[5px_5px_10px_rgba(0,0,0,0.5),-5px_-5px_10px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] transition-all duration-300 cursor-pointer ${
-                      volume === 0 ? 'opacity-50' : ''
-                    }`}
-                  >
-                    {/* Compact chord display */}
-                    <div className="flex gap-1 text-xs font-mono">
-                      {progression.slice(0, 4).map((chord, idx) => (
-                        <span
-                          key={idx}
-                          className={`transition-all duration-200 ${
-                            idx === currentChord
-                              ? 'text-blue-400 font-bold'
-                              : 'text-slate-500'
-                          }`}
-                        >
-                          {chord.length > 3 ? chord.substring(0, 3) : chord}
-                        </span>
-                      ))}
-                    </div>
-                  </button>
-                </>
-              ) : (
-                <>
-                  {/* Settings content in single row */}
-                  <div className="flex items-center gap-2 flex-1">
-                    <span className="text-xs font-medium text-blue-400 whitespace-nowrap">Progression</span>
-                    <select
-                      value={currentProgressionName}
-                      onChange={(e) => handleProgressionDropdownChange(e.target.value)}
-                      className="flex-1 px-2 py-1 text-xs bg-slate-800 rounded-md shadow-[inset_1px_1px_2px_rgba(0,0,0,0.5),inset_-1px_-1px_2px_rgba(255,255,255,0.1)] text-blue-400 border-0 outline-none"
-                    >
-                      {Object.keys(chordProgressions).map((name) => (
-                        <option key={name} value={name}>
-                          {name}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-bold text-blue-400">{progression[currentChord]}</span>
-                      <div className="flex gap-1">
-                        {progression.slice(0, 2).map((chord, index) => (
-                          <button
-                            key={index}
-                            onClick={() => {
-                              setCurrentChord(index);
-                              onNextChord();
-                            }}
-                            className={`w-4 h-4 rounded text-xs font-medium transition-all duration-200 ${
-                              index === currentChord
-                                ? 'bg-blue-500 text-white shadow-[inset_1px_1px_2px_rgba(0,0,0,0.3),inset_-1px_-1px_2px_rgba(255,255,255,0.2)]'
-                                : 'bg-slate-800 text-blue-300 shadow-[2px_2px_4px_rgba(0,0,0,0.5),-2px_-2px_4px_rgba(255,255,255,0.1)] hover:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.5),inset_-1px_-1px_2px_rgba(255,255,255,0.1)]'
-                            }`}
-                          >
-                            {chord.substring(0, 2)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={() => setIsExpanded(false)}
-                    className="w-5 h-5 rounded-md bg-slate-800 shadow-[2px_2px_4px_rgba(0,0,0,0.5),-2px_-2px_4px_rgba(255,255,255,0.1)] hover:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.5),inset_-1px_-1px_2px_rgba(255,255,255,0.1)] transition-all duration-200 text-slate-400 text-xs flex items-center justify-center ml-4"
-                    title="Close settings"
-                  >
-                    ×
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+    <div
+      className={`relative bg-slate-800 rounded-2xl px-4 py-1 h-24 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] transition-all duration-300 select-none ${
+        volume === 0 || isMuted ? 'bg-slate-850 grayscale brightness-100' : ''
+      }`}
+    >
+      <div className="flex items-center justify-between h-full">
+        {/* Volume Knob */}
+        <div className="flex justify-center items-center w-20 h-16">
+          <VolumeKnob
+            value={volume}
+            onChange={(val) => {
+              console.log('Harmony volume:', val);
+              setVolume(val);
+              if (val > 0) {
+                setIsMuted(false);
+              }
+            }}
+            color="bg-blue-400"
+            size={45}
+            isMuted={isMuted}
+            onMuteToggle={() => {
+              setIsMuted(!isMuted);
+            }}
+          />
         </div>
 
-        
+        {/* Title/Subtitle OR Settings Panel */}
+        <div className="flex-1">
+          <div className="flex items-center justify-between px-4 py-2">
+            {!isExpanded ? (
+              <>
+                {/* Title and Subtitle */}
+                <div className="flex-1">
+                  <h3
+                    className={`font-semibold text-sm transition-all duration-300 ${
+                      volume === 0 ? 'text-slate-600' : 'text-white'
+                    }`}
+                  >
+                    Harmony
+                  </h3>
+                  <p
+                    className={`text-xs transition-all duration-300 ${
+                      volume === 0 ? 'text-slate-600' : 'text-slate-400'
+                    }`}
+                  >
+                    {progression[currentChord]} -{' '}
+                    {currentProgressionName.length > 12
+                      ? currentProgressionName.substring(0, 12) + '...'
+                      : currentProgressionName}
+                  </p>
+                </div>
+
+                {/* Clickable Indicator */}
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800 shadow-[5px_5px_10px_rgba(0,0,0,0.5),-5px_-5px_10px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] transition-all duration-300 cursor-pointer ${
+                    volume === 0 ? 'opacity-50' : ''
+                  }`}
+                >
+                  {/* Compact chord display */}
+                  <div className="flex gap-1 text-sm font-mono">
+                    {progression.map((chord, idx) => (
+                      <span
+                        key={idx}
+                        className={`transition-all duration-200 ${
+                          idx === currentChord
+                            ? 'text-blue-400 font-bold'
+                            : 'text-slate-500'
+                        }`}
+                      >
+                        {chord.length > 3 ? chord.substring(0, 3) : chord}
+                      </span>
+                    ))}
+                  </div>
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Settings content - chord slots with add buttons */}
+                <div className="flex items-center gap-3 flex-1 justify-center">
+                  {/* Add button - left side */}
+                  {canAddLeft && (
+                    <button
+                      onClick={() => {
+                        const newProgression = ['', ...progression];
+                        handleSyncProgressionChange(newProgression);
+                        setCurrentChord(0);
+                        setCanAddLeft(false);
+                      }}
+                      className="w-6 h-6 rounded-full bg-slate-800 text-blue-400 text-xs font-bold shadow-[2px_2px_4px_rgba(0,0,0,0.5),-2px_-2px_4px_rgba(255,255,255,0.1)] hover:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.5),inset_-1px_-1px_2px_rgba(255,255,255,0.1)] transition-all duration-200 flex items-center justify-center"
+                      title="Add chord at beginning"
+                    >
+                      +
+                    </button>
+                  )}
+
+                  {/* Chord Input Slots */}
+                  <div className="flex gap-2">
+                    {progression.map((chord, slotIndex) => (
+                      <div
+                        key={slotIndex}
+                        className="flex flex-col items-center gap-1"
+                      >
+                        <input
+                          type="text"
+                          value={chord || ''}
+                          onChange={(e) => {
+                            const newProgression = [...progression];
+                            newProgression[slotIndex] = e.target.value;
+                            handleSyncProgressionChange(newProgression);
+                          }}
+                          onFocus={() => setCurrentChord(slotIndex)}
+                          className={`w-12 h-8 text-xs font-mono text-center rounded-md border-0 outline-none transition-all duration-200 ${
+                            slotIndex === currentChord
+                              ? 'bg-blue-500 text-white shadow-[inset_2px_2px_4px_rgba(0,0,0,0.3),inset_-2px_-2px_4px_rgba(255,255,255,0.2)]'
+                              : 'bg-slate-800 text-blue-300 shadow-[inset_1px_1px_2px_rgba(0,0,0,0.5),inset_-1px_-1px_2px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]'
+                          }`}
+                          placeholder="C7"
+                        />
+                        <div
+                          className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                            slotIndex === currentChord && isPlaying
+                              ? 'bg-blue-400 shadow-lg shadow-blue-400/50'
+                              : 'bg-slate-700'
+                          }`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add button - right side */}
+                  {canAddRight && (
+                    <button
+                      onClick={() => {
+                        const newProgression = [...progression, ''];
+                        handleSyncProgressionChange(newProgression);
+                        setCurrentChord(progression.length);
+                        setCanAddRight(false);
+                      }}
+                      className="w-6 h-6 rounded-full bg-slate-800 text-blue-400 text-xs font-bold shadow-[2px_2px_4px_rgba(0,0,0,0.5),-2px_-2px_4px_rgba(255,255,255,0.1)] hover:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.5),inset_-1px_-1px_2px_rgba(255,255,255,0.1)] transition-all duration-200 flex items-center justify-center"
+                      title="Add chord at end"
+                    >
+                      +
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => setIsExpanded(false)}
+                  className="w-5 h-5 rounded-md bg-slate-800 shadow-[2px_2px_4px_rgba(0,0,0,0.5),-2px_-2px_4px_rgba(255,255,255,0.1)] hover:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.5),inset_-1px_-1px_2px_rgba(255,255,255,0.1)] transition-all duration-200 text-slate-400 text-xs flex items-center justify-center ml-4"
+                  title="Close settings"
+                >
+                  ×
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
+    </div>
   );
 }

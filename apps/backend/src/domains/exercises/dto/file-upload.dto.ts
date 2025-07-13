@@ -36,6 +36,10 @@ export class FileUploadDto {
   @IsOptional()
   @IsBoolean()
   createExercise?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  storeFile?: boolean;
 }
 
 export class MusicXMLUploadConfigDto {

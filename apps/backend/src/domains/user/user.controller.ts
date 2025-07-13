@@ -2,6 +2,7 @@ import type { UserProfile, UserProfileData } from '@bassnotion/contracts';
 import { userProfileSchema } from '@bassnotion/contracts';
 import {
   Controller,
+  Get,
   Put,
   Delete,
   Body,
@@ -17,11 +18,91 @@ import { DatabaseService } from '../../infrastructure/database/database.service.
 import { ApiResponse } from '../../shared/types/api.types.js';
 import { AuthGuard } from './auth/guards/auth.guard.js';
 
-@Controller('user')
+@Controller('api/user')
 export class UserController {
   private readonly logger = new Logger(UserController.name);
 
   constructor(private readonly db: DatabaseService) {}
+
+  @Get('profile')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getProfile(
+    @Req() request: FastifyRequest & { user: any },
+  ): Promise<ApiResponse<UserProfile & { role: string }>> {
+    this.logger.debug(`Profile request for user: ${request.user.id}`);
+
+    try {
+      // Get the user profile from the database
+      const { data: profile, error } = await this.db.supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', request.user.id)
+        .single();
+
+      if (error) {
+        this.logger.error('Error fetching profile:', error);
+        return {
+          success: false,
+          message: 'Failed to fetch profile',
+          error: {
+            code: 'PROFILE_FETCH_FAILED',
+            details: error.message,
+          },
+        };
+      }
+
+      if (!profile) {
+        return {
+          success: false,
+          message: 'Profile not found',
+          error: {
+            code: 'PROFILE_NOT_FOUND',
+            details: 'User profile not found',
+          },
+        };
+      }
+
+      const userData: UserProfile & { role: string } = {
+        id: profile.id,
+        email: profile.email,
+        displayName: profile.display_name,
+        bio: profile.bio,
+        avatarUrl: profile.avatar_url,
+        createdAt: profile.created_at,
+        updatedAt: profile.updated_at,
+        role: profile.role || 'user', // Include role information
+        preferences: {
+          theme: 'light', // Default theme
+          emailNotifications: true, // Default setting
+          defaultMetronomeSettings: {
+            enabled: false,
+            tempo: 120,
+            beatsPerMeasure: 4,
+            subdivision: 1,
+            accentFirstBeat: true,
+            volume: 75,
+          },
+        },
+      };
+
+      return {
+        success: true,
+        message: 'Profile fetched successfully',
+        data: userData,
+      };
+    } catch (error) {
+      this.logger.error('Unexpected error fetching profile:', error);
+      return {
+        success: false,
+        message: 'Internal server error',
+        error: {
+          code: 'INTERNAL_ERROR',
+          details: 'Failed to fetch profile',
+        },
+      };
+    }
+  }
 
   @Put('profile')
   @UseGuards(AuthGuard)

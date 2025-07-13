@@ -17,6 +17,8 @@ import {
   FileUploadErrorDto,
   FileUploadType,
 } from '../dto/file-upload.dto.js';
+import { SupabaseService } from '../../../infrastructure/supabase/supabase.service.js';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class FileUploadService {
@@ -24,13 +26,161 @@ export class FileUploadService {
   private musicXMLParser: MusicXMLParser;
   private midiParser: MIDIFileParser;
 
-  constructor() {
+  constructor(private readonly supabaseService: SupabaseService) {
     this.musicXMLParser = new MusicXMLParser();
     this.midiParser = new MIDIFileParser();
   }
 
   /**
-   * Process uploaded file and convert to exercise
+   * Store file in Supabase Storage and return file path
+   */
+  private async storeFileInBucket(
+    file: any,
+    exerciseId: string,
+  ): Promise<{ filePath: string; publicUrl: string }> {
+    try {
+      const supabase = this.supabaseService.getClient();
+
+      // Generate unique filename to avoid conflicts
+      const timestamp = Date.now();
+      const fileName = `${timestamp}-${file.originalname}`;
+      const filePath = `exercises/${exerciseId}/${fileName}`;
+
+      // Upload file to exercise-files bucket
+      const { data, error } = await supabase.storage
+        .from('exercise-files')
+        .upload(filePath, file.buffer, {
+          contentType: file.mimetype,
+          upsert: false, // Don't overwrite existing files
+        });
+
+      if (error) {
+        this.logger.error(`Error uploading file to storage: ${error.message}`);
+        throw new Error(`File storage failed: ${error.message}`);
+      }
+
+      // Get public URL for the uploaded file
+      const { data: publicUrlData } = supabase.storage
+        .from('exercise-files')
+        .getPublicUrl(filePath);
+
+      this.logger.log(`File stored successfully: ${filePath}`);
+
+      return {
+        filePath: data.path,
+        publicUrl: publicUrlData.publicUrl,
+      };
+    } catch (error) {
+      this.logger.error('Error in file storage:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete file from Supabase Storage
+   */
+  async deleteFileFromBucket(filePath: string): Promise<void> {
+    try {
+      const supabase = this.supabaseService.getClient();
+
+      const { error } = await supabase.storage
+        .from('exercise-files')
+        .remove([filePath]);
+
+      if (error) {
+        this.logger.error(`Error deleting file from storage: ${error.message}`);
+        throw new Error(`File deletion failed: ${error.message}`);
+      }
+
+      this.logger.log(`File deleted successfully: ${filePath}`);
+    } catch (error) {
+      this.logger.error('Error in file deletion:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process uploaded file, store in bucket, and convert to exercise
+   */
+  async processAndStoreFile(
+    file: any,
+    uploadDto: FileUploadDto,
+    userId: string,
+    configDto?: MusicXMLUploadConfigDto | MIDIUploadConfigDto,
+  ): Promise<
+    | (FileUploadResponseDto & {
+        storageInfo?: { filePath: string; publicUrl: string };
+      })
+    | FileUploadErrorDto
+  > {
+    const startTime = performance.now();
+
+    try {
+      this.logger.log(
+        `Processing and storing uploaded file: ${file.originalname} (${file.size} bytes)`,
+      );
+
+      // Validate file
+      this.validateUploadedFile(file, uploadDto.fileType);
+
+      // Generate exercise ID for storage path
+      const exerciseId = uuidv4();
+
+      // Store file in Supabase Storage first
+      let storageInfo: { filePath: string; publicUrl: string } | undefined;
+      if (uploadDto.storeFile !== false) {
+        storageInfo = await this.storeFileInBucket(file, exerciseId);
+      }
+
+      // Process file based on type
+      let result: FileUploadResponseDto;
+
+      if (uploadDto.fileType === FileUploadType.MUSICXML) {
+        result = await this.processMusicXMLFile(
+          file,
+          uploadDto,
+          configDto as MusicXMLUploadConfigDto,
+        );
+      } else {
+        result = await this.processMIDIFile(
+          file,
+          uploadDto,
+          configDto as MIDIUploadConfigDto,
+        );
+      }
+
+      // Ensure exercise has the correct ID if created
+      if (result.exercise) {
+        result.exercise.id = exerciseId;
+      }
+
+      result.processingTimeMs = performance.now() - startTime;
+
+      this.logger.log(
+        `Successfully processed and stored ${file.originalname} in ${result.processingTimeMs.toFixed(2)}ms`,
+      );
+
+      return {
+        ...result,
+        storageInfo,
+      };
+    } catch (error) {
+      this.logger.error(`Error processing file ${file.originalname}:`, error);
+
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+        errorCode: 'FILE_PROCESSING_ERROR',
+        details: error instanceof Error ? error.stack : undefined,
+        originalFileName: file.originalname,
+        fileSize: file.size,
+      };
+    }
+  }
+
+  /**
+   * Process uploaded file and convert to exercise (legacy method)
    */
   async processUploadedFile(
     file: any,

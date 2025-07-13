@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useCallback } from 'react';
 // Import our new components
 import { YouTubeVideoSection } from './YouTubeVideoSection';
 import { TutorialInfoCard } from './TutorialInfoCard';
-import { ExerciseSelectorCard } from './ExerciseSelectorCard';
 import { FretboardCard } from './FretboardCard';
 import Fretboard3D from './Fretboard3D';
 
@@ -16,6 +15,7 @@ import { useAudioFretboard } from '@/domains/widgets/hooks/useAudioFretboard';
 import { Button } from '@/shared/components/ui/button';
 import { Play, Pause, Volume2, Settings } from 'lucide-react';
 import { SyncProvider, useSyncContext } from '../base/SyncProvider';
+import { UserIndicator } from '@/domains/user/components/UserIndicator';
 import type { Tutorial } from '@bassnotion/contracts';
 
 interface YouTubeWidgetPageProps {
@@ -95,7 +95,6 @@ function YouTubeWidgetPageContent({
     // Clear selection when changing string count to avoid invalid selections
     setSelectedDots(new Map());
   }, []);
-
 
   // Extract specific values from syncState to prevent excessive re-renders
   const selectedExercise = syncState.exercise.selectedExercise;
@@ -179,21 +178,18 @@ function YouTubeWidgetPageContent({
       {/* Mobile-first central container */}
       <div className="mx-auto px-4 py-6 max-w-[600px]">
         <div className="space-y-4">
+          {/* User Indicator - Show login status and role */}
+          <div className="flex justify-end">
+            <UserIndicator />
+          </div>
+
           {/* YouTube Video Section - Standalone at the top */}
           <YouTubeVideoSection tutorialData={tutorialData} />
 
           {/* Tutorial Info Card - Separate card with tutorial details */}
           <TutorialInfoCard tutorialData={tutorialData} />
 
-          {/* 2. Exercise Selector Card - Clickable exercise list */}
-          <ExerciseSelectorCard
-            tutorialData={tutorialData}
-            tutorialSlug={tutorialSlug}
-            exercises={exercises}
-            onExerciseSelect={handleExerciseSelect}
-          />
-
-          {/* 3. Interactive Fretboard Card - Toggle between 2D and 3D modes */}
+          {/* 2. Interactive Fretboard Card with integrated Exercise Selector */}
           <FretboardCard
             is3DMode={is3DMode}
             onToggle3DMode={() => setIs3DMode(!is3DMode)}
@@ -203,6 +199,10 @@ function YouTubeWidgetPageContent({
             setStringCount3D={setStringCount}
             cameraMode={cameraMode}
             setCameraMode={setCameraMode}
+            tutorialData={tutorialData}
+            tutorialSlug={tutorialSlug}
+            exercises={exercises}
+            onExerciseSelect={handleExerciseSelect}
           />
 
           {/* 4. Global Playback Controls Card - Dedicated panel for global controls */}

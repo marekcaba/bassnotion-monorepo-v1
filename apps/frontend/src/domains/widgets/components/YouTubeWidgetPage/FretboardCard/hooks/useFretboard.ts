@@ -84,12 +84,14 @@ export const useFretboard = (syncProps: SyncedWidgetRenderProps) => {
     // Direct access to key state values for convenience
     stringCount: state.stringCount,
     tiltAngle: state.tiltAngle,
+    maxFrets: state.maxFrets,
     selectedDots: state.selectedDots,
     frets: state.frets,
 
     // Direct access to key functions for convenience
     handleStringCountChange: state.handleStringCountChange,
     handleTiltAngleChange: state.handleTiltAngleChange,
+    handleMaxFretsChange: state.handleMaxFretsChange,
     checkIsDotSelected: state.checkIsDotSelected,
     checkGetDotOrder: state.checkGetDotOrder,
     checkHasSelectedDots: state.checkHasSelectedDots,

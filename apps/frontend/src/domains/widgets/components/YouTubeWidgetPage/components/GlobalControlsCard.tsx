@@ -1,10 +1,7 @@
 'use client';
 
 import React from 'react';
-import {
-  Card,
-  CardContent,
-} from '@/shared/components/ui/card';
+import { Card, CardContent } from '@/shared/components/ui/card';
 import { GlobalControls } from './GlobalControls';
 import { SyncedWidget } from '../../base';
 import type { SyncedWidgetRenderProps } from '../../base';
@@ -32,7 +29,11 @@ export function GlobalControlsCard() {
   );
 }
 
-function GlobalControlsCardContent({ syncProps }: { syncProps: SyncedWidgetRenderProps }) {
+function GlobalControlsCardContent({
+  syncProps,
+}: {
+  syncProps: SyncedWidgetRenderProps;
+}) {
   const widgetState = useWidgetPageState();
 
   // Handle tempo changes from global controls
@@ -41,7 +42,7 @@ function GlobalControlsCardContent({ syncProps }: { syncProps: SyncedWidgetRende
     syncProps.sync.actions.emitEvent(
       'TEMPO_CHANGE',
       { tempo: newTempo },
-      'high'
+      'high',
     );
   };
 
@@ -50,7 +51,7 @@ function GlobalControlsCardContent({ syncProps }: { syncProps: SyncedWidgetRende
     syncProps.sync.actions.emitEvent(
       'TIMELINE_UPDATE',
       { currentTime: time },
-      'high'
+      'high',
     );
   };
 

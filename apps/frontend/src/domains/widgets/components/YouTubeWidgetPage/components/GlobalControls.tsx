@@ -1,9 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Volume2, Heart, SkipBack, SkipForward, Star, Music, RotateCw, Upload, FileText } from 'lucide-react';
+import {
+  Play,
+  Pause,
+  Volume2,
+  Heart,
+  SkipBack,
+  SkipForward,
+  Star,
+  Music,
+  RotateCw,
+  Upload,
+  FileText,
+} from 'lucide-react';
 import { TempoKnob } from './TempoKnob';
+import { LooperKnob } from './LooperKnob';
 import { LoopGridStrip } from './LoopGridStrip';
+import { SheetPlayerToolbar } from './SheetPlayerToolbar';
 import type { LoopRegion } from './LoopGridStrip';
-import type { Exercise, ExerciseNote, NoteDuration } from '@bassnotion/contracts';
+import type {
+  MusicalExercise as Exercise,
+  ExerciseNote,
+  NoteDuration,
+} from '@bassnotion/contracts';
+import { MIDIFileParser } from '@bassnotion/contracts';
 import { Button } from '@/shared/components/ui/button';
 
 // VexFlow imports for sheet music
@@ -204,8 +223,12 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
   // Sheet music state
   const [currentPosition, setCurrentPosition] = useState(2);
   const [isLooping, setIsLooping] = useState(true);
-  const [importedExercise, setImportedExercise] = useState<Exercise | null>(null);
-  const [importSource, setImportSource] = useState<'musicxml' | 'midi' | null>(null);
+  const [importedExercise, setImportedExercise] = useState<Exercise | null>(
+    null,
+  );
+  const [importSource, setImportSource] = useState<'musicxml' | 'midi' | null>(
+    null,
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -247,19 +270,21 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
   };
 
   // Handle file input change
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    
+
     if (fileExtension === 'xml' || fileExtension === 'musicxml') {
       // Process MusicXML file
       try {
         const text = await file.text();
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(text, 'text/xml');
-        
+
         // Create a mock exercise from the MusicXML (simplified version)
         const exercise: Exercise = {
           id: `imported-${Date.now()}`,
@@ -269,11 +294,12 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
           timeSignature: { numerator: 4, denominator: 4 },
           key: 'C',
           difficulty: 'intermediate',
-          tags: ['imported'],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          duration: 0,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         };
-        
+
         handleMusicXMLUpload(exercise);
       } catch (error) {
         handleUploadError('Failed to parse MusicXML file');
@@ -281,29 +307,33 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
     } else if (fileExtension === 'mid' || fileExtension === 'midi') {
       // Process MIDI file using the actual MIDI parser
       try {
-        const { MIDIFileParser } = await import('@bassnotion/contracts');
         const arrayBuffer = await file.arrayBuffer();
         const parser = new MIDIFileParser();
-        
+
         const parsingResult = await parser.parseFile(arrayBuffer, file.name);
-        
+
         if (!parsingResult.success) {
-          throw new Error(`MIDI parsing failed: ${parsingResult.errors.join(', ')}`);
+          throw new Error(
+            `MIDI parsing failed: ${parsingResult.errors.join(', ')}`,
+          );
         }
-        
+
         if (!parsingResult.exercise) {
-          throw new Error('No bass track found in MIDI file. Try a MIDI file with bass content.');
+          throw new Error(
+            'No bass track found in MIDI file. Try a MIDI file with bass content.',
+          );
         }
-        
+
         handleMIDIUpload(parsingResult.exercise);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to parse MIDI file';
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to parse MIDI file';
         handleUploadError(errorMessage);
       }
     } else {
       handleUploadError(`Unsupported file format: ${fileExtension}`);
     }
-    
+
     // Clear the input value so the same file can be selected again
     event.target.value = '';
   };
@@ -433,7 +463,7 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
       renderer.resize(svgWidth, svgHeight);
       const context = renderer.getContext();
       context.setFont('Arial', 10);
-      
+
       // Set black colors for notes and staff
       context.setFillStyle('#000000'); // Black for notes
       context.setStrokeStyle('#000000'); // Black for lines
@@ -481,8 +511,23 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
       for (let i = 0; i < measures.length; i++) {
         const measureNotes = measures[i];
 
+        // Add null safety check for measureNotes
+        if (!measureNotes) {
+          vexFlowMeasures.push([]);
+          continue;
+        }
+
+        // Define timeline item type for proper TypeScript support
+        interface TimelineItem {
+          type: 'note' | 'rest';
+          startBeat: number;
+          endBeat?: number;
+          note?: ExerciseNote;
+          duration: number | string;
+        }
+
         // Create a timeline-based approach for proper rhythm placement
-        const timeline = [];
+        const timeline: TimelineItem[] = [];
 
         // Add all notes to timeline with their exact beat positions
         measureNotes.forEach((note) => {
@@ -507,7 +552,7 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
         timeline.sort((a, b) => a.startBeat - b.startBeat);
 
         // Fill gaps with rests to create complete rhythm
-        const completeTimeline = [];
+        const completeTimeline: TimelineItem[] = [];
         let currentBeat = 0;
 
         for (const item of timeline) {
@@ -543,7 +588,7 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
 
           // Add the note
           completeTimeline.push(item);
-          currentBeat = Math.max(currentBeat, item.endBeat);
+          currentBeat = Math.max(currentBeat, item.endBeat || item.startBeat);
         }
 
         // Add final rest to complete the measure if needed
@@ -562,7 +607,7 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
 
         // Convert timeline to VexFlow notes
         const vexFlowNotes = completeTimeline.map((item) => {
-          if (item.type === 'note') {
+          if (item.type === 'note' && item.note) {
             const noteKey = convertNoteToVexFlow(item.note);
             const duration = convertNoteDurationToVexFlow(
               item.note.duration || 'quarter',
@@ -595,12 +640,12 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
               keys: ['d/3'],
               duration: item.duration + 'r',
             });
-            
+
             restNote.setStyle({
               fillStyle: '#000000',
               strokeStyle: '#000000',
             });
-            
+
             return restNote;
           }
         });
@@ -667,7 +712,128 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
 
   // Determine if loop is actually enabled based on loopRegion
   const isLoopActive = loopRegion !== null;
-  
+
+  // Looper knob state - track selected bars
+  const [selectedLooperBars, setSelectedLooperBars] = React.useState<
+    number | null
+  >(null);
+
+  // Sheet Player Toolbar Handlers
+  const handleToolbarImport = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleToolbarSave = async () => {
+    if (!activeExercise) return;
+
+    try {
+      // TODO: Implement save to backend/library functionality
+      console.log('Saving exercise:', activeExercise.title);
+      // This would call an API to save the exercise to the database
+      alert(
+        'Save functionality will be implemented - exercise would be saved to library',
+      );
+    } catch (error) {
+      console.error('Error saving exercise:', error);
+      alert('Failed to save exercise');
+    }
+  };
+
+  const handleToolbarExportPDF = () => {
+    if (!containerRef.current || !activeExercise) return;
+
+    try {
+      // Get the SVG element from VexFlow
+      const svgElement = containerRef.current.querySelector('svg');
+      if (!svgElement) {
+        alert('No sheet music to export');
+        return;
+      }
+
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert('Please allow popups for PDF export');
+        return;
+      }
+
+      // Create a print-friendly HTML document
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>${activeExercise.title} - Sheet Music</title>
+            <style>
+              body { margin: 0; padding: 20px; background: white; }
+              .header { text-align: center; margin-bottom: 20px; }
+              .sheet-music { text-align: center; }
+              svg { max-width: 100%; height: auto; }
+              @media print {
+                body { margin: 0; }
+                .header { margin-bottom: 10px; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>${activeExercise.title}</h1>
+              <p>Tempo: ${activeExercise.bpm} BPM | Key: ${activeExercise.key} | Time: ${activeExercise.timeSignature?.numerator}/${activeExercise.timeSignature?.denominator}</p>
+            </div>
+            <div class="sheet-music">
+              ${svgData}
+            </div>
+          </body>
+        </html>
+      `;
+
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+
+      // Trigger print dialog
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      alert('Failed to export PDF');
+    }
+  };
+
+  const handleToolbarReset = () => {
+    setImportedExercise(null);
+    setImportSource(null);
+    setCurrentPosition(2);
+  };
+
+  // Looper knob handler
+  const handleLooperBarSelect = (bars: number | null) => {
+    setSelectedLooperBars(bars);
+
+    if (bars === null) {
+      // Turn off looper
+      if (onLoopRegionChange) {
+        onLoopRegionChange(null);
+      }
+    } else {
+      // Set loop region for selected number of bars
+      if (onLoopRegionChange) {
+        onLoopRegionChange({
+          startMeasure: 1,
+          endMeasure: bars,
+          startBeat: 1,
+          endBeat: selectedExercise?.timeSignature?.numerator || 4,
+        });
+      }
+    }
+
+    // Call the toggle function if provided
+    if (onToggleLoop) {
+      onToggleLoop();
+    }
+  };
+
   // Handle loop toggle - set 1 bar loop when enabled
   const handleLoopToggle = () => {
     if (!isLoopActive) {
@@ -686,7 +852,7 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
         onLoopRegionChange(null);
       }
     }
-    
+
     // Always call the toggle function if provided
     if (onToggleLoop) {
       onToggleLoop();
@@ -720,12 +886,16 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
           background: #475569;
           border-radius: 50%;
           cursor: pointer;
-          box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5), -2px -2px 4px rgba(255, 255, 255, 0.1);
+          box-shadow:
+            2px 2px 4px rgba(0, 0, 0, 0.5),
+            -2px -2px 4px rgba(255, 255, 255, 0.1);
           transition: all 0.15s ease;
         }
         .slider-thumb::-webkit-slider-thumb:hover {
           transform: scale(1.1);
-          box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.5), inset -1px -1px 2px rgba(255, 255, 255, 0.1);
+          box-shadow:
+            inset 1px 1px 2px rgba(0, 0, 0, 0.5),
+            inset -1px -1px 2px rgba(255, 255, 255, 0.1);
         }
         .slider-thumb::-moz-range-thumb {
           width: 12px;
@@ -734,15 +904,19 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
           border-radius: 50%;
           cursor: pointer;
           border: none;
-          box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5), -2px -2px 4px rgba(255, 255, 255, 0.1);
+          box-shadow:
+            2px 2px 4px rgba(0, 0, 0, 0.5),
+            -2px -2px 4px rgba(255, 255, 255, 0.1);
           transition: all 0.15s ease;
         }
         .slider-thumb::-moz-range-thumb:hover {
           transform: scale(1.1);
-          box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.5), inset -1px -1px 2px rgba(255, 255, 255, 0.1);
+          box-shadow:
+            inset 1px 1px 2px rgba(0, 0, 0, 0.5),
+            inset -1px -1px 2px rgba(255, 255, 255, 0.1);
         }
       `}</style>
-      
+
       {/* Global Controls - Neumorphic style matching subwidgets */}
       <div className="bg-slate-800 rounded-2xl p-4 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)]">
         {/* Compact Player Layout */}
@@ -771,7 +945,7 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
               <button
                 onClick={onTogglePlayback}
                 className="rounded-full bg-blue-500 shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 flex items-center justify-center"
-                style={{ width: '60px', height: '60px' }}
+                style={{ width: '78px', height: '78px' }}
               >
                 {isPlaying ? (
                   <Pause className="w-5 h-5 text-white" />
@@ -788,71 +962,21 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
             </div>
           </div>
 
-          {/* Right Side - Looper Controls (Three Rows) */}
-          <div className="flex flex-col justify-center min-w-[6rem] gap-1">
-            {/* Top Row - Loop Toggle */}
-            <div className="flex items-center justify-center gap-2">
-              <button 
-                onClick={handleLoopToggle}
-                className={`relative w-10 h-5 rounded-full transition-all duration-300 ${
-                  isLoopActive 
-                    ? 'bg-blue-500' 
-                    : 'bg-slate-600'
-                }`}
-              >
-                <div 
-                  className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-md transition-all duration-300 ${
-                    isLoopActive ? 'left-5' : 'left-0.5'
-                  }`}
-                />
-              </button>
-              <span className="text-xs font-medium text-slate-300">LOOPER</span>
-            </div>
-            
-            {/* Bar Presets Dropdown */}
-            <select
-              onChange={(e) => handlePresetClick(parseInt(e.target.value))}
-              className="w-full px-2 py-1 text-xs bg-slate-800 text-slate-300 rounded shadow-[inset_1px_1px_2px_rgba(0,0,0,0.5),inset_-1px_-1px_2px_rgba(255,255,255,0.1)] border border-slate-600/30 focus:outline-none focus:border-blue-500/50"
-              defaultValue=""
-            >
-              <option value="" disabled>Select bars</option>
-              <option value="1">1 bar</option>
-              <option value="2">2 bars</option>
-              <option value="4">4 bars</option>
-              <option value="8">8 bars</option>
-              <option value="16">16 bars</option>
-            </select>
-
-            {/* Import Controls */}
-            <div className="flex items-center gap-1 mt-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-slate-300 hover:text-white text-xs px-2 py-1 h-auto"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="w-3 h-3 mr-1" />
-                Import
-              </Button>
-              {isImported && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-slate-300 hover:text-red-400 text-xs px-2 py-1 h-auto"
-                  onClick={handleClearImported}
-                >
-                  Clear
-                </Button>
-              )}
-              {/* Hidden file input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xml,.musicxml,.mid,.midi"
-                onChange={handleFileSelect}
-                style={{ display: 'none' }}
-              />
-            </div>
+          {/* Right Side - Looper Knob */}
+          <div className="flex justify-center items-center min-w-[5rem] py-2">
+            <LooperKnob
+              selectedBars={selectedLooperBars}
+              onBarSelect={handleLooperBarSelect}
+              size={50}
+            />
+            {/* Hidden file input for sheet player toolbar */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xml,.musicxml,.mid,.midi"
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+            />
           </div>
         </div>
 
@@ -863,24 +987,23 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
             currentTime={currentTime}
             duration={duration}
             loopRegion={loopRegion}
-            onLoopRegionChange={onLoopRegionChange || (() => {})}
+            onLoopRegionChange={onLoopRegionChange || (() => undefined)}
             className="[&>div]:bg-transparent [&>div]:shadow-none [&>div]:p-0"
           />
         </div>
 
         {/* Sheet Music Section - Integrated within the same panel */}
         <div className="mt-4 border-t border-slate-700/30 pt-4">
-
-
           {/* VexFlow Sheet Music */}
           {exerciseNotes.length > 0 ? (
             <div
-              className="w-full overflow-x-auto"
-              style={{ 
+              className="w-full overflow-x-auto scrollbar-hide"
+              style={{
                 maxHeight: '250px',
                 borderRadius: '28px',
                 background: 'linear-gradient(135deg, #bfbfbf 0%, #d1d1d1 100%)',
-                boxShadow: 'inset 5px 5px 10px #b3b3b3, inset -5px -5px 10px #dfdfdf'
+                boxShadow:
+                  'inset 5px 5px 10px #b3b3b3, inset -5px -5px 10px #dfdfdf',
               }}
             >
               <div
@@ -890,19 +1013,31 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
               />
             </div>
           ) : (
-            <div 
+            <div
               className="flex items-center justify-center h-32 flex-col gap-4"
               style={{
                 borderRadius: '28px',
                 background: 'linear-gradient(135deg, #bfbfbf 0%, #d1d1d1 100%)',
-                boxShadow: 'inset 5px 5px 10px #b3b3b3, inset -5px -5px 10px #dfdfdf'
+                boxShadow:
+                  'inset 5px 5px 10px #b3b3b3, inset -5px -5px 10px #dfdfdf',
               }}
             >
-              <span className="text-slate-600 text-sm">No exercise selected</span>
+              <span className="text-slate-600 text-sm">
+                No exercise selected
+              </span>
             </div>
           )}
-        </div>
 
+          {/* Sheet Player Toolbar */}
+          <SheetPlayerToolbar
+            exercise={activeExercise}
+            onImport={handleToolbarImport}
+            onSave={handleToolbarSave}
+            onExportPDF={handleToolbarExportPDF}
+            onReset={handleToolbarReset}
+            disabled={false}
+          />
+        </div>
       </div>
     </>
   );
