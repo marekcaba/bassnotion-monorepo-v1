@@ -1,9 +1,11 @@
 import { supabase } from '@/infrastructure/supabase';
 import { apiClient } from '@/lib/api-client';
 import type {
-  DatabaseExercise as Exercise,
+  Exercise,
   GetExercisesResponse,
   GetExerciseResponse,
+  NoteDuration,
+  MusicalPosition,
 } from '@bassnotion/contracts';
 import { MOCK_EXERCISES } from './mockExercises';
 
@@ -25,8 +27,10 @@ const DEFAULT_EXERCISE: Exercise = {
   description: 'A simple bass exercise to get you started',
   difficulty: 'beginner',
   duration: 30000, // 30 seconds
+  duration_beats: 8, // 2 bars at 4/4
   bpm: 80,
   key: 'C',
+  timeSignature: { numerator: 4, denominator: 4 },
   chord_progression: ['C', 'F', 'G', 'C'],
   notes: [
     {
@@ -34,7 +38,8 @@ const DEFAULT_EXERCISE: Exercise = {
       timestamp: 0,
       string: 4, // E string (bottom string)
       fret: 0, // Open E
-      duration: 500,
+      duration: 'quarter' as NoteDuration,
+      position: { measure: 1, beat: 1, subdivision: 0 } as MusicalPosition,
       note: 'E',
       color: 'blue',
     },
@@ -43,7 +48,8 @@ const DEFAULT_EXERCISE: Exercise = {
       timestamp: 500,
       string: 4,
       fret: 3, // G note
-      duration: 500,
+      duration: 'quarter' as NoteDuration,
+      position: { measure: 1, beat: 2, subdivision: 0 } as MusicalPosition,
       note: 'G',
       color: 'green',
     },
@@ -52,7 +58,8 @@ const DEFAULT_EXERCISE: Exercise = {
       timestamp: 1000,
       string: 3, // A string
       fret: 0, // Open A
-      duration: 500,
+      duration: 'quarter' as NoteDuration,
+      position: { measure: 1, beat: 3, subdivision: 0 } as MusicalPosition,
       note: 'A',
       color: 'yellow',
     },
@@ -61,7 +68,8 @@ const DEFAULT_EXERCISE: Exercise = {
       timestamp: 1500,
       string: 3,
       fret: 3, // C note
-      duration: 500,
+      duration: 'quarter' as NoteDuration,
+      position: { measure: 1, beat: 4, subdivision: 0 } as MusicalPosition,
       note: 'C',
       color: 'red',
     },
@@ -70,7 +78,8 @@ const DEFAULT_EXERCISE: Exercise = {
       timestamp: 2000,
       string: 2, // D string
       fret: 0, // Open D
-      duration: 500,
+      duration: 'quarter' as NoteDuration,
+      position: { measure: 2, beat: 1, subdivision: 0 } as MusicalPosition,
       note: 'D',
       color: 'purple',
     },
@@ -79,7 +88,8 @@ const DEFAULT_EXERCISE: Exercise = {
       timestamp: 2500,
       string: 2,
       fret: 2, // E note
-      duration: 500,
+      duration: 'quarter' as NoteDuration,
+      position: { measure: 2, beat: 2, subdivision: 0 } as MusicalPosition,
       note: 'E',
       color: 'blue',
     },
@@ -88,7 +98,8 @@ const DEFAULT_EXERCISE: Exercise = {
       timestamp: 3000,
       string: 1, // G string
       fret: 0, // Open G
-      duration: 500,
+      duration: 'quarter' as NoteDuration,
+      position: { measure: 2, beat: 3, subdivision: 0 } as MusicalPosition,
       note: 'G',
       color: 'green',
     },
@@ -97,7 +108,8 @@ const DEFAULT_EXERCISE: Exercise = {
       timestamp: 3500,
       string: 1,
       fret: 2, // A note
-      duration: 500,
+      duration: 'quarter' as NoteDuration,
+      position: { measure: 2, beat: 4, subdivision: 0 } as MusicalPosition,
       note: 'A',
       color: 'yellow',
     },
@@ -224,11 +236,11 @@ export async function getExercises(): Promise<GetExercisesResponse> {
         firstExerciseKeys: Object.keys(data[0] || {}),
         notesField: data[0]?.notes,
         notesType: typeof data[0]?.notes,
-        allExerciseKeys: data.map((ex) => Object.keys(ex)),
+        allExerciseKeys: data.map((ex: any) => Object.keys(ex)),
       });
 
       // Parse JSONB notes field from Supabase
-      const exercises = data.map((exercise) => {
+      const exercises = data.map((exercise: any) => {
         console.log(
           '🎯 Processing exercise:',
           exercise.title,

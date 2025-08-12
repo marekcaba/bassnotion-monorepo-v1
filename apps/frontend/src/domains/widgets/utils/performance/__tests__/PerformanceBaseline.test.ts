@@ -11,7 +11,7 @@ import {
 } from '../PerformanceBaseline';
 
 // Mock the PerformanceMonitor
-vi.mock('../../../../playback/services/PerformanceMonitor.js', () => ({
+vi.mock('../../../../playback/services/PerformanceMonitor', () => ({
   PerformanceMonitor: {
     getInstance: vi.fn(() => ({
       initialize: vi.fn(),
@@ -45,7 +45,7 @@ const mockPerformance = {
     }
     if (type === 'resource') {
       return [
-        { name: 'app.js', startTime: 100, responseEnd: 300 },
+        { name: 'app', startTime: 100, responseEnd: 300 },
         { name: 'styles.css', startTime: 150, responseEnd: 250 },
         { name: 'font.woff', startTime: 200, responseEnd: 400 },
       ];

@@ -1,4 +1,4 @@
-import type { ExerciseNote } from '../types/fretboard.js';
+import type { ExerciseNote } from '../types/fretboard';
 
 export interface EditCommand {
   execute(): void;

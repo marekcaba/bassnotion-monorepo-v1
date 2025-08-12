@@ -82,11 +82,8 @@ function TeachingTakeawayCardContent({
   useEffect(() => {
     const selectedExercise = syncProps.selectedExercise;
     if (selectedExercise) {
-      console.log(
-        `💡 TeachingTakeaway: Updated for exercise: ${selectedExercise.title || selectedExercise.id}`,
-      );
-      // Here you could update the teaching content based on the selected exercise
-      // For now, we just log the sync event
+      // Update teaching content based on the selected exercise
+      // Exercise synced: { title, id }
     }
   }, [syncProps.selectedExercise]);
 

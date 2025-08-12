@@ -5,9 +5,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AudioSampleManager } from '../AudioSampleManager.js';
-import { SupabaseAssetClient } from '../SupabaseAssetClient.js';
-import { PredictiveLoadingEngine } from '../PredictiveLoadingEngine.js';
+import { AudioSampleManager } from '../AudioSampleManager';
+import { SupabaseAssetClient } from '../SupabaseAssetClient';
+import { PredictiveLoadingEngine } from '../PredictiveLoadingEngine';
 import {
   AudioSampleManagerConfig,
   AudioSampleFormat,
@@ -16,8 +16,8 @@ import {
 } from '@bassnotion/contracts';
 
 // Mock dependencies
-vi.mock('../SupabaseAssetClient.js');
-vi.mock('../PredictiveLoadingEngine.js');
+vi.mock('../SupabaseAssetClient');
+vi.mock('../PredictiveLoadingEngine');
 
 // Mock Web Audio API - Global mock that the test can access
 let mockAudioContext: any;

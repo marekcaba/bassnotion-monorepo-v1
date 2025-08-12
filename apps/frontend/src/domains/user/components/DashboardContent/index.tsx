@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
+import { BassSettingsCard } from '../BassSettingsCard';
 
 interface DashboardCard {
   id: string;
@@ -80,6 +81,18 @@ export function DashboardContent() {
   const [cards, setCards] = useState<DashboardCard[]>(initialCards);
   const [gridRef] = useAutoAnimate();
 
+  const handleBassSettingsChange = (settings: {
+    stringCount: 4 | 5 | 6;
+    maxFrets: number;
+  }) => {
+    // Emit a custom event that other parts of the app can listen to
+    window.dispatchEvent(
+      new CustomEvent('bass-settings-changed', {
+        detail: settings,
+      }),
+    );
+  };
+
   const addRandomCard = () => {
     const availableCards = extraCards.filter(
       // TODO: Review non-null assertion - consider null safety
@@ -117,6 +130,9 @@ export function DashboardContent() {
 
   return (
     <div className="space-y-4">
+      {/* Bass Configuration */}
+      <BassSettingsCard onSettingsChange={handleBassSettingsChange} />
+
       {/* Controls */}
       <div className="flex gap-2 flex-wrap">
         <Button

@@ -7,9 +7,9 @@
  * Part of Story 2.2: Task 7, Subtask 7.4
  */
 
-import { AssetManager } from '../AssetManager.js';
-import { MusicalContextAnalyzer } from './MusicalContextAnalyzer.js';
-import { InstrumentAssetOptimizer } from './InstrumentAssetOptimizer.js';
+import { AssetManager } from '../AssetManager';
+import { MusicalContextAnalyzer } from './MusicalContextAnalyzer';
+import { InstrumentAssetOptimizer } from './InstrumentAssetOptimizer';
 import type {
   N8nPayloadConfig,
   AssetLoadResult,
@@ -17,7 +17,7 @@ import type {
   ProcessedAssetManifest,
   AssetLoadingGroup,
   AssetOptimization,
-} from '../../types/audio.js';
+} from '../../types/audio';
 
 export interface N8nIntegrationConfig {
   enableCdnOptimization: boolean;

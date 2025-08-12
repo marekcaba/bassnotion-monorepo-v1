@@ -43,12 +43,30 @@ pnpm nx build @bassnotion/backend
 pnpm nx test @bassnotion/backend
 ```
 
+# PM2 process management (SERVING ONLY)
+pm2 start ecosystem.config.cjs
+pm2 restart bassnotion-frontend
+pm2 restart bassnotion-backend
+pm2 status
+pm2 logs bassnotion-frontend
+pm2 stop bassnotion-frontend
+```
+
 ### ❌ **FORBIDDEN COMMANDS:**
 ```bash
 # NEVER use these:
 npm install    # ❌ 
 npm run build  # ❌
 yarn install   # ❌
+
+# NEVER use these serving commands:
+nx serve @bassnotion/frontend     # ❌ FORBIDDEN
+nx serve @bassnotion/backend      # ❌ FORBIDDEN
+pnpm nx serve frontend            # ❌ FORBIDDEN
+pnpm nx serve backend             # ❌ FORBIDDEN
+pnpm serve                        # ❌ FORBIDDEN
+npm run dev                       # ❌ FORBIDDEN
+npm start                         # ❌ FORBIDDEN
 ```
 
 ---

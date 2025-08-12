@@ -28,7 +28,6 @@ Operational steps are in [Operational Workflow](#operational-workflow). Embody o
 - **Identify Target Agent:** Match user's request against an agent's `Title` or `Name` in `AgentConfig`. If ambiguous, ask for clarification.
 
 - **If an Agent Persona is identified:**
-
   1.  Inform user: "Activating the {Title} Agent, {Name}..."
   2.  **Load Agent Context (from `AgentConfig` definitions):**
       a. For the agent, retrieve its `Persona` reference (e.g., `"personas#pm"` or `"analyst.md"`), and any lists/references for `templates`, `checklists`, `data`, and `tasks`.

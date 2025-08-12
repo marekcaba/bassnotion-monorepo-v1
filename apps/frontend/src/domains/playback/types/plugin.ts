@@ -5,10 +5,10 @@
  * with comprehensive lifecycle management and Epic 2 integration support.
  *
  * Part of Story 2.1: Task 1, Subtask 1.4
+ * Updated for Story 3.18.3: Removed direct Tone import for clean DI
  */
 
-import * as Tone from 'tone';
-import type { ErrorContext } from '../services/errors/base';
+import type { ErrorContext } from '../services/errors/base.js';
 
 /**
  * Plugin categories for organization and filtering
@@ -190,19 +190,25 @@ export interface PluginEvents {
 
 /**
  * Plugin audio processing context
+ * Updated for Story 3.18.3: Clean dependency injection
  */
 export interface PluginAudioContext {
   audioContext: AudioContext;
   sampleRate: number;
   bufferSize: number;
   currentTime: number;
+  
+  // Latency info
+  baseLatency?: number;
+  outputLatency?: number;
 
-  // Tone.js integration
-  toneContext: Tone.BaseContext;
-  transport: typeof Tone.Transport;
+  // Tone.js integration via dependency injection
+  getTone?: () => any; // Returns the Tone instance
+  toneContext?: any; // Tone.BaseContext type
+  transport?: any; // Tone.Transport type
 
   // Performance monitoring
-  performanceMetrics: {
+  performanceMetrics?: {
     processingTime: number;
     cpuUsage: number;
     memoryUsage: number;
@@ -323,9 +329,10 @@ export interface AudioPlugin {
 
   /**
    * Tone.js integration
+   * Story 3.18.3: Using generic types for clean DI
    */
-  getToneNode?(): Tone.ToneAudioNode | null;
-  connectToTone?(destination: Tone.ToneAudioNode): void;
+  getToneNode?(): any; // Returns Tone.ToneAudioNode
+  connectToTone?(destination: any): void; // Accepts Tone.ToneAudioNode
   disconnectFromTone?(): void;
 
   /**

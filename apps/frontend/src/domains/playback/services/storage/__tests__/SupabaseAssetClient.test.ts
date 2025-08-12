@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { SupabaseAssetClient, StorageError } from '../SupabaseAssetClient.js';
+import { SupabaseAssetClient, StorageError } from '../SupabaseAssetClient';
 import {
   SupabaseAssetClientConfig,
   CDNOptimizationConfig,

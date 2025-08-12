@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
   Play,
   Pause,
@@ -12,11 +18,7 @@ import {
   Upload,
   FileText,
 } from 'lucide-react';
-import { TempoKnob } from './TempoKnob';
-import { LooperKnob } from './LooperKnob';
-import { LoopGridStrip } from './LoopGridStrip';
 import { SheetPlayerToolbar } from './SheetPlayerToolbar';
-import type { LoopRegion } from './LoopGridStrip';
 import type {
   MusicalExercise as Exercise,
   ExerciseNote,
@@ -24,6 +26,8 @@ import type {
 } from '@bassnotion/contracts';
 import { MIDIFileParser } from '@bassnotion/contracts';
 import { Button } from '@/shared/components/ui/button';
+import { useCorePlaybackEngine } from '@/domains/playback/hooks/useCorePlaybackEngine';
+import { useAudio, useTransport } from '@/domains/playback/hooks';
 
 // VexFlow imports for sheet music
 import * as VF from 'vexflow';
@@ -186,40 +190,93 @@ const convertDurationToRests = (duration: number): string[] => {
 };
 
 interface GlobalControlsProps {
-  isPlaying: boolean;
-  currentTime: number;
-  tempo: number;
-  masterVolume: number;
-  syncEnabled: boolean;
   selectedExercise?: Exercise;
   duration: number;
+  // Fretboard actions
+  is3DMode?: boolean;
+  tiltAngle?: number;
+  hasSelectedDots?: boolean;
+  cameraMode?: 'overview' | 'action';
+  // Fretboard action callbacks
+  onToggle3DMode?: () => void;
+  onTiltAngleChange?: (angle: number) => void;
+  onCameraModeChange?: (mode: 'overview' | 'action') => void;
+  onResetFretboard?: () => void;
+  // Loop settings
+  loopRegion?: {
+    startMeasure: number;
+    endMeasure: number;
+    startBeat?: number;
+    endBeat?: number;
+  } | null;
   isLoopEnabled?: boolean;
-  loopRegion?: LoopRegion | null;
-  onTogglePlayback: () => void;
-  onCurrentTimeChange: (time: number) => void;
-  onTempoChange: (tempo: number) => void;
-  onVolumeChange: (volume: number) => void;
-  onLoopRegionChange?: (region: LoopRegion | null) => void;
-  onToggleLoop?: () => void;
 }
 
 export const GlobalControls: React.FC<GlobalControlsProps> = ({
-  isPlaying,
-  currentTime,
-  tempo,
-  masterVolume,
-  syncEnabled,
   selectedExercise,
   duration,
-  isLoopEnabled = false,
+  is3DMode = false,
+  tiltAngle = 35,
+  hasSelectedDots = false,
+  cameraMode = 'overview',
+  onToggle3DMode,
+  onTiltAngleChange,
+  onCameraModeChange,
+  onResetFretboard,
   loopRegion,
-  onTogglePlayback,
-  onCurrentTimeChange,
-  onTempoChange,
-  onVolumeChange,
-  onLoopRegionChange,
-  onToggleLoop,
+  isLoopEnabled = false,
 }) => {
+  // Get audio services from new hooks
+  const { isReady: audioReady, getTone, initialize: initializeAudio } = useAudio();
+  const Tone = audioReady ? getTone() : null;
+  const Transport = Tone?.Transport;
+  const toneReady = audioReady;
+
+  // Core Playback Engine integration
+  const { state: playbackState, controls: playbackControls } =
+    useCorePlaybackEngine({
+      autoInitialize: true,
+      enablePerformanceMonitoring: true,
+    });
+
+  // Use transport directly for playback control
+  const transport = useTransport();
+
+  // Debug: Log when component mounts
+  useEffect(() => {
+    console.log('🎮 GlobalControls component mounted');
+    return () => {
+      console.log('🎮 GlobalControls component unmounted');
+    };
+  }, []);
+
+  // Widget Sync integration
+  const {
+    actions: syncActions,
+    isPlaying,
+    currentTime,
+    tempo: syncTempo,
+    masterVolume: syncMasterVolume,
+  } = useWidgetSync({
+    widgetId: 'global-controls',
+    subscribeTo: [
+      'PLAYBACK_STATE',
+      'EXERCISE_CHANGE',
+      'TEMPO_CHANGE',
+      'VOLUME_CHANGE',
+    ],
+    throttleUpdates: false, // Immediate updates for global controls
+  });
+
+  // Local state for immediate UI responsiveness during dragging
+  const [localTempo, setLocalTempo] = useState(syncTempo || 120);
+  const [localVolume, setLocalVolume] = useState(syncMasterVolume || 1.0); // Set default to 100%
+  const [isDraggingTempo, setIsDraggingTempo] = useState(false);
+
+  // Track the last user-initiated values to prevent feedback loops
+  const lastUserTempo = useRef(syncTempo || 120);
+  const lastUserVolume = useRef(syncMasterVolume || 1.0); // Set default to 100%
+  const ignoreNextSyncTempo = useRef(false);
   // Sheet music state
   const [currentPosition, setCurrentPosition] = useState(2);
   const [isLooping, setIsLooping] = useState(true);
@@ -295,6 +352,7 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
           key: 'C',
           difficulty: 'intermediate',
           duration: 0,
+          duration_beats: 16, // Default to 4 bars
           is_active: true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -338,27 +396,216 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
     event.target.value = '';
   };
 
+  // Debounced sync to prevent rapid fire events during slider drag
+  const tempoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Prevent multiple simultaneous playback toggles
+  const [isTogglingPlayback, setIsTogglingPlayback] = useState(false);
+
+  // Global playback control handlers
+  const handlePlayButtonClick = async () => {
+    console.log('🎵 PLAY BUTTON CLICKED - handlePlayButtonClick called');
+
+    if (isTogglingPlayback) {
+      console.log('Already toggling playback, ignoring duplicate call');
+      return;
+    }
+
+    try {
+      setIsTogglingPlayback(true);
+
+      // Initialize audio if not ready (handles user gesture requirement)
+      if (!audioReady) {
+        console.log('🎵 Audio not ready, initializing...');
+        try {
+          // Initialize through useAudio hook which now properly delegates to CoreServices
+          await initializeAudio();
+          console.log('🎵 Audio initialized successfully');
+        } catch (error) {
+          console.error('🎵 Failed to initialize audio:', error);
+          setIsTogglingPlayback(false);
+          return;
+        }
+      }
+
+      // AudioContext will be started by CorePlaybackEngine/Orchestrator when needed
+      const currentTone = audioReady ? getTone() : null;
+      if (audioReady && currentTone && currentTone.context.state !== 'running') {
+        console.log(
+          'AudioContext not running yet - will be started by playback engine',
+        );
+      }
+
+      // Re-get Tone/Transport after potential initialization
+      const updatedTone = getTone();
+      const updatedTransport = updatedTone?.Transport;
+      
+      // Configure Transport loop if enabled
+      if (updatedTransport && isLoopEnabled && loopRegion && selectedExercise) {
+        const bpm = selectedExercise.bpm || 120;
+        const timeSignature = selectedExercise.timeSignature || {
+          numerator: 4,
+          denominator: 4,
+        };
+        const beatsPerMeasure = timeSignature.numerator;
+
+        // Calculate loop start and end times in Transport time format
+        // Transport time format: "measure:beat:subdivision"
+        const startMeasure = loopRegion.startMeasure - 1; // 0-indexed
+        const startBeat = (loopRegion.startBeat || 1) - 1; // 0-indexed
+        const endMeasure = loopRegion.endMeasure - 1; // 0-indexed
+        const endBeat = (loopRegion.endBeat || beatsPerMeasure) - 1; // 0-indexed
+
+        // Set Transport loop points
+        updatedTransport.loopStart = `${startMeasure}:${startBeat}:0`;
+        updatedTransport.loopEnd = `${endMeasure}:${endBeat}:0`;
+        updatedTransport.loop = true;
+
+        console.log(
+          `🎵 Loop enabled: ${updatedTransport.loopStart} to ${updatedTransport.loopEnd}`,
+        );
+      } else if (updatedTransport) {
+        // Disable loop if not enabled
+        updatedTransport.loop = false;
+        console.log('🎵 Loop disabled');
+      }
+
+      // Use transport directly for playback control
+      console.log(`Using transport. Current isPlaying: ${isPlaying}`);
+      if (isPlaying) {
+        // Pause playback
+        await transport.pause();
+        syncActions.emitEvent('PAUSE', {}, 'critical');
+        syncActions.emitEvent('PLAYBACK_STATE', { isPlaying: false }, 'high');
+        // Still emit STOP event to stop sustained notes
+        syncActions.emitEvent('STOP', {}, 'high');
+      } else {
+        // Start playback
+        await transport.start();
+        syncActions.emitEvent('PLAY', {}, 'critical');
+        syncActions.emitEvent('PLAYBACK_STATE', { isPlaying: true }, 'high');
+      }
+    } catch (error) {
+      console.error('Error toggling playback:', error);
+    } finally {
+      setIsTogglingPlayback(false);
+    }
+  };
+
+  const handleTempoChange = useCallback(
+    async (newTempo: number) => {
+      try {
+        // Update local state immediately for responsive UI
+        setLocalTempo(newTempo);
+        lastUserTempo.current = newTempo;
+
+        // Set flag to ignore the next sync update to prevent feedback
+        ignoreNextSyncTempo.current = true;
+
+        // Update tempo using transport
+        await transport.setTempo(newTempo);
+
+        // Clear any pending sync
+        if (tempoTimeoutRef.current) {
+          clearTimeout(tempoTimeoutRef.current);
+        }
+
+        // Debounce the sync event to prevent rapid fire during slider drag
+        tempoTimeoutRef.current = setTimeout(() => {
+          syncActions.emitEvent('TEMPO_CHANGE', { tempo: newTempo }, 'high');
+          // Reset ignore flag after sync completes
+          setTimeout(() => {
+            ignoreNextSyncTempo.current = false;
+          }, 200);
+        }, 100); // 100ms debounce for sync events only
+      } catch (error) {
+        console.error('Error setting tempo:', error);
+      }
+    },
+    [transport, syncActions],
+  );
+
+  // Sync local state with external changes when not dragging
+  useEffect(() => {
+    if (
+      !isDraggingTempo &&
+      !ignoreNextSyncTempo.current &&
+      syncTempo !== undefined
+    ) {
+      // Only update if the sync value is significantly different to avoid micro-adjustments
+      const tempoThreshold = 1; // Allow 1 BPM difference
+      if (Math.abs(syncTempo - localTempo) > tempoThreshold) {
+        setLocalTempo(syncTempo);
+      }
+    }
+  }, [syncTempo, isDraggingTempo]); // Remove localTempo from deps to avoid loops
+
   // Sync with global playback state for timeline position
   useEffect(() => {
-    const globalCurrentTime = currentTime;
-    if (globalCurrentTime >= 0 && exerciseNotes.length > 0) {
+    if (currentTime >= 0 && exerciseNotes.length > 0) {
       // Convert time to sheet music position (simplified mapping)
       const maxPosition = exerciseNotes.length;
       const newPosition =
-        Math.floor((globalCurrentTime % (maxPosition * 1000)) / 1000) + 1;
+        Math.floor((currentTime % (maxPosition * 1000)) / 1000) + 1;
       if (newPosition !== currentPosition && newPosition <= maxPosition) {
         setCurrentPosition(newPosition);
       }
     }
   }, [currentTime, currentPosition, exerciseNotes.length]);
 
-  // Sync tempo with global state and exercise BPM
+  // Set volume to 100% on mount
   useEffect(() => {
-    const globalTempo = tempo || exerciseBpm;
-    if (globalTempo && globalTempo !== tempo) {
-      // Update local tempo state if needed
+    // Only set volume once on mount
+    if (playbackControls) {
+      playbackControls.setMasterVolume(1.0);
     }
-  }, [tempo, exerciseBpm]);
+  }, []); // Empty dependency array - only run once on mount
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (tempoTimeoutRef.current) {
+        clearTimeout(tempoTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Drag event handlers for responsive UI
+  const handleTempoMouseDown = useCallback(() => {
+    setIsDraggingTempo(true);
+    ignoreNextSyncTempo.current = true;
+  }, []);
+
+  const handleTempoMouseUp = useCallback(() => {
+    setIsDraggingTempo(false);
+    // Keep ignoring sync updates for a bit after release
+    setTimeout(() => {
+      ignoreNextSyncTempo.current = false;
+    }, 300);
+  }, []);
+
+  // Add global mouse up listeners to handle drag end even outside the slider
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDraggingTempo) {
+        handleTempoMouseUp();
+      }
+    };
+
+    const handleGlobalTouchEnd = () => {
+      if (isDraggingTempo) {
+        handleTempoMouseUp();
+      }
+    };
+
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    document.addEventListener('touchend', handleGlobalTouchEnd);
+
+    return () => {
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('touchend', handleGlobalTouchEnd);
+    };
+  }, [isDraggingTempo, handleTempoMouseUp]);
 
   // Calculate beats per measure for processing
   const beatsPerMeasure = timeSignature.numerator;
@@ -710,14 +957,6 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
     }
   };
 
-  // Determine if loop is actually enabled based on loopRegion
-  const isLoopActive = loopRegion !== null;
-
-  // Looper knob state - track selected bars
-  const [selectedLooperBars, setSelectedLooperBars] = React.useState<
-    number | null
-  >(null);
-
   // Sheet Player Toolbar Handlers
   const handleToolbarImport = () => {
     fileInputRef.current?.click();
@@ -807,134 +1046,102 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
     setCurrentPosition(2);
   };
 
-  // Looper knob handler
-  const handleLooperBarSelect = (bars: number | null) => {
-    setSelectedLooperBars(bars);
-
-    if (bars === null) {
-      // Turn off looper
-      if (onLoopRegionChange) {
-        onLoopRegionChange(null);
-      }
-    } else {
-      // Set loop region for selected number of bars
-      if (onLoopRegionChange) {
-        onLoopRegionChange({
-          startMeasure: 1,
-          endMeasure: bars,
-          startBeat: 1,
-          endBeat: selectedExercise?.timeSignature?.numerator || 4,
-        });
-      }
-    }
-
-    // Call the toggle function if provided
-    if (onToggleLoop) {
-      onToggleLoop();
-    }
-  };
-
-  // Handle loop toggle - set 1 bar loop when enabled
-  const handleLoopToggle = () => {
-    if (!isLoopActive) {
-      // Enable loop with 1 bar selected
-      if (onLoopRegionChange) {
-        onLoopRegionChange({
-          startMeasure: 1,
-          endMeasure: 1,
-          startBeat: 1,
-          endBeat: selectedExercise?.timeSignature?.numerator || 4,
-        });
-      }
-    } else {
-      // Disable loop
-      if (onLoopRegionChange) {
-        onLoopRegionChange(null);
-      }
-    }
-
-    // Always call the toggle function if provided
-    if (onToggleLoop) {
-      onToggleLoop();
-    }
-  };
-
-  // Handle preset buttons
-  const handlePresetClick = (bars: number) => {
-    if (onLoopRegionChange) {
-      onLoopRegionChange({
-        startMeasure: 1,
-        endMeasure: bars,
-        startBeat: 1,
-        endBeat: selectedExercise?.timeSignature?.numerator || 4,
-      });
-    }
-  };
-
   return (
     <>
       <style jsx>{`
         .slider-thumb {
           --webkit-appearance: none;
           appearance: none;
+          /* Remove transition for smoother real-time updates */
         }
         .slider-thumb::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
-          width: 12px;
-          height: 12px;
-          background: #475569;
+          width: 16px;
+          height: 16px;
+          background: #64748b;
           border-radius: 50%;
-          cursor: pointer;
+          cursor: grab;
           box-shadow:
-            2px 2px 4px rgba(0, 0, 0, 0.5),
-            -2px -2px 4px rgba(255, 255, 255, 0.1);
-          transition: all 0.15s ease;
+            2px 2px 4px rgba(0, 0, 0, 0.6),
+            -2px -2px 4px rgba(255, 255, 255, 0.15);
+          /* Reduce transition duration for more responsive feel */
+          transition:
+            transform 0.05s ease,
+            box-shadow 0.05s ease;
         }
         .slider-thumb::-webkit-slider-thumb:hover {
-          transform: scale(1.1);
+          background: #3b82f6;
+          transform: scale(1.15);
           box-shadow:
-            inset 1px 1px 2px rgba(0, 0, 0, 0.5),
-            inset -1px -1px 2px rgba(255, 255, 255, 0.1);
+            3px 3px 6px rgba(0, 0, 0, 0.7),
+            -3px -3px 6px rgba(255, 255, 255, 0.2);
+        }
+        .slider-thumb::-webkit-slider-thumb:active {
+          cursor: grabbing;
+          background: #2563eb;
+          transform: scale(1.25);
+          box-shadow:
+            inset 2px 2px 4px rgba(0, 0, 0, 0.6),
+            inset -2px -2px 4px rgba(255, 255, 255, 0.15);
         }
         .slider-thumb::-moz-range-thumb {
-          width: 12px;
-          height: 12px;
-          background: #475569;
+          width: 16px;
+          height: 16px;
+          background: #64748b;
           border-radius: 50%;
-          cursor: pointer;
+          cursor: grab;
           border: none;
           box-shadow:
-            2px 2px 4px rgba(0, 0, 0, 0.5),
-            -2px -2px 4px rgba(255, 255, 255, 0.1);
-          transition: all 0.15s ease;
+            2px 2px 4px rgba(0, 0, 0, 0.6),
+            -2px -2px 4px rgba(255, 255, 255, 0.15);
+          /* Reduce transition duration for more responsive feel */
+          transition:
+            transform 0.05s ease,
+            box-shadow 0.05s ease;
         }
         .slider-thumb::-moz-range-thumb:hover {
-          transform: scale(1.1);
+          background: #3b82f6;
+          transform: scale(1.15);
           box-shadow:
-            inset 1px 1px 2px rgba(0, 0, 0, 0.5),
-            inset -1px -1px 2px rgba(255, 255, 255, 0.1);
+            3px 3px 6px rgba(0, 0, 0, 0.7),
+            -3px -3px 6px rgba(255, 255, 255, 0.2);
+        }
+        .slider-thumb::-moz-range-thumb:active {
+          cursor: grabbing;
+          background: #2563eb;
+          transform: scale(1.25);
+          box-shadow:
+            inset 2px 2px 4px rgba(0, 0, 0, 0.6),
+            inset -2px -2px 4px rgba(255, 255, 255, 0.15);
+        }
+
+        /* Optimize slider track for performance */
+        .slider-thumb::-webkit-slider-runnable-track {
+          will-change: auto;
+        }
+        .slider-thumb::-moz-range-track {
+          will-change: auto;
         }
       `}</style>
 
       {/* Global Controls - Neumorphic style matching subwidgets */}
       <div className="bg-slate-800 rounded-2xl p-4 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)]">
-        {/* Compact Player Layout */}
-        <div className="flex items-center gap-4">
-          {/* Left Side - Tempo Knob */}
-          <div className="flex justify-center items-center min-w-[5rem] py-2">
-            <TempoKnob
-              value={tempo}
-              onChange={onTempoChange}
-              min={60}
-              max={200}
-              size={50}
-            />
-          </div>
+        {/* Two-Row Player Layout */}
+        <div className="flex flex-col gap-3">
+          {/* First Row - Mode Button, Playback Controls, View Button */}
+          <div className="flex items-center justify-between">
+            {/* Left Side - 3D Mode Toggle */}
+            <div className="flex justify-center items-center py-2 w-24">
+              <button
+                onClick={onToggle3DMode}
+                className="px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-slate-300"
+              >
+                {is3DMode ? '2D Mode' : '3D Mode'}
+              </button>
+            </div>
 
-          {/* Center - Controls */}
-          <div className="flex-1 flex flex-col gap-2">
-            {/* Control Buttons Row */}
+            {/* Center - Playback Controls */}
             <div className="flex items-center justify-center gap-4">
               <button className="p-2 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200">
                 <Heart className="w-4 h-4 text-slate-400" />
@@ -943,7 +1150,7 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
                 <SkipBack className="w-4 h-4 text-slate-300" />
               </button>
               <button
-                onClick={onTogglePlayback}
+                onClick={handlePlayButtonClick}
                 className="rounded-full bg-blue-500 shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 flex items-center justify-center"
                 style={{ width: '78px', height: '78px' }}
               >
@@ -960,37 +1167,90 @@ export const GlobalControls: React.FC<GlobalControlsProps> = ({
                 <Star className="w-4 h-4 text-slate-400" />
               </button>
             </div>
+
+            {/* Right Side - View Button */}
+            <div className="flex justify-center items-center py-2 w-24">
+              {/* Single Toggle Button */}
+              {is3DMode ? (
+                /* 3D Mode: Camera Controls Toggle */
+                <button
+                  onClick={() =>
+                    onCameraModeChange?.(
+                      cameraMode === 'overview' ? 'action' : 'overview',
+                    )
+                  }
+                  className="px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-blue-400"
+                >
+                  {cameraMode === 'overview' ? 'Overview' : 'Action'}
+                </button>
+              ) : (
+                /* 2D Mode: Tilt Controls Toggle */
+                <button
+                  onClick={() => onTiltAngleChange?.(tiltAngle === 35 ? 0 : 35)}
+                  className="px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-green-400"
+                >
+                  {tiltAngle === 35 ? 'Overview' : 'Flat'}
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Right Side - Looper Knob */}
-          <div className="flex justify-center items-center min-w-[5rem] py-2">
-            <LooperKnob
-              selectedBars={selectedLooperBars}
-              onBarSelect={handleLooperBarSelect}
-              size={50}
-            />
-            {/* Hidden file input for sheet player toolbar */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xml,.musicxml,.mid,.midi"
-              onChange={handleFileSelect}
-              style={{ display: 'none' }}
-            />
+          {/* Second Row - Tempo Slider with +/- Buttons */}
+          <div className="flex items-center gap-3 px-4">
+            {/* Minus Button */}
+            <button
+              onClick={() => handleTempoChange(Math.max(60, localTempo - 5))}
+              className="w-8 h-8 rounded-full bg-slate-800 shadow-[2px_2px_4px_rgba(0,0,0,0.5),-2px_-2px_4px_rgba(255,255,255,0.1)] hover:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.5),inset_-1px_-1px_2px_rgba(255,255,255,0.1)] transition-all duration-200 flex items-center justify-center text-slate-300 text-lg font-bold"
+            >
+              −
+            </button>
+
+            {/* Tempo Slider */}
+            <div className="flex-1 relative">
+              <input
+                type="range"
+                min={60}
+                max={200}
+                value={localTempo}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (!isNaN(value) && isFinite(value)) {
+                    handleTempoChange(value);
+                  }
+                }}
+                onMouseDown={handleTempoMouseDown}
+                onMouseUp={handleTempoMouseUp}
+                onTouchStart={handleTempoMouseDown}
+                onTouchEnd={handleTempoMouseUp}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] slider-thumb"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((localTempo - 60) / (200 - 60)) * 100}%, #475569 ${((localTempo - 60) / (200 - 60)) * 100}%, #475569 100%)`,
+                }}
+              />
+              {/* Tempo Value Display */}
+              <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-800 px-2 py-1 rounded text-xs text-slate-300 shadow-[2px_2px_4px_rgba(0,0,0,0.5),-2px_-2px_4px_rgba(255,255,255,0.1)]">
+                {localTempo} BPM
+              </div>
+            </div>
+
+            {/* Plus Button */}
+            <button
+              onClick={() => handleTempoChange(Math.min(200, localTempo + 5))}
+              className="w-8 h-8 rounded-full bg-slate-800 shadow-[2px_2px_4px_rgba(0,0,0,0.5),-2px_-2px_4px_rgba(255,255,255,0.1)] hover:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.5),inset_-1px_-1px_2px_rgba(255,255,255,0.1)] transition-all duration-200 flex items-center justify-center text-slate-300 text-lg font-bold"
+            >
+              +
+            </button>
           </div>
         </div>
 
-        {/* Loop Grid Strip - Below all controls */}
-        <div className="mt-4">
-          <LoopGridStrip
-            exercise={selectedExercise}
-            currentTime={currentTime}
-            duration={duration}
-            loopRegion={loopRegion}
-            onLoopRegionChange={onLoopRegionChange || (() => undefined)}
-            className="[&>div]:bg-transparent [&>div]:shadow-none [&>div]:p-0"
-          />
-        </div>
+        {/* Hidden file input for sheet player toolbar */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xml,.musicxml,.mid,.midi"
+          onChange={handleFileSelect}
+          style={{ display: 'none' }}
+        />
 
         {/* Sheet Music Section - Integrated within the same panel */}
         <div className="mt-4 border-t border-slate-700/30 pt-4">

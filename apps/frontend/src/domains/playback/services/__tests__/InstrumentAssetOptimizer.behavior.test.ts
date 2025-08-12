@@ -11,12 +11,12 @@ import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   InstrumentAssetOptimizer,
   type InstrumentOptimizationConfig,
-} from '../plugins/InstrumentAssetOptimizer.js';
+} from '../plugins/InstrumentAssetOptimizer';
 import type {
   DeviceCapabilities,
   NetworkCapabilities,
   AssetLoadResult,
-} from '../../types/audio.js';
+} from '../../types/audio';
 
 // Mock AudioBuffer for Node.js environment
 class MockAudioBuffer {
@@ -53,7 +53,7 @@ class MockAudioBuffer {
 const originalAudioBuffer = global.AudioBuffer;
 
 // Mock the AssetManager
-vi.mock('../AssetManager.js', () => ({
+vi.mock('../AssetManager', () => ({
   AssetManager: {
     getInstance: vi.fn(() => ({
       loadAsset: vi.fn(),

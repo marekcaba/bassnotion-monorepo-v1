@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Tone.js Sampler</title>
+    <script src="https://unpkg.com/tone@15.1.3/build/Tone.js"></script>
+</head>
+<body>
+    <h1>Test Tone.js Sampler Loading</h1>
+    <button id="start">Start Test</button>
+    <pre id="log"></pre>
+    
+    <script>
+        const log = (msg) => {
+            document.getElementById('log').textContent += msg + '\n';
+            console.log(msg);
+        };
+
+        document.getElementById('start').addEventListener('click', async () => {
+            try {
+                // Start audio context
+                await Tone.start();
+                log('✅ Tone.js started');
+                
+                // Test with Supabase URL
+                const baseUrl = 'https://htuztkrbuewheehjspcz.supabase.co/storage/v1/object/public/audio-samples/Keyboards/salamander/v8/';
+                const urls = {
+                    'C4': 'C4.mp3'
+                };
+                
+                log(`Creating sampler with baseUrl: ${baseUrl}`);
+                
+                const sampler = new Tone.Sampler({
+                    urls: urls,
+                    baseUrl: baseUrl,
+                    onload: () => {
+                        log('✅ Sampler onload callback fired!');
+                    },
+                    onerror: (err) => {
+                        log(`❌ Sampler onerror: ${err}`);
+                    }
+                });
+                
+                log('Waiting for loaded promise...');
+                
+                // Add timeout
+                const timeout = setTimeout(() => {
+                    log('❌ Timeout after 10 seconds');
+                }, 10000);
+                
+                await sampler.loaded;
+                clearTimeout(timeout);
+                
+                log('✅ Loaded promise resolved!');
+                log(`Has _buffers: ${!!sampler._buffers}`);
+                if (sampler._buffers) {
+                    log(`Buffer count: ${sampler._buffers.size}`);
+                }
+                
+                // Try to play
+                sampler.triggerAttackRelease('C4', '1n');
+                log('✅ Triggered note!');
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>

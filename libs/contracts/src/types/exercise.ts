@@ -75,22 +75,85 @@ export interface ExerciseNote {
   display_symbol?: string; // "h", "p", "/", "\", "x", "()", "~", ">", "T", "P"
 }
 
-// Epic 4 Compatible Exercise Schema
+// Multi-track configuration for unified exercise data architecture
+export interface TrackConfiguration {
+  tracks: {
+    bass: {
+      enabled: boolean;
+      volume: number;
+      pan: number;
+    };
+    drums: {
+      enabled: boolean;
+      volume: number;
+      pan: number;
+    };
+    harmony: {
+      enabled: boolean;
+      volume: number;
+      pan: number;
+    };
+  };
+  globalSettings: {
+    masterVolume: number;
+    tempo: number;
+    metronome: {
+      enabled: boolean;
+      volume: number;
+    };
+  };
+}
+
+// Drum pattern data structure
+export interface DrumPattern {
+  enabled: boolean;
+  pattern: Array<{
+    timestamp: number;
+    type: 'kick' | 'snare' | 'hihat' | 'crash' | 'ride' | 'tom';
+    velocity: number;
+  }>;
+}
+
+// Harmony voicing data structure
+export interface HarmonyVoicing {
+  enabled: boolean;
+  voicing: Array<{
+    timestamp: number;
+    chord: string;
+    notes: string[];
+  }>;
+}
+
+// Epic 4 Compatible Exercise Schema (with multi-track support)
 export interface Exercise {
   id: string;
   title: string;
   description?: string;
   difficulty: ExerciseDifficulty;
-  duration: number; // milliseconds - total duration
+
+  // Musical duration (tempo-independent)
+  duration_beats: number; // Total number of beats in the exercise
+
+  // Legacy duration field (deprecated but kept for backward compatibility)
+  duration?: number; // DEPRECATED: milliseconds - use duration_beats with BPM to calculate runtime
+
   bpm: number;
   key: string;
   timeSignature: TimeSignature; // NEW: e.g., {numerator: 4, denominator: 4}
   chord_progression?: string[]; // Epic 3 Widget integration - array of chord names
+  chord_durations?: number[]; // Duration in beats for each chord
+  chord_positions?: MusicalPosition[]; // Musical position for each chord start
   youtube_video_id?: string; // Epic 3 YouTube integration
   start_timestamp?: number; // YouTube start time in seconds
   end_timestamp?: number; // YouTube end time in seconds
   notes: ExerciseNote[]; // JSON array of Epic 4 compatible notes with musical timing
   teaching_summary?: string; // Epic 3 teaching takeaway
+
+  // Multi-track data (unified exercise-centric architecture)
+  drum_pattern?: DrumPattern; // Drum track data
+  harmony_voicing?: HarmonyVoicing; // Harmony track data
+  track_configuration?: TrackConfiguration; // Multi-track configuration
+
   is_active: boolean;
   created_by?: string;
   created_at: string;

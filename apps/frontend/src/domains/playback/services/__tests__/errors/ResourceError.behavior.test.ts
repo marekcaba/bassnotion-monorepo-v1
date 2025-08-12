@@ -9,12 +9,8 @@ import {
   ResourceError,
   ResourceErrorCode,
   createResourceError,
-} from '../../errors/ResourceError.js';
-import {
-  ErrorSeverity,
-  ErrorCategory,
-  ErrorContext,
-} from '../../errors/base.js';
+} from '../../errors/ResourceError';
+import { ErrorSeverity, ErrorCategory, ErrorContext } from '../../errors/base';
 
 describe('ResourceError Behavioral Tests', () => {
   // ================================

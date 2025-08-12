@@ -4,6 +4,11 @@ export * from './validation/index.js';
 // All types
 export * from './types/index.js';
 
+// Re-export Exercise type directly for convenience
+export type { Exercise } from './types/exercise.js';
+// Alias for backward compatibility
+export type { Exercise as DatabaseExercise } from './types/exercise.js';
+
 // Utilities
 export * from './utils/index.js';
 
@@ -15,8 +20,30 @@ export type {
   SwingConfig,
   MusicalTimingConfig,
 } from './types/musical-timing.js';
-export { MusicalTimeConverter } from './utils/musical-time-converter.js';
+// export { MusicalTimeConverter } from './utils/musical-time-converter.js'; // Moved to services
 export { ExerciseMigration } from './utils/exercise-migration.js';
+
+// Professional Musical Time System (Story 3.15)
+export type {
+  DrumPattern,
+  DrumEvent,
+  DrumArrangement,
+  DrumType,
+  DrumTrackData,
+  BassNote,
+  BassTrackData,
+  HarmonyChange,
+  HarmonyTrackData,
+  MusicalContent,
+  MixSettings,
+  ProfessionalExercise,
+  TickPosition,
+  MusicalTimeConfig,
+  TimingFeatures,
+  SwingConfig as ProfessionalSwingConfig,
+} from './types/musical-time.js';
+export { MusicalTimeConverter } from './services/MusicalTimeConverter.js';
+export { ProfessionalDrumProcessor } from './services/ProfessionalDrumProcessor.js';
 
 // MusicXML types and utilities (explicit exports for better IDE support)
 export type {
@@ -54,3 +81,6 @@ export { MIDIFileParser } from './utils/midifile-parser.js';
 
 // Common types
 export type { MetronomeSettings } from './types/common.js';
+
+// User types
+export type { BassConfiguration } from './types/user.js';

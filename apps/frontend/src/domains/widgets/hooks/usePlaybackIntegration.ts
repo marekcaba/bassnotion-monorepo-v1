@@ -148,12 +148,7 @@ export function usePlaybackIntegration(
       exerciseNotesRef.current = notes;
       exerciseProgressionRef.current = progression;
 
-      console.log('🎵 Exercise data processed:', {
-        exerciseId: exercise.id,
-        notesCount: notes.length,
-        chords: progression,
-        bpm: exercise.bpm,
-      });
+      // Exercise data processed
 
       return { notes, progression };
     } catch (error) {
@@ -285,7 +280,7 @@ export function usePlaybackIntegration(
           isPlaying: false,
           error: null,
         }));
-        console.log('🔄 Playback reset');
+        // Playback reset
       } catch (error) {
         console.error('❌ Error resetting playback:', error);
         setIntegrationState((prev) => ({

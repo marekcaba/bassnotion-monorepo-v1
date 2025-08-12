@@ -1,0 +1,89 @@
+{
+  "samples": [
+    {
+      "id": "wood-click-1",
+      "name": "Wood Block Click",
+      "description": "Classic wood block metronome sound",
+      "category": "wood",
+      "url": "wood-click-1.wav",
+      "isDefault": false,
+      "metadata": {
+        "pitch": 0,
+        "envelope": {
+          "attack": 0.001,
+          "decay": 0.03,
+          "sustain": 0,
+          "release": 0.02
+        }
+      }
+    },
+    {
+      "id": "metal-click-1",
+      "name": "Metal Click",
+      "description": "Sharp metallic metronome click",
+      "category": "metal",
+      "url": "metal-click-1.wav",
+      "isDefault": false,
+      "metadata": {
+        "pitch": 100,
+        "envelope": {
+          "attack": 0.001,
+          "decay": 0.02,
+          "sustain": 0,
+          "release": 0.01
+        }
+      }
+    },
+    {
+      "id": "electronic-beep-1",
+      "name": "Electronic Beep",
+      "description": "Modern electronic metronome beep",
+      "category": "electronic",
+      "url": "electronic-beep-1.wav",
+      "isDefault": true,
+      "metadata": {
+        "pitch": 0,
+        "envelope": {
+          "attack": 0.001,
+          "decay": 0.05,
+          "sustain": 0,
+          "release": 0.05
+        }
+      }
+    },
+    {
+      "id": "acoustic-click-1",
+      "name": "Acoustic Click",
+      "description": "Natural acoustic metronome click",
+      "category": "acoustic",
+      "url": "acoustic-click-1.wav",
+      "isDefault": false,
+      "metadata": {
+        "pitch": -50,
+        "envelope": {
+          "attack": 0.002,
+          "decay": 0.04,
+          "sustain": 0,
+          "release": 0.03
+        }
+      }
+    },
+    {
+      "id": "synthetic-tick-1",
+      "name": "Synthetic Tick",
+      "description": "Synthesized tick sound for modern music",
+      "category": "synthetic",
+      "url": "synthetic-tick-1.wav",
+      "isDefault": false,
+      "metadata": {
+        "pitch": 50,
+        "envelope": {
+          "attack": 0.001,
+          "decay": 0.01,
+          "sustain": 0,
+          "release": 0.01
+        }
+      }
+    }
+  ]
+}

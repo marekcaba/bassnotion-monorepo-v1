@@ -21,7 +21,7 @@ import {
   type ControlInteraction,
   type Achievement,
   type PracticeContext,
-} from '../AnalyticsEngine.js';
+} from '../AnalyticsEngine';
 
 describe('AnalyticsEngine', () => {
   let analyticsEngine: AnalyticsEngine;

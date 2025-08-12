@@ -1,7 +1,10 @@
 'use client';
 
 import { supabase } from '@/infrastructure/supabase/client';
-import type { UserProfileData } from '@bassnotion/contracts';
+import type {
+  UserProfileData,
+  BassConfigurationData,
+} from '@bassnotion/contracts';
 
 export class ProfileService {
   private async getAuthHeaders() {
@@ -96,6 +99,47 @@ export class ProfileService {
   }
 
   /**
+   * Update bass configuration
+   */
+  async updateBassConfiguration(bassConfig: BassConfigurationData) {
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          bass_string_count: bassConfig.stringCount,
+          bass_max_frets: bassConfig.maxFrets,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(
+          `Failed to update bass configuration: ${error.message}`,
+        );
+      }
+
+      return {
+        stringCount: data.bass_string_count,
+        maxFrets: data.bass_max_frets,
+      };
+    } catch (error) {
+      console.error('[Profile] Update bass configuration error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get current user profile
    */
   async getCurrentProfile() {
@@ -141,6 +185,8 @@ export class ProfileService {
             display_name: displayName,
             bio: null,
             avatar_url: null,
+            bass_string_count: 4,
+            bass_max_frets: 24,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
@@ -162,6 +208,10 @@ export class ProfileService {
           displayName: newProfile.display_name,
           bio: newProfile.bio,
           avatarUrl: newProfile.avatar_url,
+          bassConfiguration: {
+            stringCount: newProfile.bass_string_count || 4,
+            maxFrets: newProfile.bass_max_frets || 24,
+          },
           createdAt: newProfile.created_at,
           updatedAt: newProfile.updated_at,
         };
@@ -173,6 +223,10 @@ export class ProfileService {
         displayName: profile.display_name,
         bio: profile.bio,
         avatarUrl: profile.avatar_url,
+        bassConfiguration: {
+          stringCount: profile.bass_string_count || 4,
+          maxFrets: profile.bass_max_frets || 24,
+        },
         createdAt: profile.created_at,
         updatedAt: profile.updated_at,
       };

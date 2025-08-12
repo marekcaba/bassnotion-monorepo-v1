@@ -2,16 +2,16 @@ import React, { ReactNode } from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { useTutorialExercises, useTutorial } from '../useTutorialExercises.js';
-import * as tutorialsApi from '../../api/tutorials.js';
-import { TutorialsApiError } from '../../api/tutorials.js';
+import { useTutorialExercises, useTutorial } from '../useTutorialExercises';
+import * as tutorialsApi from '../../api/tutorials';
+import { TutorialsApiError } from '../../api/tutorials';
 import type {
   TutorialExercisesResponse,
   Tutorial,
 } from '@bassnotion/contracts';
 
 // Mock the API module
-vi.mock('../../api/tutorials.js');
+vi.mock('../../api/tutorials');
 
 const mockedFetchTutorialExercises = vi.mocked(
   tutorialsApi.fetchTutorialExercises,

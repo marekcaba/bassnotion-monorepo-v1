@@ -12,8 +12,11 @@
  * - Comprehensive bass note mapping (B0-G4)
  */
 
-import * as Tone from 'tone';
-import { ArticulationType } from './MidiParserProcessor.js';
+// Dynamic import to avoid AudioContext initialization before user gesture
+// Tone will be loaded when the processor is initialized
+let Tone: any = null;
+
+import { ArticulationType } from './MidiParserProcessor';
 
 // Bass-specific types and interfaces
 export interface BassInstrumentConfig {
@@ -140,12 +143,25 @@ export class BassInstrumentProcessor {
   }
 
   /**
+   * Ensure Tone.js is loaded dynamically
+   */
+  private async ensureToneLoaded(): Promise<void> {
+    if (!Tone) {
+      Tone = await loadGlobalTone();
+      console.log('🎵 Using global Tone.js instance in BassInstrumentProcessor');
+    }
+  }
+
+  /**
    * Initialize the bass instrument with sample loading
    */
   public async initialize(
     bassSamples: Record<string, string[]>,
   ): Promise<void> {
     try {
+      // Ensure Tone is loaded before initializing
+      await this.ensureToneLoaded();
+
       // Generate bass note mapping
       this.generateBassNoteMapping();
 
@@ -153,7 +169,7 @@ export class BassInstrumentProcessor {
       await this.loadSamples(bassSamples);
 
       // Setup audio processing chain
-      this.setupAudioProcessingChain();
+      await this.setupAudioProcessingChain();
 
       // Initialize expression controllers
       this.setupExpressionControls();
@@ -489,14 +505,20 @@ export class BassInstrumentProcessor {
     await Tone.loaded();
   }
 
-  private setupAudioProcessingChain(): void {
+  private async setupAudioProcessingChain(): Promise<void> {
     // TODO: Review non-null assertion - consider null safety
     if (!this.sampler) return;
 
+    // Initialize amp simulator with Tone loaded
+    await this.ampSimulator.initialize();
+
     // Connect sampler through amp simulation to destination with graceful degradation
     try {
-      if (typeof this.sampler.connect === 'function') {
-        this.sampler.connect(this.ampSimulator.getInput());
+      if (
+        typeof this.sampler.connect === 'function' &&
+        this.ampSimulator.getInput()
+      ) {
+        this.sampler.connect(this.ampSimulator.getInput()!);
       } else {
         console.warn(
           '🎸 Sampler.connect() not available, likely in test environment',
@@ -659,36 +681,43 @@ class BassArticulationEngine {
  * Bass Amp Simulator
  */
 class BassAmpSimulator {
-  private preamp: Tone.Gain;
-  private eq: Tone.EQ3;
-  private compressor: Tone.Compressor;
+  private preamp: Tone.Gain | null = null;
+  private eq: Tone.EQ3 | null = null;
+  private compressor: Tone.Compressor | null = null;
   private cabinet: Tone.Convolver | null = null;
   private config: BassAmpConfig;
+  private isInitialized = false;
 
   constructor(config: BassAmpConfig) {
     this.config = config;
+    // Delay initialization until Tone is loaded
+  }
+
+  public async initialize(): Promise<void> {
+    if (this.isInitialized || !Tone) return;
 
     // Initialize audio nodes
-    this.preamp = new Tone.Gain(config.preamp.gain);
+    this.preamp = new Tone.Gain(this.config.preamp.gain);
     this.eq = new Tone.EQ3({
-      low: config.eq.bass,
-      mid: config.eq.mid,
-      high: config.eq.treble,
+      low: this.config.eq.bass,
+      mid: this.config.eq.mid,
+      high: this.config.eq.treble,
     });
     this.compressor = new Tone.Compressor({
-      threshold: config.compression.threshold,
-      ratio: config.compression.ratio,
-      attack: config.compression.attack,
-      release: config.compression.release,
+      threshold: this.config.compression.threshold,
+      ratio: this.config.compression.ratio,
+      attack: this.config.compression.attack,
+      release: this.config.compression.release,
     });
 
     this.setupAmpChain();
+    this.isInitialized = true;
   }
 
   private setupAmpChain(): void {
     // Chain the effects with graceful degradation for test environments
     try {
-      if (typeof this.preamp.connect === 'function') {
+      if (this.preamp && this.eq && typeof this.preamp.connect === 'function') {
         this.preamp.connect(this.eq);
       } else {
         console.warn(
@@ -703,7 +732,7 @@ class BassAmpSimulator {
     }
 
     try {
-      if (typeof this.eq.connect === 'function') {
+      if (this.eq && this.compressor && typeof this.eq.connect === 'function') {
         this.eq.connect(this.compressor);
       } else {
         console.warn(
@@ -718,7 +747,7 @@ class BassAmpSimulator {
     }
   }
 
-  public getInput(): Tone.ToneAudioNode {
+  public getInput(): Tone.ToneAudioNode | null {
     return this.preamp;
   }
 

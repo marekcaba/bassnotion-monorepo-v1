@@ -3,7 +3,7 @@
 import React, { useRef, useCallback, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import type { ExerciseNote } from '../types/fretboard.js';
+import type { ExerciseNote } from '../types/fretboard';
 
 interface InteractionManagerProps {
   notes: ExerciseNote[];

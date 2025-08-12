@@ -9,7 +9,6 @@ The BMAD Method uses various checklists to ensure quality and completeness of di
 ## Instructions
 
 1. **Initial Assessment**
-
    - Check `checklist-mappings` for available checklists
    - If user provides a checklist name:
      - Look for exact match in checklist-mappings.yml
@@ -24,7 +23,6 @@ The BMAD Method uses various checklists to ensure quality and completeness of di
      - All at once (YOLO mode)
 
 2. **Document Location**
-
    - Look up the required documents and default locations in `checklist-mappings`
    - For each required document:
      - Check all default locations specified in the mapping
@@ -34,7 +32,6 @@ The BMAD Method uses various checklists to ensure quality and completeness of di
 3. **Checklist Processing**
 
    If in interactive mode:
-
    - Work through each section of the checklist one at a time
    - For each section:
      - Review all items in the section
@@ -43,7 +40,6 @@ The BMAD Method uses various checklists to ensure quality and completeness of di
      - Get user confirmation before proceeding to next section
 
    If in YOLO mode:
-
    - Process all sections at once
    - Create a comprehensive report of all findings
    - Present the complete analysis to the user
@@ -51,7 +47,6 @@ The BMAD Method uses various checklists to ensure quality and completeness of di
 4. **Validation Approach**
 
    For each checklist item:
-
    - Read and understand the requirement
    - Look for evidence in the documentation that satisfies the requirement
    - Consider both explicit mentions and implicit coverage
@@ -64,7 +59,6 @@ The BMAD Method uses various checklists to ensure quality and completeness of di
 5. **Section Analysis**
 
    For each section:
-
    - Calculate pass rate
    - Identify common themes in failed items
    - Provide specific recommendations for improvement
@@ -74,7 +68,6 @@ The BMAD Method uses various checklists to ensure quality and completeness of di
 6. **Final Report**
 
    Prepare a summary that includes:
-
    - Overall checklist completion status
    - Pass rates by section
    - List of failed items with context
@@ -84,21 +77,18 @@ The BMAD Method uses various checklists to ensure quality and completeness of di
 ## Special Considerations
 
 1. **Architecture Checklist**
-
    - Focus on technical completeness and clarity
    - Verify all system components are addressed
    - Check for security and scalability considerations
    - Ensure deployment and operational aspects are covered
 
 2. **Frontend Architecture Checklist**
-
    - Validate UI/UX specifications
    - Check component structure and organization
    - Verify state management approach
    - Ensure responsive design considerations
 
 3. **PM Checklist**
-
    - Focus on product requirements clarity
    - Verify user stories and acceptance criteria
    - Check market and user research coverage

@@ -237,6 +237,11 @@ export function useDotSelectionHandlers({
           }
         }
 
+        // Emit bassline event with the updated dots after drag
+        setTimeout(() => {
+          emitBasslineEvent(newDots);
+        }, 10);
+
         return newDots;
       });
 
@@ -252,6 +257,7 @@ export function useDotSelectionHandlers({
       triggerNote,
       handleDragEnd,
       markManualSelection,
+      emitBasslineEvent,
     ],
   );
 
@@ -282,13 +288,24 @@ export function useDotSelectionHandlers({
           setSelectionOrder(nextOrder);
         }
 
+        // Emit bassline event with the updated dots
+        setTimeout(() => {
+          emitBasslineEvent(newDots);
+        }, 10);
+
         return newDots;
       });
 
       // Trigger audio
       triggerNote(stringIndex, fret);
     },
-    [setSelectedDots, setSelectionOrder, triggerNote, markManualSelection],
+    [
+      setSelectedDots,
+      setSelectionOrder,
+      triggerNote,
+      markManualSelection,
+      emitBasslineEvent,
+    ],
   );
 
   /**
@@ -322,8 +339,18 @@ export function useDotSelectionHandlers({
       }
 
       sharedSetSelectedDots(newDotsMap);
+
+      // Emit bassline event with the updated dots
+      setTimeout(() => {
+        emitBasslineEvent(newDotsMap);
+      }, 10);
     },
-    [sharedSelectedDots, sharedSetSelectedDots, markManualSelection],
+    [
+      sharedSelectedDots,
+      sharedSetSelectedDots,
+      markManualSelection,
+      emitBasslineEvent,
+    ],
   );
 
   /**
@@ -372,10 +399,20 @@ export function useDotSelectionHandlers({
           setSelectionOrder(allRemainingOrders.length);
         }
 
+        // Emit bassline event with the updated dots
+        setTimeout(() => {
+          emitBasslineEvent(newDots);
+        }, 10);
+
         return newDots;
       });
     },
-    [setSelectedDots, setSelectionOrder, markManualSelection],
+    [
+      setSelectedDots,
+      setSelectionOrder,
+      markManualSelection,
+      emitBasslineEvent,
+    ],
   );
 
   /**
@@ -428,8 +465,18 @@ export function useDotSelectionHandlers({
       }
 
       sharedSetSelectedDots(newDotsMap);
+
+      // Emit bassline event with the updated dots
+      setTimeout(() => {
+        emitBasslineEvent(newDotsMap);
+      }, 10);
     },
-    [sharedSelectedDots, sharedSetSelectedDots, markManualSelection],
+    [
+      sharedSelectedDots,
+      sharedSetSelectedDots,
+      markManualSelection,
+      emitBasslineEvent,
+    ],
   );
 
   return {

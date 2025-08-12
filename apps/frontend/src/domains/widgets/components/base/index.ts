@@ -8,25 +8,27 @@
  */
 
 // Core synchronization components
-export { SyncedWidget, SimpleSyncedWidget } from './SyncedWidget';
-export type {
-  SyncedWidgetProps,
-  SyncedWidgetRenderProps,
-  SyncedWidgetState,
-  SimpleSyncedWidgetProps,
-} from './SyncedWidget';
+// NOTE: SyncedWidget depends on deleted useWidgetSync hook - needs migration to new track system
+// export { SyncedWidget, SimpleSyncedWidget } from './SyncedWidget';
+// export type {
+//   SyncedWidgetProps,
+//   SyncedWidgetRenderProps,
+//   SyncedWidgetState,
+//   SimpleSyncedWidgetProps,
+// } from './SyncedWidget';
 
 // Container components
-export {
-  WidgetContainer,
-  StyledWidgetContainer,
-  WidgetLoading,
-  WidgetError,
-} from './WidgetContainer';
-export type {
-  WidgetContainerProps,
-  WidgetHeaderProps,
-} from './WidgetContainer';
+// NOTE: WidgetContainer depends on SyncedWidget which uses deleted useWidgetSync hook
+// export {
+//   WidgetContainer,
+//   StyledWidgetContainer,
+//   WidgetLoading,
+//   WidgetError,
+// } from './WidgetContainer';
+// export type {
+//   WidgetContainerProps,
+//   WidgetHeaderProps,
+// } from './WidgetContainer';
 
 // Context provider and hooks
 export {

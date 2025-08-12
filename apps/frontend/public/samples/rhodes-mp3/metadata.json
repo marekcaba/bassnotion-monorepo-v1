@@ -1,0 +1,12 @@
+{
+  "instrument": "Fender Rhodes",
+  "velocityLayers": 4,
+  "noteRange": "A0-C7",
+  "velocityMapping": {
+    "p": "v1",
+    "mp": "v2",
+    "mf": "v3",
+    "f": "v4"
+  },
+  "convertedAt": "2025-07-22T22:33:44.551Z"
+}

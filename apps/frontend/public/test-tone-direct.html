@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Tone.js Test</title>
+    <script src="https://unpkg.com/tone@15.1.22/build/Tone.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #fff;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #log {
+            background-color: #333;
+            padding: 10px;
+            margin-top: 20px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .info { color: #2196F3; }
+    </style>
+</head>
+<body>
+    <h1>Direct Tone.js Drum Test</h1>
+    
+    <div>
+        <h2>Step 1: Initialize</h2>
+        <button onclick="initTone()">Initialize Tone.js</button>
+        <button onclick="checkState()">Check State</button>
+    </div>
+
+    <div>
+        <h2>Step 2: Load Drums</h2>
+        <button onclick="loadDrums()">Load Boss DR-110</button>
+    </div>
+
+    <div>
+        <h2>Step 3: Play</h2>
+        <button onclick="playDrum('kick')">Kick</button>
+        <button onclick="playDrum('snare')">Snare</button>
+        <button onclick="playDrum('hihat')">Hi-Hat</button>
+        <button onclick="playSynth()">Test Synth</button>
+    </div>
+
+    <div id="log"></div>
+
+    <script>
+        let players = {};
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+            console.log(message);
+        }
+
+        async function initTone() {
+            try {
+                log('Starting Tone.js...', 'info');
+                await Tone.start();
+                log(`✅ Tone.js started! Context state: ${Tone.context.state}`, 'success');
+                
+                // Try to resume if suspended
+                if (Tone.context.state === 'suspended') {
+                    log('Context is suspended, attempting to resume...', 'info');
+                    await Tone.context.resume();
+                    log(`After resume: ${Tone.context.state}`, 'info');
+                }
+                
+                // Use native API as fallback
+                if (Tone.context.state === 'suspended') {
+                    log('Still suspended, trying native API...', 'info');
+                    const audioContext = Tone.context.rawContext;
+                    await audioContext.resume();
+                    log(`Native resume result: ${audioContext.state}`, 'info');
+                }
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function checkState() {
+            log(`Context state: ${Tone.context.state}`, 'info');
+            log(`Sample rate: ${Tone.context.sampleRate}`, 'info');
+            log(`Current time: ${Tone.context.currentTime}`, 'info');
+            log(`Transport state: ${Tone.Transport.state}`, 'info');
+            log(`Transport BPM: ${Tone.Transport.bpm.value}`, 'info');
+        }
+
+        async function loadDrums() {
+            const baseUrl = 'https://htuztkrbuewheehjspcz.supabase.co/storage/v1/object/public/audio-samples/drums/hydrogen-kits/mp3/electronic/boss-dr110/';
+            
+            const drums = {
+                kick: 'dr110kik.mp3',
+                snare: 'dr110clp.mp3',
+                hihat: 'dr110cht.mp3'
+            };
+
+            try {
+                log('Loading drum samples...', 'info');
+                
+                // Ensure context is running
+                if (Tone.context.state === 'suspended') {
+                    await Tone.start();
+                }
+
+                for (const [name, file] of Object.entries(drums)) {
+                    const url = baseUrl + file;
+                    log(`Loading ${name}: ${url}`, 'info');
+                    
+                    players[name] = new Tone.Player({
+                        url: url,
+                        onload: () => {
+                            log(`✅ Loaded ${name}`, 'success');
+                        },
+                        onerror: (error) => {
+                            log(`❌ Failed to load ${name}: ${error}`, 'error');
+                        }
+                    }).toDestination();
+                }
+
+                // Wait for all to load
+                await Tone.loaded();
+                log('✅ All drums loaded!', 'success');
+                
+            } catch (error) {
+                log(`❌ Load error: ${error.message}`, 'error');
+            }
+        }
+
+        async function playDrum(name) {
+            try {
+                // Always ensure context is running
+                if (Tone.context.state === 'suspended') {
+                    log('Resuming context before playing...', 'info');
+                    await Tone.start();
+                }
+
+                if (players[name]) {
+                    players[name].start();
+                    log(`🥁 Playing ${name} (context: ${Tone.context.state})`, 'success');
+                } else {
+                    log(`${name} not loaded yet`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Play error: ${error.message}`, 'error');
+            }
+        }
+
+        async function playSynth() {
+            try {
+                if (Tone.context.state === 'suspended') {
+                    await Tone.start();
+                }
+                
+                const synth = new Tone.Synth().toDestination();
+                synth.triggerAttackRelease("C4", "8n");
+                log(`🎹 Synth played (context: ${Tone.context.state})`, 'success');
+            } catch (error) {
+                log(`❌ Synth error: ${error.message}`, 'error');
+            }
+        }
+
+        // Log initial state
+        window.addEventListener('load', () => {
+            log('Page loaded. Click "Initialize Tone.js" to start.', 'info');
+        });
+    </script>
+</body>
+</html>

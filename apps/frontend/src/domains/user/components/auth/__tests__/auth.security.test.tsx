@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '../../../test/test-utils.js';
+import { render, screen, waitFor } from '../../../test/test-utils';
 
 // Simple mock for the auth service
 const mockAuthService = {

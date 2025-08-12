@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rhodes Sample Generator</title>
+    <script src="https://unpkg.com/tone@15.0.4/build/Tone.js"></script>
+</head>
+<body>
+    <h1>Rhodes Electric Piano Sample Generator</h1>
+    <p>This page generates Rhodes-like samples using FM synthesis.</p>
+    <button onclick="generateSamples()">Generate Rhodes Samples</button>
+    <div id="status"></div>
+    
+    <script>
+    const NOTES = [["C1",24],["C2",36],["C3",48],["C4",60],["C5",72],["E1",28],["E2",40],["E3",52],["E4",64],["E5",76],["G1",31],["G2",43],["G3",55],["G4",67],["G5",79],["A1",33],["A2",45],["A3",57],["A4",69],["A5",81],["C6",84],["E6",88],["G6",91],["A6",93],["C7",96]];
+    
+    async function generateSamples() {
+        const status = document.getElementById('status');
+        status.innerHTML = 'Starting sample generation...';
+        
+        await Tone.start();
+        
+        // Create Rhodes-like FM synthesis
+        const synth = new Tone.FMSynth({
+            harmonicity: 7,
+            modulationIndex: 12,
+            detune: 0,
+            oscillator: {
+                type: "sine"
+            },
+            envelope: {
+                attack: 0.01,
+                decay: 0.3,
+                sustain: 0.4,
+                release: 1.2
+            },
+            modulation: {
+                type: "sine"
+            },
+            modulationEnvelope: {
+                attack: 0.002,
+                decay: 0.2,
+                sustain: 0.3,
+                release: 0.9
+            }
+        }).toDestination();
+        
+        // Add chorus for Rhodes character
+        const chorus = new Tone.Chorus(4, 2.5, 0.5).toDestination();
+        synth.connect(chorus);
+        
+        for (const [noteName, midiNote] of NOTES) {
+            status.innerHTML = `Generating ${noteName}...`;
+            
+            // Convert MIDI to frequency
+            const freq = Tone.Frequency(midiNote, "midi").toFrequency();
+            
+            // Record the note
+            const recorder = new Tone.Recorder();
+            synth.connect(recorder);
+            
+            recorder.start();
+            synth.triggerAttackRelease(freq, "2n");
+            
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            const recording = await recorder.stop();
+            const url = URL.createObjectURL(recording);
+            
+            // Create download link
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${noteName}.webm`;
+            a.click();
+            
+            synth.disconnect(recorder);
+        }
+        
+        status.innerHTML = '✅ All samples generated! Check your downloads folder.';
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "generated": "2025-07-21T10:05:22.679Z",
+  "instruments": [
+    {
+      "id": "nice-keys-rhodes",
+      "name": "Nice Keys Electric Piano",
+      "description": "Authentic vintage Rhodes electric piano",
+      "category": "electric_piano",
+      "format": "sf2",
+      "size": 83886080,
+      "license": "Public Domain",
+      "author": "Nice Keys",
+      "path": "nice-keys-rhodes/nice-keys-rhodes.sf2"
+    }
+  ]
+}

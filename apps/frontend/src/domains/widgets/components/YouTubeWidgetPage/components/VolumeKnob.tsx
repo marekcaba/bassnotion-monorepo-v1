@@ -22,7 +22,7 @@ export function VolumeKnob({
   const [isDragging, setIsDragging] = useState(false);
   const [currentValue, setCurrentValue] = useState(value);
   const knobRef = useRef<HTMLDivElement>(null);
-  const centerButtonRef = useRef<HTMLButtonElement>(null);
+  const centerButtonRef = useRef<HTMLDivElement>(null);
   const startAngleRef = useRef<number>(0);
   const startValueRef = useRef<number>(0);
 
@@ -101,8 +101,10 @@ export function VolumeKnob({
 
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault(); // Prevent scrolling
-      const touch = e.touches[0];
-      handleMove(touch.clientX, touch.clientY);
+      const touch = e.touches?.[0];
+      if (touch) {
+        handleMove(touch.clientX, touch.clientY);
+      }
     };
 
     const handleMouseUp = () => {
@@ -150,8 +152,10 @@ export function VolumeKnob({
         }}
         onTouchStart={(e) => {
           e.preventDefault();
-          const touch = e.touches[0];
-          handleStart(touch.clientX, touch.clientY);
+          const touch = e.touches?.[0];
+          if (touch) {
+            handleStart(touch.clientX, touch.clientY);
+          }
         }}
         onDragStart={(e) => e.preventDefault()}
       >
@@ -219,8 +223,14 @@ export function VolumeKnob({
           const angle = (i / 10) * 270 - 135;
           const isActive = displayValue >= i * 10;
           const radius = size / 2 + 8;
-          const x = Math.cos(((angle - 90) * Math.PI) / 180) * radius;
-          const y = Math.sin(((angle - 90) * Math.PI) / 180) * radius;
+          const x =
+            Math.round(
+              Math.cos(((angle - 90) * Math.PI) / 180) * radius * 100,
+            ) / 100;
+          const y =
+            Math.round(
+              Math.sin(((angle - 90) * Math.PI) / 180) * radius * 100,
+            ) / 100;
 
           return (
             <div
@@ -229,8 +239,8 @@ export function VolumeKnob({
                 isActive ? color : 'bg-slate-600'
               }`}
               style={{
-                left: `${size / 2 + x - 3}px`,
-                top: `${size / 2 + y - 3}px`,
+                left: `${Math.round((size / 2 + x - 3) * 100) / 100}px`,
+                top: `${Math.round((size / 2 + y - 3) * 100) / 100}px`,
               }}
             />
           );

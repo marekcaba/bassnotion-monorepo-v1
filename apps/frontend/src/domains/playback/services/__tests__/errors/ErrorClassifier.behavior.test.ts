@@ -8,12 +8,8 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ErrorClassifier } from '../../errors/ErrorClassifier.js';
-import {
-  ErrorCategory,
-  ErrorSeverity,
-  ErrorContext,
-} from '../../errors/base.js';
+import { ErrorClassifier } from '../../errors/ErrorClassifier';
+import { ErrorCategory, ErrorSeverity, ErrorContext } from '../../errors/base';
 
 // Test Environment Setup
 const setupTestEnvironment = () => {

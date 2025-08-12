@@ -41,7 +41,17 @@ export interface WidgetPageState {
 }
 
 // Import Exercise type from contracts
-import type { DatabaseExercise as Exercise } from '@bassnotion/contracts';
+import type { Exercise } from '@bassnotion/contracts';
+// Epic 3.18: ExerciseTimelineIntegrator removed
+// import { exerciseTimelineIntegrator } from '@/domains/playback/services/ExerciseTimelineIntegrator';
+
+// Stub for exerciseTimelineIntegrator
+const exerciseTimelineIntegrator = {
+  async clearExercise() {},
+  async loadExercise(exercise: any, options: any) {},
+  getCurrentSection() { return null; },
+  getProgress() { return 0; }
+};
 
 // Loop region interface
 export interface LoopRegion {
@@ -145,85 +155,157 @@ export function useWidgetPageState() {
   );
 
   // Exercise selection with data integration
-  const setSelectedExercise = useCallback((exercise: Exercise | undefined) => {
-    setState((prev) => {
-      const newState = {
-        ...prev,
-        selectedExercise: exercise,
-      };
-
-      // Update widget states based on exercise data
-      if (exercise) {
-        // Update tempo from exercise BPM
-        if (exercise.bpm && exercise.bpm > 0) {
-          newState.tempo = exercise.bpm;
-          newState.widgets = {
-            ...prev.widgets,
-            metronome: {
-              ...prev.widgets.metronome,
-              bpm: exercise.bpm,
-            },
-          };
-        }
-
-        // Update harmony progression from exercise data
-        if (
-          exercise.chord_progression &&
-          Array.isArray(exercise.chord_progression)
-        ) {
-          // Use exercise's chord progression
-          newState.widgets = {
-            ...newState.widgets,
-            harmony: {
-              ...newState.widgets.harmony,
-              progression: exercise.chord_progression,
-              currentChord: 0, // Reset to first chord
-            },
-          };
-        } else if (exercise.key) {
-          // Fallback: Generate chord progression based on key (I-vi-IV-V)
-          const baseKey = exercise.key.replace(/[^A-G#b]/g, '');
-          const majorProgressions: Record<string, string[]> = {
-            C: ['C', 'Am', 'F', 'G'],
-            D: ['D', 'Bm', 'G', 'A'],
-            E: ['E', 'C#m', 'A', 'B'],
-            F: ['F', 'Dm', 'Bb', 'C'],
-            G: ['G', 'Em', 'C', 'D'],
-            A: ['A', 'F#m', 'D', 'E'],
-            B: ['B', 'G#m', 'E', 'F#'],
-          };
-
-          const progression = majorProgressions[baseKey] || [
-            'Dm7',
-            'G7',
-            'CMaj7',
-          ];
-          newState.widgets = {
-            ...newState.widgets,
-            harmony: {
-              ...newState.widgets.harmony,
-              progression,
-              currentChord: 0, // Reset to first chord
-            },
-          };
-        }
-
-        // Debug log (disabled to reduce console noise)
-        // console.log(
-        //   '🎯 useWidgetPageState: Exercise selected, updating widgets:',
-        //   {
-        //     exerciseId: exercise.id,
-        //     title: exercise.title,
-        //     bpm: exercise.bpm,
-        //     key: exercise.key,
-        //     chords: exercise.chord_progression,
-        //   },
-        // );
+  const setSelectedExercise = useCallback(
+    async (exercise: Exercise | undefined) => {
+      // Clear exercise if undefined
+      if (!exercise) {
+        await exerciseTimelineIntegrator.clearExercise();
+        setState((prev) => ({ ...prev, selectedExercise: undefined }));
+        return;
       }
 
-      return newState;
-    });
-  }, []);
+      // Convert Exercise to ExerciseData format for timeline integration
+      const exerciseData = {
+        id: exercise.id,
+        title: exercise.title,
+        total_bars: Math.ceil(
+          (exercise.duration_beats || 16) /
+            (exercise.timeSignature?.numerator || 4),
+        ),
+        tempo: exercise.bpm || 120,
+        key_signature: exercise.key || 'C',
+        time_signature: exercise.timeSignature || {
+          numerator: 4,
+          denominator: 4,
+        },
+        musical_content: {
+          bass: {
+            enabled: exercise.notes && exercise.notes.length > 0,
+            notes: exercise.notes || [],
+          },
+          drums: {
+            enabled: true, // Enable drums by default
+            resolution: 480,
+            patterns: [], // Will use default patterns
+            arrangement: [], // Will use default arrangement
+          },
+          harmony: {
+            enabled:
+              exercise.chord_progression &&
+              exercise.chord_progression.length > 0,
+            progression: exercise.chord_progression
+              ? exercise.chord_progression.map((chord, index) => ({
+                  position: {
+                    measure: Math.floor(index / 2) + 1,
+                    beat: (index % 2) * 2 + 1,
+                    subdivision: 0,
+                  },
+                  chord,
+                  duration: 'half' as const,
+                }))
+              : [],
+          },
+        },
+        mix_settings: {
+          levels: {
+            bass: 0.8,
+            drums: 0.7,
+            harmony: 0.6,
+          },
+          master: 1.0,
+        },
+      };
+
+      // Load exercise into timeline integrator
+      try {
+        await exerciseTimelineIntegrator.loadExercise(exerciseData, {
+          autoPlay: false,
+          userTempo: exercise.bpm,
+        });
+      } catch (error) {
+        console.error('Failed to load exercise into timeline:', error);
+      }
+
+      setState((prev) => {
+        const newState = {
+          ...prev,
+          selectedExercise: exercise,
+        };
+
+        // Update widget states based on exercise data
+        if (exercise) {
+          // Update tempo from exercise BPM
+          if (exercise.bpm && exercise.bpm > 0) {
+            newState.tempo = exercise.bpm;
+            newState.widgets = {
+              ...prev.widgets,
+              metronome: {
+                ...prev.widgets.metronome,
+                bpm: exercise.bpm,
+              },
+            };
+          }
+
+          // Update harmony progression from exercise data
+          if (
+            exercise.chord_progression &&
+            Array.isArray(exercise.chord_progression)
+          ) {
+            // Use exercise's chord progression
+            newState.widgets = {
+              ...newState.widgets,
+              harmony: {
+                ...newState.widgets.harmony,
+                progression: exercise.chord_progression,
+                currentChord: 0, // Reset to first chord
+              },
+            };
+          } else if (exercise.key) {
+            // Fallback: Generate chord progression based on key (I-vi-IV-V)
+            const baseKey = exercise.key.replace(/[^A-G#b]/g, '');
+            const majorProgressions: Record<string, string[]> = {
+              C: ['C', 'Am', 'F', 'G'],
+              D: ['D', 'Bm', 'G', 'A'],
+              E: ['E', 'C#m', 'A', 'B'],
+              F: ['F', 'Dm', 'Bb', 'C'],
+              G: ['G', 'Em', 'C', 'D'],
+              A: ['A', 'F#m', 'D', 'E'],
+              B: ['B', 'G#m', 'E', 'F#'],
+            };
+
+            const progression = majorProgressions[baseKey] || [
+              'Dm7',
+              'G7',
+              'CMaj7',
+            ];
+            newState.widgets = {
+              ...newState.widgets,
+              harmony: {
+                ...newState.widgets.harmony,
+                progression,
+                currentChord: 0, // Reset to first chord
+              },
+            };
+          }
+
+          // Debug log (disabled to reduce console noise)
+          // console.log(
+          //   '🎯 useWidgetPageState: Exercise selected, updating widgets:',
+          //   {
+          //     exerciseId: exercise.id,
+          //     title: exercise.title,
+          //     bpm: exercise.bpm,
+          //     key: exercise.key,
+          //     chords: exercise.chord_progression,
+          //   },
+          // );
+        }
+
+        return newState;
+      });
+    },
+    [],
+  );
 
   // Widget visibility controls
   const toggleWidgetVisibility = useCallback(

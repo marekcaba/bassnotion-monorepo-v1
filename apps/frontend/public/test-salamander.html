@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Salamander Piano Samples</title>
+    <script src="/Tone.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e3f2fd;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎹 Test Salamander Piano Samples</h1>
+    
+    <button onclick="testLocalSamples()">Test Local Salamander Samples</button>
+    <button onclick="playScale()">Play C Major Scale</button>
+    <button onclick="playChord()">Play C Major Chord</button>
+    
+    <div id="status" class="status">Ready to test...</div>
+
+    <script>
+        let sampler = null;
+
+        async function testLocalSamples() {
+            const statusEl = document.getElementById('status');
+            statusEl.className = 'status';
+            statusEl.textContent = 'Loading Salamander Grand Piano samples...';
+            
+            try {
+                await Tone.start();
+                console.log('Tone.js started');
+                
+                // Test if samples are accessible
+                const testResponse = await fetch('/samples/salamander-piano/C4.mp3');
+                if (!testResponse.ok) {
+                    throw new Error('Sample files not accessible');
+                }
+                console.log('Sample files are accessible');
+                
+                const urls = {
+                    'A0': 'A0.mp3',
+                    'C1': 'C1.mp3',
+                    'D#1': 'Ds1.mp3',
+                    'F#1': 'Fs1.mp3',
+                    'A1': 'A1.mp3',
+                    'C2': 'C2.mp3',
+                    'D#2': 'Ds2.mp3',
+                    'F#2': 'Fs2.mp3',
+                    'A2': 'A2.mp3',
+                    'C3': 'C3.mp3',
+                    'D#3': 'Ds3.mp3',
+                    'F#3': 'Fs3.mp3',
+                    'A3': 'A3.mp3',
+                    'C4': 'C4.mp3',
+                    'D#4': 'Ds4.mp3',
+                    'F#4': 'Fs4.mp3',
+                    'A4': 'A4.mp3',
+                    'C5': 'C5.mp3',
+                    'D#5': 'Ds5.mp3',
+                    'F#5': 'Fs5.mp3',
+                    'A5': 'A5.mp3',
+                    'C6': 'C6.mp3',
+                    'D#6': 'Ds6.mp3',
+                    'F#6': 'Fs6.mp3',
+                    'A6': 'A6.mp3',
+                    'C7': 'C7.mp3',
+                    'D#7': 'Ds7.mp3',
+                    'F#7': 'Fs7.mp3',
+                    'A7': 'A7.mp3',
+                    'C8': 'C8.mp3'
+                };
+                
+                sampler = new Tone.Sampler({
+                    urls: urls,
+                    baseUrl: '/samples/salamander-piano/',
+                    onload: () => {
+                        statusEl.className = 'status success';
+                        statusEl.textContent = '✅ Success! Salamander Grand Piano loaded. Try playing some notes...';
+                        
+                        // Play a test note
+                        sampler.triggerAttackRelease('C4', '1n');
+                    },
+                    onerror: (error) => {
+                        statusEl.className = 'status error';
+                        statusEl.textContent = `❌ Error: ${error}`;
+                        console.error('Sampler error:', error);
+                    }
+                }).toDestination();
+                
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ Error: ${error.message}`;
+                console.error('Test failed:', error);
+            }
+        }
+        
+        async function playScale() {
+            if (!sampler) {
+                document.getElementById('status').textContent = 'Please load samples first!';
+                return;
+            }
+            
+            const notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'];
+            let time = Tone.now();
+            
+            notes.forEach((note, i) => {
+                sampler.triggerAttackRelease(note, '8n', time + i * 0.25);
+            });
+            
+            document.getElementById('status').textContent = '🎵 Playing C Major scale...';
+        }
+        
+        async function playChord() {
+            if (!sampler) {
+                document.getElementById('status').textContent = 'Please load samples first!';
+                return;
+            }
+            
+            const chord = ['C4', 'E4', 'G4'];
+            sampler.triggerAttackRelease(chord, '2n');
+            
+            document.getElementById('status').textContent = '🎵 Playing C Major chord...';
+        }
+        
+        // Check sample availability on load
+        fetch('/samples/salamander-piano/metadata.json')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Found Salamander Piano metadata:', data);
+                document.getElementById('status').textContent = 
+                    `Found ${Object.keys(data.samples).length} samples ready to load`;
+            })
+            .catch(error => {
+                console.error('Sample metadata not found:', error);
+            });
+    </script>
+</body>
+</html>

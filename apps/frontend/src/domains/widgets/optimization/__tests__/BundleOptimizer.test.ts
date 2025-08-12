@@ -293,7 +293,7 @@ describe('BundleOptimizer', () => {
 
       expect(mockLink.rel).toBe('modulepreload');
       expect(mockLink.crossOrigin).toBe('anonymous');
-      expect(mockLink.href).toContain('PreloadTest.js');
+      expect(mockLink.href).toContain('PreloadTest');
     });
   });
 
@@ -419,7 +419,7 @@ describe('BundleOptimizer', () => {
     it('should process performance entries correctly', () => {
       // Simulate performance entry processing
       const mockEntry = {
-        name: 'https://example.com/chunk-abc123.js',
+        name: 'https://example.com/chunk-abc123',
         duration: 150,
         entryType: 'resource',
       };
@@ -493,7 +493,7 @@ describe('BundleOptimizer', () => {
   describe('Resource Tracking', () => {
     it('should track fetch requests for JS files', async () => {
       // Simulate a fetch request for a JS file
-      bundleOptimizer.simulateResourceLoad('https://example.com/chunk-test.js');
+      bundleOptimizer.simulateResourceLoad('https://example.com/chunk-test');
 
       expect(mockConsoleDebug).toHaveBeenCalledWith(
         '[BundleOptimizer] Tracked chunk: chunk-test (1024 bytes)',
@@ -504,9 +504,9 @@ describe('BundleOptimizer', () => {
       const optimizer = bundleOptimizer as any;
 
       expect(
-        optimizer.extractChunkName('https://example.com/chunk-abc123.js'),
+        optimizer.extractChunkName('https://example.com/chunk-abc123'),
       ).toBe('chunk-abc123');
-      expect(optimizer.extractChunkName('/static/chunks/widget-main.js')).toBe(
+      expect(optimizer.extractChunkName('/static/chunks/widget-main')).toBe(
         'widget-main',
       );
       expect(optimizer.extractChunkName('invalid-url')).toBe('invalid-url');

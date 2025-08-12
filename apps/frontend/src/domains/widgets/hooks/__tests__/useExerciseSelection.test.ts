@@ -4,7 +4,7 @@
 
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { useExerciseSelection } from '../useExerciseSelection.js';
+import { useExerciseSelection } from '../useExerciseSelection';
 import type { DatabaseExercise } from '@bassnotion/contracts';
 
 // Mock the exercises API
@@ -70,7 +70,7 @@ const mockDefaultExercise: DatabaseExercise = {
 };
 
 // Mock the API functions
-vi.mock('../../api/exercises.js', () => ({
+vi.mock('../../api/exercises', () => ({
   getExercises: vi.fn(),
   searchExercises: vi.fn(),
   getExercisesByDifficulty: vi.fn(),
@@ -82,9 +82,9 @@ import {
   searchExercises,
   getExercisesByDifficulty,
   getDefaultExercise,
-} from '../../api/exercises.js';
+} from '../../api/exercises';
 
-import { __clearCache } from '../useExerciseSelection.js';
+import { __clearCache } from '../useExerciseSelection';
 
 const mockGetExercises = vi.mocked(getExercises);
 const mockSearchExercises = vi.mocked(searchExercises);

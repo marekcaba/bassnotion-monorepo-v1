@@ -9,21 +9,21 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   N8nAssetPipelineProcessor,
   type N8nIntegrationConfig,
-} from '../plugins/N8nAssetPipelineProcessor.js';
-import type { N8nPayloadConfig } from '../../types/audio.js';
+} from '../plugins/N8nAssetPipelineProcessor';
+import type { N8nPayloadConfig } from '../../types/audio';
 
 // Mock the dependencies at module level BEFORE the describe block
-vi.mock('../AssetManager.js', () => ({
+vi.mock('../AssetManager', () => ({
   AssetManager: {
     getInstance: vi.fn(),
   },
 }));
 
-vi.mock('../plugins/MusicalContextAnalyzer.js', () => ({
+vi.mock('../plugins/MusicalContextAnalyzer', () => ({
   MusicalContextAnalyzer: vi.fn(),
 }));
 
-vi.mock('../plugins/InstrumentAssetOptimizer.js', () => ({
+vi.mock('../plugins/InstrumentAssetOptimizer', () => ({
   InstrumentAssetOptimizer: vi.fn(),
 }));
 
@@ -59,12 +59,12 @@ describe('N8nAssetPipelineProcessor Behaviors', () => {
     };
 
     // Set up the mocks using vi.mocked
-    const AssetManagerModule = await import('../AssetManager.js');
+    const AssetManagerModule = await import('../AssetManager');
     const MusicalContextAnalyzerModule = await import(
-      '../plugins/MusicalContextAnalyzer.js'
+      '../plugins/MusicalContextAnalyzer'
     );
     const InstrumentAssetOptimizerModule = await import(
-      '../plugins/InstrumentAssetOptimizer.js'
+      '../plugins/InstrumentAssetOptimizer'
     );
 
     vi.mocked(AssetManagerModule.AssetManager.getInstance).mockReturnValue(

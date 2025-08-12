@@ -5,6 +5,7 @@ export type {
   AuthUser,
   UserProfile,
   UserPreferences as UserPreferencesBase,
+  BassConfiguration,
   AuthCredentials,
 } from './user.js';
 // Content management types (high-level metadata)
@@ -33,6 +34,10 @@ export type {
   GetCustomBasslinesResponse,
   CreateExerciseRequest,
   UpdateExerciseRequest,
+  // Multi-track data architecture types
+  TrackConfiguration,
+  DrumPattern,
+  HarmonyVoicing,
   // Story 3.8: Enhanced Bassline Persistence Types
   BasslineMetadata,
   SavedBassline,
@@ -401,7 +406,7 @@ export {
 } from './musical-timing.js';
 
 // Musical timing utilities
-export { MusicalTimeConverter } from '../utils/musical-time-converter.js';
+// export { MusicalTimeConverter } from '../utils/musical-time-converter.js'; // Moved to services
 export { ExerciseMigration } from '../utils/exercise-migration.js';
 
 // Story 2.4 Subtask 1.5: Real-time Health Monitoring & Performance Analytics

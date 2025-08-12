@@ -16,8 +16,8 @@ import {
   vi,
   afterEach as _afterEach,
 } from 'vitest';
-import { usePlaybackStore } from '../playbackStore.js';
-import type { AudioSourceConfig } from '../../types/audio.js';
+import { usePlaybackStore } from '../playbackStore';
+import type { AudioSourceConfig } from '../../types/audio';
 
 // Mock performance with a safe implementation
 const mockPerformanceNow = vi.fn(() => 1000);
@@ -125,7 +125,7 @@ describe('Playback Store - Security Tests', () => {
         'vbscript:msgbox("xss")',
         'file:///etc/passwd',
         '<script>alert(1)</script>',
-        'http://evil.com/xss.js',
+        'http://evil.com/xss',
       ];
 
       maliciousUrls.forEach((maliciousContent, index) => {

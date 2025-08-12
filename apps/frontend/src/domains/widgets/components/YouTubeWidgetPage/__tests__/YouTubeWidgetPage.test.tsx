@@ -43,7 +43,7 @@ vi.mock('@/domains/widgets/hooks/useExerciseSelection', () => ({
 }));
 
 // Mock SyncedWidget to return its children
-vi.mock('../base/SyncedWidget.js', () => ({
+vi.mock('../base/SyncedWidget', () => ({
   SyncedWidget: ({ children }: { children: any }) => {
     // Mock sync props for SyncedWidget children
     const mockSyncProps = {
@@ -62,7 +62,7 @@ vi.mock('../base/SyncedWidget.js', () => ({
 }));
 
 // Mock the individual widget components
-vi.mock('./components/MetronomeWidget.js', () => ({
+vi.mock('./components/MetronomeWidget', () => ({
   MetronomeWidget: () => (
     <div>
       <h3>🎵 Metronome</h3>
@@ -70,7 +70,7 @@ vi.mock('./components/MetronomeWidget.js', () => ({
   ),
 }));
 
-vi.mock('./components/DrummerWidget.js', () => ({
+vi.mock('./components/DrummerWidget', () => ({
   DrummerWidget: () => (
     <div>
       <h3>🥁 Drummer</h3>
@@ -78,7 +78,7 @@ vi.mock('./components/DrummerWidget.js', () => ({
   ),
 }));
 
-vi.mock('./components/BassLineWidget.js', () => ({
+vi.mock('./components/BassLineWidget', () => ({
   BassLineWidget: () => (
     <div>
       <h3>🎸 Bass Line</h3>
@@ -86,7 +86,7 @@ vi.mock('./components/BassLineWidget.js', () => ({
   ),
 }));
 
-vi.mock('./components/HarmonyWidget.js', () => ({
+vi.mock('./components/HarmonyWidget', () => ({
   HarmonyWidget: () => (
     <div>
       <h3>🎼 Harmony</h3>
@@ -95,7 +95,7 @@ vi.mock('./components/HarmonyWidget.js', () => ({
 }));
 
 // Mock the SyncProvider to prevent context dependencies
-vi.mock('../base/SyncProvider.js', () => ({
+vi.mock('../base/SyncProvider', () => ({
   SyncProvider: ({ children }: { children: any }) => <div>{children}</div>,
   useSyncContext: () => ({
     syncState: {
@@ -157,7 +157,7 @@ vi.mock('@/domains/widgets/hooks/useWidgetPageState', () => ({
   }),
 }));
 
-import { YouTubeWidgetPage } from '../YouTubeWidgetPage.js';
+import { YouTubeWidgetPage } from '../YouTubeWidgetPage';
 
 describe('YouTubeWidgetPage', () => {
   const mockTutorialData = {

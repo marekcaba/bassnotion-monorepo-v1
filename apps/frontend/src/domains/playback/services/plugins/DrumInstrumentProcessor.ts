@@ -14,7 +14,15 @@
  * - Looping after 2, 4, or 8 bars (user-selectable)
  */
 
-import * as Tone from 'tone';
+// Dynamic import to avoid AudioContext initialization before user gesture
+// Tone will be loaded when the processor is initialized
+let Tone: any = null;
+
+import {
+  HybridDrumSampleManager,
+  DrumKitSamples,
+  DrumKitMetadata,
+} from '../HybridDrumSampleManager';
 
 // Core drum system interfaces
 export interface DrumInstrumentConfig {
@@ -223,6 +231,10 @@ export class DrumInstrumentProcessor {
   private currentLoop: DrumLoop | null = null;
   private isPlaying = false;
 
+  // Story 3.16: Enhanced hybrid drum sample support
+  private hybridSampleManager?: HybridDrumSampleManager;
+  private currentKitSamples?: DrumKitSamples;
+
   constructor(config?: Partial<DrumInstrumentConfig>) {
     this.config = this.createDefaultConfig(config);
     this.drumSamplers = new Map();
@@ -238,11 +250,23 @@ export class DrumInstrumentProcessor {
     this.setupEventListeners();
   }
 
+  /**
+   * Ensure Tone.js is loaded dynamically
+   */
+  private async ensureToneLoaded(): Promise<void> {
+    if (!Tone) {
+      Tone = await loadGlobalTone();
+      console.log('🎵 Using global Tone.js instance in DrumInstrumentProcessor');
+    }
+  }
+
   public async initialize(
     drumSamples: Record<DrumPiece, string[]>,
     audioLoops?: Record<string, string>,
   ): Promise<void> {
     try {
+      // Ensure Tone is loaded before initializing
+      await this.ensureToneLoaded();
       console.log('DrumInstrumentProcessor initializing...');
 
       // Initialize drum samplers for each piece
@@ -265,6 +289,255 @@ export class DrumInstrumentProcessor {
       console.error('Failed to initialize DrumInstrumentProcessor:', error);
       throw error;
     }
+  }
+
+  /**
+   * Story 3.16: Initialize hybrid drum sample manager
+   */
+  public setHybridSampleManager(
+    hybridSampleManager: HybridDrumSampleManager,
+  ): void {
+    this.hybridSampleManager = hybridSampleManager;
+
+    // Listen for kit changes
+    this.hybridSampleManager.on('kitChanged', async (event) => {
+      await this.onKitChanged(event);
+    });
+  }
+
+  /**
+   * Story 3.16: Load a hybrid drum kit (admin or Hydrogen)
+   */
+  public async loadHybridDrumKit(
+    kitId: string,
+    source: 'admin' | 'hydrogen',
+  ): Promise<void> {
+    if (!this.hybridSampleManager) {
+      throw new Error(
+        'HybridSampleManager not initialized. Call setHybridSampleManager first.',
+      );
+    }
+
+    try {
+      console.log(`Loading hybrid drum kit: ${kitId} (${source})`);
+
+      // Load samples from hybrid manager
+      const kitSamples = await this.hybridSampleManager.loadDrumLibrary(
+        kitId,
+        source,
+      );
+      this.currentKitSamples = kitSamples;
+
+      // Convert to Tone.js samplers
+      await this.setupHybridDrumSamplers(kitSamples);
+
+      console.log(`Hybrid drum kit loaded successfully: ${kitId}`);
+    } catch (error) {
+      console.error(`Failed to load hybrid drum kit ${kitId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Story 3.16: Switch drum kits using hybrid manager
+   */
+  public async switchDrumKit(
+    kitId: string,
+    source: 'admin' | 'hydrogen',
+  ): Promise<void> {
+    if (!this.hybridSampleManager) {
+      throw new Error('HybridSampleManager not initialized');
+    }
+
+    await this.hybridSampleManager.switchDrumKit(kitId, source);
+  }
+
+  /**
+   * Story 3.16: Handle kit change events from hybrid manager
+   */
+  private async onKitChanged(event: {
+    kitId: string;
+    source: 'admin' | 'hydrogen';
+    metadata: DrumKitMetadata;
+    samples: DrumKitSamples;
+  }): Promise<void> {
+    try {
+      this.currentKitSamples = event.samples;
+      await this.setupHybridDrumSamplers(event.samples);
+      console.log(`Switched to drum kit: ${event.metadata.name}`);
+    } catch (error) {
+      console.error('Failed to switch drum kit:', error);
+    }
+  }
+
+  /**
+   * Story 3.16: Setup Tone.js samplers from hybrid kit samples
+   */
+  private async setupHybridDrumSamplers(
+    kitSamples: DrumKitSamples,
+  ): Promise<void> {
+    // Clear existing samplers
+    this.drumSamplers.forEach((sampler) => sampler.dispose());
+    this.drumSamplers.clear();
+
+    const setupPromises: Promise<void>[] = [];
+
+    // Setup kick drum
+    if (kitSamples.kick.length > 0) {
+      setupPromises.push(
+        this.createSamplerFromBuffers(DrumPiece.KICK, kitSamples.kick),
+      );
+    }
+
+    // Setup snare drum
+    if (kitSamples.snare.length > 0) {
+      setupPromises.push(
+        this.createSamplerFromBuffers(DrumPiece.SNARE, kitSamples.snare),
+      );
+    }
+
+    // Setup hi-hat closed
+    if (kitSamples.hihat.length > 0) {
+      setupPromises.push(
+        this.createSamplerFromBuffers(DrumPiece.HIHAT_CLOSED, kitSamples.hihat),
+      );
+    }
+
+    // Setup hi-hat open
+    if (kitSamples.openHihat && kitSamples.openHihat.length > 0) {
+      setupPromises.push(
+        this.createSamplerFromBuffers(
+          DrumPiece.HIHAT_OPEN,
+          kitSamples.openHihat,
+        ),
+      );
+    }
+
+    // Setup crash
+    if (kitSamples.crash.length > 0) {
+      setupPromises.push(
+        this.createSamplerFromBuffers(DrumPiece.CRASH, kitSamples.crash),
+      );
+    }
+
+    // Setup ride
+    if (kitSamples.ride.length > 0) {
+      setupPromises.push(
+        this.createSamplerFromBuffers(DrumPiece.RIDE, kitSamples.ride),
+      );
+    }
+
+    // Setup toms
+    if (kitSamples.tom1 && kitSamples.tom1.length > 0) {
+      setupPromises.push(
+        this.createSamplerFromBuffers(DrumPiece.TOM_HIGH, kitSamples.tom1),
+      );
+    }
+    if (kitSamples.tom2 && kitSamples.tom2.length > 0) {
+      setupPromises.push(
+        this.createSamplerFromBuffers(DrumPiece.TOM_MID, kitSamples.tom2),
+      );
+    }
+    if (kitSamples.tom3 && kitSamples.tom3.length > 0) {
+      setupPromises.push(
+        this.createSamplerFromBuffers(DrumPiece.TOM_LOW, kitSamples.tom3),
+      );
+    }
+
+    await Promise.all(setupPromises);
+  }
+
+  /**
+   * Story 3.16: Create Tone.js sampler from AudioBuffers
+   */
+  private async createSamplerFromBuffers(
+    drumPiece: DrumPiece,
+    buffers: AudioBuffer[],
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      try {
+        const sampleMapping: Record<string, string> = {};
+        const baseNote = this.getDrumNote(drumPiece);
+
+        // Convert AudioBuffers to data URLs for Tone.js
+        buffers.forEach((buffer, index) => {
+          const velocityNote = `${baseNote}${index + 1}`;
+          const dataUrl = this.audioBufferToDataUrl(buffer);
+          sampleMapping[velocityNote] = dataUrl;
+        });
+
+        // Create Tone.js sampler
+        const sampler = new Tone.Sampler({
+          urls: sampleMapping,
+          release: 1,
+          onload: () => {
+            this.drumSamplers.set(drumPiece, sampler);
+            resolve();
+          },
+          onerror: (error) => {
+            console.error(`Failed to load sampler for ${drumPiece}:`, error);
+            reject(error);
+          },
+        }).toDestination();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Story 3.16: Convert AudioBuffer to data URL for Tone.js
+   */
+  private audioBufferToDataUrl(buffer: AudioBuffer): string {
+    // Convert AudioBuffer to WAV data URL
+    const length = buffer.length;
+    const numberOfChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+
+    // Create WAV file data
+    const arrayBuffer = new ArrayBuffer(44 + length * numberOfChannels * 2);
+    const view = new DataView(arrayBuffer);
+
+    // WAV header
+    const writeString = (offset: number, string: string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + length * numberOfChannels * 2, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numberOfChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numberOfChannels * 2, true);
+    view.setUint16(32, numberOfChannels * 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, length * numberOfChannels * 2, true);
+
+    // Convert float32 samples to int16
+    let offset = 44;
+    for (let i = 0; i < length; i++) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const sample = Math.max(
+          -1,
+          Math.min(1, buffer.getChannelData(channel)[i]),
+        );
+        view.setInt16(offset, sample * 0x7fff, true);
+        offset += 2;
+      }
+    }
+
+    // Convert to base64 data URL
+    const bytes = new Uint8Array(arrayBuffer);
+    const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join(
+      '',
+    );
+    return `data:audio/wav;base64,${btoa(binary)}`;
   }
 
   public playDrumHit(event: DrumEvent): void {

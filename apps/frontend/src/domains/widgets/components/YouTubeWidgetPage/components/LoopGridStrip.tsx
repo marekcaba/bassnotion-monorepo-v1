@@ -22,6 +22,7 @@ export interface LoopGridStripProps {
   duration: number; // Total exercise duration in seconds
   loopRegion?: LoopRegion | null; // Current loop region (controlled)
   onLoopRegionChange: (region: LoopRegion | null) => void;
+  onSeek?: (position: number) => void; // Seek to position in seconds
   className?: string;
 }
 
@@ -38,6 +39,7 @@ export function LoopGridStrip({
   duration,
   loopRegion: loopRegionProp,
   onLoopRegionChange,
+  onSeek,
   className = '',
 }: LoopGridStripProps) {
   // Use prop value for loopRegion (controlled component)
@@ -70,20 +72,9 @@ export function LoopGridStrip({
 
   // Calculate measures based on exercise metadata
   const measures = useMemo((): MeasureData[] => {
-    // Convert duration from milliseconds to seconds if needed
-    const durationInSeconds = duration > 1000 ? duration / 1000 : duration;
-
-    console.log('LoopGridStrip Debug:', {
-      exercise: exercise?.title || 'No exercise',
-      duration,
-      durationInSeconds,
-      bpm: exercise?.bpm,
-      timeSignature: exercise?.timeSignature,
-    });
-
     if (!exercise) {
       // Default to 4 measures if no exercise
-      const measureDuration = durationInSeconds / 4;
+      const measureDuration = duration > 0 ? duration / 4000 : 1; // Convert ms to seconds
       return Array.from({ length: 4 }, (_, i) => ({
         index: i + 1,
         startTime: i * measureDuration,
@@ -92,39 +83,43 @@ export function LoopGridStrip({
       }));
     }
 
-    // Calculate measure count from time signature and duration
+    // Get exercise metadata
     const timeSignature: TimeSignature = exercise.timeSignature || {
       numerator: 4,
       denominator: 4,
     };
     const bpm = exercise.bpm || 120;
-
-    // Calculate beats per measure and measure duration
     const beatsPerMeasure = timeSignature.numerator;
-    const beatValue = timeSignature.denominator; // 4 = quarter note, 8 = eighth note, etc.
+
+    // Calculate total measures from duration_beats if available
+    let totalMeasures: number;
+
+    if (exercise.duration_beats) {
+      // Calculate measures from total beats
+      totalMeasures = Math.ceil(exercise.duration_beats / beatsPerMeasure);
+    } else if (exercise.total_bars) {
+      // Use total_bars if available
+      totalMeasures = exercise.total_bars;
+    } else {
+      // Fallback: calculate from duration
+      const durationInSeconds = duration / 1000;
+      const beatsPerSecond = bpm / 60;
+      const secondsPerMeasure = beatsPerMeasure / beatsPerSecond;
+      totalMeasures = Math.max(
+        1,
+        Math.ceil(durationInSeconds / secondsPerMeasure),
+      );
+    }
+
+    // Calculate measure duration for timeline
     const beatsPerSecond = bpm / 60;
-    const quarterNotesPerBeat = 4 / beatValue; // Convert beat value to quarter note equivalent
-    const quarterNotesPerMeasure = beatsPerMeasure * quarterNotesPerBeat;
-    const measureDurationInSeconds = quarterNotesPerMeasure / beatsPerSecond;
-
-    // Calculate total measure count
-    const totalMeasures = Math.max(
-      4,
-      Math.ceil(durationInSeconds / measureDurationInSeconds),
-    );
+    const measureDurationInSeconds = beatsPerMeasure / beatsPerSecond;
     const measureWidth = 100 / totalMeasures; // Percentage width per measure
-
-    console.log('LoopGridStrip Calculation:', {
-      beatsPerMeasure,
-      measureDurationInSeconds,
-      totalMeasures,
-      measureWidth,
-    });
 
     return Array.from({ length: totalMeasures }, (_, i) => ({
       index: i + 1,
       startTime: i * measureDurationInSeconds,
-      endTime: Math.min((i + 1) * measureDurationInSeconds, durationInSeconds),
+      endTime: (i + 1) * measureDurationInSeconds,
       width: measureWidth,
     }));
   }, [exercise, duration]);
@@ -155,16 +150,36 @@ export function LoopGridStrip({
   // Calculate current playback position as percentage
   const playbackPosition = useMemo(() => {
     if (duration === 0) return 0;
-    const durationInSeconds = duration > 1000 ? duration / 1000 : duration;
-    const currentTimeInSeconds =
-      currentTime > 1000 ? currentTime / 1000 : currentTime;
-    return Math.min((currentTimeInSeconds / durationInSeconds) * 100, 100);
+
+    // Both currentTime and duration should be in milliseconds
+    // Convert to seconds for calculation
+    const durationInSeconds = duration / 1000;
+    const currentTimeInSeconds = currentTime / 1000;
+
+    const percentage = Math.min(
+      (currentTimeInSeconds / durationInSeconds) * 100,
+      100,
+    );
+
+    return percentage;
   }, [currentTime, duration]);
 
   // Handle measure click
   const handleMeasureClick = useCallback(
     (measureIndex: number, event: React.MouseEvent) => {
       event.preventDefault();
+
+      // If Alt/Cmd is held and onSeek is provided, seek to this position
+      if ((event.altKey || event.metaKey) && onSeek) {
+        const measure = measures[measureIndex - 1];
+        if (measure) {
+          onSeek(measure.startTime);
+          console.log(
+            `🎵 Seeking to measure ${measureIndex} at ${measure.startTime}s`,
+          );
+        }
+        return;
+      }
 
       // Check if clicking on already selected measure(s) - clear if so
       if (
@@ -185,7 +200,7 @@ export function LoopGridStrip({
         onLoopRegionChange(newRegion);
       }
     },
-    [loopRegion, onLoopRegionChange, beatsPerMeasure],
+    [loopRegion, onLoopRegionChange, beatsPerMeasure, onSeek, measures],
   );
 
   // Handle resize start
@@ -498,12 +513,18 @@ export function LoopGridStrip({
                 key={measure.index}
                 className={`relative border-r border-slate-600/30 cursor-pointer transition-all duration-150 select-none hover:bg-slate-600/20`}
                 style={{ width: `${measure.width}%` }}
+                title={
+                  onSeek
+                    ? `Click to set loop region. Alt/Cmd+Click to seek to measure ${measure.index}`
+                    : `Click to set loop region`
+                }
                 onClick={(e) => handleMeasureClick(measure.index, e)}
                 onMouseDown={(e) => handleSelectionDragStart(measure.index, e)}
                 onMouseEnter={() => handleDragOver(measure.index)}
                 onTouchStart={(e) => {
                   e.preventDefault();
                   const touch = e.touches[0];
+                  if (!touch) return;
                   const mouseEvent = new MouseEvent('mousedown', {
                     clientX: touch.clientX,
                     clientY: touch.clientY,
@@ -570,6 +591,7 @@ export function LoopGridStrip({
                 onTouchStart={(e) => {
                   e.preventDefault();
                   const touch = e.touches[0];
+                  if (!touch) return;
                   const mouseEvent = new MouseEvent('mousedown', {
                     clientX: touch.clientX,
                     clientY: touch.clientY,
@@ -622,6 +644,7 @@ export function LoopGridStrip({
                 onTouchStart={(e) => {
                   e.preventDefault();
                   const touch = e.touches[0];
+                  if (!touch) return;
                   const mouseEvent = new MouseEvent('mousedown', {
                     clientX: touch.clientX,
                     clientY: touch.clientY,
@@ -652,6 +675,7 @@ export function LoopGridStrip({
                 onTouchStart={(e) => {
                   e.preventDefault();
                   const touch = e.touches[0];
+                  if (!touch) return;
                   const mouseEvent = new MouseEvent('mousedown', {
                     clientX: touch.clientX,
                     clientY: touch.clientY,

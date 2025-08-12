@@ -7,10 +7,7 @@
  * Part of Story 2.2: Task 7, Subtask 7.2
  */
 
-import {
-  type ParsedMidiData,
-  type ParsedTrack,
-} from './MidiParserProcessor.js';
+import { type ParsedMidiData, type ParsedTrack } from './MidiParserProcessor';
 
 export interface MusicalPattern {
   id: string;

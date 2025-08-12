@@ -16,7 +16,7 @@ import {
   MemoryManager,
   useMemoryManager,
   type MemoryUsageMetrics,
-} from '../MemoryManager.js';
+} from '../MemoryManager';
 
 // Mock performance.memory
 const mockPerformanceMemory = {

@@ -8,6 +8,7 @@
       "executor": "@nx/next:build",
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
+      "dependsOn": ["@bassnotion/contracts:build"],
       "options": {
         "outputPath": "dist/apps/frontend"
       }
@@ -34,5 +35,5 @@
       }
     }
   },
-  "tags": []
+  "tags": ["scope:frontend", "type:app"]
 }

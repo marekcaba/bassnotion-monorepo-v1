@@ -11,47 +11,29 @@
 // CORE SERVICES - Main engine components
 // ============================================================================
 
-export { CorePlaybackEngine } from './services/CorePlaybackEngine.js';
-export { AudioContextManager } from './services/AudioContextManager.js';
-export { PerformanceMonitor } from './services/PerformanceMonitor.js';
-export { WorkerPoolManager } from './services/WorkerPoolManager.js';
-export { StatePersistenceManager } from './services/StatePersistenceManager.js';
-export { N8nPayloadProcessor } from './services/N8nPayloadProcessor.js';
-export { AssetManifestProcessor } from './services/AssetManifestProcessor.js';
-export { AssetManager } from './services/AssetManager.js';
-export { NetworkLatencyMonitor } from './services/NetworkLatencyMonitor.js';
-export { CacheMetricsCollector } from './services/CacheMetricsCollector.js';
-
-// ============================================================================
-// PERFORMANCE OPTIMIZATION - A/B Testing and Analytics
-// ============================================================================
-
+// Export new core services from Epic 3.18
 export {
-  ABTestFramework,
-  type ExperimentConfig,
-  type ExperimentVariant,
-  type ExperimentStatus,
-  type OptimizationCategory,
-  type AudioOptimizationConfig,
-  type ExperimentResult,
-  type ExperimentAnalysis,
-  type RollbackCondition,
-  type DeviceTargeting,
-  type UserTargeting,
-  type ExperimentMetrics,
-  type StatisticalMetrics,
-  type DeviceInfo,
-  type VariantAnalysis,
-  type RiskAssessment,
-  type ExperimentRecommendation,
-} from './services/ABTestFramework.js';
+  ServiceRegistry,
+  AudioEngine,
+  EventBus,
+  UnifiedTransport,
+  PluginManager,
+  CoreServices,
+  createCoreServices
+} from './services/core/index.js';
+
+// ============================================================================
+// PERFORMANCE OPTIMIZATION - Removed in Epic 3.18
+// ============================================================================
+
+// A/B Testing framework removed as part of service consolidation
 
 // ============================================================================
 // PLUGIN ARCHITECTURE - Extensible audio processing
 // ============================================================================
 
-export { BaseAudioPlugin } from './services/BaseAudioPlugin.js';
-export { PluginManager } from './services/PluginManager.js';
+// PluginManager is now part of core services, exported above
+// BaseAudioPlugin removed - use plugin types instead
 
 // ============================================================================
 // ERROR HANDLING - Comprehensive error management
@@ -97,7 +79,7 @@ export {
   isNetworkError,
   isMobileError,
   isValidationError,
-} from './services/errors/index.js';
+} from './services/errors/index';
 
 // ============================================================================
 // TYPE DEFINITIONS - TypeScript interfaces and types
@@ -153,7 +135,7 @@ export type {
   WorkerInitPayload,
   AudioStreamConfig,
   SharedAudioBuffer,
-} from './types/audio.js';
+} from './types/audio';
 
 export type {
   // Plugin system types
@@ -170,13 +152,23 @@ export type {
   PluginManagerConfig,
   PluginManagerEvents,
   PluginRegistryEntry,
-} from './types/plugin.js';
+} from './types/plugin';
 
 // ============================================================================
 // REACT INTEGRATION - Hooks and state management
 // ============================================================================
 
-export { useCorePlaybackEngine } from './hooks/useCorePlaybackEngine.js';
+// Provider for new architecture
+export { AudioProvider } from './providers/AudioProvider.js';
+
+// New hooks from Epic 3.18 architecture
+export { useAudio } from './hooks/useAudio.js';
+export { useTransport } from './hooks/useTransport.js';
+export { usePlugins } from './hooks/usePlugins.js';
+export { useToneInit } from './hooks/useToneInit.js';
+
+// Legacy hooks - these should be migrated to new hooks
+export { useCorePlaybackEngine } from './hooks/useCorePlaybackEngine';
 
 // ============================================================================
 // STATE MANAGEMENT - Zustand store
@@ -186,7 +178,7 @@ export {
   usePlaybackStore,
   playbackSelectors,
   type PlaybackStore,
-} from './store/playbackStore.js';
+} from './store/playbackStore';
 
 // ============================================================================
 // UTILITIES - Helper functions and device detection
@@ -205,7 +197,7 @@ export {
   // Type exports for device detection
   type DeviceCapabilities,
   type MobileAudioConstraints,
-} from './utils/deviceDetection.js';
+} from './utils/deviceDetection';
 
 // ============================================================================
 // CONSTANTS - Configuration defaults and enums
@@ -243,7 +235,11 @@ export {
 // ENUMS - Direct enum exports for external use
 // ============================================================================
 
-export { PluginCategory, PluginPriority, PluginState } from './types/plugin.js';
+export { PluginCategory, PluginPriority, PluginState } from './types/plugin';
+export * from './types/pattern';
+export * from './types/region';
+export * from './types/timing';
+export * from './types/track';
 
 // ============================================================================
 // VERSION INFO - For debugging and compatibility
@@ -274,10 +270,9 @@ export const isFeatureSupported = (
 // ============================================================================
 
 /**
- * @deprecated Use CorePlaybackEngine instead
- * This alias is provided for backward compatibility during Epic 2 transition
+ * @deprecated Use AudioEngine from core services instead
+ * Legacy exports removed in Epic 3.18
  */
-export { CorePlaybackEngine as CoreAudioEngine } from './services/CorePlaybackEngine.js';
 
 // ============================================================================
 // LAZY IMPORTS - For optional features that don't exist yet
@@ -315,26 +310,10 @@ export const LazyImports = {
   },
 } as const;
 
-export type {
-  // State Persistence Types
-  PersistenceConfig,
-  PersistedState,
-  StorageQuota,
-  PersistenceMetrics,
-} from './services/StatePersistenceManager.js';
+// State persistence types removed - use core services state management
 
-// MOBILE OPTIMIZATION - Task 7: Adaptive Quality Scaling and Battery Management
-export { MobileOptimizer } from './services/MobileOptimizer.js';
-export { BackgroundProcessor } from './services/BackgroundProcessor.js';
-export { IOSOptimizer } from './services/IOSOptimizer.js';
-export { AndroidOptimizer } from './services/AndroidOptimizer.js';
-export {
-  BatteryManager,
-  type BatteryUsageMetrics,
-  type PowerManagementSettings,
-  type BatteryOptimizationSuggestion,
-  type BatteryHistoryEntry,
-} from './services/BatteryManager.js';
+// MOBILE OPTIMIZATION - Removed in Epic 3.18
+// Mobile optimization is now handled by monitoring services
 export type {
   DeviceClass,
   QualityLevel,
@@ -377,26 +356,13 @@ export type {
   AndroidAudioInterruption,
   AndroidAudioRouteChangeEvent,
   AndroidOptimizationDecision,
-} from './types/audio.js';
+} from './types/audio';
 
-// Resource Management & Cleanup
-export { ResourceManager } from './services/ResourceManager.js';
-export { MemoryLeakDetector } from './services/MemoryLeakDetector.js';
-export { GarbageCollectionOptimizer } from './services/GarbageCollectionOptimizer.js';
-export { AudioResourceDisposer } from './services/AudioResourceDisposer.js';
-export { ResourceUsageMonitor } from './services/ResourceUsageMonitor.js';
+// Resource Management & Cleanup - Removed in Epic 3.18
+// Resource management is now handled within core services
 
-// Audio Compression Engine - Task 13.4
-export {
-  AudioCompressionEngine,
-  type AudioCompressionConfig,
-  type CompressionProfile,
-  type CompressionResult,
-  type CompressionOptions,
-  type CompressionMetrics,
-  type AudioFormat,
-  type CompressionAlgorithm,
-} from './services/AudioCompressionEngine.js';
+// Audio Compression - Removed in Epic 3.18
+// Compression functionality moved to plugin architecture
 
 // Enhanced mobile optimization exports - NEW for Task 12.1
 export type {
@@ -409,15 +375,15 @@ export type {
   DynamicOptimizationState,
   EnhancedOptimizationRules,
   DeviceOptimizationMetrics,
-} from './types/audio.js';
+} from './types/audio';
 
 // ============================================================================
 // ENHANCED REACT HOOKS - NEW for Task 15.3: Widget Consumption Hooks
 // ============================================================================
 
 // NEW: Widget-optimized hooks for easy consumption
-export { usePlaybackState } from './hooks/usePlaybackState.js';
-export type { UsePlaybackStateReturn } from './hooks/usePlaybackState.js';
+export { usePlaybackState } from './hooks/usePlaybackState';
+export type { UsePlaybackStateReturn } from './hooks/usePlaybackState';
 
-export { useAssetLoading } from './hooks/useAssetLoading.js';
-export type { UseAssetLoadingReturn } from './hooks/useAssetLoading.js';
+export { useAssetLoading } from './hooks/useAssetLoading';
+export type { UseAssetLoadingReturn } from './hooks/useAssetLoading';

@@ -163,6 +163,8 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
         'CUSTOM_BASSLINE',
         'WIDGET_HEARTBEAT',
         'PERFORMANCE_UPDATE',
+        'AUDIO_SOURCE_REGISTERED',
+        'AUDIO_SOURCE_UNREGISTERED',
       ];
       if (skipEvents.includes(event.type)) {
         if (debugMode) {
@@ -291,8 +293,8 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
       }
     };
 
-    // Use longer monitoring interval to reduce unnecessary checks
-    const actualInterval = Math.max(monitoringInterval, 15000); // Minimum 15 seconds
+    // Use the monitoring interval as specified (removed 15s minimum for better real-time performance)
+    const actualInterval = monitoringInterval;
     const interval = setInterval(monitorPerformance, actualInterval);
 
     if (debugMode) {

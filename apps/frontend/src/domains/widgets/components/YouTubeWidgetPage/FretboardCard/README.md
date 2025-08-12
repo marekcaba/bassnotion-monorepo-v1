@@ -48,7 +48,6 @@ FretboardCard/
 The FretboardCard manages multiple interconnected state sources:
 
 1. **2D Local State** (`useFretboardState`)
-
    - `selectedDots`: Map<string, number[]> - user-selected dots with order numbers
    - `selectionOrder`: number - counter for sequential dot selection
    - `stringCount`: 4 | 5 | 6 - bass guitar string configuration
@@ -57,13 +56,11 @@ The FretboardCard manages multiple interconnected state sources:
    - `dragOverTarget`: DragOverTarget | null - drag hover target
 
 2. **3D Shared State** (Props from parent)
-
    - `selectedDots3D`: Map<string, number[]> - shared between 2D and 3D modes
    - `stringCount3D`: 4 | 5 | 6 - shared string count
    - `cameraMode`: 'overview' | 'action' - 3D camera configuration
 
 3. **Exercise State** (`useFretboardExercise`)
-
    - `selectedExercise`: Exercise data from sync system
    - `exerciseNotes`: ExerciseNote[] - exercise metadata
    - `hasExercise`: boolean - whether an exercise is loaded

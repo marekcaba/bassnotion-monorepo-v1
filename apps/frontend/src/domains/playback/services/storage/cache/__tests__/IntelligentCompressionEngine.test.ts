@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { IntelligentCompressionEngine } from '../IntelligentCompressionEngine.js';
+import { IntelligentCompressionEngine } from '../IntelligentCompressionEngine';
 import type {
   IntelligentCompressionConfig,
   NetworkAdaptiveConfig,

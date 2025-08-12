@@ -1,0 +1,2027 @@
+Service Functionality Analysis
+=============================
+
+
+=== ABTestFramework ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ABTestFramework.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== AnalyticsEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/AnalyticsEngine.ts
+
+
+/**
+ * PracticeSessionTracker - Tracks and analyzes practice sessions
+ */
+export class PracticeSessionTracker extends EventEmitter {
+
+/**
+ * BehaviorPatternRecognizer - Analyzes user behavior patterns and learning styles
+ */
+export class BehaviorPatternRecognizer extends EventEmitter {
+
+/**
+ * IntelligentSuggestionEngine - Generates intelligent practice suggestions
+ */
+export class IntelligentSuggestionEngine extends EventEmitter {
+
+/**
+ * ProgressAnalyzer - Analyzes user progress and performance trends
+ */
+export class ProgressAnalyzer extends EventEmitter {
+
+/**
+ * AnalyticsEngine - Main orchestrator for analytics and learning intelligence
+ */
+export class AnalyticsEngine extends EventEmitter {
+
+Key Methods/Properties:
+
+
+=== AndroidOptimizer ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/AndroidOptimizer.ts
+
+
+/**
+ * Browser API availability check utilities
+ */
+interface BrowserAPIs {
+
+Key Methods/Properties:
+
+
+=== AssetManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/AssetManager.ts
+
+
+/**
+ * Simple semaphore for controlling concurrency
+ */
+class Semaphore {
+
+Key Methods/Properties:
+
+
+=== AssetManifestProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/AssetManifestProcessor.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== AudioCompressionEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/AudioCompressionEngine.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== AudioContextManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/AudioContextManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== AudioEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/AudioEngine.ts
+
+
+/**
+ * Configuration for creating a sampler instance
+ */
+export interface SamplerConfig {
+
+/**
+ * Audio sampler interface
+ */
+export interface AudioSampler {
+
+/**
+ * Main audio engine interface
+ * Defines contract for audio operations without Tone.js dependency
+ */
+export interface AudioEngine {
+
+/**
+ * Tone.js implementation of AudioEngine
+ * Handles dynamic loading and lazy initialization
+ */
+class ToneAudioEngine implements AudioEngine {
+
+/**
+ * Factory for creating AudioEngine instances
+ * Centralizes dynamic loading logic and error handling
+ */
+export class AudioEngineFactory {
+
+/**
+
+Key Methods/Properties:
+
+
+=== AudioResourceDisposer ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/AudioResourceDisposer.ts
+
+
+/**
+ * Timer Service Interface for Dependency Injection
+ *
+ * Enables testable timer operations and removes tight coupling to global functions.
+ * Follows SOLID principles and makes the code more maintainable.
+ */
+export interface TimerService {
+
+/**
+ * Default Timer Service Implementation
+ *
+ * Uses global timer functions in production while providing
+ * a clean interface for dependency injection in tests.
+ */
+export class DefaultTimerService implements TimerService {
+
+Key Methods/Properties:
+
+
+=== BackgroundProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/BackgroundProcessor.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== BaseAudioPlugin ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/BaseAudioPlugin.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== BatteryManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/BatteryManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== BrowserCompatibilityDetector ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/BrowserCompatibilityDetector.ts
+
+
+/**
+ * Comprehensive browser compatibility detection for Web Worker threading
+ */
+export class BrowserCompatibilityDetector {
+
+Key Methods/Properties:
+
+
+=== CacheMetricsCollector ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/CacheMetricsCollector.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== CDNCache ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/CDNCache.ts
+
+
+/**
+ * Usage predictor for intelligent prefetching
+ */
+class UsagePredictor {
+
+Key Methods/Properties:
+
+
+=== ComprehensiveStateManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ComprehensiveStateManager.ts
+
+
+/**
+ * Complete system state capturing all controller states
+ */
+export interface ComprehensiveSystemState {
+
+/**
+ * Automation point with timing and curve information
+ */
+export interface AutomationPoint {
+
+/**
+ * Automation lane for a specific parameter
+ */
+export interface AutomationLane {
+
+/**
+ * Preset system with intelligent auto-generation
+ */
+export interface StatePreset {
+
+/**
+ * Session restoration data
+ */
+export interface SessionSnapshot {
+
+/**
+ * Behavior pattern for learning intelligence
+ */
+export interface BehaviorPattern {
+
+Key Methods/Properties:
+
+
+=== AssetLoadingController ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/CorePlaybackEngine/controllers/AssetLoadingController.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== TransportController ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/CorePlaybackEngine/controllers/TransportController.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== CorePlaybackEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/CorePlaybackEngine/CorePlaybackEngine.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== AudioSourceManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/CorePlaybackEngine/managers/AudioSourceManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== EventManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/CorePlaybackEngine/managers/EventManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== StateManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/CorePlaybackEngine/managers/StateManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ToneManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/CorePlaybackEngine/managers/ToneManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== DeviceInfoService ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/DeviceInfoService.ts
+
+
+/**
+ * Service for accessing device information in a testable way
+ */
+export class DeviceInfoService {
+
+Key Methods/Properties:
+
+
+=== AudioContextError ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/errors/AudioContextError.ts
+
+
+/**
+ * Helper function to get recovery actions based on error code
+ */
+function getRecoveryActions(
+
+/**
+ * Determine severity based on error code
+ */
+function getSeverity(code: AudioContextErrorCode): ErrorSeverity {
+
+/**
+ * Get user-friendly message
+ */
+function getUserMessage(code: AudioContextErrorCode): string {
+
+/**
+ * Get technical message for developers
+ */
+function getTechnicalMessage(
+
+/**
+ * Get documentation URL for error code
+ */
+function getDocumentationUrl(code: AudioContextErrorCode): string {
+
+/**
+ * Factory function to create AudioContextError with proper context
+ */
+export function createAudioContextError(
+
+Key Methods/Properties:
+
+
+=== base ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/errors/base.ts
+
+
+/**
+ * Base PlaybackError class with comprehensive error handling
+ */
+export class PlaybackError extends Error {
+
+/**
+ * Utility function to create standardized error context
+ */
+export function createErrorContext(
+
+/**
+ * Utility function to determine severity based on error characteristics
+ */
+export function determineSeverity(
+
+Key Methods/Properties:
+
+
+=== CircuitBreaker ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/errors/CircuitBreaker.ts
+
+
+/**
+ * Circuit Breaker Manager for handling multiple circuit breakers
+ */
+export class CircuitBreakerManager {
+
+Key Methods/Properties:
+
+
+=== ErrorClassifier ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/errors/ErrorClassifier.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ErrorRecovery ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/errors/ErrorRecovery.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ErrorReporter ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/errors/ErrorReporter.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== GracefulDegradation ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/errors/GracefulDegradation.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== MobileError ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/errors/MobileError.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== NetworkError ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/errors/NetworkError.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== PerformanceError ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/errors/PerformanceError.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ResourceError ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/errors/ResourceError.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== typeGuards ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/errors/typeGuards.ts
+
+
+/**
+ * Check if error is a PlaybackError instance
+ */
+export function isPlaybackError(error: unknown): error is PlaybackError {
+
+/**
+ * Check if error is an AudioContextError instance
+ */
+export function isAudioContextError(
+
+/**
+ * Check if error is a PerformanceError instance
+ */
+export function isPerformanceError(error: unknown): error is PerformanceError {
+
+/**
+ * Check if error is a ResourceError instance
+ */
+export function isResourceError(error: unknown): error is ResourceError {
+
+/**
+ * Check if error is a NetworkError instance
+ */
+export function isNetworkError(error: unknown): error is NetworkError {
+
+/**
+ * Check if error is a MobileError instance
+ */
+export function isMobileError(error: unknown): error is MobileError {
+
+Key Methods/Properties:
+
+
+=== ValidationError ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/errors/ValidationError.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ExerciseTimelineAdapter ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ExerciseTimelineAdapter.ts
+
+
+/**
+ * Create an exercise timeline adapter
+ */
+export function createExerciseTimelineAdapter(): ExerciseToTransportAdapter {
+
+Key Methods/Properties:
+
+
+=== ExerciseTimelineIntegrator ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ExerciseTimelineIntegrator.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== GarbageCollectionOptimizer ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/GarbageCollectionOptimizer.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== HybridDrumSampleManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/HybridDrumSampleManager.ts
+
+
+/**
+ * Hybrid Drum Sample Manager
+ *
+ * Manages loading and switching between:
+ * - Admin-curated drum samples from Supabase
+ * - Professional Hydrogen drum kits
+ *
+ * Leverages existing AudioSampleManager infrastructure for caching,
+ * quality adaptation, and progressive loading.
+ */
+export class HybridDrumSampleManager extends EventEmitter {
+
+Key Methods/Properties:
+
+
+=== initializeAudio ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/initializeAudio.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== IntelligentTempoController ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/IntelligentTempoController.ts
+
+
+/**
+ * Advanced tempo ramping engine with multiple algorithms
+ */
+class TempoRampingEngine {
+
+/**
+ * Groove preservation system for maintaining musical feel
+ */
+class GroovePreserver {
+
+/**
+ * Practice automation engine for gradual tempo progression
+ */
+class TempoAutomationEngine {
+
+/**
+ * Learning analyzer for intelligent tempo suggestions
+ */
+class TempoLearningAnalyzer {
+
+/**
+ * Main Intelligent Tempo Controller
+ */
+export class IntelligentTempoController {
+
+Key Methods/Properties:
+
+
+=== IOSOptimizer ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/IOSOptimizer.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== LoopController ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/LoopController.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== MemoryLeakDetector ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/MemoryLeakDetector.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== MIDIAssetOrchestrator ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/MIDIAssetOrchestrator.ts
+
+
+/**
+ * Core MIDI Orchestration Engine
+ */
+export class MIDIAssetOrchestrator {
+
+Key Methods/Properties:
+
+
+=== MixingConsole ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/MixingConsole.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== MobileOptimizer ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/MobileOptimizer.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== MusicalTimeEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/MusicalTimeEngine.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== N8nPayloadProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/N8nPayloadProcessor.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== NetworkLatencyMonitor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/NetworkLatencyMonitor.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== PerformanceMonitor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/PerformanceMonitor.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== PerformanceOptimizationEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/PerformanceOptimizationEngine.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== PluginLoader ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/PluginLoader.ts
+
+
+/**
+ * Plugin loading configuration
+ */
+export interface PluginLoaderConfig {
+
+/**
+ * Plugin loading result
+ */
+export interface PluginLoadResult {
+
+/**
+ * Plugin loading context
+ */
+export interface PluginLoadContext {
+
+/**
+ * Plugin cache entry
+ */
+interface PluginCacheEntry {
+
+/**
+ * Default plugin loader configuration
+ */
+const DEFAULT_CONFIG: PluginLoaderConfig = {
+
+Key Methods/Properties:
+
+
+=== PluginManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/PluginManager.ts
+
+
+/**
+ * Default plugin manager configuration
+ */
+const DEFAULT_CONFIG: PluginManagerConfig = {
+
+Key Methods/Properties:
+
+
+=== AssetInstrumentIntegrationProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/AssetInstrumentIntegrationProcessor.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== BassInstrumentProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/BassInstrumentProcessor.ts
+
+
+/**
+ * Professional Bass Instrument Processor
+ */
+export class BassInstrumentProcessor {
+
+/**
+ * Pitch Bend Processor for realistic bass slides
+ */
+class PitchBendProcessor {
+
+/**
+ * Bass Articulation Engine
+ */
+class BassArticulationEngine {
+
+/**
+ * Bass Amp Simulator
+ */
+class BassAmpSimulator {
+
+/**
+ * Bass Expression Controller
+ */
+class BassExpressionController {
+
+Key Methods/Properties:
+
+
+=== BassProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/BassProcessor.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ChordInstrumentProcessor-velocity ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/ChordInstrumentProcessor-velocity.ts
+
+
+/**
+ * Helper function to determine velocity from musical context
+ */
+export function getVelocityFromDynamic(dynamic: string): number {
+
+/**
+ * Helper to convert chord voicing to velocities based on voice leading
+ */
+export function getVelocitiesForVoicing(
+
+Key Methods/Properties:
+
+
+=== ChordInstrumentProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ChordTypes ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/ChordTypes.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== DrumInstrumentProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/DrumInstrumentProcessor.ts
+
+
+/**
+ * Professional Drum Instrument Processor with Logic Pro X Drummer features
+ */
+export class DrumInstrumentProcessor {
+
+/**
+ * DrummerEngine - Core Logic Pro X Drummer-inspired engine
+ */
+class DrummerEngine {
+
+/**
+ * GrooveEngine - Logic Pro X style groove and swing processing
+ */
+class GrooveEngine {
+
+/**
+ * FillScheduler - Interactive fill triggering and scheduling
+ */
+class FillScheduler {
+
+/**
+ * PatternManager - Pattern and loop management with quantized switching
+ */
+class PatternManager {
+
+/**
+ * HumanizationEngine - Timing and velocity humanization
+ */
+class HumanizationEngine {
+
+Key Methods/Properties:
+
+
+=== DrumProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/DrumProcessor.ts
+
+
+/**
+ * Drum processing parameters
+ */
+interface _DrumProcessorParameters {
+
+/**
+ * Beat detection result
+ */
+interface BeatDetectionResult {
+
+/**
+ * Rhythm analysis result
+ */
+interface RhythmAnalysisResult {
+
+Key Methods/Properties:
+
+
+=== EnhancedChordProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/EnhancedChordProcessor.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== EnhancedMetronomeProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/EnhancedMetronomeProcessor.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== organ-synthesis ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/examples/organ-synthesis.ts
+
+
+/**
+ * Hammond B3-style drawbar organ synthesis
+ */
+export function createDrawbarOrgan(): Tone.PolySynth {
+
+Key Methods/Properties:
+
+
+=== pad-synthesis ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/examples/pad-synthesis.ts
+
+
+/**
+ * Warm analog-style pad synthesizer
+ */
+export function createWarmPadSynth(): Tone.PolySynth {
+
+Key Methods/Properties:
+
+
+=== InstrumentAssetOptimizer ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/InstrumentAssetOptimizer.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== InstrumentLifecycleManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/InstrumentLifecycleManager.ts
+
+
+/**
+ * Enterprise-Level Instrument Lifecycle Manager
+ *
+ * Manages the complete lifecycle of all professional instruments with
+ * enterprise-grade resource management, memory optimization, and performance monitoring.
+ */
+export class InstrumentLifecycleManager {
+
+Key Methods/Properties:
+
+
+=== LongPadSampler ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/LongPadSampler.ts
+
+
+/**
+ * Singleton instance for global use
+ */
+export const longPadSampler = new LongPadSampler();
+
+Key Methods/Properties:
+
+
+=== MetronomeInstrumentProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/MetronomeInstrumentProcessor.ts
+
+
+/**
+ * Professional Metronome Instrument Processor
+ */
+export class MetronomeInstrumentProcessor {
+
+Key Methods/Properties:
+
+
+=== MidiParserProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/MidiParserProcessor.ts
+
+
+/**
+ * Enhanced MidiParserProcessor class with comprehensive music theory analysis
+ */
+export class MidiParserProcessor {
+
+/**
+ * Music Theory Analyzer for comprehensive harmonic analysis
+ */
+class MusicTheoryAnalyzer {
+
+Key Methods/Properties:
+
+
+=== MusicalContextAnalyzer ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/MusicalContextAnalyzer.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== MusicalExpressionEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/MusicalExpressionEngine.ts
+
+
+/**
+ * Advanced Musical Expression Engine
+ *
+ * Provides sophisticated musical interpretation and expression processing
+ * for all instrument types with context-aware musical intelligence.
+ */
+export class MusicalExpressionEngine extends EventEmitter {
+
+/**
+ * Swing Processor for swing quantization
+ */
+class SwingProcessor {
+
+/**
+ * Micro-timing Engine for subtle timing adjustments
+ */
+class MicroTimingEngine {
+
+/**
+ * Dynamics Processor for velocity and expression
+ */
+class DynamicsProcessor {
+
+/**
+ * Articulation Processor for musical articulations
+ */
+class ArticulationProcessor {
+
+/**
+
+Key Methods/Properties:
+
+
+=== N8nAssetPipelineProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/N8nAssetPipelineProcessor.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== PerformanceOptimizer ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/PerformanceOptimizer.ts
+
+
+/**
+ * Performance Optimizer & Quality Assurance Engine
+ *
+ * Provides comprehensive performance optimization and quality assurance
+ * for professional MIDI synthesis and instrument management.
+ */
+export class PerformanceOptimizer extends EventEmitter {
+
+Key Methods/Properties:
+
+
+=== PerformanceTunerOptimizer ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/PerformanceTunerOptimizer.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== RhodesVelocitySampler ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/RhodesVelocitySampler.ts
+
+
+/**
+ * Singleton instance for global use
+ */
+export const rhodesPiano = new RhodesVelocitySampler();
+
+Key Methods/Properties:
+
+
+=== SalamanderVelocitySampler ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/SalamanderVelocitySampler.ts
+
+
+/**
+ * Singleton instance for global use
+ */
+export const salamanderPiano = new SalamanderVelocitySampler();
+
+Key Methods/Properties:
+
+
+=== SyncProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/SyncProcessor.ts
+
+
+/**
+ * Synchronization parameters
+ */
+interface _SyncProcessorParameters {
+
+/**
+ * Tempo detection result
+ */
+interface TempoDetectionResult {
+
+/**
+ * Phase alignment result
+ */
+interface PhaseAlignmentResult {
+
+/**
+ * Synchronization state
+ */
+interface SyncState {
+
+Key Methods/Properties:
+
+
+=== TheSawSampler ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/TheSawSampler.ts
+
+
+/**
+ * Singleton instance for global use
+ */
+export const theSawSampler = new TheSawSampler();
+
+Key Methods/Properties:
+
+
+=== toneLoader ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/toneLoader.ts
+
+
+/**
+ * Verify that two Tone instances share the same context
+ */
+export function verifyToneContext(tone1: any, tone2: any): boolean {
+
+/**
+ * Reset the cached Tone instance (useful for testing)
+ */
+export function resetToneCache(): void {
+
+Key Methods/Properties:
+
+
+=== TrackManagerProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/TrackManagerProcessor.ts
+
+
+/**
+ * Advanced Track Classification Engine
+ * Implements multiple algorithms for intelligent track identification
+ */
+export class TrackClassifier {
+
+/**
+ * Channel Analysis Algorithm
+ * Classifies tracks based on MIDI channel conventions
+ */
+export class ChannelAnalysisAlgorithm implements TrackIdentificationAlgorithm {
+
+/**
+ * Track Name Analysis Algorithm
+ * Classifies tracks based on track names and text markers
+ */
+export class TrackNameAnalysisAlgorithm
+
+/**
+ * Note Range Analysis Algorithm
+ * Classifies tracks based on MIDI note ranges
+ */
+export class NoteRangeAnalysisAlgorithm
+
+/**
+ * Pattern Analysis Algorithm
+ * Classifies tracks based on musical patterns
+ */
+export class PatternAnalysisAlgorithm implements TrackIdentificationAlgorithm {
+
+Key Methods/Properties:
+
+
+=== WurlitzerVelocitySampler ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/WurlitzerVelocitySampler.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== PrecisionSynchronizationEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/PrecisionSynchronizationEngine.ts
+
+
+/**
+ * Musical position with Epic 2 precision tracking
+ */
+export interface MusicalPosition {
+
+/**
+ * Time signature for musical context
+ */
+export interface TimeSignature {
+
+/**
+ * Drift measurement for Epic 2 advanced correction
+ */
+export interface DriftMeasurement {
+
+/**
+ * Device-specific calibration profile
+ */
+export interface DeviceProfile {
+
+/**
+ * Synchronization health metrics
+ */
+export interface SyncHealthMetrics {
+
+/**
+ * Visual component synchronization interface
+ */
+export interface VisualSyncComponent {
+
+Key Methods/Properties:
+
+
+=== ProfessionalPlaybackController ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalPlaybackController.ts
+
+
+/**
+ * Performance metrics for professional control system
+ * Aligned with NFR-PF-04 (<200ms response time requirement)
+ */
+export interface ControlPerformanceMetrics {
+
+/**
+ * Audio fade configuration for professional transitions
+ */
+export interface AudioFadeConfig {
+
+/**
+ * Predictive buffer configuration
+ */
+export interface PredictiveBufferConfig {
+
+/**
+ * State recovery configuration
+ */
+export interface StateRecoveryConfig {
+
+/**
+ * Professional playback controller configuration
+ * Comprehensive configuration aligned with Epic 2 architecture
+ */
+export interface ProfessionalPlaybackConfig {
+
+/**
+ * Playback control events for comprehensive system integration
+
+Key Methods/Properties:
+
+
+=== ErrorHandler ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/managers/ErrorHandler.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== EventQueueManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/managers/EventQueueManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== MetricsManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/managers/MetricsManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== PerformanceOptimizer ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/managers/PerformanceOptimizer.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== PerformanceReportingManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/managers/PerformanceReportingManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== SchedulingLoop ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/managers/SchedulingLoop.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== StrategyManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/managers/StrategyManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ThreadedSchedulingManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/managers/ThreadedSchedulingManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== TransportEventHandler ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/managers/TransportEventHandler.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ProfessionalTransportScheduler ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ImmediateSchedulingStrategy ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/strategies/ImmediateSchedulingStrategy.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== NextBarSchedulingStrategy ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/strategies/NextBarSchedulingStrategy.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== QuantizedSchedulingStrategy ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/strategies/QuantizedSchedulingStrategy.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== EventIdGenerator ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/utils/EventIdGenerator.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== logger ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/utils/logger.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== SchedulingContextFactory ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/utils/SchedulingContextFactory.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== TimeUtils ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler/utils/TimeUtils.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== QualityScaler ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/QualityScaler.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== QualityTransitionManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/QualityTransitionManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ResourceManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ResourceManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ResourceUsageMonitor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ResourceUsageMonitor.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== SampleAccurateTimelineMapper ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/SampleAccurateTimelineMapper.ts
+
+
+/**
+ * Professional sample-accurate timeline mapper
+ * Implements 0.0208ms precision timing at 48kHz sample rate
+ */
+export class SampleAccurateTimelineMapper {
+
+Key Methods/Properties:
+
+
+=== StatePersistenceManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/StatePersistenceManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== AdaptiveAudioStreamer ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/AdaptiveAudioStreamer.ts
+
+
+/**
+ * Adaptive Audio Streamer
+ *
+ * Orchestrates adaptive streaming with progressive loading and format optimization.
+ * Provides intelligent quality adaptation, chunked loading, and real-time optimization.
+ */
+export class AdaptiveAudioStreamer {
+
+Key Methods/Properties:
+
+
+=== SampleAnalyticsEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/analytics/SampleAnalyticsEngine.ts
+
+
+/**
+ * Analytics aggregation result
+ */
+export interface AnalyticsAggregation {
+
+/**
+ * Quality trend analysis
+ */
+export interface QualityTrend {
+
+/**
+ * Performance alert
+ */
+export interface PerformanceAlert {
+
+/**
+ * Analytics recommendation
+ */
+export interface AnalyticsRecommendation {
+
+/**
+ * Real-time monitoring data
+ */
+export interface RealTimeMonitoringData {
+
+/**
+ * Analytics report
+ */
+export interface AnalyticsReport {
+
+Key Methods/Properties:
+
+
+=== AudioSampleManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/AudioSampleManager.ts
+
+
+/**
+ * Professional Audio Sample Manager
+ *
+ * Provides enterprise-grade audio sample management with:
+ * - Multi-format support (WAV, MP3, OGG, FLAC, AAC, M4A, WebM)
+ * - Dynamic compression and quality adaptation
+ * - Professional sample library management
+ * - Adaptive streaming with progressive loading
+ * - Intelligent caching with usage-based optimization
+ * - Comprehensive analytics and quality monitoring
+ * - Integration with existing storage and predictive loading systems
+ */
+export class AudioSampleManager extends EventEmitter {
+
+Key Methods/Properties:
+
+
+=== AdvancedCacheManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/cache/AdvancedCacheManager.ts
+
+
+/**
+ * ML training data for cache optimization
+ */
+interface MLTrainingData {
+
+/**
+ * Machine learning features for cache optimization
+ */
+interface MLFeatures {
+
+/**
+ * Layer performance metrics
+ */
+interface LayerPerformanceMetrics {
+
+/**
+ * Cache conflict resolution strategy
+ */
+interface _CacheConflictResolution {
+
+/**
+ * Compression algorithm configuration
+ */
+interface _CompressionAlgorithmConfig {
+
+/**
+ * Advanced Multi-Level Cache Manager
+ *
+ * Provides enterprise-grade caching with machine learning optimization,
+
+Key Methods/Properties:
+
+
+=== CacheAnalyticsEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/cache/CacheAnalyticsEngine.ts
+
+
+/**
+ * Enterprise-grade Cache Analytics Engine
+ * Provides comprehensive analytics, pattern analysis, and optimization recommendations
+ */
+export class CacheAnalyticsEngine {
+
+Key Methods/Properties:
+
+
+=== CacheSynchronizationEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/cache/CacheSynchronizationEngine.ts
+
+
+/**
+ * Extended resolver interface for conflict resolution
+ */
+interface ExtendedResolutionStrategy {
+
+/**
+ * Extended merge strategy interface
+ */
+interface ExtendedMergeStrategy {
+
+/**
+ * Cache Synchronization Engine
+ * Handles cache synchronization across multiple layers with intelligent conflict resolution
+ */
+export class CacheSynchronizationEngine {
+
+Key Methods/Properties:
+
+
+=== EvictionPolicyEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/cache/EvictionPolicyEngine.ts
+
+
+/**
+ * Eviction candidate information
+ */
+export interface EvictionCandidate {
+
+/**
+ * Eviction policy configuration
+ */
+export interface EvictionPolicyConfig {
+
+/**
+ * Eviction statistics
+ */
+export interface EvictionStatistics {
+
+/**
+ * Eviction Policy Engine
+ *
+ * Implements intelligent eviction strategies to optimize cache performance and memory usage.
+ * Supports multiple eviction policies and adapts to memory pressure and usage patterns.
+ */
+export class EvictionPolicyEngine {
+
+Key Methods/Properties:
+
+
+=== IntelligentCacheRouter ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/cache/IntelligentCacheRouter.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== IntelligentCompressionEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/cache/IntelligentCompressionEngine.ts
+
+
+/**
+ * Intelligent Compression Engine
+ * Provides format-specific compression with quality preservation and adaptive optimization
+ */
+export class IntelligentCompressionEngine {
+
+Key Methods/Properties:
+
+
+=== MemoryManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/cache/MemoryManager.ts
+
+
+/**
+ * Memory usage information
+ */
+export interface MemoryUsageInfo {
+
+/**
+ * Memory Manager
+ *
+ * Monitors system memory usage and optimizes cache behavior based on memory pressure.
+ * Provides adaptive cache sizing, emergency eviction, and memory optimization recommendations.
+ */
+export class MemoryManager {
+
+Key Methods/Properties:
+
+
+=== SampleCacheManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/cache/SampleCacheManager.ts
+
+
+/**
+ * Memory optimization result interface
+ */
+export interface MemoryOptimizationResult {
+
+/**
+ * Cache operation result interface
+ */
+export interface CacheOperationResult {
+
+/**
+ * Cache analytics interface
+ */
+export interface CacheAnalytics {
+
+/**
+ * Preload operation interface
+ */
+export interface PreloadOperation {
+
+/**
+ * Sample Cache Manager
+ *
+ * The main orchestrator for intelligent sample caching that integrates:
+ * - Usage pattern analysis for optimization recommendations
+ * - Memory management for pressure-aware caching decisions
+ * - Intelligent eviction policies with adaptive strategies
+ */
+export class SampleCacheManager {
+
+Key Methods/Properties:
+
+
+=== UsagePatternAnalyzer ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/cache/UsagePatternAnalyzer.ts
+
+
+/**
+ * Usage pattern analysis interfaces
+ */
+export interface UsagePattern {
+
+/**
+ * Usage Pattern Analyzer
+ *
+ * Analyzes cache usage patterns to optimize caching strategies and predict future access.
+ * Provides insights for intelligent eviction, predictive preloading, and cache optimization.
+ */
+export class UsagePatternAnalyzer {
+
+Key Methods/Properties:
+
+
+=== MetadataAnalyzer ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/MetadataAnalyzer.ts
+
+
+/**
+ * Configuration for metadata analysis operations
+ */
+interface MetadataAnalyzerConfig {
+
+/**
+ * Professional audio metadata analysis engine
+ *
+ * Provides comprehensive audio analysis capabilities for sample library management.
+ * Integrates with Web Audio API for precise audio processing and feature extraction.
+ */
+export class MetadataAnalyzer {
+
+Key Methods/Properties:
+
+
+=== MIDIAnalyticsEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/MIDIAnalyticsEngine.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== MIDICollaborationManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/MIDICollaborationManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== MIDIMetadataProcessor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/MIDIMetadataProcessor.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== MIDIRealTimeSync ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/MIDIRealTimeSync.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== PredictiveComponents ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/PredictiveComponents.ts
+
+
+/**
+ * BehaviorAnalyzer
+ *
+ * Analyzes user behavior patterns and identifies learning characteristics
+ */
+export class BehaviorAnalyzer {
+
+/**
+ * IntelligentPrefetcher
+ *
+ * Handles intelligent prefetching of assets based on predictions
+ */
+export class IntelligentPrefetcher {
+
+/**
+ * Base class for predictive models
+ */
+abstract class BasePredictiveModel {
+
+/**
+ * ExerciseProgressionModel
+ */
+export class ExerciseProgressionModel extends BasePredictiveModel {
+
+/**
+ * AssetDemandModel
+ */
+export class AssetDemandModel extends BasePredictiveModel {
+
+
+Key Methods/Properties:
+
+
+=== PredictiveLoadingEngine ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/PredictiveLoadingEngine.ts
+
+
+/**
+ * Main Predictive Loading Engine
+ *
+ * Core orchestrator that manages machine learning-based predictive loading,
+ * integrating behavior analysis, intelligent prefetching, predictive models,
+ * and adaptive learning for optimal asset management.
+ */
+export class PredictiveLoadingEngine {
+
+Key Methods/Properties:
+
+
+=== SupabaseAssetClient ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/storage/SupabaseAssetClient.ts
+
+
+/**
+ * Enterprise-grade Supabase Asset Client
+ * Implements Story 2.4 Subtask 1.1 - Advanced connection pooling, failover, and geographic optimization
+ * Implements Story 2.4 Subtask 1.2 - Sophisticated authentication with token refresh, session management, and security monitoring
+ * Implements Story 2.4 Subtask 1.3 - Advanced bucket organization with versioning, metadata indexing, and automated cleanup
+ */
+export class SupabaseAssetClient {
+
+/**
+ * Authentication Manager
+ * Story 2.4 Subtask 1.2: Sophisticated authentication with token refresh and session management
+ */
+class AuthenticationManager {
+
+/**
+ * Security Monitor
+ * Story 2.4 Subtask 1.2: Security monitoring and incident tracking
+ */
+class SecurityMonitor {
+
+/**
+ * Error Recovery Manager
+ * Story 2.4 Subtask 1.4: Comprehensive error handling with automatic recovery
+ */
+class ErrorRecoveryManager {
+
+/**
+ * Retry Manager
+ * Story 2.4 Subtask 1.4: Advanced retry mechanisms with exponential backoff and jitter
+
+Key Methods/Properties:
+
+
+=== AudioScheduler ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ThreadedTransportScheduler/controllers/AudioScheduler.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== FallbackController ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ThreadedTransportScheduler/controllers/FallbackController.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== WorkerController ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ThreadedTransportScheduler/controllers/WorkerController.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== BrowserCapabilityDetector ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ThreadedTransportScheduler/managers/BrowserCapabilityDetector.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== EventManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ThreadedTransportScheduler/managers/EventManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== MessageManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ThreadedTransportScheduler/managers/MessageManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== PerformanceMonitor ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ThreadedTransportScheduler/managers/PerformanceMonitor.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ThreadedTransportScheduler ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ThreadedTransportScheduler/ThreadedTransportScheduler.ts
+
+
+/**
+ * Main thread coordinator for Web Worker-based scheduling
+ */
+export class ThreadedTransportScheduler {
+
+Key Methods/Properties:
+
+
+=== logger ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ThreadedTransportScheduler/utils/logger.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ToneInstanceManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ToneInstanceManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ToneProvider ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ToneProvider.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== TranspositionController ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/TranspositionController.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== PauseTransportCommand ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/UnifiedTransportController/commands/PauseTransportCommand.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== StartTransportCommand ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/UnifiedTransportController/commands/StartTransportCommand.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== StopTransportCommand ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/UnifiedTransportController/commands/StopTransportCommand.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ProfessionalSchedulerIntegration ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ExerciseManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/UnifiedTransportController/managers/ExerciseManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== HeartbeatManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/UnifiedTransportController/managers/HeartbeatManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== ObserverManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/UnifiedTransportController/managers/ObserverManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== PerformanceTracker ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/UnifiedTransportController/managers/PerformanceTracker.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== PositionTracker ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/UnifiedTransportController/managers/PositionTracker.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== UnifiedTransportController ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+
+No main documentation found
+
+Key Methods/Properties:
+
+
+=== WorkerPoolManager ===
+File: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/WorkerPoolManager.ts
+
+No main documentation found
+
+Key Methods/Properties:
+

@@ -1,0 +1,209 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Harmony Widget Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #1a1a1a;
+        color: white;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 10px;
+        background: #4a90e2;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #357abd;
+      }
+      #output {
+        background: #2a2a2a;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      .log {
+        margin: 5px 0;
+      }
+      .success {
+        color: #4caf50;
+      }
+      .error {
+        color: #f44336;
+      }
+      .info {
+        color: #2196f3;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🎼 Harmony Widget Audio Test</h1>
+    <p>Testing our soundfont loading and playback system</p>
+
+    <button id="testFetch">Test Soundfont Fetch</button>
+    <button id="testAudio">Test Audio Playback</button>
+    <button id="clearLog">Clear Log</button>
+
+    <div id="output"></div>
+
+    <script>
+      const output = document.getElementById('output');
+
+      function log(message, type = 'info') {
+        console.log(message);
+        const div = document.createElement('div');
+        div.className = `log ${type}`;
+        div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+        output.appendChild(div);
+        output.scrollTop = output.scrollHeight;
+      }
+
+      document.getElementById('clearLog').addEventListener('click', () => {
+        output.innerHTML = '';
+      });
+
+      document
+        .getElementById('testFetch')
+        .addEventListener('click', async () => {
+          log('🔍 Testing soundfont fetch...', 'info');
+
+          try {
+            const soundfontUrl = '/soundfonts/acoustic_grand_piano-mp3.js';
+            log(`📡 Fetching: ${soundfontUrl}`, 'info');
+
+            const response = await fetch(soundfontUrl);
+            if (!response.ok) {
+              throw new Error(
+                `HTTP ${response.status}: ${response.statusText}`,
+              );
+            }
+
+            const soundfontText = await response.text();
+            log(
+              `✅ Fetch successful! File size: ${soundfontText.length} characters`,
+              'success',
+            );
+
+            // Parse the MIDI.js soundfont format
+            const begin = soundfontText.indexOf('MIDI.Soundfont.');
+            if (begin < 0) {
+              throw new Error('Invalid MIDI.js Soundfont format');
+            }
+
+            const assignmentIndex = soundfontText.indexOf('=', begin) + 2;
+            const endIndex = soundfontText.lastIndexOf(',');
+
+            if (assignmentIndex <= 2 || endIndex <= assignmentIndex) {
+              throw new Error('Invalid MIDI.js Soundfont parsing');
+            }
+
+            const jsonPart =
+              soundfontText.slice(assignmentIndex, endIndex) + '}';
+            const soundfontData = JSON.parse(jsonPart);
+
+            const noteCount = Object.keys(soundfontData).length;
+            log(`✅ Parsed soundfont with ${noteCount} notes!`, 'success');
+
+            // Show first few notes
+            const firstNotes = Object.keys(soundfontData).slice(0, 5);
+            log(`🎵 First notes: ${firstNotes.join(', ')}`, 'info');
+
+            // Store for audio test
+            window.testSoundfontData = soundfontData;
+          } catch (error) {
+            log(`❌ Fetch failed: ${error.message}`, 'error');
+          }
+        });
+
+      document
+        .getElementById('testAudio')
+        .addEventListener('click', async () => {
+          if (!window.testSoundfontData) {
+            log('❌ Please run soundfont fetch test first!', 'error');
+            return;
+          }
+
+          log('🎵 Testing audio playback...', 'info');
+
+          try {
+            // Test if we can play a note
+            const noteKey = 'C4'; // Common note
+            const soundfontData = window.testSoundfontData;
+
+            if (!soundfontData[noteKey]) {
+              // Try to find any available note
+              const availableNotes = Object.keys(soundfontData);
+              if (availableNotes.length === 0) {
+                throw new Error('No notes found in soundfont data');
+              }
+              const firstNote = availableNotes[0];
+              log(`🎵 Note ${noteKey} not found, trying ${firstNote}`, 'info');
+              noteKey = firstNote;
+            }
+
+            const base64Data = soundfontData[noteKey];
+            if (!base64Data || !base64Data.startsWith('data:audio/')) {
+              throw new Error(`Invalid audio data for note ${noteKey}`);
+            }
+
+            log(`🎵 Playing note: ${noteKey}`, 'info');
+
+            // Convert base64 to audio
+            const dataUrlIndex = base64Data.indexOf(',');
+            const base64Audio = base64Data.slice(dataUrlIndex + 1);
+            const binaryString = atob(base64Audio);
+            const bytes = new Uint8Array(binaryString.length);
+
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+
+            // Create AudioContext
+            const audioContext = new (window.AudioContext ||
+              window.webkitAudioContext)();
+
+            // Decode audio data
+            const audioBuffer = await audioContext.decodeAudioData(
+              bytes.buffer,
+            );
+            log(
+              `✅ Audio decoded! Duration: ${audioBuffer.duration.toFixed(2)}s`,
+              'success',
+            );
+
+            // Create and play audio source
+            const source = audioContext.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(audioContext.destination);
+            source.start();
+
+            log(`🎵 Playing real piano sample for note ${noteKey}!`, 'success');
+
+            // Clean up after 3 seconds
+            setTimeout(() => {
+              try {
+                source.stop();
+              } catch (e) {
+                // Ignore if already stopped
+              }
+            }, 3000);
+          } catch (error) {
+            log(`❌ Audio test failed: ${error.message}`, 'error');
+          }
+        });
+
+      log('🎼 Harmony Widget Test Ready!', 'success');
+      log(
+        'Click "Test Soundfont Fetch" first, then "Test Audio Playback"',
+        'info',
+      );
+    </script>
+  </body>
+</html>

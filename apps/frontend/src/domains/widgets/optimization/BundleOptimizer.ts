@@ -137,7 +137,7 @@ export class BundleOptimizer {
    * Process performance entry for bundle metrics
    */
   private processPerformanceEntry(entry: PerformanceEntry): void {
-    if (entry.name.includes('.js') || entry.name.includes('.ts')) {
+    if (entry.name.includes('') || entry.name.includes('.ts')) {
       const chunkName = this.extractChunkName(entry.name);
       const existingChunk = this.chunkRegistry.get(chunkName);
 
@@ -180,7 +180,7 @@ export class BundleOptimizer {
     globalObj.fetch = async (...args) => {
       const response = await originalFetch.apply(globalObj, args);
 
-      if (args[0] && typeof args[0] === 'string' && args[0].includes('.js')) {
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('')) {
         this.trackChunkLoad(
           args[0],
           response.headers?.get?.('content-length') || '0',

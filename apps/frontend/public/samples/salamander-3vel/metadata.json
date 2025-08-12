@@ -1,0 +1,13 @@
+{
+  "instrument": "Salamander Grand Piano (3-velocity test)",
+  "source": "https://github.com/sfzinstruments/SalamanderGrandPiano",
+  "license": "CC-BY 3.0",
+  "version": "3-velocity",
+  "velocityLayers": 3,
+  "velocityMapping": {
+    "0-42": "v1",
+    "43-85": "v8",
+    "86-127": "v16"
+  },
+  "created": "2025-07-22T09:48:19.977Z"
+}

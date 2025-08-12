@@ -1,0 +1,85 @@
+{
+  "id": "classic-808",
+  "name": "Classic TR-808",
+  "category": "electronic",
+  "version": "1.0",
+  "description": "Example manifest showing how original filenames map to drum types",
+  
+  "mapping": {
+    "kick": [
+      { 
+        "file": "BD7575.WAV",
+        "originalName": "BD7575.WAV",
+        "velocity": 2,
+        "notes": "This is the original TR-808 filename - we keep it as-is"
+      }
+    ],
+    "snare": [
+      { 
+        "file": "SD7575.WAV",
+        "originalName": "SD7575.WAV", 
+        "velocity": 2,
+        "notes": "SD = Snare Drum in Roland naming"
+      }
+    ],
+    "hihat-closed": [
+      { 
+        "file": "CHH.WAV",
+        "originalName": "CHH.WAV",
+        "velocity": 2,
+        "notes": "CHH = Closed Hi-Hat"
+      }
+    ],
+    "hihat-open": [
+      { 
+        "file": "OHH.WAV",
+        "originalName": "OHH.WAV",
+        "velocity": 2,
+        "notes": "OHH = Open Hi-Hat"
+      }
+    ],
+    "cowbell": [
+      { 
+        "file": "CB.WAV",
+        "originalName": "CB.WAV",
+        "velocity": 2,
+        "notes": "CB = Cowbell"
+      }
+    ],
+    "clap": [
+      { 
+        "file": "CP.WAV",
+        "originalName": "CP.WAV",
+        "velocity": 2,
+        "notes": "CP = Clap"
+      }
+    ]
+  },
+  
+  "benefits": [
+    "✅ NO RENAMING NEEDED - Keep original filenames",
+    "✅ DrummerWidget knows BD7575.WAV is a 'kick'",
+    "✅ Easy kit switching - all kits use same drum types",
+    "✅ Supports multiple samples per drum type",
+    "✅ Add new kits without changing code"
+  ],
+  
+  "usage": {
+    "drummerWidget": {
+      "comment": "Your widget code would look like this:",
+      "example": [
+        "// Load kit and manifest",
+        "const manifest = await loadManifest('classic-808');",
+        "",
+        "// Assign samples to pads by drum type",
+        "pad1.assignSample(manifest.mapping['kick'][0].file);     // Loads 'BD7575.WAV'",
+        "pad2.assignSample(manifest.mapping['snare'][0].file);    // Loads 'SD7575.WAV'",
+        "pad3.assignSample(manifest.mapping['hihat-closed'][0].file);",
+        "",
+        "// System knows what each pad is for display/MIDI",
+        "pad1.drumType = 'kick';",
+        "pad2.drumType = 'snare';"
+      ]
+    }
+  }
+}

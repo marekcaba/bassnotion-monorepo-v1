@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Drum Test</title>
+    <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+</head>
+<body>
+    <h1>Simple Drum Sample Test</h1>
+    <button onclick="testDrums()">Test Drums</button>
+    <button onclick="playKick()">Play Kick</button>
+    <button onclick="playSnare()">Play Snare</button>
+    <button onclick="playHihat()">Play Hihat</button>
+    <div id="status"></div>
+
+    <script>
+        let drumSamplers = {};
+        const status = document.getElementById('status');
+
+        async function testDrums() {
+            status.innerHTML = '<p>Starting Tone.js...</p>';
+            await Tone.start();
+            
+            status.innerHTML += '<p>Loading drum samples...</p>';
+            
+            const baseUrl = '/drum-kits/hydrogen/classic-808/';
+            const drums = {
+                kick: 'kick-v1.wav',
+                snare: 'snare-v1.wav', 
+                hihat: 'hihat-v1.wav'
+            };
+            
+            for (const [drum, filename] of Object.entries(drums)) {
+                const url = baseUrl + filename;
+                status.innerHTML += `<p>Loading ${drum} from ${url}...</p>`;
+                
+                try {
+                    // Test if file exists
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        status.innerHTML += `<p style="color: red;">❌ ${drum} file not found: ${response.status}</p>`;
+                        continue;
+                    }
+                    
+                    // Create sampler
+                    drumSamplers[drum] = new Tone.Sampler({
+                        urls: { C1: url },
+                        onload: () => {
+                            status.innerHTML += `<p style="color: green;">✅ ${drum} loaded successfully!</p>`;
+                        },
+                        onerror: (error) => {
+                            status.innerHTML += `<p style="color: red;">❌ ${drum} error: ${error}</p>`;
+                        }
+                    }).toDestination();
+                    
+                    await drumSamplers[drum].loaded;
+                    
+                } catch (error) {
+                    status.innerHTML += `<p style="color: red;">❌ ${drum} failed: ${error.message}</p>`;
+                }
+            }
+            
+            status.innerHTML += '<p style="color: blue;">Done! Click buttons to play drums.</p>';
+        }
+        
+        function playKick() {
+            if (drumSamplers.kick) {
+                drumSamplers.kick.triggerAttackRelease('C1', '8n');
+                status.innerHTML += '<p>🥁 Kick!</p>';
+            }
+        }
+        
+        function playSnare() {
+            if (drumSamplers.snare) {
+                drumSamplers.snare.triggerAttackRelease('C1', '8n');
+                status.innerHTML += '<p>🥁 Snare!</p>';
+            }
+        }
+        
+        function playHihat() {
+            if (drumSamplers.hihat) {
+                drumSamplers.hihat.triggerAttackRelease('C1', '8n');
+                status.innerHTML += '<p>🥁 Hihat!</p>';
+            }
+        }
+    </script>
+</body>
+</html>

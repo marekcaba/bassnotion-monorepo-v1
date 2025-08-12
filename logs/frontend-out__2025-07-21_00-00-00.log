@@ -1,0 +1,169 @@
+2025-07-20 10:51:00 +02:00:  [32m[1m✓[22m[39m Compiled in 1432ms (2509 modules)
+2025-07-20 10:51:11 +02:00:  [32m[1m✓[22m[39m Compiled in 3s (4909 modules)
+2025-07-20 10:51:21 +02:00:  [32m[1m✓[22m[39m Compiled in 1236ms (4909 modules)
+2025-07-20 10:51:30 +02:00:  [32m[1m✓[22m[39m Compiled in 845ms (4939 modules)
+2025-07-20 10:51:39 +02:00:  [32m[1m✓[22m[39m Compiled in 645ms (4939 modules)
+2025-07-20 10:51:51 +02:00:  [32m[1m✓[22m[39m Compiled in 654ms (4939 modules)
+2025-07-20 10:52:13 +02:00:  [32m[1m✓[22m[39m Compiled in 994ms (4939 modules)
+2025-07-20 10:52:31 +02:00:  [32m[1m✓[22m[39m Compiled in 699ms (4939 modules)
+2025-07-20 11:12:17 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 820ms
+2025-07-20 11:12:18 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-20 11:12:19 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1703ms (2525 modules)
+2025-07-20 11:12:20 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2206ms
+2025-07-20 11:12:20 +02:00:  GET /meta.json [33m404[39m in 985ms
+2025-07-20 11:18:42 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 546ms
+2025-07-20 11:18:42 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 45ms
+2025-07-20 11:18:44 +02:00:  GET /meta.json [33m404[39m in 59ms
+2025-07-20 11:18:44 +02:00:  GET /meta.json [33m404[39m in 58ms
+2025-07-20 11:18:44 +02:00:  GET /meta.json [33m404[39m in 31ms
+2025-07-20 11:19:36 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 52ms
+2025-07-20 11:19:37 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 45ms
+2025-07-20 11:19:38 +02:00:  GET /meta.json [33m404[39m in 72ms
+2025-07-20 11:19:51 +02:00:  [32m[1m✓[22m[39m Compiled in 4.5s (4940 modules)
+2025-07-20 11:19:51 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 76ms
+2025-07-20 12:45:49 +02:00:  [32m[1m✓[22m[39m Compiled in 3.1s (4939 modules)
+2025-07-20 12:45:49 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 75ms
+2025-07-20 12:45:59 +02:00:  [32m[1m✓[22m[39m Compiled in 705ms (4939 modules)
+2025-07-20 12:45:59 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 54ms
+2025-07-20 21:06:15 +02:00:  [37m[1m○[22m[39m Compiling /_error ...
+2025-07-20 21:06:18 +02:00:  GET /library/another-one-bites-dust [31m500[39m in 4881ms
+2025-07-20 21:06:19 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [31m500[39m in 867ms
+2025-07-20 21:06:19 +02:00:  GET /meta.json [31m500[39m in 20ms
+2025-07-20 21:06:49 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 5.1s (5280 modules)
+2025-07-20 21:06:50 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 819ms
+2025-07-20 21:06:50 +02:00:  GET /_next/static/webpack/a8f43e47c82719d8.webpack.hot-update.json [33m404[39m in 817ms
+2025-07-20 21:06:50 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 34ms
+2025-07-20 21:06:50 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 31ms
+2025-07-20 21:06:52 +02:00:  GET /meta.json [33m404[39m in 73ms
+2025-07-20 21:06:56 +02:00:  [32m[1m✓[22m[39m Compiled in 2s (5280 modules)
+2025-07-20 21:06:56 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 98ms
+2025-07-20 21:07:22 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 620ms
+2025-07-20 21:07:22 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 49ms
+2025-07-20 21:07:23 +02:00:  GET /meta.json [33m404[39m in 54ms
+2025-07-20 21:20:39 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 98ms
+2025-07-20 21:20:39 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 70ms
+2025-07-20 21:20:41 +02:00:  GET /meta.json [33m404[39m in 84ms
+2025-07-20 21:23:49 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 114ms
+2025-07-20 21:23:49 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 67ms
+2025-07-20 21:23:51 +02:00:  GET /meta.json [33m404[39m in 47ms
+2025-07-20 21:24:09 +02:00:  [32m[1m✓[22m[39m Compiled in 3.1s (5280 modules)
+2025-07-20 21:24:09 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 60ms
+2025-07-20 21:24:50 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 491ms
+2025-07-20 21:24:50 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 82ms
+2025-07-20 21:24:51 +02:00:  GET /meta.json [33m404[39m in 36ms
+2025-07-20 21:29:03 +02:00:  [32m[1m✓[22m[39m Compiled in 2.6s (5279 modules)
+2025-07-20 21:29:03 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 72ms
+2025-07-20 21:29:06 +02:00:  [32m[1m✓[22m[39m Compiled in 690ms (5279 modules)
+2025-07-20 21:29:06 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 53ms
+2025-07-20 21:32:08 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-20 21:32:09 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1580ms (2612 modules)
+2025-07-20 21:32:09 +02:00:  GET /_next/static/chunks/soundfont-player.js [33m404[39m in 1759ms
+2025-07-20 21:32:27 +02:00:  [37m[1m○[22m[39m Compiling /test-exercises ...
+2025-07-20 21:32:29 +02:00:  [32m[1m✓[22m[39m Compiled /test-exercises in 2.7s (5273 modules)
+2025-07-20 21:32:29 +02:00:  GET /test-exercises [32m200[39m in 2827ms
+2025-07-20 21:33:09 +02:00:  GET /library [32m200[39m in 202ms
+2025-07-20 21:33:34 +02:00:  GET /library/test-tutorial [32m200[39m in 546ms
+2025-07-20 21:33:43 +02:00:  GET /_next/static/chunks/soundfont-player.js [33m404[39m in 51ms
+2025-07-20 21:37:03 +02:00:  [32m[1m✓[22m[39m Compiled in 2.9s (5281 modules)
+2025-07-20 21:37:03 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 67ms
+2025-07-20 21:38:05 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 785ms
+2025-07-20 21:38:05 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-20 21:38:06 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1729ms (2612 modules)
+2025-07-20 21:38:07 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1919ms
+2025-07-20 21:38:07 +02:00:  GET /meta.json [33m404[39m in 198ms
+2025-07-20 21:38:40 +02:00:  [32m[1m✓[22m[39m Compiled in 2s (5282 modules)
+2025-07-20 21:38:40 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 55ms
+2025-07-20 21:38:49 +02:00:  [32m[1m✓[22m[39m Compiled in 729ms (5282 modules)
+2025-07-20 21:38:49 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 48ms
+2025-07-20 21:38:55 +02:00:  [32m[1m✓[22m[39m Compiled in 1305ms (5282 modules)
+2025-07-20 21:38:55 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 53ms
+2025-07-20 21:39:09 +02:00:  [32m[1m✓[22m[39m Compiled in 751ms (5282 modules)
+2025-07-20 21:39:09 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 61ms
+2025-07-20 21:39:22 +02:00:  [32m[1m✓[22m[39m Compiled in 1520ms (5281 modules)
+2025-07-20 21:39:22 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 49ms
+2025-07-20 21:41:46 +02:00:  GET /library/test [32m200[39m in 712ms
+2025-07-20 21:44:51 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-07-20 21:44:54 +02:00:  [32m[1m✓[22m[39m Compiled / in 4.1s (5276 modules)
+2025-07-20 21:44:55 +02:00:  GET / [32m200[39m in 4300ms
+2025-07-20 21:45:42 +02:00:  GET /library [32m200[39m in 146ms
+2025-07-20 21:45:43 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-20 21:45:43 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 813ms (2618 modules)
+2025-07-20 21:45:43 +02:00:  GET /meta.json [33m404[39m in 455ms
+2025-07-20 21:45:43 +02:00:  GET /meta.json [33m404[39m in 993ms
+2025-07-20 21:45:56 +02:00:  GET /library/come-together [32m200[39m in 64ms
+2025-07-20 21:46:01 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 54ms
+2025-07-20 21:46:07 +02:00:  [32m[1m✓[22m[39m Compiled in 3.6s (5271 modules)
+2025-07-20 21:46:07 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 69ms
+2025-07-20 21:46:07 +02:00:  GET /library/come-together [32m200[39m in 71ms
+2025-07-20 21:47:24 +02:00:  [32m[1m✓[22m[39m Compiled in 3.1s (5284 modules)
+2025-07-20 21:47:24 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 97ms
+2025-07-20 21:47:24 +02:00:  GET /library/come-together [32m200[39m in 98ms
+2025-07-20 21:48:15 +02:00:  GET /library/come-together [32m200[39m in 739ms
+2025-07-20 21:48:16 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 501ms (2612 modules)
+2025-07-20 21:48:16 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 663ms
+2025-07-20 21:48:16 +02:00:  GET /meta.json [33m404[39m in 26ms
+2025-07-20 21:49:30 +02:00:  [32m[1m✓[22m[39m Compiled in 2.6s (5284 modules)
+2025-07-20 21:49:30 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 76ms
+2025-07-20 21:49:30 +02:00:  GET /library/come-together [32m200[39m in 77ms
+2025-07-20 21:49:46 +02:00:  [32m[1m✓[22m[39m Compiled in 941ms (5284 modules)
+2025-07-20 21:49:46 +02:00:  GET /library/come-together [32m200[39m in 68ms
+2025-07-20 21:49:46 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 67ms
+2025-07-20 21:55:13 +02:00:  GET /library/come-together [32m200[39m in 713ms
+2025-07-20 21:55:14 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-20 21:55:15 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1681ms (2612 modules)
+2025-07-20 21:55:15 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1837ms
+2025-07-20 21:55:15 +02:00:  GET /meta.json [33m404[39m in 163ms
+2025-07-20 21:56:11 +02:00:  [32m[1m✓[22m[39m Compiled in 2.2s (5285 modules)
+2025-07-20 21:56:11 +02:00:  GET /library/come-together [32m200[39m in 74ms
+2025-07-20 21:56:11 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 75ms
+2025-07-20 21:56:51 +02:00:  GET /library/come-together [32m200[39m in 678ms
+2025-07-20 21:56:51 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 47ms
+2025-07-20 21:56:53 +02:00:  GET /meta.json [33m404[39m in 298ms
+2025-07-20 23:30:16 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (2673 modules)
+2025-07-20 23:30:16 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 60ms
+2025-07-20 23:30:16 +02:00:  GET /library/come-together [32m200[39m in 61ms
+2025-07-20 23:30:58 +02:00:  [32m[1m✓[22m[39m Compiled in 693ms (2673 modules)
+2025-07-20 23:30:58 +02:00:  GET /library/come-together [32m200[39m in 30ms
+2025-07-20 23:30:58 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 29ms
+2025-07-20 23:31:26 +02:00:  [32m[1m✓[22m[39m Compiled in 396ms (2673 modules)
+2025-07-20 23:31:26 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 21ms
+2025-07-20 23:31:26 +02:00:  GET /library/come-together [32m200[39m in 22ms
+2025-07-20 23:32:18 +02:00:  [32m[1m✓[22m[39m Compiled in 541ms (2673 modules)
+2025-07-20 23:32:18 +02:00:  GET /library/come-together [32m200[39m in 25ms
+2025-07-20 23:32:18 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 24ms
+2025-07-20 23:33:51 +02:00:  [32m[1m✓[22m[39m Compiled in 1498ms (2673 modules)
+2025-07-20 23:33:51 +02:00:  GET /library/come-together [32m200[39m in 26ms
+2025-07-20 23:33:51 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 27ms
+2025-07-20 23:34:33 +02:00:  [32m[1m✓[22m[39m Compiled in 658ms (2673 modules)
+2025-07-20 23:34:33 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 30ms
+2025-07-20 23:34:33 +02:00:  GET /library/come-together [32m200[39m in 29ms
+2025-07-20 23:35:12 +02:00:  [32m[1m✓[22m[39m Compiled in 483ms (2673 modules)
+2025-07-20 23:35:12 +02:00:  GET /library/come-together [32m200[39m in 20ms
+2025-07-20 23:35:12 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 20ms
+2025-07-20 23:47:47 +02:00:  [32m[1m✓[22m[39m Compiled in 1540ms (2673 modules)
+2025-07-20 23:47:47 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 24ms
+2025-07-20 23:47:47 +02:00:  GET /library/come-together [32m200[39m in 24ms
+2025-07-20 23:48:02 +02:00:  [32m[1m✓[22m[39m Compiled in 368ms (2673 modules)
+2025-07-20 23:48:02 +02:00:  GET /library/come-together [32m200[39m in 19ms
+2025-07-20 23:48:02 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 19ms
+2025-07-20 23:48:22 +02:00:  GET /library/come-together [32m200[39m in 78ms
+2025-07-20 23:48:23 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 39ms
+2025-07-20 23:48:25 +02:00:  GET /meta.json [33m404[39m in 65ms
+2025-07-20 23:58:11 +02:00:  [32m[1m✓[22m[39m Compiled in 4.7s (5284 modules)
+2025-07-20 23:58:11 +02:00:  GET /library/come-together [32m200[39m in 111ms
+2025-07-20 23:58:11 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 113ms
+2025-07-20 23:58:16 +02:00:  [32m[1m✓[22m[39m Compiled in 820ms (5284 modules)
+2025-07-20 23:58:17 +02:00:  GET /library/come-together [32m200[39m in 374ms
+2025-07-20 23:58:17 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 403ms
+2025-07-20 23:58:34 +02:00:  [32m[1m✓[22m[39m Compiled in 1992ms (5306 modules)
+2025-07-20 23:58:34 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 69ms
+2025-07-20 23:58:34 +02:00:  GET /library/come-together [32m200[39m in 68ms
+2025-07-20 23:59:10 +02:00:  [32m[1m✓[22m[39m Compiled in 1024ms (5306 modules)
+2025-07-20 23:59:10 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 95ms
+2025-07-20 23:59:10 +02:00:  GET /library/come-together [32m200[39m in 95ms
+2025-07-20 23:59:29 +02:00:  [32m[1m✓[22m[39m Compiled in 702ms (5306 modules)
+2025-07-20 23:59:30 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 408ms
+2025-07-20 23:59:30 +02:00:  GET /library/come-together [32m200[39m in 443ms
+2025-07-20 23:59:49 +02:00:  [32m[1m✓[22m[39m Compiled in 1968ms (5314 modules)
+2025-07-20 23:59:49 +02:00:  GET /library/another-one-bites-dust [32m200[39m in 82ms
+2025-07-20 23:59:49 +02:00:  GET /library/come-together [32m200[39m in 84ms

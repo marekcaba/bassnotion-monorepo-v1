@@ -475,10 +475,16 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
         const measureNotes = measures[i];
 
         // Create a timeline-based approach for proper rhythm placement
-        const timeline = [];
+        const timeline: Array<{
+          type: 'note';
+          startBeat: number;
+          endBeat: number;
+          note: ExerciseNote;
+          duration: number;
+        }> = [];
 
         // Add all notes to timeline with their exact beat positions
-        measureNotes.forEach((note) => {
+        measureNotes?.forEach((note) => {
           const beatPosition =
             (note.position?.beat || 1) -
             1 +
@@ -500,7 +506,13 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
         timeline.sort((a, b) => a.startBeat - b.startBeat);
 
         // Fill gaps with rests to create complete rhythm
-        const completeTimeline = [];
+        const completeTimeline: Array<{
+          type: 'note' | 'rest';
+          startBeat: number;
+          endBeat: number;
+          note?: ExerciseNote;
+          duration: number | string;
+        }> = [];
         let currentBeat = 0;
 
         for (const item of timeline) {
@@ -514,6 +526,7 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
                 type: 'rest',
                 duration: restDur,
                 startBeat: currentBeat,
+                endBeat: currentBeat,
               });
               // Update currentBeat based on rest duration
               const restBeats =
@@ -549,13 +562,14 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
               type: 'rest',
               duration: restDur,
               startBeat: currentBeat,
+              endBeat: currentBeat,
             });
           });
         }
 
         // Convert timeline to VexFlow notes
         const vexFlowNotes = completeTimeline.map((item) => {
-          if (item.type === 'note') {
+          if (item.type === 'note' && item.note) {
             const noteKey = convertNoteToVexFlow(item.note);
             const duration = convertNoteDurationToVexFlow(
               item.note.duration || 'quarter',
@@ -568,7 +582,10 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
             });
 
             // Add current note highlighting
-            if (exerciseNotes.indexOf(item.note) + 1 === currentPosition) {
+            if (
+              item.note &&
+              exerciseNotes.indexOf(item.note) + 1 === currentPosition
+            ) {
               staveNote.setStyle({
                 fillStyle: '#3b82f6',
                 strokeStyle: '#3b82f6',
@@ -591,8 +608,9 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
           completeTimeline.map((item) => ({
             type: item.type,
             startBeat: item.startBeat,
-            duration: item.type === 'note' ? item.note.duration : item.duration,
-            note: item.type === 'note' ? item.note.note : 'REST',
+            duration:
+              item.type === 'note' ? item.note?.duration : item.duration,
+            note: item.type === 'note' ? item.note?.note : 'REST',
           })),
         );
 

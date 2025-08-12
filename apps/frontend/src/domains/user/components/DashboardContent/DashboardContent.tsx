@@ -3,6 +3,7 @@ import {
   useTransitionPreHeat,
   useViewTransitionRouter,
 } from '@/lib/hooks/use-view-transition-router';
+import { BassSettingsCard } from '../BassSettingsCard';
 
 export function DashboardContent() {
   // This ensures transitions are pre-heated for smooth first navigation
@@ -28,12 +29,30 @@ export function DashboardContent() {
     setTimeout(() => navigateWithTransition('/'), 100);
   };
 
+  const handleBassSettingsChange = (settings: {
+    stringCount: 4 | 5 | 6;
+    maxFrets: number;
+  }) => {
+    // Emit a custom event that other parts of the app can listen to
+    window.dispatchEvent(
+      new CustomEvent('bass-settings-changed', {
+        detail: settings,
+      }),
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="rounded-lg border bg-card p-6">
         // TODO: Review non-null assertion - consider null safety
         <h2 className="text-xl font-semibold mb-4">Welcome to BassNotion!</h2>
         <p className="text-muted-foreground">Your music learning dashboard.</p>
+      </div>
+
+      {/* Bass Configuration Section */}
+      <div className="p-4 bg-red-100 border-2 border-red-500 rounded">
+        <h2>DEBUG: Bass Settings Card Should Be Here</h2>
+        <BassSettingsCard onSettingsChange={handleBassSettingsChange} />
       </div>
 
       <div className="rounded-lg border bg-card p-6">

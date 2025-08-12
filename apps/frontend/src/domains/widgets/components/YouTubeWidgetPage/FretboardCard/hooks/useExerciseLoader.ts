@@ -36,6 +36,11 @@ export function useExerciseLoader({
   const lastResetTime = useRef<number>(0);
   const lastClickTimestamp = useRef<number>(0);
 
+  // Ref for loadExercise to avoid stale closures
+  const loadExerciseRef = useRef<
+    ((exercise: any, isAfterReset?: boolean) => void) | null
+  >(null);
+
   /**
    * Central function for loading exercises
    * Handles all the complex logic around when to load and when to skip
@@ -93,6 +98,11 @@ export function useExerciseLoader({
     [manualSelectionTracking, fretboardExercise, onExerciseLoad],
   );
 
+  // Keep ref up to date with the latest loadExercise function
+  useEffect(() => {
+    loadExerciseRef.current = loadExercise;
+  }, [loadExercise]);
+
   /**
    * Mark that a reset occurred
    */
@@ -116,20 +126,26 @@ export function useExerciseLoader({
 
         const currentTime = Date.now();
         const timeSinceLastReset = currentTime - lastResetTime.current;
-        const isAfterReset =
-          manualSelectionTracking.hasManuallyReset() &&
-          timeSinceLastReset > 100;
 
-        // Load exercise immediately for any user click
-        loadExercise(exercise, isAfterReset);
+        // Get current state values using refs to avoid stale closures
+        const hasReset = lastResetTime.current > 0;
+        const isAfterReset = hasReset && timeSinceLastReset > 100;
+
+        // Call loadExercise using the latest ref
+        if (loadExerciseRef.current) {
+          loadExerciseRef.current(exercise, isAfterReset);
+        }
       }
     };
 
     // Import and use the sync service directly for event subscription
     let unsubscribe: (() => void) | undefined;
+    let isSubscribed = true;
 
     import('../../../../services/WidgetSyncService').then(
       ({ widgetSyncService }) => {
+        if (!isSubscribed) return; // Component unmounted
+
         widgetSyncService.subscribe('EXERCISE_CHANGE', handleExerciseChange);
         unsubscribe = () => {
           widgetSyncService.unsubscribe(
@@ -141,11 +157,12 @@ export function useExerciseLoader({
     );
 
     return () => {
+      isSubscribed = false;
       if (unsubscribe) {
         unsubscribe();
       }
     };
-  }, [syncProps.sync, loadExercise, manualSelectionTracking]);
+  }, [syncProps.sync]); // Remove loadExercise and manualSelectionTracking from deps
 
   // FALLBACK: Handle initial exercise load when page loads (not user clicks)
   useEffect(() => {

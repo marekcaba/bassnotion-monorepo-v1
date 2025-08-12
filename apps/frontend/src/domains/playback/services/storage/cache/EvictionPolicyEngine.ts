@@ -12,7 +12,7 @@
  */
 
 import { SampleCacheEntry } from '@bassnotion/contracts';
-import { MemoryPressureLevel } from './MemoryManager.js';
+import { MemoryPressureLevel } from './MemoryManager';
 
 /**
  * Eviction policy types

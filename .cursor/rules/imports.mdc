@@ -1,5 +1,5 @@
 ---
-description: Standardized import rules for the BassNotion TypeScript monorepo. These rules are critical for maintaining consistent code style and ensuring proper compilation with NodeNext module resolution.
+description: Standardized import rules for the BassNotion TypeScript monorepo. These rules are critical for maintaining consistent code style and ensuring proper compilation with ES Modules (ESM).
 globs: 
 alwaysApply: false
 ---
@@ -7,11 +7,11 @@ alwaysApply: false
 
 ## Overview
 
-This document defines the rules for managing imports in the BassNotion monorepo project. These rules are designed to work with our TypeScript configuration using `NodeNext` module resolution.
+This document defines the rules for managing imports in the BassNotion monorepo project. These rules are designed to work with our ES Modules (ESM) configuration.
 
 Key Rules:
-  1. Relative imports (./ or ../) MUST include .js extension
-  2. Alias imports (@/ or @bassnotion/) MUST NOT include .js extension
+  1. Relative imports (./ or ../) MUST include .js extension (ESM requirement)
+  2. Alias imports (@/ or @bassnotion/) MUST NOT include extension
   3. Package imports (node_modules) NEVER use extensions
 
 ## Import Rules
@@ -19,13 +19,13 @@ Key Rules:
 ### 1. Relative Imports (starting with `.` or `..`)
 
 ```typescript
-// ALWAYS add .js extension, even when importing .ts files
+// ALWAYS add .js extension for TypeScript files (ESM requirement)
 import { AuthController } from './auth.controller.js';
 import { UserService } from '../services/user.service.js';
 import { types } from './types/index.js';
 ```
 
-**Why?** With `NodeNext` module resolution, Node.js requires explicit file extensions for relative imports. TypeScript will handle the compilation correctly, replacing `.ts` with `.js` in the output.
+**Why?** ES Modules (ESM) specification requires file extensions. The bundler (webpack in Next.js) is configured with `extensionAlias` to resolve `.js` to the appropriate TypeScript file.
 
 ### 2. Absolute Imports (using aliases)
 
@@ -50,16 +50,16 @@ import { createClient } from '@supabase/supabase-js';
 ### ✅ Correct Examples
 
 ```typescript
-// Relative imports
+// Relative imports - MUST include .js extension
 import { UserEntity } from './user.entity.js';
 import { AuthService } from '../auth/auth.service.js';
 import { EmailValidator } from '../../validators/email.validator.js';
 
-// Absolute imports (with aliases)
+// Absolute imports (with aliases) - NO extension
 import { DatabaseService } from '@/infrastructure/database/database.service';
 import { UserTypes } from '@bassnotion/contracts';
 
-// Package imports
+// Package imports - NO extension
 import { Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 ```
@@ -68,25 +68,33 @@ import { Test } from '@nestjs/testing';
 
 ```typescript
 // Don't omit .js for relative imports
-import { UserEntity } from './user.entity';           // ❌
-import { AuthService } from '../auth/auth.service';   // ❌
+import { UserEntity } from './user.entity';           // ❌ Missing .js
+import { AuthService } from '../auth/auth.service';   // ❌ Missing .js
 
 // Don't add .js for aliased imports
-import { DatabaseService } from '@/infrastructure/database/database.service.js';  // ❌
-import { UserTypes } from '@bassnotion/contracts.js';  // ❌
+import { DatabaseService } from '@/infrastructure/database/database.service.js';  // ❌ Should not have .js
+import { UserTypes } from '@bassnotion/contracts.js';  // ❌ Should not have .js
 ```
 
 ## TypeScript Configuration
 
-These rules work in conjunction with the following TypeScript configuration:
+These rules work in conjunction with the following configuration:
 
+Frontend (Next.js):
 ```json
 {
   "compilerOptions": {
-    "moduleResolution": "NodeNext",
-    "module": "NodeNext",
+    "moduleResolution": "bundler",
+    "module": "esnext",
     // ... other options
   }
+}
+```
+
+The project uses ES Modules (ESM) as specified in package.json:
+```json
+{
+  "type": "module"
 }
 ```
 

@@ -1,0 +1,16 @@
+2025-08-02 22:33:58 +02:00: 
+2025-08-02 22:33:58 +02:00: 
+2025-08-02 22:33:58 +02:00: 
+2025-08-02 22:33:58 +02:00:  NX   Running target serve for project @bassnotion/backend failed
+2025-08-02 22:33:58 +02:00: 
+2025-08-02 22:33:58 +02:00: Failed tasks:
+2025-08-02 22:33:58 +02:00: 
+2025-08-02 22:33:58 +02:00: - @bassnotion/backend:serve
+2025-08-02 22:33:58 +02:00: 
+2025-08-02 22:33:58 +02:00: Hint: run the command with --verbose for more details.
+2025-08-02 22:33:58 +02:00: 
+2025-08-02 22:33:58 +02:00: 
+2025-08-02 22:33:58 +02:00:  NX   Nx Cloud encountered some problems
+2025-08-02 22:33:58 +02:00: 
+2025-08-02 22:33:58 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+2025-08-02 22:33:58 +02:00: 

@@ -1,0 +1,143 @@
+2025-07-26 11:12:32 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/plugins/SalamanderVelocitySampler.ts
+2025-07-26 11:12:32 +02:00: Error:   [31mx[0m Expected a semicolon
+2025-07-26 11:12:32 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/SalamanderVelocitySampler.ts[0m:289:1]
+2025-07-26 11:12:32 +02:00:  [2m286[0m | 
+2025-07-26 11:12:32 +02:00:  [2m287[0m |         try {
+2025-07-26 11:12:32 +02:00:  [2m288[0m |           // console.log(`🎹 Creating sampler for layer ${layer}`
+2025-07-26 11:12:32 +02:00:  [2m289[0m |           });
+2025-07-26 11:12:32 +02:00:      : [35;1m           ^[0m
+2025-07-26 11:12:32 +02:00:  [2m290[0m |           
+2025-07-26 11:12:32 +02:00:  [2m291[0m |           sampler = new Tone.Sampler({
+2025-07-26 11:12:32 +02:00:  [2m292[0m |             urls: this.sampleMapping,
+2025-07-26 11:12:32 +02:00:      `----
+2025-07-26 11:12:32 +02:00:   [31mx[0m Expression expected
+2025-07-26 11:12:32 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/SalamanderVelocitySampler.ts[0m:289:1]
+2025-07-26 11:12:32 +02:00:  [2m286[0m | 
+2025-07-26 11:12:32 +02:00:  [2m287[0m |         try {
+2025-07-26 11:12:32 +02:00:  [2m288[0m |           // console.log(`🎹 Creating sampler for layer ${layer}`
+2025-07-26 11:12:32 +02:00:  [2m289[0m |           });
+2025-07-26 11:12:32 +02:00:      : [35;1m           ^[0m
+2025-07-26 11:12:32 +02:00:  [2m290[0m |           
+2025-07-26 11:12:32 +02:00:  [2m291[0m |           sampler = new Tone.Sampler({
+2025-07-26 11:12:32 +02:00:  [2m292[0m |             urls: this.sampleMapping,
+2025-07-26 11:12:32 +02:00:      `----
+2025-07-26 11:12:32 +02:00: Caused by:
+2025-07-26 11:12:32 +02:00:     Syntax Error
+2025-07-26 11:12:32 +02:00: Import trace for requested module:
+2025-07-26 11:12:32 +02:00: ./src/domains/playback/services/plugins/SalamanderVelocitySampler.ts
+2025-07-26 11:12:32 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 11:12:32 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 11:12:32 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:06:31 +02:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:31 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:06:31 +02:00: Import trace for requested module:
+2025-07-26 12:06:31 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:31 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:06:31 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:06:31 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:06:31 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:31 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:06:31 +02:00: Import trace for requested module:
+2025-07-26 12:06:31 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:31 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:06:31 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:06:31 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:06:31 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:31 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:06:31 +02:00: Import trace for requested module:
+2025-07-26 12:06:31 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:31 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:06:31 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:06:31 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:06:31 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:31 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:06:31 +02:00: Import trace for requested module:
+2025-07-26 12:06:31 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:31 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:06:31 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:06:31 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:06:49 +02:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:49 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:06:49 +02:00: Import trace for requested module:
+2025-07-26 12:06:49 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:49 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:06:49 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:06:49 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:06:49 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:49 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:06:49 +02:00: Import trace for requested module:
+2025-07-26 12:06:49 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:49 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:06:49 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:06:49 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:06:49 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:49 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:06:49 +02:00: Import trace for requested module:
+2025-07-26 12:06:49 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:49 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:06:49 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:06:49 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:06:49 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:49 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:06:49 +02:00: Import trace for requested module:
+2025-07-26 12:06:49 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:49 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:06:49 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:06:49 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:06:59 +02:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:59 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:06:59 +02:00: Import trace for requested module:
+2025-07-26 12:06:59 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:59 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:06:59 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:06:59 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:06:59 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:59 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:06:59 +02:00: Import trace for requested module:
+2025-07-26 12:06:59 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:59 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:06:59 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:06:59 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:06:59 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:59 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:06:59 +02:00: Import trace for requested module:
+2025-07-26 12:06:59 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:59 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:06:59 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:06:59 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:06:59 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:59 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:06:59 +02:00: Import trace for requested module:
+2025-07-26 12:06:59 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:06:59 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:06:59 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:06:59 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:07:18 +02:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:07:18 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:07:18 +02:00: Import trace for requested module:
+2025-07-26 12:07:18 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:07:18 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:07:18 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:07:18 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:07:18 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:07:18 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:07:18 +02:00: Import trace for requested module:
+2025-07-26 12:07:18 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:07:18 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:07:18 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:07:18 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:07:18 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:07:18 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:07:18 +02:00: Import trace for requested module:
+2025-07-26 12:07:18 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:07:18 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:07:18 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:07:18 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 12:07:18 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:07:18 +02:00: Attempted import error: 'getGlobalTone' is not exported from '@/domains/playback/providers/ToneProvider' (imported as 'getGlobalTone').
+2025-07-26 12:07:18 +02:00: Import trace for requested module:
+2025-07-26 12:07:18 +02:00: ./src/domains/playback/services/plugins/toneLoader.ts
+2025-07-26 12:07:18 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-26 12:07:18 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-26 12:07:18 +02:00: ./src/app/test-transport/page.tsx
+2025-07-26 14:16:06 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.

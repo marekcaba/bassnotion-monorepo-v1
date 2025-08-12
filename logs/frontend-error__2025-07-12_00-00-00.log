@@ -1,0 +1,694 @@
+2025-07-11 00:51:06 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-11 00:51:06 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-11 00:51:06 +02:00: Caused by:
+2025-07-11 00:51:06 +02:00:     No such file or directory (os error 2)
+2025-07-11 00:51:06 +02:00: Import trace for requested module:
+2025-07-11 00:51:06 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-11 00:51:06 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-11 00:51:23 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-11 00:51:23 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-11 00:51:23 +02:00: Caused by:
+2025-07-11 00:51:23 +02:00:     No such file or directory (os error 2)
+2025-07-11 00:51:23 +02:00: Import trace for requested module:
+2025-07-11 00:51:23 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-11 00:51:23 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-11 02:05:45 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './128.js'
+2025-07-11 02:05:45 +02:00: Require stack:
+2025-07-11 02:05:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-11 02:05:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-11 02:05:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-11 02:05:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-11 02:05:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-11 02:05:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-11 02:05:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-11 02:05:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-11 02:05:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-11 02:05:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-11 02:05:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-11 02:05:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-11 02:05:45 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-11 02:05:45 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-11 02:05:45 +02:00:     at Array.reduce (<anonymous>)
+2025-07-11 02:05:45 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-11 02:05:45 +02:00:     at Array.map (<anonymous>)
+2025-07-11 02:05:45 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-11 02:05:45 +02:00:     at <unknown> (.next/server/app/library/[tutorialId]/page.js:275:147983)
+2025-07-11 02:05:45 +02:00:     at Object.<anonymous> (.next/server/app/library/[tutorialId]/page.js:275:148036) {
+2025-07-11 02:05:45 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-11 02:05:45 +02:00:   requireStack: [36m[Array][39m,
+2025-07-11 02:05:45 +02:00:   page: [32m'/library/come-together'[39m
+2025-07-11 02:05:45 +02:00: }
+2025-07-11 02:05:47 +02:00:  [31m[1m⨯[22m[39m Failed to generate static paths for /library/[tutorialId]:
+2025-07-11 02:05:47 +02:00: Error: Cannot find module './vendor-chunks/@tanstack+query-devtools@5.81.2.js'
+2025-07-11 02:05:47 +02:00: Require stack:
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/dev/static-paths-worker.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/compiled/jest-worker/processChild.js
+2025-07-11 02:05:47 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-11 02:05:47 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-11 02:05:47 +02:00:     at Array.reduce (<anonymous>)
+2025-07-11 02:05:47 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67) {
+2025-07-11 02:05:47 +02:00:   type: [32m'Error'[39m,
+2025-07-11 02:05:47 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-11 02:05:47 +02:00:   requireStack: [36m[Array][39m
+2025-07-11 02:05:47 +02:00: }
+2025-07-11 02:05:47 +02:00:  [31m[1m⨯[22m[39m Failed to generate static paths for /library/[tutorialId]:
+2025-07-11 02:05:47 +02:00: Error: Cannot find module './vendor-chunks/@tanstack+query-devtools@5.81.2.js'
+2025-07-11 02:05:47 +02:00: Require stack:
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/dev/static-paths-worker.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/compiled/jest-worker/processChild.js
+2025-07-11 02:05:47 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-11 02:05:47 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-11 02:05:47 +02:00:     at Array.reduce (<anonymous>)
+2025-07-11 02:05:47 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67) {
+2025-07-11 02:05:47 +02:00:   type: [32m'Error'[39m,
+2025-07-11 02:05:47 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-11 02:05:47 +02:00:   requireStack: [36m[Array][39m
+2025-07-11 02:05:47 +02:00: }
+2025-07-11 02:05:47 +02:00:  [31m[1m⨯[22m[39m Failed to generate static paths for /library/[tutorialId]:
+2025-07-11 02:05:47 +02:00: Error: Cannot find module './vendor-chunks/@tanstack+query-devtools@5.81.2.js'
+2025-07-11 02:05:47 +02:00: Require stack:
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/dev/static-paths-worker.js
+2025-07-11 02:05:47 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/compiled/jest-worker/processChild.js
+2025-07-11 02:05:47 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-11 02:05:47 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-11 02:05:47 +02:00:     at Array.reduce (<anonymous>)
+2025-07-11 02:05:47 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67) {
+2025-07-11 02:05:47 +02:00:   type: [32m'Error'[39m,
+2025-07-11 02:05:47 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-11 02:05:47 +02:00:   requireStack: [36m[Array][39m
+2025-07-11 02:05:47 +02:00: }
+2025-07-11 12:53:54 +02:00:  [31m[1m⨯[22m[39m Failed to generate static paths for /library/[tutorialId]:
+2025-07-11 12:53:54 +02:00: [TypeError: Cannot read properties of undefined (reading 'definition')] {
+2025-07-11 12:53:54 +02:00:   type: [32m'TypeError'[39m
+2025-07-11 12:53:54 +02:00: }
+2025-07-11 18:48:02 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-11 18:48:02 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-11 18:48:02 +02:00: Caused by:
+2025-07-11 18:48:02 +02:00:     No such file or directory (os error 2)
+2025-07-11 18:48:02 +02:00: Import trace for requested module:
+2025-07-11 18:48:02 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-11 18:48:02 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-11 18:52:36 +02:00:  [31m[1m⨯[22m[39m Failed to generate static paths for /library/[tutorialId]:
+2025-07-11 18:52:36 +02:00: Error: Cannot find module './vendor-chunks/@tanstack+query-devtools@5.81.2.js'
+2025-07-11 18:52:36 +02:00: Require stack:
+2025-07-11 18:52:36 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-11 18:52:36 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-11 18:52:36 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-11 18:52:36 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-11 18:52:36 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-11 18:52:36 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/dev/static-paths-worker.js
+2025-07-11 18:52:36 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/compiled/jest-worker/processChild.js
+2025-07-11 18:52:36 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-11 18:52:36 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-11 18:52:36 +02:00:     at Array.reduce (<anonymous>)
+2025-07-11 18:52:36 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67) {
+2025-07-11 18:52:36 +02:00:   type: [32m'Error'[39m,
+2025-07-11 18:52:36 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-11 18:52:36 +02:00:   requireStack: [36m[Array][39m
+2025-07-11 18:52:36 +02:00: }
+2025-07-11 18:52:49 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './vendor-chunks/@tanstack+query-devtools@5.81.2.js'
+2025-07-11 18:52:49 +02:00: Require stack:
+2025-07-11 18:52:49 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-11 18:52:49 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-11 18:52:49 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-11 18:52:49 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-11 18:52:49 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-11 18:52:49 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/dev/static-paths-worker.js
+2025-07-11 18:52:49 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/compiled/jest-worker/processChild.js
+2025-07-11 18:52:49 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-11 18:52:49 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-11 18:52:49 +02:00:     at Array.reduce (<anonymous>)
+2025-07-11 18:52:49 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67) {
+2025-07-11 18:52:49 +02:00:   type: [32m'Error'[39m,
+2025-07-11 18:52:49 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-11 18:52:49 +02:00:   requireStack: [36m[Array][39m,
+2025-07-11 18:52:49 +02:00:   page: [32m'/library/another-one-bites-dust'[39m
+2025-07-11 18:52:49 +02:00: }
+2025-07-11 18:53:18 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-07-11 20:00:01 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/LoopGridStrip.tsx
+2025-07-11 20:00:01 +02:00: Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+2025-07-11 20:00:01 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/LoopGridStrip.tsx[0m:381:1]
+2025-07-11 20:00:01 +02:00:  [2m378[0m |   }, [isDragging, handleDragEnd, dragType, handleResizeDrag]);
+2025-07-11 20:00:01 +02:00:  [2m379[0m | 
+2025-07-11 20:00:01 +02:00:  [2m380[0m |   return (
+2025-07-11 20:00:01 +02:00:  [2m381[0m |     <div className={`relative w-full ${className}`}>
+2025-07-11 20:00:01 +02:00:      : [35;1m     ^^^[0m
+2025-07-11 20:00:01 +02:00:  [2m382[0m |       {/* Header */}
+2025-07-11 20:00:01 +02:00:  [2m383[0m |       <div className="flex items-center gap-2 mb-3">
+2025-07-11 20:00:01 +02:00:  [2m384[0m |         <span className="text-sm font-medium text-slate-300">Looper</span>
+2025-07-11 20:00:01 +02:00:      `----
+2025-07-11 20:00:01 +02:00: Caused by:
+2025-07-11 20:00:01 +02:00:     Syntax Error
+2025-07-11 20:00:01 +02:00: Import trace for requested module:
+2025-07-11 20:00:01 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/LoopGridStrip.tsx
+2025-07-11 20:00:01 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx
+2025-07-11 20:00:01 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 20:00:01 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 20:00:01 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 20:00:01 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 20:09:55 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/LoopGridStrip.tsx
+2025-07-11 20:09:55 +02:00: Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+2025-07-11 20:09:55 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/LoopGridStrip.tsx[0m:381:1]
+2025-07-11 20:09:55 +02:00:  [2m378[0m |   }, [isDragging, handleDragEnd, dragType, handleResizeDrag]);
+2025-07-11 20:09:55 +02:00:  [2m379[0m | 
+2025-07-11 20:09:55 +02:00:  [2m380[0m |   return (
+2025-07-11 20:09:55 +02:00:  [2m381[0m |     <div className={`relative w-full ${className}`}>
+2025-07-11 20:09:55 +02:00:      : [35;1m     ^^^[0m
+2025-07-11 20:09:55 +02:00:  [2m382[0m |       {/* Container with padding for neumorphic shadows */}
+2025-07-11 20:09:55 +02:00:  [2m383[0m |       <div className="p-1">
+2025-07-11 20:09:55 +02:00:  [2m384[0m |         {/* Grid Strip - Enhanced neumorphic styling */}
+2025-07-11 20:09:55 +02:00:      `----
+2025-07-11 20:09:55 +02:00: Caused by:
+2025-07-11 20:09:55 +02:00:     Syntax Error
+2025-07-11 20:09:55 +02:00: Import trace for requested module:
+2025-07-11 20:09:55 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/LoopGridStrip.tsx
+2025-07-11 20:09:55 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx
+2025-07-11 20:09:55 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 20:09:55 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 20:09:55 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 20:09:55 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 21:40:54 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:7:1
+2025-07-11 21:40:54 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../SheetMusicSection[39m'
+2025-07-11 21:40:54 +02:00:    5 | import type { LoopRegion } from './LoopGridStrip';
+2025-07-11 21:40:54 +02:00:    6 | import type { Exercise } from '@bassnotion/contracts';
+2025-07-11 21:40:54 +02:00: >  7 | import { SheetMusicSection } from '../SheetMusicSection';
+2025-07-11 21:40:54 +02:00:      | ^
+2025-07-11 21:40:54 +02:00:    8 |
+2025-07-11 21:40:54 +02:00:    9 | interface GlobalControlsProps {
+2025-07-11 21:40:54 +02:00:   10 |   isPlaying: boolean;
+2025-07-11 21:40:54 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-11 21:40:54 +02:00: Import trace for requested module:
+2025-07-11 21:40:54 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 21:40:54 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 21:40:54 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 21:40:54 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 21:41:07 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:7:1
+2025-07-11 21:41:07 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../SheetMusicSection[39m'
+2025-07-11 21:41:07 +02:00:    5 | import type { LoopRegion } from './LoopGridStrip';
+2025-07-11 21:41:07 +02:00:    6 | import type { Exercise } from '@bassnotion/contracts';
+2025-07-11 21:41:07 +02:00: >  7 | import { SheetMusicSection } from '../SheetMusicSection';
+2025-07-11 21:41:07 +02:00:      | ^
+2025-07-11 21:41:07 +02:00:    8 |
+2025-07-11 21:41:07 +02:00:    9 | interface GlobalControlsProps {
+2025-07-11 21:41:07 +02:00:   10 |   isPlaying: boolean;
+2025-07-11 21:41:07 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-11 21:41:07 +02:00: Import trace for requested module:
+2025-07-11 21:41:07 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 21:41:07 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 21:41:07 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 21:41:07 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 21:41:14 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:7:1
+2025-07-11 21:41:14 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../SheetMusicSection[39m'
+2025-07-11 21:41:14 +02:00:    5 | import type { LoopRegion } from './LoopGridStrip';
+2025-07-11 21:41:14 +02:00:    6 | import type { Exercise } from '@bassnotion/contracts';
+2025-07-11 21:41:14 +02:00: >  7 | import { SheetMusicSection } from '../SheetMusicSection';
+2025-07-11 21:41:14 +02:00:      | ^
+2025-07-11 21:41:14 +02:00:    8 |
+2025-07-11 21:41:14 +02:00:    9 | interface GlobalControlsProps {
+2025-07-11 21:41:14 +02:00:   10 |   isPlaying: boolean;
+2025-07-11 21:41:14 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-11 21:41:14 +02:00: Import trace for requested module:
+2025-07-11 21:41:14 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 21:41:14 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 21:41:14 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 21:41:14 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 21:41:36 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:7:1
+2025-07-11 21:41:36 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../SheetMusicSection[39m'
+2025-07-11 21:41:36 +02:00:    5 | import type { LoopRegion } from './LoopGridStrip';
+2025-07-11 21:41:36 +02:00:    6 | import type { Exercise } from '@bassnotion/contracts';
+2025-07-11 21:41:36 +02:00: >  7 | import { SheetMusicSection } from '../SheetMusicSection';
+2025-07-11 21:41:36 +02:00:      | ^
+2025-07-11 21:41:36 +02:00:    8 |
+2025-07-11 21:41:36 +02:00:    9 | interface GlobalControlsProps {
+2025-07-11 21:41:36 +02:00:   10 |   isPlaying: boolean;
+2025-07-11 21:41:36 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-11 21:41:36 +02:00: Import trace for requested module:
+2025-07-11 21:41:36 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 21:41:36 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 21:41:36 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 21:41:36 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 21:41:38 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:7:1
+2025-07-11 21:41:38 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../SheetMusicSection[39m'
+2025-07-11 21:41:38 +02:00:    5 | import type { LoopRegion } from './LoopGridStrip';
+2025-07-11 21:41:38 +02:00:    6 | import type { Exercise } from '@bassnotion/contracts';
+2025-07-11 21:41:38 +02:00: >  7 | import { SheetMusicSection } from '../SheetMusicSection';
+2025-07-11 21:41:38 +02:00:      | ^
+2025-07-11 21:41:38 +02:00:    8 |
+2025-07-11 21:41:38 +02:00:    9 | interface GlobalControlsProps {
+2025-07-11 21:41:38 +02:00:   10 |   isPlaying: boolean;
+2025-07-11 21:41:38 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-11 21:41:38 +02:00: Import trace for requested module:
+2025-07-11 21:41:38 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 21:41:38 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 21:41:38 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 21:41:38 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 21:42:25 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-07-11 21:49:02 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:8:1
+2025-07-11 21:49:02 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../shared/MusicXMLUpload[39m'
+2025-07-11 21:49:02 +02:00:    6 | import type { Exercise, ExerciseNote, NoteDuration } from '@bassnotion/contracts';
+2025-07-11 21:49:02 +02:00:    7 | import { Button } from '@/shared/components/ui/button';
+2025-07-11 21:49:02 +02:00: >  8 | import { MusicXMLUpload } from '../shared/MusicXMLUpload';
+2025-07-11 21:49:02 +02:00:      | ^
+2025-07-11 21:49:02 +02:00:    9 | import { MIDIUpload } from '../shared/MIDIUpload';
+2025-07-11 21:49:02 +02:00:   10 |
+2025-07-11 21:49:02 +02:00:   11 | // VexFlow imports for sheet music
+2025-07-11 21:49:02 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-11 21:49:02 +02:00: Import trace for requested module:
+2025-07-11 21:49:02 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 21:49:02 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 21:49:02 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 21:49:02 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 21:49:35 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:8:1
+2025-07-11 21:49:35 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../shared/MusicXMLUpload[39m'
+2025-07-11 21:49:35 +02:00:    6 | import type { Exercise, ExerciseNote, NoteDuration } from '@bassnotion/contracts';
+2025-07-11 21:49:35 +02:00:    7 | import { Button } from '@/shared/components/ui/button';
+2025-07-11 21:49:35 +02:00: >  8 | import { MusicXMLUpload } from '../shared/MusicXMLUpload';
+2025-07-11 21:49:35 +02:00:      | ^
+2025-07-11 21:49:35 +02:00:    9 | import { MIDIUpload } from '../shared/MIDIUpload';
+2025-07-11 21:49:35 +02:00:   10 |
+2025-07-11 21:49:35 +02:00:   11 | // VexFlow imports for sheet music
+2025-07-11 21:49:35 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-11 21:49:35 +02:00: Import trace for requested module:
+2025-07-11 21:49:35 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 21:49:35 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 21:49:35 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 21:49:35 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 21:49:39 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:8:1
+2025-07-11 21:49:39 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../shared/MusicXMLUpload[39m'
+2025-07-11 21:49:39 +02:00:    6 | import type { Exercise, ExerciseNote, NoteDuration } from '@bassnotion/contracts';
+2025-07-11 21:49:39 +02:00:    7 | import { Button } from '@/shared/components/ui/button';
+2025-07-11 21:49:39 +02:00: >  8 | import { MusicXMLUpload } from '../shared/MusicXMLUpload';
+2025-07-11 21:49:39 +02:00:      | ^
+2025-07-11 21:49:39 +02:00:    9 | import { MIDIUpload } from '../shared/MIDIUpload';
+2025-07-11 21:49:39 +02:00:   10 |
+2025-07-11 21:49:39 +02:00:   11 | // VexFlow imports for sheet music
+2025-07-11 21:49:39 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-11 21:49:39 +02:00: Import trace for requested module:
+2025-07-11 21:49:39 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 21:49:39 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 21:49:39 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 21:49:39 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 21:50:04 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 21:50:04 +02:00: Error:   [31mx[0m Return statement is not allowed here
+2025-07-11 21:50:04 +02:00:       ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx[0m:1099:1]
+2025-07-11 21:50:04 +02:00:  [2m1096[0m |         }
+2025-07-11 21:50:04 +02:00:  [2m1097[0m |       };
+2025-07-11 21:50:04 +02:00:  [2m1098[0m |     
+2025-07-11 21:50:04 +02:00:  [2m1099[0m | [35;1m,[0m[35;1m-[0m[35;1m>[0m   return (
+2025-07-11 21:50:04 +02:00:  [2m1100[0m | [35;1m|[0m       <div>
+2025-07-11 21:50:04 +02:00:  [2m1101[0m | [35;1m|[0m         {/* Hidden File Input */}
+2025-07-11 21:50:04 +02:00:  [2m1102[0m | [35;1m|[0m         <input
+2025-07-11 21:50:04 +02:00:  [2m1103[0m | [35;1m|[0m           ref={fileInputRef}
+2025-07-11 21:50:04 +02:00:  [2m1104[0m | [35;1m|[0m           type="file"
+2025-07-11 21:50:04 +02:00:  [2m1105[0m | [35;1m|[0m           accept=".mid,.midi,.xml,.musicxml"
+2025-07-11 21:50:04 +02:00:  [2m1106[0m | [35;1m|[0m           onChange={handleFileSelect}
+2025-07-11 21:50:04 +02:00:  [2m1107[0m | [35;1m|[0m           style={{ display: 'none' }}
+2025-07-11 21:50:04 +02:00:  [2m1108[0m | [35;1m|[0m         />
+2025-07-11 21:50:04 +02:00:  [2m1109[0m | [35;1m|[0m   
+2025-07-11 21:50:04 +02:00:  [2m1110[0m | [35;1m|[0m         {/* Import Controls - Simple and Clean */}
+2025-07-11 21:50:04 +02:00:  [2m1111[0m | [35;1m|[0m         <div className="mb-2 flex justify-end">
+2025-07-11 21:50:04 +02:00:  [2m1112[0m | [35;1m|[0m           <Button
+2025-07-11 21:50:04 +02:00:  [2m1113[0m | [35;1m|[0m             size="sm"
+2025-07-11 21:50:04 +02:00:  [2m1114[0m | [35;1m|[0m             variant="ghost"
+2025-07-11 21:50:04 +02:00:  [2m1115[0m | [35;1m|[0m             className="text-slate-300 hover:text-white"
+2025-07-11 21:50:04 +02:00:  [2m1116[0m | [35;1m|[0m             onClick={handleImportClick}
+2025-07-11 21:50:04 +02:00:  [2m1117[0m | [35;1m|[0m           >
+2025-07-11 21:50:04 +02:00:  [2m1118[0m | [35;1m|[0m             <Upload className="w-4 h-4 mr-1" />
+2025-07-11 21:50:04 +02:00:  [2m1119[0m | [35;1m|[0m             Import
+2025-07-11 21:50:04 +02:00:  [2m1120[0m | [35;1m|[0m           </Button>
+2025-07-11 21:50:04 +02:00:  [2m1121[0m | [35;1m|[0m           {isImported && (
+2025-07-11 21:50:04 +02:00:  [2m1122[0m | [35;1m|[0m             <Button
+2025-07-11 21:50:04 +02:00:  [2m1123[0m | [35;1m|[0m               size="sm"
+2025-07-11 21:50:04 +02:00:  [2m1124[0m | [35;1m|[0m               variant="ghost"
+2025-07-11 21:50:04 +02:00:  [2m1125[0m | [35;1m|[0m               className="text-slate-300 hover:text-red-400 ml-2"
+2025-07-11 21:50:04 +02:00:  [2m1126[0m | [35;1m|[0m               onClick={handleClearImported}
+2025-07-11 21:50:04 +02:00:  [2m1127[0m | [35;1m|[0m             >
+2025-07-11 21:50:04 +02:00:  [2m1128[0m | [35;1m|[0m               Clear
+2025-07-11 21:50:04 +02:00:  [2m1129[0m | [35;1m|[0m             </Button>
+2025-07-11 21:50:04 +02:00:  [2m1130[0m | [35;1m|[0m           )}
+2025-07-11 21:50:04 +02:00:  [2m1131[0m | [35;1m|[0m         </div>
+2025-07-11 21:50:04 +02:00:  [2m1132[0m | [35;1m|[0m   
+2025-07-11 21:50:04 +02:00:  [2m1133[0m | [35;1m|[0m         {/* VexFlow Sheet Music Container */}
+2025-07-11 21:50:04 +02:00:  [2m1134[0m | [35;1m|[0m         {activeExerciseInSheet ? (
+2025-07-11 21:50:04 +02:00:  [2m1135[0m | [35;1m|[0m           <div className="p-0 bg-white rounded-lg">
+2025-07-11 21:50:04 +02:00:  [2m1136[0m | [35;1m|[0m             <div
+2025-07-11 21:50:04 +02:00:  [2m1137[0m | [35;1m|[0m               className="w-full overflow-x-auto"
+2025-07-11 21:50:04 +02:00:  [2m1138[0m | [35;1m|[0m               style={{ maxHeight: '250px' }}
+2025-07-11 21:50:04 +02:00:  [2m1139[0m | [35;1m|[0m             >
+2025-07-11 21:50:04 +02:00:  [2m1140[0m | [35;1m|[0m               <div
+2025-07-11 21:50:04 +02:00:  [2m1141[0m | [35;1m|[0m                 ref={containerRef}
+2025-07-11 21:50:04 +02:00:  [2m1142[0m | [35;1m|[0m                 className="min-w-full"
+2025-07-11 21:50:04 +02:00:  [2m1143[0m | [35;1m|[0m                 style={{ minHeight: '120px' }}
+2025-07-11 21:50:04 +02:00:  [2m1144[0m | [35;1m|[0m               />
+2025-07-11 21:50:04 +02:00:  [2m1145[0m | [35;1m|[0m             </div>
+2025-07-11 21:50:04 +02:00:  [2m1146[0m | [35;1m|[0m           </div>
+2025-07-11 21:50:04 +02:00:  [2m1147[0m | [35;1m|[0m         ) : (
+2025-07-11 21:50:04 +02:00:  [2m1148[0m | [35;1m|[0m           <div className="flex items-center justify-center h-32 bg-slate-800/20 rounded-lg border border-slate-600 border-dashed">
+2025-07-11 21:50:04 +02:00:  [2m1149[0m | [35;1m|[0m             <div className="text-center">
+2025-07-11 21:50:04 +02:00:  [2m1150[0m | [35;1m|[0m               <span className="text-slate-400 text-sm">No exercise selected</span>
+2025-07-11 21:50:04 +02:00:  [2m1151[0m | [35;1m|[0m               <div className="mt-2">
+2025-07-11 21:50:04 +02:00:  [2m1152[0m | [35;1m|[0m                 <Button
+2025-07-11 21:50:04 +02:00:  [2m1153[0m | [35;1m|[0m                   variant="outline"
+2025-07-11 21:50:04 +02:00:  [2m1154[0m | [35;1m|[0m                   size="sm"
+2025-07-11 21:50:04 +02:00:  [2m1155[0m | [35;1m|[0m                   onClick={handleImportClick}
+2025-07-11 21:50:04 +02:00:  [2m1156[0m | [35;1m|[0m                   className="text-slate-300 hover:text-white border-slate-600"
+2025-07-11 21:50:04 +02:00:  [2m1157[0m | [35;1m|[0m                 >
+2025-07-11 21:50:04 +02:00:  [2m1158[0m | [35;1m|[0m                   <Upload className="w-4 h-4 mr-2" />
+2025-07-11 21:50:04 +02:00:  [2m1159[0m | [35;1m|[0m                   Import Music
+2025-07-11 21:50:04 +02:00:  [2m1160[0m | [35;1m|[0m                 </Button>
+2025-07-11 21:50:04 +02:00:  [2m1161[0m | [35;1m|[0m               </div>
+2025-07-11 21:50:04 +02:00:  [2m1162[0m | [35;1m|[0m             </div>
+2025-07-11 21:50:04 +02:00:  [2m1163[0m | [35;1m|[0m           </div>
+2025-07-11 21:50:04 +02:00:  [2m1164[0m | [35;1m|[0m         )}
+2025-07-11 21:50:04 +02:00:  [2m1165[0m | [35;1m|[0m       </div>
+2025-07-11 21:50:04 +02:00:  [2m1166[0m | [35;1m`[0m[35;1m-[0m[35;1m>[0m   );
+2025-07-11 21:50:04 +02:00:  [2m1167[0m |     }
+2025-07-11 21:50:04 +02:00:       `----
+2025-07-11 21:50:04 +02:00:   [31mx[0m Expression expected
+2025-07-11 21:50:04 +02:00:       ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx[0m:1167:1]
+2025-07-11 21:50:04 +02:00:  [2m1164[0m |       )}
+2025-07-11 21:50:04 +02:00:  [2m1165[0m |     </div>
+2025-07-11 21:50:04 +02:00:  [2m1166[0m |   );
+2025-07-11 21:50:04 +02:00:  [2m1167[0m | }
+2025-07-11 21:50:04 +02:00:       : [35;1m^[0m
+2025-07-11 21:50:04 +02:00:       `----
+2025-07-11 21:50:04 +02:00: Caused by:
+2025-07-11 21:50:04 +02:00:     Syntax Error
+2025-07-11 21:50:04 +02:00: Import trace for requested module:
+2025-07-11 21:50:04 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 21:50:04 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 21:50:04 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 21:50:04 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 21:53:09 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 21:53:09 +02:00: Error:   [31mx[0m Return statement is not allowed here
+2025-07-11 21:53:09 +02:00:       ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx[0m:1097:1]
+2025-07-11 21:53:09 +02:00:  [2m1094[0m |         }
+2025-07-11 21:53:09 +02:00:  [2m1095[0m |       };
+2025-07-11 21:53:09 +02:00:  [2m1096[0m |     
+2025-07-11 21:53:09 +02:00:  [2m1097[0m | [35;1m,[0m[35;1m-[0m[35;1m>[0m   return (
+2025-07-11 21:53:09 +02:00:  [2m1098[0m | [35;1m|[0m       <div>
+2025-07-11 21:53:09 +02:00:  [2m1099[0m | [35;1m|[0m         {/* Hidden File Input */}
+2025-07-11 21:53:09 +02:00:  [2m1100[0m | [35;1m|[0m         <input
+2025-07-11 21:53:09 +02:00:  [2m1101[0m | [35;1m|[0m           ref={fileInputRef}
+2025-07-11 21:53:09 +02:00:  [2m1102[0m | [35;1m|[0m           type="file"
+2025-07-11 21:53:09 +02:00:  [2m1103[0m | [35;1m|[0m           accept=".mid,.midi,.xml,.musicxml"
+2025-07-11 21:53:09 +02:00:  [2m1104[0m | [35;1m|[0m           onChange={handleFileSelect}
+2025-07-11 21:53:09 +02:00:  [2m1105[0m | [35;1m|[0m           style={{ display: 'none' }}
+2025-07-11 21:53:09 +02:00:  [2m1106[0m | [35;1m|[0m         />
+2025-07-11 21:53:09 +02:00:  [2m1107[0m | [35;1m|[0m   
+2025-07-11 21:53:09 +02:00:  [2m1108[0m | [35;1m|[0m         {/* Import Controls - Simple and Clean */}
+2025-07-11 21:53:09 +02:00:  [2m1109[0m | [35;1m|[0m         <div className="mb-2 flex justify-end">
+2025-07-11 21:53:09 +02:00:  [2m1110[0m | [35;1m|[0m           <Button
+2025-07-11 21:53:09 +02:00:  [2m1111[0m | [35;1m|[0m             size="sm"
+2025-07-11 21:53:09 +02:00:  [2m1112[0m | [35;1m|[0m             variant="ghost"
+2025-07-11 21:53:09 +02:00:  [2m1113[0m | [35;1m|[0m             className="text-slate-300 hover:text-white"
+2025-07-11 21:53:09 +02:00:  [2m1114[0m | [35;1m|[0m             onClick={handleImportClick}
+2025-07-11 21:53:09 +02:00:  [2m1115[0m | [35;1m|[0m           >
+2025-07-11 21:53:09 +02:00:  [2m1116[0m | [35;1m|[0m             <Upload className="w-4 h-4 mr-1" />
+2025-07-11 21:53:09 +02:00:  [2m1117[0m | [35;1m|[0m             Import
+2025-07-11 21:53:09 +02:00:  [2m1118[0m | [35;1m|[0m           </Button>
+2025-07-11 21:53:09 +02:00:  [2m1119[0m | [35;1m|[0m           {isImported && (
+2025-07-11 21:53:09 +02:00:  [2m1120[0m | [35;1m|[0m             <Button
+2025-07-11 21:53:09 +02:00:  [2m1121[0m | [35;1m|[0m               size="sm"
+2025-07-11 21:53:09 +02:00:  [2m1122[0m | [35;1m|[0m               variant="ghost"
+2025-07-11 21:53:09 +02:00:  [2m1123[0m | [35;1m|[0m               className="text-slate-300 hover:text-red-400 ml-2"
+2025-07-11 21:53:09 +02:00:  [2m1124[0m | [35;1m|[0m               onClick={handleClearImported}
+2025-07-11 21:53:09 +02:00:  [2m1125[0m | [35;1m|[0m             >
+2025-07-11 21:53:09 +02:00:  [2m1126[0m | [35;1m|[0m               Clear
+2025-07-11 21:53:09 +02:00:  [2m1127[0m | [35;1m|[0m             </Button>
+2025-07-11 21:53:09 +02:00:  [2m1128[0m | [35;1m|[0m           )}
+2025-07-11 21:53:09 +02:00:  [2m1129[0m | [35;1m|[0m         </div>
+2025-07-11 21:53:09 +02:00:  [2m1130[0m | [35;1m|[0m   
+2025-07-11 21:53:09 +02:00:  [2m1131[0m | [35;1m|[0m         {/* VexFlow Sheet Music Container */}
+2025-07-11 21:53:09 +02:00:  [2m1132[0m | [35;1m|[0m         {activeExerciseInSheet ? (
+2025-07-11 21:53:09 +02:00:  [2m1133[0m | [35;1m|[0m           <div className="p-0 bg-white rounded-lg">
+2025-07-11 21:53:09 +02:00:  [2m1134[0m | [35;1m|[0m             <div
+2025-07-11 21:53:09 +02:00:  [2m1135[0m | [35;1m|[0m               className="w-full overflow-x-auto"
+2025-07-11 21:53:09 +02:00:  [2m1136[0m | [35;1m|[0m               style={{ maxHeight: '250px' }}
+2025-07-11 21:53:09 +02:00:  [2m1137[0m | [35;1m|[0m             >
+2025-07-11 21:53:09 +02:00:  [2m1138[0m | [35;1m|[0m               <div
+2025-07-11 21:53:09 +02:00:  [2m1139[0m | [35;1m|[0m                 ref={containerRef}
+2025-07-11 21:53:09 +02:00:  [2m1140[0m | [35;1m|[0m                 className="min-w-full"
+2025-07-11 21:53:09 +02:00:  [2m1141[0m | [35;1m|[0m                 style={{ minHeight: '120px' }}
+2025-07-11 21:53:09 +02:00:  [2m1142[0m | [35;1m|[0m               />
+2025-07-11 21:53:09 +02:00:  [2m1143[0m | [35;1m|[0m             </div>
+2025-07-11 21:53:09 +02:00:  [2m1144[0m | [35;1m|[0m           </div>
+2025-07-11 21:53:09 +02:00:  [2m1145[0m | [35;1m|[0m         ) : (
+2025-07-11 21:53:09 +02:00:  [2m1146[0m | [35;1m|[0m           <div className="flex items-center justify-center h-32 bg-slate-800/20 rounded-lg border border-slate-600 border-dashed">
+2025-07-11 21:53:09 +02:00:  [2m1147[0m | [35;1m|[0m             <div className="text-center">
+2025-07-11 21:53:09 +02:00:  [2m1148[0m | [35;1m|[0m               <span className="text-slate-400 text-sm">No exercise selected</span>
+2025-07-11 21:53:09 +02:00:  [2m1149[0m | [35;1m|[0m               <div className="mt-2">
+2025-07-11 21:53:09 +02:00:  [2m1150[0m | [35;1m|[0m                 <Button
+2025-07-11 21:53:09 +02:00:  [2m1151[0m | [35;1m|[0m                   variant="outline"
+2025-07-11 21:53:09 +02:00:  [2m1152[0m | [35;1m|[0m                   size="sm"
+2025-07-11 21:53:09 +02:00:  [2m1153[0m | [35;1m|[0m                   onClick={handleImportClick}
+2025-07-11 21:53:09 +02:00:  [2m1154[0m | [35;1m|[0m                   className="text-slate-300 hover:text-white border-slate-600"
+2025-07-11 21:53:09 +02:00:  [2m1155[0m | [35;1m|[0m                 >
+2025-07-11 21:53:09 +02:00:  [2m1156[0m | [35;1m|[0m                   <Upload className="w-4 h-4 mr-2" />
+2025-07-11 21:53:09 +02:00:  [2m1157[0m | [35;1m|[0m                   Import Music
+2025-07-11 21:53:09 +02:00:  [2m1158[0m | [35;1m|[0m                 </Button>
+2025-07-11 21:53:09 +02:00:  [2m1159[0m | [35;1m|[0m               </div>
+2025-07-11 21:53:09 +02:00:  [2m1160[0m | [35;1m|[0m             </div>
+2025-07-11 21:53:09 +02:00:  [2m1161[0m | [35;1m|[0m           </div>
+2025-07-11 21:53:09 +02:00:  [2m1162[0m | [35;1m|[0m         )}
+2025-07-11 21:53:09 +02:00:  [2m1163[0m | [35;1m|[0m       </div>
+2025-07-11 21:53:09 +02:00:  [2m1164[0m | [35;1m`[0m[35;1m-[0m[35;1m>[0m   );
+2025-07-11 21:53:09 +02:00:  [2m1165[0m |     }
+2025-07-11 21:53:09 +02:00:       `----
+2025-07-11 21:53:09 +02:00:   [31mx[0m Expression expected
+2025-07-11 21:53:09 +02:00:       ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx[0m:1165:1]
+2025-07-11 21:53:09 +02:00:  [2m1162[0m |       )}
+2025-07-11 21:53:09 +02:00:  [2m1163[0m |     </div>
+2025-07-11 21:53:09 +02:00:  [2m1164[0m |   );
+2025-07-11 21:53:09 +02:00:  [2m1165[0m | }
+2025-07-11 21:53:09 +02:00:       : [35;1m^[0m
+2025-07-11 21:53:09 +02:00:       `----
+2025-07-11 21:53:09 +02:00: Caused by:
+2025-07-11 21:53:09 +02:00:     Syntax Error
+2025-07-11 21:53:09 +02:00: Import trace for requested module:
+2025-07-11 21:53:09 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 21:53:09 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 21:53:09 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 21:53:09 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 22:19:41 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:8:1
+2025-07-11 22:19:41 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../shared/MusicXMLUpload[39m'
+2025-07-11 22:19:41 +02:00:    6 | import type { Exercise, ExerciseNote, NoteDuration } from '@bassnotion/contracts';
+2025-07-11 22:19:41 +02:00:    7 | import { Button } from '@/shared/components/ui/button';
+2025-07-11 22:19:41 +02:00: >  8 | import { MusicXMLUpload } from '../shared/MusicXMLUpload';
+2025-07-11 22:19:41 +02:00:      | ^
+2025-07-11 22:19:41 +02:00:    9 | import { MIDIUpload } from '../shared/MIDIUpload';
+2025-07-11 22:19:41 +02:00:   10 |
+2025-07-11 22:19:41 +02:00:   11 | // VexFlow imports for sheet music
+2025-07-11 22:19:41 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-11 22:19:41 +02:00: Import trace for requested module:
+2025-07-11 22:19:41 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 22:19:41 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 22:19:41 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 22:19:41 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 22:19:52 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:8:1
+2025-07-11 22:19:52 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../shared/MusicXMLUpload[39m'
+2025-07-11 22:19:52 +02:00:    6 | import type { Exercise, ExerciseNote, NoteDuration } from '@bassnotion/contracts';
+2025-07-11 22:19:52 +02:00:    7 | import { Button } from '@/shared/components/ui/button';
+2025-07-11 22:19:52 +02:00: >  8 | import { MusicXMLUpload } from '../shared/MusicXMLUpload';
+2025-07-11 22:19:52 +02:00:      | ^
+2025-07-11 22:19:52 +02:00:    9 | import { MIDIUpload } from '../shared/MIDIUpload';
+2025-07-11 22:19:52 +02:00:   10 |
+2025-07-11 22:19:52 +02:00:   11 | // VexFlow imports for sheet music
+2025-07-11 22:19:52 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-11 22:19:52 +02:00: Import trace for requested module:
+2025-07-11 22:19:52 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 22:19:52 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 22:19:52 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 22:19:52 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 22:20:17 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:8:1
+2025-07-11 22:20:17 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../shared/MusicXMLUpload[39m'
+2025-07-11 22:20:17 +02:00:    6 | import type { Exercise, ExerciseNote, NoteDuration } from '@bassnotion/contracts';
+2025-07-11 22:20:17 +02:00:    7 | import { Button } from '@/shared/components/ui/button';
+2025-07-11 22:20:17 +02:00: >  8 | import { MusicXMLUpload } from '../shared/MusicXMLUpload';
+2025-07-11 22:20:17 +02:00:      | ^
+2025-07-11 22:20:17 +02:00:    9 | import { MIDIUpload } from '../shared/MIDIUpload';
+2025-07-11 22:20:17 +02:00:   10 |
+2025-07-11 22:20:17 +02:00:   11 | // VexFlow imports for sheet music
+2025-07-11 22:20:17 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-11 22:20:17 +02:00: Import trace for requested module:
+2025-07-11 22:20:17 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 22:20:17 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 22:20:17 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 22:20:17 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 22:20:24 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:8:1
+2025-07-11 22:20:24 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m../shared/MusicXMLUpload[39m'
+2025-07-11 22:20:24 +02:00:    6 | import type { Exercise, ExerciseNote, NoteDuration } from '@bassnotion/contracts';
+2025-07-11 22:20:24 +02:00:    7 | import { Button } from '@/shared/components/ui/button';
+2025-07-11 22:20:24 +02:00: >  8 | import { MusicXMLUpload } from '../shared/MusicXMLUpload';
+2025-07-11 22:20:24 +02:00:      | ^
+2025-07-11 22:20:24 +02:00:    9 | import { MIDIUpload } from '../shared/MIDIUpload';
+2025-07-11 22:20:24 +02:00:   10 |
+2025-07-11 22:20:24 +02:00:   11 | // VexFlow imports for sheet music
+2025-07-11 22:20:24 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-11 22:20:24 +02:00: Import trace for requested module:
+2025-07-11 22:20:24 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/FretboardCard.tsx
+2025-07-11 22:20:24 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/FretboardCard/index.ts
+2025-07-11 22:20:24 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-11 22:20:24 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-11 22:23:23 +02:00:  [31m[1m⨯[22m[39m Failed to generate static paths for /library/[tutorialId]:
+2025-07-11 22:23:23 +02:00: Error: Cannot find module './vendor-chunks/@swc+helpers@0.5.15.js'
+2025-07-11 22:23:23 +02:00: Require stack:
+2025-07-11 22:23:23 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-11 22:23:23 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-11 22:23:23 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-11 22:23:23 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-11 22:23:23 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-11 22:23:23 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/dev/static-paths-worker.js
+2025-07-11 22:23:23 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/compiled/jest-worker/processChild.js
+2025-07-11 22:23:23 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-11 22:23:23 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-11 22:23:23 +02:00:     at Array.reduce (<anonymous>)
+2025-07-11 22:23:23 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67) {
+2025-07-11 22:23:23 +02:00:   type: [32m'Error'[39m,
+2025-07-11 22:23:23 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-11 22:23:23 +02:00:   requireStack: [36m[Array][39m
+2025-07-11 22:23:23 +02:00: }
+2025-07-11 23:24:57 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './vendor-chunks/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47.js'
+2025-07-11 23:24:57 +02:00: Require stack:
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/dev/static-paths-worker.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/compiled/jest-worker/processChild.js
+2025-07-11 23:24:57 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-11 23:24:57 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-11 23:24:57 +02:00:     at Array.reduce (<anonymous>)
+2025-07-11 23:24:57 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67) {
+2025-07-11 23:24:57 +02:00:   type: [32m'Error'[39m,
+2025-07-11 23:24:57 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-11 23:24:57 +02:00:   requireStack: [36m[Array][39m,
+2025-07-11 23:24:57 +02:00:   page: [32m'/library/another-one-bites-dust'[39m
+2025-07-11 23:24:57 +02:00: }
+2025-07-11 23:24:57 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './868.js'
+2025-07-11 23:24:57 +02:00: Require stack:
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-11 23:24:57 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-11 23:24:57 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-11 23:24:57 +02:00:     at Array.reduce (<anonymous>)
+2025-07-11 23:24:57 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-11 23:24:57 +02:00:     at Array.map (<anonymous>)
+2025-07-11 23:24:57 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-11 23:24:57 +02:00:     at <unknown> (.next/server/pages/_document.js:1:335)
+2025-07-11 23:24:57 +02:00:     at Object.<anonymous> (.next/server/pages/_document.js:1:376) {
+2025-07-11 23:24:57 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-11 23:24:57 +02:00:   requireStack: [36m[Array][39m
+2025-07-11 23:24:57 +02:00: }
+2025-07-11 23:24:57 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './vendor-chunks/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47.js'
+2025-07-11 23:24:57 +02:00: Require stack:
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/dev/static-paths-worker.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/compiled/jest-worker/processChild.js
+2025-07-11 23:24:57 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-11 23:24:57 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-11 23:24:57 +02:00:     at Array.reduce (<anonymous>)
+2025-07-11 23:24:57 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67) {
+2025-07-11 23:24:57 +02:00:   type: [32m'Error'[39m,
+2025-07-11 23:24:57 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-11 23:24:57 +02:00:   requireStack: [36m[Array][39m,
+2025-07-11 23:24:57 +02:00:   page: [32m'/library/another-one-bites-dust'[39m
+2025-07-11 23:24:57 +02:00: }
+2025-07-11 23:24:57 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './868.js'
+2025-07-11 23:24:57 +02:00: Require stack:
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-11 23:24:57 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-11 23:24:57 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-11 23:24:57 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-11 23:24:57 +02:00:     at Array.reduce (<anonymous>)
+2025-07-11 23:24:57 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-11 23:24:57 +02:00:     at Array.map (<anonymous>)
+2025-07-11 23:24:57 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-11 23:24:57 +02:00:     at <unknown> (.next/server/pages/_document.js:1:335)
+2025-07-11 23:24:57 +02:00:     at Object.<anonymous> (.next/server/pages/_document.js:1:376) {
+2025-07-11 23:24:57 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-11 23:24:57 +02:00:   requireStack: [36m[Array][39m
+2025-07-11 23:24:57 +02:00: }
+2025-07-11 23:25:03 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './vendor-chunks/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47.js'
+2025-07-11 23:25:03 +02:00: Require stack:
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/dev/static-paths-worker.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/compiled/jest-worker/processChild.js
+2025-07-11 23:25:03 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-11 23:25:03 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-11 23:25:03 +02:00:     at Array.reduce (<anonymous>)
+2025-07-11 23:25:03 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67) {
+2025-07-11 23:25:03 +02:00:   type: [32m'Error'[39m,
+2025-07-11 23:25:03 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-11 23:25:03 +02:00:   requireStack: [36m[Array][39m,
+2025-07-11 23:25:03 +02:00:   page: [32m'/library/another-one-bites-dust'[39m
+2025-07-11 23:25:03 +02:00: }
+2025-07-11 23:25:03 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './868.js'
+2025-07-11 23:25:03 +02:00: Require stack:
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-11 23:25:03 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-11 23:25:03 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-11 23:25:03 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-11 23:25:03 +02:00:     at Array.reduce (<anonymous>)
+2025-07-11 23:25:03 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-11 23:25:03 +02:00:     at Array.map (<anonymous>)
+2025-07-11 23:25:03 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-11 23:25:03 +02:00:     at <unknown> (.next/server/pages/_document.js:1:335)
+2025-07-11 23:25:03 +02:00:     at Object.<anonymous> (.next/server/pages/_document.js:1:376) {
+2025-07-11 23:25:03 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-11 23:25:03 +02:00:   requireStack: [36m[Array][39m
+2025-07-11 23:25:03 +02:00: }

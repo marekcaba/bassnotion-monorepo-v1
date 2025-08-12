@@ -54,6 +54,7 @@ export interface BassNoteEvent {
 export interface StringConfig {
   4: string[];
   5: string[];
+  6: string[];
 }
 
 /**
@@ -62,6 +63,7 @@ export interface StringConfig {
 export interface OctaveMapping {
   4: number[];
   5: number[];
+  6: number[];
 }
 
 /**
@@ -83,7 +85,7 @@ export interface PlaybackPosition {
  * Hook configuration options
  */
 export interface UseAudioFretboardConfig {
-  stringCount: 4 | 5;
+  stringCount: 4 | 5 | 6;
   autoPlayOnClick?: boolean;
   defaultDuration?: number; // Legacy - milliseconds
   defaultVelocity?: number;
@@ -130,6 +132,7 @@ export interface UseAudioFretboardReturn {
 const BASS_STRING_CONFIGS: StringConfig = {
   4: ['G', 'D', 'A', 'E'], // Standard 4-string bass (string 1=G, 2=D, 3=A, 4=E) - highest to lowest pitch
   5: ['G', 'D', 'A', 'E', 'B'], // 5-string bass (string 1=G, 2=D, 3=A, 4=E, 5=B) - highest to lowest pitch
+  6: ['C', 'G', 'D', 'A', 'E', 'B'], // 6-string bass (string 1=C, 2=G, 3=D, 4=A, 5=E, 6=B) - highest to lowest pitch
 };
 
 /**
@@ -169,6 +172,22 @@ const BASS_NOTE_MAPPING = {
     11: ['F#', 'C#', 'G#', 'D#', 'A#'],
     12: ['G', 'D', 'A', 'E', 'B'], // Octave
   },
+  6: {
+    // 6-string bass tuning (string 1=C, 2=G, 3=D, 4=A, 5=E, 6=B) - highest to lowest pitch
+    0: ['C', 'G', 'D', 'A', 'E', 'B'], // Open strings
+    1: ['C#', 'G#', 'D#', 'A#', 'F', 'C'],
+    2: ['D', 'A', 'E', 'B', 'F#', 'C#'],
+    3: ['D#', 'A#', 'F', 'C', 'G', 'D'],
+    4: ['E', 'B', 'F#', 'C#', 'G#', 'D#'],
+    5: ['F', 'C', 'G', 'D', 'A', 'E'],
+    6: ['F#', 'C#', 'G#', 'D#', 'A#', 'F'],
+    7: ['G', 'D', 'A', 'E', 'B', 'F#'],
+    8: ['G#', 'D#', 'A#', 'F', 'C', 'G'],
+    9: ['A', 'E', 'B', 'F#', 'C#', 'G#'],
+    10: ['A#', 'F', 'C', 'G', 'D', 'A'],
+    11: ['B', 'F#', 'C#', 'G#', 'D#', 'A#'],
+    12: ['C', 'G', 'D', 'A', 'E', 'B'], // Octave
+  },
 } as const;
 
 /**
@@ -178,6 +197,7 @@ const BASS_NOTE_MAPPING = {
 const BASS_OCTAVE_MAPPING: OctaveMapping = {
   4: [2, 2, 1, 1], // G2, D2, A1, E1 (string 1=G, 2=D, 3=A, 4=E) - highest to lowest pitch
   5: [2, 2, 1, 1, 0], // G2, D2, A1, E1, B0 (string 1=G, 2=D, 3=A, 4=E, 5=B) - highest to lowest pitch
+  6: [3, 2, 2, 1, 1, 0], // C3, G2, D2, A1, E1, B0 (string 1=C, 2=G, 3=D, 4=A, 5=E, 6=B) - highest to lowest pitch
 };
 
 // ============================================================================
@@ -243,7 +263,10 @@ function processExerciseNotes(
     return exercise.notes.map((note: ExerciseNote, index: number) => {
       // Convert musical position to milliseconds
       const timestamp = note.position
-        ? MusicalTimeConverter.positionToMs(note.position, timeSignature, bpm)
+        ? MusicalTimeConverter.positionToMs(note.position, {
+            tempo: bpm,
+            timeSignature,
+          })
         : note.timestamp || index * 500;
 
       // Convert musical duration to milliseconds
@@ -292,7 +315,10 @@ function timestampToMusicalPosition(
     denominator: 4,
   };
 
-  return MusicalTimeConverter.msToPosition(timestamp, timeSignature, bpm);
+  return MusicalTimeConverter.msToPosition(timestamp, {
+    tempo: bpm,
+    timeSignature,
+  });
 }
 
 // ============================================================================
@@ -363,18 +389,7 @@ export function useAudioFretboard(
     // Log timing system detection
     if (exercise && notes.length > 0) {
       const isMusical = isMusicalTimingExercise(exercise);
-      console.log(
-        `🎵 Exercise timing system: ${isMusical ? 'Musical' : 'Legacy'}`,
-      );
-      if (isMusical) {
-        console.log(
-          `🎵 Time signature: ${exercise.timeSignature.numerator}/${exercise.timeSignature.denominator}`,
-        );
-        console.log(`🎵 BPM: ${exercise.bpm}`);
-        console.log(
-          `🎵 Converted ${notes.length} notes from musical to millisecond timing`,
-        );
-      }
+      // Note: Musical timing converted to millisecond timing for compatibility
     }
 
     return notes;
@@ -584,12 +599,8 @@ export function useAudioFretboard(
       // Attempt to trigger actual audio if playback integration is available
       if (playbackIntegration && (playbackIntegration as any)?.engine) {
         try {
-          console.log('🎵 Triggering note:', {
-            note: noteEvent.note,
-            octave: noteEvent.octave,
-            string: stringIndex,
-            fret: fret,
-          });
+          // Trigger note
+          // Note triggered: { note, octave, string, fret }
 
           // Trigger audio with BassInstrumentProcessor
           (playbackIntegration as any).engine.processNoteEvent?.(noteEvent);
@@ -597,14 +608,8 @@ export function useAudioFretboard(
           console.warn('⚠️ Audio trigger failed:', error);
         }
       } else {
-        // Fallback: Log the note that would be triggered
-        console.log('🎵 Note would be triggered:', {
-          note: noteEvent.note,
-          octave: noteEvent.octave,
-          string: stringIndex,
-          fret: fret,
-          mode: 'fallback',
-        });
+        // Fallback: Note would be triggered
+        // Note would be triggered: { note, octave, string, fret, mode: 'fallback' }
       }
     },
     [autoPlayOnClick, createNoteEvent, playbackIntegration],

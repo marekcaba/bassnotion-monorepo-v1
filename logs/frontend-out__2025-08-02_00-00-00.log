@@ -1,0 +1,609 @@
+2025-08-01 00:04:18 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-08-01 00:04:20 +02:00:  [32m[1m✓[22m[39m Compiled /test-transport in 2.5s (3518 modules)
+2025-08-01 00:04:20 +02:00:  GET /test-transport [32m200[39m in 2951ms
+2025-08-01 00:04:22 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 00:04:24 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.5s (3519 modules)
+2025-08-01 00:04:24 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2886ms
+2025-08-01 00:06:02 +02:00:  [32m[1m✓[22m[39m Compiled in 1472ms (3532 modules)
+2025-08-01 00:06:03 +02:00:  GET /test-transport [32m200[39m in 160ms
+2025-08-01 00:07:10 +02:00:  [32m[1m✓[22m[39m Compiled in 1230ms (3532 modules)
+2025-08-01 00:07:10 +02:00:  GET /test-transport [32m200[39m in 90ms
+2025-08-01 00:07:24 +02:00:  [32m[1m✓[22m[39m Compiled in 1209ms (3532 modules)
+2025-08-01 00:07:24 +02:00:  GET /test-transport [32m200[39m in 83ms
+2025-08-01 00:07:46 +02:00: 
+2025-08-01 00:07:46 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-01 00:07:46 +02:00: 
+2025-08-01 00:07:47 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-01 00:07:47 +02:00:    - Local:        http://localhost:3001
+2025-08-01 00:07:47 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-01 00:07:47 +02:00:    - Environments: .env.local, .env
+2025-08-01 00:07:47 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-01 00:07:50 +02:00:  [32m[1m✓[22m[39m Ready in 3.2s
+2025-08-01 00:08:03 +02:00:  [37m[1m○[22m[39m Compiling /test-exercises ...
+2025-08-01 00:08:10 +02:00:  [32m[1m✓[22m[39m Compiled /test-exercises in 6.9s (3404 modules)
+2025-08-01 00:08:10 +02:00:  GET /test-exercises [32m200[39m in 7279ms
+2025-08-01 00:08:10 +02:00:  [32m[1m✓[22m[39m Compiled in 701ms (1652 modules)
+2025-08-01 00:09:35 +02:00:  [32m[1m✓[22m[39m Compiled in 1194ms (1652 modules)
+2025-08-01 00:09:40 +02:00:  [37m[1m○[22m[39m Compiling /test-audio-init ...
+2025-08-01 00:09:45 +02:00:  GET /test-audio-init [31m500[39m in 4905ms
+2025-08-01 00:10:00 +02:00:  GET /test-audio-init [31m500[39m in 58ms
+2025-08-01 10:53:40 +02:00:  [32m[1m✓[22m[39m Compiled /_error in 3.3s (1970 modules)
+2025-08-01 10:54:09 +02:00:  [32m[1m✓[22m[39m Compiled in 1083ms (1970 modules)
+2025-08-01 10:56:38 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-08-01 10:56:41 +02:00:  [32m[1m✓[22m[39m Compiled /test-transport in 3.7s (3839 modules)
+2025-08-01 10:56:42 +02:00:  GET /test-transport [32m200[39m in 4651ms
+2025-08-01 10:56:43 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 304ms (1884 modules)
+2025-08-01 10:56:43 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 506ms
+2025-08-01 10:59:28 +02:00:  [32m[1m✓[22m[39m Compiled in 2.2s (3853 modules)
+2025-08-01 10:59:28 +02:00:  GET /test-transport [32m200[39m in 204ms
+2025-08-01 11:00:12 +02:00:  [32m[1m✓[22m[39m Compiled in 3s (3853 modules)
+2025-08-01 11:00:12 +02:00:  GET /test-transport [32m200[39m in 228ms
+2025-08-01 11:00:33 +02:00: 
+2025-08-01 11:00:33 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-01 11:00:33 +02:00: 
+2025-08-01 11:00:34 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-01 11:00:34 +02:00:    - Local:        http://localhost:3001
+2025-08-01 11:00:34 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-01 11:00:34 +02:00:    - Environments: .env.local, .env
+2025-08-01 11:00:34 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-01 11:00:36 +02:00:  [32m[1m✓[22m[39m Ready in 2.2s
+2025-08-01 11:02:22 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-08-01 11:02:28 +02:00:  [32m[1m✓[22m[39m Compiled /test-transport in 6.6s (3525 modules)
+2025-08-01 11:02:28 +02:00:  GET /test-transport [32m200[39m in 7420ms
+2025-08-01 11:02:29 +02:00:  [32m[1m✓[22m[39m Compiled in 979ms (1713 modules)
+2025-08-01 11:02:29 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 11:02:31 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.3s (3512 modules)
+2025-08-01 11:02:32 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2907ms
+2025-08-01 11:06:15 +02:00:  GET /test-transport [32m200[39m in 288ms
+2025-08-01 11:06:15 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 48ms
+2025-08-01 11:08:00 +02:00:  [32m[1m✓[22m[39m Compiled in 4s (3525 modules)
+2025-08-01 11:08:00 +02:00:  GET /test-transport [32m200[39m in 247ms
+2025-08-01 11:08:11 +02:00:  [32m[1m✓[22m[39m Compiled in 974ms (3525 modules)
+2025-08-01 11:08:11 +02:00:  GET /test-transport [32m200[39m in 154ms
+2025-08-01 11:08:20 +02:00:  [32m[1m✓[22m[39m Compiled in 1345ms (3525 modules)
+2025-08-01 11:08:20 +02:00:  GET /test-transport [32m200[39m in 62ms
+2025-08-01 11:10:20 +02:00: 
+2025-08-01 11:10:20 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-01 11:10:20 +02:00: 
+2025-08-01 11:10:21 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-01 11:10:21 +02:00:    - Local:        http://localhost:3001
+2025-08-01 11:10:21 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-01 11:10:21 +02:00:    - Environments: .env.local, .env
+2025-08-01 11:10:21 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-01 11:10:23 +02:00:  [32m[1m✓[22m[39m Ready in 2.2s
+2025-08-01 11:32:23 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-08-01 11:32:30 +02:00:  [32m[1m✓[22m[39m Compiled /test-transport in 7.8s (3525 modules)
+2025-08-01 11:32:31 +02:00:  GET /test-transport [32m200[39m in 8866ms
+2025-08-01 11:32:31 +02:00:  [32m[1m✓[22m[39m Compiled in 1325ms (1713 modules)
+2025-08-01 11:32:32 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 11:32:34 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.2s (3512 modules)
+2025-08-01 11:32:34 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2599ms
+2025-08-01 11:38:41 +02:00:  GET /test-transport [32m200[39m in 274ms
+2025-08-01 11:38:41 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 66ms
+2025-08-01 11:45:03 +02:00:  [32m[1m✓[22m[39m Compiled in 7s (3525 modules)
+2025-08-01 11:45:04 +02:00:  GET /test-transport [32m200[39m in 590ms
+2025-08-01 11:45:09 +02:00:  [32m[1m✓[22m[39m Compiled in 2.3s (3525 modules)
+2025-08-01 11:45:09 +02:00:  GET /test-transport [32m200[39m in 261ms
+2025-08-01 11:47:56 +02:00: 
+2025-08-01 11:47:56 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-01 11:47:56 +02:00: 
+2025-08-01 11:47:57 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-01 11:47:57 +02:00:    - Local:        http://localhost:3001
+2025-08-01 11:47:57 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-01 11:47:57 +02:00:    - Environments: .env.local, .env
+2025-08-01 11:47:57 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-01 11:47:59 +02:00:  [32m[1m✓[22m[39m Ready in 2.2s
+2025-08-01 11:49:04 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-08-01 11:49:08 +02:00:  [32m[1m✓[22m[39m Compiled /test-transport in 4.9s (3511 modules)
+2025-08-01 11:49:09 +02:00:  GET /test-transport [32m200[39m in 5626ms
+2025-08-01 11:49:09 +02:00:  [32m[1m✓[22m[39m Compiled in 929ms (1699 modules)
+2025-08-01 11:49:10 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 11:49:11 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1808ms (3512 modules)
+2025-08-01 11:49:12 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2586ms
+2025-08-01 11:51:48 +02:00:  [32m[1m✓[22m[39m Compiled in 6.7s (3525 modules)
+2025-08-01 11:51:48 +02:00:  GET /test-transport [32m200[39m in 265ms
+2025-08-01 11:51:50 +02:00:  GET /test-transport [32m200[39m in 1581ms
+2025-08-01 11:51:50 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 11:51:51 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1550ms (1813 modules)
+2025-08-01 11:51:51 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2164ms
+2025-08-01 11:52:43 +02:00:  [32m[1m✓[22m[39m Compiled in 4s (3526 modules)
+2025-08-01 11:52:44 +02:00:  GET /test-transport [32m200[39m in 453ms
+2025-08-01 11:53:09 +02:00:  [32m[1m✓[22m[39m Compiled in 1464ms (3525 modules)
+2025-08-01 11:53:09 +02:00:  GET /test-transport [32m200[39m in 161ms
+2025-08-01 11:53:34 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (3525 modules)
+2025-08-01 11:53:34 +02:00:  GET /test-transport [32m200[39m in 80ms
+2025-08-01 11:53:56 +02:00:  [32m[1m✓[22m[39m Compiled in 837ms (3525 modules)
+2025-08-01 11:53:56 +02:00:  GET /test-transport [32m200[39m in 113ms
+2025-08-01 11:55:44 +02:00: 
+2025-08-01 11:55:44 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-01 11:55:44 +02:00: 
+2025-08-01 11:55:46 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-01 11:55:46 +02:00:    - Local:        http://localhost:3001
+2025-08-01 11:55:46 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-01 11:55:46 +02:00:    - Environments: .env.local, .env
+2025-08-01 11:55:46 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-01 11:55:48 +02:00:  [32m[1m✓[22m[39m Ready in 2.5s
+2025-08-01 11:57:09 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-08-01 11:57:15 +02:00:  [32m[1m✓[22m[39m Compiled /test-transport in 6.9s (3525 modules)
+2025-08-01 11:57:16 +02:00:  GET /test-transport [32m200[39m in 7757ms
+2025-08-01 11:57:17 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 11:57:17 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.1s (3512 modules)
+2025-08-01 11:57:18 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1501ms
+2025-08-01 11:57:22 +02:00:  GET /test-transport [32m200[39m in 223ms
+2025-08-01 11:57:22 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 39ms
+2025-08-01 12:00:03 +02:00:  [32m[1m✓[22m[39m Compiled in 2s (3525 modules)
+2025-08-01 12:00:03 +02:00:  GET /test-transport [32m200[39m in 110ms
+2025-08-01 12:00:14 +02:00: 
+2025-08-01 12:00:14 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-01 12:00:14 +02:00: 
+2025-08-01 12:00:15 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-01 12:00:15 +02:00:    - Local:        http://localhost:3001
+2025-08-01 12:00:15 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-01 12:00:15 +02:00:    - Environments: .env.local, .env
+2025-08-01 12:00:15 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-01 12:00:17 +02:00:  [32m[1m✓[22m[39m Ready in 1923ms
+2025-08-01 12:06:42 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-08-01 12:06:49 +02:00:  [32m[1m✓[22m[39m Compiled /test-transport in 7.8s (3525 modules)
+2025-08-01 12:06:50 +02:00:  GET /test-transport [32m200[39m in 8911ms
+2025-08-01 12:06:50 +02:00:  [32m[1m✓[22m[39m Compiled in 1225ms (1713 modules)
+2025-08-01 12:06:51 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 12:06:51 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1145ms (3512 modules)
+2025-08-01 12:06:52 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1367ms
+2025-08-01 12:47:06 +02:00:  GET /test-transport [32m200[39m in 330ms
+2025-08-01 12:47:06 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 53ms
+2025-08-01 12:49:27 +02:00:  [32m[1m✓[22m[39m Compiled in 2.5s (3525 modules)
+2025-08-01 12:49:28 +02:00:  GET /test-transport [32m200[39m in 636ms
+2025-08-01 12:49:28 +02:00:  GET /test-transport [32m200[39m in 1066ms
+2025-08-01 12:49:29 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 380ms (1813 modules)
+2025-08-01 12:49:29 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 612ms
+2025-08-01 13:59:46 +02:00: 
+2025-08-01 13:59:46 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-01 13:59:46 +02:00: 
+2025-08-01 13:59:47 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-01 13:59:47 +02:00:    - Local:        http://localhost:3001
+2025-08-01 13:59:47 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-01 13:59:47 +02:00:    - Environments: .env.local, .env
+2025-08-01 13:59:47 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-01 13:59:50 +02:00:  [32m[1m✓[22m[39m Ready in 2.6s
+2025-08-01 14:00:02 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-08-01 14:00:08 +02:00:  [32m[1m✓[22m[39m Compiled /test-transport in 6.6s (3511 modules)
+2025-08-01 14:00:09 +02:00:  GET /test-transport [32m200[39m in 7233ms
+2025-08-01 14:00:09 +02:00:  [32m[1m✓[22m[39m Compiled in 829ms (1699 modules)
+2025-08-01 14:00:11 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 14:00:12 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.3s (3512 modules)
+2025-08-01 14:00:13 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2597ms
+2025-08-01 14:02:50 +02:00:  GET /test-transport [32m200[39m in 598ms
+2025-08-01 14:02:51 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 40ms
+2025-08-01 14:06:37 +02:00:  [32m[1m✓[22m[39m Compiled in 7.2s (3525 modules)
+2025-08-01 14:06:38 +02:00:  GET /test-transport [32m200[39m in 305ms
+2025-08-01 14:07:08 +02:00:  [32m[1m✓[22m[39m Compiled in 1212ms (3525 modules)
+2025-08-01 14:07:08 +02:00:  GET /test-transport [32m200[39m in 130ms
+2025-08-01 14:07:22 +02:00: 
+2025-08-01 14:07:22 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-01 14:07:22 +02:00: 
+2025-08-01 14:07:22 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-01 14:07:22 +02:00:    - Local:        http://localhost:3001
+2025-08-01 14:07:22 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-01 14:07:22 +02:00:    - Environments: .env.local, .env
+2025-08-01 14:07:22 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-01 14:07:24 +02:00:  [32m[1m✓[22m[39m Ready in 1947ms
+2025-08-01 14:10:33 +02:00: 
+2025-08-01 14:10:33 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-01 14:10:33 +02:00: 
+2025-08-01 14:10:33 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-01 14:10:33 +02:00:    - Local:        http://localhost:3001
+2025-08-01 14:10:33 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-01 14:10:33 +02:00:    - Environments: .env.local, .env
+2025-08-01 14:10:33 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-01 14:10:36 +02:00:  [32m[1m✓[22m[39m Ready in 2.3s
+2025-08-01 14:23:49 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-08-01 14:23:56 +02:00:  [32m[1m✓[22m[39m Compiled /test-transport in 7.7s (3525 modules)
+2025-08-01 14:23:57 +02:00:  GET /test-transport [32m200[39m in 8593ms
+2025-08-01 14:23:57 +02:00:  [32m[1m✓[22m[39m Compiled in 1180ms (1713 modules)
+2025-08-01 14:23:58 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 14:23:59 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2s (3512 modules)
+2025-08-01 14:24:00 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2325ms
+2025-08-01 14:24:48 +02:00:  GET /test-transport [32m200[39m in 278ms
+2025-08-01 14:24:48 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 51ms
+2025-08-01 14:25:42 +02:00:  [32m[1m✓[22m[39m Compiled in 2.8s (3526 modules)
+2025-08-01 14:25:42 +02:00:  GET /test-transport [32m200[39m in 438ms
+2025-08-01 14:25:43 +02:00:  GET /test-transport [32m200[39m in 469ms
+2025-08-01 14:25:44 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 266ms
+2025-08-01 14:26:47 +02:00:  [32m[1m✓[22m[39m Compiled in 4.4s (3526 modules)
+2025-08-01 14:26:47 +02:00:  GET /test-transport [32m200[39m in 250ms
+2025-08-01 14:26:59 +02:00:  [32m[1m✓[22m[39m Compiled in 1495ms (3525 modules)
+2025-08-01 14:26:59 +02:00:  GET /test-transport [32m200[39m in 190ms
+2025-08-01 14:27:23 +02:00: 
+2025-08-01 14:27:23 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-01 14:27:23 +02:00: 
+2025-08-01 14:27:24 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-01 14:27:24 +02:00:    - Local:        http://localhost:3001
+2025-08-01 14:27:24 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-01 14:27:24 +02:00:    - Environments: .env.local, .env
+2025-08-01 14:27:24 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-01 14:27:26 +02:00:  [32m[1m✓[22m[39m Ready in 2.5s
+2025-08-01 14:27:51 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-08-01 14:27:57 +02:00:  [32m[1m✓[22m[39m Compiled /test-transport in 7.5s (3525 modules)
+2025-08-01 14:27:58 +02:00:  GET /test-transport [32m200[39m in 8513ms
+2025-08-01 14:27:59 +02:00:  [32m[1m✓[22m[39m Compiled in 1112ms (1713 modules)
+2025-08-01 14:27:59 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 14:28:01 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.8s (3512 modules)
+2025-08-01 14:28:02 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 3054ms
+2025-08-01 14:29:21 +02:00:  [32m[1m✓[22m[39m Compiled in 1634ms (3525 modules)
+2025-08-01 14:29:22 +02:00:  GET /test-transport [32m200[39m in 102ms
+2025-08-01 15:27:47 +02:00: 
+2025-08-01 15:27:47 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-01 15:27:47 +02:00: 
+2025-08-01 15:27:48 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-01 15:27:48 +02:00:    - Local:        http://localhost:3001
+2025-08-01 15:27:48 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-01 15:27:48 +02:00:    - Environments: .env.local, .env
+2025-08-01 15:27:48 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-01 15:27:49 +02:00:  [32m[1m✓[22m[39m Ready in 1932ms
+2025-08-01 15:42:16 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-08-01 15:42:21 +02:00:  [32m[1m✓[22m[39m Compiled /test-transport in 5.2s (3511 modules)
+2025-08-01 15:42:21 +02:00:  GET /test-transport [32m200[39m in 5830ms
+2025-08-01 15:42:22 +02:00:  [32m[1m✓[22m[39m Compiled in 746ms (1699 modules)
+2025-08-01 15:42:22 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 15:42:24 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1817ms (3512 modules)
+2025-08-01 15:42:24 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2316ms
+2025-08-01 15:44:21 +02:00:  [32m[1m✓[22m[39m Compiled in 9.1s (3525 modules)
+2025-08-01 15:44:22 +02:00:  GET /test-transport [32m200[39m in 637ms
+2025-08-01 15:46:49 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (3525 modules)
+2025-08-01 15:46:50 +02:00:  GET /test-transport [32m200[39m in 855ms
+2025-08-01 15:46:51 +02:00:  GET /test-transport [32m200[39m in 730ms
+2025-08-01 15:46:53 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 325ms (1813 modules)
+2025-08-01 15:46:53 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 541ms
+2025-08-01 15:47:02 +02:00:  [32m[1m✓[22m[39m Compiled in 1486ms (3526 modules)
+2025-08-01 15:47:03 +02:00:  GET /test-transport [32m200[39m in 800ms
+2025-08-01 15:47:03 +02:00:  GET /test-transport [32m200[39m in 1227ms
+2025-08-01 15:47:03 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 64ms
+2025-08-01 15:47:17 +02:00:  [32m[1m✓[22m[39m Compiled in 1128ms (3526 modules)
+2025-08-01 15:47:17 +02:00:  GET /test-transport [32m200[39m in 83ms
+2025-08-01 15:47:31 +02:00:  [32m[1m✓[22m[39m Compiled in 926ms (3526 modules)
+2025-08-01 15:47:31 +02:00:  GET /test-transport [32m200[39m in 80ms
+2025-08-01 15:47:39 +02:00:  [32m[1m✓[22m[39m Compiled in 1270ms (3526 modules)
+2025-08-01 15:47:39 +02:00:  GET /test-transport [32m200[39m in 103ms
+2025-08-01 15:47:48 +02:00:  [32m[1m✓[22m[39m Compiled in 651ms (3526 modules)
+2025-08-01 15:47:48 +02:00:  GET /test-transport [32m200[39m in 118ms
+2025-08-01 15:47:57 +02:00:  [32m[1m✓[22m[39m Compiled in 1248ms (3526 modules)
+2025-08-01 15:47:57 +02:00:  GET /test-transport [32m200[39m in 68ms
+2025-08-01 15:48:07 +02:00:  [32m[1m✓[22m[39m Compiled in 1056ms (3526 modules)
+2025-08-01 15:48:07 +02:00:  GET /test-transport [32m200[39m in 66ms
+2025-08-01 15:48:13 +02:00:  [32m[1m✓[22m[39m Compiled in 856ms (3525 modules)
+2025-08-01 15:48:13 +02:00:  GET /test-transport [32m200[39m in 70ms
+2025-08-01 15:48:22 +02:00:  [37m[1m○[22m[39m Compiling /_error ...
+2025-08-01 15:48:23 +02:00:  GET /test-transport [31m500[39m in 1943ms
+2025-08-01 15:48:23 +02:00:  GET /test-transport [31m500[39m in 8ms
+2025-08-01 15:48:23 +02:00:  GET /test-transport [31m500[39m in 6ms
+2025-08-01 15:48:23 +02:00:  GET /test-transport [31m500[39m in 10ms
+2025-08-01 15:48:23 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [31m500[39m in 248ms
+2025-08-01 15:53:23 +02:00:  GET /test-transport [31m500[39m in 1391ms
+2025-08-01 15:53:24 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [31m500[39m in 416ms
+2025-08-01 15:54:00 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 3.8s (3892 modules)
+2025-08-01 15:54:00 +02:00:  GET /_next/static/webpack/a47a84e83f814df7.webpack.hot-update.json [33m404[39m in 2373ms
+2025-08-01 15:54:01 +02:00:  GET /test-transport [32m200[39m in 288ms
+2025-08-01 15:54:01 +02:00:  GET /test-transport [32m200[39m in 44ms
+2025-08-01 15:54:01 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 65ms
+2025-08-01 15:54:32 +02:00:  [32m[1m✓[22m[39m Compiled in 2.5s (3892 modules)
+2025-08-01 15:54:33 +02:00:  GET /test-transport [32m200[39m in 251ms
+2025-08-01 15:54:34 +02:00:  GET /test-transport [32m200[39m in 1800ms
+2025-08-01 15:54:34 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 675ms
+2025-08-01 15:54:44 +02:00:  [32m[1m✓[22m[39m Compiled in 1127ms (3892 modules)
+2025-08-01 15:54:44 +02:00:  GET /test-transport [32m200[39m in 103ms
+2025-08-01 15:54:45 +02:00:  GET /test-transport [32m200[39m in 263ms
+2025-08-01 15:54:45 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 46ms
+2025-08-01 15:54:57 +02:00:  [32m[1m✓[22m[39m Compiled in 1628ms (3892 modules)
+2025-08-01 15:54:57 +02:00:  GET /test-transport [32m200[39m in 176ms
+2025-08-01 15:54:58 +02:00:  GET /test-transport [32m200[39m in 391ms
+2025-08-01 15:54:58 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 50ms
+2025-08-01 15:55:10 +02:00:  [32m[1m✓[22m[39m Compiled in 1763ms (3892 modules)
+2025-08-01 15:55:10 +02:00:  GET /test-transport [32m200[39m in 94ms
+2025-08-01 15:55:10 +02:00:  GET /test-transport [32m200[39m in 342ms
+2025-08-01 15:55:11 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 48ms
+2025-08-01 15:56:14 +02:00:  GET /test-transport [32m200[39m in 89ms
+2025-08-01 15:56:14 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 57ms
+2025-08-01 15:57:27 +02:00:  [32m[1m✓[22m[39m Compiled in 2.4s (3891 modules)
+2025-08-01 15:57:27 +02:00:  GET /test-transport [32m200[39m in 224ms
+2025-08-01 15:57:28 +02:00:  GET /test-transport [32m200[39m in 769ms
+2025-08-01 15:57:29 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 490ms (1926 modules)
+2025-08-01 15:57:29 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 686ms
+2025-08-01 15:57:38 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (3892 modules)
+2025-08-01 15:57:38 +02:00:  GET /test-transport [32m200[39m in 417ms
+2025-08-01 15:57:38 +02:00:  GET /test-transport [32m200[39m in 34ms
+2025-08-01 15:57:39 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 189ms
+2025-08-01 15:59:15 +02:00:  GET /test-transport [32m200[39m in 147ms
+2025-08-01 15:59:15 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 56ms
+2025-08-01 16:02:05 +02:00:  [32m[1m✓[22m[39m Compiled in 4.4s (3891 modules)
+2025-08-01 16:02:05 +02:00:  GET /test-transport [32m200[39m in 200ms
+2025-08-01 16:02:37 +02:00:  [32m[1m✓[22m[39m Compiled in 1121ms (3891 modules)
+2025-08-01 16:02:37 +02:00:  GET /test-transport [32m200[39m in 98ms
+2025-08-01 16:06:18 +02:00:  [32m[1m✓[22m[39m Compiled in 3.8s (3891 modules)
+2025-08-01 16:06:18 +02:00:  GET /test-transport [32m200[39m in 108ms
+2025-08-01 16:06:50 +02:00:  [32m[1m✓[22m[39m Compiled in 4.4s (3891 modules)
+2025-08-01 16:06:50 +02:00:  GET /test-transport [32m200[39m in 223ms
+2025-08-01 16:07:27 +02:00:  [32m[1m✓[22m[39m Compiled in 19.6s (3891 modules)
+2025-08-01 16:07:42 +02:00:  GET /test-transport [32m200[39m in 14302ms
+2025-08-01 16:08:57 +02:00:  [32m[1m✓[22m[39m Compiled in 56.9s (3891 modules)
+2025-08-01 16:08:57 +02:00:  GET /test-transport [32m200[39m in 260ms
+2025-08-01 16:09:09 +02:00:  [32m[1m✓[22m[39m Compiled in 1514ms (3891 modules)
+2025-08-01 16:09:09 +02:00:  GET /test-transport [32m200[39m in 60ms
+2025-08-01 16:09:46 +02:00:  [32m[1m✓[22m[39m Compiled in 1440ms (3891 modules)
+2025-08-01 16:09:46 +02:00:  GET /test-transport [32m200[39m in 136ms
+2025-08-01 16:09:54 +02:00:  [32m[1m✓[22m[39m Compiled in 1240ms (3891 modules)
+2025-08-01 16:09:54 +02:00:  GET /test-transport [32m200[39m in 75ms
+2025-08-01 16:10:03 +02:00:  [32m[1m✓[22m[39m Compiled in 948ms (3891 modules)
+2025-08-01 16:10:03 +02:00:  GET /test-transport [32m200[39m in 64ms
+2025-08-01 16:10:12 +02:00:  [32m[1m✓[22m[39m Compiled in 1176ms (3891 modules)
+2025-08-01 16:10:12 +02:00:  GET /test-transport [32m200[39m in 67ms
+2025-08-01 16:10:21 +02:00:  [32m[1m✓[22m[39m Compiled in 1373ms (3891 modules)
+2025-08-01 16:10:21 +02:00:  GET /test-transport [32m200[39m in 59ms
+2025-08-01 16:10:30 +02:00:  [32m[1m✓[22m[39m Compiled in 1245ms (3891 modules)
+2025-08-01 16:10:30 +02:00:  GET /test-transport [32m200[39m in 128ms
+2025-08-01 16:10:39 +02:00:  GET /test-transport [31m500[39m in 53ms
+2025-08-01 16:10:39 +02:00:  GET /test-transport [31m500[39m in 72ms
+2025-08-01 16:10:47 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 16:10:48 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.1s (3892 modules)
+2025-08-01 16:10:48 +02:00:  GET /_next/static/webpack/a47a84e83f814df7.webpack.hot-update.json [33m404[39m in 1535ms
+2025-08-01 16:10:48 +02:00:  GET /test-transport [32m200[39m in 201ms
+2025-08-01 16:10:48 +02:00:  GET /test-transport [32m200[39m in 47ms
+2025-08-01 16:11:10 +02:00:  [32m[1m✓[22m[39m Compiled in 1010ms (3892 modules)
+2025-08-01 16:11:10 +02:00:  GET /test-transport [32m200[39m in 65ms
+2025-08-01 16:11:26 +02:00:  [32m[1m✓[22m[39m Compiled in 1181ms (3892 modules)
+2025-08-01 16:11:26 +02:00:  GET /test-transport [32m200[39m in 62ms
+2025-08-01 16:11:44 +02:00:  [32m[1m✓[22m[39m Compiled in 1123ms (3892 modules)
+2025-08-01 16:11:44 +02:00:  GET /test-transport [32m200[39m in 123ms
+2025-08-01 16:11:55 +02:00:  [32m[1m✓[22m[39m Compiled in 1711ms (3891 modules)
+2025-08-01 16:11:55 +02:00:  GET /test-transport [32m200[39m in 63ms
+2025-08-01 16:13:07 +02:00:  [32m[1m✓[22m[39m Compiled in 3.4s (3891 modules)
+2025-08-01 16:13:07 +02:00:  GET /test-transport [32m200[39m in 99ms
+2025-08-01 16:13:44 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 16:13:44 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 516ms (1926 modules)
+2025-08-01 16:13:44 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 730ms
+2025-08-01 16:13:46 +02:00:  GET /test-transport [32m200[39m in 360ms
+2025-08-01 16:13:46 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 55ms
+2025-08-01 16:15:00 +02:00:  [32m[1m✓[22m[39m Compiled in 16.3s (3892 modules)
+2025-08-01 16:15:02 +02:00:  GET /test-transport [32m200[39m in 1300ms
+2025-08-01 16:15:45 +02:00:  [32m[1m✓[22m[39m Compiled in 6.4s (3891 modules)
+2025-08-01 16:15:45 +02:00:  GET /test-transport [32m200[39m in 108ms
+2025-08-01 16:16:06 +02:00:  [32m[1m✓[22m[39m Compiled in 709ms (3891 modules)
+2025-08-01 16:16:06 +02:00:  GET /test-transport [32m200[39m in 76ms
+2025-08-01 16:16:17 +02:00:  [32m[1m✓[22m[39m Compiled in 1211ms (3891 modules)
+2025-08-01 16:16:17 +02:00:  GET /test-transport [32m200[39m in 62ms
+2025-08-01 16:16:31 +02:00:  [32m[1m✓[22m[39m Compiled in 726ms (3891 modules)
+2025-08-01 16:16:31 +02:00:  GET /test-transport [32m200[39m in 57ms
+2025-08-01 16:16:41 +02:00:  [32m[1m✓[22m[39m Compiled in 816ms (3891 modules)
+2025-08-01 16:16:41 +02:00:  GET /test-transport [32m200[39m in 54ms
+2025-08-01 16:16:50 +02:00:  [32m[1m✓[22m[39m Compiled in 898ms (3891 modules)
+2025-08-01 16:16:50 +02:00:  GET /test-transport [32m200[39m in 61ms
+2025-08-01 16:17:03 +02:00:  [32m[1m✓[22m[39m Compiled in 931ms (3891 modules)
+2025-08-01 16:17:03 +02:00:  GET /test-transport [32m200[39m in 61ms
+2025-08-01 16:18:19 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 16:18:19 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1403ms (1926 modules)
+2025-08-01 16:18:20 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2340ms
+2025-08-01 16:18:20 +02:00:  GET /test-transport [32m200[39m in 1352ms
+2025-08-01 16:18:21 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 61ms
+2025-08-01 16:20:29 +02:00:  [32m[1m✓[22m[39m Compiled in 3.3s (3891 modules)
+2025-08-01 16:20:29 +02:00:  GET /test-transport [32m200[39m in 159ms
+2025-08-01 16:23:46 +02:00:  [32m[1m✓[22m[39m Compiled in 2.9s (3891 modules)
+2025-08-01 16:23:46 +02:00:  GET /test-transport [32m200[39m in 123ms
+2025-08-01 16:23:54 +02:00:  [32m[1m✓[22m[39m Compiled in 1131ms (3891 modules)
+2025-08-01 16:23:54 +02:00:  GET /test-transport [32m200[39m in 78ms
+2025-08-01 16:25:25 +02:00:  [32m[1m✓[22m[39m Compiled in 2.3s (3891 modules)
+2025-08-01 16:25:25 +02:00:  GET /test-transport [32m200[39m in 63ms
+2025-08-01 16:25:44 +02:00:  [32m[1m✓[22m[39m Compiled in 1128ms (3891 modules)
+2025-08-01 16:25:44 +02:00:  GET /test-transport [32m200[39m in 74ms
+2025-08-01 16:26:04 +02:00:  [32m[1m✓[22m[39m Compiled in 1378ms (3891 modules)
+2025-08-01 16:26:04 +02:00:  GET /test-transport [32m200[39m in 60ms
+2025-08-01 16:26:15 +02:00:  [32m[1m✓[22m[39m Compiled in 1021ms (3891 modules)
+2025-08-01 16:26:15 +02:00:  GET /test-transport [32m200[39m in 71ms
+2025-08-01 16:26:27 +02:00:  [32m[1m✓[22m[39m Compiled in 1548ms (3891 modules)
+2025-08-01 16:26:27 +02:00:  GET /test-transport [32m200[39m in 60ms
+2025-08-01 16:27:16 +02:00:  GET /test-transport [32m200[39m in 587ms
+2025-08-01 16:27:16 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 16:27:17 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1129ms (1926 modules)
+2025-08-01 16:27:17 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1498ms
+2025-08-01 16:31:10 +02:00:  [32m[1m✓[22m[39m Compiled in 7.2s (3891 modules)
+2025-08-01 16:31:11 +02:00:  GET /test-transport [32m200[39m in 270ms
+2025-08-01 16:31:12 +02:00:  GET /test-transport [32m200[39m in 784ms
+2025-08-01 16:31:13 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 16:31:15 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2s (3892 modules)
+2025-08-01 16:31:15 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2230ms
+2025-08-01 16:31:28 +02:00:  [32m[1m✓[22m[39m Compiled in 3.5s (3892 modules)
+2025-08-01 16:31:28 +02:00:  GET /test-transport [32m200[39m in 169ms
+2025-08-01 16:31:29 +02:00:  GET /test-transport [32m200[39m in 421ms
+2025-08-01 16:31:29 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 67ms
+2025-08-01 16:33:54 +02:00:  [32m[1m✓[22m[39m Compiled in 2.7s (3891 modules)
+2025-08-01 16:33:54 +02:00:  GET /test-transport [32m200[39m in 160ms
+2025-08-01 16:34:05 +02:00:  [32m[1m✓[22m[39m Compiled in 1341ms (3891 modules)
+2025-08-01 16:34:05 +02:00:  GET /test-transport [32m200[39m in 94ms
+2025-08-01 16:35:10 +02:00:  [32m[1m✓[22m[39m Compiled in 2.8s (3891 modules)
+2025-08-01 16:35:11 +02:00:  GET /test-transport [32m200[39m in 127ms
+2025-08-01 16:35:53 +02:00:  [32m[1m✓[22m[39m Compiled in 1291ms (3891 modules)
+2025-08-01 16:35:53 +02:00:  GET /test-transport [32m200[39m in 130ms
+2025-08-01 16:36:24 +02:00:  [32m[1m✓[22m[39m Compiled in 2.2s (3891 modules)
+2025-08-01 16:36:25 +02:00:  GET /test-transport [32m200[39m in 123ms
+2025-08-01 16:36:48 +02:00:  [32m[1m✓[22m[39m Compiled in 2.9s (3891 modules)
+2025-08-01 16:36:48 +02:00:  GET /test-transport [32m200[39m in 92ms
+2025-08-01 16:36:57 +02:00:  [32m[1m✓[22m[39m Compiled in 1476ms (3891 modules)
+2025-08-01 16:36:57 +02:00:  GET /test-transport [32m200[39m in 89ms
+2025-08-01 16:37:07 +02:00:  [32m[1m✓[22m[39m Compiled in 1468ms (3891 modules)
+2025-08-01 16:37:07 +02:00:  GET /test-transport [32m200[39m in 82ms
+2025-08-01 16:38:16 +02:00:  [32m[1m✓[22m[39m Compiled in 1359ms (1966 modules)
+2025-08-01 16:38:16 +02:00:  GET /test-transport [32m200[39m in 12ms
+2025-08-01 16:38:37 +02:00:  GET /test-transport [32m200[39m in 417ms
+2025-08-01 16:38:38 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 16:38:39 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1464ms (1926 modules)
+2025-08-01 16:38:39 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1714ms
+2025-08-01 16:42:21 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (1966 modules)
+2025-08-01 16:42:21 +02:00:  GET /test-transport [32m200[39m in 122ms
+2025-08-01 16:42:40 +02:00:  [32m[1m✓[22m[39m Compiled in 692ms (1966 modules)
+2025-08-01 16:42:40 +02:00:  GET /test-transport [32m200[39m in 38ms
+2025-08-01 16:42:50 +02:00:  [32m[1m✓[22m[39m Compiled in 756ms (1966 modules)
+2025-08-01 16:42:50 +02:00:  GET /test-transport [32m200[39m in 26ms
+2025-08-01 16:43:16 +02:00:  [32m[1m✓[22m[39m Compiled in 5.5s (3891 modules)
+2025-08-01 16:43:16 +02:00:  GET /test-transport [32m200[39m in 333ms
+2025-08-01 16:43:29 +02:00:  [32m[1m✓[22m[39m Compiled in 2.8s (3891 modules)
+2025-08-01 16:43:29 +02:00:  GET /test-transport [32m200[39m in 110ms
+2025-08-01 16:43:58 +02:00:  [32m[1m✓[22m[39m Compiled in 8.2s (3891 modules)
+2025-08-01 16:43:59 +02:00:  GET /test-transport [32m200[39m in 620ms
+2025-08-01 16:44:04 +02:00:  [32m[1m✓[22m[39m Compiled in 2.8s (3891 modules)
+2025-08-01 16:44:04 +02:00:  GET /test-transport [32m200[39m in 203ms
+2025-08-01 17:03:27 +02:00:  GET /test-transport [32m200[39m in 608ms
+2025-08-01 17:03:28 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 17:03:29 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.1s (1926 modules)
+2025-08-01 17:03:29 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2339ms
+2025-08-01 17:05:43 +02:00:  [32m[1m✓[22m[39m Compiled in 8.5s (3891 modules)
+2025-08-01 17:05:43 +02:00:  GET /test-transport [32m200[39m in 175ms
+2025-08-01 17:06:26 +02:00:  [32m[1m✓[22m[39m Compiled in 1894ms (3891 modules)
+2025-08-01 17:06:26 +02:00:  GET /test-transport [32m200[39m in 133ms
+2025-08-01 17:10:43 +02:00:  GET /test-transport [32m200[39m in 672ms
+2025-08-01 17:10:44 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 17:10:46 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2s (1926 modules)
+2025-08-01 17:10:46 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2186ms
+2025-08-01 17:11:41 +02:00:  GET /test-transport [32m200[39m in 346ms
+2025-08-01 17:11:41 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 62ms
+2025-08-01 17:17:14 +02:00:  [32m[1m✓[22m[39m Compiled in 8.4s (3891 modules)
+2025-08-01 17:17:14 +02:00:  GET /test-transport [32m200[39m in 240ms
+2025-08-01 17:17:55 +02:00:  [32m[1m✓[22m[39m Compiled in 1561ms (3891 modules)
+2025-08-01 17:17:55 +02:00:  GET /test-transport [32m200[39m in 91ms
+2025-08-01 17:22:11 +02:00:  GET /test-transport [32m200[39m in 626ms
+2025-08-01 17:22:12 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 17:22:14 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.3s (1926 modules)
+2025-08-01 17:22:14 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2418ms
+2025-08-01 23:22:28 +02:00: 
+2025-08-01 23:22:28 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-01 23:22:28 +02:00: 
+2025-08-01 23:22:29 +02:00: [?25h
+2025-08-01 23:22:29 +02:00: 
+2025-08-01 23:22:29 +02:00: 
+2025-08-01 23:22:29 +02:00: 
+2025-08-01 23:22:29 +02:00:  NX   Successfully ran target serve for project @bassnotion/frontend
+2025-08-01 23:22:29 +02:00: 
+2025-08-01 23:22:29 +02:00: 
+2025-08-01 23:22:29 +02:00: 
+2025-08-01 23:22:29 +02:00:  NX   Nx Cloud encountered some problems
+2025-08-01 23:22:29 +02:00: 
+2025-08-01 23:22:29 +02:00: This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+2025-08-01 23:22:29 +02:00: 
+2025-08-01 23:24:22 +02:00: 
+2025-08-01 23:24:22 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-01 23:24:22 +02:00: 
+2025-08-01 23:24:23 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-01 23:24:23 +02:00:    - Local:        http://localhost:3001
+2025-08-01 23:24:23 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-01 23:24:23 +02:00:    - Environments: .env.local, .env
+2025-08-01 23:24:23 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-01 23:24:24 +02:00:  [32m[1m✓[22m[39m Ready in 1469ms
+2025-08-01 23:24:41 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-08-01 23:24:50 +02:00:  [32m[1m✓[22m[39m Compiled /test-transport in 10.2s (3534 modules)
+2025-08-01 23:24:51 +02:00:  GET /test-transport [32m200[39m in 10689ms
+2025-08-01 23:24:51 +02:00:  [32m[1m✓[22m[39m Compiled in 736ms (1713 modules)
+2025-08-01 23:25:31 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-08-01 23:25:31 +02:00:  [32m[1m✓[22m[39m Compiled / in 917ms (3520 modules)
+2025-08-01 23:25:31 +02:00:  GET / [32m200[39m in 1102ms
+2025-08-01 23:25:50 +02:00:  [32m[1m✓[22m[39m Compiled in 694ms (3520 modules)
+2025-08-01 23:29:28 +02:00:  GET /test-transport [32m200[39m in 337ms
+2025-08-01 23:29:32 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 23:29:33 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 910ms (3515 modules)
+2025-08-01 23:29:33 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1070ms
+2025-08-01 23:32:21 +02:00:  [32m[1m✓[22m[39m Compiled in 1717ms (3528 modules)
+2025-08-01 23:32:21 +02:00:  GET /test-transport [32m200[39m in 511ms
+2025-08-01 23:32:21 +02:00:  GET /test-transport [32m200[39m in 888ms
+2025-08-01 23:32:22 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 205ms (1813 modules)
+2025-08-01 23:32:22 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 357ms
+2025-08-01 23:32:41 +02:00:  [32m[1m✓[22m[39m Compiled in 1451ms (3529 modules)
+2025-08-01 23:32:41 +02:00:  GET /test-transport [32m200[39m in 87ms
+2025-08-01 23:32:59 +02:00:  [32m[1m✓[22m[39m Compiled in 743ms (3529 modules)
+2025-08-01 23:32:59 +02:00:  GET /test-transport [32m200[39m in 96ms
+2025-08-01 23:34:00 +02:00:  GET /test-transport [32m200[39m in 365ms
+2025-08-01 23:34:00 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 55ms
+2025-08-01 23:37:11 +02:00:  [32m[1m✓[22m[39m Compiled in 2.3s (3528 modules)
+2025-08-01 23:37:11 +02:00:  GET /test-transport [32m200[39m in 115ms
+2025-08-01 23:37:24 +02:00:  [32m[1m✓[22m[39m Compiled in 641ms (3528 modules)
+2025-08-01 23:37:24 +02:00:  GET /test-transport [32m200[39m in 75ms
+2025-08-01 23:37:52 +02:00:  [32m[1m✓[22m[39m Compiled in 656ms (3528 modules)
+2025-08-01 23:37:52 +02:00:  GET /test-transport [32m200[39m in 61ms
+2025-08-01 23:38:45 +02:00:  GET /test-transport [32m200[39m in 270ms
+2025-08-01 23:38:45 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 220ms (1813 modules)
+2025-08-01 23:38:46 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 422ms
+2025-08-01 23:42:04 +02:00:  [32m[1m✓[22m[39m Compiled in 1118ms (3528 modules)
+2025-08-01 23:42:04 +02:00:  GET /test-transport [32m200[39m in 100ms
+2025-08-01 23:42:25 +02:00:  [32m[1m✓[22m[39m Compiled in 529ms (3528 modules)
+2025-08-01 23:42:25 +02:00:  GET /test-transport [32m200[39m in 73ms
+2025-08-01 23:42:50 +02:00:  [32m[1m✓[22m[39m Compiled in 594ms (3528 modules)
+2025-08-01 23:42:50 +02:00:  GET /test-transport [32m200[39m in 58ms
+2025-08-01 23:43:05 +02:00:  [32m[1m✓[22m[39m Compiled in 598ms (3528 modules)
+2025-08-01 23:43:05 +02:00:  GET /test-transport [32m200[39m in 60ms
+2025-08-01 23:43:15 +02:00:  [32m[1m✓[22m[39m Compiled in 541ms (3528 modules)
+2025-08-01 23:43:15 +02:00:  GET /test-transport [32m200[39m in 56ms
+2025-08-01 23:43:25 +02:00:  [32m[1m✓[22m[39m Compiled in 527ms (3528 modules)
+2025-08-01 23:43:26 +02:00:  GET /test-transport [32m200[39m in 54ms
+2025-08-01 23:43:40 +02:00:  [32m[1m✓[22m[39m Compiled in 478ms (3528 modules)
+2025-08-01 23:43:40 +02:00:  GET /test-transport [32m200[39m in 55ms
+2025-08-01 23:44:20 +02:00:  [32m[1m✓[22m[39m Compiled in 1786ms (3528 modules)
+2025-08-01 23:44:20 +02:00:  GET /test-transport [32m200[39m in 84ms
+2025-08-01 23:44:32 +02:00:  [32m[1m✓[22m[39m Compiled in 533ms (3528 modules)
+2025-08-01 23:44:32 +02:00:  GET /test-transport [32m200[39m in 74ms
+2025-08-01 23:44:42 +02:00:  [32m[1m✓[22m[39m Compiled in 597ms (3528 modules)
+2025-08-01 23:44:42 +02:00:  GET /test-transport [32m200[39m in 59ms
+2025-08-01 23:45:09 +02:00:  [32m[1m✓[22m[39m Compiled in 607ms (3528 modules)
+2025-08-01 23:45:09 +02:00:  GET /test-transport [32m200[39m in 59ms
+2025-08-01 23:45:18 +02:00:  [32m[1m✓[22m[39m Compiled in 589ms (3528 modules)
+2025-08-01 23:45:18 +02:00:  GET /test-transport [32m200[39m in 54ms
+2025-08-01 23:45:58 +02:00:  GET /test-transport [32m200[39m in 267ms
+2025-08-01 23:45:59 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 23:45:59 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 511ms (1813 modules)
+2025-08-01 23:45:59 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 719ms
+2025-08-01 23:47:31 +02:00:  [32m[1m✓[22m[39m Compiled in 1425ms (3528 modules)
+2025-08-01 23:47:32 +02:00:  GET /test-transport [32m200[39m in 90ms
+2025-08-01 23:47:40 +02:00:  [32m[1m✓[22m[39m Compiled in 1147ms (3528 modules)
+2025-08-01 23:47:40 +02:00:  GET /test-transport [32m200[39m in 73ms
+2025-08-01 23:47:49 +02:00:  [32m[1m✓[22m[39m Compiled in 516ms (3528 modules)
+2025-08-01 23:47:49 +02:00:  GET /test-transport [32m200[39m in 55ms
+2025-08-01 23:48:06 +02:00:  [32m[1m✓[22m[39m Compiled in 485ms (3528 modules)
+2025-08-01 23:48:06 +02:00:  GET /test-transport [32m200[39m in 59ms
+2025-08-01 23:48:17 +02:00:  [32m[1m✓[22m[39m Compiled in 630ms (3528 modules)
+2025-08-01 23:48:17 +02:00:  GET /test-transport [32m200[39m in 57ms
+2025-08-01 23:48:26 +02:00:  [32m[1m✓[22m[39m Compiled in 1309ms (3528 modules)
+2025-08-01 23:48:26 +02:00:  GET /test-transport [32m200[39m in 65ms
+2025-08-01 23:48:47 +02:00:  [32m[1m✓[22m[39m Compiled in 750ms (3528 modules)
+2025-08-01 23:48:47 +02:00:  GET /test-transport [32m200[39m in 58ms
+2025-08-01 23:48:56 +02:00:  [32m[1m✓[22m[39m Compiled in 511ms (3528 modules)
+2025-08-01 23:48:56 +02:00:  GET /test-transport [32m200[39m in 58ms
+2025-08-01 23:52:03 +02:00:  GET /test-transport [32m200[39m in 278ms
+2025-08-01 23:52:04 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 23:52:04 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1238ms (1813 modules)
+2025-08-01 23:52:05 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1461ms
+2025-08-01 23:52:47 +02:00:  [32m[1m✓[22m[39m Compiled in 1287ms (3529 modules)
+2025-08-01 23:52:47 +02:00:  GET /test-transport [32m200[39m in 83ms
+2025-08-01 23:52:52 +02:00:  [32m[1m✓[22m[39m Compiled in 574ms (3529 modules)
+2025-08-01 23:52:52 +02:00:  GET /test-transport [32m200[39m in 62ms
+2025-08-01 23:52:59 +02:00:  [32m[1m✓[22m[39m Compiled in 556ms (3529 modules)
+2025-08-01 23:52:59 +02:00:  GET /test-transport [32m200[39m in 59ms
+2025-08-01 23:53:05 +02:00:  [32m[1m✓[22m[39m Compiled in 505ms (3529 modules)
+2025-08-01 23:53:05 +02:00:  GET /test-transport [32m200[39m in 64ms
+2025-08-01 23:53:13 +02:00:  [32m[1m✓[22m[39m Compiled in 484ms (3528 modules)
+2025-08-01 23:53:14 +02:00:  GET /test-transport [32m200[39m in 99ms
+2025-08-01 23:53:41 +02:00:  [32m[1m✓[22m[39m Compiled in 1283ms (3528 modules)
+2025-08-01 23:53:41 +02:00:  GET /test-transport [32m200[39m in 83ms
+2025-08-01 23:53:47 +02:00:  [32m[1m✓[22m[39m Compiled in 524ms (3528 modules)
+2025-08-01 23:53:47 +02:00:  GET /test-transport [32m200[39m in 76ms
+2025-08-01 23:53:54 +02:00:  [32m[1m✓[22m[39m Compiled in 512ms (3528 modules)
+2025-08-01 23:53:54 +02:00:  GET /test-transport [32m200[39m in 59ms
+2025-08-01 23:54:05 +02:00:  [32m[1m✓[22m[39m Compiled in 497ms (3528 modules)
+2025-08-01 23:54:05 +02:00:  GET /test-transport [32m200[39m in 61ms
+2025-08-01 23:55:09 +02:00:  [32m[1m✓[22m[39m Compiled in 1479ms (3528 modules)
+2025-08-01 23:55:09 +02:00:  GET /test-transport [32m200[39m in 76ms
+2025-08-01 23:57:21 +02:00:  GET /test-transport [32m200[39m in 283ms
+2025-08-01 23:57:22 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-01 23:57:23 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1485ms (1813 modules)
+2025-08-01 23:57:23 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1760ms
+2025-08-01 23:59:05 +02:00:  [32m[1m✓[22m[39m Compiled in 1727ms (3528 modules)
+2025-08-01 23:59:05 +02:00:  GET /test-transport [32m200[39m in 79ms
+2025-08-01 23:59:13 +02:00:  [32m[1m✓[22m[39m Compiled in 549ms (3528 modules)
+2025-08-01 23:59:13 +02:00:  GET /test-transport [32m200[39m in 61ms
+2025-08-01 23:59:39 +02:00:  [32m[1m✓[22m[39m Compiled in 497ms (3528 modules)
+2025-08-01 23:59:39 +02:00:  GET /test-transport [32m200[39m in 55ms
+2025-08-01 23:59:49 +02:00:  [32m[1m✓[22m[39m Compiled in 639ms (3528 modules)
+2025-08-01 23:59:49 +02:00:  GET /test-transport [32m200[39m in 64ms

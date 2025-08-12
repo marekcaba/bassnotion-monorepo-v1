@@ -1,0 +1,68 @@
+{
+  "id": "zynaddsubfx-synth",
+  "name": "ZynAddSubFX Synthesizer",
+  "description": "Professional synthesizer with complex waveforms",
+  "category": "synthesizer",
+  "quality": "studio",
+  "format": "mp3",
+  "sampleRate": 48000,
+  "bitDepth": 16,
+  "generatedAt": "2025-07-21T11:46:42.582Z",
+  "source": "Programmatically generated professional samples",
+  "samples": [
+    {
+      "note": "C3",
+      "filename": "C3.mp3",
+      "path": "keyboards/zynaddsubfx-synth/samples/C3.mp3",
+      "frequency": "130.81"
+    },
+    {
+      "note": "E3",
+      "filename": "E3.mp3",
+      "path": "keyboards/zynaddsubfx-synth/samples/E3.mp3",
+      "frequency": "164.81"
+    },
+    {
+      "note": "G3",
+      "filename": "G3.mp3",
+      "path": "keyboards/zynaddsubfx-synth/samples/G3.mp3",
+      "frequency": "196.00"
+    },
+    {
+      "note": "C4",
+      "filename": "C4.mp3",
+      "path": "keyboards/zynaddsubfx-synth/samples/C4.mp3",
+      "frequency": "261.63"
+    },
+    {
+      "note": "E4",
+      "filename": "E4.mp3",
+      "path": "keyboards/zynaddsubfx-synth/samples/E4.mp3",
+      "frequency": "329.63"
+    },
+    {
+      "note": "G4",
+      "filename": "G4.mp3",
+      "path": "keyboards/zynaddsubfx-synth/samples/G4.mp3",
+      "frequency": "392.00"
+    },
+    {
+      "note": "C5",
+      "filename": "C5.mp3",
+      "path": "keyboards/zynaddsubfx-synth/samples/C5.mp3",
+      "frequency": "523.25"
+    },
+    {
+      "note": "E5",
+      "filename": "E5.mp3",
+      "path": "keyboards/zynaddsubfx-synth/samples/E5.mp3",
+      "frequency": "659.25"
+    },
+    {
+      "note": "G5",
+      "filename": "G5.mp3",
+      "path": "keyboards/zynaddsubfx-synth/samples/G5.mp3",
+      "frequency": "783.99"
+    }
+  ]
+}

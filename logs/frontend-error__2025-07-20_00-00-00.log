@@ -1,0 +1,530 @@
+2025-07-19 11:16:45 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-19 11:16:45 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-19 11:16:45 +02:00: Caused by:
+2025-07-19 11:16:45 +02:00:     No such file or directory (os error 2)
+2025-07-19 11:16:45 +02:00: Import trace for requested module:
+2025-07-19 11:16:45 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-19 11:16:45 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-19 11:17:34 +02:00:  [31m[1m⨯[22m[39m Failed to generate static paths for /library/[tutorialId]:
+2025-07-19 11:17:34 +02:00: Error: Cannot find module './vendor-chunks/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47.js'
+2025-07-19 11:17:34 +02:00: Require stack:
+2025-07-19 11:17:34 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:17:34 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-19 11:17:34 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:17:34 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:17:34 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:17:34 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/dev/static-paths-worker.js
+2025-07-19 11:17:34 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/compiled/jest-worker/processChild.js
+2025-07-19 11:17:34 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:17:34 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:17:34 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:17:34 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67) {
+2025-07-19 11:17:34 +02:00:   type: [32m'Error'[39m,
+2025-07-19 11:17:34 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:17:34 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:17:34 +02:00: }
+2025-07-19 11:17:44 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './vendor-chunks/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47.js'
+2025-07-19 11:17:44 +02:00: Require stack:
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/dev/static-paths-worker.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/compiled/jest-worker/processChild.js
+2025-07-19 11:17:44 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:17:44 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:17:44 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:17:44 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67) {
+2025-07-19 11:17:44 +02:00:   type: [32m'Error'[39m,
+2025-07-19 11:17:44 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:17:44 +02:00:   requireStack: [36m[Array][39m,
+2025-07-19 11:17:44 +02:00:   page: [32m'/library/billie-jean'[39m
+2025-07-19 11:17:44 +02:00: }
+2025-07-19 11:17:44 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './868.js'
+2025-07-19 11:17:44 +02:00: Require stack:
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:17:44 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:17:44 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:17:44 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:17:44 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:17:44 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:17:44 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:17:44 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:17:44 +02:00:     at <unknown> (.next/server/pages/_document.js:1:335)
+2025-07-19 11:17:44 +02:00:     at Object.<anonymous> (.next/server/pages/_document.js:1:376) {
+2025-07-19 11:17:44 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:17:44 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:17:44 +02:00: }
+2025-07-19 11:17:45 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './vendor-chunks/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47.js'
+2025-07-19 11:17:45 +02:00: Require stack:
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/dev/static-paths-worker.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/compiled/jest-worker/processChild.js
+2025-07-19 11:17:45 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:17:45 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:17:45 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:17:45 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67) {
+2025-07-19 11:17:45 +02:00:   type: [32m'Error'[39m,
+2025-07-19 11:17:45 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:17:45 +02:00:   requireStack: [36m[Array][39m,
+2025-07-19 11:17:45 +02:00:   page: [32m'/library/billie-jean'[39m
+2025-07-19 11:17:45 +02:00: }
+2025-07-19 11:17:45 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './868.js'
+2025-07-19 11:17:45 +02:00: Require stack:
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/library/[tutorialId]/page.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:17:45 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:17:45 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:17:45 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:17:45 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:17:45 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:17:45 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:17:45 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:17:45 +02:00:     at <unknown> (.next/server/pages/_document.js:1:335)
+2025-07-19 11:17:45 +02:00:     at Object.<anonymous> (.next/server/pages/_document.js:1:376) {
+2025-07-19 11:17:45 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:17:45 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:17:45 +02:00: }
+2025-07-19 11:18:49 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-19 11:18:49 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-19 11:18:49 +02:00: Caused by:
+2025-07-19 11:18:49 +02:00:     No such file or directory (os error 2)
+2025-07-19 11:18:49 +02:00: Import trace for requested module:
+2025-07-19 11:18:49 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-19 11:18:49 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-19 11:18:49 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-19 11:18:49 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-19 11:18:49 +02:00: Caused by:
+2025-07-19 11:18:49 +02:00:     No such file or directory (os error 2)
+2025-07-19 11:18:49 +02:00: Import trace for requested module:
+2025-07-19 11:18:49 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-19 11:18:49 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-19 11:20:09 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './714.js'
+2025-07-19 11:20:09 +02:00: Require stack:
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:20:09 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:20:09 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:20:09 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:20:09 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:20:09 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:20:09 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:20:09 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1:2673)
+2025-07-19 11:20:09 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:2718) {
+2025-07-19 11:20:09 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:20:09 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:20:09 +02:00: }
+2025-07-19 11:20:09 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './714.js'
+2025-07-19 11:20:09 +02:00: Require stack:
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:20:09 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:20:09 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:20:09 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:20:09 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:20:09 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:20:09 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:20:09 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1:2673)
+2025-07-19 11:20:09 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:2718) {
+2025-07-19 11:20:09 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:20:09 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:20:09 +02:00: }
+2025-07-19 11:20:09 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './714.js'
+2025-07-19 11:20:09 +02:00: Require stack:
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:20:09 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:20:09 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:20:09 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:20:09 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:20:09 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:20:09 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:20:09 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1:2673)
+2025-07-19 11:20:09 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:2718) {
+2025-07-19 11:20:09 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:20:09 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:20:09 +02:00: }
+2025-07-19 11:20:09 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './714.js'
+2025-07-19 11:20:09 +02:00: Require stack:
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:20:09 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:20:09 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:20:09 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:20:09 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:20:09 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:20:09 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:20:09 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:20:09 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1:2673)
+2025-07-19 11:20:09 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:2718) {
+2025-07-19 11:20:09 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:20:09 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:20:09 +02:00: }
+2025-07-19 11:20:18 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './714.js'
+2025-07-19 11:20:18 +02:00: Require stack:
+2025-07-19 11:20:18 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:20:18 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-19 11:20:18 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:20:18 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:20:18 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:20:18 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:20:18 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:20:18 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:20:18 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:20:18 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:20:18 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:20:18 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:20:18 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:20:18 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:20:18 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:20:18 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:20:18 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:20:18 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:20:18 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1:2673)
+2025-07-19 11:20:18 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:2718) {
+2025-07-19 11:20:18 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:20:18 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:20:18 +02:00: }
+2025-07-19 11:20:26 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './714.js'
+2025-07-19 11:20:26 +02:00: Require stack:
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:20:26 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:20:26 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:20:26 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:20:26 +02:00:     at <unknown> (.next/server/app/library/[tutorialId]/page.js:264:153893)
+2025-07-19 11:20:26 +02:00:     at Object.<anonymous> (.next/server/app/library/[tutorialId]/page.js:264:153946) {
+2025-07-19 11:20:26 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:20:26 +02:00:   requireStack: [36m[Array][39m,
+2025-07-19 11:20:26 +02:00:   page: [32m'/library/billie-jean'[39m
+2025-07-19 11:20:26 +02:00: }
+2025-07-19 11:20:26 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './868.js'
+2025-07-19 11:20:26 +02:00: Require stack:
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:20:26 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:20:26 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:20:26 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:20:26 +02:00:     at <unknown> (.next/server/pages/_document.js:1:335)
+2025-07-19 11:20:26 +02:00:     at Object.<anonymous> (.next/server/pages/_document.js:1:376) {
+2025-07-19 11:20:26 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:20:26 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:20:26 +02:00: }
+2025-07-19 11:20:26 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './714.js'
+2025-07-19 11:20:26 +02:00: Require stack:
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:20:26 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:20:26 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:20:26 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:20:26 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1:2673)
+2025-07-19 11:20:26 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:2718) {
+2025-07-19 11:20:26 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:20:26 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:20:26 +02:00: }
+2025-07-19 11:20:26 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './714.js'
+2025-07-19 11:20:26 +02:00: Require stack:
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:20:26 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:20:26 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:20:26 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:20:26 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1:2673)
+2025-07-19 11:20:26 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:2718) {
+2025-07-19 11:20:26 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:20:26 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:20:26 +02:00: }
+2025-07-19 11:20:26 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './714.js'
+2025-07-19 11:20:26 +02:00: Require stack:
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:20:26 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:20:26 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:20:26 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:20:26 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1:2673)
+2025-07-19 11:20:26 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:2718) {
+2025-07-19 11:20:26 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:20:26 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:20:26 +02:00: }
+2025-07-19 11:20:26 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './714.js'
+2025-07-19 11:20:26 +02:00: Require stack:
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:20:26 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:20:26 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:20:26 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:20:26 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:20:26 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:20:26 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1:2673)
+2025-07-19 11:20:26 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:2718) {
+2025-07-19 11:20:26 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:20:26 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:20:26 +02:00: }
+2025-07-19 11:20:27 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './714.js'
+2025-07-19 11:20:27 +02:00: Require stack:
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:20:27 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:20:27 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:20:27 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:20:27 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:20:27 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:20:27 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:20:27 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1:2673)
+2025-07-19 11:20:27 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:2718) {
+2025-07-19 11:20:27 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:20:27 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:20:27 +02:00: }
+2025-07-19 11:20:27 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './714.js'
+2025-07-19 11:20:27 +02:00: Require stack:
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:20:27 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:20:27 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:20:27 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:20:27 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:20:27 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:20:27 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:20:27 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1:2673)
+2025-07-19 11:20:27 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:2718) {
+2025-07-19 11:20:27 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:20:27 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:20:27 +02:00: }
+2025-07-19 11:20:27 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './714.js'
+2025-07-19 11:20:27 +02:00: Require stack:
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-19 11:20:27 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-19 11:20:27 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-19 11:20:27 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-19 11:20:27 +02:00:     at Array.reduce (<anonymous>)
+2025-07-19 11:20:27 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-19 11:20:27 +02:00:     at Array.map (<anonymous>)
+2025-07-19 11:20:27 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-19 11:20:27 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1:2673)
+2025-07-19 11:20:27 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:2718) {
+2025-07-19 11:20:27 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-19 11:20:27 +02:00:   requireStack: [36m[Array][39m
+2025-07-19 11:20:27 +02:00: }
+2025-07-19 11:24:56 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-19 11:24:56 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-19 11:24:56 +02:00: Caused by:
+2025-07-19 11:24:56 +02:00:     No such file or directory (os error 2)
+2025-07-19 11:24:56 +02:00: Import trace for requested module:
+2025-07-19 11:24:56 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-19 11:24:56 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-19 11:24:57 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-19 11:24:57 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-19 11:24:57 +02:00: Caused by:
+2025-07-19 11:24:57 +02:00:     No such file or directory (os error 2)
+2025-07-19 11:24:57 +02:00: Import trace for requested module:
+2025-07-19 11:24:57 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-19 11:24:57 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-19 11:31:00 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-19 11:31:00 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-19 11:31:00 +02:00: Caused by:
+2025-07-19 11:31:00 +02:00:     No such file or directory (os error 2)
+2025-07-19 11:31:00 +02:00: Import trace for requested module:
+2025-07-19 11:31:00 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-19 11:31:00 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-19 11:31:00 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-19 11:31:00 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-19 11:31:00 +02:00: Caused by:
+2025-07-19 11:31:00 +02:00:     No such file or directory (os error 2)
+2025-07-19 11:31:00 +02:00: Import trace for requested module:
+2025-07-19 11:31:00 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-19 11:31:00 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-19 11:36:39 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-19 11:36:39 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-19 11:36:39 +02:00: Caused by:
+2025-07-19 11:36:39 +02:00:     No such file or directory (os error 2)
+2025-07-19 11:36:39 +02:00: Import trace for requested module:
+2025-07-19 11:36:39 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-19 11:36:39 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-19 11:36:39 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-19 11:36:39 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-19 11:36:39 +02:00: Caused by:
+2025-07-19 11:36:39 +02:00:     No such file or directory (os error 2)
+2025-07-19 11:36:39 +02:00: Import trace for requested module:
+2025-07-19 11:36:39 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-19 11:36:39 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-19 12:54:27 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/DrummerWidget.tsx
+2025-07-19 12:54:27 +02:00: Module parse failed: Identifier 'syncTempo' has already been declared (316:10)
+2025-07-19 12:54:27 +02:00: |     ]);
+2025-07-19 12:54:27 +02:00: |     // Get tempo from sync props with fallback (match MetronomeWidget pattern)
+2025-07-19 12:54:27 +02:00: >     const syncTempo = syncProps.tempo || ((_syncProps_sync2 = syncProps.sync) === null || _syncProps_sync2 === void 0 ? void 0 : _syncProps_sync2.tempo) || 120;
+2025-07-19 12:54:27 +02:00: |     const syncIsPlaying = syncProps.isPlaying || ((_syncProps_sync3 = syncProps.sync) === null || _syncProps_sync3 === void 0 ? void 0 : (_syncProps_sync_playback1 = _syncProps_sync3.playback) === null || _syncProps_sync_playback1 === void 0 ? void 0 : _syncProps_sync_playback1.isPlaying) || isPlaying;
+2025-07-19 12:54:27 +02:00: |     // Replace JavaScript interval with Tone.js Transport for precise timing
+2025-07-19 12:54:27 +02:00: Import trace for requested module:
+2025-07-19 12:54:27 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/DrummerWidget.tsx
+2025-07-19 12:54:27 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/FourWidgetsCard.tsx
+2025-07-19 12:54:27 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-19 12:54:27 +02:00: ./src/app/library/[tutorialId]/page.tsx

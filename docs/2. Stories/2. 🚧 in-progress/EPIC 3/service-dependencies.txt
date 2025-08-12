@@ -1,0 +1,544 @@
+Service Dependencies Analysis
+============================
+
+WIDGET DEPENDENCIES
+==================
+
+Services used by widgets:
+
+Widget: PerformanceBaseline.ts
+  - PerformanceMonitor
+
+Widget: HybridDrumKitSelector.tsx
+  - HybridDrumSampleManager
+
+Widget: ExerciseTimelineIndicator.tsx
+  - ExerciseTimelineIntegrator
+  - index
+  - ExerciseTimelineIntegrator
+
+Widget: HarmonyWidget.tsx
+  - ChordInstrumentProcessor
+
+Widget: DrummerWidget.tsx
+  - HybridDrumSampleManager
+  - AudioSampleManager
+
+Widget: Story315.integration.test.ts
+  - MusicalTimeEngine
+
+Widget: useWidgetPageState.ts
+  - ExerciseTimelineIntegrator
+
+Widget: YouTubePlaybackSync.ts
+  - CorePlaybackEngine
+
+Widget: TempoIndependentExerciseLoader.ts
+  - MusicalTimeEngine
+
+Widget: TransportWidgetAdapter.ts
+  - index
+
+Widget: timeline-updates.test.ts
+  - MusicalTimeEngine
+
+Widget: PlaybackOrchestrator.ts
+  - CorePlaybackEngine
+  - MusicalTimeEngine
+
+
+SERVICE INTER-DEPENDENCIES
+=========================
+
+
+Service: LoopController
+  - PrecisionSynchronizationEngine
+  - AnalyticsEngine
+  - ComprehensiveStateManager
+  - MixingConsole
+  - AudioContextManager
+
+Service: EventManager
+
+Service: ToneManager
+  - EventManager
+
+Service: AudioSourceManager
+
+Service: StateManager
+  - EventManager
+
+Service: index
+  - AudioSourceManager
+  - EventManager
+  - StateManager
+  - ToneManager
+
+Service: CorePlaybackEngine
+  - managers
+  - controllers
+
+Service: index
+  - CorePlaybackEngine
+
+Service: AssetLoadingController
+
+Service: TransportController
+
+Service: index
+  - TransportController
+  - AssetLoadingController
+
+Service: ToneProvider
+  - AudioContextManager
+
+Service: IOSOptimizer
+  - MobileOptimizer
+
+Service: PerformanceMonitor
+  - NetworkLatencyMonitor
+  - CacheMetricsCollector
+
+Service: AssetManager
+  - NetworkLatencyMonitor
+  - CacheMetricsCollector
+
+Service: WurlitzerVelocitySampler
+  - toneLoader
+
+Service: RhodesVelocitySampler
+  - toneLoader
+
+Service: EnhancedMetronomeProcessor
+  - MetronomeInstrumentProcessor
+
+Service: TheSawSampler
+  - toneLoader
+
+Service: AssetInstrumentIntegrationProcessor
+  - BassInstrumentProcessor
+  - DrumInstrumentProcessor
+  - ChordInstrumentProcessor
+  - MetronomeInstrumentProcessor
+  - MidiParserProcessor
+
+Service: LongPadSampler
+  - toneLoader
+
+Service: N8nAssetPipelineProcessor
+  - MusicalContextAnalyzer
+  - InstrumentAssetOptimizer
+
+Service: DrumInstrumentProcessor
+
+Service: MusicalContextAnalyzer
+  - MidiParserProcessor
+
+Service: EnhancedChordProcessor
+  - ChordInstrumentProcessor
+
+Service: BassProcessor
+
+Service: PerformanceTunerOptimizer
+  - N8nAssetPipelineProcessor
+  - InstrumentAssetOptimizer
+  - MusicalContextAnalyzer
+
+Service: InstrumentAssetOptimizer
+
+Service: InstrumentLifecycleManager
+  - BassInstrumentProcessor
+  - DrumInstrumentProcessor
+  - ChordInstrumentProcessor
+  - MetronomeInstrumentProcessor
+
+Service: index
+  - BassProcessor
+  - DrumProcessor
+  - SyncProcessor
+  - MidiParserProcessor
+  - BassInstrumentProcessor
+  - DrumInstrumentProcessor
+  - ChordInstrumentProcessor
+  - MetronomeInstrumentProcessor
+  - EnhancedMetronomeProcessor
+  - EnhancedChordProcessor
+  - BassProcessor
+  - DrumProcessor
+  - SyncProcessor
+
+Service: BassInstrumentProcessor
+  - MidiParserProcessor
+
+Service: ChordInstrumentProcessor
+  - toneLoader
+  - SalamanderVelocitySampler
+  - WurlitzerVelocitySampler
+  - LongPadSampler
+  - RhodesVelocitySampler
+  - TheSawSampler
+  - ChordTypes
+  - ChordTypes
+  - ChordTypes
+
+Service: toneLoader
+  - ToneInstanceManager
+
+Service: DrumProcessor
+
+Service: SyncProcessor
+
+Service: SalamanderVelocitySampler
+  - toneLoader
+
+Service: initializeAudio
+  - AudioContextManager
+  - ToneInstanceManager
+
+Service: QualityTransitionManager
+
+Service: AndroidOptimizer
+  - MobileOptimizer
+
+Service: PerformanceOptimizationEngine
+  - AudioContextManager
+
+Service: PluginManager
+  - PerformanceMonitor
+
+Service: TranspositionController
+
+Service: AssetManifestProcessor
+
+Service: BatteryManager
+  - MobileOptimizer
+  - PerformanceMonitor
+
+Service: WorkerPoolManager
+  - DeviceInfoService
+
+Service: ExerciseTimelineAdapter
+  - MusicalTimeConverter
+  - TempoIndependentExerciseLoader
+
+Service: AdaptiveAudioStreamer
+  - SupabaseAssetClient
+
+Service: EvictionPolicyEngine
+  - MemoryManager
+
+Service: SampleCacheManager
+  - UsagePatternAnalyzer
+  - MemoryManager
+  - EvictionPolicyEngine
+
+Service: AdvancedCacheManager
+  - SampleCacheManager
+
+Service: AudioSampleManager
+  - SupabaseAssetClient
+  - PredictiveLoadingEngine
+  - AdaptiveAudioStreamer
+  - MetadataAnalyzer
+
+Service: QualityScaler
+  - PerformanceMonitor
+  - BatteryManager
+  - MobileOptimizer
+  - QualityTransitionManager
+  - NetworkLatencyMonitor
+  - CacheMetricsCollector
+
+Service: ToneInstanceManager
+  - AudioContextManager
+
+Service: StatePersistenceManager
+
+Service: BaseAudioPlugin
+
+Service: ExerciseTimelineIntegrator
+  - ExerciseTimelineAdapter
+  - ExerciseTimelineAdapter
+  - TempoIndependentExerciseLoader
+  - TempoIndependentExerciseLoader
+  - WidgetSyncService
+  - SampleAccurateTimelineMapper
+
+Service: ImmediateSchedulingStrategy
+
+Service: NextBarSchedulingStrategy
+
+Service: index
+  - ImmediateSchedulingStrategy
+  - QuantizedSchedulingStrategy
+  - NextBarSchedulingStrategy
+
+Service: QuantizedSchedulingStrategy
+
+Service: SchedulingLoop
+  - EventQueueManager
+  - MetricsManager
+
+Service: PerformanceOptimizer
+  - MetricsManager
+
+Service: MetricsManager
+
+Service: ErrorHandler
+  - EventQueueManager
+  - MetricsManager
+
+Service: EventQueueManager
+
+Service: PerformanceReportingManager
+  - MetricsManager
+
+Service: ThreadedSchedulingManager
+  - EventQueueManager
+  - MetricsManager
+
+Service: index
+  - EventQueueManager
+  - MetricsManager
+  - SchedulingLoop
+  - PerformanceOptimizer
+  - ErrorHandler
+  - ThreadedSchedulingManager
+  - StrategyManager
+  - TransportEventHandler
+  - PerformanceReportingManager
+
+Service: TransportEventHandler
+
+Service: StrategyManager
+
+Service: SchedulingContextFactory
+  - TimeUtils
+
+Service: logger
+
+Service: index
+  - EventIdGenerator
+  - TimeUtils
+  - SchedulingContextFactory
+  - logger
+
+Service: constants
+
+Service: index
+  - ProfessionalTransportScheduler
+  - strategies
+  - constants
+
+Service: ProfessionalTransportScheduler
+  - constants
+  - managers
+  - utils
+
+Service: MemoryLeakDetector
+  - ResourceManager
+
+Service: PerformanceMonitor
+
+Service: index
+  - EventManager
+  - BrowserCapabilityDetector
+  - MessageManager
+  - PerformanceMonitor
+
+Service: BrowserCapabilityDetector
+
+Service: MessageManager
+
+Service: index
+  - logger
+
+Service: index
+  - ThreadedTransportScheduler
+
+Service: WorkerController
+
+Service: FallbackController
+
+Service: index
+  - WorkerController
+  - AudioScheduler
+  - FallbackController
+
+Service: AudioScheduler
+
+Service: ThreadedTransportScheduler
+  - utils
+  - managers
+  - controllers
+
+Service: PrecisionSynchronizationEngine
+  - ProfessionalPlaybackController
+  - IntelligentTempoController
+  - TranspositionController
+
+Service: MobileOptimizer
+  - NetworkLatencyMonitor
+
+Service: PluginLoader
+
+Service: MIDIAssetOrchestrator
+  - AssetManager
+
+Service: ResourceManager
+  - AssetManager
+  - N8nPayloadProcessor
+  - AssetManifestProcessor
+
+Service: ErrorRecovery
+  - base
+  - CircuitBreaker
+  - GracefulDegradation
+
+Service: ErrorClassifier
+  - base
+
+Service: NetworkError
+  - base
+
+Service: typeGuards
+  - base
+  - AudioContextError
+  - PerformanceError
+  - ResourceError
+  - NetworkError
+  - MobileError
+  - ValidationError
+
+Service: AudioContextError
+  - base
+
+Service: ErrorReporter
+  - base
+
+Service: GracefulDegradation
+  - base
+
+Service: MobileError
+  - base
+
+Service: ValidationError
+  - base
+
+Service: index
+  - base
+  - base
+  - AudioContextError
+  - AudioContextError
+  - PerformanceError
+  - PerformanceError
+  - ResourceError
+  - ResourceError
+  - NetworkError
+  - NetworkError
+  - MobileError
+  - MobileError
+  - ValidationError
+  - ValidationError
+  - ErrorClassifier
+  - ErrorRecovery
+  - ErrorReporter
+  - CircuitBreaker
+  - GracefulDegradation
+  - AudioContextError
+  - PerformanceError
+  - ResourceError
+  - NetworkError
+  - MobileError
+  - ValidationError
+  - typeGuards
+  - CircuitBreaker
+  - GracefulDegradation
+  - ErrorRecovery
+
+Service: ResourceError
+  - base
+
+Service: PerformanceError
+  - base
+
+Service: ComprehensiveStateManager
+  - ProfessionalPlaybackController
+  - IntelligentTempoController
+  - TranspositionController
+  - PrecisionSynchronizationEngine
+
+Service: MixingConsole
+  - PrecisionSynchronizationEngine
+  - ComprehensiveStateManager
+  - AnalyticsEngine
+
+Service: MusicalTimeEngine
+  - MusicalTimeConverter
+
+Service: ProfessionalPlaybackController
+  - AudioContextManager
+  - PerformanceMonitor
+
+Service: IntelligentTempoController
+  - PerformanceMonitor
+
+Service: N8nPayloadProcessor
+
+Service: ABTestFramework
+
+Service: HybridDrumSampleManager
+
+Service: CDNCache
+  - NetworkLatencyMonitor
+  - CacheMetricsCollector
+
+Service: AudioCompressionEngine
+
+Service: UnifiedTransportController
+  - WidgetSyncService
+  - constants
+  - commands
+  - managers
+
+Service: HeartbeatManager
+
+Service: PositionTracker
+  - WidgetSyncService
+
+Service: PerformanceTracker
+
+Service: index
+  - ObserverManager
+  - PositionTracker
+  - HeartbeatManager
+  - ExerciseManager
+  - PerformanceTracker
+
+Service: ObserverManager
+
+Service: ExerciseManager
+
+Service: ProfessionalSchedulerIntegration
+
+Service: constants
+
+Service: StopTransportCommand
+
+Service: StartTransportCommand
+
+Service: PauseTransportCommand
+
+Service: index
+  - StartTransportCommand
+  - StopTransportCommand
+  - PauseTransportCommand
+
+Service: index
+  - UnifiedTransportController
+  - constants
+
+Service: BackgroundProcessor
+  - WorkerPoolManager
+  - MobileOptimizer
+

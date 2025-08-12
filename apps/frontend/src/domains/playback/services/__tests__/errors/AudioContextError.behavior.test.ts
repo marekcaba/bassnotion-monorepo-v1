@@ -12,9 +12,9 @@ import {
   AudioContextError,
   AudioContextErrorCode,
   createAudioContextError,
-} from '../../errors/AudioContextError.js';
-import type { ErrorContext } from '../../errors/base.js';
-import { ErrorCategory, ErrorSeverity } from '../../errors/base.js';
+} from '../../errors/AudioContextError';
+import type { ErrorContext } from '../../errors/base';
+import { ErrorCategory, ErrorSeverity } from '../../errors/base';
 
 // Test Environment Setup
 const setupTestEnvironment = () => {

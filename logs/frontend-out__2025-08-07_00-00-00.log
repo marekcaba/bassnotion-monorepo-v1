@@ -1,0 +1,566 @@
+2025-08-06 00:10:25 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 00:10:27 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 2.1s (1887 modules)
+2025-08-06 00:10:27 +02:00:  GET /test-unified-transport [32m200[39m in 2379ms
+2025-08-06 00:10:28 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 335ms (1888 modules)
+2025-08-06 00:10:28 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 602ms
+2025-08-06 00:11:50 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (3858 modules)
+2025-08-06 00:11:51 +02:00:  GET /test-unified-transport [32m200[39m in 776ms
+2025-08-06 00:11:51 +02:00:  GET /test-unified-transport [31m500[39m in 1640ms
+2025-08-06 00:11:51 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 314ms (1888 modules)
+2025-08-06 00:11:52 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 453ms
+2025-08-06 00:12:03 +02:00:  [32m[1m✓[22m[39m Compiled in 1032ms (3859 modules)
+2025-08-06 00:12:03 +02:00:  GET /test-unified-transport [32m200[39m in 638ms
+2025-08-06 00:12:03 +02:00:  GET /test-unified-transport [31m500[39m in 648ms
+2025-08-06 00:12:04 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 48ms
+2025-08-06 00:12:10 +02:00:  [32m[1m✓[22m[39m Compiled in 978ms (3859 modules)
+2025-08-06 00:12:11 +02:00:  GET /test-unified-transport [32m200[39m in 610ms
+2025-08-06 00:12:11 +02:00:  GET /test-unified-transport [31m500[39m in 613ms
+2025-08-06 00:12:11 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 48ms
+2025-08-06 00:12:18 +02:00:  [32m[1m✓[22m[39m Compiled in 1174ms (3859 modules)
+2025-08-06 00:12:18 +02:00:  GET /test-unified-transport [32m200[39m in 412ms
+2025-08-06 00:12:18 +02:00:  GET /test-unified-transport [32m200[39m in 415ms
+2025-08-06 00:12:19 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 42ms
+2025-08-06 00:17:05 +02:00:  GET /test-unified-transport [32m200[39m in 90ms
+2025-08-06 00:19:21 +02:00:  [32m[1m✓[22m[39m Compiled in 3.2s (3858 modules)
+2025-08-06 00:19:21 +02:00:  GET /test-unified-transport [32m200[39m in 142ms
+2025-08-06 00:19:28 +02:00:  [32m[1m✓[22m[39m Compiled in 1002ms (3858 modules)
+2025-08-06 00:19:28 +02:00:  GET /test-unified-transport [32m200[39m in 61ms
+2025-08-06 00:19:32 +02:00:  GET /test-unified-transport [32m200[39m in 164ms
+2025-08-06 00:19:32 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 276ms (1888 modules)
+2025-08-06 00:19:32 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 430ms
+2025-08-06 00:19:44 +02:00:  GET /test-unified-transport [32m200[39m in 71ms
+2025-08-06 00:19:44 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 46ms
+2025-08-06 00:21:22 +02:00:  [32m[1m✓[22m[39m Compiled in 2.7s (3858 modules)
+2025-08-06 00:21:22 +02:00:  GET /test-unified-transport [32m200[39m in 75ms
+2025-08-06 00:21:22 +02:00:  GET /test-unified-transport [32m200[39m in 216ms
+2025-08-06 00:21:22 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 280ms (1888 modules)
+2025-08-06 00:21:22 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 438ms
+2025-08-06 00:21:26 +02:00:  GET /test-unified-transport [32m200[39m in 57ms
+2025-08-06 00:21:37 +02:00:  GET /test-unified-transport [32m200[39m in 60ms
+2025-08-06 00:21:37 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 27ms
+2025-08-06 00:23:35 +02:00:  [32m[1m✓[22m[39m Compiled in 2.8s (3858 modules)
+2025-08-06 00:23:35 +02:00:  GET /test-unified-transport [32m200[39m in 59ms
+2025-08-06 00:25:36 +02:00:  GET /test-unified-transport [32m200[39m in 207ms
+2025-08-06 00:25:37 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 00:25:37 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 894ms (1888 modules)
+2025-08-06 00:25:37 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1050ms
+2025-08-06 00:28:01 +02:00:  [32m[1m✓[22m[39m Compiled in 3.3s (3858 modules)
+2025-08-06 00:28:01 +02:00:  GET /test-unified-transport [32m200[39m in 411ms
+2025-08-06 00:28:07 +02:00:  GET /test-transport [32m200[39m in 307ms
+2025-08-06 00:28:07 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 316ms (1888 modules)
+2025-08-06 00:28:07 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 453ms
+2025-08-06 00:28:13 +02:00:  [32m[1m✓[22m[39m Compiled in 1712ms (3859 modules)
+2025-08-06 00:28:13 +02:00:  GET /test-transport [32m200[39m in 107ms
+2025-08-06 00:28:47 +02:00:  [32m[1m✓[22m[39m Compiled in 1191ms (3859 modules)
+2025-08-06 00:28:47 +02:00:  GET /test-transport [32m200[39m in 85ms
+2025-08-06 00:28:57 +02:00:  [32m[1m✓[22m[39m Compiled in 1110ms (3859 modules)
+2025-08-06 00:28:58 +02:00:  GET /test-transport [32m200[39m in 150ms
+2025-08-06 00:29:47 +02:00:  [32m[1m✓[22m[39m Compiled in 4.5s (3858 modules)
+2025-08-06 00:29:47 +02:00:  GET /test-transport [32m200[39m in 343ms
+2025-08-06 00:29:54 +02:00:  [32m[1m✓[22m[39m Compiled in 2.2s (3858 modules)
+2025-08-06 00:29:54 +02:00:  GET /test-transport [32m200[39m in 135ms
+2025-08-06 00:30:57 +02:00:  [32m[1m✓[22m[39m Compiled in 3.4s (3858 modules)
+2025-08-06 00:30:57 +02:00:  GET /test-transport [32m200[39m in 63ms
+2025-08-06 00:31:06 +02:00:  [32m[1m✓[22m[39m Compiled in 1935ms (3858 modules)
+2025-08-06 00:31:06 +02:00:  GET /test-transport [32m200[39m in 117ms
+2025-08-06 00:31:38 +02:00:  [32m[1m✓[22m[39m Compiled in 1141ms (3858 modules)
+2025-08-06 00:31:38 +02:00:  GET /test-transport [32m200[39m in 68ms
+2025-08-06 00:32:51 +02:00:  GET /test-unified-transport [32m200[39m in 222ms
+2025-08-06 00:32:51 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 00:32:52 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1046ms (1888 modules)
+2025-08-06 00:32:52 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1185ms
+2025-08-06 00:34:09 +02:00:  [32m[1m✓[22m[39m Compiled in 2.7s (3858 modules)
+2025-08-06 00:34:09 +02:00:  GET /test-unified-transport [32m200[39m in 51ms
+2025-08-06 00:34:09 +02:00:  GET /test-unified-transport [32m200[39m in 146ms
+2025-08-06 00:34:09 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 298ms (1888 modules)
+2025-08-06 00:34:09 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 415ms
+2025-08-06 00:34:19 +02:00:  [32m[1m✓[22m[39m Compiled in 638ms (3859 modules)
+2025-08-06 00:34:20 +02:00:  GET /test-unified-transport [32m200[39m in 374ms
+2025-08-06 00:34:20 +02:00:  GET /test-unified-transport [32m200[39m in 621ms
+2025-08-06 00:34:20 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 40ms
+2025-08-06 00:34:38 +02:00:  [32m[1m✓[22m[39m Compiled in 2.9s (3859 modules)
+2025-08-06 00:34:38 +02:00:  GET /test-unified-transport [32m200[39m in 44ms
+2025-08-06 00:34:53 +02:00:  GET /test-unified-transport [32m200[39m in 197ms
+2025-08-06 00:34:53 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 39ms
+2025-08-06 00:36:44 +02:00:  GET /test-unified-transport [32m200[39m in 117ms
+2025-08-06 00:36:44 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 41ms
+2025-08-06 00:37:36 +02:00:  GET /ef48b364-ed8f-46be-b364-5de10e9ed889 [33m404[39m in 59ms
+2025-08-06 00:38:23 +02:00:  GET /test-unified-transport [32m200[39m in 95ms
+2025-08-06 00:38:23 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 49ms
+2025-08-06 00:39:04 +02:00:  GET /test-unified-transport [32m200[39m in 149ms
+2025-08-06 00:39:04 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 62ms
+2025-08-06 00:39:47 +02:00:  [32m[1m✓[22m[39m Compiled in 3s (3859 modules)
+2025-08-06 00:39:47 +02:00:  GET /test-unified-transport [32m200[39m in 64ms
+2025-08-06 00:39:55 +02:00:  [32m[1m✓[22m[39m Compiled in 1296ms (3859 modules)
+2025-08-06 00:39:55 +02:00:  GET /test-unified-transport [32m200[39m in 63ms
+2025-08-06 00:40:32 +02:00:  [32m[1m✓[22m[39m Compiled in 823ms (3858 modules)
+2025-08-06 00:40:32 +02:00:  GET /test-unified-transport [32m200[39m in 56ms
+2025-08-06 00:40:51 +02:00:  GET /test-unified-transport [32m200[39m in 273ms
+2025-08-06 00:40:52 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 361ms (1888 modules)
+2025-08-06 00:40:52 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 481ms
+2025-08-06 00:41:46 +02:00:  [32m[1m✓[22m[39m Compiled in 3.7s (3859 modules)
+2025-08-06 00:41:46 +02:00:  GET /test-unified-transport [32m200[39m in 205ms
+2025-08-06 00:41:47 +02:00:  GET /test-unified-transport [32m200[39m in 693ms
+2025-08-06 00:41:48 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 86ms
+2025-08-06 00:42:10 +02:00:  [32m[1m✓[22m[39m Compiled in 1236ms (3859 modules)
+2025-08-06 00:42:10 +02:00:  GET /test-unified-transport [32m200[39m in 66ms
+2025-08-06 00:42:10 +02:00:  GET /test-unified-transport [32m200[39m in 174ms
+2025-08-06 00:42:10 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 56ms
+2025-08-06 00:42:34 +02:00:  [32m[1m✓[22m[39m Compiled in 1021ms (3859 modules)
+2025-08-06 00:42:34 +02:00:  GET /test-unified-transport [32m200[39m in 47ms
+2025-08-06 00:42:34 +02:00:  GET /test-unified-transport [32m200[39m in 122ms
+2025-08-06 00:42:34 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 39ms
+2025-08-06 09:16:06 +02:00:  GET /test-unified-transport [32m200[39m in 106ms
+2025-08-06 09:16:06 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 63ms
+2025-08-06 09:20:02 +02:00:  [32m[1m✓[22m[39m Compiled in 3.8s (3858 modules)
+2025-08-06 09:20:02 +02:00:  GET /test-unified-transport [32m200[39m in 60ms
+2025-08-06 09:20:13 +02:00:  [32m[1m✓[22m[39m Compiled in 1053ms (3858 modules)
+2025-08-06 09:20:13 +02:00:  GET /test-unified-transport [32m200[39m in 55ms
+2025-08-06 09:30:02 +02:00: 
+2025-08-06 09:30:02 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-06 09:30:02 +02:00: 
+2025-08-06 09:30:03 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 09:30:03 +02:00:    - Local:        http://localhost:3001
+2025-08-06 09:30:03 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 09:30:03 +02:00:    - Environments: .env.local, .env
+2025-08-06 09:30:03 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 09:30:06 +02:00:  [32m[1m✓[22m[39m Ready in 3.1s
+2025-08-06 09:30:13 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 09:30:17 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 4.4s (3407 modules)
+2025-08-06 09:30:18 +02:00:  GET /test-unified-transport [32m200[39m in 4841ms
+2025-08-06 09:30:18 +02:00:  [32m[1m✓[22m[39m Compiled in 620ms (1647 modules)
+2025-08-06 09:30:18 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 09:30:21 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 3.1s (3408 modules)
+2025-08-06 09:30:21 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 3287ms
+2025-08-06 09:33:19 +02:00:  [32m[1m✓[22m[39m Compiled in 3.2s (3421 modules)
+2025-08-06 09:33:19 +02:00:  GET /test-unified-transport [32m200[39m in 75ms
+2025-08-06 09:33:19 +02:00:  GET /test-unified-transport [32m200[39m in 170ms
+2025-08-06 09:33:20 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 406ms (1761 modules)
+2025-08-06 09:33:21 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 662ms
+2025-08-06 09:33:51 +02:00: 
+2025-08-06 09:33:51 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-06 09:33:51 +02:00: 
+2025-08-06 09:33:52 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 09:33:52 +02:00:    - Local:        http://localhost:3001
+2025-08-06 09:33:52 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 09:33:52 +02:00:    - Environments: .env.local, .env
+2025-08-06 09:33:52 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 09:33:54 +02:00:  [32m[1m✓[22m[39m Ready in 1844ms
+2025-08-06 09:34:13 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 09:34:19 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 6.3s (3421 modules)
+2025-08-06 09:34:19 +02:00:  GET /test-unified-transport [32m200[39m in 7064ms
+2025-08-06 09:34:20 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 09:34:20 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1594ms (3408 modules)
+2025-08-06 09:34:21 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1184ms
+2025-08-06 09:35:18 +02:00:  [32m[1m✓[22m[39m Compiled in 1928ms (3422 modules)
+2025-08-06 09:35:18 +02:00:  GET /test-unified-transport [32m200[39m in 93ms
+2025-08-06 09:35:45 +02:00:  [32m[1m✓[22m[39m Compiled in 1379ms (3421 modules)
+2025-08-06 09:35:45 +02:00:  GET /test-unified-transport [32m200[39m in 101ms
+2025-08-06 09:35:45 +02:00:  GET /test-unified-transport [32m200[39m in 276ms
+2025-08-06 09:35:47 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 09:35:47 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 508ms (1761 modules)
+2025-08-06 09:35:48 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1011ms
+2025-08-06 09:36:04 +02:00:  [32m[1m✓[22m[39m Compiled in 680ms (3422 modules)
+2025-08-06 09:36:04 +02:00:  GET /test-unified-transport [32m200[39m in 45ms
+2025-08-06 09:36:04 +02:00:  GET /test-unified-transport [32m200[39m in 110ms
+2025-08-06 09:36:04 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 44ms
+2025-08-06 09:36:13 +02:00:  [32m[1m✓[22m[39m Compiled in 818ms (3422 modules)
+2025-08-06 09:36:13 +02:00:  GET /test-unified-transport [32m200[39m in 45ms
+2025-08-06 09:36:13 +02:00:  GET /test-unified-transport [32m200[39m in 109ms
+2025-08-06 09:36:13 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 50ms
+2025-08-06 09:36:19 +02:00:  [32m[1m✓[22m[39m Compiled in 617ms (3422 modules)
+2025-08-06 09:36:19 +02:00:  GET /test-unified-transport [32m200[39m in 287ms
+2025-08-06 09:36:19 +02:00:  GET /test-unified-transport [32m200[39m in 429ms
+2025-08-06 09:36:19 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 37ms
+2025-08-06 09:36:28 +02:00: 
+2025-08-06 09:36:28 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-06 09:36:28 +02:00: 
+2025-08-06 09:36:29 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 09:36:29 +02:00:    - Local:        http://localhost:3001
+2025-08-06 09:36:29 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 09:36:29 +02:00:    - Environments: .env.local, .env
+2025-08-06 09:36:29 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 09:36:31 +02:00:  [32m[1m✓[22m[39m Ready in 1887ms
+2025-08-06 09:36:38 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 09:36:44 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 6.1s (3421 modules)
+2025-08-06 09:36:44 +02:00:  GET /test-unified-transport [32m200[39m in 6728ms
+2025-08-06 09:36:45 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 09:36:45 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1510ms (3408 modules)
+2025-08-06 09:36:46 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1113ms
+2025-08-06 09:38:05 +02:00:  GET /test-unified-transport [32m200[39m in 101ms
+2025-08-06 09:38:05 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 44ms
+2025-08-06 09:39:43 +02:00:  [32m[1m✓[22m[39m Compiled in 2.3s (3421 modules)
+2025-08-06 09:39:43 +02:00:  GET /test-unified-transport [32m200[39m in 72ms
+2025-08-06 09:40:34 +02:00: 
+2025-08-06 09:40:34 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-06 09:40:34 +02:00: 
+2025-08-06 09:40:35 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 09:40:35 +02:00:    - Local:        http://localhost:3001
+2025-08-06 09:40:35 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 09:40:35 +02:00:    - Environments: .env.local, .env
+2025-08-06 09:40:35 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 09:40:36 +02:00:  [32m[1m✓[22m[39m Ready in 2s
+2025-08-06 09:44:35 +02:00: 
+2025-08-06 09:44:35 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-06 09:44:35 +02:00: 
+2025-08-06 09:44:36 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 09:44:36 +02:00:    - Local:        http://localhost:3001
+2025-08-06 09:44:36 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 09:44:36 +02:00:    - Environments: .env.local, .env
+2025-08-06 09:44:36 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 09:44:38 +02:00:  [32m[1m✓[22m[39m Ready in 1911ms
+2025-08-06 09:44:56 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 09:45:02 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 6.1s (3421 modules)
+2025-08-06 09:45:02 +02:00:  GET /test-unified-transport [32m200[39m in 6780ms
+2025-08-06 09:45:03 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 09:45:03 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1593ms (3408 modules)
+2025-08-06 09:45:03 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1108ms
+2025-08-06 09:45:12 +02:00:  GET /test-unified-transport [32m200[39m in 82ms
+2025-08-06 09:45:12 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 64ms
+2025-08-06 09:48:37 +02:00:  [32m[1m✓[22m[39m Compiled in 1751ms (3421 modules)
+2025-08-06 09:48:37 +02:00:  GET /test-unified-transport [32m200[39m in 111ms
+2025-08-06 09:52:20 +02:00:  [32m[1m✓[22m[39m Compiled in 1394ms (3421 modules)
+2025-08-06 09:52:21 +02:00:  GET /test-unified-transport [32m200[39m in 68ms
+2025-08-06 10:01:11 +02:00: 
+2025-08-06 10:01:11 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-06 10:01:11 +02:00: 
+2025-08-06 10:01:12 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 10:01:12 +02:00:    - Local:        http://localhost:3001
+2025-08-06 10:01:12 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 10:01:12 +02:00:    - Environments: .env.local, .env
+2025-08-06 10:01:12 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 10:01:14 +02:00:  [32m[1m✓[22m[39m Ready in 1904ms
+2025-08-06 10:50:45 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 10:50:48 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 3.8s (3407 modules)
+2025-08-06 10:50:49 +02:00:  GET /test-unified-transport [32m200[39m in 4314ms
+2025-08-06 10:50:49 +02:00:  [32m[1m✓[22m[39m Compiled in 572ms (1647 modules)
+2025-08-06 10:50:49 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 10:50:50 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 747ms (3408 modules)
+2025-08-06 10:50:50 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 899ms
+2025-08-06 10:52:07 +02:00:  [32m[1m✓[22m[39m Compiled in 4.4s (3421 modules)
+2025-08-06 10:52:07 +02:00:  GET /test-unified-transport [32m200[39m in 84ms
+2025-08-06 10:52:17 +02:00:  [32m[1m✓[22m[39m Compiled in 1525ms (3421 modules)
+2025-08-06 10:52:17 +02:00:  GET /test-unified-transport [32m200[39m in 60ms
+2025-08-06 10:52:32 +02:00:  [32m[1m✓[22m[39m Compiled in 1367ms (3421 modules)
+2025-08-06 10:52:32 +02:00:  GET /test-unified-transport [32m200[39m in 85ms
+2025-08-06 10:52:32 +02:00:  GET /test-unified-transport [32m200[39m in 238ms
+2025-08-06 10:52:33 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 267ms (1761 modules)
+2025-08-06 10:52:33 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 427ms
+2025-08-06 10:52:43 +02:00: 
+2025-08-06 10:52:43 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-06 10:52:43 +02:00: 
+2025-08-06 10:52:44 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 10:52:44 +02:00:    - Local:        http://localhost:3001
+2025-08-06 10:52:44 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 10:52:44 +02:00:    - Environments: .env.local, .env
+2025-08-06 10:52:44 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 10:52:45 +02:00:  [32m[1m✓[22m[39m Ready in 1794ms
+2025-08-06 10:52:52 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 10:52:55 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 4.3s (3407 modules)
+2025-08-06 10:52:56 +02:00:  GET /test-unified-transport [32m200[39m in 4734ms
+2025-08-06 10:52:56 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 10:52:58 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.2s (3408 modules)
+2025-08-06 10:52:58 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1959ms
+2025-08-06 10:54:30 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 10:54:30 +02:00:    - Local:        http://localhost:3001
+2025-08-06 10:54:30 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 10:54:30 +02:00:    - Environments: .env.local, .env
+2025-08-06 10:54:30 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 10:54:32 +02:00:  [32m[1m✓[22m[39m Ready in 1658ms
+2025-08-06 12:41:39 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 12:41:49 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 10.3s (3430 modules)
+2025-08-06 12:41:49 +02:00:  GET /test-unified-transport [32m200[39m in 11026ms
+2025-08-06 12:41:50 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 12:41:51 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.8s (3408 modules)
+2025-08-06 12:41:52 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2331ms
+2025-08-06 12:41:52 +02:00:  GET /test-unified-transport [32m200[39m in 266ms
+2025-08-06 13:19:42 +02:00:  GET /test-unified-transport [32m200[39m in 135ms
+2025-08-06 13:19:42 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 41ms
+2025-08-06 13:19:54 +02:00:  [32m[1m✓[22m[39m Compiled in 1729ms (3422 modules)
+2025-08-06 13:19:54 +02:00:  GET /test-unified-transport [32m200[39m in 87ms
+2025-08-06 13:20:18 +02:00:  [32m[1m✓[22m[39m Compiled in 758ms (3422 modules)
+2025-08-06 13:20:19 +02:00:  GET /test-unified-transport [32m200[39m in 113ms
+2025-08-06 13:21:52 +02:00:  [32m[1m✓[22m[39m Compiled in 1816ms (3421 modules)
+2025-08-06 13:21:52 +02:00:  GET /test-unified-transport [32m200[39m in 100ms
+2025-08-06 13:21:52 +02:00:  GET /test-unified-transport [32m200[39m in 576ms
+2025-08-06 13:21:53 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 291ms (1761 modules)
+2025-08-06 13:21:53 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 461ms
+2025-08-06 13:22:18 +02:00: 
+2025-08-06 13:22:18 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-06 13:22:18 +02:00: 
+2025-08-06 13:22:19 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 13:22:19 +02:00:    - Local:        http://localhost:3001
+2025-08-06 13:22:19 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 13:22:19 +02:00:    - Environments: .env.local, .env
+2025-08-06 13:22:19 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 13:22:21 +02:00:  [32m[1m✓[22m[39m Ready in 1891ms
+2025-08-06 13:22:38 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 13:22:43 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 5.5s (3421 modules)
+2025-08-06 13:22:43 +02:00:  GET /test-unified-transport [32m200[39m in 6370ms
+2025-08-06 13:22:44 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 13:22:46 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 3.6s (3408 modules)
+2025-08-06 13:22:46 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 3026ms
+2025-08-06 13:22:46 +02:00:  GET /test-unified-transport [32m200[39m in 220ms
+2025-08-06 13:23:25 +02:00:  GET /test-unified-transport [32m200[39m in 115ms
+2025-08-06 13:23:26 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 52ms
+2025-08-06 13:26:12 +02:00:  [32m[1m✓[22m[39m Compiled in 1692ms (3421 modules)
+2025-08-06 13:26:12 +02:00:  GET /test-unified-transport [32m200[39m in 76ms
+2025-08-06 13:26:28 +02:00:  [32m[1m✓[22m[39m Compiled in 891ms (3421 modules)
+2025-08-06 13:26:28 +02:00:  GET /test-unified-transport [32m200[39m in 117ms
+2025-08-06 13:29:09 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (3421 modules)
+2025-08-06 13:29:09 +02:00:  GET /test-unified-transport [32m200[39m in 77ms
+2025-08-06 13:59:46 +02:00:  GET /test-unified-transport [32m200[39m in 234ms
+2025-08-06 13:59:47 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 13:59:47 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1016ms (1761 modules)
+2025-08-06 13:59:48 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1161ms
+2025-08-06 14:15:32 +02:00:  [32m[1m✓[22m[39m Compiled in 1838ms (3421 modules)
+2025-08-06 14:15:32 +02:00:  GET /test-unified-transport [32m200[39m in 116ms
+2025-08-06 16:23:44 +02:00:  [32m[1m✓[22m[39m Compiled in 1186ms (3421 modules)
+2025-08-06 16:23:44 +02:00:  GET /test-unified-transport [32m200[39m in 45ms
+2025-08-06 16:24:01 +02:00:  [32m[1m✓[22m[39m Compiled in 1153ms (3421 modules)
+2025-08-06 16:24:01 +02:00:  GET /test-unified-transport [32m200[39m in 55ms
+2025-08-06 16:24:14 +02:00:  GET /test-unified-transport [32m200[39m in 410ms
+2025-08-06 16:24:15 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 16:24:15 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 610ms (1761 modules)
+2025-08-06 16:24:15 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 803ms
+2025-08-06 16:24:28 +02:00:  [32m[1m✓[22m[39m Compiled in 1552ms (3422 modules)
+2025-08-06 16:24:28 +02:00:  GET /test-unified-transport [32m200[39m in 53ms
+2025-08-06 16:25:13 +02:00:  GET /test-unified-transport [32m200[39m in 172ms
+2025-08-06 16:25:14 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 64ms
+2025-08-06 16:26:31 +02:00:  [32m[1m✓[22m[39m Compiled in 1301ms (3421 modules)
+2025-08-06 16:26:31 +02:00:  GET /test-unified-transport [32m200[39m in 88ms
+2025-08-06 16:26:46 +02:00:  [32m[1m✓[22m[39m Compiled in 1049ms (3421 modules)
+2025-08-06 16:26:46 +02:00:  GET /test-unified-transport [32m200[39m in 69ms
+2025-08-06 16:27:04 +02:00:  [32m[1m✓[22m[39m Compiled in 913ms (3421 modules)
+2025-08-06 16:27:04 +02:00:  GET /test-unified-transport [32m200[39m in 79ms
+2025-08-06 16:27:14 +02:00:  [32m[1m✓[22m[39m Compiled in 903ms (3421 modules)
+2025-08-06 16:27:14 +02:00:  GET /test-unified-transport [32m200[39m in 44ms
+2025-08-06 16:28:02 +02:00:  [32m[1m✓[22m[39m Compiled in 887ms (3421 modules)
+2025-08-06 16:28:02 +02:00:  GET /test-unified-transport [32m200[39m in 41ms
+2025-08-06 16:28:11 +02:00:  [32m[1m✓[22m[39m Compiled in 672ms (3421 modules)
+2025-08-06 16:28:12 +02:00:  GET /test-unified-transport [32m200[39m in 35ms
+2025-08-06 16:28:35 +02:00:  [32m[1m✓[22m[39m Compiled in 537ms (3421 modules)
+2025-08-06 16:28:36 +02:00:  GET /test-unified-transport [32m200[39m in 72ms
+2025-08-06 16:28:45 +02:00:  [32m[1m✓[22m[39m Compiled in 844ms (3421 modules)
+2025-08-06 16:28:45 +02:00:  GET /test-unified-transport [32m200[39m in 39ms
+2025-08-06 16:35:44 +02:00:  GET /test-unified-transport [32m200[39m in 232ms
+2025-08-06 16:35:45 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 16:35:46 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1584ms (1761 modules)
+2025-08-06 16:35:46 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1780ms
+2025-08-06 16:37:48 +02:00:  [32m[1m✓[22m[39m Compiled in 1659ms (3421 modules)
+2025-08-06 16:37:48 +02:00:  GET /test-unified-transport [32m200[39m in 74ms
+2025-08-06 16:38:36 +02:00:  [32m[1m✓[22m[39m Compiled in 1961ms (3421 modules)
+2025-08-06 16:38:37 +02:00:  GET /test-unified-transport [32m200[39m in 901ms
+2025-08-06 16:38:37 +02:00:  GET /test-unified-transport [32m200[39m in 1730ms
+2025-08-06 16:38:37 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 332ms (1761 modules)
+2025-08-06 16:38:37 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 507ms
+2025-08-06 16:39:26 +02:00: 
+2025-08-06 16:39:26 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-06 16:39:26 +02:00: 
+2025-08-06 16:39:27 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 16:39:27 +02:00:    - Local:        http://localhost:3001
+2025-08-06 16:39:27 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 16:39:27 +02:00:    - Environments: .env.local, .env
+2025-08-06 16:39:27 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 16:39:28 +02:00:  [32m[1m✓[22m[39m Ready in 1709ms
+2025-08-06 16:39:36 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 16:39:39 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 3.8s (3407 modules)
+2025-08-06 16:39:39 +02:00:  GET /test-unified-transport [32m200[39m in 4297ms
+2025-08-06 16:39:40 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 16:39:40 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1550ms (3408 modules)
+2025-08-06 16:39:41 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1322ms
+2025-08-06 16:43:22 +02:00:  [32m[1m✓[22m[39m Compiled in 4.2s (3421 modules)
+2025-08-06 16:43:22 +02:00:  GET /test-unified-transport [32m200[39m in 88ms
+2025-08-06 16:43:32 +02:00:  [32m[1m✓[22m[39m Compiled in 938ms (3421 modules)
+2025-08-06 16:43:32 +02:00:  GET /test-unified-transport [32m200[39m in 56ms
+2025-08-06 16:43:45 +02:00:  [32m[1m✓[22m[39m Compiled in 673ms (3421 modules)
+2025-08-06 16:43:45 +02:00:  GET /test-unified-transport [32m200[39m in 55ms
+2025-08-06 16:43:56 +02:00:  [32m[1m✓[22m[39m Compiled in 507ms (3421 modules)
+2025-08-06 16:43:56 +02:00:  GET /test-unified-transport [32m200[39m in 48ms
+2025-08-06 16:44:15 +02:00:  [32m[1m✓[22m[39m Compiled in 607ms (3421 modules)
+2025-08-06 16:44:15 +02:00:  GET /test-unified-transport [32m200[39m in 67ms
+2025-08-06 16:44:28 +02:00:  [32m[1m✓[22m[39m Compiled in 636ms (3421 modules)
+2025-08-06 16:44:29 +02:00:  GET /test-unified-transport [32m200[39m in 60ms
+2025-08-06 16:44:38 +02:00:  [32m[1m✓[22m[39m Compiled in 521ms (3421 modules)
+2025-08-06 16:44:38 +02:00:  GET /test-unified-transport [32m200[39m in 44ms
+2025-08-06 16:46:09 +02:00:  GET /test-unified-transport [32m200[39m in 223ms
+2025-08-06 16:46:09 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 16:46:10 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 602ms (1761 modules)
+2025-08-06 16:46:10 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 778ms
+2025-08-06 16:47:55 +02:00:  [32m[1m✓[22m[39m Compiled in 1001ms (3421 modules)
+2025-08-06 16:47:55 +02:00:  GET /test-unified-transport [32m200[39m in 84ms
+2025-08-06 16:48:03 +02:00:  [32m[1m✓[22m[39m Compiled in 932ms (3421 modules)
+2025-08-06 16:48:04 +02:00:  GET /test-unified-transport [32m200[39m in 42ms
+2025-08-06 16:48:14 +02:00:  [32m[1m✓[22m[39m Compiled in 515ms (3421 modules)
+2025-08-06 16:48:14 +02:00:  GET /test-unified-transport [32m200[39m in 49ms
+2025-08-06 16:48:24 +02:00:  [32m[1m✓[22m[39m Compiled in 883ms (3421 modules)
+2025-08-06 16:48:24 +02:00:  GET /test-unified-transport [32m200[39m in 38ms
+2025-08-06 16:48:46 +02:00:  GET /test-unified-transport [32m200[39m in 175ms
+2025-08-06 16:48:46 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 484ms (1761 modules)
+2025-08-06 16:48:47 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 760ms
+2025-08-06 16:51:19 +02:00:  GET /test-unified-transport [32m200[39m in 128ms
+2025-08-06 16:51:20 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 39ms
+2025-08-06 16:54:17 +02:00:  [32m[1m✓[22m[39m Compiled in 1382ms (3421 modules)
+2025-08-06 16:54:18 +02:00:  GET /test-unified-transport [32m200[39m in 70ms
+2025-08-06 16:55:05 +02:00:  [32m[1m✓[22m[39m Compiled in 636ms (3421 modules)
+2025-08-06 16:55:05 +02:00:  GET /test-unified-transport [32m200[39m in 78ms
+2025-08-06 16:55:26 +02:00:  [32m[1m✓[22m[39m Compiled in 685ms (3421 modules)
+2025-08-06 16:55:26 +02:00:  GET /test-unified-transport [32m200[39m in 52ms
+2025-08-06 16:55:34 +02:00:  [32m[1m✓[22m[39m Compiled in 493ms (3421 modules)
+2025-08-06 16:55:34 +02:00:  GET /test-unified-transport [32m200[39m in 43ms
+2025-08-06 16:56:13 +02:00: 
+2025-08-06 16:56:13 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-06 16:56:13 +02:00: 
+2025-08-06 16:56:14 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 16:56:14 +02:00:    - Local:        http://localhost:3001
+2025-08-06 16:56:14 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 16:56:14 +02:00:    - Environments: .env.local, .env
+2025-08-06 16:56:14 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 16:56:16 +02:00:  [32m[1m✓[22m[39m Ready in 1770ms
+2025-08-06 16:57:26 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 16:57:31 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 5.7s (3421 modules)
+2025-08-06 16:57:32 +02:00:  GET /test-unified-transport [32m200[39m in 6347ms
+2025-08-06 16:57:32 +02:00:  [32m[1m✓[22m[39m Compiled in 806ms (1661 modules)
+2025-08-06 16:57:32 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 16:57:33 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 855ms (3408 modules)
+2025-08-06 16:57:33 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1117ms
+2025-08-06 16:57:42 +02:00:  GET /test-unified-transport [32m200[39m in 116ms
+2025-08-06 16:57:43 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 32ms
+2025-08-06 16:59:39 +02:00:  [32m[1m✓[22m[39m Compiled in 1354ms (3421 modules)
+2025-08-06 16:59:39 +02:00:  GET /test-unified-transport [32m200[39m in 80ms
+2025-08-06 17:00:14 +02:00: 
+2025-08-06 17:00:14 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-06 17:00:14 +02:00: 
+2025-08-06 17:00:15 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 17:00:15 +02:00:    - Local:        http://localhost:3001
+2025-08-06 17:00:15 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 17:00:15 +02:00:    - Environments: .env.local, .env
+2025-08-06 17:00:15 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 17:00:16 +02:00:  [32m[1m✓[22m[39m Ready in 1750ms
+2025-08-06 17:00:19 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 17:00:22 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 3.5s (3407 modules)
+2025-08-06 17:00:23 +02:00:  GET /test-unified-transport [32m200[39m in 3902ms
+2025-08-06 17:00:23 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 17:00:24 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1387ms (3408 modules)
+2025-08-06 17:00:24 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1269ms
+2025-08-06 17:02:52 +02:00:  GET /test-unified-transport [32m200[39m in 154ms
+2025-08-06 17:02:52 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 39ms
+2025-08-06 17:04:44 +02:00:  [32m[1m✓[22m[39m Compiled in 3.1s (3421 modules)
+2025-08-06 17:04:44 +02:00:  GET /test-unified-transport [32m200[39m in 74ms
+2025-08-06 17:04:50 +02:00:  [32m[1m✓[22m[39m Compiled in 745ms (3421 modules)
+2025-08-06 17:04:50 +02:00:  GET /test-unified-transport [32m200[39m in 55ms
+2025-08-06 17:05:00 +02:00:  [32m[1m✓[22m[39m Compiled in 747ms (3421 modules)
+2025-08-06 17:05:00 +02:00:  GET /test-unified-transport [32m200[39m in 38ms
+2025-08-06 17:05:44 +02:00: 
+2025-08-06 17:05:44 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-06 17:05:44 +02:00: 
+2025-08-06 17:05:45 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 17:05:45 +02:00:    - Local:        http://localhost:3001
+2025-08-06 17:05:45 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 17:05:45 +02:00:    - Environments: .env.local, .env
+2025-08-06 17:05:45 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 17:05:47 +02:00:  [32m[1m✓[22m[39m Ready in 1693ms
+2025-08-06 17:06:59 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 17:07:02 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 3.7s (3407 modules)
+2025-08-06 17:07:03 +02:00:  GET /test-unified-transport [32m200[39m in 4125ms
+2025-08-06 17:07:03 +02:00:  [32m[1m✓[22m[39m Compiled in 619ms (1647 modules)
+2025-08-06 17:07:03 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 17:07:04 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 812ms (3408 modules)
+2025-08-06 17:07:04 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1036ms
+2025-08-06 17:08:38 +02:00:  [32m[1m✓[22m[39m Compiled in 2.9s (3421 modules)
+2025-08-06 17:08:38 +02:00:  GET /test-unified-transport [32m200[39m in 87ms
+2025-08-06 17:08:39 +02:00:  GET /test-unified-transport [32m200[39m in 425ms
+2025-08-06 17:08:39 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 251ms (1761 modules)
+2025-08-06 17:08:39 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 479ms
+2025-08-06 17:08:50 +02:00:  [32m[1m✓[22m[39m Compiled in 811ms (3422 modules)
+2025-08-06 17:08:50 +02:00:  GET /test-unified-transport [32m200[39m in 60ms
+2025-08-06 17:08:50 +02:00:  GET /test-unified-transport [32m200[39m in 131ms
+2025-08-06 17:08:50 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 36ms
+2025-08-06 17:09:03 +02:00: 
+2025-08-06 17:09:03 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-06 17:09:03 +02:00: 
+2025-08-06 17:09:04 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 17:09:04 +02:00:    - Local:        http://localhost:3001
+2025-08-06 17:09:04 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 17:09:04 +02:00:    - Environments: .env.local, .env
+2025-08-06 17:09:04 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 17:09:06 +02:00:  [32m[1m✓[22m[39m Ready in 1761ms
+2025-08-06 17:09:33 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 17:09:38 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 5.3s (3421 modules)
+2025-08-06 17:09:38 +02:00:  GET /test-unified-transport [32m200[39m in 6111ms
+2025-08-06 17:09:39 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 17:09:39 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1655ms (3408 modules)
+2025-08-06 17:09:39 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1046ms
+2025-08-06 17:11:43 +02:00:  [32m[1m✓[22m[39m Compiled in 1081ms (3421 modules)
+2025-08-06 17:11:43 +02:00:  GET /test-unified-transport [32m200[39m in 116ms
+2025-08-06 17:11:51 +02:00:  [32m[1m✓[22m[39m Compiled in 742ms (3421 modules)
+2025-08-06 17:11:51 +02:00:  GET /test-unified-transport [32m200[39m in 56ms
+2025-08-06 17:12:03 +02:00: 
+2025-08-06 17:12:03 +02:00: > nx run @bassnotion/frontend:serve
+2025-08-06 17:12:03 +02:00: 
+2025-08-06 17:12:03 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-08-06 17:12:03 +02:00:    - Local:        http://localhost:3001
+2025-08-06 17:12:03 +02:00:    - Network:      http://10.0.0.6:3001
+2025-08-06 17:12:03 +02:00:    - Environments: .env.local, .env
+2025-08-06 17:12:03 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-08-06 17:12:05 +02:00:  [32m[1m✓[22m[39m Ready in 1658ms
+2025-08-06 17:12:37 +02:00:  [37m[1m○[22m[39m Compiling /test-unified-transport ...
+2025-08-06 17:12:40 +02:00:  [32m[1m✓[22m[39m Compiled /test-unified-transport in 3.4s (3407 modules)
+2025-08-06 17:12:40 +02:00:  GET /test-unified-transport [32m200[39m in 3838ms
+2025-08-06 17:12:41 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 17:12:41 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1387ms (3408 modules)
+2025-08-06 17:12:41 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1126ms
+2025-08-06 17:17:02 +02:00:  [32m[1m✓[22m[39m Compiled in 3.1s (3421 modules)
+2025-08-06 17:17:02 +02:00:  GET /test-unified-transport [32m200[39m in 87ms
+2025-08-06 17:17:02 +02:00:  GET /test-unified-transport [32m200[39m in 175ms
+2025-08-06 17:17:03 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 17:17:03 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 772ms (1761 modules)
+2025-08-06 17:17:04 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 962ms
+2025-08-06 17:17:14 +02:00:  [32m[1m✓[22m[39m Compiled in 824ms (3422 modules)
+2025-08-06 17:17:14 +02:00:  GET /test-unified-transport [32m200[39m in 40ms
+2025-08-06 17:17:14 +02:00:  GET /test-unified-transport [32m200[39m in 133ms
+2025-08-06 17:17:15 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 35ms
+2025-08-06 17:17:21 +02:00:  [32m[1m✓[22m[39m Compiled in 529ms (3422 modules)
+2025-08-06 17:17:21 +02:00:  GET /test-unified-transport [32m200[39m in 41ms
+2025-08-06 17:17:21 +02:00:  GET /test-unified-transport [32m200[39m in 104ms
+2025-08-06 17:17:21 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 40ms
+2025-08-06 17:17:29 +02:00:  [32m[1m✓[22m[39m Compiled in 643ms (3422 modules)
+2025-08-06 17:17:29 +02:00:  GET /test-unified-transport [32m200[39m in 39ms
+2025-08-06 17:17:30 +02:00:  GET /test-unified-transport [32m200[39m in 100ms
+2025-08-06 17:17:30 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 36ms
+2025-08-06 17:17:42 +02:00:  [32m[1m✓[22m[39m Compiled in 759ms (3422 modules)
+2025-08-06 17:17:42 +02:00:  GET /test-unified-transport [32m200[39m in 41ms
+2025-08-06 17:17:42 +02:00:  GET /test-unified-transport [32m200[39m in 113ms
+2025-08-06 17:17:42 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 38ms
+2025-08-06 17:18:15 +02:00:  [32m[1m✓[22m[39m Compiled in 656ms (3422 modules)
+2025-08-06 17:18:15 +02:00:  GET /test-unified-transport [32m200[39m in 38ms
+2025-08-06 17:18:16 +02:00:  GET /test-unified-transport [32m200[39m in 105ms
+2025-08-06 17:18:16 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 45ms
+2025-08-06 17:21:03 +02:00:  GET /test-unified-transport [32m200[39m in 72ms
+2025-08-06 17:21:03 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 97ms
+2025-08-06 17:22:11 +02:00:  [32m[1m✓[22m[39m Compiled in 1195ms (3421 modules)
+2025-08-06 17:22:11 +02:00:  GET /test-unified-transport [32m200[39m in 42ms
+2025-08-06 17:22:11 +02:00:  GET /test-unified-transport [32m200[39m in 134ms
+2025-08-06 17:22:12 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 17:22:12 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 592ms (1761 modules)
+2025-08-06 17:22:12 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 725ms
+2025-08-06 17:22:26 +02:00:  [32m[1m✓[22m[39m Compiled in 528ms (3422 modules)
+2025-08-06 17:22:26 +02:00:  GET /test-unified-transport [32m200[39m in 56ms
+2025-08-06 17:22:26 +02:00:  GET /test-unified-transport [32m200[39m in 116ms
+2025-08-06 17:22:27 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 36ms
+2025-08-06 17:23:07 +02:00:  GET /test-unified-transport [32m200[39m in 77ms
+2025-08-06 17:23:07 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 40ms
+2025-08-06 17:24:11 +02:00:  [32m[1m✓[22m[39m Compiled in 1128ms (3422 modules)
+2025-08-06 17:24:11 +02:00:  GET /test-unified-transport [32m200[39m in 55ms
+2025-08-06 17:24:11 +02:00:  GET /test-unified-transport [32m200[39m in 162ms
+2025-08-06 17:24:12 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 48ms
+2025-08-06 17:26:32 +02:00:  GET /test-unified-transport [32m200[39m in 79ms
+2025-08-06 17:26:33 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 147ms
+2025-08-06 17:29:20 +02:00:  GET /test-unified-transport [32m200[39m in 97ms
+2025-08-06 17:29:21 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 42ms
+2025-08-06 17:31:00 +02:00:  [32m[1m✓[22m[39m Compiled in 1179ms (3421 modules)
+2025-08-06 17:31:00 +02:00:  GET /test-unified-transport [32m200[39m in 57ms
+2025-08-06 17:31:00 +02:00:  GET /test-unified-transport [32m200[39m in 166ms
+2025-08-06 17:31:01 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-06 17:31:01 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 555ms (1761 modules)
+2025-08-06 17:31:01 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 709ms

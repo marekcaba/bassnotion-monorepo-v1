@@ -9,12 +9,8 @@ import {
   MobileError,
   MobileErrorCode,
   createMobileError,
-} from '../../errors/MobileError.js';
-import {
-  ErrorSeverity,
-  ErrorCategory,
-  ErrorContext,
-} from '../../errors/base.js';
+} from '../../errors/MobileError';
+import { ErrorSeverity, ErrorCategory, ErrorContext } from '../../errors/base';
 
 describe('MobileError Behavioral Tests', () => {
   // ================================

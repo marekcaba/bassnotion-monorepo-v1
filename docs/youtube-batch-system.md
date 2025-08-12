@@ -7,6 +7,7 @@ This system batch-fetches YouTube creator statistics once daily and caches them 
 ## 💰 **Cost Optimization**
 
 **YouTube Data API v3 Pricing:**
+
 - **Free Tier:** 10,000 quota units/day
 - **Channel Statistics:** 1 quota unit per channel
 - **Cost Beyond Free Tier:** $0.0035 per quota unit
@@ -31,6 +32,7 @@ This system batch-fetches YouTube creator statistics once daily and caches them 
 ## 🔧 **System Components**
 
 ### **1. Database Schema**
+
 ```sql
 -- Creator statistics cache table
 CREATE TABLE creator_stats (
@@ -50,12 +52,14 @@ CREATE TABLE creator_stats (
 ### **2. Backend Services**
 
 #### **CreatorsService** (`apps/backend/src/domains/creators/creators.service.ts`)
+
 - **Batch YouTube API calls** (up to 50 channels per request)
 - **Database caching** with upsert operations
 - **Error handling** and retry logic
 - **Channel ID extraction** from various URL formats
 
 #### **CreatorsController** (`apps/backend/src/domains/creators/creators.controller.ts`)
+
 - `GET /api/creators/stats?channelUrl=...` - Get cached stats
 - `POST /api/creators/batch-update` - Trigger manual update
 - `GET /api/creators/health` - System health check
@@ -63,6 +67,7 @@ CREATE TABLE creator_stats (
 ### **3. Frontend Integration**
 
 #### **API Client** (`apps/frontend/src/domains/widgets/api/creators.ts`)
+
 ```typescript
 // Get cached creator stats
 const stats = await getCreatorStats(channelUrl);
@@ -75,6 +80,7 @@ const health = await getCreatorHealthStatus();
 ```
 
 #### **React Hook** (`apps/frontend/src/domains/widgets/hooks/useYouTubeChannelData.ts`)
+
 ```typescript
 const { subscriberCount, creatorName, isLoading } = useYouTubeChannelData(
   channelUrl,
@@ -85,6 +91,7 @@ const { subscriberCount, creatorName, isLoading } = useYouTubeChannelData(
 ### **4. Automated Batch Updates**
 
 #### **Cron Script** (`scripts/update-creator-stats.sh`)
+
 - **Robust error handling** with retries
 - **Health checks** before updates
 - **Comprehensive logging**
@@ -93,18 +100,21 @@ const { subscriberCount, creatorName, isLoading } = useYouTubeChannelData(
 ## 🚀 **Setup Instructions**
 
 ### **1. Environment Variables**
+
 ```bash
 # Add to .env files
 YOUTUBE_API_KEY=your_youtube_api_key_here
 ```
 
 ### **2. Database Migration**
+
 ```bash
 # Run the migration
 pnpm nx run @bassnotion/backend:supabase:db:migrate
 ```
 
 ### **3. Backend Module Registration**
+
 ```typescript
 // apps/backend/src/app.module.ts
 import { CreatorsModule } from './domains/creators/creators.module';
@@ -119,6 +129,7 @@ export class AppModule {}
 ```
 
 ### **4. Cron Job Setup**
+
 ```bash
 # Make script executable
 chmod +x scripts/update-creator-stats.sh
@@ -128,11 +139,13 @@ crontab -e
 ```
 
 Add this line to crontab:
+
 ```bash
 0 4 * * * /path/to/bassnotion-monorepo-v1/scripts/update-creator-stats.sh
 ```
 
 ### **5. Manual Testing**
+
 ```bash
 # Test the batch update manually
 ./scripts/update-creator-stats.sh
@@ -146,11 +159,13 @@ curl "http://localhost:3000/creators/stats?channelUrl=https://youtube.com/channe
 ## 📊 **Monitoring & Health Checks**
 
 ### **System Health Endpoint**
+
 ```bash
 GET /api/creators/health
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -165,6 +180,7 @@ GET /api/creators/health
 ```
 
 ### **Logging**
+
 - **Cron job logs:** `/var/log/bassnotion/creator-stats-update.log`
 - **Backend logs:** Standard NestJS logging
 - **Success/failure notifications:** Logged with timestamps
@@ -172,6 +188,7 @@ GET /api/creators/health
 ## 🔄 **Data Flow**
 
 ### **Daily Batch Process:**
+
 1. **4:00 AM:** Cron job triggers
 2. **Health Check:** Verify API availability
 3. **Fetch Channels:** Get all unique creator URLs from tutorials
@@ -181,6 +198,7 @@ GET /api/creators/health
 7. **Logging:** Record success/failure details
 
 ### **Frontend Requests:**
+
 1. **User visits tutorial page**
 2. **Hook fetches cached data** (30-minute stale time)
 3. **Instant display** of subscriber counts
@@ -189,11 +207,13 @@ GET /api/creators/health
 ## 🛡️ **Error Handling**
 
 ### **API Failures:**
+
 - **3 retry attempts** with exponential backoff
 - **Graceful degradation** to fallback data
 - **Comprehensive error logging**
 
 ### **Missing Data:**
+
 - **Fallback values:** "Subscribe" button, "Creator" name
 - **Progressive enhancement:** Works without YouTube API
 - **Cache invalidation:** 24-hour refresh cycle
@@ -201,11 +221,13 @@ GET /api/creators/health
 ## 📈 **Performance Benefits**
 
 ### **Before (Per-Request API Calls):**
+
 - **User wait time:** 2-5 seconds per page load
 - **API quota usage:** 1 unit per user visit
 - **Rate limiting:** Blocked after quota exhaustion
 
 ### **After (Batch System):**
+
 - **User wait time:** Instant (cached data)
 - **API quota usage:** 1 unit per channel per day
 - **Scalability:** Support thousands of concurrent users
@@ -213,12 +235,14 @@ GET /api/creators/health
 ## 🔮 **Future Enhancements**
 
 ### **Advanced Features:**
+
 - **Webhook notifications** on subscriber milestones
 - **Historical tracking** of subscriber growth
 - **Analytics dashboard** for creator performance
 - **Smart refresh** based on channel activity
 
 ### **Optimization:**
+
 - **CDN caching** for static creator avatars
 - **Redis cache layer** for ultra-fast access
 - **GraphQL subscriptions** for real-time updates
@@ -235,13 +259,14 @@ GET /api/creators/health
 - **Cost Reduction:** 95%+ reduction in API calls
 - **Performance:** Sub-100ms response times
 - **Reliability:** 99.9% uptime with fallback handling
-- **Scalability:** Support 10,000+ channels with free tier 
+- **Scalability:** Support 10,000+ channels with free tier
 
 ## 🔗 **Integration with Existing Google OAuth Setup**
 
 Since you already have Google OAuth configured, you can use the same Google Cloud Console project for YouTube Data API access.
 
 ### **Step 1: Enable YouTube Data API**
+
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Select your existing project (the one with OAuth configured)
 3. Navigate to **APIs & Services** → **Library**
@@ -249,13 +274,16 @@ Since you already have Google OAuth configured, you can use the same Google Clou
 5. Click **Enable**
 
 ### **Step 2: Get API Key**
+
 1. In Google Cloud Console, go to **APIs & Services** → **Credentials**
 2. Click **Create Credentials** → **API Key**
 3. Copy the generated API key
 4. (Optional) Restrict the key to YouTube Data API v3 for security
 
 ### **Step 3: Set Environment Variable**
+
 Add to your environment variables (`.env` file or deployment config):
+
 ```bash
 # Option 1: Dedicated YouTube API key (recommended)
 YOUTUBE_API_KEY=your_api_key_here
@@ -267,6 +295,7 @@ GOOGLE_API_KEY=your_api_key_here
 ```
 
 ### **Step 4: Test the Integration**
+
 ```bash
 # Test the health endpoint
 curl http://localhost:3000/api/creators/health
@@ -281,9 +310,11 @@ curl "http://localhost:3000/api/creators/stats?channelUrl=https://www.youtube.co
 ## API Endpoints
 
 ### GET /api/creators/health
+
 Returns system health status and statistics.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -298,12 +329,15 @@ Returns system health status and statistics.
 ```
 
 ### GET /api/creators/stats
+
 Get cached creator statistics for a specific channel.
 
 **Parameters:**
+
 - `channelUrl` (required): YouTube channel URL
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -319,9 +353,11 @@ Get cached creator statistics for a specific channel.
 ```
 
 ### POST /api/creators/batch-update
+
 Manually trigger batch update of all creator statistics.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -333,17 +369,20 @@ Manually trigger batch update of all creator statistics.
 ## Cost Optimization
 
 ### YouTube Data API Quotas
+
 - **Free Tier**: 10,000 quota units per day
 - **Channel Statistics**: 1 quota unit per channel
 - **Batch Size**: Up to 50 channels per request
 
 ### Our Optimization Strategy
+
 1. **Daily Batch Updates**: Fetch all creator stats once per day at 4 AM
 2. **Database Caching**: Serve cached data to users (instant response)
 3. **Efficient Batching**: Group up to 50 channels per API request
 4. **Cost Reduction**: 95%+ reduction compared to per-user requests
 
 ### Scaling Capacity
+
 - **Free Tier**: 10,000 channels per day
 - **Current Usage**: 4 channels (well within limits)
 - **User Impact**: Support thousands of concurrent users with free tier
@@ -351,6 +390,7 @@ Manually trigger batch update of all creator statistics.
 ## Database Schema
 
 ### creator_stats Table
+
 ```sql
 CREATE TABLE creator_stats (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -369,6 +409,7 @@ CREATE TABLE creator_stats (
 ## Automation Setup
 
 ### Cron Job Script
+
 Location: `scripts/update-creator-stats.sh`
 
 ```bash
@@ -397,6 +438,7 @@ exit 1
 ```
 
 ### Crontab Entry
+
 ```bash
 # Add to crontab (crontab -e)
 0 4 * * * /path/to/bassnotion/scripts/update-creator-stats.sh
@@ -405,12 +447,14 @@ exit 1
 ## Error Handling
 
 ### Graceful Degradation
+
 1. **API Key Missing**: Returns fallback data with "Subscribe" button
 2. **API Rate Limit**: Logs error, continues with cached data
 3. **Network Issues**: Retries with exponential backoff
 4. **Invalid Channel URLs**: Skips invalid channels, continues processing
 
 ### Monitoring
+
 - **Health Endpoint**: Check system status and stale data
 - **Logs**: Comprehensive logging for debugging
 - **Fallback UI**: Always shows functional subscribe button
@@ -418,6 +462,7 @@ exit 1
 ## Frontend Integration
 
 ### React Hook Usage
+
 ```typescript
 import { useYouTubeChannelData } from '@/domains/widgets/hooks/useYouTubeChannelData';
 
@@ -438,6 +483,7 @@ const TutorialInfoCard = ({ tutorial }) => {
 ```
 
 ### Performance Benefits
+
 - **User Wait Time**: Instant (cached) vs 2-5 seconds (per-request)
 - **API Quota Usage**: 1 unit per channel per day vs 1 unit per user visit
 - **Scalability**: Support thousands of concurrent users
@@ -446,17 +492,20 @@ const TutorialInfoCard = ({ tutorial }) => {
 ## Security Considerations
 
 ### API Key Protection
+
 - Store API keys as environment variables
 - Use restricted API keys (YouTube Data API v3 only)
 - Never commit API keys to version control
 - Rotate keys periodically
 
 ### Rate Limiting
+
 - Implement exponential backoff for API requests
 - Respect YouTube API rate limits
 - Monitor quota usage to prevent service disruption
 
 ### Data Privacy
+
 - Cache only public YouTube statistics
 - No personal user data stored
 - Comply with YouTube Terms of Service
@@ -485,6 +534,7 @@ const TutorialInfoCard = ({ tutorial }) => {
    - Verify API key is working
 
 ### Debug Commands
+
 ```bash
 # Check system health
 curl http://localhost:3000/api/creators/health
@@ -505,4 +555,4 @@ pnpm pm2 logs bassnotion-backend
 2. **Analytics Dashboard**: Admin interface for monitoring API usage
 3. **Multiple Providers**: Support for other video platforms
 4. **Advanced Caching**: Redis integration for distributed caching
-5. **Webhook Integration**: YouTube webhook notifications for instant updates 
+5. **Webhook Integration**: YouTube webhook notifications for instant updates

@@ -11,7 +11,7 @@ vi.mock('@/shared/hooks/use-toast', () => ({
 }));
 
 // Mock the API module to prevent actual API calls
-vi.mock('../../api/user-basslines.js', () => ({
+vi.mock('../../api/user-basslines', () => ({
   UserBasslinesAPI: {
     getUserBasslines: vi.fn().mockResolvedValue({
       data: { basslines: [], total: 0, page: 1, limit: 20 },

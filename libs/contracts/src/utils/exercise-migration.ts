@@ -313,6 +313,7 @@ export class ExerciseMigration {
       title,
       difficulty: 'beginner',
       duration: totalDurationMs,
+      duration_beats: totalBeats,
       bpm,
       key: 'C',
       timeSignature,

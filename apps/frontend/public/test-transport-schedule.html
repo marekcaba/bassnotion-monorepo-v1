@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tone.js Transport.scheduleRepeat Test</title>
+    <script src="/Tone.js"></script>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #logs {
+            white-space: pre;
+            padding: 20px;
+            background: #000;
+            border: 1px solid #0f0;
+            margin-top: 20px;
+            height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            color: #f00;
+        }
+        .success {
+            color: #0f0;
+        }
+        .warning {
+            color: #ff0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tone.js Transport.scheduleRepeat Test</h1>
+    <p>This test reproduces the exact issue from the app</p>
+    
+    <button onclick="testWithDelay()">Test with +0.1 delay (app behavior)</button>
+    <button onclick="testImmediate()">Test immediate start</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+    
+    <div id="logs"></div>
+
+    <script>
+        let logDiv = document.getElementById('logs');
+        
+        function log(message, className = '') {
+            const timestamp = new Date().toISOString().substr(11, 8);
+            const line = document.createElement('div');
+            line.className = className;
+            line.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(line);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLogs() {
+            logDiv.innerHTML = '';
+        }
+
+        async function testWithDelay() {
+            log('🚀 Starting test with +0.1 delay (like in the app)...', 'warning');
+            log(`Tone.js version: ${Tone.version}`);
+            
+            // Initialize
+            await Tone.start();
+            log('✅ Audio context started');
+            
+            // Reset Transport
+            Tone.Transport.stop();
+            Tone.Transport.cancel();
+            Tone.Transport.position = 0;
+            Tone.Transport.bpm.value = 120;
+            
+            let callbackCount = 0;
+            const startTime = Date.now();
+            
+            // Create schedule
+            const scheduleId = Tone.Transport.scheduleRepeat((time) => {
+                callbackCount++;
+                const elapsed = Date.now() - startTime;
+                log(`🥁 Callback ${callbackCount}: time=${time.toFixed(3)}, position=${Tone.Transport.position}, elapsed=${elapsed}ms`);
+                
+                // Log detailed state on first few callbacks
+                if (callbackCount <= 3) {
+                    log(`   Transport.state: ${Tone.Transport.state}`);
+                    log(`   Transport.seconds: ${Tone.Transport.seconds.toFixed(3)}`);
+                }
+            }, '8n', 0);
+            
+            log('📅 Schedule created, starting Transport with +0.1 delay...');
+            Tone.Transport.start('+0.1');
+            
+            // Check state after delay
+            setTimeout(() => {
+                log(`Transport state after 150ms: ${Tone.Transport.state}`, 'warning');
+            }, 150);
+            
+            // Stop after 3 seconds
+            setTimeout(() => {
+                Tone.Transport.clear(scheduleId);
+                Tone.Transport.stop();
+                
+                log('⏹️ Transport stopped', 'warning');
+                log(`Total callbacks: ${callbackCount}`);
+                
+                if (callbackCount <= 1) {
+                    log('❌ ISSUE REPRODUCED: Only got ' + callbackCount + ' callback(s)', 'error');
+                    log('This matches the issue from the app!', 'error');
+                } else {
+                    log('✅ Transport.scheduleRepeat is working correctly', 'success');
+                }
+            }, 3000);
+        }
+
+        async function testImmediate() {
+            log('🚀 Starting test with immediate start...', 'warning');
+            
+            // Initialize
+            await Tone.start();
+            
+            // Reset Transport
+            Tone.Transport.stop();
+            Tone.Transport.cancel();
+            Tone.Transport.position = 0;
+            Tone.Transport.bpm.value = 120;
+            
+            let callbackCount = 0;
+            
+            // Create schedule
+            const scheduleId = Tone.Transport.scheduleRepeat((time) => {
+                callbackCount++;
+                log(`🎵 Immediate - Callback ${callbackCount}: time=${time.toFixed(3)}`);
+            }, '8n', 0);
+            
+            log('📅 Schedule created, starting Transport immediately...');
+            Tone.Transport.start(); // No delay
+            
+            // Stop after 2 seconds
+            setTimeout(() => {
+                Tone.Transport.clear(scheduleId);
+                Tone.Transport.stop();
+                
+                log('⏹️ Transport stopped', 'warning');
+                log(`Total callbacks: ${callbackCount}`);
+                
+                if (callbackCount > 1) {
+                    log('✅ Immediate start works correctly', 'success');
+                } else {
+                    log('❌ Issue with immediate start too', 'error');
+                }
+            }, 2000);
+        }
+
+        // Wait for Tone to load
+        window.addEventListener('load', () => {
+            log('Page loaded. Click a button to start testing.');
+            log(`Window.Tone available: ${typeof Tone !== 'undefined'}`);
+            if (typeof Tone !== 'undefined') {
+                log(`Tone.js version: ${Tone.version}`, 'success');
+            } else {
+                log('❌ Tone.js failed to load! Trying alternative...', 'error');
+                // Try loading from local if CDN fails
+                const script = document.createElement('script');
+                script.src = '/Tone.js';
+                script.onload = () => {
+                    log('✅ Loaded local Tone.js', 'success');
+                    log(`Tone.js version: ${Tone.version}`, 'success');
+                };
+                script.onerror = () => {
+                    log('❌ Failed to load local Tone.js too', 'error');
+                };
+                document.head.appendChild(script);
+            }
+        });
+    </script>
+</body>
+</html>

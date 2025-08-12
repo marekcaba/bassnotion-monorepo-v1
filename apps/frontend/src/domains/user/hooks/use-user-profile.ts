@@ -3,20 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './use-auth';
 import { supabase } from '@/infrastructure/supabase/client';
+import type { UserProfile } from '@bassnotion/contracts';
 
-interface UserProfile {
-  id: string;
-  email: string;
-  displayName?: string;
-  bio?: string;
-  avatarUrl?: string;
+interface UserProfileWithRole extends UserProfile {
   role: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 interface UseUserProfileReturn {
-  profile: UserProfile | null;
+  profile: UserProfileWithRole | null;
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -24,7 +18,7 @@ interface UseUserProfileReturn {
 
 export function useUserProfile(): UseUserProfileReturn {
   const { user, isAuthenticated } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfileWithRole | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,7 +45,12 @@ export function useUserProfile(): UseUserProfileReturn {
       }
 
       // Call the backend API with proper auth headers
-      const response = await fetch('/api/user/profile', {
+      const backendUrl =
+        process.env.NEXT_PUBLIC_API_URL ||
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        'http://localhost:3000';
+
+      const response = await fetch(`${backendUrl}/api/user/profile`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',

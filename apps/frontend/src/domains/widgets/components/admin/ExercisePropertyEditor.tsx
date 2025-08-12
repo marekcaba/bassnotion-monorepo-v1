@@ -12,12 +12,14 @@ import { Badge } from '@/shared/components/ui/badge';
 import { useToast } from '@/shared/hooks/use-toast';
 import { Save, X, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
 import type {
-  DatabaseExercise as Exercise,
+  Exercise,
   ExerciseNote,
   ExerciseDifficulty,
   TechniqueType,
   CreateExerciseRequest,
   UpdateExerciseRequest,
+  NoteDuration,
+  MusicalPosition,
 } from '@bassnotion/contracts';
 
 export interface ExercisePropertyEditorProps {
@@ -89,7 +91,7 @@ export function ExercisePropertyEditor({
       setTitle(exercise.title);
       setDescription(exercise.description || '');
       setDifficulty(exercise.difficulty);
-      setDuration(exercise.duration);
+      setDuration(exercise.duration || 0);
       setBpm(exercise.bpm);
       setKey(exercise.key);
       setYoutubeVideoId(exercise.youtube_video_id || '');
@@ -151,7 +153,8 @@ export function ExercisePropertyEditor({
       fret: 0,
       string: 1,
       timestamp: 0,
-      duration: 500,
+      duration: 'quarter' as NoteDuration,
+      position: { measure: 1, beat: 1, subdivision: 0 } as MusicalPosition,
       note: 'C',
       color: 'blue',
     };

@@ -58,10 +58,7 @@ export default defineConfig({
         '@testing-library/jest-dom',
         'vitest-canvas-mock',
       ],
-      external: [
-        'canvas',
-        'jsdom',
-      ],
+      external: ['canvas', 'jsdom'],
     },
     // Memory leak detection
     logHeapUsage: process.env.NODE_ENV === 'development',
@@ -84,4 +81,4 @@ export default defineConfig({
     include: ['@testing-library/react', '@testing-library/user-event'],
     exclude: ['canvas'],
   },
-}); 
+});

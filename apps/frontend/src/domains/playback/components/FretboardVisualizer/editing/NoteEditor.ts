@@ -1,4 +1,4 @@
-import type { ExerciseNote } from '../types/fretboard.js';
+import type { ExerciseNote } from '../types/fretboard';
 
 // Valid ranges for bass guitar
 export const BASS_CONSTRAINTS = {

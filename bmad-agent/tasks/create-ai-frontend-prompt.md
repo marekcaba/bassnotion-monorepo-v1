@@ -14,12 +14,10 @@ To generate a masterful, comprehensive, and optimized prompt that can be used wi
 ## Key Activities & Instructions
 
 1.  **Confirm Target AI Generation Platform:**
-
     - Ask the user to specify which AI frontend generation tool/platform they intend to use (e.g., "Lovable.ai", "Vercel v0", "GPT-4 with direct code generation instructions", etc.).
     - Explain that prompt optimization might differ slightly based on the platform's capabilities and preferred input format.
 
 2.  **Synthesize Inputs into a Structured Prompt:**
-
     - **Overall Project Context:**
       - Briefly state the project's purpose (from brief/PRD).
       - Specify the chosen frontend framework, core libraries, and UI component library (from `front-end-architecture` and main `architecture`).

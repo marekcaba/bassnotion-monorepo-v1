@@ -200,7 +200,6 @@ This template is production-ready with:
 ### Automated Workflows
 
 - **CI Pipeline** (`ci.yml`): Runs on every PR and push to main
-
   - Linting and code formatting checks
   - TypeScript type checking
   - Unit tests with Vitest
@@ -209,7 +208,6 @@ This template is production-ready with:
   - Test artifact uploads (reports, screenshots, videos)
 
 - **Deployment** (`deploy.yml`): Automated production deployments
-
   - Triggered on main branch pushes and version tags
   - Full test suite execution
   - Frontend deployment to Vercel (configurable)

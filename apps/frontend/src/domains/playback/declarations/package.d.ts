@@ -346,81 +346,81 @@ declare const __PACKAGE_METADATA__: {
   readonly name: '@bassnotion/playback';
   readonly version: '2.1.0';
   readonly description: 'Professional-grade audio playback engine for bass learning applications';
-  readonly main: './index.js';
+  readonly main: './index';
   readonly types: './index.d.ts';
-  readonly module: './index.esm.js';
+  readonly module: './index.esm';
   readonly exports: {
     readonly '.': {
-      readonly import: './index.esm.js';
-      readonly require: './index.js';
+      readonly import: './index.esm';
+      readonly require: './index';
       readonly types: './index.d.ts';
     };
     readonly './types': {
       readonly types: './types.d.ts';
     };
     readonly './errors': {
-      readonly import: './errors/index.esm.js';
-      readonly require: './errors/index.js';
+      readonly import: './errors/index.esm';
+      readonly require: './errors/index';
       readonly types: './errors/index.d.ts';
     };
     readonly './core': {
-      readonly import: './core/index.esm.js';
-      readonly require: './core/index.js';
+      readonly import: './core/index.esm';
+      readonly require: './core/index';
       readonly types: './core/index.d.ts';
     };
     readonly './plugins': {
-      readonly import: './plugins/index.esm.js';
-      readonly require: './plugins/index.js';
+      readonly import: './plugins/index.esm';
+      readonly require: './plugins/index';
       readonly types: './plugins/index.d.ts';
     };
     readonly './mobile': {
-      readonly import: './mobile/index.esm.js';
-      readonly require: './mobile/index.js';
+      readonly import: './mobile/index.esm';
+      readonly require: './mobile/index';
       readonly types: './mobile/index.d.ts';
     };
     readonly './resources': {
-      readonly import: './resources/index.esm.js';
-      readonly require: './resources/index.js';
+      readonly import: './resources/index.esm';
+      readonly require: './resources/index';
       readonly types: './resources/index.d.ts';
     };
     readonly './testing': {
-      readonly import: './testing/index.esm.js';
-      readonly require: './testing/index.js';
+      readonly import: './testing/index.esm';
+      readonly require: './testing/index';
       readonly types: './testing/index.d.ts';
     };
     readonly './workers': {
-      readonly import: './workers/index.esm.js';
-      readonly require: './workers/index.js';
+      readonly import: './workers/index.esm';
+      readonly require: './workers/index';
       readonly types: './workers/index.d.ts';
     };
     readonly './persistence': {
-      readonly import: './persistence/index.esm.js';
-      readonly require: './persistence/index.js';
+      readonly import: './persistence/index.esm';
+      readonly require: './persistence/index';
       readonly types: './persistence/index.d.ts';
     };
     readonly './react': {
-      readonly import: './react/index.esm.js';
-      readonly require: './react/index.js';
+      readonly import: './react/index.esm';
+      readonly require: './react/index';
       readonly types: './react/index.d.ts';
     };
     readonly './utils': {
-      readonly import: './utils/index.esm.js';
-      readonly require: './utils/index.js';
+      readonly import: './utils/index.esm';
+      readonly require: './utils/index';
       readonly types: './utils/index.d.ts';
     };
     readonly './constants': {
-      readonly import: './constants/index.esm.js';
-      readonly require: './constants/index.js';
+      readonly import: './constants/index.esm';
+      readonly require: './constants/index';
       readonly types: './constants/index.d.ts';
     };
     readonly './lazy': {
-      readonly import: './lazy/index.esm.js';
-      readonly require: './lazy/index.js';
+      readonly import: './lazy/index.esm';
+      readonly require: './lazy/index';
       readonly types: './lazy/index.d.ts';
     };
     readonly './legacy': {
-      readonly import: './legacy/index.esm.js';
-      readonly require: './legacy/index.js';
+      readonly import: './legacy/index.esm';
+      readonly require: './legacy/index';
       readonly types: './legacy/index.d.ts';
     };
   };
@@ -451,7 +451,7 @@ declare const __PACKAGE_METADATA__: {
     'audio',
     'playback',
     'web-audio',
-    'tone.js',
+    'tone',
     'bass',
     'music',
     'education',
@@ -604,5 +604,12 @@ declare const __FEATURE_MATRIX__: {
     };
   };
 };
+
+// Global window extensions for audio context pre-activation
+declare global {
+  interface Window {
+    preActivatedHarmonyContext?: AudioContext;
+  }
+}
 
 export {};

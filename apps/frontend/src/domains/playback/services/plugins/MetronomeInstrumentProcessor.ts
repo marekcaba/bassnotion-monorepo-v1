@@ -14,7 +14,9 @@
  * - MIDI synchronization and external clock support
  */
 
-import * as Tone from 'tone';
+// Dynamic import to avoid AudioContext initialization before user gesture
+// Tone will be loaded when the processor is initialized
+let Tone: any = null;
 
 // Core metronome interfaces
 export interface MetronomeConfig {
@@ -346,12 +348,27 @@ export class MetronomeInstrumentProcessor {
   }
 
   /**
+   * Ensure Tone.js is loaded dynamically
+   */
+  private async ensureToneLoaded(): Promise<void> {
+    if (!Tone) {
+      Tone = await loadGlobalTone();
+      console.log(
+        '🎵 Using global Tone.js instance in MetronomeInstrumentProcessor',
+      );
+    }
+  }
+
+  /**
    * Initialize the metronome with click sounds
    */
   public async initialize(
     clickSamples?: Record<ClickSoundType, string>,
   ): Promise<void> {
     try {
+      // Ensure Tone is loaded before initializing
+      await this.ensureToneLoaded();
+
       // Load click sound samples
       if (clickSamples) {
         await this.loadClickSamples(clickSamples);

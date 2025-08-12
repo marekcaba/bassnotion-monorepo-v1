@@ -186,9 +186,6 @@ export function LooperKnob({
           </svg>
         </div>
       </div>
-
-      {/* Label */}
-      <span className="text-sm font-semibold text-slate-200 mt-3">LOOPER</span>
     </div>
   );
 }

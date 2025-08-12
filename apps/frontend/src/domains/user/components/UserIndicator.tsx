@@ -4,17 +4,18 @@ import React from 'react';
 import { User, Crown, LogIn } from 'lucide-react';
 import { useAuth } from '../hooks/use-auth';
 import { useUserProfile } from '../hooks/use-user-profile';
+import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 
 export function UserIndicator() {
   const { isAuthenticated, user } = useAuth();
   const { profile, isLoading } = useUserProfile();
+  const { navigateWithTransition } = useViewTransitionRouter();
 
-  // Debug: Log profile data
-  console.log('UserIndicator - Profile data:', {
-    profile,
-    isAuthenticated,
-    user,
-  });
+  const handleClick = () => {
+    if (isAuthenticated) {
+      navigateWithTransition('/dashboard');
+    }
+  };
 
   if (!isAuthenticated || !user) {
     return (
@@ -39,7 +40,11 @@ export function UserIndicator() {
     profile?.displayName || user.email?.split('@')[0] || 'User';
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+    <div
+      className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
+      onClick={handleClick}
+      title="Go to Dashboard"
+    >
       {isAdmin ? (
         <Crown className="w-4 h-4 text-yellow-400" />
       ) : (

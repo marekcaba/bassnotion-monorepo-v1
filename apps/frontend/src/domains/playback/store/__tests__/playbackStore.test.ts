@@ -6,8 +6,8 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { usePlaybackStore, playbackSelectors } from '../playbackStore.js';
-import type { AudioSourceConfig, PerformanceAlert } from '../../types/audio.js';
+import { usePlaybackStore, playbackSelectors } from '../playbackStore';
+import type { AudioSourceConfig, PerformanceAlert } from '../../types/audio';
 
 // Test store helpers
 const createTestStore = () => {

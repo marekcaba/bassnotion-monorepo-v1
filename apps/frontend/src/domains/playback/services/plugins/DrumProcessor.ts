@@ -8,8 +8,51 @@
  * Part of Story 2.1: Task 14, Subtask 14.4
  */
 
-import * as Tone from 'tone';
-import { BaseAudioPlugin } from '../BaseAudioPlugin.js';
+import { getTone } from '../../utils/tone';
+// Epic 3.18: BaseAudioPlugin removed - now using plugin types directly
+// import { BaseAudioPlugin } from '../BaseAudioPlugin';
+import type { AudioPlugin, PluginState } from '../../types/plugin';
+
+// BaseAudioPlugin stub implementation
+abstract class BaseAudioPlugin implements AudioPlugin {
+  id: string;
+  type: string;
+  state: PluginState = 'unloaded';
+  metadata: PluginMetadata;
+  config?: PluginConfig;
+  capabilities?: any;
+
+  constructor(id: string, type: string) {
+    this.id = id;
+    this.type = type;
+    this.metadata = {
+      id,
+      name: id,
+      version: '1.0.0',
+      author: 'BassNotion',
+      description: 'Audio plugin',
+      category: 'effect' as PluginCategory,
+      thumbnailUrl: ''
+    };
+  }
+
+  abstract initialize(context: PluginAudioContext): Promise<void>;
+  abstract process(input: Float32Array, output: Float32Array): void;
+  abstract dispose(): void;
+  
+  async load(): Promise<void> { this.state = 'loaded'; }
+  async activate(): Promise<void> { this.state = 'active'; }
+  async deactivate(): Promise<void> { this.state = 'inactive'; }
+  on(event: string, handler: Function): void {}
+  off(event: string, handler: Function): void {}
+  emit(event: string, ...args: any[]): void {}
+  getParameters(): Record<string, any> { return {}; }
+  protected addParameter(param: any): void {}
+  setParameter(name: string, value: any): void {}
+  getState(): PluginState { return this.state; }
+  setState(state: PluginState): void { this.state = state; }
+  getMetadata(): PluginMetadata { return this.metadata; }
+}
 import {
   PluginMetadata,
   PluginConfig,
@@ -20,7 +63,7 @@ import {
   ProcessingResultStatus,
   PluginParameterType,
   PluginState,
-} from '../../types/plugin.js';
+} from '../../types/plugin';
 
 /**
  * Drum processing parameters
@@ -197,40 +240,80 @@ export class DrumProcessor extends BaseAudioPlugin {
     analysisUpdates: 0,
   };
 
-  // Pattern definitions
-  private drumPatterns = new Map<string, any[]>([
-    [
-      'rock',
-      [
-        { time: '0:0:0', note: 'C1', velocity: 0.8 }, // Kick
-        { time: '0:1:0', note: 'D1', velocity: 0.6 }, // Snare
-        { time: '0:2:0', note: 'C1', velocity: 0.8 }, // Kick
-        { time: '0:3:0', note: 'D1', velocity: 0.6 }, // Snare
-      ],
-    ],
-    [
-      'jazz',
-      [
-        { time: '0:0:0', note: 'C1', velocity: 0.7 }, // Kick
-        { time: '0:0:2', note: 'F#1', velocity: 0.4 }, // Hi-hat
-        { time: '0:1:2', note: 'D1', velocity: 0.5 }, // Snare
-        { time: '0:2:2', note: 'F#1', velocity: 0.4 }, // Hi-hat
-      ],
-    ],
-    [
-      'funk',
-      [
-        { time: '0:0:0', note: 'C1', velocity: 0.9 }, // Kick
-        { time: '0:0:3', note: 'C1', velocity: 0.6 }, // Kick
-        { time: '0:1:0', note: 'D1', velocity: 0.8 }, // Snare
-        { time: '0:2:2', note: 'C1', velocity: 0.7 }, // Kick
-      ],
-    ],
-  ]);
+  // Professional drum patterns using tick-based system
+  private drumPatterns = new Map<string, any[]>();
+
+  // Initialize professional patterns
+  private initializeProfessionalPatterns() {
+    // Import the professional drum processor
+    const {
+      ProfessionalDrumProcessor,
+    } = require('@bassnotion/contracts/services/ProfessionalDrumProcessor');
+
+    // Generate professional patterns for each style
+    const styles = ['rock', 'jazz', 'funk'] as const;
+
+    styles.forEach((style) => {
+      const pattern = ProfessionalDrumProcessor.generatePattern(
+        {
+          style,
+          complexity: 5,
+          fills: false,
+          ghost_notes: style === 'jazz' || style === 'funk',
+          accents: true,
+          swing:
+            style === 'jazz'
+              ? { enabled: true, amount: 0.6, note_value: 'eighth' }
+              : undefined,
+        },
+        { numerator: 4, denominator: 4 },
+        1,
+      );
+
+      // Convert to Tone.js format for compatibility
+      const tonePattern = pattern.events.map((event: any) => ({
+        time: this.tickToToneTime(event.tick),
+        note: this.drumTypeToMIDINote(event.drum),
+        velocity: event.velocity / 127,
+      }));
+
+      this.drumPatterns.set(style, tonePattern);
+    });
+  }
+
+  // Convert tick position to Tone.js time notation
+  private tickToToneTime(tick: number): string {
+    const ticksPerQuarter = 480;
+    const bars = Math.floor(tick / (ticksPerQuarter * 4));
+    const beats = Math.floor((tick % (ticksPerQuarter * 4)) / ticksPerQuarter);
+    const subdivision = Math.floor(
+      ((tick % ticksPerQuarter) / ticksPerQuarter) * 4,
+    );
+
+    return `${bars}:${beats}:${subdivision}`;
+  }
+
+  // Convert drum type to MIDI note
+  private drumTypeToMIDINote(drum: string): string {
+    const drumMap: Record<string, string> = {
+      kick: 'C1',
+      snare: 'D1',
+      hihat: 'F#1',
+      crash: 'A#1',
+      ride: 'D#1',
+      tom: 'F1',
+      tom1: 'F1',
+      tom2: 'G1',
+      tom3: 'A1',
+    };
+
+    return drumMap[drum] || 'C1';
+  }
 
   constructor() {
     super();
     this.initializeParameters();
+    this.initializeProfessionalPatterns();
   }
 
   protected async onLoad(): Promise<void> {

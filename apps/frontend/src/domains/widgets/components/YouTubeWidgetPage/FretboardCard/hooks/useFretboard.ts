@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { SyncedWidgetRenderProps } from '../../../base';
 import type { Fret } from '../types/fretboardTypes';
 import { useFretboardState } from './useFretboardState';
@@ -9,9 +9,16 @@ import { useFretboardExercise } from './useFretboardExercise';
  * Main fretboard hook that combines all fretboard functionality
  * This is the primary hook that components should use
  */
-export const useFretboard = (syncProps: SyncedWidgetRenderProps) => {
-  // State management
-  const state = useFretboardState();
+export const useFretboard = (
+  syncProps: SyncedWidgetRenderProps,
+  config?: {
+    stringCount?: 4 | 5 | 6;
+    maxFrets?: number;
+    tiltAngle?: number;
+  },
+) => {
+  // State management with config from user profile
+  const state = useFretboardState(config);
 
   // Connection highlighting
   const connections = useFretboardConnections(
@@ -19,10 +26,10 @@ export const useFretboard = (syncProps: SyncedWidgetRenderProps) => {
     state.stringCount,
   );
 
-  // Exercise integration without auto-population (handled by FretboardCard)
+  // Exercise integration with auto-population enabled
   const exercise = useFretboardExercise(syncProps, {
     setSelectedDots: state.setSelectedDots,
-    autoPopulateOnExerciseLoad: false,
+    autoPopulateOnExerciseLoad: true, // Enable auto-population when exercises change
     stringCount: state.stringCount, // Pass string count to audio system
   });
 
@@ -34,13 +41,8 @@ export const useFretboard = (syncProps: SyncedWidgetRenderProps) => {
 
       // Trigger audio feedback
       exercise.triggerNote(stringIndex, fret);
-
-      // Emit sync event after a short delay to include this new dot
-      setTimeout(() => {
-        exercise.emitBasslineEvent(state.selectedDots);
-      }, 10);
     },
-    [state.handleDotClick, state.selectedDots, exercise],
+    [state.handleDotClick, exercise.triggerNote],
   );
 
   // Enhanced clear handler that also emits sync event
@@ -57,14 +59,69 @@ export const useFretboard = (syncProps: SyncedWidgetRenderProps) => {
 
       // Trigger audio for new position
       exercise.triggerNote(targetStringIndex, targetFret);
-
-      // Emit sync event after drag is complete
-      setTimeout(() => {
-        exercise.emitBasslineEvent(state.selectedDots);
-      }, 10);
     },
-    [state.handleDragDrop, state.selectedDots, exercise],
+    [state.handleDragDrop, exercise.triggerNote],
   );
+
+  // Track previous selectedDots to detect changes
+  const prevSelectedDotsRef = useRef(state.selectedDots);
+  const isManualChangeRef = useRef(false);
+
+  // Emit bassline event when selectedDots changes due to user interaction
+  useEffect(() => {
+    // Compare Map sizes first for quick check
+    const prevSize = prevSelectedDotsRef.current.size;
+    const currentSize = state.selectedDots.size;
+
+    // Check if maps are different
+    let hasChanged = prevSize !== currentSize;
+
+    if (!hasChanged && prevSize === currentSize && currentSize > 0) {
+      // If sizes are the same, check if content is different
+      for (const [key, orders] of state.selectedDots) {
+        const prevOrders = prevSelectedDotsRef.current.get(key);
+        if (
+          !prevOrders ||
+          orders.length !== prevOrders.length ||
+          orders.some((o, i) => o !== prevOrders[i])
+        ) {
+          hasChanged = true;
+          break;
+        }
+      }
+    }
+
+    // If selectedDots changed and we recently had a manual change, emit the event
+    if (hasChanged && isManualChangeRef.current) {
+      exercise.emitBasslineEvent(state.selectedDots);
+      isManualChangeRef.current = false;
+    }
+
+    // Update the ref for next comparison
+    prevSelectedDotsRef.current = new Map(state.selectedDots);
+  }, [state.selectedDots, exercise.emitBasslineEvent]);
+
+  // Mark manual changes in our handlers
+  const handleDotClickWithAudioEnhanced = useCallback(
+    (stringIndex: number, fret: Fret) => {
+      isManualChangeRef.current = true;
+      handleDotClickWithAudio(stringIndex, fret);
+    },
+    [handleDotClickWithAudio],
+  );
+
+  const handleDragDropWithAudioEnhanced = useCallback(
+    (targetStringIndex: number, targetFret: Fret) => {
+      isManualChangeRef.current = true;
+      handleDragDropWithAudio(targetStringIndex, targetFret);
+    },
+    [handleDragDropWithAudio],
+  );
+
+  const handleClearWithSyncEnhanced = useCallback(() => {
+    isManualChangeRef.current = true;
+    handleClearWithSync();
+  }, [handleClearWithSync]);
 
   return {
     // State management
@@ -77,9 +134,9 @@ export const useFretboard = (syncProps: SyncedWidgetRenderProps) => {
     exercise,
 
     // Enhanced handlers
-    handleDotClickWithAudio,
-    handleClearWithSync,
-    handleDragDropWithAudio,
+    handleDotClickWithAudio: handleDotClickWithAudioEnhanced,
+    handleClearWithSync: handleClearWithSyncEnhanced,
+    handleDragDropWithAudio: handleDragDropWithAudioEnhanced,
 
     // Direct access to key state values for convenience
     stringCount: state.stringCount,

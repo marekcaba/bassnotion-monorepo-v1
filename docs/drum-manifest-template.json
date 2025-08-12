@@ -1,0 +1,181 @@
+{
+  "version": "1.0",
+  "description": "Drum Kit Manifest Template - FAANG-style standardization",
+  "drumTypes": {
+    "kick": {
+      "id": "kick",
+      "name": "Kick Drum",
+      "aliases": ["bd", "bassdrum", "bass drum", "kik"],
+      "midiNote": 36,
+      "priority": 1
+    },
+    "snare": {
+      "id": "snare", 
+      "name": "Snare Drum",
+      "aliases": ["sd", "sn", "snr"],
+      "midiNote": 38,
+      "priority": 2
+    },
+    "hihat-closed": {
+      "id": "hihat-closed",
+      "name": "Closed Hi-Hat",
+      "aliases": ["hhc", "chh", "closed hat", "hat closed"],
+      "midiNote": 42,
+      "priority": 3
+    },
+    "hihat-open": {
+      "id": "hihat-open",
+      "name": "Open Hi-Hat",
+      "aliases": ["hho", "ohh", "open hat", "hat open"],
+      "midiNote": 46,
+      "priority": 4
+    },
+    "hihat-pedal": {
+      "id": "hihat-pedal",
+      "name": "Hi-Hat Pedal",
+      "aliases": ["hhp", "pedal hat", "foot hat"],
+      "midiNote": 44,
+      "priority": 5
+    },
+    "tom-high": {
+      "id": "tom-high",
+      "name": "High Tom",
+      "aliases": ["ht", "t1", "tom1", "high tom"],
+      "midiNote": 50,
+      "priority": 6
+    },
+    "tom-mid": {
+      "id": "tom-mid",
+      "name": "Mid Tom",
+      "aliases": ["mt", "t2", "tom2", "mid tom"],
+      "midiNote": 48,
+      "priority": 7
+    },
+    "tom-low": {
+      "id": "tom-low",
+      "name": "Low Tom",
+      "aliases": ["lt", "t3", "tom3", "low tom"],
+      "midiNote": 45,
+      "priority": 8
+    },
+    "tom-floor": {
+      "id": "tom-floor",
+      "name": "Floor Tom",
+      "aliases": ["ft", "floor tom", "floortom"],
+      "midiNote": 41,
+      "priority": 9
+    },
+    "crash": {
+      "id": "crash",
+      "name": "Crash Cymbal",
+      "aliases": ["cr", "crsh"],
+      "midiNote": 49,
+      "priority": 10
+    },
+    "ride": {
+      "id": "ride",
+      "name": "Ride Cymbal",
+      "aliases": ["rd"],
+      "midiNote": 51,
+      "priority": 11
+    },
+    "clap": {
+      "id": "clap",
+      "name": "Hand Clap",
+      "aliases": ["cp", "clp", "handclap"],
+      "midiNote": 39,
+      "priority": 12
+    },
+    "rimshot": {
+      "id": "rimshot",
+      "name": "Rimshot",
+      "aliases": ["rs", "rim"],
+      "midiNote": 37,
+      "priority": 13
+    },
+    "cowbell": {
+      "id": "cowbell",
+      "name": "Cowbell",
+      "aliases": ["cb"],
+      "midiNote": 56,
+      "priority": 14
+    },
+    "percussion": {
+      "id": "percussion",
+      "name": "Generic Percussion",
+      "aliases": [],
+      "midiNote": 70,
+      "priority": 99
+    }
+  },
+  "exampleManifest": {
+    "id": "classic-808",
+    "name": "Classic TR-808",
+    "category": "electronic",
+    "version": "1.0",
+    "mapping": {
+      "kick": [
+        {
+          "file": "bd-01.mp3",
+          "velocity": 1,
+          "variation": "default",
+          "originalName": "bd-01.mp3"
+        },
+        {
+          "file": "bd-02.mp3",
+          "velocity": 2,
+          "variation": "default",
+          "originalName": "bd-02.mp3"
+        },
+        {
+          "file": "bd-03.mp3",
+          "velocity": 3,
+          "variation": "default",
+          "originalName": "bd-03.mp3"
+        }
+      ],
+      "snare": [
+        {
+          "file": "sd.mp3",
+          "velocity": 2,
+          "variation": "default",
+          "originalName": "sd.mp3"
+        }
+      ],
+      "hihat-closed": [
+        {
+          "file": "hhc.mp3",
+          "velocity": 2,
+          "variation": "default",
+          "originalName": "hhc.mp3"
+        }
+      ],
+      "hihat-open": [
+        {
+          "file": "hho.mp3",
+          "velocity": 2,
+          "variation": "default",
+          "originalName": "hho.mp3"
+        }
+      ]
+    }
+  },
+  "implementation": {
+    "drummerWidget": {
+      "description": "The drummer widget should load manifests to understand kit structure",
+      "usage": [
+        "1. Load kit manifest from drums/hydrogen-kits/mp3/{category}/{kit}/manifest.json",
+        "2. Map widget pads to drum types using the mapping",
+        "3. Support velocity layers if available",
+        "4. Fallback to 'percussion' for unmapped sounds"
+      ]
+    },
+    "benefits": [
+      "Consistent drum type identification across all kits",
+      "Easy kit switching without remapping",
+      "Support for velocity layers and variations",
+      "Clear documentation of kit contents",
+      "Future-proof for ML-based classification"
+    ]
+  }
+}

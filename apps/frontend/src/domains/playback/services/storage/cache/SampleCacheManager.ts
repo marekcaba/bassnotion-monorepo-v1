@@ -24,18 +24,18 @@ import UsagePatternAnalyzer, {
   UsageAnalyzerConfig,
   UsageAnalysisResult,
   CacheRecommendation,
-} from './UsagePatternAnalyzer.js';
+} from './UsagePatternAnalyzer';
 
 import MemoryManager, {
   MemoryManagerConfig,
   MemoryUsageInfo,
   MemoryPressureLevel,
-} from './MemoryManager.js';
+} from './MemoryManager';
 
 import EvictionPolicyEngine, {
   EvictionPolicyConfig,
   EvictionStatistics,
-} from './EvictionPolicyEngine.js';
+} from './EvictionPolicyEngine';
 
 /**
  * Memory optimization result interface

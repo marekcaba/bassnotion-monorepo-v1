@@ -7,7 +7,7 @@
  * Part of Story 2.1: Task 5, Subtask 5.3 - Graceful degradation strategies
  */
 
-import { ErrorCategory, ErrorSeverity } from './base.js';
+import { ErrorCategory, ErrorSeverity } from './base';
 
 export enum DegradationLevel {
   NONE = 'none', // Full functionality

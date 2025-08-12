@@ -1,0 +1,26 @@
+{
+  "samples": [
+    {
+      "id": "default-electronic",
+      "name": "Electronic Click",
+      "description": "Standard electronic metronome click",
+      "category": "electronic",
+      "url": "electronic-click.wav",
+      "isDefault": true
+    },
+    {
+      "id": "wood-block",
+      "name": "Wood Block",
+      "description": "Classic wood block sound",
+      "category": "wood",
+      "url": "wood-block.wav"
+    },
+    {
+      "id": "metal-click",
+      "name": "Metal Click",
+      "description": "Sharp metal click sound",
+      "category": "metal",
+      "url": "metal-click.wav"
+    }
+  ]
+}

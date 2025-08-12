@@ -68,27 +68,22 @@
 The BMAD Method, while distinct in its "Vibe CEO'ing" approach with AI, shares foundational parallels with Agile methodologies:
 
 - **Individuals and Interactions over Processes and Tools (Agile) vs. Vibe CEO & AI Team (BMAD):**
-
   - **Agile:** Emphasizes the importance of skilled individuals and effective communication.
   - **BMAD:** The "Vibe CEO" (you) actively directs and interacts with AI agents, treating them as a high-powered team. The quality of this interaction and clear instruction ("CLEAR_INSTRUCTIONS", "KNOW_YOUR_AGENTS") is paramount, echoing Agile's focus on human elements.
 
 - **Working Software over Comprehensive Documentation (Agile) vs. Rapid Iteration & Quality Outputs (BMAD):**
-
   - **Agile:** Prioritizes delivering functional software quickly.
   - **BMAD:** Stresses "START_SMALL_SCALE_FAST" and "ITERATIVE_REFINEMENT." While "DOCUMENTATION_IS_KEY" for good inputs (briefs, PRDs), the goal is to leverage AI for rapid generation of working components or solutions. The focus is on achieving ambitious goals rapidly.
 
 - **Customer Collaboration over Contract Negotiation (Agile) vs. Vibe CEO as Ultimate Arbiter (BMAD):**
-
   - **Agile:** Involves continuous feedback from the customer.
   - **BMAD:** The "Vibe CEO" acts as the primary stakeholder and quality control ("QUALITY_CONTROL," "STRATEGIC_OVERSIGHT"), constantly reviewing and refining AI outputs, much like a highly engaged customer.
 
 - **Responding to Change over Following a Plan (Agile) vs. Embrace Chaos & Adapt (BMAD):**
-
   - **Agile:** Values adaptability and responsiveness to new requirements.
   - **BMAD:** Explicitly encourages to "EMBRACE_THE_CHAOS," "ADAPT & EXPERIMENT," and acknowledges that "ITERATIVE_REFINEMENT" means it's "not a linear process." This directly mirrors Agile's flexibility.
 
 - **Iterative Development & Incremental Delivery (Agile) vs. Story-based Implementation & Phased Value (BMAD):**
-
   - **Agile:** Work is broken down into sprints, delivering value incrementally.
   - **BMAD:** Projects are broken into Epics and Stories, with "Developer Agents" implementing stories one at a time. Epics represent "significant, deployable increments of value," aligning with incremental delivery.
 
@@ -184,7 +179,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 Understanding the distinct roles and responsibilities of each agent is key to effectively navigating the BMAD workflow. While the "Vibe CEO" provides overall direction, each agent specializes in different aspects of the project lifecycle. V3 introduces Orchestrator agents that can embody these roles, with configurations specified in `web-bmad-orchestrator-agent-cfg.md` for web and `ide-bmad-orchestrator-cfg.md` for IDE environments.
 
 - **Orchestrator Agent (BMAD):**
-
   - **Function:** The primary orchestrator, initially "BMAD." It can embody various specialized agent personas. It handles general BMAD queries, provides oversight, and is the go-to when unsure which specialist is needed.
   - **Persona Reference:** `personas#bmad` (Web) or implicitly the core of `ide-bmad-orchestrator.md` (IDE).
   - **Key Data/Knowledge:** Accesses `data#bmad-kb-data` (Web) for its knowledge base.
@@ -194,42 +188,36 @@ Understanding the distinct roles and responsibilities of each agent is key to ef
   - **Key Feature:** Simplifies agent management, especially in environments with limitations on the number of custom agents.
 
 - **Analyst:**
-
   - **Function:** Handles research, requirements gathering, brainstorming, and the creation of Project Briefs.
   - **Web Persona:** `Analyst (Mary)` with persona `personas#analyst`. Customized to be "a bit of a know-it-all, and likes to verbalize and emote." Uses `templates#project-brief-tmpl`.
   - **IDE Persona:** `Analyst (Larry)` with persona `analyst.md`. Similar "know-it-all" customization. Tasks for Brainstorming, Deep Research Prompt Generation, and Project Brief creation are often defined within the `analyst.md` persona itself ("In Analyst Memory Already").
   - **Output:** `Project Brief`.
 
 - **Product Manager (PM):**
-
   - **Function:** Responsible for creating and maintaining Product Requirements Documents (PRDs), overall project planning, and ideation related to the product.
   - **Web Persona:** `Product Manager (John)` with persona `personas#pm`. Utilizes `checklists#pm-checklist` and `checklists#change-checklist`. Employs `templates#prd-tmpl`. Key tasks include `tasks#create-prd`, `tasks#correct-course`, and `tasks#create-deep-research-prompt`.
   - **IDE Persona:** `Product Manager (PM) (Jack)` with persona `pm.md`. Focused on producing/maintaining the PRD (`create-prd.md` task) and product ideation/planning.
   - **Output:** `Product Requirements Document (PRD)`.
 
 - **Architect:**
-
   - **Function:** Designs system architecture, handles technical design, and ensures technical feasibility.
   - **Web Persona:** `Architect (Fred)` with persona `personas#architect`. Uses `checklists#architect-checklist` and `templates#architecture-tmpl`. Tasks include `tasks#create-architecture` and `tasks#create-deep-research-prompt`.
   - **IDE Persona:** `Architect (Mo)` with persona `architect.md`. Customized to be "Cold, Calculating, Brains behind the agent crew." Generates architecture (`create-architecture.md` task), helps plan stories (`create-next-story-task.md`), and can update PO-level epics/stories (`doc-sharding-task.md`).
   - **Output:** `Architecture Document`.
 
 - **Design Architect:**
-
   - **Function:** Focuses on UI/UX specifications, front-end technical architecture, and can generate prompts for AI UI generation services.
   - **Web Persona:** `Design Architect (Jane)` with persona `personas#design-architect`. Uses `checklists#frontend-architecture-checklist`, `templates#front-end-architecture-tmpl` (for FE architecture), and `templates#front-end-spec-tmpl` (for UX/UI Spec). Tasks: `tasks#create-frontend-architecture`, `tasks#create-ai-frontend-prompt`, `tasks#create-uxui-spec`.
   - **IDE Persona:** `Design Architect (Millie)` with persona `design-architect.md`. Customized to be "Fun and carefree, but a frontend design master." Helps design web apps, produces UI generation prompts (`create-ai-frontend-prompt.md` task), plans FE architecture (`create-frontend-architecture.md` task), and creates UX/UI specs (`create-uxui-spec.md` task).
   - **Output:** `UX/UI Specification`, `Front-end Architecture Plan`, AI UI generation prompts.
 
 - **Product Owner (PO):**
-
   - **Function:** Agile Product Owner responsible for validating documents, ensuring development sequencing, managing the product backlog, running master checklists, handling mid-sprint re-planning, and drafting user stories.
   - **Web Persona:** `PO (Sarah)` with persona `personas#po`. Uses `checklists#po-master-checklist`, `checklists#story-draft-checklist`, `checklists#change-checklist`, and `templates#story-tmpl`. Tasks include `tasks#story-draft-task`, `tasks#doc-sharding-task` (extracts epics and shards architecture), and `tasks#correct-course`.
   - **IDE Persona:** `Product Owner AKA PO (Curly)` with persona `po.md`. Described as a "Jack of many trades." Tasks include `create-prd.md`, `create-next-story-task.md`, `doc-sharding-task.md`, and `correct-course.md`.
   - **Output:** User Stories, managed PRD/Backlog.
 
 - **Scrum Master (SM):**
-
   - **Function:** A technical role focused on helping the team run the Scrum process, facilitating development, and often involved in story generation and refinement.
   - **Web Persona:** `SM (Bob)` with persona `personas#sm`. Described as "A very Technical Scrum Master." Uses `checklists#change-checklist`, `checklists#story-dod-checklist`, `checklists#story-draft-checklist`, and `templates#story-tmpl`. Tasks: `tasks#checklist-run-task`, `tasks#correct-course`, `tasks#story-draft-task`.
   - **IDE Persona:** `Scrum Master: SM (SallySM)` with persona `sm.ide.md`. Described as "Super Technical and Detail Oriented," specialized in "Next Story Generation" (likely leveraging the `sm.ide.md` persona's capabilities).

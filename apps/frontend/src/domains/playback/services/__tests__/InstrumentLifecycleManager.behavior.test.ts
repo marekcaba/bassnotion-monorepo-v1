@@ -10,14 +10,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   InstrumentLifecycleManager,
   type MemoryOptimizationConfig,
-} from '../plugins/InstrumentLifecycleManager.js';
-import { BassInstrumentProcessor } from '../plugins/BassInstrumentProcessor.js';
-import { DrumInstrumentProcessor } from '../plugins/DrumInstrumentProcessor.js';
-import { ChordInstrumentProcessor } from '../plugins/ChordInstrumentProcessor.js';
-import { MetronomeInstrumentProcessor } from '../plugins/MetronomeInstrumentProcessor.js';
+} from '../plugins/InstrumentLifecycleManager';
+import { BassInstrumentProcessor } from '../plugins/BassInstrumentProcessor';
+import { DrumInstrumentProcessor } from '../plugins/DrumInstrumentProcessor';
+import { ChordInstrumentProcessor } from '../plugins/ChordInstrumentProcessor';
+import { MetronomeInstrumentProcessor } from '../plugins/MetronomeInstrumentProcessor';
 
 // Mock the AssetManager
-vi.mock('../AssetManager.js', () => ({
+vi.mock('../AssetManager', () => ({
   AssetManager: {
     getInstance: vi.fn(() => ({
       loadAsset: vi.fn().mockResolvedValue('mock-asset'),
@@ -28,7 +28,7 @@ vi.mock('../AssetManager.js', () => ({
 }));
 
 // Mock the instrument processors
-vi.mock('../plugins/BassInstrumentProcessor.js', () => ({
+vi.mock('../plugins/BassInstrumentProcessor', () => ({
   BassInstrumentProcessor: vi.fn().mockImplementation(() => ({
     initialize: vi.fn().mockResolvedValue(undefined),
     dispose: vi.fn().mockResolvedValue(undefined),
@@ -36,7 +36,7 @@ vi.mock('../plugins/BassInstrumentProcessor.js', () => ({
   })),
 }));
 
-vi.mock('../plugins/DrumInstrumentProcessor.js', () => ({
+vi.mock('../plugins/DrumInstrumentProcessor', () => ({
   DrumInstrumentProcessor: vi.fn().mockImplementation(() => ({
     initialize: vi.fn().mockResolvedValue(undefined),
     dispose: vi.fn().mockResolvedValue(undefined),
@@ -44,7 +44,7 @@ vi.mock('../plugins/DrumInstrumentProcessor.js', () => ({
   })),
 }));
 
-vi.mock('../plugins/ChordInstrumentProcessor.js', () => ({
+vi.mock('../plugins/ChordInstrumentProcessor', () => ({
   ChordInstrumentProcessor: vi.fn().mockImplementation(() => ({
     initialize: vi.fn().mockResolvedValue(undefined),
     dispose: vi.fn().mockResolvedValue(undefined),
@@ -52,7 +52,7 @@ vi.mock('../plugins/ChordInstrumentProcessor.js', () => ({
   })),
 }));
 
-vi.mock('../plugins/MetronomeInstrumentProcessor.js', () => ({
+vi.mock('../plugins/MetronomeInstrumentProcessor', () => ({
   MetronomeInstrumentProcessor: vi.fn().mockImplementation(() => ({
     initialize: vi.fn().mockResolvedValue(undefined),
     dispose: vi.fn().mockResolvedValue(undefined),

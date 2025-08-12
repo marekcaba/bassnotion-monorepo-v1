@@ -9,14 +9,14 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import { usePlaybackStore } from '../store/playbackStore.js';
+import { usePlaybackStore } from '../store/playbackStore';
 import type {
   AssetLoadingProgress,
   AssetLoadingItemProgress,
   AssetLoadingError,
   AssetLoadingMetrics,
-} from '../store/playbackStore.js';
-import type { N8nPayloadConfig, AssetManifest } from '../types/audio.js';
+} from '../store/playbackStore';
+import type { N8nPayloadConfig, AssetManifest } from '../types/audio';
 
 // ============================================================================
 // HOOK INTERFACE

@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { N8nPayloadProcessor } from '../N8nPayloadProcessor.js';
+import { N8nPayloadProcessor } from '../N8nPayloadProcessor';
 
 // Type definitions for tests
 interface N8nPayloadConfig {

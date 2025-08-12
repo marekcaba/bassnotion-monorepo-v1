@@ -14,7 +14,7 @@ import {
   type MidiNoteEvent,
   type MusicalContext,
   type ExpressionOptions,
-} from '../plugins/MusicalExpressionEngine.js';
+} from '../plugins/MusicalExpressionEngine';
 
 describe('MusicalExpressionEngine - Task 9 Implementation', () => {
   let engine: MusicalExpressionEngine;

@@ -83,6 +83,10 @@ export class UserController {
             accentFirstBeat: true,
             volume: 75,
           },
+          bassConfiguration: {
+            stringCount: 4,
+            maxFrets: 24,
+          },
         },
       };
 
@@ -192,6 +196,10 @@ export class UserController {
             subdivision: 1,
             accentFirstBeat: true,
             volume: 75,
+          },
+          bassConfiguration: {
+            stringCount: 4,
+            maxFrets: 24,
           },
         },
       };

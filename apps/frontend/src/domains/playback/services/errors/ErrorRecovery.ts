@@ -12,17 +12,17 @@ import {
   ErrorRecoveryAction,
   ErrorCategory,
   ErrorSeverity,
-} from './base.js';
+} from './base';
 import {
   CircuitBreaker,
   CircuitBreakerManager,
   CircuitBreakerConfig,
-} from './CircuitBreaker.js';
+} from './CircuitBreaker';
 import {
   GracefulDegradation,
   DegradationContext,
   DegradationLevel,
-} from './GracefulDegradation.js';
+} from './GracefulDegradation';
 
 export interface RecoveryConfig {
   enableCircuitBreakers: boolean;

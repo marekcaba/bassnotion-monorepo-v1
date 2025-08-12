@@ -7,11 +7,8 @@
  * Part of Story 2.1: Task 1, Subtask 1.5
  */
 
-import type {
-  CoreAudioEngineConfig,
-  MobileAudioConfig,
-} from './types/audio.js';
-import { PluginCategory, PluginPriority } from './types/plugin.js';
+import type { CoreAudioEngineConfig, MobileAudioConfig } from './types/audio';
+import { PluginCategory, PluginPriority } from './types/plugin';
 
 // ============================================================================
 // AUDIO ENGINE DEFAULTS

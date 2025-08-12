@@ -5,7 +5,7 @@
  * Used by services like SyncProcessor, BassProcessor, DrumProcessor, CorePlaybackEngine, etc.
  *
  * Usage:
- *   import { createAudioLibraryMocks } from '../../test/mocks/audioLibraryMocks.js';
+ *   import { createAudioLibraryMocks } from '../../test/mocks/audioLibraryMocks';
  *   const mocks = createAudioLibraryMocks(options);
  */
 

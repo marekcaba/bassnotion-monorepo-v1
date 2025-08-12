@@ -1,5 +1,6 @@
 /**
  * SyncProcessor Plugin - Professional Audio Synchronization
+ * Updated for Story 3.18.3: Uses dependency injection
  *
  * Provides advanced audio synchronization including tempo detection, phase alignment,
  * and multi-track synchronization. Demonstrates complex timing algorithms and
@@ -8,8 +9,50 @@
  * Part of Story 2.1: Task 14, Subtask 14.4
  */
 
-import * as Tone from 'tone';
-import { BaseAudioPlugin } from '../BaseAudioPlugin.js';
+// Epic 3.18: BaseAudioPlugin removed - now using plugin types directly
+// import { BaseAudioPlugin } from '../BaseAudioPlugin.js';
+import type { AudioPlugin, PluginState } from '../../types/plugin.js';
+
+// BaseAudioPlugin stub implementation
+abstract class BaseAudioPlugin implements AudioPlugin {
+  id: string;
+  type: string;
+  state: PluginState = 'unloaded';
+  metadata: PluginMetadata;
+  config?: PluginConfig;
+  capabilities?: any;
+
+  constructor(id: string, type: string) {
+    this.id = id;
+    this.type = type;
+    this.metadata = {
+      id,
+      name: id,
+      version: '1.0.0',
+      author: 'BassNotion',
+      description: 'Audio plugin',
+      category: 'effect' as PluginCategory,
+      thumbnailUrl: ''
+    };
+  }
+
+  abstract initialize(context: PluginAudioContext): Promise<void>;
+  abstract process(input: Float32Array, output: Float32Array): void;
+  abstract dispose(): void;
+  
+  async load(): Promise<void> { this.state = 'loaded'; }
+  async activate(): Promise<void> { this.state = 'active'; }
+  async deactivate(): Promise<void> { this.state = 'inactive'; }
+  on(event: string, handler: Function): void {}
+  off(event: string, handler: Function): void {}
+  emit(event: string, ...args: any[]): void {}
+  getParameters(): Record<string, any> { return {}; }
+  protected addParameter(param: any): void {}
+  setParameter(name: string, value: any): void {}
+  getState(): PluginState { return this.state; }
+  setState(state: PluginState): void { this.state = state; }
+  getMetadata(): PluginMetadata { return this.metadata; }
+}
 import {
   PluginMetadata,
   PluginConfig,
@@ -20,6 +63,7 @@ import {
   PluginProcessingResult,
   ProcessingResultStatus,
 } from '../../types/plugin.js';
+import { getAudioArchitectureFlags } from '../../config/featureFlags.js';
 
 /**
  * Synchronization parameters
@@ -91,6 +135,9 @@ interface SyncState {
 }
 
 export class SyncProcessor extends BaseAudioPlugin {
+  // Store Tone reference from dependency injection
+  private Tone: any;
+  
   // Plugin metadata
   public readonly metadata: PluginMetadata = {
     id: 'bassnotion.sync-processor',
@@ -156,10 +203,10 @@ export class SyncProcessor extends BaseAudioPlugin {
   public readonly capabilities = this.metadata.capabilities;
 
   // Audio processing components
-  private inputGain: Tone.Gain | null = null;
-  private outputGain: Tone.Gain | null = null;
-  private delayCompensation: Tone.Delay | null = null;
-  private phaseShift: Tone.Delay | null = null;
+  private inputGain: any = null; // Tone.Gain
+  private outputGain: any = null; // Tone.Gain
+  private delayCompensation: any = null; // Tone.Delay
+  private phaseShift: any = null; // Tone.Delay
 
   // Analysis components
   private analyser: AnalyserNode | null = null;
@@ -220,6 +267,22 @@ export class SyncProcessor extends BaseAudioPlugin {
 
   protected async onInitialize(context: PluginAudioContext): Promise<void> {
     try {
+      // Get Tone from context
+      if (!context.getTone) {
+        throw new Error('[SyncProcessor] AudioContext missing getTone() method - ensure using new architecture');
+      }
+      
+      this.Tone = context.getTone();
+      
+      // Log migration status
+      const flags = getAudioArchitectureFlags();
+      if (flags.ENABLE_MIGRATION_MONITORING) {
+        console.log('[SyncProcessor] Using Tone from dependency injection', {
+          hasGetTone: !!context.getTone,
+          architecture: 'new'
+        });
+      }
+      
       // Create audio processing chain
       await this.createProcessingChain(context);
 
@@ -398,11 +461,11 @@ export class SyncProcessor extends BaseAudioPlugin {
     }
   }
 
-  public getToneNode(): Tone.ToneAudioNode | null {
+  public getToneNode(): any | null {
     return this.inputGain;
   }
 
-  public connectToTone(destination: Tone.ToneAudioNode): void {
+  public connectToTone(destination: any): void {
     if (this.outputGain) {
       this.outputGain.connect(destination);
     }
@@ -480,14 +543,14 @@ export class SyncProcessor extends BaseAudioPlugin {
     _context: PluginAudioContext,
   ): Promise<void> {
     // Create input/output gains
-    this.inputGain = new Tone.Gain(1);
-    this.outputGain = new Tone.Gain(1);
+    this.inputGain = new this.Tone.Gain(1);
+    this.outputGain = new this.Tone.Gain(1);
 
     // Create delay for latency compensation
-    this.delayCompensation = new Tone.Delay(0);
+    this.delayCompensation = new this.Tone.Delay(0);
 
     // Create delay for phase shifting
-    this.phaseShift = new Tone.Delay(0);
+    this.phaseShift = new this.Tone.Delay(0);
   }
 
   private async createAnalysisComponents(

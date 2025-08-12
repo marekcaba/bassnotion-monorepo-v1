@@ -7,7 +7,7 @@ import {
   fetchTutorials,
   fetchTutorialExercises,
   TutorialsApiError,
-} from '../tutorials.js';
+} from '../tutorials';
 
 // Create a more robust mock setup
 const createMockResponse = (data: any, ok = true, status = 200) => ({

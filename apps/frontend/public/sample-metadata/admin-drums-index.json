@@ -1,0 +1,14 @@
+{
+  "kits": [
+    {
+      "id": "admin-acoustic",
+      "name": "Admin Acoustic Kit",
+      "description": "Platform-curated acoustic drum kit",
+      "source": "admin",
+      "style": "acoustic",
+      "quality": "studio",
+      "sampleCount": 0,
+      "size": 0
+    }
+  ]
+}

@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AutoSaveService } from '../AutoSave.js';
+import { AutoSaveService } from '../AutoSave';
 import type {
   AutoSaveConfig,
   BasslineMetadata,
@@ -14,13 +14,13 @@ import type {
 } from '@bassnotion/contracts';
 
 // Mock the UserBasslinesAPI
-vi.mock('../../api/user-basslines.js', () => ({
+vi.mock('../../api/user-basslines', () => ({
   UserBasslinesAPI: {
     autoSave: vi.fn(),
   },
 }));
 
-import { UserBasslinesAPI } from '../../api/user-basslines.js';
+import { UserBasslinesAPI } from '../../api/user-basslines';
 
 describe('AutoSaveService', () => {
   let autoSaveService: AutoSaveService;

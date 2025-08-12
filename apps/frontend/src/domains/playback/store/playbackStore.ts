@@ -24,7 +24,7 @@ import type {
   AssetLoadingState,
   AssetManifest,
   ProcessedAssetManifest,
-} from '../types/audio.js';
+} from '../types/audio';
 
 // ============================================================================
 // EPIC 2 ASSET LOADING INTERFACES
@@ -423,9 +423,22 @@ export const usePlaybackStore = create<PlaybackStore>()(
 
     // Configuration
     updateConfig: (partial) =>
-      set((state) => ({
-        config: { ...state.config, ...partial },
-      })),
+      set((state) => {
+        // Only update if there are actual changes to prevent unnecessary re-renders
+        const hasChanges = Object.keys(partial).some(
+          (key) =>
+            state.config[key as keyof typeof state.config] !==
+            partial[key as keyof typeof partial],
+        );
+
+        if (!hasChanges) {
+          return state; // Return same state to prevent re-render
+        }
+
+        return {
+          config: { ...state.config, ...partial },
+        };
+      }),
 
     updateMobileConfig: (partial) =>
       set((state) => ({
@@ -901,6 +914,9 @@ export const playbackSelectors = {
     Array.from(state.audioSources.values()).filter((source) => source.solo),
   mutedSources: (state: PlaybackStore) =>
     Array.from(state.audioSources.values()).filter((source) => source.muted),
+
+  // Configuration selector
+  getConfig: (state: PlaybackStore) => state.config,
 
   // ============================================================================
   // EPIC 2 ASSET LOADING SELECTORS - NEW for Task 13.5

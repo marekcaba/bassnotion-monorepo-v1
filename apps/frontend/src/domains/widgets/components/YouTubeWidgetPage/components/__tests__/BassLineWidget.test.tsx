@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '../../../../test/test-utils.js';
+import { render, screen } from '../../../../test/test-utils';
 
 // Mock all @/ imports before importing the component
 vi.mock('@/shared/components/ui/card', () => ({
@@ -54,7 +54,7 @@ vi.mock('@/shared/utils', () => ({
 }));
 
 // Mock the SyncedWidget to prevent sync system dependencies
-vi.mock('../../base/SyncedWidget.js', () => ({
+vi.mock('../../base/SyncedWidget', () => ({
   SyncedWidget: ({
     children,
     widgetId,
@@ -80,7 +80,7 @@ vi.mock('../../base/SyncedWidget.js', () => ({
   },
 }));
 
-import { BassLineWidget } from '../BassLineWidget.js';
+import { BassLineWidget } from '../BassLineWidget';
 
 describe('BassLineWidget', () => {
   const defaultProps = {

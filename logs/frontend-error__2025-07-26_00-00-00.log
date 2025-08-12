@@ -1,0 +1,745 @@
+2025-07-25 00:08:34 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-25 00:08:34 +02:00: Module parse failed: Identifier 'chordIndex' has already been declared (898:38)
+2025-07-25 00:08:34 +02:00: |                                 const exerciseDuration = exerciseDurationBeatsRef.current || progression.length * 4;
+2025-07-25 00:08:34 +02:00: |                                 const beatsPerChord = Math.floor(exerciseDuration / progression.length) || 4;
+2025-07-25 00:08:34 +02:00: >                                 const chordIndex = Math.floor(totalBeatsElapsed / beatsPerChord) % progression.length;
+2025-07-25 00:08:34 +02:00: |                                 // Prevent duplicate triggers for the same chord index
+2025-07-25 00:08:34 +02:00: |                                 if (chordIndex === lastTriggeredBar && totalBeatsElapsed > 0) {
+2025-07-25 00:08:34 +02:00: Import trace for requested module:
+2025-07-25 00:08:34 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-25 00:08:34 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 12:01:14 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-25 12:01:14 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-25 12:01:14 +02:00: Caused by:
+2025-07-25 12:01:14 +02:00:     No such file or directory (os error 2)
+2025-07-25 12:01:14 +02:00: Import trace for requested module:
+2025-07-25 12:01:14 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-25 12:01:14 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-25 12:01:33 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-25 12:01:33 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-25 12:01:33 +02:00: Caused by:
+2025-07-25 12:01:33 +02:00:     No such file or directory (os error 2)
+2025-07-25 12:01:33 +02:00: Import trace for requested module:
+2025-07-25 12:01:33 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-25 12:01:33 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-25 13:00:36 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-25 13:00:36 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-25 13:00:36 +02:00: Caused by:
+2025-07-25 13:00:36 +02:00:     No such file or directory (os error 2)
+2025-07-25 13:00:36 +02:00: Import trace for requested module:
+2025-07-25 13:00:36 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-25 13:00:36 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-25 13:00:37 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-25 13:00:37 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-25 13:00:37 +02:00: Caused by:
+2025-07-25 13:00:37 +02:00:     No such file or directory (os error 2)
+2025-07-25 13:00:37 +02:00: Import trace for requested module:
+2025-07-25 13:00:37 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-25 13:00:37 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-25 13:09:18 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-25 13:09:18 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-25 13:09:18 +02:00: Caused by:
+2025-07-25 13:09:18 +02:00:     No such file or directory (os error 2)
+2025-07-25 13:09:18 +02:00: Import trace for requested module:
+2025-07-25 13:09:18 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-25 13:09:18 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-25 13:09:19 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-25 13:09:19 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-25 13:09:19 +02:00: Caused by:
+2025-07-25 13:09:19 +02:00:     No such file or directory (os error 2)
+2025-07-25 13:09:19 +02:00: Import trace for requested module:
+2025-07-25 13:09:19 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-25 13:09:19 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-25 15:30:30 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/UnifiedTransportController.ts
+2025-07-25 15:30:30 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/UnifiedTransportController.ts
+2025-07-25 15:30:30 +02:00: Caused by:
+2025-07-25 15:30:30 +02:00:     No such file or directory (os error 2)
+2025-07-25 15:30:30 +02:00: Import trace for requested module:
+2025-07-25 15:30:30 +02:00: ./src/domains/playback/services/UnifiedTransportController.ts
+2025-07-25 15:30:30 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 15:31:04 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/UnifiedTransportController.ts
+2025-07-25 15:31:04 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/UnifiedTransportController.ts
+2025-07-25 15:31:04 +02:00: Caused by:
+2025-07-25 15:31:04 +02:00:     No such file or directory (os error 2)
+2025-07-25 15:31:04 +02:00: Import trace for requested module:
+2025-07-25 15:31:04 +02:00: ./src/domains/playback/services/UnifiedTransportController.ts
+2025-07-25 15:31:04 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 15:31:16 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/UnifiedTransportController.ts
+2025-07-25 15:31:16 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/UnifiedTransportController.ts
+2025-07-25 15:31:16 +02:00: Caused by:
+2025-07-25 15:31:16 +02:00:     No such file or directory (os error 2)
+2025-07-25 15:31:16 +02:00: Import trace for requested module:
+2025-07-25 15:31:16 +02:00: ./src/domains/playback/services/UnifiedTransportController.ts
+2025-07-25 15:31:16 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 15:56:50 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:56:50 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:56:50 +02:00: Caused by:
+2025-07-25 15:56:50 +02:00:     No such file or directory (os error 2)
+2025-07-25 15:56:50 +02:00: Import trace for requested module:
+2025-07-25 15:56:50 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:56:50 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 15:56:50 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 15:56:50 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 15:56:50 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 15:56:50 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 15:56:50 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 15:56:50 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:56:50 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:56:50 +02:00: Caused by:
+2025-07-25 15:56:50 +02:00:     No such file or directory (os error 2)
+2025-07-25 15:56:50 +02:00: Import trace for requested module:
+2025-07-25 15:56:50 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:56:50 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 15:56:50 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 15:56:50 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 15:56:50 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 15:56:50 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 15:56:50 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 15:56:57 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:56:57 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:56:57 +02:00: Caused by:
+2025-07-25 15:56:57 +02:00:     No such file or directory (os error 2)
+2025-07-25 15:56:57 +02:00: Import trace for requested module:
+2025-07-25 15:56:57 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:56:57 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 15:56:57 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 15:56:57 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 15:56:57 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 15:56:57 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 15:56:57 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 15:58:28 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:58:28 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:58:28 +02:00: Caused by:
+2025-07-25 15:58:28 +02:00:     No such file or directory (os error 2)
+2025-07-25 15:58:28 +02:00: Import trace for requested module:
+2025-07-25 15:58:28 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:58:28 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 15:58:28 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 15:58:28 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 15:58:28 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 15:58:28 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 15:58:28 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 15:58:38 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:58:38 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:58:38 +02:00: Caused by:
+2025-07-25 15:58:38 +02:00:     No such file or directory (os error 2)
+2025-07-25 15:58:38 +02:00: Import trace for requested module:
+2025-07-25 15:58:38 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:58:38 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 15:58:38 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 15:58:38 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 15:58:38 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 15:58:38 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 15:58:38 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 15:59:36 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:59:36 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:59:36 +02:00: Caused by:
+2025-07-25 15:59:36 +02:00:     No such file or directory (os error 2)
+2025-07-25 15:59:36 +02:00: Import trace for requested module:
+2025-07-25 15:59:36 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:59:36 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 15:59:36 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 15:59:36 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 15:59:36 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 15:59:36 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 15:59:36 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 15:59:51 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:59:51 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:59:51 +02:00: Caused by:
+2025-07-25 15:59:51 +02:00:     No such file or directory (os error 2)
+2025-07-25 15:59:51 +02:00: Import trace for requested module:
+2025-07-25 15:59:51 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 15:59:51 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 15:59:51 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 15:59:51 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 15:59:51 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 15:59:51 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 15:59:51 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:00:10 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:00:10 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:00:10 +02:00: Caused by:
+2025-07-25 16:00:10 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:00:10 +02:00: Import trace for requested module:
+2025-07-25 16:00:10 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:00:10 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:00:10 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:00:10 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:00:10 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:00:10 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:00:10 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:00:16 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:00:16 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:00:16 +02:00: Caused by:
+2025-07-25 16:00:16 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:00:16 +02:00: Import trace for requested module:
+2025-07-25 16:00:16 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:00:16 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:00:16 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:00:16 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:00:16 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:00:16 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:00:16 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:01:19 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:01:19 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:01:19 +02:00: Caused by:
+2025-07-25 16:01:19 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:01:19 +02:00: Import trace for requested module:
+2025-07-25 16:01:19 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:01:19 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:01:19 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:01:19 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:01:19 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:01:19 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:01:19 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:01:34 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:01:34 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:01:34 +02:00: Caused by:
+2025-07-25 16:01:34 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:01:34 +02:00: Import trace for requested module:
+2025-07-25 16:01:34 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:01:34 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:01:34 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:01:34 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:01:34 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:01:34 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:01:34 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:04:19 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:04:19 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:04:19 +02:00: Caused by:
+2025-07-25 16:04:19 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:04:19 +02:00: Import trace for requested module:
+2025-07-25 16:04:19 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:04:19 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:04:19 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:04:19 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:04:19 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:04:19 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:04:19 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:04:34 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:04:34 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:04:34 +02:00: Caused by:
+2025-07-25 16:04:34 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:04:34 +02:00: Import trace for requested module:
+2025-07-25 16:04:34 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:04:34 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:04:34 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:04:34 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:04:34 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:04:34 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:04:34 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:04:47 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:04:47 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:04:47 +02:00: Caused by:
+2025-07-25 16:04:47 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:04:47 +02:00: Import trace for requested module:
+2025-07-25 16:04:47 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:04:47 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:04:47 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:04:47 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:04:47 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:04:47 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:04:47 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:05:03 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:03 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:03 +02:00: Caused by:
+2025-07-25 16:05:03 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:05:03 +02:00: Import trace for requested module:
+2025-07-25 16:05:03 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:03 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:05:03 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:03 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:05:03 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:05:03 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:05:03 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:05:24 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:24 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:24 +02:00: Caused by:
+2025-07-25 16:05:24 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:05:24 +02:00: Import trace for requested module:
+2025-07-25 16:05:24 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:24 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:05:24 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:24 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:05:24 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:05:24 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:05:24 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:05:36 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:36 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:36 +02:00: Caused by:
+2025-07-25 16:05:36 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:05:36 +02:00: Import trace for requested module:
+2025-07-25 16:05:36 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:36 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:05:36 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:36 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:05:36 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:05:36 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:05:36 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:05:43 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:43 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:43 +02:00: Caused by:
+2025-07-25 16:05:43 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:05:43 +02:00: Import trace for requested module:
+2025-07-25 16:05:43 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:43 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:05:43 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:05:43 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:05:43 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:05:43 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:05:43 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:07:05 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:07:05 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:07:05 +02:00: Caused by:
+2025-07-25 16:07:05 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:07:05 +02:00: Import trace for requested module:
+2025-07-25 16:07:05 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:07:05 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:07:05 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/ThreadedSchedulingManager.ts
+2025-07-25 16:07:05 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/index.ts
+2025-07-25 16:07:05 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:07:05 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:07:05 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:07:05 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:07:05 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:07:21 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:07:21 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:07:21 +02:00: Caused by:
+2025-07-25 16:07:21 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:07:21 +02:00: Import trace for requested module:
+2025-07-25 16:07:21 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:07:21 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:07:21 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/ThreadedSchedulingManager.ts
+2025-07-25 16:07:21 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/index.ts
+2025-07-25 16:07:21 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:07:21 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:07:21 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:07:21 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:07:21 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:27:40 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:27:40 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:27:40 +02:00: Caused by:
+2025-07-25 16:27:40 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:27:40 +02:00: Import trace for requested module:
+2025-07-25 16:27:40 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:27:40 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:27:40 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/ThreadedSchedulingManager.ts
+2025-07-25 16:27:40 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/index.ts
+2025-07-25 16:27:40 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:27:40 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:27:40 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:27:40 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:27:40 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:28:01 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:28:01 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:28:01 +02:00: Caused by:
+2025-07-25 16:28:01 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:28:01 +02:00: Import trace for requested module:
+2025-07-25 16:28:01 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:28:01 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:28:01 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/ThreadedSchedulingManager.ts
+2025-07-25 16:28:01 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/index.ts
+2025-07-25 16:28:01 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:28:01 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:28:01 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:28:01 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:28:01 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 16:28:02 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:28:02 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:28:02 +02:00: Caused by:
+2025-07-25 16:28:02 +02:00:     No such file or directory (os error 2)
+2025-07-25 16:28:02 +02:00: Import trace for requested module:
+2025-07-25 16:28:02 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 16:28:02 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler.ts
+2025-07-25 16:28:02 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/ThreadedSchedulingManager.ts
+2025-07-25 16:28:02 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/index.ts
+2025-07-25 16:28:02 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 16:28:02 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 16:28:02 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 16:28:02 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 16:28:02 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:12:29 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/CorePlaybackEngine/index.ts:5:1
+2025-07-25 18:12:29 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./CorePlaybackEngine/CorePlaybackEngine[39m'
+2025-07-25 18:12:29 +02:00:   3 |  */
+2025-07-25 18:12:29 +02:00:   4 |
+2025-07-25 18:12:29 +02:00: > 5 | export { CorePlaybackEngine } from './CorePlaybackEngine/CorePlaybackEngine';
+2025-07-25 18:12:29 +02:00:     | ^
+2025-07-25 18:12:29 +02:00:   6 |
+2025-07-25 18:12:29 +02:00:   7 | // Export types
+2025-07-25 18:12:29 +02:00:   8 | export type {
+2025-07-25 18:12:29 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-25 18:12:29 +02:00: Import trace for requested module:
+2025-07-25 18:12:29 +02:00: ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:12:29 +02:00: ./src/domains/playback/index.ts
+2025-07-25 18:12:29 +02:00: ./src/domains/widgets/hooks/usePlaybackIntegration.ts
+2025-07-25 18:12:29 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:12:34 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/CorePlaybackEngine/index.ts:5:1
+2025-07-25 18:12:34 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./CorePlaybackEngine/CorePlaybackEngine[39m'
+2025-07-25 18:12:34 +02:00:   3 |  */
+2025-07-25 18:12:34 +02:00:   4 |
+2025-07-25 18:12:34 +02:00: > 5 | export { CorePlaybackEngine } from './CorePlaybackEngine/CorePlaybackEngine';
+2025-07-25 18:12:34 +02:00:     | ^
+2025-07-25 18:12:34 +02:00:   6 |
+2025-07-25 18:12:34 +02:00:   7 | // Export types
+2025-07-25 18:12:34 +02:00:   8 | export type {
+2025-07-25 18:12:34 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-25 18:12:34 +02:00: Import trace for requested module:
+2025-07-25 18:12:34 +02:00: ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:12:34 +02:00: ./src/domains/playback/index.ts
+2025-07-25 18:12:34 +02:00: ./src/domains/widgets/hooks/usePlaybackIntegration.ts
+2025-07-25 18:12:34 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:12:35 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/CorePlaybackEngine/index.ts:5:1
+2025-07-25 18:12:35 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./CorePlaybackEngine/CorePlaybackEngine[39m'
+2025-07-25 18:12:35 +02:00:   3 |  */
+2025-07-25 18:12:35 +02:00:   4 |
+2025-07-25 18:12:35 +02:00: > 5 | export { CorePlaybackEngine } from './CorePlaybackEngine/CorePlaybackEngine';
+2025-07-25 18:12:35 +02:00:     | ^
+2025-07-25 18:12:35 +02:00:   6 |
+2025-07-25 18:12:35 +02:00:   7 | // Export types
+2025-07-25 18:12:35 +02:00:   8 | export type {
+2025-07-25 18:12:35 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-25 18:12:35 +02:00: Import trace for requested module:
+2025-07-25 18:12:35 +02:00: ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:12:35 +02:00: ./src/domains/playback/index.ts
+2025-07-25 18:12:35 +02:00: ./src/domains/widgets/hooks/usePlaybackIntegration.ts
+2025-07-25 18:12:35 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:12:56 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/CorePlaybackEngine/index.ts:5:1
+2025-07-25 18:12:56 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./CorePlaybackEngine/CorePlaybackEngine[39m'
+2025-07-25 18:12:56 +02:00:   3 |  */
+2025-07-25 18:12:56 +02:00:   4 |
+2025-07-25 18:12:56 +02:00: > 5 | export { CorePlaybackEngine } from './CorePlaybackEngine/CorePlaybackEngine';
+2025-07-25 18:12:56 +02:00:     | ^
+2025-07-25 18:12:56 +02:00:   6 |
+2025-07-25 18:12:56 +02:00:   7 | // Export types
+2025-07-25 18:12:56 +02:00:   8 | export type {
+2025-07-25 18:12:56 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-25 18:12:56 +02:00: Import trace for requested module:
+2025-07-25 18:12:56 +02:00: ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:12:56 +02:00: ./src/domains/playback/index.ts
+2025-07-25 18:12:56 +02:00: ./src/domains/widgets/hooks/usePlaybackIntegration.ts
+2025-07-25 18:12:56 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:13:11 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/CorePlaybackEngine/index.ts:5:1
+2025-07-25 18:13:11 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./CorePlaybackEngine/CorePlaybackEngine[39m'
+2025-07-25 18:13:11 +02:00:   3 |  */
+2025-07-25 18:13:11 +02:00:   4 |
+2025-07-25 18:13:11 +02:00: > 5 | export { CorePlaybackEngine } from './CorePlaybackEngine/CorePlaybackEngine';
+2025-07-25 18:13:11 +02:00:     | ^
+2025-07-25 18:13:11 +02:00:   6 |
+2025-07-25 18:13:11 +02:00:   7 | // Export types
+2025-07-25 18:13:11 +02:00:   8 | export type {
+2025-07-25 18:13:11 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-25 18:13:11 +02:00: Import trace for requested module:
+2025-07-25 18:13:11 +02:00: ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:13:11 +02:00: ./src/domains/playback/index.ts
+2025-07-25 18:13:11 +02:00: ./src/domains/widgets/hooks/usePlaybackIntegration.ts
+2025-07-25 18:13:11 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:13:25 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/CorePlaybackEngine/index.ts:5:1
+2025-07-25 18:13:25 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./CorePlaybackEngine/CorePlaybackEngine[39m'
+2025-07-25 18:13:25 +02:00:   3 |  */
+2025-07-25 18:13:25 +02:00:   4 |
+2025-07-25 18:13:25 +02:00: > 5 | export { CorePlaybackEngine } from './CorePlaybackEngine/CorePlaybackEngine';
+2025-07-25 18:13:25 +02:00:     | ^
+2025-07-25 18:13:25 +02:00:   6 |
+2025-07-25 18:13:25 +02:00:   7 | // Export types
+2025-07-25 18:13:25 +02:00:   8 | export type {
+2025-07-25 18:13:25 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-25 18:13:25 +02:00: Import trace for requested module:
+2025-07-25 18:13:25 +02:00: ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:13:25 +02:00: ./src/domains/playback/index.ts
+2025-07-25 18:13:25 +02:00: ./src/domains/widgets/hooks/usePlaybackIntegration.ts
+2025-07-25 18:13:25 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:13:32 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/CorePlaybackEngine/index.ts:5:1
+2025-07-25 18:13:32 +02:00: [31m[1mModule not found[22m[39m: Can't resolve '[32m./CorePlaybackEngine/CorePlaybackEngine[39m'
+2025-07-25 18:13:32 +02:00:   3 |  */
+2025-07-25 18:13:32 +02:00:   4 |
+2025-07-25 18:13:32 +02:00: > 5 | export { CorePlaybackEngine } from './CorePlaybackEngine/CorePlaybackEngine';
+2025-07-25 18:13:32 +02:00:     | ^
+2025-07-25 18:13:32 +02:00:   6 |
+2025-07-25 18:13:32 +02:00:   7 | // Export types
+2025-07-25 18:13:32 +02:00:   8 | export type {
+2025-07-25 18:13:32 +02:00: https://nextjs.org/docs/messages/module-not-found
+2025-07-25 18:13:32 +02:00: Import trace for requested module:
+2025-07-25 18:13:32 +02:00: ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:13:32 +02:00: ./src/domains/playback/index.ts
+2025-07-25 18:13:32 +02:00: ./src/domains/widgets/hooks/usePlaybackIntegration.ts
+2025-07-25 18:13:32 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:15:08 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:15:08 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:15:08 +02:00: Caused by:
+2025-07-25 18:15:08 +02:00:     No such file or directory (os error 2)
+2025-07-25 18:15:08 +02:00: Import trace for requested module:
+2025-07-25 18:15:08 +02:00: ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:15:08 +02:00: ./src/domains/playback/index.ts
+2025-07-25 18:15:08 +02:00: ./src/domains/widgets/hooks/usePlaybackIntegration.ts
+2025-07-25 18:15:08 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:19:12 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:19:12 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:19:12 +02:00: Caused by:
+2025-07-25 18:19:12 +02:00:     No such file or directory (os error 2)
+2025-07-25 18:19:12 +02:00: Import trace for requested module:
+2025-07-25 18:19:12 +02:00: ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:19:12 +02:00: ./src/domains/playback/index.ts
+2025-07-25 18:19:12 +02:00: ./src/domains/widgets/hooks/usePlaybackIntegration.ts
+2025-07-25 18:19:12 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:19:25 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:19:25 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:19:25 +02:00: Caused by:
+2025-07-25 18:19:25 +02:00:     No such file or directory (os error 2)
+2025-07-25 18:19:25 +02:00: Import trace for requested module:
+2025-07-25 18:19:25 +02:00: ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:19:25 +02:00: ./src/domains/playback/index.ts
+2025-07-25 18:19:25 +02:00: ./src/domains/widgets/hooks/usePlaybackIntegration.ts
+2025-07-25 18:19:25 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:19:41 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:19:41 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:19:41 +02:00: Caused by:
+2025-07-25 18:19:41 +02:00:     No such file or directory (os error 2)
+2025-07-25 18:19:41 +02:00: Import trace for requested module:
+2025-07-25 18:19:41 +02:00: ./src/domains/playback/services/CorePlaybackEngine.ts
+2025-07-25 18:19:41 +02:00: ./src/domains/playback/index.ts
+2025-07-25 18:19:41 +02:00: ./src/domains/widgets/hooks/usePlaybackIntegration.ts
+2025-07-25 18:19:41 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:21:13 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:13 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:13 +02:00: Caused by:
+2025-07-25 18:21:13 +02:00:     No such file or directory (os error 2)
+2025-07-25 18:21:13 +02:00: Import trace for requested module:
+2025-07-25 18:21:13 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:13 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/controllers/FallbackController.ts
+2025-07-25 18:21:13 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/controllers/index.ts
+2025-07-25 18:21:13 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/ThreadedTransportScheduler.ts
+2025-07-25 18:21:13 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/ThreadedSchedulingManager.ts
+2025-07-25 18:21:13 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/index.ts
+2025-07-25 18:21:13 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:13 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 18:21:13 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 18:21:13 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 18:21:13 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:21:18 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:18 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:18 +02:00: Caused by:
+2025-07-25 18:21:18 +02:00:     No such file or directory (os error 2)
+2025-07-25 18:21:18 +02:00: Import trace for requested module:
+2025-07-25 18:21:18 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:18 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/controllers/FallbackController.ts
+2025-07-25 18:21:18 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/controllers/index.ts
+2025-07-25 18:21:18 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/ThreadedTransportScheduler.ts
+2025-07-25 18:21:18 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/ThreadedSchedulingManager.ts
+2025-07-25 18:21:18 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/index.ts
+2025-07-25 18:21:18 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:18 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 18:21:18 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 18:21:18 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 18:21:18 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:21:25 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:25 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:25 +02:00: Caused by:
+2025-07-25 18:21:25 +02:00:     No such file or directory (os error 2)
+2025-07-25 18:21:25 +02:00: Import trace for requested module:
+2025-07-25 18:21:25 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:25 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/controllers/FallbackController.ts
+2025-07-25 18:21:25 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/controllers/index.ts
+2025-07-25 18:21:25 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/ThreadedTransportScheduler.ts
+2025-07-25 18:21:25 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/ThreadedSchedulingManager.ts
+2025-07-25 18:21:25 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/index.ts
+2025-07-25 18:21:25 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:25 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 18:21:25 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 18:21:25 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 18:21:25 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:21:31 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:31 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:31 +02:00: Caused by:
+2025-07-25 18:21:31 +02:00:     No such file or directory (os error 2)
+2025-07-25 18:21:31 +02:00: Import trace for requested module:
+2025-07-25 18:21:31 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:31 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/controllers/FallbackController.ts
+2025-07-25 18:21:31 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/controllers/index.ts
+2025-07-25 18:21:31 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/ThreadedTransportScheduler.ts
+2025-07-25 18:21:31 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/ThreadedSchedulingManager.ts
+2025-07-25 18:21:31 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/index.ts
+2025-07-25 18:21:31 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:31 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 18:21:31 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 18:21:31 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 18:21:31 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:21:40 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:40 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:40 +02:00: Caused by:
+2025-07-25 18:21:40 +02:00:     No such file or directory (os error 2)
+2025-07-25 18:21:40 +02:00: Import trace for requested module:
+2025-07-25 18:21:40 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:40 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/controllers/FallbackController.ts
+2025-07-25 18:21:40 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/controllers/index.ts
+2025-07-25 18:21:40 +02:00: ./src/domains/playback/services/ThreadedTransportScheduler/ThreadedTransportScheduler.ts
+2025-07-25 18:21:40 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/ThreadedSchedulingManager.ts
+2025-07-25 18:21:40 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/managers/index.ts
+2025-07-25 18:21:40 +02:00: ./src/domains/playback/services/ProfessionalTransportScheduler/ProfessionalTransportScheduler.ts
+2025-07-25 18:21:40 +02:00: ./src/domains/playback/services/UnifiedTransportController/integrations/ProfessionalSchedulerIntegration.ts
+2025-07-25 18:21:40 +02:00: ./src/domains/playback/services/UnifiedTransportController/UnifiedTransportController.ts
+2025-07-25 18:21:40 +02:00: ./src/domains/playback/services/UnifiedTransportController/index.ts
+2025-07-25 18:21:40 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 18:23:43 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-07-25 22:36:28 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-transport/page.tsx
+2025-07-25 22:36:28 +02:00: Error:   [31mx[0m Expected ';', '}' or <eof>
+2025-07-25 22:36:28 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/app/test-transport/page.tsx[0m:210:1]
+2025-07-25 22:36:28 +02:00:  [2m207[0m |           //       seconds: Transport.seconds.toFixed(3),
+2025-07-25 22:36:28 +02:00:  [2m208[0m |           //       ticks: Transport.ticks,
+2025-07-25 22:36:28 +02:00:  [2m209[0m |                 context: {
+2025-07-25 22:36:28 +02:00:  [2m210[0m | [35;1m,[0m[35;1m-[0m[35;1m>[0m               state: Transport.context.state,
+2025-07-25 22:36:28 +02:00:  [2m211[0m | [35;1m|[0m[35;1m-[0m[35;1m>[0m               currentTime: Transport.context.currentTime.toFixed(3),
+2025-07-25 22:36:28 +02:00:      : [35;1m`[0m[35;1m---[0m[33;1m                         ^[0m
+2025-07-25 22:36:28 +02:00:      : [35;1m`[0m[35;1m---[0m[35;1m-[0m [35;1mThis is the expression part of an expression statement[0m
+2025-07-25 22:36:28 +02:00:  [2m212[0m |                 },
+2025-07-25 22:36:28 +02:00:  [2m213[0m |                 timeline: {
+2025-07-25 22:36:28 +02:00:  [2m214[0m |                   length: (Transport as any)._timeline?.length,
+2025-07-25 22:36:28 +02:00:      `----
+2025-07-25 22:36:28 +02:00: Caused by:
+2025-07-25 22:36:28 +02:00:     Syntax Error
+2025-07-25 22:36:28 +02:00: Import trace for requested module:
+2025-07-25 22:36:28 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 22:36:29 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-transport/page.tsx
+2025-07-25 22:36:29 +02:00: Error:   [31mx[0m Expected ';', '}' or <eof>
+2025-07-25 22:36:29 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/app/test-transport/page.tsx[0m:210:1]
+2025-07-25 22:36:29 +02:00:  [2m207[0m |           //       seconds: Transport.seconds.toFixed(3),
+2025-07-25 22:36:29 +02:00:  [2m208[0m |           //       ticks: Transport.ticks,
+2025-07-25 22:36:29 +02:00:  [2m209[0m |                 context: {
+2025-07-25 22:36:29 +02:00:  [2m210[0m | [35;1m,[0m[35;1m-[0m[35;1m>[0m               state: Transport.context.state,
+2025-07-25 22:36:29 +02:00:  [2m211[0m | [35;1m|[0m[35;1m-[0m[35;1m>[0m               currentTime: Transport.context.currentTime.toFixed(3),
+2025-07-25 22:36:29 +02:00:      : [35;1m`[0m[35;1m---[0m[33;1m                         ^[0m
+2025-07-25 22:36:29 +02:00:      : [35;1m`[0m[35;1m---[0m[35;1m-[0m [35;1mThis is the expression part of an expression statement[0m
+2025-07-25 22:36:29 +02:00:  [2m212[0m |                 },
+2025-07-25 22:36:29 +02:00:  [2m213[0m |                 timeline: {
+2025-07-25 22:36:29 +02:00:  [2m214[0m |                   length: (Transport as any)._timeline?.length,
+2025-07-25 22:36:29 +02:00:      `----
+2025-07-25 22:36:29 +02:00: Caused by:
+2025-07-25 22:36:29 +02:00:     Syntax Error
+2025-07-25 22:36:29 +02:00: Import trace for requested module:
+2025-07-25 22:36:29 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 22:37:01 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-transport/page.tsx
+2025-07-25 22:37:01 +02:00: Error:   [31mx[0m Expected ';', '}' or <eof>
+2025-07-25 22:37:01 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/app/test-transport/page.tsx[0m:211:1]
+2025-07-25 22:37:01 +02:00:  [2m208[0m |           //       seconds: Transport.seconds.toFixed(3),
+2025-07-25 22:37:01 +02:00:  [2m209[0m |           //       ticks: Transport.ticks,
+2025-07-25 22:37:01 +02:00:  [2m210[0m |                 context: {
+2025-07-25 22:37:01 +02:00:  [2m211[0m | [35;1m,[0m[35;1m-[0m[35;1m>[0m               state: Transport.context.state,
+2025-07-25 22:37:01 +02:00:  [2m212[0m | [35;1m|[0m[35;1m-[0m[35;1m>[0m               currentTime: Transport.context.currentTime.toFixed(3),
+2025-07-25 22:37:01 +02:00:      : [35;1m`[0m[35;1m---[0m[33;1m                         ^[0m
+2025-07-25 22:37:01 +02:00:      : [35;1m`[0m[35;1m---[0m[35;1m-[0m [35;1mThis is the expression part of an expression statement[0m
+2025-07-25 22:37:01 +02:00:  [2m213[0m |                 },
+2025-07-25 22:37:01 +02:00:  [2m214[0m |                 timeline: {
+2025-07-25 22:37:01 +02:00:  [2m215[0m |                   length: (Transport as any)._timeline?.length,
+2025-07-25 22:37:01 +02:00:      `----
+2025-07-25 22:37:01 +02:00: Caused by:
+2025-07-25 22:37:01 +02:00:     Syntax Error
+2025-07-25 22:37:01 +02:00: Import trace for requested module:
+2025-07-25 22:37:01 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 22:37:01 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-25 22:45:49 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-transport/page.tsx
+2025-07-25 22:45:49 +02:00: Error:   [31mx[0m Expected ',', got '}'
+2025-07-25 22:45:49 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/app/test-transport/page.tsx[0m:221:1]
+2025-07-25 22:45:49 +02:00:  [2m218[0m |       //       scheduledEvents: (Transport as any)._scheduledEvents,
+2025-07-25 22:45:49 +02:00:  [2m219[0m |       //     });
+2025-07-25 22:45:49 +02:00:  [2m220[0m |         }
+2025-07-25 22:45:49 +02:00:  [2m221[0m |       }
+2025-07-25 22:45:49 +02:00:      : [35;1m      ^[0m
+2025-07-25 22:45:49 +02:00:  [2m222[0m | 
+2025-07-25 22:45:49 +02:00:  [2m223[0m |       // Update isPlaying based on actual transport state
+2025-07-25 22:45:49 +02:00:  [2m224[0m |       // Use a timeout to debounce rapid state changes
+2025-07-25 22:45:49 +02:00:      `----
+2025-07-25 22:45:49 +02:00: Caused by:
+2025-07-25 22:45:49 +02:00:     Syntax Error
+2025-07-25 22:45:49 +02:00: Import trace for requested module:
+2025-07-25 22:45:49 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 22:45:49 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-07-25 22:47:29 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-07-25 23:17:27 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-transport/page.tsx
+2025-07-25 23:17:27 +02:00: Module parse failed: Identifier 'handleInitializeTone' has already been declared (446:10)
+2025-07-25 23:17:27 +02:00: |         }
+2025-07-25 23:17:27 +02:00: |     };
+2025-07-25 23:17:27 +02:00: >     const handleInitializeTone = async ()=>{
+2025-07-25 23:17:27 +02:00: |         console.log('🎵 Initializing audio system...');
+2025-07-25 23:17:27 +02:00: |         // Use engine initialization with quiet logging
+2025-07-25 23:17:27 +02:00: Import trace for requested module:
+2025-07-25 23:17:27 +02:00: ./src/app/test-transport/page.tsx
+2025-07-25 23:47:33 +02:00:  [31m[1m⨯[22m[39m ReferenceError: engine is not defined
+2025-07-25 23:47:33 +02:00:     at TransportTestContent (src/app/test-transport/page.tsx:292:32)
+2025-07-25 23:47:33 +02:00: [0m [90m 290 |[39m       }[0m
+2025-07-25 23:47:33 +02:00: [0m [90m 291 |[39m     }[33m;[39m[0m
+2025-07-25 23:47:33 +02:00: [0m[31m[1m>[22m[39m[90m 292 |[39m   }[33m,[39m [isReady[33m,[39m [33mTone[39m[33m,[39m [33mTransport[39m[33m,[39m engine])[33m;[39m[0m
+2025-07-25 23:47:33 +02:00: [0m [90m     |[39m                                [31m[1m^[22m[39m[0m
+2025-07-25 23:47:33 +02:00: [0m [90m 293 |[39m[0m
+2025-07-25 23:47:33 +02:00: [0m [90m 294 |[39m   [36mconst[39m handleStartTransport [33m=[39m [36masync[39m () [33m=>[39m {[0m
+2025-07-25 23:47:33 +02:00: [0m [90m 295 |[39m     [36mif[39m ([33m![39misReady [33m||[39m [33m![39m[33mTransport[39m) [36mreturn[39m[33m;[39m[0m {
+2025-07-25 23:47:33 +02:00:   digest: [32m'557554138'[39m
+2025-07-25 23:47:33 +02:00: }
+2025-07-25 23:48:01 +02:00:  [31m[1m⨯[22m[39m ReferenceError: engine is not defined
+2025-07-25 23:48:01 +02:00:     at TransportTestContent (src/app/test-transport/page.tsx:293:32)
+2025-07-25 23:48:01 +02:00: [0m [90m 291 |[39m       }[0m
+2025-07-25 23:48:01 +02:00: [0m [90m 292 |[39m     }[33m;[39m[0m
+2025-07-25 23:48:01 +02:00: [0m[31m[1m>[22m[39m[90m 293 |[39m   }[33m,[39m [isReady[33m,[39m [33mTone[39m[33m,[39m [33mTransport[39m[33m,[39m engine])[33m;[39m[0m
+2025-07-25 23:48:01 +02:00: [0m [90m     |[39m                                [31m[1m^[22m[39m[0m
+2025-07-25 23:48:01 +02:00: [0m [90m 294 |[39m[0m
+2025-07-25 23:48:01 +02:00: [0m [90m 295 |[39m   [36mconst[39m handleStartTransport [33m=[39m [36masync[39m () [33m=>[39m {[0m
+2025-07-25 23:48:01 +02:00: [0m [90m 296 |[39m     [36mif[39m ([33m![39misReady [33m||[39m [33m![39m[33mTransport[39m) [36mreturn[39m[33m;[39m[0m {
+2025-07-25 23:48:01 +02:00:   digest: [32m'557554138'[39m
+2025-07-25 23:48:01 +02:00: }
+2025-07-25 23:48:01 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-25 23:48:07 +02:00:  [31m[1m⨯[22m[39m ReferenceError: engine is not defined
+2025-07-25 23:48:07 +02:00:     at TransportTestContent (src/app/test-transport/page.tsx:1206:29)
+2025-07-25 23:48:07 +02:00: [0m [90m 1204 |[39m                   }}[0m
+2025-07-25 23:48:07 +02:00: [0m [90m 1205 |[39m                   className[33m=[39m[32m"w-full px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-sm text-left"[39m[0m
+2025-07-25 23:48:07 +02:00: [0m[31m[1m>[22m[39m[90m 1206 |[39m                   disabled[33m=[39m{[33m![39mengine}[0m
+2025-07-25 23:48:07 +02:00: [0m [90m      |[39m                             [31m[1m^[22m[39m[0m
+2025-07-25 23:48:07 +02:00: [0m [90m 1207 |[39m                 [33m>[39m[0m
+2025-07-25 23:48:07 +02:00: [0m [90m 1208 |[39m                   🚀 [33mStart[39m [33mAll[39m [33mWidgets[39m [33mTest[39m[0m
+2025-07-25 23:48:07 +02:00: [0m [90m 1209 |[39m                 [33m<[39m[33m/[39m[33mbutton[39m[33m>[39m[0m {
+2025-07-25 23:48:07 +02:00:   digest: [32m'557554138'[39m
+2025-07-25 23:48:07 +02:00: }
+2025-07-25 23:48:16 +02:00:  [31m[1m⨯[22m[39m ReferenceError: engine is not defined
+2025-07-25 23:48:16 +02:00:     at TransportTestContent (src/app/test-transport/page.tsx:1201:29)
+2025-07-25 23:48:16 +02:00: [0m [90m 1199 |[39m                   }}[0m
+2025-07-25 23:48:16 +02:00: [0m [90m 1200 |[39m                   className[33m=[39m[32m"w-full px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-sm text-left"[39m[0m
+2025-07-25 23:48:16 +02:00: [0m[31m[1m>[22m[39m[90m 1201 |[39m                   disabled[33m=[39m{[33m![39mengine}[0m
+2025-07-25 23:48:16 +02:00: [0m [90m      |[39m                             [31m[1m^[22m[39m[0m
+2025-07-25 23:48:16 +02:00: [0m [90m 1202 |[39m                 [33m>[39m[0m
+2025-07-25 23:48:16 +02:00: [0m [90m 1203 |[39m                   🚀 [33mStart[39m [33mAll[39m [33mWidgets[39m [33mTest[39m[0m
+2025-07-25 23:48:16 +02:00: [0m [90m 1204 |[39m                 [33m<[39m[33m/[39m[33mbutton[39m[33m>[39m[0m {
+2025-07-25 23:48:16 +02:00:   digest: [32m'557554138'[39m
+2025-07-25 23:48:16 +02:00: }
+2025-07-25 23:48:16 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-25 23:48:56 +02:00:  [31m[1m⨯[22m[39m ReferenceError: engine is not defined
+2025-07-25 23:48:56 +02:00:     at TransportTestContent (src/app/test-transport/page.tsx:1189:29)
+2025-07-25 23:48:56 +02:00: [0m [90m 1187 |[39m                   }}[0m
+2025-07-25 23:48:56 +02:00: [0m [90m 1188 |[39m                   className[33m=[39m[32m"w-full px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-sm text-left"[39m[0m
+2025-07-25 23:48:56 +02:00: [0m[31m[1m>[22m[39m[90m 1189 |[39m                   disabled[33m=[39m{[33m![39mengine}[0m
+2025-07-25 23:48:56 +02:00: [0m [90m      |[39m                             [31m[1m^[22m[39m[0m
+2025-07-25 23:48:56 +02:00: [0m [90m 1190 |[39m                 [33m>[39m[0m
+2025-07-25 23:48:56 +02:00: [0m [90m 1191 |[39m                   🚀 [33mStart[39m [33mAll[39m [33mWidgets[39m [33mTest[39m[0m
+2025-07-25 23:48:56 +02:00: [0m [90m 1192 |[39m                 [33m<[39m[33m/[39m[33mbutton[39m[33m>[39m[0m {
+2025-07-25 23:48:56 +02:00:   digest: [32m'557554138'[39m
+2025-07-25 23:48:56 +02:00: }
+2025-07-25 23:48:57 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-25 23:49:14 +02:00:  [31m[1m⨯[22m[39m ReferenceError: engine is not defined
+2025-07-25 23:49:14 +02:00:     at TransportTestContent (src/app/test-transport/page.tsx:1178:29)
+2025-07-25 23:49:14 +02:00: [0m [90m 1176 |[39m                   }}[0m
+2025-07-25 23:49:14 +02:00: [0m [90m 1177 |[39m                   className[33m=[39m[32m"w-full px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-sm text-left"[39m[0m
+2025-07-25 23:49:14 +02:00: [0m[31m[1m>[22m[39m[90m 1178 |[39m                   disabled[33m=[39m{[33m![39mengine}[0m
+2025-07-25 23:49:14 +02:00: [0m [90m      |[39m                             [31m[1m^[22m[39m[0m
+2025-07-25 23:49:14 +02:00: [0m [90m 1179 |[39m                 [33m>[39m[0m
+2025-07-25 23:49:14 +02:00: [0m [90m 1180 |[39m                   🚀 [33mStart[39m [33mAll[39m [33mWidgets[39m [33mTest[39m[0m
+2025-07-25 23:49:14 +02:00: [0m [90m 1181 |[39m                 [33m<[39m[33m/[39m[33mbutton[39m[33m>[39m[0m {
+2025-07-25 23:49:14 +02:00:   digest: [32m'557554138'[39m
+2025-07-25 23:49:14 +02:00: }
+2025-07-25 23:51:47 +02:00:  [31m[1m⨯[22m[39m ReferenceError: engine is not defined
+2025-07-25 23:51:47 +02:00:     at TransportTestContent (src/app/test-transport/page.tsx:1185:29)
+2025-07-25 23:51:47 +02:00: [0m [90m 1183 |[39m                   }}[0m
+2025-07-25 23:51:47 +02:00: [0m [90m 1184 |[39m                   className[33m=[39m[32m"w-full px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-sm text-left"[39m[0m
+2025-07-25 23:51:47 +02:00: [0m[31m[1m>[22m[39m[90m 1185 |[39m                   disabled[33m=[39m{[33m![39mengine}[0m
+2025-07-25 23:51:47 +02:00: [0m [90m      |[39m                             [31m[1m^[22m[39m[0m
+2025-07-25 23:51:47 +02:00: [0m [90m 1186 |[39m                 [33m>[39m[0m
+2025-07-25 23:51:47 +02:00: [0m [90m 1187 |[39m                   🚀 [33mStart[39m [33mAll[39m [33mWidgets[39m [33mTest[39m[0m
+2025-07-25 23:51:47 +02:00: [0m [90m 1188 |[39m                 [33m<[39m[33m/[39m[33mbutton[39m[33m>[39m[0m {
+2025-07-25 23:51:47 +02:00:   digest: [32m'557554138'[39m
+2025-07-25 23:51:47 +02:00: }
+2025-07-25 23:51:47 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-25 23:52:35 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload

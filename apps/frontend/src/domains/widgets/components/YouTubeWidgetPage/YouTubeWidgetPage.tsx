@@ -5,17 +5,23 @@ import React, { useEffect, useRef, useCallback } from 'react';
 import { YouTubeVideoSection } from './YouTubeVideoSection';
 import { TutorialInfoCard } from './TutorialInfoCard';
 import { FretboardCard } from './FretboardCard';
-import Fretboard3D from './Fretboard3D';
+import Fretboard3D from './FretboardCard/components/Fretboard3D';
 
 import { FourWidgetsCard } from './components/FourWidgetsCard';
 import { GlobalControlsCard } from './components/GlobalControlsCard';
+import { LooperCard } from './components/LooperCard';
 import { TeachingTakeawayCard } from './TeachingTakeawayCard';
+import { ExerciseTimelineIndicator } from './components/ExerciseTimelineIndicator';
+import { TransportClock } from './components/TransportClock';
+import { TimingDebugWindow } from './components/TimingDebugWindow';
 import { useWidgetPageState } from '@/domains/widgets/hooks/useWidgetPageState';
 import { useAudioFretboard } from '@/domains/widgets/hooks/useAudioFretboard';
 import { Button } from '@/shared/components/ui/button';
 import { Play, Pause, Volume2, Settings } from 'lucide-react';
 import { SyncProvider, useSyncContext } from '../base/SyncProvider';
 import { UserIndicator } from '@/domains/user/components/UserIndicator';
+import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
+import { beatTimingAnalyzer } from '@/domains/playback/utils/BeatTimingAnalyzer';
 import type { Tutorial } from '@bassnotion/contracts';
 
 interface YouTubeWidgetPageProps {
@@ -40,11 +46,47 @@ function YouTubeWidgetPageContent({
 
   const widgetState = useWidgetPageState();
   const { emitGlobalEvent, syncState } = useSyncContext();
+  const { profile } = useUserProfile();
   const [is3DMode, setIs3DMode] = React.useState(false);
   const [selectedDots, setSelectedDots] = React.useState<Map<string, number[]>>(
     new Map(),
   );
   const [stringCount, setStringCount] = React.useState<4 | 5 | 6>(4);
+  const [maxFrets, setMaxFrets] = React.useState(25);
+  const [showTimingDebug, setShowTimingDebug] = React.useState(false);
+
+  // Load bass settings from user profile
+  useEffect(() => {
+    if (profile?.preferences?.bassConfiguration) {
+      setStringCount(profile.preferences.bassConfiguration.stringCount);
+      setMaxFrets(profile.preferences.bassConfiguration.maxFrets);
+    }
+  }, [profile]);
+
+  // Listen for bass settings changes from dashboard (still useful for real-time updates)
+  useEffect(() => {
+    const handleBassSettingsChange = (event: CustomEvent) => {
+      const { stringCount: newStringCount, maxFrets: newMaxFrets } =
+        event.detail;
+      setStringCount(newStringCount);
+      setMaxFrets(newMaxFrets);
+      // Clear selection when changing string count to avoid invalid selections
+      setSelectedDots(new Map());
+    };
+
+    window.addEventListener(
+      'bass-settings-changed',
+      handleBassSettingsChange as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        'bass-settings-changed',
+        handleBassSettingsChange as EventListener,
+      );
+    };
+  }, []);
+  const [tiltAngle, setTiltAngle] = React.useState(35);
   const [cameraDistance, _setCameraDistance] = React.useState(7);
   const [cameraMode, setCameraMode] = React.useState<'overview' | 'action'>(
     'overview',
@@ -63,9 +105,24 @@ function YouTubeWidgetPageContent({
   });
 
   const handleExerciseSelect = useCallback((exerciseId: string) => {
-    // Exercise selection logic can be implemented here if needed
-    console.log('Exercise selected:', exerciseId);
-  }, []);
+    // Find the exercise from the exercises array
+    const exercise = exercises?.find(ex => ex.id === exerciseId);
+    if (exercise) {
+      console.log('🎵 YouTubeWidgetPage: Exercise selected:', {
+        id: exercise.id,
+        title: exercise.title,
+        hasDrumPattern: !!exercise.drum_pattern,
+        drumPatternEnabled: exercise.drum_pattern?.enabled,
+        drumPatternLength: exercise.drum_pattern?.pattern?.length
+      });
+      
+      // Update widget state with the selected exercise
+      widgetState.setSelectedExercise(exercise);
+      
+      // Also emit to sync context for global synchronization
+      emitGlobalEvent('exercise:selected', { exerciseId, exercise });
+    }
+  }, [exercises, widgetState, emitGlobalEvent]);
 
   const handleDotClick = useCallback(
     (stringIndex: number, fret: number | 'open') => {
@@ -78,7 +135,7 @@ function YouTubeWidgetPageContent({
         if (newMap.has(key)) {
           newMap.delete(key);
         } else {
-          newMap.set(key, newMap.size + 1);
+          newMap.set(key, [newMap.size + 1]);
         }
         return newMap;
       });
@@ -90,10 +147,8 @@ function YouTubeWidgetPageContent({
     setSelectedDots(new Map());
   }, []);
 
-  const handleStringCountChange = useCallback((newCount: 4 | 5) => {
-    setStringCount(newCount);
-    // Clear selection when changing string count to avoid invalid selections
-    setSelectedDots(new Map());
+  const handleTiltAngleChange = useCallback((newTiltAngle: number) => {
+    setTiltAngle(newTiltAngle);
   }, []);
 
   // Extract specific values from syncState to prevent excessive re-renders
@@ -165,11 +220,31 @@ function YouTubeWidgetPageContent({
     }
   }, [syncMasterVolume, widgetState]);
 
+  // Initialize beat timing analyzer when playback starts
+  React.useEffect(() => {
+    // Use syncState.playback.isPlaying which comes from the actual transport
+    const isTransportPlaying = syncState.playback.isPlaying;
+    const currentTempo = widgetState.tempo || syncState.playback.tempo || 120;
+    
+    if (isTransportPlaying && currentTempo > 0) {
+      // Reset analyzer to clear old data
+      beatTimingAnalyzer.reset();
+      // Start fresh with current tempo
+      beatTimingAnalyzer.start(currentTempo);
+      console.log(`🎯 BeatTimingAnalyzer started with tempo ${currentTempo}`);
+    }
+  }, [syncState.playback.isPlaying, widgetState.tempo, syncState.playback.tempo]);
+
   React.useEffect(() => {
     // Debug: Log mount/unmount
     // console.log('🟢 YouTubeWidgetPageContent MOUNTED');
+    
+    // Don't start analyzer on mount - wait for playback to start
+    // This prevents drift calculations from page load time
+    
     return () => {
       // console.log('🔴 YouTubeWidgetPageContent UNMOUNTED');
+      // Keep analyzer data for debugging even after unmount
     };
   }, []);
 
@@ -199,22 +274,73 @@ function YouTubeWidgetPageContent({
             setStringCount3D={setStringCount}
             cameraMode={cameraMode}
             setCameraMode={setCameraMode}
+            maxFrets={maxFrets}
+            tiltAngle={tiltAngle}
+            onTiltAngleChange={handleTiltAngleChange}
             tutorialData={tutorialData}
             tutorialSlug={tutorialSlug}
             exercises={exercises}
             onExerciseSelect={handleExerciseSelect}
           />
 
+          {/* Transport Clock for monitoring */}
+          <TransportClock />
+          
           {/* 4. Global Playback Controls Card - Dedicated panel for global controls */}
-          <GlobalControlsCard />
+          <GlobalControlsCard
+            is3DMode={is3DMode}
+            tiltAngle={tiltAngle}
+            hasSelectedDots={selectedDots.size > 0}
+            cameraMode={cameraMode}
+            onToggle3DMode={() => setIs3DMode(!is3DMode)}
+            onTiltAngleChange={handleTiltAngleChange}
+            onCameraModeChange={setCameraMode}
+            onResetFretboard={handleResetSelection}
+            loopRegion={widgetState.loopRegion}
+            isLoopEnabled={widgetState.isLoopEnabled}
+          />
 
-          {/* 5. Four Widgets Card - 4 essential widgets */}
+          {/* Exercise Timeline Indicator */}
+          {widgetState.selectedExercise && (
+            <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
+              <ExerciseTimelineIndicator
+                className="w-full"
+                showDetails={true}
+              />
+            </div>
+          )}
+
+          {/* 5. Looper Card - Dedicated looper controls */}
+          <LooperCard
+            isLoopEnabled={widgetState.isLoopEnabled}
+            loopRegion={widgetState.loopRegion}
+            onLoopRegionChange={(region) => widgetState.setLoopRegion(region)}
+            onToggleLoop={() => widgetState.toggleLoopEnabled()}
+          />
+
+          {/* 6. Four Widgets Card - 4 essential widgets */}
           <FourWidgetsCard widgetState={widgetState} />
 
-          {/* 6. Teaching Takeaway Card - Lesson summaries */}
+          {/* 7. Teaching Takeaway Card - Lesson summaries */}
           <TeachingTakeawayCard tutorialData={tutorialData} />
+          
+          {/* Debug: Timing analysis toggle */}
+          <div className="text-center mt-4">
+            <button
+              onClick={() => setShowTimingDebug(!showTimingDebug)}
+              className="px-4 py-2 bg-slate-800 rounded-lg text-sm text-slate-200 hover:bg-slate-700 hover:text-white transition-colors border border-slate-600"
+            >
+              {showTimingDebug ? '🔴 Hide' : '🟢 Show'} Timing Debug
+            </button>
+          </div>
         </div>
       </div>
+      
+      {/* Timing Debug Window */}
+      <TimingDebugWindow 
+        isVisible={showTimingDebug} 
+        onClose={() => setShowTimingDebug(false)} 
+      />
     </div>
   );
 }
@@ -228,7 +354,7 @@ export function YouTubeWidgetPage({
   return (
     <SyncProvider
       debugMode={false} // Disable debug mode to reduce console noise
-      monitoringInterval={15000} // 15 seconds monitoring interval
+      monitoringInterval={1000} // 1 second - performance metrics don't need high frequency updates
       enableGlobalMonitoring={true}
     >
       <YouTubeWidgetPageContent

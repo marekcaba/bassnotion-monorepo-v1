@@ -9,7 +9,6 @@
 ## Instructions
 
 1.  **Input Analysis & Dialogue Establishment:**
-
     - Ensure you have all necessary inputs: PRD document (specifically checking for the 'Technical Assumptions' and 'Initial Architect Prompt' sections for the decided repository and service architecture), project brief, any deep research reports, and optionally a `technical-preferences.md`. Request any missing critical documents.
     - Thoroughly review all inputs.
     - Summarize key technical requirements, constraints, NFRs (Non-Functional Requirements), and the decided repository/service architecture derived from the inputs. Present this summary to the user for confirmation and to ensure mutual understanding.
@@ -22,7 +21,6 @@
       - Once the user chooses, confirm the selected mode (e.g., "Okay, we will proceed in Incremental mode."). This chosen mode will govern how subsequent steps in this task are executed.
 
 2.  **Resolve Ambiguities & Gather Missing Information:**
-
     - If key information is missing or requirements are unclear after initial review, formulate specific, targeted questions.
     - **External API Details:** If the project involves integration with external APIs, especially those that are less common or where you lack high confidence in your training data regarding their specific request/response schemas, and if a "Deep Research" phase was not conducted for these APIs:
       - Proactively ask the user to provide precise details. This includes:
@@ -34,7 +32,6 @@
     - Document all decisions and clarifications received before proceeding.
 
 3.  **Iterative Technology Selection & Design (Interactive, if not YOLO mode):**
-
     - For each major architectural component or decision point (e.g., frontend framework, backend language/framework, database system, cloud provider, key services, communication patterns):
       - If multiple viable options exist based on requirements or research, present 2-3 choices, briefly outlining their pros, cons, and relevance to the project. Consider any preferences stated in `technical-preferences.md` when formulating these options and your recommendation.
       - State your recommended choice, providing a clear rationale based on requirements, research findings, user preferences (if known), and best practices (e.g., scalability, cost, team familiarity, ecosystem).
@@ -43,9 +40,7 @@
     - **Starter Templates:** If applicable and requested, research and recommend suitable starter templates or assess existing codebases. Explain alignment with project goals and seek user confirmation.
 
 4.  **Create Technical Artifacts (Incrementally, unless YOLO mode, guided by `architecture-tmpl`):**
-
     - For each artifact or section of the main Architecture Document:
-
       - **Explain Purpose:** Briefly describe the artifact/section's importance and what it will cover.
       - **Draft Section-by-Section:** Present a draft of one logical section at a time.
         - Ensure the 'High-Level Overview' and 'Component View' sections accurately reflect and detail the repository/service architecture decided in the PRD.
@@ -58,7 +53,6 @@
         - **Seek Approval:** Obtain explicit user approval for the section before moving to the next, or for the entire artifact if drafted holistically (in YOLO mode).
 
 5.  **Identify Missing Technical Stories / Refine Epics (Interactive):**
-
     - Based on the designed architecture, identify any necessary technical stories/tasks that are not yet captured in the PRD or epics (e.g., "Set up CI/CD pipeline for frontend deployment," "Implement authentication module using JWT," "Create base Docker images for backend services," "Configure initial database schema based on data models").
     - Explain the importance of these technical stories for enabling the functional requirements and successful project execution.
     - Collaborate with the user to refine these stories (clear description, acceptance criteria) and suggest adding them to the project backlog or relevant epics.

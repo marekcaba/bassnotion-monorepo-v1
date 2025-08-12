@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test CORS Sampler Loading</title>
+    <script src="https://unpkg.com/tone@15.0.4/build/Tone.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e3f2fd;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎹 Test CORS Sampler Loading</h1>
+    
+    <button onclick="testCORSSampler()">Test Tone.js CDN Sampler</button>
+    <button onclick="testLocalSampler()">Test Local Sampler (if available)</button>
+    
+    <div id="status" class="status">Ready to test...</div>
+
+    <script>
+        async function testCORSSampler() {
+            const statusEl = document.getElementById('status');
+            statusEl.className = 'status';
+            statusEl.textContent = 'Testing Tone.js CDN loading...';
+            
+            try {
+                await Tone.start();
+                console.log('Tone.js started');
+                
+                const sampler = new Tone.Sampler({
+                    urls: {
+                        'C4': 'C4.mp3',
+                        'D#4': 'Ds4.mp3',
+                        'F#4': 'Fs4.mp3',
+                        'A4': 'A4.mp3'
+                    },
+                    baseUrl: 'https://tonejs.github.io/audio/salamander/',
+                    onload: () => {
+                        statusEl.className = 'status success';
+                        statusEl.textContent = '✅ Success! Sampler loaded from CDN. Try playing a note...';
+                        
+                        // Play a test note
+                        sampler.triggerAttackRelease('C4', '1n');
+                    },
+                    onerror: (error) => {
+                        statusEl.className = 'status error';
+                        statusEl.textContent = `❌ Error: ${error}`;
+                        console.error('Sampler error:', error);
+                    }
+                }).toDestination();
+                
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ Error: ${error.message}`;
+                console.error('Test failed:', error);
+            }
+        }
+        
+        async function testLocalSampler() {
+            const statusEl = document.getElementById('status');
+            statusEl.className = 'status';
+            statusEl.textContent = 'Testing local sampler (would need local files)...';
+            
+            // This would test loading from local files if we had them
+            statusEl.className = 'status';
+            statusEl.textContent = 'Local sampler test not implemented - would need local sample files';
+        }
+        
+        // Test fetch directly
+        fetch('https://tonejs.github.io/audio/salamander/C4.mp3')
+            .then(response => {
+                console.log('Direct fetch test:', response.ok ? 'OK' : 'Failed');
+                console.log('Headers:', response.headers);
+            })
+            .catch(error => {
+                console.error('Direct fetch failed:', error);
+            });
+    </script>
+</body>
+</html>

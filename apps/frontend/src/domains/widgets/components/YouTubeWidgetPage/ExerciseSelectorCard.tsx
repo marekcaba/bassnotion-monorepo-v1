@@ -14,7 +14,7 @@ import {
   Music,
   CheckCircle,
   Loader2,
-  FileMusic,
+  FileText,
   Download,
 } from 'lucide-react';
 import { useExerciseSelection } from '../../hooks/useExerciseSelection';
@@ -343,7 +343,7 @@ function ExerciseSelectorCardContent({
                           </div>
                           {exercise.midi_file_path && (
                             <div className="flex items-center gap-1">
-                              <FileMusic className="w-3 h-3 text-blue-400" />
+                              <FileText className="w-3 h-3 text-blue-400" />
                               <span className="text-blue-400">MIDI</span>
                             </div>
                           )}

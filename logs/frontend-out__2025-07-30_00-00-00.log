@@ -1,0 +1,247 @@
+2025-07-29 00:54:11 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-07-29 00:54:12 +02:00: [Audio Migration] Using legacy ToneProvider {
+2025-07-29 00:54:12 +02:00:   reason: [32m'feature flags disabled'[39m,
+2025-07-29 00:54:12 +02:00:   flags: {
+2025-07-29 00:54:12 +02:00:     USE_NEW_AUDIO_ENGINE: [33mfalse[39m,
+2025-07-29 00:54:12 +02:00:     USE_NEW_DEPENDENCY_INJECTION: [33mfalse[39m,
+2025-07-29 00:54:12 +02:00:     ROLLBACK_TO_OLD_SYSTEM: [33mfalse[39m,
+2025-07-29 00:54:12 +02:00:     ENABLE_MIGRATION_MONITORING: [33mtrue[39m,
+2025-07-29 00:54:12 +02:00:     ROLLOUT_PERCENTAGE: [33m0[39m
+2025-07-29 00:54:12 +02:00:   },
+2025-07-29 00:54:12 +02:00:   timestamp: [32m'2025-07-28T22:54:12.465Z'[39m
+2025-07-29 00:54:12 +02:00: }
+2025-07-29 00:54:12 +02:00:  GET /test-transport [32m200[39m in 1550ms
+2025-07-29 00:54:13 +02:00: [Audio Migration] Using legacy ToneProvider {
+2025-07-29 00:54:13 +02:00:   reason: [32m'feature flags disabled'[39m,
+2025-07-29 00:54:13 +02:00:   flags: {
+2025-07-29 00:54:13 +02:00:     USE_NEW_AUDIO_ENGINE: [33mfalse[39m,
+2025-07-29 00:54:13 +02:00:     USE_NEW_DEPENDENCY_INJECTION: [33mfalse[39m,
+2025-07-29 00:54:13 +02:00:     ROLLBACK_TO_OLD_SYSTEM: [33mfalse[39m,
+2025-07-29 00:54:13 +02:00:     ENABLE_MIGRATION_MONITORING: [33mtrue[39m,
+2025-07-29 00:54:13 +02:00:     ROLLOUT_PERCENTAGE: [33m0[39m
+2025-07-29 00:54:13 +02:00:   },
+2025-07-29 00:54:13 +02:00:   timestamp: [32m'2025-07-28T22:54:13.146Z'[39m
+2025-07-29 00:54:13 +02:00: }
+2025-07-29 00:54:13 +02:00: [Audio Migration] Using legacy ToneProvider {
+2025-07-29 00:54:13 +02:00:   reason: [32m'feature flags disabled'[39m,
+2025-07-29 00:54:13 +02:00:   flags: {
+2025-07-29 00:54:13 +02:00:     USE_NEW_AUDIO_ENGINE: [33mfalse[39m,
+2025-07-29 00:54:13 +02:00:     USE_NEW_DEPENDENCY_INJECTION: [33mfalse[39m,
+2025-07-29 00:54:13 +02:00:     ROLLBACK_TO_OLD_SYSTEM: [33mfalse[39m,
+2025-07-29 00:54:13 +02:00:     ENABLE_MIGRATION_MONITORING: [33mtrue[39m,
+2025-07-29 00:54:13 +02:00:     ROLLOUT_PERCENTAGE: [33m0[39m
+2025-07-29 00:54:13 +02:00:   },
+2025-07-29 00:54:13 +02:00:   timestamp: [32m'2025-07-28T22:54:13.246Z'[39m
+2025-07-29 00:54:13 +02:00: }
+2025-07-29 00:54:13 +02:00: [Audio Migration] Using legacy ToneProvider {
+2025-07-29 00:54:13 +02:00:   reason: [32m'feature flags disabled'[39m,
+2025-07-29 00:54:13 +02:00:   flags: {
+2025-07-29 00:54:13 +02:00:     USE_NEW_AUDIO_ENGINE: [33mfalse[39m,
+2025-07-29 00:54:13 +02:00:     USE_NEW_DEPENDENCY_INJECTION: [33mfalse[39m,
+2025-07-29 00:54:13 +02:00:     ROLLBACK_TO_OLD_SYSTEM: [33mfalse[39m,
+2025-07-29 00:54:13 +02:00:     ENABLE_MIGRATION_MONITORING: [33mtrue[39m,
+2025-07-29 00:54:13 +02:00:     ROLLOUT_PERCENTAGE: [33m0[39m
+2025-07-29 00:54:13 +02:00:   },
+2025-07-29 00:54:13 +02:00:   timestamp: [32m'2025-07-28T22:54:13.266Z'[39m
+2025-07-29 00:54:13 +02:00: }
+2025-07-29 00:54:13 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 689ms
+2025-07-29 00:54:13 +02:00: [Audio Migration] Using legacy ToneProvider {
+2025-07-29 00:54:13 +02:00:   reason: [32m'feature flags disabled'[39m,
+2025-07-29 00:54:13 +02:00:   flags: {
+2025-07-29 00:54:13 +02:00:     USE_NEW_AUDIO_ENGINE: [33mfalse[39m,
+2025-07-29 00:54:13 +02:00:     USE_NEW_DEPENDENCY_INJECTION: [33mfalse[39m,
+2025-07-29 00:54:13 +02:00:     ROLLBACK_TO_OLD_SYSTEM: [33mfalse[39m,
+2025-07-29 00:54:13 +02:00:     ENABLE_MIGRATION_MONITORING: [33mtrue[39m,
+2025-07-29 00:54:13 +02:00:     ROLLOUT_PERCENTAGE: [33m0[39m
+2025-07-29 00:54:13 +02:00:   },
+2025-07-29 00:54:13 +02:00:   timestamp: [32m'2025-07-28T22:54:13.323Z'[39m
+2025-07-29 00:54:13 +02:00: }
+2025-07-29 00:54:13 +02:00:  GET /_next/static/chunks/app-pages-internals.js [33m404[39m in 350ms
+2025-07-29 00:54:13 +02:00:  GET /_next/static/chunks/main-app.js?v=1753743252179 [33m404[39m in 354ms
+2025-07-29 00:54:13 +02:00:  GET /_next/static/chunks/app/error.js [33m404[39m in 342ms
+2025-07-29 01:51:21 +02:00:  GET /library/come-together [31m500[39m in 11756ms
+2025-07-29 01:51:21 +02:00:  GET / [31m500[39m in 2060ms
+2025-07-29 01:51:21 +02:00:  GET /library/come-together [31m500[39m in 8ms
+2025-07-29 01:51:22 +02:00:  GET /test-transport [31m500[39m in 591ms
+2025-07-29 01:52:24 +02:00:  GET /test-transport [31m500[39m in 38ms
+2025-07-29 02:06:38 +02:00:  GET /test-transport [31m500[39m in 1757ms
+2025-07-29 02:16:24 +02:00:  GET /test-transport [31m500[39m in 66ms
+2025-07-29 02:16:38 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [31m500[39m in 15ms
+2025-07-29 02:21:22 +02:00:  GET /test-transport [31m500[39m in 1541ms
+2025-07-29 02:21:22 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [31m500[39m in 16ms
+2025-07-29 10:19:06 +02:00:  GET /test-transport [31m500[39m in 837ms
+2025-07-29 10:19:07 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [31m500[39m in 434ms
+2025-07-29 10:19:07 +02:00:  GET /_next/static/chunks/fallback/webpack.js [31m500[39m in 425ms
+2025-07-29 10:19:07 +02:00:  GET /_next/static/chunks/fallback/react-refresh.js [31m500[39m in 418ms
+2025-07-29 10:19:07 +02:00:  GET /_next/static/chunks/fallback/main.js [31m500[39m in 417ms
+2025-07-29 10:19:07 +02:00:  GET /_next/static/chunks/fallback/pages/_app.js [31m500[39m in 168ms
+2025-07-29 10:19:07 +02:00:  GET /_next/static/chunks/fallback/pages/_error.js [31m500[39m in 167ms
+2025-07-29 10:24:14 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 850ms (2734 modules)
+2025-07-29 10:24:45 +02:00:  [32m[1m✓[22m[39m Compiled in 347ms (2720 modules)
+2025-07-29 10:25:25 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-07-29 10:25:27 +02:00:  [32m[1m✓[22m[39m Compiled /test-transport in 1812ms (1921 modules)
+2025-07-29 10:25:27 +02:00:  GET /test-transport [31m500[39m in 2562ms
+2025-07-29 10:25:28 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 308ms (1922 modules)
+2025-07-29 10:25:30 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [31m500[39m in 2973ms
+2025-07-29 10:25:30 +02:00:  GET /_next/static/chunks/fallback/webpack.js [31m500[39m in 2972ms
+2025-07-29 10:25:30 +02:00:  GET /_next/static/chunks/fallback/react-refresh.js [31m500[39m in 2970ms
+2025-07-29 10:25:30 +02:00:  GET /_next/static/chunks/fallback/main.js [31m500[39m in 2790ms
+2025-07-29 10:25:30 +02:00:  GET /_next/static/chunks/fallback/pages/_app.js [31m500[39m in 2790ms
+2025-07-29 10:25:30 +02:00:  GET /_next/static/chunks/fallback/pages/_error.js [31m500[39m in 2706ms
+2025-07-29 10:26:50 +02:00: 
+2025-07-29 10:26:50 +02:00: > nx run @bassnotion/frontend:serve
+2025-07-29 10:26:50 +02:00: 
+2025-07-29 10:26:51 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-07-29 10:26:51 +02:00:    - Local:        http://localhost:3001
+2025-07-29 10:26:51 +02:00:    - Network:      http://10.0.0.6:3001
+2025-07-29 10:26:51 +02:00:    - Environments: .env.local, .env
+2025-07-29 10:26:51 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-07-29 10:26:53 +02:00:  [32m[1m✓[22m[39m Ready in 1696ms
+2025-07-29 10:29:19 +02:00:  [37m[1m○[22m[39m Compiling / ...
+2025-07-29 10:29:28 +02:00:  [32m[1m✓[22m[39m Compiled / in 9s (3402 modules)
+2025-07-29 10:29:28 +02:00: [Audio Migration] Using legacy ToneProvider {
+2025-07-29 10:29:28 +02:00:   reason: [32m'feature flags disabled'[39m,
+2025-07-29 10:29:28 +02:00:   flags: {
+2025-07-29 10:29:28 +02:00:     USE_NEW_AUDIO_ENGINE: [33mfalse[39m,
+2025-07-29 10:29:28 +02:00:     USE_NEW_DEPENDENCY_INJECTION: [33mfalse[39m,
+2025-07-29 10:29:28 +02:00:     ROLLBACK_TO_OLD_SYSTEM: [33mfalse[39m,
+2025-07-29 10:29:28 +02:00:     ENABLE_MIGRATION_MONITORING: [33mtrue[39m,
+2025-07-29 10:29:28 +02:00:     ROLLOUT_PERCENTAGE: [33m0[39m
+2025-07-29 10:29:28 +02:00:   },
+2025-07-29 10:29:28 +02:00:   timestamp: [32m'2025-07-29T08:29:28.554Z'[39m
+2025-07-29 10:29:28 +02:00: }
+2025-07-29 10:29:28 +02:00:  GET / [32m200[39m in 9394ms
+2025-07-29 10:29:28 +02:00:  [32m[1m✓[22m[39m Compiled in 639ms (1647 modules)
+2025-07-29 10:30:37 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-07-29 10:30:38 +02:00:  [32m[1m✓[22m[39m Compiled /test-transport in 1577ms (3507 modules)
+2025-07-29 10:30:38 +02:00: [Audio Migration] Using legacy ToneProvider {
+2025-07-29 10:30:38 +02:00:   reason: [32m'feature flags disabled'[39m,
+2025-07-29 10:30:38 +02:00:   flags: {
+2025-07-29 10:30:38 +02:00:     USE_NEW_AUDIO_ENGINE: [33mfalse[39m,
+2025-07-29 10:30:38 +02:00:     USE_NEW_DEPENDENCY_INJECTION: [33mfalse[39m,
+2025-07-29 10:30:38 +02:00:     ROLLBACK_TO_OLD_SYSTEM: [33mfalse[39m,
+2025-07-29 10:30:38 +02:00:     ENABLE_MIGRATION_MONITORING: [33mtrue[39m,
+2025-07-29 10:30:38 +02:00:     ROLLOUT_PERCENTAGE: [33m0[39m
+2025-07-29 10:30:38 +02:00:   },
+2025-07-29 10:30:38 +02:00:   timestamp: [32m'2025-07-29T08:30:38.863Z'[39m
+2025-07-29 10:30:38 +02:00: }
+2025-07-29 10:30:38 +02:00:  GET /test-transport [32m200[39m in 1892ms
+2025-07-29 10:30:39 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 439ms (3508 modules)
+2025-07-29 10:30:39 +02:00: [Audio Migration] Using legacy ToneProvider {
+2025-07-29 10:30:39 +02:00:   reason: [32m'feature flags disabled'[39m,
+2025-07-29 10:30:39 +02:00:   flags: {
+2025-07-29 10:30:39 +02:00:     USE_NEW_AUDIO_ENGINE: [33mfalse[39m,
+2025-07-29 10:30:39 +02:00:     USE_NEW_DEPENDENCY_INJECTION: [33mfalse[39m,
+2025-07-29 10:30:39 +02:00:     ROLLBACK_TO_OLD_SYSTEM: [33mfalse[39m,
+2025-07-29 10:30:39 +02:00:     ENABLE_MIGRATION_MONITORING: [33mtrue[39m,
+2025-07-29 10:30:39 +02:00:     ROLLOUT_PERCENTAGE: [33m0[39m
+2025-07-29 10:30:39 +02:00:   },
+2025-07-29 10:30:39 +02:00:   timestamp: [32m'2025-07-29T08:30:39.481Z'[39m
+2025-07-29 10:30:39 +02:00: }
+2025-07-29 10:30:39 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 592ms
+2025-07-29 10:31:55 +02:00:  [32m[1m✓[22m[39m Compiled in 1496ms (3521 modules)
+2025-07-29 10:31:55 +02:00:  GET /test-transport [32m200[39m in 124ms
+2025-07-29 10:32:35 +02:00:  GET /test-transport [32m200[39m in 115ms
+2025-07-29 10:32:51 +02:00:  GET /test-transport [32m200[39m in 101ms
+2025-07-29 10:33:10 +02:00:  GET /test-transport [32m200[39m in 71ms
+2025-07-29 10:33:29 +02:00: [Audio Migration] Using legacy ToneProvider {
+2025-07-29 10:33:29 +02:00:   reason: [32m'feature flags disabled'[39m,
+2025-07-29 10:33:29 +02:00:   flags: {
+2025-07-29 10:33:29 +02:00:     USE_NEW_AUDIO_ENGINE: [33mfalse[39m,
+2025-07-29 10:33:29 +02:00:     USE_NEW_DEPENDENCY_INJECTION: [33mfalse[39m,
+2025-07-29 10:33:29 +02:00:     ROLLBACK_TO_OLD_SYSTEM: [33mfalse[39m,
+2025-07-29 10:33:29 +02:00:     ENABLE_MIGRATION_MONITORING: [33mtrue[39m,
+2025-07-29 10:33:29 +02:00:     ROLLOUT_PERCENTAGE: [33m0[39m
+2025-07-29 10:33:29 +02:00:   },
+2025-07-29 10:33:29 +02:00:   timestamp: [32m'2025-07-29T08:33:29.025Z'[39m
+2025-07-29 10:33:29 +02:00: }
+2025-07-29 10:33:29 +02:00:  GET /test-transport [32m200[39m in 267ms
+2025-07-29 10:45:34 +02:00: [Audio Migration] Using legacy ToneProvider {
+2025-07-29 10:45:34 +02:00:   reason: [32m'feature flags disabled'[39m,
+2025-07-29 10:45:34 +02:00:   flags: {
+2025-07-29 10:45:34 +02:00:     USE_NEW_AUDIO_ENGINE: [33mfalse[39m,
+2025-07-29 10:45:34 +02:00:     USE_NEW_DEPENDENCY_INJECTION: [33mfalse[39m,
+2025-07-29 10:45:34 +02:00:     ROLLBACK_TO_OLD_SYSTEM: [33mfalse[39m,
+2025-07-29 10:45:34 +02:00:     ENABLE_MIGRATION_MONITORING: [33mtrue[39m,
+2025-07-29 10:45:34 +02:00:     ROLLOUT_PERCENTAGE: [33m0[39m
+2025-07-29 10:45:34 +02:00:   },
+2025-07-29 10:45:34 +02:00:   timestamp: [32m'2025-07-29T08:45:34.259Z'[39m
+2025-07-29 10:45:34 +02:00: }
+2025-07-29 10:45:34 +02:00:  GET /test-transport [32m200[39m in 134ms
+2025-07-29 10:45:34 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-29 10:45:36 +02:00: [Audio Migration] Using legacy ToneProvider {
+2025-07-29 10:45:36 +02:00:   reason: [32m'feature flags disabled'[39m,
+2025-07-29 10:45:36 +02:00:   flags: {
+2025-07-29 10:45:36 +02:00:     USE_NEW_AUDIO_ENGINE: [33mfalse[39m,
+2025-07-29 10:45:36 +02:00:     USE_NEW_DEPENDENCY_INJECTION: [33mfalse[39m,
+2025-07-29 10:45:36 +02:00:     ROLLBACK_TO_OLD_SYSTEM: [33mfalse[39m,
+2025-07-29 10:45:36 +02:00:     ENABLE_MIGRATION_MONITORING: [33mtrue[39m,
+2025-07-29 10:45:36 +02:00:     ROLLOUT_PERCENTAGE: [33m0[39m
+2025-07-29 10:45:36 +02:00:   },
+2025-07-29 10:45:36 +02:00:   timestamp: [32m'2025-07-29T08:45:36.086Z'[39m
+2025-07-29 10:45:36 +02:00: }
+2025-07-29 10:45:36 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1765ms
+2025-07-29 10:46:25 +02:00:  GET /test-transport [32m200[39m in 87ms
+2025-07-29 10:46:39 +02:00:  GET /test-transport [32m200[39m in 107ms
+2025-07-29 10:46:52 +02:00:  GET /test-transport [32m200[39m in 84ms
+2025-07-29 10:47:22 +02:00: [Audio Migration] Using legacy ToneProvider {
+2025-07-29 10:47:22 +02:00:   reason: [32m'feature flags disabled'[39m,
+2025-07-29 10:47:22 +02:00:   flags: {
+2025-07-29 10:47:22 +02:00:     USE_NEW_AUDIO_ENGINE: [33mfalse[39m,
+2025-07-29 10:47:22 +02:00:     USE_NEW_DEPENDENCY_INJECTION: [33mfalse[39m,
+2025-07-29 10:47:22 +02:00:     ROLLBACK_TO_OLD_SYSTEM: [33mfalse[39m,
+2025-07-29 10:47:22 +02:00:     ENABLE_MIGRATION_MONITORING: [33mtrue[39m,
+2025-07-29 10:47:22 +02:00:     ROLLOUT_PERCENTAGE: [33m0[39m
+2025-07-29 10:47:22 +02:00:   },
+2025-07-29 10:47:22 +02:00:   timestamp: [32m'2025-07-29T08:47:22.040Z'[39m
+2025-07-29 10:47:22 +02:00: }
+2025-07-29 10:47:22 +02:00:  GET /test-transport [32m200[39m in 313ms
+2025-07-29 10:47:22 +02:00: [Audio Migration] Using legacy ToneProvider {
+2025-07-29 10:47:22 +02:00:   reason: [32m'feature flags disabled'[39m,
+2025-07-29 10:47:22 +02:00:   flags: {
+2025-07-29 10:47:22 +02:00:     USE_NEW_AUDIO_ENGINE: [33mfalse[39m,
+2025-07-29 10:47:22 +02:00:     USE_NEW_DEPENDENCY_INJECTION: [33mfalse[39m,
+2025-07-29 10:47:22 +02:00:     ROLLBACK_TO_OLD_SYSTEM: [33mfalse[39m,
+2025-07-29 10:47:22 +02:00:     ENABLE_MIGRATION_MONITORING: [33mtrue[39m,
+2025-07-29 10:47:22 +02:00:     ROLLOUT_PERCENTAGE: [33m0[39m
+2025-07-29 10:47:22 +02:00:   },
+2025-07-29 10:47:22 +02:00:   timestamp: [32m'2025-07-29T08:47:22.542Z'[39m
+2025-07-29 10:47:22 +02:00: }
+2025-07-29 10:47:22 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 400ms
+2025-07-29 10:52:15 +02:00:  GET /test-transport [32m200[39m in 94ms
+2025-07-29 10:53:17 +02:00:  GET /test-transport [32m200[39m in 120ms
+2025-07-29 10:53:18 +02:00:  GET /test-transport [32m200[39m in 319ms
+2025-07-29 10:53:18 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 524ms
+2025-07-29 10:53:40 +02:00: 
+2025-07-29 10:53:40 +02:00: > nx run @bassnotion/frontend:serve
+2025-07-29 10:53:40 +02:00: 
+2025-07-29 10:53:41 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-07-29 10:53:41 +02:00:    - Local:        http://localhost:3001
+2025-07-29 10:53:41 +02:00:    - Network:      http://172.20.10.11:3001
+2025-07-29 10:53:41 +02:00:    - Environments: .env.local, .env
+2025-07-29 10:53:41 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-07-29 10:53:42 +02:00:  [32m[1m✓[22m[39m Ready in 1925ms
+2025-07-29 11:00:31 +02:00:  [37m[1m○[22m[39m Compiling /test-transport ...
+2025-07-29 11:00:38 +02:00:  GET /test-transport [32m200[39m in 6980ms
+2025-07-29 11:00:41 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 3072ms
+2025-07-29 11:03:20 +02:00:  GET /test-transport [32m200[39m in 197ms
+2025-07-29 11:03:20 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 35ms
+2025-07-29 11:03:27 +02:00:  GET /test-transport [32m200[39m in 15ms
+2025-07-29 11:03:38 +02:00:  GET /test-transport [32m200[39m in 16ms
+2025-07-29 11:03:59 +02:00:  GET /test-transport [32m200[39m in 30ms
+2025-07-29 11:04:23 +02:00:  GET /test-transport [32m200[39m in 13ms
+2025-07-29 11:06:17 +02:00:  GET /test-transport [32m200[39m in 11ms
+2025-07-29 11:07:36 +02:00:  GET /test-transport [32m200[39m in 11ms
+2025-07-29 11:09:01 +02:00:  GET /test-transport [32m200[39m in 13ms
+2025-07-29 11:09:15 +02:00:  GET /test-transport [32m200[39m in 11ms
+2025-07-29 11:09:27 +02:00:  GET /test-transport [32m200[39m in 12ms
+2025-07-29 11:10:46 +02:00:  GET /test-transport [32m200[39m in 14ms
+2025-07-29 11:11:16 +02:00:  GET /test-transport [32m200[39m in 12ms
+2025-07-29 11:11:24 +02:00:  GET /test-transport [32m200[39m in 11ms
+2025-07-29 11:12:47 +02:00:  GET /test-transport [32m200[39m in 11ms
+2025-07-29 21:56:59 +02:00: 
+2025-07-29 21:56:59 +02:00:  NX   Daemon process terminated and closed the connection
+2025-07-29 21:56:59 +02:00: 
+2025-07-29 21:56:59 +02:00: Please rerun the command, which will restart the daemon.
+2025-07-29 21:56:59 +02:00: If you get this error again, check for any errors in the daemon process logs found in: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/.nx/workspace-data/d/daemon.log
+2025-07-29 21:56:59 +02:00: 

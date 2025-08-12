@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import MetadataAnalyzer from '../MetadataAnalyzer.js';
+import MetadataAnalyzer from '../MetadataAnalyzer';
 
 // Mock Web Audio API
 const mockAudioContext = {

@@ -7,7 +7,7 @@
  * Part of Story 2.1: Task 1, Subtask 1.3
  */
 
-import { ErrorCategory, ErrorSeverity, ErrorContext } from './base.js';
+import { ErrorCategory, ErrorSeverity, ErrorContext } from './base';
 
 export class ErrorClassifier {
   /**

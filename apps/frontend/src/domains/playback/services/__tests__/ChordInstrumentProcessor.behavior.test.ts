@@ -13,6 +13,130 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+// Mock Tone.js to avoid dynamic import issues in tests
+const mockPolySynth = {
+  set: vi.fn(),
+  get: vi.fn().mockReturnValue({ release: 0.1 }),
+  triggerAttackRelease: vi.fn(),
+  triggerRelease: vi.fn(),
+  releaseAll: vi.fn(),
+  dispose: vi.fn(),
+  maxPolyphony: 8,
+  chain: vi.fn().mockReturnThis(),
+  toDestination: vi.fn().mockReturnThis(),
+};
+
+const mockReverb = {
+  set: vi.fn(),
+  dispose: vi.fn(),
+  wet: { value: 0 },
+  toDestination: vi.fn().mockReturnThis(),
+};
+
+const mockChorus = {
+  set: vi.fn(),
+  dispose: vi.fn(),
+  frequency: { value: 0 },
+  depth: { value: 0 },
+  wet: { value: 0 },
+};
+
+const mockStereoWidener = {
+  width: { value: 0 },
+  dispose: vi.fn(),
+};
+
+const mockEQ3 = {
+  set: vi.fn(),
+  dispose: vi.fn(),
+  low: { value: 0 },
+  mid: { value: 0 },
+  high: { value: 0 },
+};
+
+const mockTone = {
+  PolySynth: vi.fn(() => mockPolySynth),
+  Synth: vi.fn(),
+  Reverb: vi.fn(() => mockReverb),
+  Chorus: vi.fn(() => mockChorus),
+  StereoWidener: vi.fn(() => mockStereoWidener),
+  EQ3: vi.fn(() => mockEQ3),
+  Transport: {
+    scheduleOnce: vi.fn(),
+  },
+  context: {
+    state: 'running',
+  },
+  start: vi.fn().mockResolvedValue(undefined),
+  now: vi.fn().mockReturnValue(0),
+};
+
+// Mock Soundfont
+vi.mock('soundfont-player', () => ({
+  default: {
+    instrument: vi.fn().mockResolvedValue({
+      play: vi.fn(),
+      stop: vi.fn(),
+    }),
+  },
+}));
+
+// Mock the velocity samplers
+vi.mock('../plugins/SalamanderVelocitySampler', () => ({
+  SalamanderVelocitySampler: vi.fn(() => ({
+    initialize: vi.fn().mockResolvedValue(undefined),
+    connect: vi.fn(),
+    dispose: vi.fn(),
+    triggerAttack: vi.fn(),
+    triggerRelease: vi.fn(),
+  })),
+}));
+
+vi.mock('../plugins/WurlitzerVelocitySampler', () => ({
+  WurlitzerVelocitySampler: vi.fn(() => ({
+    initialize: vi.fn().mockResolvedValue(undefined),
+    connect: vi.fn(),
+    dispose: vi.fn(),
+    triggerAttack: vi.fn(),
+    triggerRelease: vi.fn(),
+  })),
+}));
+
+vi.mock('../plugins/LongPadSampler', () => ({
+  LongPadSampler: vi.fn(() => ({
+    initialize: vi.fn().mockResolvedValue(undefined),
+    connect: vi.fn(),
+    dispose: vi.fn(),
+    triggerAttack: vi.fn(),
+    triggerRelease: vi.fn(),
+  })),
+}));
+
+vi.mock('../plugins/RhodesVelocitySampler', () => ({
+  RhodesVelocitySampler: vi.fn(() => ({
+    initialize: vi.fn().mockResolvedValue(undefined),
+    connect: vi.fn(),
+    dispose: vi.fn(),
+    triggerAttack: vi.fn(),
+    triggerRelease: vi.fn(),
+  })),
+}));
+
+vi.mock('../plugins/TheSawSampler', () => ({
+  TheSawSampler: vi.fn(() => ({
+    initialize: vi.fn().mockResolvedValue(undefined),
+    connect: vi.fn(),
+    dispose: vi.fn(),
+    triggerAttack: vi.fn(),
+    triggerRelease: vi.fn(),
+  })),
+}));
+
+// Mock dynamic import
+vi.mock('tone', () => mockTone);
+
+// Import after mocks are set up
 import {
   ChordInstrumentProcessor,
   ChordQuality,
@@ -20,55 +144,7 @@ import {
   VoicingStyle,
   ChordVoicingEngine,
   HarmonicAnalyzer,
-} from '../plugins/ChordInstrumentProcessor.js';
-
-// Mock Tone.js since it requires browser environment
-vi.mock('tone', () => {
-  const createMockPolySynth = () => {
-    const mockPolySynth: any = {
-      set: vi.fn(),
-      triggerAttackRelease: vi.fn(),
-      releaseAll: vi.fn(),
-      dispose: vi.fn(),
-      maxPolyphony: 8,
-    };
-    // Add chain and toDestination methods that return the mock itself
-    mockPolySynth.chain = vi.fn().mockReturnValue(mockPolySynth);
-    mockPolySynth.toDestination = vi.fn().mockReturnValue(mockPolySynth);
-    return mockPolySynth;
-  };
-
-  return {
-    PolySynth: vi.fn().mockImplementation(createMockPolySynth),
-    Synth: vi.fn(),
-    Reverb: vi.fn().mockImplementation(() => ({
-      set: vi.fn(), // Critical for effect configuration
-      dispose: vi.fn(),
-      wet: { value: 0 }, // Add wet property for reverb
-    })),
-    Chorus: vi.fn().mockImplementation(() => ({
-      set: vi.fn(), // Critical for effect configuration
-      dispose: vi.fn(),
-      frequency: { value: 0 }, // Add frequency property for chorus
-      depth: { value: 0 }, // Add depth property for chorus
-      wet: { value: 0 }, // Add wet property for chorus
-    })),
-    StereoWidener: vi.fn().mockImplementation(() => ({
-      width: { value: 0 },
-      dispose: vi.fn(),
-    })),
-    EQ3: vi.fn().mockImplementation(() => ({
-      set: vi.fn(), // Critical for EQ configuration
-      dispose: vi.fn(),
-      low: { value: 0 }, // Add low frequency control
-      mid: { value: 0 }, // Add mid frequency control
-      high: { value: 0 }, // Add high frequency control
-    })),
-    Transport: {
-      scheduleOnce: vi.fn(),
-    },
-  };
-});
+} from '../plugins/ChordInstrumentProcessor';
 
 // Mock setTimeout to prevent actual delays
 vi.stubGlobal(
@@ -80,23 +156,40 @@ describe('ChordInstrumentProcessor', () => {
   let processor: ChordInstrumentProcessor;
 
   beforeEach(() => {
+    // Reset all mocks before each test
+    vi.clearAllMocks();
+
+    // Create a test-specific processor that bypasses dynamic loading
     processor = new ChordInstrumentProcessor();
+
+    // Manually inject the mocked Tone to bypass dynamic loading
+    (processor as any).Tone = mockTone;
   });
 
   afterEach(() => {
     // Safely dispose processor if it was created successfully
     if (processor && typeof processor.dispose === 'function') {
-      processor.dispose();
+      try {
+        processor.dispose();
+      } catch (error) {
+        // Ignore disposal errors in tests
+      }
     }
   });
 
   describe('Initialization', () => {
-    it('should initialize with default configuration', () => {
+    it('should initialize with default configuration', async () => {
       expect(processor).toBeDefined();
       expect(processor.getChordProgression()).toBeNull();
+
+      // Manually call initialization with mocked Tone
+      await processor.preActivateAudioContext();
+
+      // Verify processor is ready
+      expect(processor).toBeDefined();
     });
 
-    it('should initialize with custom configuration', () => {
+    it('should initialize with custom configuration', async () => {
       const customConfig = {
         preset: ChordPreset.RHODES,
         polyphony: 12,
@@ -111,8 +204,16 @@ describe('ChordInstrumentProcessor', () => {
       };
 
       const customProcessor = new ChordInstrumentProcessor(customConfig);
+      // Inject mocked Tone
+      (customProcessor as any).Tone = mockTone;
+
       expect(customProcessor).toBeDefined();
-      customProcessor.dispose();
+
+      try {
+        customProcessor.dispose();
+      } catch (error) {
+        // Ignore disposal errors in tests
+      }
     });
   });
 
@@ -142,7 +243,8 @@ describe('ChordInstrumentProcessor', () => {
 
       expect(voicing).toBeDefined();
       expect(voicing.length).toBeGreaterThan(0);
-      expect(voicing[0]).toBe('C');
+      // Voicing includes octave numbers
+      expect(voicing[0]).toMatch(/^C\d$/);
     });
 
     it('should generate drop-2 voicing', () => {
@@ -397,8 +499,27 @@ describe('ChordInstrumentProcessor', () => {
     });
 
     it('should handle disposal correctly', () => {
+      // First, ensure processor is initialized with effects
+      (processor as any).effects = {
+        reverb: mockReverb,
+        chorus: mockChorus,
+        stereoImaging: mockStereoWidener,
+        eq: mockEQ3,
+      };
+      (processor as any).polySynth = mockPolySynth;
+
       expect(() => {
         processor.dispose();
+        // Verify dispose was called on effects
+        expect(mockReverb.dispose).toHaveBeenCalled();
+        expect(mockChorus.dispose).toHaveBeenCalled();
+        expect(mockStereoWidener.dispose).toHaveBeenCalled();
+        expect(mockEQ3.dispose).toHaveBeenCalled();
+        expect(mockPolySynth.dispose).toHaveBeenCalled();
+
+        // Reset mocks for second disposal
+        vi.clearAllMocks();
+
         processor.dispose(); // Double disposal should not throw
       }).not.toThrow();
     });

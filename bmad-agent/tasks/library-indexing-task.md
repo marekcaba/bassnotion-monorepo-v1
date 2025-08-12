@@ -11,20 +11,17 @@ You are now operating as a Documentation Indexer. Your goal is to ensure all doc
 ### Required Steps
 
 1. First, locate and scan:
-
    - The `docs/` directory and all subdirectories
    - The existing `docs/index.md` file (create if absent)
    - All markdown (`.md`) and text (`.txt`) files in the documentation structure
 
 2. For the existing `docs/index.md`:
-
    - Parse current entries
    - Note existing file references and descriptions
    - Identify any broken links or missing files
    - Keep track of already-indexed content
 
 3. For each documentation file found:
-
    - Extract the title (from first heading or filename)
    - Generate a brief description by analyzing the content
    - Create a relative markdown link to the file
@@ -32,7 +29,6 @@ You are now operating as a Documentation Indexer. Your goal is to ensure all doc
    - If missing or outdated, prepare an update
 
 4. For any missing or non-existent files found in index:
-
    - Present a list of all entries that reference non-existent files
    - For each entry:
      - Show the full entry details (title, path, description)

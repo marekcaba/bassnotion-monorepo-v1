@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    // Enable experimental features if needed
+    // Enable experimental features for better performance
+    optimizePackageImports: ['tone'],
   },
   // Configure path mapping for the monorepo structure
   transpilePackages: [],
@@ -22,6 +23,47 @@ const nextConfig = {
 
   // Security: Remove X-Powered-By header
   poweredByHeader: false,
+
+  // Webpack configuration for ESM module resolution and optimization
+  webpack: (config, { isServer }) => {
+    // Handle .js extensions for TypeScript files
+    config.resolve.extensionAlias = {
+      '.js': ['.ts', '.tsx', '.js', '.jsx'],
+      '.jsx': ['.tsx', '.jsx'],
+      '.mjs': ['.mts', '.mjs'],
+    };
+    
+    // Optimize chunk splitting for faster loading
+    if (!isServer) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          // Split Tone.js into separate chunks for parallel loading
+          toneCore: {
+            test: /[\\/]node_modules[\\/]tone[\\/]build[\\/]esm[\\/]core[\\/]/,
+            name: 'tone-core',
+            priority: 20,
+            reuseExistingChunk: true,
+          },
+          toneInstruments: {
+            test: /[\\/]node_modules[\\/]tone[\\/]build[\\/]esm[\\/]instrument[\\/]/,
+            name: 'tone-instruments',
+            priority: 15,
+            reuseExistingChunk: true,
+          },
+          // Separate audio engine code
+          audioEngine: {
+            test: /[\\/]src[\\/]domains[\\/]playback[\\/]services[\\/]core[\\/]/,
+            name: 'audio-engine',
+            priority: 10,
+            reuseExistingChunk: true,
+          },
+        },
+      };
+    }
+
+    return config;
+  },
 
   // Configure API routes
   async rewrites() {
@@ -91,13 +133,16 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              // Removed YouTube from script-src - much more secure!
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://*.supabase.co https://cdn.jsdelivr.net",
+              // Removed YouTube from script-src - much more secure! Added blob: for AudioWorklet
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://vercel.live https://*.supabase.co https://cdn.jsdelivr.net",
+              // Allow Web Workers for Tone.js audio processing
+              "worker-src 'self' blob:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' data: https://fonts.gstatic.com",
               // YouTube thumbnails only (no metadata services needed)
               "img-src 'self' data: https: blob: https://i.ytimg.com https://img.youtube.com https://yt3.ggpht.com https://yt4.ggpht.com https://lh3.googleusercontent.com",
-              "media-src 'self' https:",
+              // Allow audio/video from self and Supabase storage
+              "media-src 'self' https://*.supabase.co https://htuztkrbuewheehjspcz.supabase.co blob:",
               `connect-src ${connectSrc.join(' ')}`,
               // Allow YouTube iframes - sandboxed and secure
               "frame-src 'self' https://www.youtube.com https://youtube.com",

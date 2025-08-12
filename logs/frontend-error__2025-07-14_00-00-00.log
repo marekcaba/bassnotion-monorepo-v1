@@ -1,0 +1,68 @@
+2025-07-13 02:17:45 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-13 02:17:45 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-13 02:17:45 +02:00: Caused by:
+2025-07-13 02:17:45 +02:00:     No such file or directory (os error 2)
+2025-07-13 02:17:45 +02:00: Import trace for requested module:
+2025-07-13 02:17:45 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-13 02:17:45 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-13 02:17:46 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-13 02:17:46 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-13 02:17:46 +02:00: Caused by:
+2025-07-13 02:17:46 +02:00:     No such file or directory (os error 2)
+2025-07-13 02:17:46 +02:00: Import trace for requested module:
+2025-07-13 02:17:46 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-13 02:17:46 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-13 12:43:47 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-13 12:43:47 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-13 12:43:47 +02:00: Caused by:
+2025-07-13 12:43:47 +02:00:     No such file or directory (os error 2)
+2025-07-13 12:43:47 +02:00: Import trace for requested module:
+2025-07-13 12:43:47 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-13 12:43:47 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-13 12:46:50 +02:00:  [31m[1m⨯[22m[39m Error: Cannot find module './714.js'
+2025-07-13 12:46:50 +02:00: Require stack:
+2025-07-13 12:46:50 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-07-13 12:46:50 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-07-13 12:46:50 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/require.js
+2025-07-13 12:46:50 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/load-components.js
+2025-07-13 12:46:50 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/utils.js
+2025-07-13 12:46:50 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/options.js
+2025-07-13 12:46:50 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/swc/index.js
+2025-07-13 12:46:50 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/parse-module.js
+2025-07-13 12:46:50 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-07-13 12:46:50 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-07-13 12:46:50 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/router-server.js
+2025-07-13 12:46:50 +02:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.3.2_@babel+core@7.27.4_@playwright+test@1.54.0_babel-plugin-macros@3.1.0_react-_35c7215ccdd8d32d80e970c5a8bb0c47/node_modules/next/dist/server/lib/start-server.js
+2025-07-13 12:46:50 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-13 12:46:50 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-13 12:46:50 +02:00:     at Array.reduce (<anonymous>)
+2025-07-13 12:46:50 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-13 12:46:50 +02:00:     at Array.map (<anonymous>)
+2025-07-13 12:46:50 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-13 12:46:50 +02:00:     at <unknown> (.next/server/app/dashboard/page.js:257:26676)
+2025-07-13 12:46:50 +02:00:     at Object.<anonymous> (.next/server/app/dashboard/page.js:257:26721) {
+2025-07-13 12:46:50 +02:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-07-13 12:46:50 +02:00:   requireStack: [36m[Array][39m,
+2025-07-13 12:46:50 +02:00:   page: [32m'/dashboard'[39m
+2025-07-13 12:46:50 +02:00: }
+2025-07-13 13:19:08 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-07-13 13:23:06 +02:00: Failed to proxy http://localhost:3000/api/user/profile [AggregateError: ] { code: [32m'ECONNREFUSED'[39m }
+2025-07-13 13:23:06 +02:00: [AggregateError: ] { code: [32m'ECONNREFUSED'[39m }
+2025-07-13 13:23:06 +02:00: Failed to proxy http://localhost:3000/api/user/profile [AggregateError: ] { code: [32m'ECONNREFUSED'[39m }
+2025-07-13 13:23:06 +02:00: [AggregateError: ] { code: [32m'ECONNREFUSED'[39m }
+2025-07-13 13:24:20 +02:00: Failed to proxy http://localhost:3000/api/user/profile [AggregateError: ] { code: [32m'ECONNREFUSED'[39m }
+2025-07-13 13:24:20 +02:00: [AggregateError: ] { code: [32m'ECONNREFUSED'[39m }
+2025-07-13 13:48:56 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-13 13:48:56 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-13 13:48:56 +02:00: Caused by:
+2025-07-13 13:48:56 +02:00:     No such file or directory (os error 2)
+2025-07-13 13:48:56 +02:00: Import trace for requested module:
+2025-07-13 13:48:56 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-13 13:48:56 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-13 13:48:57 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-13 13:48:57 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-13 13:48:57 +02:00: Caused by:
+2025-07-13 13:48:57 +02:00:     No such file or directory (os error 2)
+2025-07-13 13:48:57 +02:00: Import trace for requested module:
+2025-07-13 13:48:57 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-13 13:48:57 +02:00: ./src/domains/user/components/auth/LoginForm.tsx

@@ -81,9 +81,7 @@ To define the technical architecture for the frontend application. This includes
 ### 12. Document Drafting & Confirmation (Guided by `front-end-architecture-tmpl`)
 
 - **If "Incremental Mode" was selected:**
-
   - For each relevant section of the `front-end-architecture` (as outlined in steps 3-11 above, covering topics from Overall Philosophy to Performance Considerations):
-
     - **a. Explain Purpose & Draft Section:** Explain the purpose of the section and present a draft for that section.
     - **b. Initial Discussion & Feedback:** Discuss the draft with the user, incorporate their feedback, and iterate as needed for initial revisions.
     - **c. [Offer Advanced Self-Refinement & Elicitation Options](#offer-advanced-self-refinement--elicitation-options)**

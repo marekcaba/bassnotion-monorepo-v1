@@ -6,11 +6,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { PerformanceTunerOptimizer } from '../plugins/PerformanceTunerOptimizer.js';
-import { DeviceInfoService } from '../DeviceInfoService.js';
+import { PerformanceTunerOptimizer } from '../plugins/PerformanceTunerOptimizer';
+import { DeviceInfoService } from '../DeviceInfoService';
 
 // Mock DeviceInfoService
-vi.mock('../DeviceInfoService.js', () => ({
+vi.mock('../DeviceInfoService', () => ({
   DeviceInfoService: {
     getInstance: vi.fn(),
   },
@@ -67,7 +67,7 @@ global.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
 global.cancelAnimationFrame = vi.fn();
 
 // Mock the dependencies
-vi.mock('../AssetManager.js', () => ({
+vi.mock('../AssetManager', () => ({
   AssetManager: {
     getInstance: vi.fn(() => ({
       updateConfiguration: vi.fn(),
@@ -80,7 +80,7 @@ vi.mock('../AssetManager.js', () => ({
   },
 }));
 
-vi.mock('../plugins/N8nAssetPipelineProcessor.js', () => ({
+vi.mock('../plugins/N8nAssetPipelineProcessor', () => ({
   N8nAssetPipelineProcessor: vi.fn().mockImplementation(() => ({
     updateConfiguration: vi.fn(),
     getPerformanceMetrics: vi.fn().mockReturnValue({
@@ -91,7 +91,7 @@ vi.mock('../plugins/N8nAssetPipelineProcessor.js', () => ({
   })),
 }));
 
-vi.mock('../plugins/InstrumentAssetOptimizer.js', () => ({
+vi.mock('../plugins/InstrumentAssetOptimizer', () => ({
   InstrumentAssetOptimizer: vi.fn().mockImplementation(() => ({
     updateConfiguration: vi.fn(),
     getOptimizationStatus: vi.fn().mockReturnValue({
@@ -102,7 +102,7 @@ vi.mock('../plugins/InstrumentAssetOptimizer.js', () => ({
   })),
 }));
 
-vi.mock('../plugins/MusicalContextAnalyzer.js', () => ({
+vi.mock('../plugins/MusicalContextAnalyzer', () => ({
   MusicalContextAnalyzer: vi.fn().mockImplementation(() => ({
     updateConfiguration: vi.fn(),
     exportConfiguration: vi.fn().mockReturnValue({

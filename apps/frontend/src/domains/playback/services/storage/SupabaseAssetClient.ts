@@ -95,6 +95,8 @@ class StorageErrorImpl extends Error implements StorageError {
  * Implements Story 2.4 Subtask 1.3 - Advanced bucket organization with versioning, metadata indexing, and automated cleanup
  */
 export class SupabaseAssetClient {
+  private static instance: SupabaseAssetClient | null = null;
+  private static defaultConfig: SupabaseAssetClientConfig | null = null;
   // TODO: Review non-null assertion - consider null safety
   private primaryClient!: SupabaseClient;
   private backupClients: SupabaseClient[] = [];
@@ -248,6 +250,41 @@ export class SupabaseAssetClient {
     this.setupHealthDashboard();
     this.setupMonitoringIntegration();
     this.setupCDNOptimization();
+  }
+
+  /**
+   * Get singleton instance of SupabaseAssetClient
+   * Prevents multiple Supabase client instances
+   */
+  static getInstance(config?: SupabaseAssetClientConfig): SupabaseAssetClient {
+    // If config is provided, update the default config
+    if (config && !SupabaseAssetClient.defaultConfig) {
+      SupabaseAssetClient.defaultConfig = config;
+    }
+
+    // Create instance if it doesn't exist
+    if (!SupabaseAssetClient.instance) {
+      const configToUse = config || SupabaseAssetClient.defaultConfig;
+      if (!configToUse) {
+        throw new Error(
+          'SupabaseAssetClient requires configuration on first initialization',
+        );
+      }
+      SupabaseAssetClient.instance = new SupabaseAssetClient(configToUse);
+    }
+
+    return SupabaseAssetClient.instance;
+  }
+
+  /**
+   * Reset singleton instance (useful for testing)
+   */
+  static resetInstance(): void {
+    if (SupabaseAssetClient.instance) {
+      // Clean up resources if needed
+      SupabaseAssetClient.instance = null;
+    }
+    SupabaseAssetClient.defaultConfig = null;
   }
 
   /**

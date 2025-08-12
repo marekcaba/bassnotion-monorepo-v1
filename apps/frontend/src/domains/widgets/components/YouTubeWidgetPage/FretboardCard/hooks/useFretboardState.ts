@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import type {
   StringCount,
   SelectedDotsMap,
@@ -21,11 +21,21 @@ import {
 /**
  * Hook to manage fretboard state including string count, tilt, selected dots, and drag state
  */
-export const useFretboardState = () => {
-  // Basic fretboard configuration
-  const [stringCount, setStringCount] = useState<StringCount>(4);
-  const [tiltAngle, setTiltAngle] = useState<number>(35);
-  const [maxFrets, setMaxFrets] = useState<number>(25);
+export const useFretboardState = (initialConfig?: {
+  stringCount?: StringCount;
+  maxFrets?: number;
+  tiltAngle?: number;
+}) => {
+  // Basic fretboard configuration - use provided values or defaults
+  const [stringCount, setStringCount] = useState<StringCount>(
+    initialConfig?.stringCount || 4,
+  );
+  const [tiltAngle, setTiltAngle] = useState<number>(
+    initialConfig?.tiltAngle || 35,
+  );
+  const [maxFrets, setMaxFrets] = useState<number>(
+    initialConfig?.maxFrets || 25,
+  );
 
   // Selected dots state - stores position keys with order numbers
   const [selectedDots, setSelectedDots] = useState<SelectedDotsMap>(new Map());
@@ -36,6 +46,39 @@ export const useFretboardState = () => {
   const [dragOverTarget, setDragOverTarget] = useState<DragOverTarget | null>(
     null,
   );
+
+  // Update state when initial config changes (from user profile)
+  // Use useMemo to stabilize the config values and avoid infinite loops
+  const stableStringCount = useMemo(
+    () => initialConfig?.stringCount,
+    [initialConfig?.stringCount],
+  );
+  const stableMaxFrets = useMemo(
+    () => initialConfig?.maxFrets,
+    [initialConfig?.maxFrets],
+  );
+  const stableTiltAngle = useMemo(
+    () => initialConfig?.tiltAngle,
+    [initialConfig?.tiltAngle],
+  );
+
+  useEffect(() => {
+    if (stableStringCount !== undefined) {
+      setStringCount(stableStringCount);
+    }
+  }, [stableStringCount]);
+
+  useEffect(() => {
+    if (stableMaxFrets !== undefined) {
+      setMaxFrets(stableMaxFrets);
+    }
+  }, [stableMaxFrets]);
+
+  useEffect(() => {
+    if (stableTiltAngle !== undefined) {
+      setTiltAngle(stableTiltAngle);
+    }
+  }, [stableTiltAngle]);
 
   // Generate frets array based on maxFrets setting
   const frets = useMemo(

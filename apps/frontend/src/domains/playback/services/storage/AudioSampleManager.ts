@@ -17,14 +17,27 @@ import {
   DownloadOptions,
 } from '@bassnotion/contracts';
 
-import { SupabaseAssetClient } from './SupabaseAssetClient.js';
-import { PredictiveLoadingEngine } from './PredictiveLoadingEngine.js';
-import { AdaptiveAudioStreamer } from './AdaptiveAudioStreamer.js';
-import { AudioCompressionEngine } from '../AudioCompressionEngine.js';
-import { MetadataAnalyzer } from './MetadataAnalyzer.js';
-import { SampleCacheManager } from './cache/SampleCacheManager.js';
-import { SampleAnalyticsEngine } from './analytics/SampleAnalyticsEngine.js';
+import { SupabaseAssetClient } from './SupabaseAssetClient';
+import { PredictiveLoadingEngine } from './PredictiveLoadingEngine';
+import { AdaptiveAudioStreamer } from './AdaptiveAudioStreamer';
+// Epic 3.18: Removed services - using stubs or core services
+// import { AudioCompressionEngine } from '../AudioCompressionEngine';
+import { MetadataAnalyzer } from './MetadataAnalyzer';
+import { SampleCacheManager } from './cache/SampleCacheManager';
+import { SampleAnalyticsEngine } from './analytics/SampleAnalyticsEngine';
 import { EventEmitter } from 'events';
+// import { AudioEngineFactory } from '../AudioEngine.js'; // Story 3.18.3
+import { ServiceRegistry, AudioEngine } from '../core/index.js';
+
+// Stub for AudioCompressionEngine
+class AudioCompressionEngine {
+  async compressAudioBuffer(buffer: AudioBuffer, options: any): Promise<AudioBuffer> {
+    return buffer; // Return uncompressed for now
+  }
+  async decompressAudioBuffer(buffer: AudioBuffer): Promise<AudioBuffer> {
+    return buffer;
+  }
+}
 
 /**
  * Professional Audio Sample Manager
@@ -70,8 +83,10 @@ export class AudioSampleManager extends EventEmitter {
     super();
     this.config = config;
 
-    // Initialize storage client
-    this.storageClient = new SupabaseAssetClient(config.storageClientConfig);
+    // Initialize storage client using singleton to prevent multiple instances
+    this.storageClient = SupabaseAssetClient.getInstance(
+      config.storageClientConfig,
+    );
 
     // Initialize optional components based on configuration
     if (config.predictiveLoadingEnabled) {
@@ -107,6 +122,16 @@ export class AudioSampleManager extends EventEmitter {
 
     // Initialize supported formats
     this.supportedFormats = new Set(config.supportedFormats);
+  }
+
+  /**
+   * Update AudioContext from AudioEngine when it becomes available
+   * Story 3.18.3: Support deferred AudioContext initialization
+   */
+  public updateAudioContext(): void {
+    if (!this.audioContext) {
+      this.initializeAudioContext();
+    }
   }
 
   /**
@@ -586,23 +611,25 @@ export class AudioSampleManager extends EventEmitter {
 
   private async initializeAudioContext(): Promise<void> {
     try {
-      this.audioContext = new (window.AudioContext ||
-        (window as any).webkitAudioContext)();
-
-      if (this.audioContext.state === 'suspended') {
-        // Audio context will be resumed on first user interaction
-        document.addEventListener(
-          'click',
-          () => {
-            if (this.audioContext && this.audioContext.state === 'suspended') {
-              this.audioContext.resume();
-            }
-          },
-          { once: true },
-        );
+      // Story 3.18.3: Get AudioContext from AudioEngine instead of creating new one
+      const audioEngine = AudioEngineFactory.getInstance();
+      if (!audioEngine) {
+        console.warn('[AudioSampleManager] AudioEngine not initialized, deferring AudioContext access');
+        return;
       }
+
+      // Get the existing AudioContext from AudioEngine
+      this.audioContext = audioEngine.getContext();
+      
+      if (!this.audioContext) {
+        console.warn('[AudioSampleManager] AudioContext not available from AudioEngine');
+        return;
+      }
+
+      // AudioEngine handles the suspended state management
+      console.log('[AudioSampleManager] Using AudioContext from AudioEngine');
     } catch (error) {
-      console.warn('Failed to initialize AudioContext:', error);
+      console.warn('[AudioSampleManager] Failed to get AudioContext from AudioEngine:', error);
       // Continue without AudioContext - some features will be limited
     }
   }

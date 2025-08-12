@@ -2,7 +2,7 @@
 
 import React from 'react';
 import * as THREE from 'three';
-import type { ExerciseNote } from '../types/fretboard.js';
+import type { ExerciseNote } from '../types/fretboard';
 
 interface NoteSelectorProps {
   selectedNoteId: string | null;

@@ -3,6 +3,11 @@ import { ReactNode } from 'react';
 import { ReactQueryProvider } from '@/lib/react-query';
 import { AuthProvider } from '@/domains/user/components/auth';
 import { Toaster } from '@/shared/components/ui/toaster';
+import { AudioProvider } from '@/domains/playback/providers/AudioProvider';
+import { PreloadInitializer } from '@/domains/playback/components/PreloadInitializer';
+
+// Story 3.18.3: Replaced initializeAudio import with AudioProvider component
+// The AudioProvider handles all audio initialization with clean dependency injection
 
 import { inter, metadata } from './layout.constants';
 
@@ -15,9 +20,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body className={inter.className}>
-        <AuthProviderWrapper>
-          <ReactQueryProvider>{children}</ReactQueryProvider>
-        </AuthProviderWrapper>
+        <AudioProvider>
+          <PreloadInitializer />
+          <AuthProviderWrapper>
+            <ReactQueryProvider>{children}</ReactQueryProvider>
+          </AuthProviderWrapper>
+        </AudioProvider>
         <Toaster />
       </body>
     </html>

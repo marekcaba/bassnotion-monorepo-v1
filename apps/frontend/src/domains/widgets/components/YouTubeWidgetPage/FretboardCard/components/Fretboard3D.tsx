@@ -147,7 +147,8 @@ interface DotPosition {
 }
 
 interface Fretboard3DProps {
-  stringCount: 4 | 5;
+  stringCount: 4 | 5 | 6;
+  maxFrets?: number;
   selectedDots: Map<string, number>;
   onDotClick: (stringIndex: number, fret: number | 'open') => void;
   onDotDragStart?: (stringIndex: number, fret: number | 'open') => void;
@@ -407,13 +408,15 @@ function ConnectionLine3D({
 // Main 3D Scene Component
 function Fretboard3DScene({
   stringCount,
+  maxFrets,
   selectedDots,
   onDotClick,
   cameraDistance,
   onCameraUpdate,
   cameraMode,
 }: {
-  stringCount: 4 | 5;
+  stringCount: 4 | 5 | 6;
+  maxFrets: number;
   selectedDots: Map<string, number>;
   onDotClick: (stringIndex: number, fret: number | 'open') => void;
   cameraDistance: number;
@@ -745,7 +748,7 @@ Target: [${target.x.toFixed(4)}, ${target.y.toFixed(4)}, ${target.z.toFixed(4)}]
       );
 
       // Fretted positions
-      for (let fret = 1; fret <= 12; fret++) {
+      for (let fret = 1; fret <= maxFrets; fret++) {
         const fretKey = `${absoluteStringIndex}-${fret}`;
         const isFretSelected = selectedDots.has(fretKey);
         const fretSelectionOrder = selectedDots.get(fretKey);
@@ -908,7 +911,7 @@ Target: [${target.x.toFixed(4)}, ${target.y.toFixed(4)}, ${target.z.toFixed(4)}]
       {/* Fretboard base removed to match 2D mode */}
 
       {/* Fret lines - white with low opacity to match 2D mode */}
-      {Array.from({ length: 13 }, (_, i) => (
+      {Array.from({ length: maxFrets + 1 }, (_, i) => (
         <mesh key={`fret-${i}`} position={[i * 1.5 - 9, -0.1, 0]}>
           <boxGeometry args={[0.05, 0.1, (stringCount - 1) * 1.0]} />
           <meshStandardMaterial color="#ffffff" transparent opacity={0.1} />
@@ -965,6 +968,7 @@ Target: [${target.x.toFixed(4)}, ${target.y.toFixed(4)}, ${target.z.toFixed(4)}]
 
 export default function Fretboard3D({
   stringCount = 4,
+  maxFrets = 24,
   selectedDots,
   onDotClick,
   onDotDragStart: _onDotDragStart,
@@ -1005,6 +1009,7 @@ export default function Fretboard3D({
       >
         <Fretboard3DScene
           stringCount={stringCount}
+          maxFrets={maxFrets}
           selectedDots={selectedDots}
           onDotClick={onDotClick}
           cameraDistance={cameraDistance}

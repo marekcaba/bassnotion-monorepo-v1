@@ -9,8 +9,8 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import { usePlaybackStore } from '../store/playbackStore.js';
-import type { PlaybackState, AudioPerformanceMetrics } from '../types/audio.js';
+import { usePlaybackStore } from '../store/playbackStore';
+import type { PlaybackState, AudioPerformanceMetrics } from '../types/audio';
 
 // ============================================================================
 // HOOK INTERFACE

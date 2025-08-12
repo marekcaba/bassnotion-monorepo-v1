@@ -16,7 +16,7 @@ import {
   PluginParameterType,
   PluginCategory,
   PluginPriority,
-} from '../../types/plugin.js';
+} from '../../types/plugin';
 
 // Mock Tone module BEFORE importing DrumProcessor - define inline to avoid hoisting issues
 vi.mock('tone', () => {
@@ -96,7 +96,7 @@ vi.mock('tone', () => {
 });
 
 // Now import DrumProcessor - it will get the mocked Tone.js
-import { DrumProcessor } from '../plugins/DrumProcessor.js';
+import { DrumProcessor } from '../plugins/DrumProcessor';
 
 // Get the mocked Tone module for test assertions
 const mockTone = vi.mocked(Tone);

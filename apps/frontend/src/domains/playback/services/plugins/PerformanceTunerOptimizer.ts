@@ -5,11 +5,11 @@
  * Part of Story 2.2: Task 7, Subtask 7.5
  */
 
-import { AssetManager } from '../AssetManager.js';
-import { N8nAssetPipelineProcessor } from './N8nAssetPipelineProcessor.js';
-import { InstrumentAssetOptimizer } from './InstrumentAssetOptimizer.js';
-import { MusicalContextAnalyzer } from './MusicalContextAnalyzer.js';
-import { DeviceInfoService } from '../DeviceInfoService.js';
+import { AssetManager } from '../AssetManager';
+import { N8nAssetPipelineProcessor } from './N8nAssetPipelineProcessor';
+import { InstrumentAssetOptimizer } from './InstrumentAssetOptimizer';
+import { MusicalContextAnalyzer } from './MusicalContextAnalyzer';
+import { DeviceInfoService } from '../DeviceInfoService';
 
 interface PerformanceProfile {
   deviceType: 'mobile' | 'tablet' | 'desktop' | 'lowend';

@@ -62,13 +62,13 @@ vi.mock('tone', () => {
   };
 });
 
-import { SyncProcessor } from '../plugins/SyncProcessor.js';
+import { SyncProcessor } from '../plugins/SyncProcessor';
 import {
   PluginState,
   PluginAudioContext,
   ProcessingResultStatus,
   PluginParameterType,
-} from '../../types/plugin.js';
+} from '../../types/plugin';
 
 // Test Environment Setup
 const setupSyncTestEnvironment = () => {

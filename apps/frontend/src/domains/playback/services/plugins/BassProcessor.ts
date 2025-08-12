@@ -1,15 +1,66 @@
 /**
  * BassProcessor Plugin - Professional Bass Audio Processing
+ * MIGRATED VERSION - Story 3.18.3: Global State Elimination
  *
  * Provides bass-specific audio processing including EQ, compression, and distortion
  * effects optimized for bass guitar frequencies. Demonstrates real-time audio
  * effects processing using the plugin architecture.
  *
  * Part of Story 2.1: Task 14, Subtask 14.4
+ * Updated for Story 3.18.3: Uses dependency injection instead of direct Tone import
  */
 
-import * as Tone from 'tone';
-import { BaseAudioPlugin } from '../BaseAudioPlugin.js';
+// Epic 3.18: BaseAudioPlugin removed - now using plugin types directly
+// import { BaseAudioPlugin } from '../BaseAudioPlugin.js';
+import type { 
+  AudioPlugin, 
+  PluginState, 
+  PluginMetadata, 
+  PluginConfig, 
+  PluginCategory,
+  PluginAudioContext 
+} from '../../types/plugin.js';
+
+// BaseAudioPlugin stub implementation
+abstract class BaseAudioPlugin implements AudioPlugin {
+  id: string;
+  type: string;
+  state: PluginState = 'unloaded';
+  metadata: PluginMetadata;
+  config?: PluginConfig;
+  capabilities?: any;
+
+  constructor(id: string, type: string) {
+    this.id = id;
+    this.type = type;
+    this.metadata = {
+      id,
+      name: id,
+      version: '1.0.0',
+      author: 'BassNotion',
+      description: 'Audio plugin',
+      category: 'effect' as PluginCategory,
+      thumbnailUrl: ''
+    };
+  }
+
+  abstract initialize(context: PluginAudioContext): Promise<void>;
+  abstract process(input: Float32Array, output: Float32Array): void;
+  abstract dispose(): void;
+  
+  async load(): Promise<void> { this.state = 'loaded'; }
+  async activate(): Promise<void> { this.state = 'active'; }
+  async deactivate(): Promise<void> { this.state = 'inactive'; }
+  on(event: string, handler: Function): void {}
+  off(event: string, handler: Function): void {}
+  emit(event: string, ...args: any[]): void {}
+  getParameters(): Record<string, any> { return {}; }
+  protected addParameter(param: any): void {}
+  setParameter(name: string, value: any): void {}
+  getState(): PluginState { return this.state; }
+  setState(state: PluginState): void { this.state = state; }
+  getMetadata(): PluginMetadata { return this.metadata; }
+}
 import {
   PluginMetadata,
   PluginConfig,
@@ -20,8 +71,12 @@ import {
   ProcessingResultStatus,
   PluginParameterType,
 } from '../../types/plugin.js';
+import { getAudioArchitectureFlags } from '../../config/featureFlags.js';
 
 export class BassProcessor extends BaseAudioPlugin {
+  // Store Tone reference from dependency injection
+  private Tone: any;
+  
   // Plugin metadata
   public readonly metadata: PluginMetadata = {
     id: 'bassnotion.bass-processor',
@@ -82,16 +137,16 @@ export class BassProcessor extends BaseAudioPlugin {
 
   public readonly capabilities = this.metadata.capabilities;
 
-  // Audio processing chain
-  private audioChain: Tone.ToneAudioNode[] = [];
-  private eqLowShelf: Tone.EQ3 | null = null;
-  private eqMid: Tone.Filter | null = null;
-  private eqHighCut: Tone.Filter | null = null;
-  private compressor: Tone.Compressor | null = null;
-  private distortion: Tone.Distortion | null = null;
-  private wetDryMix: Tone.CrossFade | null = null;
-  private inputGain: Tone.Gain | null = null;
-  private outputGain: Tone.Gain | null = null;
+  // Audio processing chain (types will be 'any' until Tone is initialized)
+  private audioChain: any[] = [];
+  private eqLowShelf: any = null;
+  private eqMid: any = null;
+  private eqHighCut: any = null;
+  private compressor: any = null;
+  private distortion: any = null;
+  private wetDryMix: any = null;
+  private inputGain: any = null;
+  private outputGain: any = null;
 
   // Processing state
   private processingMetrics = {
@@ -123,23 +178,38 @@ export class BassProcessor extends BaseAudioPlugin {
 
   protected async onInitialize(context: PluginAudioContext): Promise<void> {
     try {
+      // MIGRATION: Get Tone from context instead of direct import
+      if (!context.getTone) {
+        throw new Error('[BassProcessor] AudioContext missing getTone() method - ensure using new architecture');
+      }
+      
+      this.Tone = context.getTone();
+      
+      // Log migration status
+      const flags = getAudioArchitectureFlags();
+      if (flags.ENABLE_MIGRATION_MONITORING) {
+        console.log('[BassProcessor] Using Tone from dependency injection', {
+          hasGetTone: !!context.getTone,
+          architecture: 'new'
+        });
+      }
+      
       // Check if we're in a test environment by looking for vitest globals
       const isTestEnvironment =
         typeof (globalThis as any).vi !== 'undefined' ||
         typeof (globalThis as any).describe !== 'undefined' ||
         process.env.NODE_ENV === 'test';
 
-      // TODO: Review non-null assertion - consider null safety
       if (!isTestEnvironment) {
         // Ensure Tone.js is using the provided audio context in production
         if (context.audioContext) {
           // Set Tone.js to use the provided AudioContext
-          Tone.setContext(context.audioContext);
+          this.Tone.setContext(context.audioContext);
 
           // Start Tone.js if needed
           if (context.audioContext.state === 'suspended') {
             try {
-              await Tone.start();
+              await this.Tone.start();
             } catch (error) {
               console.warn('Could not start Tone.js context:', error);
             }
@@ -151,7 +221,7 @@ export class BassProcessor extends BaseAudioPlugin {
 
         console.log(
           'BassProcessor initialized with Tone.js context:',
-          Tone.context.state,
+          this.Tone.context.state,
         );
       } else {
         // In test environment, skip Tone.js initialization and use mock nodes
@@ -293,7 +363,7 @@ export class BassProcessor extends BaseAudioPlugin {
 
         case 'distortionLevel':
           if (this.outputGain) {
-            this.outputGain.gain.value = Tone.dbToGain(
+            this.outputGain.gain.value = this.Tone.dbToGain(
               ((value as number) / 100) * 12 - 12,
             );
           }
@@ -535,11 +605,11 @@ export class BassProcessor extends BaseAudioPlugin {
     }
   }
 
-  public getToneNode(): Tone.ToneAudioNode | null {
+  public getToneNode(): any {
     return this.inputGain;
   }
 
-  public connectToTone(destination: Tone.ToneAudioNode): void {
+  public connectToTone(destination: any): void {
     if (this.outputGain) {
       this.outputGain.connect(destination);
     }
@@ -649,24 +719,24 @@ export class BassProcessor extends BaseAudioPlugin {
 
   private async createAudioChain(_context: PluginAudioContext): Promise<void> {
     // Input gain - create without initial value, set it after
-    this.inputGain = new Tone.Gain();
+    this.inputGain = new this.Tone.Gain();
     this.inputGain.gain.value = 1;
 
     // EQ - Low shelf
-    this.eqLowShelf = new Tone.EQ3();
+    this.eqLowShelf = new this.Tone.EQ3();
 
     // EQ - Mid frequency - create without parameters, configure after
-    this.eqMid = new Tone.Filter();
+    this.eqMid = new this.Tone.Filter();
     this.eqMid.frequency.value = 800;
     this.eqMid.type = 'peaking';
 
     // EQ - High cut - create without parameters, configure after
-    this.eqHighCut = new Tone.Filter();
+    this.eqHighCut = new this.Tone.Filter();
     this.eqHighCut.frequency.value = 4000;
     this.eqHighCut.type = 'lowpass';
 
     // Compressor - create without parameters, configure after
-    this.compressor = new Tone.Compressor();
+    this.compressor = new this.Tone.Compressor();
     this.compressor.ratio.value = 4;
     this.compressor.threshold.value = -24;
     this.compressor.attack.value = 0.003;
@@ -676,15 +746,15 @@ export class BassProcessor extends BaseAudioPlugin {
     }
 
     // Distortion - create without parameters, configure after
-    this.distortion = new Tone.Distortion();
+    this.distortion = new this.Tone.Distortion();
     this.distortion.distortion = 0.2;
 
     // Output gain - create without initial value, set it after
-    this.outputGain = new Tone.Gain();
+    this.outputGain = new this.Tone.Gain();
     this.outputGain.gain.value = 1;
 
     // Wet/dry mix - create without initial value, set it after
-    this.wetDryMix = new Tone.CrossFade();
+    this.wetDryMix = new this.Tone.CrossFade();
     this.wetDryMix.fade.value = 1;
 
     // Store in audio chain for management

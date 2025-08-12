@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { YouTubeWidgetPage } from '@/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage';
+import { AudioEnabledTutorial } from '@/domains/widgets/components/YouTubeWidgetPage/AudioEnabledTutorial';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 
 interface TutorialPageProps {
@@ -52,13 +52,10 @@ export default function TutorialPage({ params }: TutorialPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Tutorial Content with real data and exercises */}
-      <YouTubeWidgetPage
-        tutorialData={tutorial}
-        tutorialSlug={tutorialSlug}
-        exercises={exercises}
-      />
-    </div>
+    <AudioEnabledTutorial
+      tutorialData={tutorial}
+      tutorialSlug={tutorialSlug}
+      exercises={exercises}
+    />
   );
 }

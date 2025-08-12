@@ -21,7 +21,7 @@ import {
   type ManagedTrack,
   type TrackMixingState,
   type InstrumentType,
-} from '../plugins/TrackManagerProcessor.js';
+} from '../plugins/TrackManagerProcessor';
 
 describe('TrackManagerProcessor', () => {
   let trackManager: TrackManagerProcessor;

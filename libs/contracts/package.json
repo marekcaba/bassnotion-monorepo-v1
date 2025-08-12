@@ -9,6 +9,21 @@
       "import": "./dist/src/index.js",
       "require": "./dist/src/index.js",
       "types": "./dist/src/index.d.ts"
+    },
+    "./services/MusicalTimeConverter": {
+      "import": "./dist/src/services/MusicalTimeConverter.js",
+      "require": "./dist/src/services/MusicalTimeConverter.js",
+      "types": "./dist/src/services/MusicalTimeConverter.d.ts"
+    },
+    "./services/ProfessionalDrumProcessor": {
+      "import": "./dist/src/services/ProfessionalDrumProcessor.js",
+      "require": "./dist/src/services/ProfessionalDrumProcessor.js",
+      "types": "./dist/src/services/ProfessionalDrumProcessor.d.ts"
+    },
+    "./types/musical-time": {
+      "import": "./dist/src/types/musical-time.js",
+      "require": "./dist/src/types/musical-time.js",
+      "types": "./dist/src/types/musical-time.d.ts"
     }
   },
   "scripts": {

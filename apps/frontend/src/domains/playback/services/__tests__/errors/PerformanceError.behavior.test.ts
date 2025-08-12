@@ -9,12 +9,8 @@ import {
   PerformanceError,
   PerformanceErrorCode,
   createPerformanceError,
-} from '../../errors/PerformanceError.js';
-import {
-  ErrorSeverity,
-  ErrorCategory,
-  ErrorContext,
-} from '../../errors/base.js';
+} from '../../errors/PerformanceError';
+import { ErrorSeverity, ErrorCategory, ErrorContext } from '../../errors/base';
 
 describe('PerformanceError Behavioral Tests', () => {
   // ================================

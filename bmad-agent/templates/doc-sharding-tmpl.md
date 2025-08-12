@@ -31,12 +31,10 @@ This plan directs the agent on how to break down large source documents into sma
 
 - **Source Section(s) to Copy:** Section(s) titled "Environment Variables Documentation", "Configuration Settings", "Deployment Parameters", or relevant subsections within "Infrastructure and Deployment Overview" if a dedicated section is not found.
 - **Target File:** `docs/environment-vars.md`
-
   - _Agent Note: Prioritize a dedicated 'Environment Variables' section or linked 'environment-vars.md' source if available. If not, extract relevant configuration details from 'Infrastructure and Deployment Overview'. This shard is for specific variable definitions and usage._
 
 - **Source Section(s) to Copy:** Section(s) detailing "Project Structure".
 - **Target File:** `docs/project-structure.md`
-
   - _Agent Note: If the project involves multiple repositories (not a monorepo), ensure this file clearly describes the structure of each relevant repository or links to sub-files if necessary._
 
 - **Source Section(s) to Copy:** Section(s) detailing "Technology Stack", "Key Technologies", "Libraries and Frameworks", or "Definitive Tech Stack Selections".
@@ -44,7 +42,6 @@ This plan directs the agent on how to break down large source documents into sma
 
 - **Source Section(s) to Copy:** Sections detailing "Coding Standards", "Development Guidelines", "Best Practices", "Testing Strategy", "Testing Decisions", "QA Processes", "Overall Testing Strategy", "Error Handling Strategy", and "Security Best Practices".
 - **Target File:** `docs/operational-guidelines.md`
-
   - _Agent Note: This file consolidates several key operational aspects. Ensure that the content from each source section ("Coding Standards", "Testing Strategy", "Error Handling Strategy", "Security Best Practices") is clearly delineated under its own H3 (###) or H4 (####) heading within this document._
 
 - **Source Section(s) to Copy:** Section(s) titled "Component View" (including sub-sections like "Architectural / Design Patterns Adopted").
@@ -55,7 +52,6 @@ This plan directs the agent on how to break down large source documents into sma
 
 - **Source Section(s) to Copy:** Section(s) titled "Infrastructure and Deployment Overview".
 - **Target File:** `docs/infra-deployment.md`
-
   - _Agent Note: This is for the broader overview, distinct from the specific `docs/environment-vars.md`._
 
 - **Source Section(s) to Copy:** Section(s) titled "Key Reference Documents".
@@ -74,7 +70,6 @@ This plan directs the agent on how to break down large source documents into sma
 
 - **Source Section(s) to Copy:** Section(s) detailing "UI Style Guide", "Brand Guidelines", "Visual Design Specifications", or "Styling Approach".
 - **Target File:** `docs/front-end-style-guide.md`
-
   - _Agent Note: This section might be a sub-section or refer to other documents (e.g., `ui-ux-spec.txt`). Extract the core styling philosophy and approach defined within the frontend architecture document itself._
 
 - **Source Section(s) to Copy:** Section(s) detailing "Component Library", "Reusable UI Components Guide", "Atomic Design Elements", or "Component Breakdown & Implementation Details".
@@ -82,7 +77,6 @@ This plan directs the agent on how to break down large source documents into sma
 
 - **Source Section(s) to Copy:** Section(s) detailing "Front-End Coding Standards" (specifically for UI development, e.g., JavaScript/TypeScript style, CSS naming conventions, accessibility best practices for FE).
 - **Target File:** `docs/front-end-coding-standards.md`
-
   - _Agent Note: A dedicated top-level section for this might not exist. If not found, this shard might be empty or require cross-referencing with the main architecture's coding standards. Extract any front-end-specific coding conventions mentioned._
 
 - **Source Section(s) to Copy:** Section(s) titled "State Management In-Depth".

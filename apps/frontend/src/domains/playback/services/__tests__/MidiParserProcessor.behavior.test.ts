@@ -18,7 +18,7 @@ import {
   ControllerType,
   ChordQuality,
   ParsedNote,
-} from '../plugins/MidiParserProcessor.js';
+} from '../plugins/MidiParserProcessor';
 
 // Mock WebMidi since it requires browser environment
 vi.mock('webmidi', () => ({

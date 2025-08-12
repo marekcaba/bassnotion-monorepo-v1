@@ -9,8 +9,8 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { widgetSyncService } from '../../services/WidgetSyncService.js';
-import type { WidgetSyncEvent } from '../../services/WidgetSyncService.js';
+import { widgetSyncService } from '../../services/WidgetSyncService';
+import type { WidgetSyncEvent } from '../../services/WidgetSyncService';
 
 // ============================================================================
 // SIMPLE TEST COMPONENTS

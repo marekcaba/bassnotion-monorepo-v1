@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+  <head>
+    <title>XMLHttpRequest Test</title>
+  </head>
+  <body>
+    <h1>XMLHttpRequest Test for Soundfont Files</h1>
+    <button id="testBtn">Test XMLHttpRequest</button>
+    <div id="output"></div>
+
+    <script>
+      const output = document.getElementById('output');
+
+      function log(message) {
+        console.log(message);
+        output.innerHTML += message + '<br>';
+      }
+
+      document.getElementById('testBtn').addEventListener('click', () => {
+        log('🔍 Testing XMLHttpRequest to soundfont file...');
+
+        const url = '/soundfonts/acoustic_grand_piano-mp3.js';
+        log(`📡 Fetching: ${url}`);
+
+        const req = new XMLHttpRequest();
+        req.responseType = 'text';
+
+        req.onreadystatechange = function () {
+          log(`📊 ReadyState: ${req.readyState}, Status: ${req.status}`);
+        };
+
+        req.onload = function () {
+          log(`✅ onload: Status ${req.status}`);
+          if (req.status === 200) {
+            log(`📄 Response length: ${req.response.length} characters`);
+            log(`📄 First 100 chars: ${req.response.substring(0, 100)}`);
+
+            // Test parsing
+            try {
+              const begin = req.response.indexOf('MIDI.Soundfont.');
+              if (begin < 0) {
+                log(
+                  '❌ Invalid MIDI.js Soundfont format - no MIDI.Soundfont found',
+                );
+              } else {
+                log('✅ Found MIDI.Soundfont in response');
+                const assignmentIndex = req.response.indexOf('=', begin) + 2;
+                const endIndex = req.response.lastIndexOf(',');
+                log(
+                  `📍 Parsing indices: begin=${assignmentIndex}, end=${endIndex}`,
+                );
+
+                if (assignmentIndex > 2 && endIndex > assignmentIndex) {
+                  const jsonPart =
+                    req.response.slice(assignmentIndex, endIndex) + '}';
+                  log(`📄 JSON part length: ${jsonPart.length}`);
+
+                  try {
+                    const parsed = JSON.parse(jsonPart);
+                    const noteCount = Object.keys(parsed).length;
+                    log(
+                      `✅ Successfully parsed soundfont with ${noteCount} notes!`,
+                    );
+                  } catch (parseError) {
+                    log(`❌ JSON parse error: ${parseError.message}`);
+                  }
+                } else {
+                  log('❌ Invalid parsing indices');
+                }
+              }
+            } catch (error) {
+              log(`❌ Parsing error: ${error.message}`);
+            }
+          } else {
+            log(`❌ HTTP Error: ${req.status} ${req.statusText}`);
+          }
+        };
+
+        req.onerror = function () {
+          log(`❌ Network Error occurred`);
+          log(`📊 Status: ${req.status}, ReadyState: ${req.readyState}`);
+        };
+
+        req.ontimeout = function () {
+          log(`❌ Request timed out`);
+        };
+
+        try {
+          req.open('GET', url);
+          req.send();
+          log('📤 Request sent');
+        } catch (error) {
+          log(`❌ Failed to send request: ${error.message}`);
+        }
+      });
+    </script>
+  </body>
+</html>

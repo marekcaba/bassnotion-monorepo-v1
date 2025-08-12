@@ -10,22 +10,37 @@
  */
 
 // Export sample plugins (Story 2.1)
-export { BassProcessor } from './BassProcessor.js';
-export { DrumProcessor } from './DrumProcessor.js';
-export { SyncProcessor } from './SyncProcessor.js';
+export { BassProcessor } from './BassProcessor';
+export { DrumProcessor } from './DrumProcessor';
+export { SyncProcessor } from './SyncProcessor';
 
 // Export professional instrument processors (Story 2.2)
-export { MidiParserProcessor } from './MidiParserProcessor.js';
-export { BassInstrumentProcessor } from './BassInstrumentProcessor.js';
-export { DrumInstrumentProcessor } from './DrumInstrumentProcessor.js';
-export { ChordInstrumentProcessor } from './ChordInstrumentProcessor.js';
-export { MetronomeInstrumentProcessor } from './MetronomeInstrumentProcessor.js';
+export { MidiParserProcessor } from './MidiParserProcessor';
+export { BassInstrumentProcessor } from './BassInstrumentProcessor';
+export { DrumInstrumentProcessor } from './DrumInstrumentProcessor';
+export { ChordInstrumentProcessor } from './ChordInstrumentProcessor';
+export { MetronomeInstrumentProcessor } from './MetronomeInstrumentProcessor';
+
+// Export enhanced processors with professional audio samples (Story 3.16)
+export {
+  EnhancedMetronomeProcessor,
+  createEnhancedMetronome,
+} from './EnhancedMetronomeProcessor';
+export {
+  EnhancedChordProcessor,
+  createEnhancedChordProcessor,
+} from './EnhancedChordProcessor';
+
+// Export WAM integration services (Story 3.21 Task 7)
+export { WamPluginAdapter } from './WamPluginAdapter';
+export { WamHostManager } from './WamHostManager';
+export { WamDeviceOptimizer } from './WamDeviceOptimizer';
 
 // Plugin registry for easy registration
-import { BassProcessor } from './BassProcessor.js';
-import { DrumProcessor } from './DrumProcessor.js';
-import { SyncProcessor } from './SyncProcessor.js';
-import type { AudioPlugin } from '../../types/plugin.js';
+import { BassProcessor } from './BassProcessor';
+import { DrumProcessor } from './DrumProcessor';
+import { SyncProcessor } from './SyncProcessor';
+import type { AudioPlugin } from '../../types/plugin';
 
 /**
  * Sample plugin registry

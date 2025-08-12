@@ -1,0 +1,281 @@
+/**
+ * Sample Manifest Configuration
+ * Defines quality tiers and loading priorities for all instruments
+ */
+
+export interface SampleDefinition {
+  url: string;
+  note?: string;
+  velocity?: number;
+  size?: number; // bytes
+}
+
+export interface SampleTier {
+  quality: 'essential' | 'standard' | 'premium';
+  description: string;
+  samples: SampleDefinition[];
+  estimatedSize: number; // total bytes
+  loadTime: number; // estimated ms at 1Mbps
+}
+
+export interface InstrumentManifest {
+  name: string;
+  displayName: string;
+  tiers: SampleTier[];
+}
+
+/**
+ * Complete manifest of all audio samples with quality tiers
+ */
+export const SAMPLE_MANIFEST: Record<string, InstrumentManifest> = {
+  harmony: {
+    name: 'harmony',
+    displayName: 'Harmony (Piano)',
+    tiers: [
+      {
+        quality: 'essential',
+        description: 'Single velocity, core notes only',
+        samples: [
+          { url: 'C3.mp3', note: 'C3', velocity: 64, size: 50000 },
+          { url: 'D3.mp3', note: 'D3', velocity: 64, size: 50000 },
+          { url: 'E3.mp3', note: 'E3', velocity: 64, size: 50000 },
+          { url: 'F3.mp3', note: 'F3', velocity: 64, size: 50000 },
+          { url: 'G3.mp3', note: 'G3', velocity: 64, size: 50000 },
+          { url: 'A3.mp3', note: 'A3', velocity: 64, size: 50000 },
+          { url: 'B3.mp3', note: 'B3', velocity: 64, size: 50000 },
+          { url: 'C4.mp3', note: 'C4', velocity: 64, size: 50000 },
+        ],
+        estimatedSize: 400000, // 400KB
+        loadTime: 3200, // 3.2 seconds at 1Mbps
+      },
+      {
+        quality: 'standard',
+        description: '3 velocity layers, chromatic scale',
+        samples: [
+          // Velocity layer 1 (pp - pianissimo)
+          { url: 'C3v1.mp3', note: 'C3', velocity: 32, size: 45000 },
+          { url: 'Ds3v1.mp3', note: 'D#3', velocity: 32, size: 45000 },
+          { url: 'Fs3v1.mp3', note: 'F#3', velocity: 32, size: 45000 },
+          { url: 'A3v1.mp3', note: 'A3', velocity: 32, size: 45000 },
+          { url: 'C4v1.mp3', note: 'C4', velocity: 32, size: 45000 },
+          // Velocity layer 2 (mf - mezzo-forte)
+          { url: 'C3v2.mp3', note: 'C3', velocity: 64, size: 50000 },
+          { url: 'Ds3v2.mp3', note: 'D#3', velocity: 64, size: 50000 },
+          { url: 'Fs3v2.mp3', note: 'F#3', velocity: 64, size: 50000 },
+          { url: 'A3v2.mp3', note: 'A3', velocity: 64, size: 50000 },
+          { url: 'C4v2.mp3', note: 'C4', velocity: 64, size: 50000 },
+          // Velocity layer 3 (ff - fortissimo)
+          { url: 'C3v3.mp3', note: 'C3', velocity: 96, size: 55000 },
+          { url: 'Ds3v3.mp3', note: 'D#3', velocity: 96, size: 55000 },
+          { url: 'Fs3v3.mp3', note: 'F#3', velocity: 96, size: 55000 },
+          { url: 'A3v3.mp3', note: 'A3', velocity: 96, size: 55000 },
+          { url: 'C4v3.mp3', note: 'C4', velocity: 96, size: 55000 },
+        ],
+        estimatedSize: 1500000, // 1.5MB
+        loadTime: 12000, // 12 seconds at 1Mbps
+      },
+      {
+        quality: 'premium',
+        description: '5+ velocity layers, full range, release samples',
+        samples: [
+          // This would be the full Salamander Grand Piano
+          // 88 keys × 5 velocities × ~100KB per sample = ~44MB
+        ],
+        estimatedSize: 44000000, // 44MB
+        loadTime: 352000, // 5.8 minutes at 1Mbps (why we need background loading!)
+      },
+    ],
+  },
+  
+  drums: {
+    name: 'drums',
+    displayName: 'Drum Kit',
+    tiers: [
+      {
+        quality: 'essential',
+        description: 'Basic synth drums',
+        samples: [], // Synths don't need samples
+        estimatedSize: 0,
+        loadTime: 0,
+      },
+      {
+        quality: 'standard',
+        description: 'Boss DR-110 samples',
+        samples: [
+          { url: 'dr110kik.mp3', size: 30000 },
+          { url: 'dr110clp.mp3', size: 25000 },
+          { url: 'dr110cht.mp3', size: 15000 },
+          { url: 'dr110oht.mp3', size: 18000 },
+          { url: 'dr110sn1.mp3', size: 22000 },
+          { url: 'dr110sn2.mp3', size: 22000 },
+        ],
+        estimatedSize: 132000, // 132KB
+        loadTime: 1056, // 1 second at 1Mbps
+      },
+      {
+        quality: 'premium',
+        description: 'Multi-layered acoustic kit',
+        samples: [
+          // Full kit with round-robins and velocity layers
+          // ~20 drums × 4 velocities × 3 round-robins × 50KB = ~12MB
+        ],
+        estimatedSize: 12000000, // 12MB
+        loadTime: 96000, // 1.6 minutes at 1Mbps
+      },
+    ],
+  },
+  
+  bass: {
+    name: 'bass',
+    displayName: 'Bass Guitar',
+    tiers: [
+      {
+        quality: 'essential',
+        description: 'Open strings only',
+        samples: [
+          { url: 'E1.mp3', note: 'E1', size: 60000 },
+          { url: 'A1.mp3', note: 'A1', size: 60000 },
+          { url: 'D2.mp3', note: 'D2', size: 60000 },
+          { url: 'G2.mp3', note: 'G2', size: 60000 },
+        ],
+        estimatedSize: 240000, // 240KB
+        loadTime: 1920, // 2 seconds at 1Mbps
+      },
+      {
+        quality: 'standard',
+        description: 'Chromatic, single velocity',
+        samples: [
+          // E1 to G3, chromatic
+        ],
+        estimatedSize: 2000000, // 2MB
+        loadTime: 16000, // 16 seconds at 1Mbps
+      },
+      {
+        quality: 'premium',
+        description: 'Multi-velocity with articulations',
+        samples: [
+          // Full range with slaps, pops, harmonics
+        ],
+        estimatedSize: 8000000, // 8MB
+        loadTime: 64000, // 1 minute at 1Mbps
+      },
+    ],
+  },
+  
+  metronome: {
+    name: 'metronome',
+    displayName: 'Metronome',
+    tiers: [
+      {
+        quality: 'essential',
+        description: 'Basic click',
+        samples: [], // Synth-based
+        estimatedSize: 0,
+        loadTime: 0,
+      },
+      {
+        quality: 'standard',
+        description: 'Woodblock and click samples',
+        samples: [
+          { url: 'click_hi.mp3', size: 5000 },
+          { url: 'click_lo.mp3', size: 5000 },
+          { url: 'woodblock_hi.mp3', size: 8000 },
+          { url: 'woodblock_lo.mp3', size: 8000 },
+        ],
+        estimatedSize: 26000, // 26KB
+        loadTime: 208, // 0.2 seconds at 1Mbps
+      },
+      {
+        quality: 'premium',
+        description: 'Multiple click types',
+        samples: [
+          // Various click sounds, cowbell, rimshot, etc.
+        ],
+        estimatedSize: 100000, // 100KB
+        loadTime: 800, // 0.8 seconds at 1Mbps
+      },
+    ],
+  },
+};
+
+/**
+ * Get loading priority order based on typical user needs
+ */
+export function getLoadingPriority(): string[] {
+  return [
+    'harmony:essential',
+    'drums:essential',
+    'metronome:essential',
+    'harmony:standard',
+    'drums:standard',
+    'bass:essential',
+    'metronome:standard',
+    'harmony:premium',
+    'drums:premium',
+    'bass:standard',
+    'bass:premium',
+    'metronome:premium',
+  ];
+}
+
+/**
+ * Calculate total size for a given quality tier across all instruments
+ */
+export function calculateTotalSize(quality: 'essential' | 'standard' | 'premium'): number {
+  let totalSize = 0;
+  
+  Object.values(SAMPLE_MANIFEST).forEach(instrument => {
+    const tier = instrument.tiers.find(t => t.quality === quality);
+    if (tier) {
+      totalSize += tier.estimatedSize;
+    }
+  });
+  
+  return totalSize;
+}
+
+/**
+ * Get human-readable size string
+ */
+export function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+/**
+ * Estimate loading time based on connection speed
+ */
+export function estimateLoadTime(bytes: number, mbps: number = 1): number {
+  const bytesPerSecond = (mbps * 1000000) / 8; // Convert Mbps to bytes/second
+  return Math.round((bytes / bytesPerSecond) * 1000); // Return milliseconds
+}
+
+/**
+ * Get recommended quality tier based on connection speed
+ */
+export function getRecommendedQuality(connectionType?: string): 'essential' | 'standard' | 'premium' {
+  // Use Network Information API if available
+  if ('connection' in navigator) {
+    const connection = (navigator as any).connection;
+    const effectiveType = connection?.effectiveType;
+    
+    switch (effectiveType) {
+      case 'slow-2g':
+      case '2g':
+        return 'essential';
+      case '3g':
+        return 'standard';
+      case '4g':
+      default:
+        return 'premium';
+    }
+  }
+  
+  // Default to standard if we can't detect
+  return 'standard';
+}

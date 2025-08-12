@@ -1,0 +1,316 @@
+2025-07-21 15:27:36 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-21 15:27:36 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-21 15:27:36 +02:00: Caused by:
+2025-07-21 15:27:36 +02:00:     No such file or directory (os error 2)
+2025-07-21 15:27:36 +02:00: Import trace for requested module:
+2025-07-21 15:27:36 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-21 15:27:36 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-21 15:27:37 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-21 15:27:37 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-21 15:27:37 +02:00: Caused by:
+2025-07-21 15:27:37 +02:00:     No such file or directory (os error 2)
+2025-07-21 15:27:37 +02:00: Import trace for requested module:
+2025-07-21 15:27:37 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-21 15:27:37 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-21 15:50:54 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-21 15:50:54 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-21 15:50:54 +02:00: Caused by:
+2025-07-21 15:50:54 +02:00:     No such file or directory (os error 2)
+2025-07-21 15:50:54 +02:00: Import trace for requested module:
+2025-07-21 15:50:54 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-21 15:50:54 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-21 15:50:54 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-21 15:50:54 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-21 15:50:54 +02:00: Caused by:
+2025-07-21 15:50:54 +02:00:     No such file or directory (os error 2)
+2025-07-21 15:50:54 +02:00: Import trace for requested module:
+2025-07-21 15:50:54 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-21 15:50:54 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-21 15:52:04 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-21 15:52:04 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-21 15:52:04 +02:00: Caused by:
+2025-07-21 15:52:04 +02:00:     No such file or directory (os error 2)
+2025-07-21 15:52:04 +02:00: Import trace for requested module:
+2025-07-21 15:52:04 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-21 15:52:04 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-21 15:52:05 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-21 15:52:05 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-21 15:52:05 +02:00: Caused by:
+2025-07-21 15:52:05 +02:00:     No such file or directory (os error 2)
+2025-07-21 15:52:05 +02:00: Import trace for requested module:
+2025-07-21 15:52:05 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-21 15:52:05 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-21 15:57:04 +02:00:  [31m[1m⨯[22m[39m Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/vendor-chunks/zod@3.25.76.js'
+2025-07-21 15:57:04 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-21 15:57:04 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-21 15:57:04 +02:00:     at Array.reduce (<anonymous>)
+2025-07-21 15:57:04 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-21 15:57:04 +02:00:     at Array.map (<anonymous>)
+2025-07-21 15:57:04 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-21 15:57:04 +02:00:     at <unknown> (.next/server/app/library/[tutorialId]/page.js:2058:47)
+2025-07-21 15:57:04 +02:00:     at Object.<anonymous> (.next/server/app/library/[tutorialId]/page.js:2061:3) {
+2025-07-21 15:57:04 +02:00:   errno: [33m-2[39m,
+2025-07-21 15:57:04 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 15:57:04 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 15:57:04 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/vendor-chunks/zod@3.25.76.js'[39m,
+2025-07-21 15:57:04 +02:00:   page: [32m'/library/come-together'[39m
+2025-07-21 15:57:04 +02:00: }
+2025-07-21 15:57:04 +02:00:  [31m[1m⨯[22m[39m Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/vendor-chunks/zod@3.25.76.js'
+2025-07-21 15:57:04 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-21 15:57:04 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-21 15:57:04 +02:00:     at Array.reduce (<anonymous>)
+2025-07-21 15:57:04 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-21 15:57:04 +02:00:     at Array.map (<anonymous>)
+2025-07-21 15:57:04 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-21 15:57:04 +02:00:     at <unknown> (.next/server/app/test-drums/page.js:1508:47)
+2025-07-21 15:57:04 +02:00:     at Object.<anonymous> (.next/server/app/test-drums/page.js:1511:3) {
+2025-07-21 15:57:04 +02:00:   errno: [33m-2[39m,
+2025-07-21 15:57:04 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 15:57:04 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 15:57:04 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/vendor-chunks/zod@3.25.76.js'[39m,
+2025-07-21 15:57:04 +02:00:   page: [32m'/test-drums'[39m
+2025-07-21 15:57:04 +02:00: }
+2025-07-21 15:57:11 +02:00:  [31m[1m⨯[22m[39m Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/vendor-chunks/zod@3.25.76.js'
+2025-07-21 15:57:11 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-21 15:57:11 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-21 15:57:11 +02:00:     at Array.reduce (<anonymous>)
+2025-07-21 15:57:11 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-21 15:57:11 +02:00:     at Array.map (<anonymous>)
+2025-07-21 15:57:11 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-21 15:57:11 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1014:47)
+2025-07-21 15:57:11 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1017:3) {
+2025-07-21 15:57:11 +02:00:   errno: [33m-2[39m,
+2025-07-21 15:57:11 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 15:57:11 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 15:57:11 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/vendor-chunks/zod@3.25.76.js'[39m
+2025-07-21 15:57:11 +02:00: }
+2025-07-21 15:57:11 +02:00:  [31m[1m⨯[22m[39m Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/vendor-chunks/zod@3.25.76.js'
+2025-07-21 15:57:11 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-21 15:57:11 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-21 15:57:11 +02:00:     at Array.reduce (<anonymous>)
+2025-07-21 15:57:11 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-21 15:57:11 +02:00:     at Array.map (<anonymous>)
+2025-07-21 15:57:11 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-21 15:57:11 +02:00:     at <unknown> (.next/server/app/test-drums/page.js:1508:47)
+2025-07-21 15:57:11 +02:00:     at Object.<anonymous> (.next/server/app/test-drums/page.js:1511:3) {
+2025-07-21 15:57:11 +02:00:   errno: [33m-2[39m,
+2025-07-21 15:57:11 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 15:57:11 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 15:57:11 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/vendor-chunks/zod@3.25.76.js'[39m,
+2025-07-21 15:57:11 +02:00:   page: [32m'/test-drums'[39m
+2025-07-21 15:57:11 +02:00: }
+2025-07-21 15:57:12 +02:00:  [31m[1m⨯[22m[39m Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/vendor-chunks/zod@3.25.76.js'
+2025-07-21 15:57:12 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-21 15:57:12 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-21 15:57:12 +02:00:     at Array.reduce (<anonymous>)
+2025-07-21 15:57:12 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-21 15:57:12 +02:00:     at Array.map (<anonymous>)
+2025-07-21 15:57:12 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-21 15:57:12 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1014:47)
+2025-07-21 15:57:12 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1017:3) {
+2025-07-21 15:57:12 +02:00:   errno: [33m-2[39m,
+2025-07-21 15:57:12 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 15:57:12 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 15:57:12 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/vendor-chunks/zod@3.25.76.js'[39m
+2025-07-21 15:57:12 +02:00: }
+2025-07-21 15:57:14 +02:00:  [31m[1m⨯[22m[39m Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/vendor-chunks/zod@3.25.76.js'
+2025-07-21 15:57:14 +02:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+2025-07-21 15:57:14 +02:00:     at <unknown> (.next/server/webpack-runtime.js:111:40)
+2025-07-21 15:57:14 +02:00:     at Array.reduce (<anonymous>)
+2025-07-21 15:57:14 +02:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+2025-07-21 15:57:14 +02:00:     at Array.map (<anonymous>)
+2025-07-21 15:57:14 +02:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+2025-07-21 15:57:14 +02:00:     at <unknown> (.next/server/app/_not-found/page.js:1014:47)
+2025-07-21 15:57:14 +02:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1017:3) {
+2025-07-21 15:57:14 +02:00:   errno: [33m-2[39m,
+2025-07-21 15:57:14 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 15:57:14 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 15:57:14 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/vendor-chunks/zod@3.25.76.js'[39m
+2025-07-21 15:57:14 +02:00: }
+2025-07-21 15:58:11 +02:00: [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/server-development/7.pack.gz'] {
+2025-07-21 15:58:11 +02:00:   errno: [33m-2[39m,
+2025-07-21 15:58:11 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 15:58:11 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 15:58:11 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/server-development/7.pack.gz'[39m
+2025-07-21 15:58:11 +02:00: }
+2025-07-21 15:58:11 +02:00:  [31m[1m⨯[22m[39m unhandledRejection: [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/server-development/7.pack.gz'] {
+2025-07-21 15:58:11 +02:00:   errno: [33m-2[39m,
+2025-07-21 15:58:11 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 15:58:11 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 15:58:11 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/server-development/7.pack.gz'[39m
+2025-07-21 15:58:11 +02:00: }
+2025-07-21 15:58:11 +02:00:  [31m[1m⨯[22m[39m unhandledRejection:  [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/server-development/7.pack.gz'] {
+2025-07-21 15:58:11 +02:00:   errno: [33m-2[39m,
+2025-07-21 15:58:11 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 15:58:11 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 15:58:11 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/server-development/7.pack.gz'[39m
+2025-07-21 15:58:11 +02:00: }
+2025-07-21 15:58:11 +02:00: [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/server-development/17.pack.gz'] {
+2025-07-21 15:58:11 +02:00:   errno: [33m-2[39m,
+2025-07-21 15:58:11 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 15:58:11 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 15:58:11 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/server-development/17.pack.gz'[39m
+2025-07-21 15:58:11 +02:00: }
+2025-07-21 15:58:11 +02:00:  [31m[1m⨯[22m[39m unhandledRejection: [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/server-development/17.pack.gz'] {
+2025-07-21 15:58:11 +02:00:   errno: [33m-2[39m,
+2025-07-21 15:58:11 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 15:58:11 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 15:58:11 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/server-development/17.pack.gz'[39m
+2025-07-21 15:58:11 +02:00: }
+2025-07-21 15:58:11 +02:00:  [31m[1m⨯[22m[39m unhandledRejection:  [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/server-development/17.pack.gz'] {
+2025-07-21 15:58:11 +02:00:   errno: [33m-2[39m,
+2025-07-21 15:58:11 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 15:58:11 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 15:58:11 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/server-development/17.pack.gz'[39m
+2025-07-21 15:58:11 +02:00: }
+2025-07-21 15:58:11 +02:00: <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/server-development/7.pack.gz'
+2025-07-21 16:14:04 +02:00:  [31m[1m⨯[22m[39m [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'] {
+2025-07-21 16:14:04 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:14:04 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:14:04 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 16:14:04 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'[39m,
+2025-07-21 16:14:04 +02:00:   page: [32m'/library/come-together'[39m
+2025-07-21 16:14:04 +02:00: }
+2025-07-21 16:14:04 +02:00:  [31m[1m⨯[22m[39m [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/pages-manifest.json'] {
+2025-07-21 16:14:04 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:14:04 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:14:04 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 16:14:04 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/pages-manifest.json'[39m
+2025-07-21 16:14:04 +02:00: }
+2025-07-21 16:14:04 +02:00:  [31m[1m⨯[22m[39m [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'] {
+2025-07-21 16:14:04 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:14:04 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:14:04 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 16:14:04 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'[39m
+2025-07-21 16:14:04 +02:00: }
+2025-07-21 16:14:05 +02:00:  [31m[1m⨯[22m[39m [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'] {
+2025-07-21 16:14:05 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:14:05 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:14:05 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 16:14:05 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'[39m
+2025-07-21 16:14:05 +02:00: }
+2025-07-21 16:14:05 +02:00:  [31m[1m⨯[22m[39m [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'] {
+2025-07-21 16:14:05 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:14:05 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:14:05 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 16:14:05 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'[39m
+2025-07-21 16:14:05 +02:00: }
+2025-07-21 16:14:05 +02:00:  [31m[1m⨯[22m[39m [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'] {
+2025-07-21 16:14:05 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:14:05 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:14:05 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 16:14:05 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'[39m
+2025-07-21 16:14:05 +02:00: }
+2025-07-21 16:14:05 +02:00:  [31m[1m⨯[22m[39m [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'] {
+2025-07-21 16:14:05 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:14:05 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:14:05 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 16:14:05 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'[39m
+2025-07-21 16:14:05 +02:00: }
+2025-07-21 16:14:05 +02:00:  [31m[1m⨯[22m[39m [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'] {
+2025-07-21 16:14:05 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:14:05 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:14:05 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 16:14:05 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'[39m
+2025-07-21 16:14:05 +02:00: }
+2025-07-21 16:14:05 +02:00:  [31m[1m⨯[22m[39m [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'] {
+2025-07-21 16:14:05 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:14:05 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:14:05 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 16:14:05 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'[39m
+2025-07-21 16:14:05 +02:00: }
+2025-07-21 16:14:05 +02:00:  [31m[1m⨯[22m[39m [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'] {
+2025-07-21 16:14:05 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:14:05 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:14:05 +02:00:   syscall: [32m'open'[39m,
+2025-07-21 16:14:05 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app-paths-manifest.json'[39m
+2025-07-21 16:14:05 +02:00: }
+2025-07-21 16:14:19 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-21 16:14:19 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-21 16:14:19 +02:00: Caused by:
+2025-07-21 16:14:19 +02:00:     No such file or directory (os error 2)
+2025-07-21 16:14:19 +02:00: Import trace for requested module:
+2025-07-21 16:14:19 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-21 16:14:19 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-21 16:14:19 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-21 16:14:19 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-21 16:14:19 +02:00: Caused by:
+2025-07-21 16:14:19 +02:00:     No such file or directory (os error 2)
+2025-07-21 16:14:19 +02:00: Import trace for requested module:
+2025-07-21 16:14:19 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-21 16:14:19 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-21 16:15:22 +02:00: [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/7.pack.gz'] {
+2025-07-21 16:15:22 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:15:22 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:15:22 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 16:15:22 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/7.pack.gz'[39m
+2025-07-21 16:15:22 +02:00: }
+2025-07-21 16:15:22 +02:00:  [31m[1m⨯[22m[39m unhandledRejection: [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/7.pack.gz'] {
+2025-07-21 16:15:22 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:15:22 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:15:22 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 16:15:22 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/7.pack.gz'[39m
+2025-07-21 16:15:22 +02:00: }
+2025-07-21 16:15:22 +02:00:  [31m[1m⨯[22m[39m unhandledRejection:  [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/7.pack.gz'] {
+2025-07-21 16:15:22 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:15:22 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:15:22 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 16:15:22 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/7.pack.gz'[39m
+2025-07-21 16:15:22 +02:00: }
+2025-07-21 16:15:22 +02:00: [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/2.pack.gz'] {
+2025-07-21 16:15:22 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:15:22 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:15:22 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 16:15:22 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/2.pack.gz'[39m
+2025-07-21 16:15:22 +02:00: }
+2025-07-21 16:15:22 +02:00:  [31m[1m⨯[22m[39m unhandledRejection: [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/2.pack.gz'] {
+2025-07-21 16:15:22 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:15:22 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:15:22 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 16:15:22 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/2.pack.gz'[39m
+2025-07-21 16:15:22 +02:00: }
+2025-07-21 16:15:22 +02:00:  [31m[1m⨯[22m[39m unhandledRejection:  [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/2.pack.gz'] {
+2025-07-21 16:15:22 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:15:22 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:15:22 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 16:15:22 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/2.pack.gz'[39m
+2025-07-21 16:15:22 +02:00: }
+2025-07-21 16:15:22 +02:00: [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/20.pack.gz'] {
+2025-07-21 16:15:22 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:15:22 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:15:22 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 16:15:22 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/20.pack.gz'[39m
+2025-07-21 16:15:22 +02:00: }
+2025-07-21 16:15:22 +02:00:  [31m[1m⨯[22m[39m unhandledRejection: [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/20.pack.gz'] {
+2025-07-21 16:15:22 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:15:22 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:15:22 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 16:15:22 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/20.pack.gz'[39m
+2025-07-21 16:15:22 +02:00: }
+2025-07-21 16:15:22 +02:00:  [31m[1m⨯[22m[39m unhandledRejection:  [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/20.pack.gz'] {
+2025-07-21 16:15:22 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:15:22 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:15:22 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 16:15:22 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/20.pack.gz'[39m
+2025-07-21 16:15:22 +02:00: }
+2025-07-21 16:15:22 +02:00: [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/23.pack.gz'] {
+2025-07-21 16:15:22 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:15:22 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:15:22 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 16:15:22 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/23.pack.gz'[39m
+2025-07-21 16:15:22 +02:00: }
+2025-07-21 16:15:22 +02:00:  [31m[1m⨯[22m[39m unhandledRejection: [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/23.pack.gz'] {
+2025-07-21 16:15:22 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:15:22 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:15:22 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 16:15:22 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/23.pack.gz'[39m
+2025-07-21 16:15:22 +02:00: }
+2025-07-21 16:15:22 +02:00:  [31m[1m⨯[22m[39m unhandledRejection:  [Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/23.pack.gz'] {
+2025-07-21 16:15:22 +02:00:   errno: [33m-2[39m,
+2025-07-21 16:15:22 +02:00:   code: [32m'ENOENT'[39m,
+2025-07-21 16:15:22 +02:00:   syscall: [32m'stat'[39m,
+2025-07-21 16:15:22 +02:00:   path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/23.pack.gz'[39m
+2025-07-21 16:15:22 +02:00: }
+2025-07-21 16:15:22 +02:00: <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development/2.pack.gz'
+2025-07-21 16:16:58 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-21 16:17:03 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload

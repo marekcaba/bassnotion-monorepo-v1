@@ -13,7 +13,7 @@ import {
   HammerOnRenderer,
   RenderContext,
   // TechniqueAnimationState, // Unused in tests
-} from '../TechniqueRendererPlugin.js';
+} from '../TechniqueRendererPlugin';
 
 // Mock THREE.js
 vi.mock('three', () => {

@@ -110,6 +110,9 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
         scrollContainer.removeEventListener('scroll', handleScroll);
       };
     }
+
+    // Return empty cleanup function when no scroll container is found
+    return () => {};
   }, []);
 
   // Handle second selection (add another note to the same dot)
@@ -590,7 +593,7 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
                   x2: number;
                   y2: number;
                 }> = [];
-                const connectionElements: JSX.Element[] = [];
+                const connectionElements: React.ReactElement[] = [];
                 let overlapCount = 0; // Track number of overlaps for alternating colors
 
                 connections.forEach(({ pos1, pos2 }, index) => {

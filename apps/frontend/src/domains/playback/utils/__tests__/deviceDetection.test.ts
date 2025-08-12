@@ -14,7 +14,7 @@ import {
   requiresUserGesture,
   getDevicePerformanceTier,
   getBatteryOptimizationRecommendations,
-} from '../deviceDetection.js';
+} from '../deviceDetection';
 
 // Store original values - will be set up in beforeEach
 let _originalUserAgent: string;

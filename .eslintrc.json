@@ -17,12 +17,16 @@
       "files": [
         "**/*.test.ts",
         "**/*.test.tsx",
-        "**/*.spec.ts", 
+        "**/*.spec.ts",
         "**/*.spec.tsx",
         "**/__tests__/**/*.ts",
         "**/__tests__/**/*.tsx"
       ],
-      "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"],
+      "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "prettier"
+      ],
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
         "ecmaVersion": 2022,
@@ -54,7 +58,7 @@
                 "onlyDependOnLibsWithTags": ["scope:shared"]
               },
               {
-                "sourceTag": "scope:backend", 
+                "sourceTag": "scope:backend",
                 "onlyDependOnLibsWithTags": ["scope:shared"]
               },
               {
@@ -83,7 +87,11 @@
         "prettier"
       ],
       "parserOptions": {
-        "project": ["./tsconfig.json", "./apps/*/tsconfig.json", "./libs/*/tsconfig.json"]
+        "project": [
+          "./tsconfig.json",
+          "./apps/*/tsconfig.json",
+          "./libs/*/tsconfig.json"
+        ]
       },
       "rules": {
         "prettier/prettier": "error",

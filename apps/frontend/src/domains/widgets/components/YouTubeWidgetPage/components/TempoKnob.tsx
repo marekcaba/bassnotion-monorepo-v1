@@ -70,7 +70,7 @@ export function TempoKnob({
       const clientX =
         e instanceof MouseEvent
           ? e.clientX
-          : (e as TouchEvent).changedTouches[0].clientX;
+          : (e as TouchEvent).changedTouches?.[0]?.clientX || 0;
 
       if (knobRef.current) {
         const rect = knobRef.current.getBoundingClientRect();
@@ -98,7 +98,7 @@ export function TempoKnob({
     const handleMouseMove = (e: MouseEvent) => handleMove(e.clientX);
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault();
-      handleMove(e.touches[0].clientX);
+      handleMove(e.touches?.[0]?.clientX || 0);
     };
     const handleMouseUp = (e: MouseEvent) => handleEnd(e);
     const handleTouchEnd = (e: TouchEvent) => handleEnd(e);
@@ -136,7 +136,7 @@ export function TempoKnob({
           }}
           onTouchStart={(e) => {
             e.preventDefault();
-            handleStart(e.touches[0].clientX);
+            handleStart(e.touches?.[0]?.clientX || 0);
           }}
           onDragStart={(e) => e.preventDefault()}
         >

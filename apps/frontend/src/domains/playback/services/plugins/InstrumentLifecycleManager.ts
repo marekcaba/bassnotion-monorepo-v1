@@ -16,11 +16,11 @@
  * Integration: Works with all professional instruments (Tasks 2-6) and AssetManager (Task 7)
  */
 
-import { BassInstrumentProcessor } from './BassInstrumentProcessor.js';
-import { DrumInstrumentProcessor } from './DrumInstrumentProcessor.js';
-import { ChordInstrumentProcessor } from './ChordInstrumentProcessor.js';
-import { MetronomeInstrumentProcessor } from './MetronomeInstrumentProcessor.js';
-import { AssetManager } from '../AssetManager.js';
+import { BassInstrumentProcessor } from './BassInstrumentProcessor';
+import { DrumInstrumentProcessor } from './DrumInstrumentProcessor';
+import { ChordInstrumentProcessor } from './ChordInstrumentProcessor';
+import { MetronomeInstrumentProcessor } from './MetronomeInstrumentProcessor';
+import { AssetManager } from '../AssetManager';
 
 // Core interfaces for lifecycle management
 export interface InstrumentInstance {

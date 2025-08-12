@@ -7,7 +7,7 @@
  * Integrates with existing PerformanceMonitor from playback domain.
  */
 
-import { PerformanceMonitor } from '../../../playback/services/PerformanceMonitor.js';
+import { PerformanceMonitor } from '../../../playback/services/PerformanceMonitor';
 
 export interface WidgetPerformanceMetrics {
   // Rendering Performance
@@ -519,7 +519,7 @@ ${warnings.map((t) => `- ⚠️ **${t.metric}:** ${t.current}${t.unit} (target: 
     const assetLoadTimes = resources
       .filter(
         (r) =>
-          r.name.includes('.js') ||
+          r.name.includes('') ||
           r.name.includes('.css') ||
           r.name.includes('.woff'),
       )

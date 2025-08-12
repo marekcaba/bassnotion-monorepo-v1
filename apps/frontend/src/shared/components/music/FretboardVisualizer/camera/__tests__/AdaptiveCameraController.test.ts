@@ -11,7 +11,7 @@ import {
   CameraConfig,
   ViewportConfig,
   TechniqueCameraSettings,
-} from '../AdaptiveCameraController.js';
+} from '../AdaptiveCameraController';
 
 // Mock THREE.js completely - this must happen before any imports use it
 vi.mock('three', () => {

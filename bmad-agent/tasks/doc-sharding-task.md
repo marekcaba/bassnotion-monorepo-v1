@@ -10,21 +10,18 @@ Transform large project documents into smaller, granular files within the `docs/
 
 1. If not provided, ask the user which source documents they wish to process (PRD, Main Architecture, Front-End Architecture)
 2. Validate prerequisites:
-
    - Provided `doc-sharding-tmpl.txt` or access to `bmad-agent/doc-sharding-tmpl.txt`
    - Location of source documents to process
    - Write access to the `docs/` directory
    - Output method (file system or chat interface)
 
 3. For each selected document:
-
    - Follow the structure in `doc-sharding-tmpl.txt`, processing only relevant sections
    - Extract content verbatim without summarization or reinterpretation
    - Create self-contained markdown files for each section or output to chat
    - Use consistent file naming as specified in the plan
 
 4. For `docs/index.md` when working with the file system:
-
    - Create if absent
    - Add descriptive titles with relative markdown links
    - Organize content logically with brief descriptions

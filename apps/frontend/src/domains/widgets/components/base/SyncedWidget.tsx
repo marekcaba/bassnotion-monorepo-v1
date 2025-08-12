@@ -207,6 +207,9 @@ export const SyncedWidget: React.FC<SyncedWidgetProps> = ({
       'EXERCISE_CHANGE',
       'TEMPO_CHANGE',
       'VOLUME_CHANGE',
+      'PLAY',
+      'PAUSE',
+      'STOP',
     ],
     throttleUpdates: true,
     throttleMs: 16, // 60fps
@@ -260,7 +263,8 @@ export const SyncedWidget: React.FC<SyncedWidgetProps> = ({
         mergedSyncOptions,
       );
     }
-  }, [widgetId, widgetName, debugMode, mergedSyncOptions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widgetId, widgetName, debugMode]); // Removed mergedSyncOptions to prevent repeated logs
 
   // Create render props
   const renderProps: SyncedWidgetRenderProps = {
@@ -274,6 +278,13 @@ export const SyncedWidget: React.FC<SyncedWidgetProps> = ({
     hasError: sync.state.hasError,
     performanceMetrics: sync.performanceMetrics,
   };
+  
+  // Debug log for play state changes
+  React.useEffect(() => {
+    if (debugMode) {
+      console.log(`🔄 SyncedWidget[${widgetId}]: isPlaying changed to ${sync.isPlaying}`);
+    }
+  }, [sync.isPlaying, widgetId, debugMode]);
 
   return (
     <SyncedWidgetErrorBoundary

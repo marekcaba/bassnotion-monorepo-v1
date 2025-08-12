@@ -22,7 +22,7 @@ import {
   AutoSaveService,
   type AutoSaveState,
   type AutoSaveCallbacks,
-} from '../../services/AutoSave.js';
+} from '../../services/AutoSave';
 import type {
   ExerciseNote,
   BasslineMetadata,

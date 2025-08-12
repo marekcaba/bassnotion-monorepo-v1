@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Soundfont Local Loading Test</title>
+  </head>
+  <body>
+    <h1>Soundfont Local Loading Test</h1>
+    <button id="testBtn">Test Local Soundfont Loading</button>
+    <div id="output"></div>
+
+    <script
+      src="http://localhost:3001/_next/static/chunks/soundfont-player.js"
+      onerror="console.log('Soundfont-player script not found')"
+    ></script>
+    <script>
+      const output = document.getElementById('output');
+
+      function log(message) {
+        console.log(message);
+        output.innerHTML += message + '<br>';
+      }
+
+      document.getElementById('testBtn').addEventListener('click', async () => {
+        try {
+          log('🎼 Testing local soundfont loading...');
+
+          // Test if soundfont-player is available
+          if (typeof Soundfont === 'undefined') {
+            log('❌ Soundfont library not available, loading via CDN...');
+
+            // Dynamically load soundfont-player from CDN for testing
+            const script = document.createElement('script');
+            script.src =
+              'https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.min.js';
+            document.head.appendChild(script);
+
+            await new Promise((resolve, reject) => {
+              script.onload = resolve;
+              script.onerror = reject;
+            });
+
+            log('✅ Soundfont library loaded from CDN');
+          }
+
+          // Create AudioContext
+          const audioContext = new (window.AudioContext ||
+            window.webkitAudioContext)();
+          log('🎼 AudioContext created');
+
+          // Test our custom nameToUrl function
+          const customNameToUrl = (name, soundfont, format) => {
+            const actualFormat = format === 'ogg' ? 'ogg' : 'mp3';
+            const localUrl = `/soundfonts/${name}-${actualFormat}.js`;
+            log(`🎼 Custom nameToUrl: ${localUrl}`);
+            return localUrl;
+          };
+
+          log('🎼 Loading acoustic_grand_piano with custom nameToUrl...');
+
+          const instrument = await Soundfont.instrument(
+            audioContext,
+            'acoustic_grand_piano',
+            {
+              format: 'mp3',
+              nameToUrl: customNameToUrl,
+            },
+          );
+
+          log('✅ Successfully loaded soundfont instrument!');
+          log(`🎼 Instrument loaded: ${instrument.name}`);
+          log(
+            `🎼 Number of samples: ${Object.keys(instrument.buffers || {}).length}`,
+          );
+
+          // Test playing a note
+          if (instrument.play) {
+            log('🎵 Playing test note C4...');
+            instrument.play('C4');
+            log('✅ Note played successfully!');
+          } else {
+            log('❌ No play method available');
+          }
+        } catch (error) {
+          log(`❌ Error: ${error.message}`);
+          console.error('Full error:', error);
+        }
+      });
+    </script>
+  </body>
+</html>

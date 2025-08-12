@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import type { ExerciseNote } from '../types/fretboard.js';
+import type { ExerciseNote } from '../types/fretboard';
 
 interface ContextMenuProps {
   isVisible: boolean;

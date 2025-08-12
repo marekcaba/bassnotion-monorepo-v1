@@ -16,8 +16,8 @@ import {
   DegradationStrategy,
   DegradationAction,
   DegradationState,
-} from '../../errors/GracefulDegradation.js';
-import { ErrorCategory, ErrorSeverity } from '../../errors/base.js';
+} from '../../errors/GracefulDegradation';
+import { ErrorCategory, ErrorSeverity } from '../../errors/base';
 
 // Test Environment Setup
 const setupGracefulDegradationEnvironment = () => {

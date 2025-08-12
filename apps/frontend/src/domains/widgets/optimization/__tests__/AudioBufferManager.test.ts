@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AudioBufferManager } from '../AudioBufferManager.js';
+import { AudioBufferManager } from '../AudioBufferManager';
 
 // Mock Web Audio API
 class MockAudioContext {

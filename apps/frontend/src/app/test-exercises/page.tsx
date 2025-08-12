@@ -5,13 +5,10 @@ import {
   getExercises,
   getExerciseWithNotes,
 } from '@/domains/widgets/api/exercises';
-import type {
-  DatabaseExercise,
-  ExerciseWithNotes,
-} from '@bassnotion/contracts';
+import type { Exercise, ExerciseWithNotes } from '@bassnotion/contracts';
 
 export default function TestExercisesPage() {
-  const [exercises, setExercises] = useState<DatabaseExercise[]>([]);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedExercise, setSelectedExercise] =
     useState<ExerciseWithNotes | null>(null);
   const [loading, setLoading] = useState(false);
@@ -137,7 +134,11 @@ export default function TestExercisesPage() {
                     <span>BPM: {exercise.bpm}</span>
                     <span>Key: {exercise.key}</span>
                     <span>
-                      Duration: {Math.round(exercise.duration / 1000)}s
+                      Duration:{' '}
+                      {exercise.duration
+                        ? Math.round(exercise.duration / 1000)
+                        : exercise.duration_beats}
+                      s
                     </span>
                   </div>
                 </div>
@@ -160,7 +161,11 @@ export default function TestExercisesPage() {
                 <span>Notes: {selectedExercise.notes.length}</span>
                 <span>BPM: {selectedExercise.bpm}</span>
                 <span>
-                  Duration: {Math.round(selectedExercise.duration / 1000)}s
+                  Duration:{' '}
+                  {selectedExercise.duration
+                    ? Math.round(selectedExercise.duration / 1000)
+                    : selectedExercise.duration_beats}
+                  s
                 </span>
               </div>
             </div>

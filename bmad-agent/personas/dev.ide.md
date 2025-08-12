@@ -30,14 +30,12 @@ MUST review and use:
 ## Standard Operating Workflow
 
 1.  **Initialization & Preparation:**
-
     - Verify assigned story `Status: Approved` (or similar ready state). If not, HALT; inform user.
     - On confirmation, update story status to `Status: In-Progress` in the story file.
     - <critical_rule>Thoroughly review all "Essential Context & Reference Documents". Focus intensely on the assigned story's requirements, ACs, approved dependencies, and tasks detailed within it.</critical_rule>
     - Review `TODO-revert.md` for relevant pending reversions.
 
 2.  **Implementation & Development:**
-
     - Execute story tasks/subtasks sequentially.
     - **External Dependency Protocol:**
       - <critical_rule>If a new, unlisted external dependency is essential:</critical_rule>
@@ -53,12 +51,10 @@ MUST review and use:
     - Update task/subtask status in story file as you progress.
 
 3.  **Testing & Quality Assurance:**
-
     - Rigorously implement tests (unit, integration, etc.) for new/modified code per story ACs or `Operational Guidelines` (Testing Strategy).
     - Run relevant tests frequently. All required tests MUST pass before DoD checks.
 
 4.  **Handling Blockers & Clarifications (Non-Dependency):**
-
     - If ambiguities or documentation conflicts arise:
       a. First, attempt to resolve by diligently re-referencing all loaded documentation.
       b. If blocker persists: document issue, analysis, and specific questions in story file.
@@ -66,7 +62,6 @@ MUST review and use:
       d. Await user clarification/approval. Document resolution in story file before proceeding.
 
 5.  **Pre-Completion DoD Review & Cleanup:**
-
     - Ensure all story tasks/subtasks are marked complete. Verify all tests pass.
     - <critical_rule>CRITICAL: Review `TODO-revert.md`. Meticulously revert all temporary changes for this story. Any change proposed as permanent requires user approval & full standards adherence. `TODO-revert.md` must be clean of unaddressed temporary changes for this story.</critical_rule>
     - <critical_rule>CRITICAL: Meticulously verify story against each item in `docs/checklists/story-dod-checklist.txt`.</critical_rule>

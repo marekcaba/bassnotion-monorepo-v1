@@ -19,8 +19,8 @@ import {
   DownloadOptions,
 } from '@bassnotion/contracts';
 
-import { SupabaseAssetClient } from './SupabaseAssetClient.js';
-import { AudioCompressionEngine } from '../AudioCompressionEngine.js';
+import { SupabaseAssetClient } from './SupabaseAssetClient';
+import { AudioCompressionEngine } from '../AudioCompressionEngine';
 
 // Streaming-specific interfaces
 export interface StreamingSession {

@@ -24,7 +24,7 @@ import {
   requiresUserGesture,
   getDevicePerformanceTier,
   getBatteryOptimizationRecommendations,
-} from '../deviceDetection.js';
+} from '../deviceDetection';
 
 // Mock user agent safely
 const mockUserAgent = (userAgent: string) => {

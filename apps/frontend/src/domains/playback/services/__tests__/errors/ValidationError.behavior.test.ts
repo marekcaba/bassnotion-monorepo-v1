@@ -9,12 +9,8 @@ import {
   ValidationError,
   ValidationErrorCode,
   createValidationError,
-} from '../../errors/ValidationError.js';
-import {
-  ErrorSeverity,
-  ErrorCategory,
-  ErrorContext,
-} from '../../errors/base.js';
+} from '../../errors/ValidationError';
+import { ErrorSeverity, ErrorCategory, ErrorContext } from '../../errors/base';
 
 describe('ValidationError Behavioral Tests', () => {
   // ================================

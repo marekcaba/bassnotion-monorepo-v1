@@ -18,7 +18,7 @@ import {
   AudioSampleQualityProfile,
 } from '@bassnotion/contracts';
 
-import SampleCacheManager from '../SampleCacheManager.js';
+import SampleCacheManager from '../SampleCacheManager';
 
 // Mock performance.now for consistent testing
 const mockPerformanceNow = vi.fn();

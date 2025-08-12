@@ -1,0 +1,358 @@
+2025-08-02 00:05:22 +02:00:  GET /test-transport [32m200[39m in 282ms
+2025-08-02 00:05:22 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-02 00:05:23 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1304ms (1813 modules)
+2025-08-02 00:05:23 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1537ms
+2025-08-02 00:06:18 +02:00:  [32m[1m✓[22m[39m Compiled in 1172ms (3529 modules)
+2025-08-02 00:06:18 +02:00:  GET /test-transport [32m200[39m in 78ms
+2025-08-02 00:06:33 +02:00:  [32m[1m✓[22m[39m Compiled in 625ms (3528 modules)
+2025-08-02 00:06:33 +02:00:  GET /test-transport [32m200[39m in 63ms
+2025-08-02 00:06:41 +02:00:  [32m[1m✓[22m[39m Compiled in 678ms (3528 modules)
+2025-08-02 00:06:41 +02:00:  GET /test-transport [32m200[39m in 54ms
+2025-08-02 00:06:49 +02:00:  [32m[1m✓[22m[39m Compiled in 492ms (3528 modules)
+2025-08-02 00:06:49 +02:00:  GET /test-transport [32m200[39m in 60ms
+2025-08-02 00:06:56 +02:00:  [32m[1m✓[22m[39m Compiled in 502ms (3528 modules)
+2025-08-02 00:06:56 +02:00:  GET /test-transport [32m200[39m in 57ms
+2025-08-02 00:08:19 +02:00:  [32m[1m✓[22m[39m Compiled in 1443ms (3528 modules)
+2025-08-02 00:08:19 +02:00:  GET /test-transport [32m200[39m in 84ms
+2025-08-02 00:08:27 +02:00:  [32m[1m✓[22m[39m Compiled in 620ms (3528 modules)
+2025-08-02 00:08:27 +02:00:  GET /test-transport [32m200[39m in 80ms
+2025-08-02 00:09:46 +02:00:  [32m[1m✓[22m[39m Compiled in 2.3s (3528 modules)
+2025-08-02 00:09:46 +02:00:  GET /test-transport [32m200[39m in 77ms
+2025-08-02 00:10:02 +02:00:  [32m[1m✓[22m[39m Compiled in 645ms (3528 modules)
+2025-08-02 00:10:03 +02:00:  GET /test-transport [32m200[39m in 74ms
+2025-08-02 00:10:12 +02:00:  [32m[1m✓[22m[39m Compiled in 651ms (3528 modules)
+2025-08-02 00:10:12 +02:00:  GET /test-transport [32m200[39m in 82ms
+2025-08-02 00:10:19 +02:00:  [32m[1m✓[22m[39m Compiled in 554ms (3528 modules)
+2025-08-02 00:10:19 +02:00:  GET /test-transport [32m200[39m in 55ms
+2025-08-02 00:10:50 +02:00:  [32m[1m✓[22m[39m Compiled in 480ms (3528 modules)
+2025-08-02 00:10:50 +02:00:  GET /test-transport [32m200[39m in 56ms
+2025-08-02 00:10:59 +02:00:  [32m[1m✓[22m[39m Compiled in 462ms (3528 modules)
+2025-08-02 00:10:59 +02:00:  GET /test-transport [32m200[39m in 56ms
+2025-08-02 00:11:07 +02:00:  [32m[1m✓[22m[39m Compiled in 674ms (3528 modules)
+2025-08-02 00:11:07 +02:00:  GET /test-transport [32m200[39m in 57ms
+2025-08-02 00:11:23 +02:00:  [32m[1m✓[22m[39m Compiled in 601ms (3528 modules)
+2025-08-02 00:11:23 +02:00:  GET /test-transport [32m200[39m in 60ms
+2025-08-02 00:12:33 +02:00:  [32m[1m✓[22m[39m Compiled in 1151ms (3528 modules)
+2025-08-02 00:12:33 +02:00:  GET /test-transport [32m200[39m in 71ms
+2025-08-02 00:12:41 +02:00:  [32m[1m✓[22m[39m Compiled in 502ms (3528 modules)
+2025-08-02 00:12:42 +02:00:  GET /test-transport [32m200[39m in 66ms
+2025-08-02 00:12:58 +02:00:  [32m[1m✓[22m[39m Compiled in 482ms (3528 modules)
+2025-08-02 00:12:58 +02:00:  GET /test-transport [32m200[39m in 54ms
+2025-08-02 00:13:05 +02:00:  [32m[1m✓[22m[39m Compiled in 474ms (3528 modules)
+2025-08-02 00:13:05 +02:00:  GET /test-transport [32m200[39m in 70ms
+2025-08-02 00:14:36 +02:00:  GET /test-transport [32m200[39m in 274ms
+2025-08-02 00:14:36 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-02 00:14:36 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 650ms (1813 modules)
+2025-08-02 00:14:37 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 881ms
+2025-08-02 00:18:11 +02:00:  [32m[1m✓[22m[39m Compiled in 1208ms (3528 modules)
+2025-08-02 00:18:11 +02:00:  GET /test-transport [32m200[39m in 64ms
+2025-08-02 00:19:33 +02:00:  [32m[1m✓[22m[39m Compiled in 1394ms (3528 modules)
+2025-08-02 00:19:33 +02:00:  GET /test-transport [32m200[39m in 101ms
+2025-08-02 00:19:44 +02:00:  [32m[1m✓[22m[39m Compiled in 541ms (3528 modules)
+2025-08-02 00:19:44 +02:00:  GET /test-transport [32m200[39m in 69ms
+2025-08-02 00:20:54 +02:00:  [32m[1m✓[22m[39m Compiled in 1346ms (3528 modules)
+2025-08-02 00:20:54 +02:00:  GET /test-transport [32m200[39m in 91ms
+2025-08-02 00:29:48 +02:00:  GET /test-transport [32m200[39m in 286ms
+2025-08-02 00:29:48 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-02 00:29:49 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 976ms (1813 modules)
+2025-08-02 00:29:49 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1200ms
+2025-08-02 00:31:06 +02:00:  [32m[1m✓[22m[39m Compiled in 1668ms (3528 modules)
+2025-08-02 00:31:06 +02:00:  GET /test-transport [32m200[39m in 77ms
+2025-08-02 00:31:18 +02:00:  [32m[1m✓[22m[39m Compiled in 879ms (3528 modules)
+2025-08-02 00:31:18 +02:00:  GET /test-transport [32m200[39m in 98ms
+2025-08-02 00:31:30 +02:00:  [32m[1m✓[22m[39m Compiled in 799ms (3528 modules)
+2025-08-02 00:31:30 +02:00:  GET /test-transport [32m200[39m in 83ms
+2025-08-02 00:31:38 +02:00:  [32m[1m✓[22m[39m Compiled in 534ms (3528 modules)
+2025-08-02 00:31:38 +02:00:  GET /test-transport [32m200[39m in 56ms
+2025-08-02 00:33:35 +02:00:  GET /test-transport [32m200[39m in 286ms
+2025-08-02 00:33:35 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-02 00:33:35 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 730ms (1813 modules)
+2025-08-02 00:33:36 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 968ms
+2025-08-02 00:34:22 +02:00:  [32m[1m✓[22m[39m Compiled in 1410ms (3529 modules)
+2025-08-02 00:34:22 +02:00:  GET /test-transport [32m200[39m in 80ms
+2025-08-02 00:34:30 +02:00:  [32m[1m✓[22m[39m Compiled in 921ms (3529 modules)
+2025-08-02 00:34:30 +02:00:  GET /test-transport [32m200[39m in 76ms
+2025-08-02 00:34:38 +02:00:  [32m[1m✓[22m[39m Compiled in 630ms (3529 modules)
+2025-08-02 00:34:38 +02:00:  GET /test-transport [32m200[39m in 61ms
+2025-08-02 00:35:07 +02:00:  [32m[1m✓[22m[39m Compiled in 518ms (3528 modules)
+2025-08-02 00:35:07 +02:00:  GET /test-transport [32m200[39m in 59ms
+2025-08-02 00:36:10 +02:00:  [32m[1m✓[22m[39m Compiled in 1341ms (3528 modules)
+2025-08-02 00:36:10 +02:00:  GET /test-transport [32m200[39m in 61ms
+2025-08-02 00:38:28 +02:00:  GET /test-transport [32m200[39m in 299ms
+2025-08-02 00:38:29 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-02 00:38:29 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 688ms (1813 modules)
+2025-08-02 00:38:29 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 847ms
+2025-08-02 00:40:22 +02:00:  GET /test-transport [32m200[39m in 205ms
+2025-08-02 00:40:22 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 26ms
+2025-08-02 00:41:25 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (3529 modules)
+2025-08-02 00:41:25 +02:00:  GET /test-transport [32m200[39m in 89ms
+2025-08-02 00:41:30 +02:00:  [32m[1m✓[22m[39m Compiled in 856ms (3528 modules)
+2025-08-02 00:41:30 +02:00:  GET /test-transport [32m200[39m in 90ms
+2025-08-02 00:41:37 +02:00:  [32m[1m✓[22m[39m Compiled in 537ms (3528 modules)
+2025-08-02 00:41:37 +02:00:  GET /test-transport [32m200[39m in 62ms
+2025-08-02 00:42:03 +02:00:  [32m[1m✓[22m[39m Compiled in 620ms (3528 modules)
+2025-08-02 00:42:03 +02:00:  GET /test-transport [32m200[39m in 63ms
+2025-08-02 00:43:49 +02:00:  GET /test-transport [32m200[39m in 287ms
+2025-08-02 00:43:50 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-02 00:43:50 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 600ms (1813 modules)
+2025-08-02 00:43:50 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 751ms
+2025-08-02 20:37:10 +02:00:  GET /test-transport [32m200[39m in 1231ms
+2025-08-02 20:37:10 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 44ms
+2025-08-02 20:38:22 +02:00:  [32m[1m✓[22m[39m Compiled in 2.9s (3528 modules)
+2025-08-02 20:38:22 +02:00:  GET /test-transport [32m200[39m in 85ms
+2025-08-02 20:38:26 +02:00:  [32m[1m✓[22m[39m Compiled in 621ms (3528 modules)
+2025-08-02 20:38:26 +02:00:  GET /test-transport [32m200[39m in 69ms
+2025-08-02 20:38:32 +02:00:  [32m[1m✓[22m[39m Compiled in 558ms (3528 modules)
+2025-08-02 20:38:32 +02:00:  GET /test-transport [32m200[39m in 53ms
+2025-08-02 20:38:43 +02:00:  [32m[1m✓[22m[39m Compiled in 829ms (3528 modules)
+2025-08-02 20:38:43 +02:00:  GET /test-transport [32m200[39m in 69ms
+2025-08-02 20:40:51 +02:00:  GET /test-transport [32m200[39m in 460ms
+2025-08-02 20:40:52 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-02 20:40:53 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1260ms (1813 modules)
+2025-08-02 20:40:53 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1552ms
+2025-08-02 20:42:10 +02:00:  [32m[1m✓[22m[39m Compiled in 1712ms (3528 modules)
+2025-08-02 20:42:10 +02:00:  GET /test-transport [32m200[39m in 94ms
+2025-08-02 20:42:36 +02:00:  [32m[1m✓[22m[39m Compiled in 825ms (3528 modules)
+2025-08-02 20:42:36 +02:00:  GET /test-transport [32m200[39m in 62ms
+2025-08-02 20:42:44 +02:00:  [32m[1m✓[22m[39m Compiled in 550ms (3528 modules)
+2025-08-02 20:42:44 +02:00:  GET /test-transport [32m200[39m in 87ms
+2025-08-02 21:13:30 +02:00:  GET /test-transport [32m200[39m in 346ms
+2025-08-02 21:13:31 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-02 21:13:32 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1266ms (1813 modules)
+2025-08-02 21:13:32 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1423ms
+2025-08-02 21:21:12 +02:00:  [32m[1m✓[22m[39m Compiled in 736ms (1716 modules)
+2025-08-02 21:21:12 +02:00:  GET /test-transport [32m200[39m in 47ms
+2025-08-02 21:21:39 +02:00:  [32m[1m✓[22m[39m Compiled in 304ms (1716 modules)
+2025-08-02 21:21:39 +02:00:  GET /test-transport [32m200[39m in 14ms
+2025-08-02 21:22:14 +02:00:  [32m[1m✓[22m[39m Compiled in 324ms (1716 modules)
+2025-08-02 21:22:14 +02:00:  GET /test-transport [32m200[39m in 15ms
+2025-08-02 21:22:46 +02:00:  [32m[1m✓[22m[39m Compiled in 298ms (1716 modules)
+2025-08-02 21:22:46 +02:00:  GET /test-transport [32m200[39m in 12ms
+2025-08-02 21:22:56 +02:00:  [32m[1m✓[22m[39m Compiled in 288ms (1716 modules)
+2025-08-02 21:22:56 +02:00:  GET /test-transport [32m200[39m in 11ms
+2025-08-02 21:23:36 +02:00:  [32m[1m✓[22m[39m Compiled in 309ms (1716 modules)
+2025-08-02 21:23:36 +02:00:  GET /test-transport [32m200[39m in 18ms
+2025-08-02 21:34:40 +02:00:  [32m[1m✓[22m[39m Compiled in 1489ms (3528 modules)
+2025-08-02 21:34:40 +02:00:  GET /test-transport [32m200[39m in 115ms
+2025-08-02 21:35:20 +02:00:  [32m[1m✓[22m[39m Compiled in 535ms (3528 modules)
+2025-08-02 21:35:20 +02:00:  GET /test-transport [32m200[39m in 85ms
+2025-08-02 21:35:41 +02:00:  [32m[1m✓[22m[39m Compiled in 533ms (3528 modules)
+2025-08-02 21:35:41 +02:00:  GET /test-transport [32m200[39m in 69ms
+2025-08-02 21:36:37 +02:00:  [32m[1m✓[22m[39m Compiled in 693ms (3528 modules)
+2025-08-02 21:36:37 +02:00:  GET /test-transport [32m200[39m in 64ms
+2025-08-02 21:37:00 +02:00:  [32m[1m✓[22m[39m Compiled in 631ms (3528 modules)
+2025-08-02 21:37:00 +02:00:  GET /test-transport [32m200[39m in 61ms
+2025-08-02 21:37:08 +02:00:  [32m[1m✓[22m[39m Compiled in 873ms (3528 modules)
+2025-08-02 21:37:08 +02:00:  GET /test-transport [32m200[39m in 56ms
+2025-08-02 21:37:15 +02:00:  [32m[1m✓[22m[39m Compiled in 483ms (3528 modules)
+2025-08-02 21:37:15 +02:00:  GET /test-transport [32m200[39m in 58ms
+2025-08-02 21:37:28 +02:00:  [32m[1m✓[22m[39m Compiled in 466ms (3528 modules)
+2025-08-02 21:37:28 +02:00:  GET /test-transport [32m200[39m in 58ms
+2025-08-02 21:37:35 +02:00:  [32m[1m✓[22m[39m Compiled in 734ms (3528 modules)
+2025-08-02 21:37:35 +02:00:  GET /test-transport [32m200[39m in 56ms
+2025-08-02 21:39:10 +02:00:  GET /test-transport [32m200[39m in 305ms
+2025-08-02 21:39:11 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-02 21:39:11 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1269ms (1813 modules)
+2025-08-02 21:39:12 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1491ms
+2025-08-02 21:40:07 +02:00:  [32m[1m✓[22m[39m Compiled in 1670ms (3529 modules)
+2025-08-02 21:40:08 +02:00:  GET /test-transport [32m200[39m in 189ms
+2025-08-02 21:40:30 +02:00:  [32m[1m✓[22m[39m Compiled in 598ms (3528 modules)
+2025-08-02 21:40:30 +02:00:  GET /test-transport [32m200[39m in 61ms
+2025-08-02 21:40:44 +02:00:  [32m[1m✓[22m[39m Compiled in 542ms (3528 modules)
+2025-08-02 21:40:44 +02:00:  GET /test-transport [32m200[39m in 63ms
+2025-08-02 21:42:44 +02:00:  GET /test-transport [32m200[39m in 278ms
+2025-08-02 21:42:45 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-02 21:42:45 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 884ms (1813 modules)
+2025-08-02 21:42:46 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1012ms
+2025-08-02 21:43:30 +02:00:  [32m[1m✓[22m[39m Compiled in 1335ms (3529 modules)
+2025-08-02 21:43:30 +02:00:  GET /test-transport [32m200[39m in 106ms
+2025-08-02 21:49:58 +02:00:  GET /test-transport [32m200[39m in 252ms
+2025-08-02 21:49:58 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 50ms
+2025-08-02 21:54:56 +02:00:  [32m[1m✓[22m[39m Compiled in 1076ms (1716 modules)
+2025-08-02 21:54:56 +02:00:  GET /test-transport [32m200[39m in 19ms
+2025-08-02 22:00:14 +02:00:  GET /test-transport [32m200[39m in 78ms
+2025-08-02 22:00:35 +02:00:  GET /test-transport [32m200[39m in 263ms
+2025-08-02 22:00:36 +02:00:  GET /test-transport [32m200[39m in 346ms
+2025-08-02 22:00:36 +02:00:  GET /test-transport [32m200[39m in 364ms
+2025-08-02 22:00:36 +02:00:  GET /test-transport [32m200[39m in 360ms
+2025-08-02 22:03:32 +02:00:  [32m[1m✓[22m[39m Compiled in 3s (3528 modules)
+2025-08-02 22:03:32 +02:00:  GET /test-transport [32m200[39m in 119ms
+2025-08-02 22:04:06 +02:00:  GET /test-transport [32m200[39m in 370ms
+2025-08-02 22:04:06 +02:00:  GET /test-transport [32m200[39m in 370ms
+2025-08-02 22:04:06 +02:00:  GET /test-transport [32m200[39m in 370ms
+2025-08-02 22:04:06 +02:00:  GET /test-transport [32m200[39m in 370ms
+2025-08-02 22:06:46 +02:00:  GET /test-transport [32m200[39m in 257ms
+2025-08-02 22:06:46 +02:00:  GET /test-transport [32m200[39m in 253ms
+2025-08-02 22:06:46 +02:00:  GET /test-transport [32m200[39m in 275ms
+2025-08-02 22:06:46 +02:00:  GET /test-transport [32m200[39m in 305ms
+2025-08-02 22:11:23 +02:00:  GET /test-transport [32m200[39m in 287ms
+2025-08-02 22:11:23 +02:00:  GET /test-transport [32m200[39m in 288ms
+2025-08-02 22:11:23 +02:00:  GET /test-transport [32m200[39m in 293ms
+2025-08-02 22:11:23 +02:00:  GET /test-transport [32m200[39m in 288ms
+2025-08-02 22:34:39 +02:00:  [32m[1m✓[22m[39m Compiled in 845ms (1812 modules)
+2025-08-02 22:54:43 +02:00:  GET /test-transport [32m200[39m in 445ms
+2025-08-02 22:54:44 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-02 22:54:44 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 844ms (1813 modules)
+2025-08-02 22:54:44 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1010ms
+2025-08-02 22:55:52 +02:00:  GET /test-transport [32m200[39m in 538ms
+2025-08-02 22:55:52 +02:00:  GET /test-transport [32m200[39m in 552ms
+2025-08-02 22:55:52 +02:00:  GET /test-transport [32m200[39m in 537ms
+2025-08-02 22:55:52 +02:00:  GET /test-transport [32m200[39m in 536ms
+2025-08-02 22:55:52 +02:00:  GET /test-transport [32m200[39m in 571ms
+2025-08-02 22:56:11 +02:00:  GET /test-transport [32m200[39m in 246ms
+2025-08-02 22:56:11 +02:00:  GET /test-transport [32m200[39m in 260ms
+2025-08-02 22:56:11 +02:00:  GET /test-transport [32m200[39m in 248ms
+2025-08-02 22:56:11 +02:00:  GET /test-transport [32m200[39m in 252ms
+2025-08-02 22:56:17 +02:00:  GET /test-transport [32m200[39m in 84ms
+2025-08-02 22:56:23 +02:00:  GET /test-transport [32m200[39m in 196ms
+2025-08-02 22:56:34 +02:00:  GET /test-transport [32m200[39m in 139ms
+2025-08-02 22:56:43 +02:00:  GET /test-transport [32m200[39m in 255ms
+2025-08-02 22:56:43 +02:00:  GET /test-transport [32m200[39m in 191ms
+2025-08-02 22:56:43 +02:00:  GET /test-transport [32m200[39m in 188ms
+2025-08-02 22:56:48 +02:00:  GET /test-transport [32m200[39m in 148ms
+2025-08-02 22:56:51 +02:00:  GET /test-transport [32m200[39m in 187ms
+2025-08-02 22:57:07 +02:00:  GET /test-transport [32m200[39m in 150ms
+2025-08-02 22:57:19 +02:00:  GET /test-transport [32m200[39m in 251ms
+2025-08-02 22:57:19 +02:00:  GET /test-transport [32m200[39m in 315ms
+2025-08-02 22:57:19 +02:00:  GET /test-transport [32m200[39m in 127ms
+2025-08-02 22:57:22 +02:00:  GET /test-transport [32m200[39m in 76ms
+2025-08-02 22:57:38 +02:00:  GET /test-transport [32m200[39m in 74ms
+2025-08-02 23:00:08 +02:00:  GET /test-transport [32m200[39m in 313ms
+2025-08-02 23:00:08 +02:00:  GET /test-transport [32m200[39m in 316ms
+2025-08-02 23:00:08 +02:00:  GET /test-transport [32m200[39m in 322ms
+2025-08-02 23:00:08 +02:00:  GET /test-transport [32m200[39m in 359ms
+2025-08-02 23:00:08 +02:00:  GET /test-transport [32m200[39m in 358ms
+2025-08-02 23:00:14 +02:00:  GET /test-transport [32m200[39m in 115ms
+2025-08-02 23:00:23 +02:00:  GET /test-transport [32m200[39m in 143ms
+2025-08-02 23:00:40 +02:00:  GET /test-transport [32m200[39m in 246ms
+2025-08-02 23:00:45 +02:00:  GET /test-transport [32m200[39m in 109ms
+2025-08-02 23:00:45 +02:00:  GET /test-transport [32m200[39m in 78ms
+2025-08-02 23:00:48 +02:00:  GET /test-transport [32m200[39m in 74ms
+2025-08-02 23:00:55 +02:00:  GET /test-transport [32m200[39m in 114ms
+2025-08-02 23:00:58 +02:00:  GET /test-transport [32m200[39m in 86ms
+2025-08-02 23:00:59 +02:00:  GET /test-transport [32m200[39m in 72ms
+2025-08-02 23:01:12 +02:00:  GET /test-transport [32m200[39m in 74ms
+2025-08-02 23:01:15 +02:00:  GET /test-transport [32m200[39m in 70ms
+2025-08-02 23:01:20 +02:00:  GET /test-transport [32m200[39m in 69ms
+2025-08-02 23:01:29 +02:00:  GET /test-transport [32m200[39m in 70ms
+2025-08-02 23:01:30 +02:00:  GET /test-transport [32m200[39m in 76ms
+2025-08-02 23:01:32 +02:00:  GET /test-transport [32m200[39m in 73ms
+2025-08-02 23:01:33 +02:00:  GET /test-transport [32m200[39m in 71ms
+2025-08-02 23:01:42 +02:00:  GET /test-transport [32m200[39m in 85ms
+2025-08-02 23:01:46 +02:00:  GET /test-transport [32m200[39m in 79ms
+2025-08-02 23:01:46 +02:00:  GET /test-transport [32m200[39m in 68ms
+2025-08-02 23:01:46 +02:00:  GET /test-transport [32m200[39m in 53ms
+2025-08-02 23:01:50 +02:00:  GET /test-transport [32m200[39m in 72ms
+2025-08-02 23:01:58 +02:00:  GET /test-transport [32m200[39m in 68ms
+2025-08-02 23:01:59 +02:00:  GET /test-transport [32m200[39m in 68ms
+2025-08-02 23:02:01 +02:00:  GET /test-transport [32m200[39m in 143ms
+2025-08-02 23:02:02 +02:00:  GET /test-transport [32m200[39m in 87ms
+2025-08-02 23:02:03 +02:00:  GET /test-transport [32m200[39m in 59ms
+2025-08-02 23:06:23 +02:00:  [32m[1m✓[22m[39m Compiled in 1838ms (3528 modules)
+2025-08-02 23:06:47 +02:00:  [32m[1m✓[22m[39m Compiled in 747ms (3528 modules)
+2025-08-02 23:07:41 +02:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-08-02 23:07:44 +02:00:  [32m[1m✓[22m[39m Compiled /dashboard in 3.6s (3596 modules)
+2025-08-02 23:07:45 +02:00:  GET /register [32m200[39m in 4257ms
+2025-08-02 23:07:45 +02:00:  GET /register [32m200[39m in 4255ms
+2025-08-02 23:07:45 +02:00:  GET /register [32m200[39m in 4246ms
+2025-08-02 23:07:45 +02:00:  GET /login [32m200[39m in 4259ms
+2025-08-02 23:07:45 +02:00:  GET /dashboard [32m200[39m in 4259ms
+2025-08-02 23:07:47 +02:00:  GET /login [32m200[39m in 19ms
+2025-08-02 23:07:48 +02:00:  GET /register [32m200[39m in 46ms
+2025-08-02 23:07:48 +02:00:  [32m[1m✓[22m[39m Compiled / in 325ms (1863 modules)
+2025-08-02 23:07:48 +02:00:  GET / [32m200[39m in 593ms
+2025-08-02 23:07:48 +02:00:  GET / [32m200[39m in 615ms
+2025-08-02 23:07:49 +02:00:  GET /register [32m200[39m in 123ms
+2025-08-02 23:07:50 +02:00:  [37m[1m○[22m[39m Compiling /test-exercises ...
+2025-08-02 23:07:51 +02:00:  [32m[1m✓[22m[39m Compiled /test-exercises in 1815ms (3614 modules)
+2025-08-02 23:07:51 +02:00:  GET /test-exercises [32m200[39m in 2068ms
+2025-08-02 23:07:51 +02:00:  GET / [32m200[39m in 835ms
+2025-08-02 23:07:51 +02:00:  GET /test-exercises [32m200[39m in 2075ms
+2025-08-02 23:07:51 +02:00:  GET / [32m200[39m in 39ms
+2025-08-02 23:07:52 +02:00:  GET /test-exercises [32m200[39m in 219ms
+2025-08-02 23:07:52 +02:00:  GET /test-exercises [32m200[39m in 137ms
+2025-08-02 23:07:59 +02:00:  GET / [32m200[39m in 119ms
+2025-08-02 23:07:59 +02:00:  GET /test-exercises [32m200[39m in 150ms
+2025-08-02 23:08:19 +02:00:  GET / [32m200[39m in 118ms
+2025-08-02 23:08:19 +02:00:  GET / [32m200[39m in 119ms
+2025-08-02 23:08:20 +02:00:  GET /test-exercises [32m200[39m in 102ms
+2025-08-02 23:08:20 +02:00:  GET /test-exercises [32m200[39m in 107ms
+2025-08-02 23:08:21 +02:00:  GET / [32m200[39m in 61ms
+2025-08-02 23:08:22 +02:00:  GET /test-exercises [32m200[39m in 41ms
+2025-08-02 23:08:22 +02:00:  GET / [32m200[39m in 53ms
+2025-08-02 23:08:23 +02:00:  GET /test-exercises [32m200[39m in 42ms
+2025-08-02 23:08:30 +02:00:  GET / [32m200[39m in 58ms
+2025-08-02 23:08:30 +02:00:  GET /test-exercises [32m200[39m in 58ms
+2025-08-02 23:08:50 +02:00:  GET / [32m200[39m in 100ms
+2025-08-02 23:08:50 +02:00:  GET / [32m200[39m in 102ms
+2025-08-02 23:08:52 +02:00:  GET /test-exercises [32m200[39m in 98ms
+2025-08-02 23:08:52 +02:00:  GET /test-exercises [32m200[39m in 94ms
+2025-08-02 23:08:53 +02:00:  GET / [32m200[39m in 35ms
+2025-08-02 23:08:54 +02:00:  GET / [32m200[39m in 51ms
+2025-08-02 23:08:55 +02:00:  GET / [32m200[39m in 45ms
+2025-08-02 23:08:57 +02:00:  GET /register [32m200[39m in 115ms
+2025-08-02 23:09:01 +02:00:  GET /dashboard [32m200[39m in 75ms
+2025-08-02 23:09:02 +02:00:  GET /login [32m200[39m in 41ms
+2025-08-02 23:09:05 +02:00:  GET /dashboard [32m200[39m in 52ms
+2025-08-02 23:09:06 +02:00:  GET /login [32m200[39m in 29ms
+2025-08-02 23:09:08 +02:00:  GET /dashboard [32m200[39m in 51ms
+2025-08-02 23:09:09 +02:00:  GET /login [32m200[39m in 28ms
+2025-08-02 23:09:22 +02:00:  GET /register [32m200[39m in 68ms
+2025-08-02 23:09:22 +02:00:  GET /login [32m200[39m in 47ms
+2025-08-02 23:09:32 +02:00:  [37m[1m○[22m[39m Compiling /library ...
+2025-08-02 23:09:36 +02:00:  [32m[1m✓[22m[39m Compiled /library in 4.2s (3631 modules)
+2025-08-02 23:09:36 +02:00:  GET /library [32m200[39m in 4602ms
+2025-08-02 23:09:36 +02:00:  GET /library [32m200[39m in 2440ms
+2025-08-02 23:09:36 +02:00:  GET /dashboard [32m200[39m in 2444ms
+2025-08-02 23:09:36 +02:00:  GET /dashboard [32m200[39m in 546ms
+2025-08-02 23:09:37 +02:00:  GET /library [32m200[39m in 59ms
+2025-08-02 23:09:37 +02:00:  GET /register [32m200[39m in 102ms
+2025-08-02 23:09:50 +02:00:  GET /test-transport [32m200[39m in 244ms
+2025-08-02 23:09:50 +02:00:  GET /test-transport [32m200[39m in 239ms
+2025-08-02 23:09:51 +02:00:  GET /test-transport [32m200[39m in 378ms
+2025-08-02 23:09:51 +02:00:  GET /test-transport [32m200[39m in 370ms
+2025-08-02 23:09:52 +02:00:  GET /test-transport [32m200[39m in 71ms
+2025-08-02 23:15:30 +02:00:  GET /test-transport [32m200[39m in 165ms
+2025-08-02 23:15:30 +02:00:  GET /test-transport [32m200[39m in 182ms
+2025-08-02 23:15:31 +02:00:  GET /test-transport [32m200[39m in 132ms
+2025-08-02 23:15:31 +02:00:  GET /test-transport [32m200[39m in 133ms
+2025-08-02 23:15:32 +02:00:  GET /test-transport [32m200[39m in 92ms
+2025-08-02 23:21:23 +02:00:  GET /test-transport [32m200[39m in 172ms
+2025-08-02 23:21:23 +02:00:  GET /test-transport [32m200[39m in 167ms
+2025-08-02 23:21:24 +02:00:  GET /test-transport [32m200[39m in 111ms
+2025-08-02 23:21:24 +02:00:  GET /test-transport [32m200[39m in 112ms
+2025-08-02 23:21:25 +02:00:  GET /test-transport [32m200[39m in 263ms
+2025-08-02 23:24:48 +02:00:  GET /test-transport [32m200[39m in 178ms
+2025-08-02 23:24:48 +02:00:  GET /test-transport [32m200[39m in 180ms
+2025-08-02 23:24:49 +02:00:  GET /test-transport [32m200[39m in 126ms
+2025-08-02 23:24:49 +02:00:  GET /test-transport [32m200[39m in 129ms
+2025-08-02 23:24:50 +02:00:  GET /test-transport [32m200[39m in 107ms
+2025-08-02 23:27:32 +02:00:  GET /test-transport [32m200[39m in 189ms
+2025-08-02 23:27:32 +02:00:  GET /test-transport [32m200[39m in 183ms
+2025-08-02 23:27:33 +02:00:  GET /test-transport [32m200[39m in 129ms
+2025-08-02 23:27:33 +02:00:  GET /test-transport [32m200[39m in 128ms
+2025-08-02 23:27:34 +02:00:  GET /test-transport [32m200[39m in 178ms
+2025-08-02 23:31:18 +02:00:  GET /register [32m200[39m in 363ms
+2025-08-02 23:31:18 +02:00:  GET /login [32m200[39m in 366ms
+2025-08-02 23:31:18 +02:00:  GET /register [32m200[39m in 367ms
+2025-08-02 23:31:18 +02:00:  GET /register [32m200[39m in 366ms
+2025-08-02 23:31:18 +02:00:  GET /dashboard [32m200[39m in 373ms
+2025-08-02 23:31:20 +02:00:  GET /login [32m200[39m in 11ms
+2025-08-02 23:31:20 +02:00:  GET /register [32m200[39m in 60ms
+2025-08-02 23:31:20 +02:00:  GET / [32m200[39m in 81ms
+2025-08-02 23:31:20 +02:00:  GET / [32m200[39m in 42ms
+2025-08-02 23:31:21 +02:00:  GET /test-exercises [32m200[39m in 209ms
+2025-08-02 23:31:21 +02:00:  GET /register [32m200[39m in 174ms
+2025-08-02 23:31:22 +02:00:  GET /test-exercises [32m200[39m in 130ms
+2025-08-02 23:31:23 +02:00:  GET / [32m200[39m in 38ms
+2025-08-02 23:31:23 +02:00:  GET /test-exercises [32m200[39m in 46ms
+2025-08-02 23:31:23 +02:00:  GET / [32m200[39m in 34ms
+2025-08-02 23:31:24 +02:00:  GET /test-exercises [32m200[39m in 58ms
+2025-08-02 23:52:52 +02:00:  GET /test-transport [32m200[39m in 84ms
+2025-08-02 23:53:06 +02:00:  GET /test-transport [32m200[39m in 89ms
+2025-08-02 23:53:19 +02:00:  GET /test-transport [32m200[39m in 111ms
+2025-08-02 23:57:35 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-08-02 23:57:37 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1830ms (1841 modules)
+2025-08-02 23:57:37 +02:00:  GET /exercises [33m404[39m in 2110ms
+2025-08-02 23:58:06 +02:00:  GET /exercises [33m404[39m in 224ms
+2025-08-02 23:58:06 +02:00:  GET /test-transport [32m200[39m in 236ms

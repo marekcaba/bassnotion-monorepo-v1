@@ -12,10 +12,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import {
-  LatencyOptimizer,
-  type LatencyMeasurement,
-} from '../LatencyOptimizer.js';
+import { LatencyOptimizer, type LatencyMeasurement } from '../LatencyOptimizer';
 
 // Mock Web Audio API
 class MockAudioContext {

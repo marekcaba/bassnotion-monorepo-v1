@@ -18,7 +18,7 @@ import {
   ErrorMetrics,
   createErrorContext,
   determineSeverity,
-} from '../../errors/base.js';
+} from '../../errors/base';
 
 // Test Environment Setup
 const setupTestEnvironment = () => {

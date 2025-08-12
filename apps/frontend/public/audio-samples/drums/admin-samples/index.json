@@ -1,0 +1,26 @@
+{
+  "kits": [
+    {
+      "id": "acoustic-kit",
+      "name": "Admin Acoustic Kit",
+      "description": "Custom acoustic drum kit curated by platform admins",
+      "source": "admin",
+      "style": "acoustic",
+      "quality": "studio",
+      "sampleCount": 12,
+      "size": 20971520,
+      "previewUrl": "drums/admin-samples/acoustic-kit/preview.mp3"
+    },
+    {
+      "id": "electronic-kit",
+      "name": "Admin Electronic Kit",
+      "description": "Modern electronic drum sounds selected by admins",
+      "source": "admin",
+      "style": "electronic",
+      "quality": "studio",
+      "sampleCount": 15,
+      "size": 18874368,
+      "previewUrl": "drums/admin-samples/electronic-kit/preview.mp3"
+    }
+  ]
+}

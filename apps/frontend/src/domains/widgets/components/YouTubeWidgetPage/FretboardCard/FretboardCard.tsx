@@ -21,6 +21,7 @@ import { useExerciseLoader } from './hooks/useExerciseLoader';
 import { useDotSynchronization } from './hooks/useDotSynchronization';
 import { useDotSelectionHandlers } from './hooks/useDotSelectionHandlers';
 import { useStringCountHandlers } from './hooks/useStringCountHandlers';
+// import { useWidgetAudioRegistration } from '@/domains/widgets/hooks/useWidgetAudioRegistration'; // TODO: Fix - depends on deleted useWidgetSync
 import { FretboardHeader } from './components/FretboardHeader';
 import { ExerciseProgressBar } from './components/ExerciseProgressBar';
 import { FretboardControls } from './components/FretboardControls';
@@ -79,6 +80,10 @@ interface FretboardCardProps {
   setStringCount3D?: (count: 4 | 5 | 6) => void;
   cameraMode?: 'overview' | 'action';
   setCameraMode?: (mode: 'overview' | 'action') => void;
+  maxFrets?: number;
+  tiltAngle?: number;
+  onMaxFretsChange?: (frets: number) => void;
+  onTiltAngleChange?: (angle: number) => void;
   // Exercise-related props
   tutorialData?: any;
   tutorialSlug?: string;
@@ -95,6 +100,10 @@ export function FretboardCard({
   setStringCount3D,
   cameraMode,
   setCameraMode,
+  maxFrets = 25,
+  tiltAngle = 35,
+  onMaxFretsChange,
+  onTiltAngleChange,
   tutorialData,
   tutorialSlug,
   exercises,
@@ -111,7 +120,6 @@ export function FretboardCard({
           'EXERCISE_CHANGE',
           'TEMPO_CHANGE',
         ],
-        debugMode: true,
       }}
     >
       {(syncProps: SyncedWidgetRenderProps) => (
@@ -125,6 +133,10 @@ export function FretboardCard({
           setStringCount3D={setStringCount3D}
           cameraMode={cameraMode}
           setCameraMode={setCameraMode}
+          maxFrets={maxFrets}
+          tiltAngle={tiltAngle}
+          onMaxFretsChange={onMaxFretsChange}
+          onTiltAngleChange={onTiltAngleChange}
           tutorialData={tutorialData}
           tutorialSlug={tutorialSlug}
           exercises={exercises}
@@ -172,7 +184,7 @@ function getDifficultyConfig(difficulty: any) {
   };
 }
 
-let renderCount = 0;
+const renderCount = 0;
 
 function FretboardCardContent({
   syncProps,
@@ -184,6 +196,10 @@ function FretboardCardContent({
   setStringCount3D,
   cameraMode,
   setCameraMode,
+  maxFrets = 25,
+  tiltAngle = 35,
+  onMaxFretsChange,
+  onTiltAngleChange,
   tutorialData,
   tutorialSlug,
   exercises,
@@ -197,6 +213,10 @@ function FretboardCardContent({
   setStringCount3D?: (count: 4 | 5 | 6) => void;
   cameraMode?: 'overview' | 'action';
   setCameraMode?: (mode: 'overview' | 'action') => void;
+  maxFrets?: number;
+  tiltAngle?: number;
+  onMaxFretsChange?: (frets: number) => void;
+  onTiltAngleChange?: (angle: number) => void;
   tutorialData?: any;
   tutorialSlug?: string;
   exercises?: any[];
@@ -225,77 +245,87 @@ function FretboardCardContent({
 
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
 
-  const handleExerciseSelect = (exerciseId: string) => {
-    const exercise = exercisesList.find((ex) => ex.id === exerciseId);
-    if (exercise) {
-      // Check if this exercise is already selected by comparing with sync state
-      const wasAlreadySelected = syncProps.selectedExercise?.id === exerciseId;
+  const handleExerciseSelect = React.useCallback(
+    (exerciseId: string) => {
+      const exercise = exercisesList.find((ex) => ex.id === exerciseId);
+      if (exercise) {
+        // Check if this exercise is already selected by comparing with sync state
+        const wasAlreadySelected =
+          syncProps.selectedExercise?.id === exerciseId;
 
-      // Add a unique selection timestamp to track user clicks
-      const timestamp = Date.now();
-      const exerciseWithTimestamp = {
-        ...exercise,
-        _selectionTimestamp: timestamp,
-      };
+        // Add a unique selection timestamp to track user clicks
+        const timestamp = Date.now();
+        const exerciseWithTimestamp = {
+          ...exercise,
+          _selectionTimestamp: timestamp,
+        };
 
-      setSelectedExerciseId(exerciseId);
-      selectExercise(exerciseWithTimestamp);
-      onExerciseSelect?.(exerciseId);
+        setSelectedExerciseId(exerciseId);
+        selectExercise(exerciseWithTimestamp);
+        onExerciseSelect?.(exerciseId);
 
-      // Emit comprehensive sync events to configure all widgets
-      syncProps.sync.actions.emitEvent(
-        'EXERCISE_CHANGE',
-        {
-          exercise,
-          forceReload: wasAlreadySelected,
-          clickTimestamp: timestamp,
-        },
-        'high',
-      );
-
-      // Update tempo for metronome and global controls
-      if (exercise.bpm && exercise.bpm > 0) {
+        // Emit comprehensive sync events to configure all widgets
         syncProps.sync.actions.emitEvent(
-          'TEMPO_CHANGE',
+          'EXERCISE_CHANGE',
           {
-            tempo: exercise.bpm,
-            source: 'exercise-selector',
-            reason: 'exercise-template',
+            exercise,
+            forceReload: wasAlreadySelected,
+            clickTimestamp: timestamp,
           },
           'high',
         );
-      }
 
-      // Custom bassline pattern if available
-      if (
-        exercise.chord_progression &&
-        Array.isArray(exercise.chord_progression)
-      ) {
+        // Update tempo for metronome and global controls
+        if (exercise.bpm && exercise.bpm > 0) {
+          syncProps.sync.actions.emitEvent(
+            'TEMPO_CHANGE',
+            {
+              tempo: exercise.bpm,
+              source: 'exercise-selector',
+              reason: 'exercise-template',
+            },
+            'high',
+          );
+        }
+
+        // Custom bassline pattern if available
+        if (
+          exercise.chord_progression &&
+          Array.isArray(exercise.chord_progression)
+        ) {
+          syncProps.sync.actions.emitEvent(
+            'CUSTOM_BASSLINE',
+            {
+              chordProgression: exercise.chord_progression,
+              key: exercise.key,
+              source: 'exercise-selector',
+              reason: 'exercise-template',
+            },
+            'normal',
+          );
+        }
+
+        // Volume configuration for optimal practice
         syncProps.sync.actions.emitEvent(
-          'CUSTOM_BASSLINE',
+          'VOLUME_CHANGE',
           {
-            chordProgression: exercise.chord_progression,
-            key: exercise.key,
+            masterVolume: 0.8,
+            metronomeVolume: 0.7,
             source: 'exercise-selector',
             reason: 'exercise-template',
           },
-          'normal',
+          'low',
         );
       }
-
-      // Volume configuration for optimal practice
-      syncProps.sync.actions.emitEvent(
-        'VOLUME_CHANGE',
-        {
-          masterVolume: 0.8,
-          metronomeVolume: 0.7,
-          source: 'exercise-selector',
-          reason: 'exercise-template',
-        },
-        'low',
-      );
-    }
-  };
+    },
+    [
+      exercisesList,
+      syncProps.selectedExercise?.id,
+      syncProps.sync.actions,
+      selectExercise,
+      onExerciseSelect,
+    ],
+  );
 
   // Auto-select first exercise when exercises load
   useEffect(() => {
@@ -305,26 +335,11 @@ function FretboardCardContent({
         handleExerciseSelect(firstExercise.id);
       }
     }
-  }, [exercisesList, selectedExerciseId]);
-
-  // Debug: Track renders
-  renderCount++;
-  console.log(
-    '🔄 FretboardCardContent RENDER #',
-    renderCount,
-    'hasUserScrolled:',
-    hasUserScrolled,
-  );
+  }, [exercisesList.length, selectedExerciseId, handleExerciseSelect]);
 
   // Only reset scroll to 0 if user hasn't manually scrolled
   React.useEffect(() => {
     if (!hasUserScrolled && scrollContainerRef.current && !is3DMode) {
-      console.log(
-        '🚨 FORCING SCROLL TO 0 - hasUserScrolled:',
-        hasUserScrolled,
-        'is3DMode:',
-        is3DMode,
-      );
       scrollContainerRef.current.scrollLeft = 0;
     }
   }, [is3DMode, hasUserScrolled]);
@@ -332,14 +347,11 @@ function FretboardCardContent({
   // Set initial scroll position on mount only
   React.useEffect(() => {
     if (scrollContainerRef.current && !is3DMode) {
-      console.log('🏠 MOUNT: Setting scroll to 0');
       scrollContainerRef.current.scrollLeft = 0;
     }
   }, []); // Run only on mount
-  // Use the main fretboard hook that combines all functionality
-  const fretboard = useFretboard(syncProps);
 
-  // Use shared state from parent, with defaults if not provided
+  // Use shared state from parent, with defaults if not provided - MUST be declared before useFretboard
   const sharedSelectedDots = selectedDots3D || new Map();
   const sharedSetSelectedDots =
     setSelectedDots3D ||
@@ -347,6 +359,14 @@ function FretboardCardContent({
       console.log('No setSelectedDots3D provided, dots:', dots);
     });
   const sharedStringCount = stringCount3D || 4;
+
+  // Use the main fretboard hook that combines all functionality
+  const fretboard = useFretboard(syncProps, {
+    stringCount: sharedStringCount,
+    maxFrets: maxFrets,
+    tiltAngle: tiltAngle,
+  });
+
   const sharedSetStringCount =
     setStringCount3D ||
     ((count: StringCount) => {
@@ -361,6 +381,40 @@ function FretboardCardContent({
 
   // Manual selection tracking hook
   const manualSelectionTracking = useManualSelectionTracking();
+
+  // TODO: Fix audio registration - depends on deleted useWidgetSync
+  // const audioRegistrationConfig = React.useMemo(
+  //   () => ({
+  //     widgetId: 'interactive-fretboard',
+  //     widgetType: 'fretboard' as const,
+  //     displayName: 'Interactive Fretboard Visualization',
+  //     audioConfig: {
+  //       id: 'interactive-fretboard',
+  //       type: 'bass' as const,
+  //       volume: 0.8, // Fretboard is primarily visual, lower volume
+  //       pan: 0, // Center panning
+  //       muted: false,
+  //       solo: false,
+  //     },
+  //     requiresPreciseSync: true, // Fretboard needs precise sync for visual timing
+  //     latencyTolerance: 16, // 16ms for 60fps smooth animations
+  //     tempoSensitive: true,
+  //     volumeSensitive: false, // Fretboard volume is not critical
+  //     priority: 3, // Medium priority - visual feedback
+  //     canBeSoloed: false, // Fretboard doesn't produce audio directly
+  //     canBeMuted: false, // Always show fretboard
+  //     autoRegister: false, // Disable auto-register to prevent re-registration loops
+  //   }),
+  //   [],
+  // );
+
+  // Audio registration for global playback synchronization (Story 3.14)
+  // const { state: audioState, controls: audioControls } =
+  //   useWidgetAudioRegistration(audioRegistrationConfig);
+  
+  // Temporary placeholders
+  const audioState = { isRegistered: false, hasError: false };
+  const audioControls = { register: () => {}, unregister: () => {} };
 
   // Get selected exercise from sync props for GlobalControls
   const activeExercise = syncProps.selectedExercise;
@@ -438,12 +492,11 @@ function FretboardCardContent({
     }
   }, [
     fretboard.exerciseData.hasExercise,
-    fretboard.exerciseData.exerciseNotes,
+    fretboard.exerciseData.exerciseNotes.length,
     fretboard.exerciseData.selectedExercise?.id,
     setSelectedDots3D,
-    fretboard.exercise.convertExerciseNotesToSelectedDots,
-    manualSelectionTracking.hasManuallyReset,
-    manualSelectionTracking.hasManualSelections,
+    // Removed unstable function references to prevent infinite loops
+    // manualSelectionTracking functions are stable and don't need to be in dependencies
   ]);
 
   // Auto-scroll to center a specific fret in view
@@ -483,7 +536,6 @@ function FretboardCardContent({
             scrollContainerRef.current &&
             scrollContainerRef.current.scrollLeft > 0
           ) {
-            console.log('🎵 AUTO-SCROLL: Scrolling to 0 for open string note');
             scrollContainerRef.current.scrollTo({
               left: 0,
               behavior: 'smooth',
@@ -515,10 +567,6 @@ function FretboardCardContent({
               fretX < currentViewStart + buffer ||
               fretX > currentViewEnd - buffer
             ) {
-              console.log(
-                '🎵 AUTO-SCROLL: Scrolling to fret',
-                currentNote.fret,
-              );
               scrollToFret(currentNote.fret);
             }
           }
@@ -560,10 +608,6 @@ function FretboardCardContent({
     scrollContainerRef.current.scrollLeft = dragStart.scrollLeft - walk;
 
     // Mark that user has manually scrolled
-    console.log(
-      '🐆 USER DRAG: Setting hasUserScrolled to true, scroll position:',
-      scrollContainerRef.current.scrollLeft,
-    );
     setHasUserScrolled(true);
   };
 
@@ -679,188 +723,6 @@ function FretboardCardContent({
                   ))}
             </div>
           </div>
-
-          {/* 3D Mode Toggle Button - Top Right Corner with Neumorphic Shadows */}
-          <button
-            onClick={onToggle3DMode}
-            className={`absolute top-6 right-6 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 z-10 ${
-              is3DMode
-                ? 'bg-purple-500/20 text-purple-300 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] border border-purple-500/30'
-                : 'bg-orange-500/20 text-orange-300 shadow-[2px_2px_4px_rgba(0,0,0,0.5),-2px_-2px_4px_rgba(255,255,255,0.1)] border border-orange-500/30'
-            } hover:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.5),inset_-1px_-1px_2px_rgba(255,255,255,0.1)]`}
-          >
-            {is3DMode ? '2D Mode' : '3D Mode'}
-          </button>
-
-          {/* Header Section */}
-          <div className="flex items-center justify-between mb-6">
-            {/* Left Side - Sync Status & Title */}
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-3 h-3 rounded-full shadow-[1px_1px_2px_rgba(0,0,0,0.4),-1px_-1px_2px_rgba(255,255,255,0.1)] ${
-                  syncProps.isConnected ? 'bg-green-400' : 'bg-red-400'
-                }`}
-                role="img"
-                aria-label={
-                  syncProps.isConnected
-                    ? 'Widget synchronized'
-                    : 'Widget sync error'
-                }
-                title={syncProps.isConnected ? 'Synced' : 'Sync error'}
-              />
-              <div>
-                <h3 className="font-semibold text-sm text-white">
-                  🎸 Interactive Fretboard
-                </h3>
-                <p className="text-xs text-slate-400">
-                  {syncStatus} •{' '}
-                  {fretboard.checkHasSelectedDots()
-                    ? 'Notes Selected'
-                    : 'Ready'}
-                </p>
-              </div>
-            </div>
-
-            {/* Center - Playback Status */}
-            {fretboard.exercise.audioIntegration.playbackPosition?.isPlaying &&
-              fretboard.exercise.audioIntegration.playbackPosition
-                .currentNote && (
-                <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 rounded-lg border border-blue-500/30 shadow-[inset_1px_1px_2px_rgba(0,0,0,0.3),inset_-1px_-1px_2px_rgba(255,255,255,0.1)]">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-                  <div className="text-sm text-blue-300">
-                    <span className="font-medium">
-                      {
-                        fretboard.exercise.audioIntegration.playbackPosition
-                          .currentNote.note
-                      }
-                      {
-                        fretboard.exercise.audioIntegration.playbackPosition
-                          .currentNote.octave
-                      }
-                    </span>
-                    <span className="ml-2 text-xs">
-                      {Math.round(
-                        fretboard.exercise.audioIntegration.playbackPosition
-                          .progress * 100,
-                      )}
-                      %
-                    </span>
-                  </div>
-                </div>
-              )}
-
-            {/* Right Side - Empty for 3D Mode Button positioning */}
-            <div></div>
-          </div>
-
-          {/* Mode Controls Section */}
-          <div className="flex items-center justify-between">
-            {/* Left Controls Group */}
-            <div className="flex items-center gap-4">
-              {/* String Count Controls */}
-              <div className="flex items-center gap-2">
-                <select
-                  value={sharedStringCount}
-                  onChange={(e) => {
-                    const count = parseInt(e.target.value) as 4 | 5 | 6;
-                    // Update both shared state and fretboard internal state
-                    stringCountHandlers.handleStringCountChangeWithValidation(
-                      count,
-                    );
-                    fretboard.state.handleStringCountChange(count);
-                  }}
-                  className="px-3 py-1 rounded-lg bg-slate-700/50 text-slate-300 text-sm font-medium border border-slate-600/50 shadow-[2px_2px_4px_rgba(0,0,0,0.4),-1px_-1px_2px_rgba(255,255,255,0.1)] hover:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.3),inset_-1px_-1px_2px_rgba(255,255,255,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200"
-                >
-                  {[4, 5, 6].map((count) => (
-                    <option key={count} value={count}>
-                      {count} String
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Fret Count Controls */}
-              <div className="flex items-center gap-2">
-                <select
-                  value={fretboard.maxFrets || 25}
-                  onChange={(e) =>
-                    fretboard.handleMaxFretsChange?.(parseInt(e.target.value))
-                  }
-                  className="px-3 py-1 rounded-lg bg-slate-700/50 text-slate-300 text-sm font-medium border border-slate-600/50 shadow-[2px_2px_4px_rgba(0,0,0,0.4),-1px_-1px_2px_rgba(255,255,255,0.1)] hover:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.3),inset_-1px_-1px_2px_rgba(255,255,255,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200"
-                >
-                  {Array.from({ length: 7 }, (_, i) => i + 19).map(
-                    (fretCount) => (
-                      <option key={fretCount} value={fretCount}>
-                        {fretCount} Frets
-                      </option>
-                    ),
-                  )}
-                </select>
-              </div>
-            </div>
-
-            {/* Action Buttons with Metronome Style */}
-            <div className="flex items-center gap-2">
-              {fretboard.checkHasSelectedDots() && (
-                <button
-                  onClick={dotSelectionHandlers.handleUnifiedReset}
-                  className="px-3 py-2 rounded-xl bg-slate-800 shadow-[5px_5px_10px_rgba(0,0,0,0.5),-5px_-5px_10px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] transition-all duration-300 text-red-400 text-sm font-medium"
-                >
-                  Reset
-                </button>
-              )}
-
-              {is3DMode ? (
-                /* 3D Mode: Camera Controls */
-                <>
-                  <button
-                    onClick={() => sharedSetCameraMode('overview')}
-                    className={`px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 ${
-                      sharedCameraMode === 'overview'
-                        ? 'shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-blue-400'
-                        : 'shadow-[5px_5px_10px_rgba(0,0,0,0.5),-5px_-5px_10px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-slate-300'
-                    }`}
-                  >
-                    Overview
-                  </button>
-                  <button
-                    onClick={() => sharedSetCameraMode('action')}
-                    className={`px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 ${
-                      sharedCameraMode === 'action'
-                        ? 'shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-blue-400'
-                        : 'shadow-[5px_5px_10px_rgba(0,0,0,0.5),-5px_-5px_10px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-slate-300'
-                    }`}
-                  >
-                    Action
-                  </button>
-                </>
-              ) : (
-                /* 2D Mode: Tilt Controls */
-                <>
-                  <button
-                    onClick={() => fretboard.handleTiltAngleChange(35)}
-                    className={`px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 ${
-                      fretboard.tiltAngle === 35
-                        ? 'shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-green-400'
-                        : 'shadow-[5px_5px_10px_rgba(0,0,0,0.5),-5px_-5px_10px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-slate-300'
-                    }`}
-                  >
-                    Default
-                  </button>
-                  <button
-                    onClick={() => fretboard.handleTiltAngleChange(0)}
-                    className={`px-3 py-2 rounded-xl bg-slate-800 text-sm font-medium transition-all duration-300 ${
-                      fretboard.tiltAngle === 0
-                        ? 'shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-green-400'
-                        : 'shadow-[5px_5px_10px_rgba(0,0,0,0.5),-5px_-5px_10px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)] text-slate-300'
-                    }`}
-                  >
-                    Flat
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
         </div>
 
         {/* Conditional fretboard rendering based on mode */}
@@ -890,12 +752,16 @@ function FretboardCardContent({
                 }}
               >
                 <Fretboard3D
-                  stringCount={sharedStringCount as 4 | 5}
+                  stringCount={sharedStringCount as 4 | 5 | 6}
+                  maxFrets={maxFrets}
                   selectedDots={convertTo3DFormat(
                     sharedSelectedDots,
                     sharedStringCount,
                   )}
-                  onDotClick={dotSelectionHandlers.handleDotClick3D}
+                  onDotClick={(stringIndex, fret) => {
+                    // Convert 3D format call to standard format for consistency
+                    fretboard.handleDotClickWithAudio(stringIndex, fret);
+                  }}
                   cameraDistance={7}
                   cameraMode={sharedCameraMode}
                   onCameraModeChange={sharedSetCameraMode}
@@ -909,12 +775,7 @@ function FretboardCardContent({
             className="relative mx-auto"
             style={{
               width: 568, // Full container width // Fixed viewport width
-              height:
-                (sharedStringCount === 4
-                  ? 220
-                  : sharedStringCount === 5
-                    ? 250
-                    : 290) * zoomLevel,
+              height: 290, // Fixed height same as 3D mode
               overflow: 'visible', // Allow shadows to extend in all directions
               perspective: '800px', // Add perspective here
             }}
@@ -925,15 +786,6 @@ function FretboardCardContent({
                 if (el && !is3DMode && !hasUserScrolled) {
                   // Only set to 0 if user hasn't manually scrolled
                   el.scrollLeft = 0;
-                  console.log(
-                    '🔍 REF: Set scroll to 0, hasUserScrolled:',
-                    hasUserScrolled,
-                  );
-                } else if (el && hasUserScrolled) {
-                  console.log(
-                    '🔍 REF: User has scrolled, NOT resetting position. Current:',
-                    el.scrollLeft,
-                  );
                 }
               }}
               className="overflow-x-auto overflow-y-hidden h-full flex items-center"
@@ -941,7 +793,7 @@ function FretboardCardContent({
                 cursor: isDragging ? 'grabbing' : 'grab',
                 scrollbarWidth: 'none', // Firefox
                 msOverflowStyle: 'none', // IE/Edge
-                transform: `rotateX(${fretboard.tiltAngle}deg)`, // Apply tilt to scroll container
+                transform: `rotateX(${tiltAngle}deg)`, // Apply tilt to scroll container
                 transformStyle: 'preserve-3d',
                 transformOrigin: 'center center',
               }}
@@ -955,11 +807,6 @@ function FretboardCardContent({
                   scrollContainerRef.current &&
                   scrollContainerRef.current.scrollLeft > 0
                 ) {
-                  console.log(
-                    '📋 SCROLL EVENT: Position',
-                    scrollContainerRef.current.scrollLeft,
-                    'setting hasUserScrolled to true',
-                  );
                   setHasUserScrolled(true);
                 }
               }}
@@ -978,7 +825,7 @@ function FretboardCardContent({
               >
                 <FretboardGrid
                   stringCount={sharedStringCount}
-                  tiltAngle={fretboard.tiltAngle}
+                  tiltAngle={tiltAngle}
                   frets={fretboard.frets}
                   selectedDots={fretboard.selectedDots}
                   draggedDot={fretboard.state.draggedDot}
@@ -1006,7 +853,7 @@ function FretboardCardContent({
                     );
                   }}
                   onDragEnd={fretboard.handleDragEnd}
-                  onDotClick={dotSelectionHandlers.handleDotClick2D}
+                  onDotClick={fretboard.handleDotClickWithAudio}
                   onDotSecondSelection={
                     dotSelectionHandlers.handleDotSecondSelection2D
                   }

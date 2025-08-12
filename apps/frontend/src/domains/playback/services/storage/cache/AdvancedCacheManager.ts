@@ -36,7 +36,7 @@ import {
   CacheOptimizationCategory,
 } from '@bassnotion/contracts';
 
-import { SampleCacheManager } from './SampleCacheManager.js';
+import { SampleCacheManager } from './SampleCacheManager';
 
 // ===============================
 // Advanced Cache Manager Types

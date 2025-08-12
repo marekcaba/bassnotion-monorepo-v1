@@ -1,0 +1,445 @@
+2025-07-23 01:44:28 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-23 02:19:05 +02:00:  [31m[1m⨯[22m[39m ../../libs/contracts/dist/src/index.js
+2025-07-23 02:19:05 +02:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/libs/contracts/dist/src/index.js
+2025-07-23 02:19:05 +02:00: Caused by:
+2025-07-23 02:19:05 +02:00:     No such file or directory (os error 2)
+2025-07-23 02:19:05 +02:00: Import trace for requested module:
+2025-07-23 02:19:05 +02:00: ../../libs/contracts/dist/src/index.js
+2025-07-23 02:19:05 +02:00: ./src/domains/user/components/auth/LoginForm.tsx
+2025-07-23 02:20:18 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-23 12:08:46 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:08:46 +02:00: Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+2025-07-23 12:08:46 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/app/test-professional-pianos/page.tsx[0m:447:1]
+2025-07-23 12:08:46 +02:00:  [2m444[0m |   }, [salamanderSampler, wurlitzerSampler, longPadSampler, rhodesSampler, theSawSampler]);
+2025-07-23 12:08:46 +02:00:  [2m445[0m | 
+2025-07-23 12:08:46 +02:00:  [2m446[0m |   return (
+2025-07-23 12:08:46 +02:00:  [2m447[0m |     <div className="container mx-auto p-6 max-w-6xl">
+2025-07-23 12:08:46 +02:00:      : [35;1m     ^^^[0m
+2025-07-23 12:08:46 +02:00:  [2m448[0m |       <h1 className="text-3xl font-bold mb-8">
+2025-07-23 12:08:46 +02:00:  [2m449[0m |         🎹 Professional Piano Test Suite
+2025-07-23 12:08:46 +02:00:  [2m450[0m |       </h1>
+2025-07-23 12:08:46 +02:00:      `----
+2025-07-23 12:08:46 +02:00: Caused by:
+2025-07-23 12:08:46 +02:00:     Syntax Error
+2025-07-23 12:08:46 +02:00: Import trace for requested module:
+2025-07-23 12:08:46 +02:00: ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:08:48 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:08:48 +02:00: Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+2025-07-23 12:08:48 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/app/test-professional-pianos/page.tsx[0m:447:1]
+2025-07-23 12:08:48 +02:00:  [2m444[0m |   }, [salamanderSampler, wurlitzerSampler, longPadSampler, rhodesSampler, theSawSampler]);
+2025-07-23 12:08:48 +02:00:  [2m445[0m | 
+2025-07-23 12:08:48 +02:00:  [2m446[0m |   return (
+2025-07-23 12:08:48 +02:00:  [2m447[0m |     <div className="container mx-auto p-6 max-w-6xl">
+2025-07-23 12:08:48 +02:00:      : [35;1m     ^^^[0m
+2025-07-23 12:08:48 +02:00:  [2m448[0m |       <h1 className="text-3xl font-bold mb-8">
+2025-07-23 12:08:48 +02:00:  [2m449[0m |         🎹 Professional Piano Test Suite
+2025-07-23 12:08:48 +02:00:  [2m450[0m |       </h1>
+2025-07-23 12:08:48 +02:00:      `----
+2025-07-23 12:08:48 +02:00: Caused by:
+2025-07-23 12:08:48 +02:00:     Syntax Error
+2025-07-23 12:08:48 +02:00: Import trace for requested module:
+2025-07-23 12:08:48 +02:00: ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:08:48 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:08:48 +02:00: Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+2025-07-23 12:08:48 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/app/test-professional-pianos/page.tsx[0m:447:1]
+2025-07-23 12:08:48 +02:00:  [2m444[0m |   }, [salamanderSampler, wurlitzerSampler, longPadSampler, rhodesSampler, theSawSampler]);
+2025-07-23 12:08:48 +02:00:  [2m445[0m | 
+2025-07-23 12:08:48 +02:00:  [2m446[0m |   return (
+2025-07-23 12:08:48 +02:00:  [2m447[0m |     <div className="container mx-auto p-6 max-w-6xl">
+2025-07-23 12:08:48 +02:00:      : [35;1m     ^^^[0m
+2025-07-23 12:08:48 +02:00:  [2m448[0m |       <h1 className="text-3xl font-bold mb-8">
+2025-07-23 12:08:48 +02:00:  [2m449[0m |         🎹 Professional Piano Test Suite
+2025-07-23 12:08:48 +02:00:  [2m450[0m |       </h1>
+2025-07-23 12:08:48 +02:00:      `----
+2025-07-23 12:08:48 +02:00: Caused by:
+2025-07-23 12:08:48 +02:00:     Syntax Error
+2025-07-23 12:08:48 +02:00: Import trace for requested module:
+2025-07-23 12:08:48 +02:00: ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:09:07 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:09:07 +02:00: Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+2025-07-23 12:09:07 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/app/test-professional-pianos/page.tsx[0m:447:1]
+2025-07-23 12:09:07 +02:00:  [2m444[0m |   }, [salamanderSampler, wurlitzerSampler, longPadSampler, rhodesSampler, theSawSampler]);
+2025-07-23 12:09:07 +02:00:  [2m445[0m | 
+2025-07-23 12:09:07 +02:00:  [2m446[0m |   return (
+2025-07-23 12:09:07 +02:00:  [2m447[0m |     <div className="container mx-auto p-6 max-w-6xl">
+2025-07-23 12:09:07 +02:00:      : [35;1m     ^^^[0m
+2025-07-23 12:09:07 +02:00:  [2m448[0m |       <h1 className="text-3xl font-bold mb-8">
+2025-07-23 12:09:07 +02:00:  [2m449[0m |         🎹 Professional Piano Test Suite
+2025-07-23 12:09:07 +02:00:  [2m450[0m |       </h1>
+2025-07-23 12:09:07 +02:00:      `----
+2025-07-23 12:09:07 +02:00: Caused by:
+2025-07-23 12:09:07 +02:00:     Syntax Error
+2025-07-23 12:09:07 +02:00: Import trace for requested module:
+2025-07-23 12:09:07 +02:00: ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:09:07 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-23 12:09:28 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:09:28 +02:00: Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+2025-07-23 12:09:28 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/app/test-professional-pianos/page.tsx[0m:447:1]
+2025-07-23 12:09:28 +02:00:  [2m444[0m |   }, [salamanderSampler, wurlitzerSampler, longPadSampler, rhodesSampler, theSawSampler]);
+2025-07-23 12:09:28 +02:00:  [2m445[0m | 
+2025-07-23 12:09:28 +02:00:  [2m446[0m |   return (
+2025-07-23 12:09:28 +02:00:  [2m447[0m |     <div className="container mx-auto p-6 max-w-6xl">
+2025-07-23 12:09:28 +02:00:      : [35;1m     ^^^[0m
+2025-07-23 12:09:28 +02:00:  [2m448[0m |       <h1 className="text-3xl font-bold mb-8">
+2025-07-23 12:09:28 +02:00:  [2m449[0m |         🎹 Professional Piano Test Suite
+2025-07-23 12:09:28 +02:00:  [2m450[0m |       </h1>
+2025-07-23 12:09:28 +02:00:      `----
+2025-07-23 12:09:28 +02:00: Caused by:
+2025-07-23 12:09:28 +02:00:     Syntax Error
+2025-07-23 12:09:28 +02:00: Import trace for requested module:
+2025-07-23 12:09:28 +02:00: ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:09:28 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-23 12:09:54 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:09:54 +02:00: Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+2025-07-23 12:09:54 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/app/test-professional-pianos/page.tsx[0m:447:1]
+2025-07-23 12:09:54 +02:00:  [2m444[0m |   }, [salamanderSampler, wurlitzerSampler, longPadSampler, rhodesSampler, theSawSampler]);
+2025-07-23 12:09:54 +02:00:  [2m445[0m | 
+2025-07-23 12:09:54 +02:00:  [2m446[0m |   return (
+2025-07-23 12:09:54 +02:00:  [2m447[0m |     <div className="container mx-auto p-6 max-w-6xl">
+2025-07-23 12:09:54 +02:00:      : [35;1m     ^^^[0m
+2025-07-23 12:09:54 +02:00:  [2m448[0m |       <h1 className="text-3xl font-bold mb-8">
+2025-07-23 12:09:54 +02:00:  [2m449[0m |         🎹 Professional Piano Test Suite
+2025-07-23 12:09:54 +02:00:  [2m450[0m |       </h1>
+2025-07-23 12:09:54 +02:00:      `----
+2025-07-23 12:09:54 +02:00: Caused by:
+2025-07-23 12:09:54 +02:00:     Syntax Error
+2025-07-23 12:09:54 +02:00: Import trace for requested module:
+2025-07-23 12:09:54 +02:00: ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:09:54 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-23 12:10:03 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:10:03 +02:00: Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+2025-07-23 12:10:03 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/app/test-professional-pianos/page.tsx[0m:447:1]
+2025-07-23 12:10:03 +02:00:  [2m444[0m |   }, [salamanderSampler, wurlitzerSampler, longPadSampler, rhodesSampler, theSawSampler]);
+2025-07-23 12:10:03 +02:00:  [2m445[0m | 
+2025-07-23 12:10:03 +02:00:  [2m446[0m |   return (
+2025-07-23 12:10:03 +02:00:  [2m447[0m |     <div className="container mx-auto p-6 max-w-6xl">
+2025-07-23 12:10:03 +02:00:      : [35;1m     ^^^[0m
+2025-07-23 12:10:03 +02:00:  [2m448[0m |       <h1 className="text-3xl font-bold mb-8">
+2025-07-23 12:10:03 +02:00:  [2m449[0m |         🎹 Professional Piano Test Suite
+2025-07-23 12:10:03 +02:00:  [2m450[0m |       </h1>
+2025-07-23 12:10:03 +02:00:      `----
+2025-07-23 12:10:03 +02:00: Caused by:
+2025-07-23 12:10:03 +02:00:     Syntax Error
+2025-07-23 12:10:03 +02:00: Import trace for requested module:
+2025-07-23 12:10:03 +02:00: ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:10:03 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-23 12:10:12 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:10:12 +02:00: Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+2025-07-23 12:10:12 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/app/test-professional-pianos/page.tsx[0m:447:1]
+2025-07-23 12:10:12 +02:00:  [2m444[0m |   }, [salamanderSampler, wurlitzerSampler, longPadSampler, rhodesSampler, theSawSampler]);
+2025-07-23 12:10:12 +02:00:  [2m445[0m | 
+2025-07-23 12:10:12 +02:00:  [2m446[0m |   return (
+2025-07-23 12:10:12 +02:00:  [2m447[0m |     <div className="container mx-auto p-6 max-w-6xl">
+2025-07-23 12:10:12 +02:00:      : [35;1m     ^^^[0m
+2025-07-23 12:10:12 +02:00:  [2m448[0m |       <h1 className="text-3xl font-bold mb-8">
+2025-07-23 12:10:12 +02:00:  [2m449[0m |         🎹 Professional Piano Test Suite
+2025-07-23 12:10:12 +02:00:  [2m450[0m |       </h1>
+2025-07-23 12:10:12 +02:00:      `----
+2025-07-23 12:10:12 +02:00: Caused by:
+2025-07-23 12:10:12 +02:00:     Syntax Error
+2025-07-23 12:10:12 +02:00: Import trace for requested module:
+2025-07-23 12:10:12 +02:00: ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:10:12 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-23 12:12:53 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:12:53 +02:00: Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+2025-07-23 12:12:53 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/app/test-professional-pianos/page.tsx[0m:447:1]
+2025-07-23 12:12:53 +02:00:  [2m444[0m |   }, [salamanderSampler, wurlitzerSampler, longPadSampler, rhodesSampler, theSawSampler]);
+2025-07-23 12:12:53 +02:00:  [2m445[0m | 
+2025-07-23 12:12:53 +02:00:  [2m446[0m |   return (
+2025-07-23 12:12:53 +02:00:  [2m447[0m |     <div className="container mx-auto p-6 max-w-6xl">
+2025-07-23 12:12:53 +02:00:      : [35;1m     ^^^[0m
+2025-07-23 12:12:53 +02:00:  [2m448[0m |       <h1 className="text-3xl font-bold mb-8">
+2025-07-23 12:12:53 +02:00:  [2m449[0m |         🎹 Professional Piano Test Suite
+2025-07-23 12:12:53 +02:00:  [2m450[0m |       </h1>
+2025-07-23 12:12:53 +02:00:      `----
+2025-07-23 12:12:53 +02:00: Caused by:
+2025-07-23 12:12:53 +02:00:     Syntax Error
+2025-07-23 12:12:53 +02:00: Import trace for requested module:
+2025-07-23 12:12:53 +02:00: ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:12:53 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-07-23 12:13:32 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-07-23 12:13:49 +02:00:  [31m[1m⨯[22m[39m ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:13:49 +02:00: Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+2025-07-23 12:13:49 +02:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/app/test-professional-pianos/page.tsx[0m:447:1]
+2025-07-23 12:13:49 +02:00:  [2m444[0m |   }, [salamanderSampler, wurlitzerSampler, longPadSampler, rhodesSampler, theSawSampler]);
+2025-07-23 12:13:49 +02:00:  [2m445[0m | 
+2025-07-23 12:13:49 +02:00:  [2m446[0m |   return (
+2025-07-23 12:13:49 +02:00:  [2m447[0m |     <div className="container mx-auto p-6 max-w-6xl">
+2025-07-23 12:13:49 +02:00:      : [35;1m     ^^^[0m
+2025-07-23 12:13:49 +02:00:  [2m448[0m |       <h1 className="text-3xl font-bold mb-8">
+2025-07-23 12:13:49 +02:00:  [2m449[0m |         🎹 Professional Piano Test Suite
+2025-07-23 12:13:49 +02:00:  [2m450[0m |       </h1>
+2025-07-23 12:13:49 +02:00:      `----
+2025-07-23 12:13:49 +02:00: Caused by:
+2025-07-23 12:13:49 +02:00:     Syntax Error
+2025-07-23 12:13:49 +02:00: Import trace for requested module:
+2025-07-23 12:13:49 +02:00: ./src/app/test-professional-pianos/page.tsx
+2025-07-23 12:13:57 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-07-23 13:26:24 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-23 13:28:21 +02:00:  [31m[1m⨯[22m[39m ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-23 13:28:21 +02:00: Error:   [31mx[0m Expected a semicolon
+2025-07-23 13:28:21 +02:00:       ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/ChordInstrumentProcessor.ts[0m:1557:1]
+2025-07-23 13:28:21 +02:00:  [2m1554[0m |       console.log('✅ 16-velocity Salamander Grand Piano ready!');
+2025-07-23 13:28:21 +02:00:  [2m1555[0m |       return true;
+2025-07-23 13:28:21 +02:00:  [2m1556[0m |       
+2025-07-23 13:28:21 +02:00:  [2m1557[0m |     } catch (error) {
+2025-07-23 13:28:21 +02:00:       : [35;1m      ^^^^^[0m
+2025-07-23 13:28:21 +02:00:  [2m1558[0m |       console.error('❌ Failed to load velocity sampler:', error);
+2025-07-23 13:28:21 +02:00:  [2m1559[0m |       if (this.velocitySampler) {
+2025-07-23 13:28:21 +02:00:  [2m1560[0m |         this.velocitySampler.dispose();
+2025-07-23 13:28:21 +02:00:       `----
+2025-07-23 13:28:21 +02:00:   [31mx[0m Expected a semicolon
+2025-07-23 13:28:21 +02:00:       ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/ChordInstrumentProcessor.ts[0m:1570:1]
+2025-07-23 13:28:21 +02:00:  [2m1567[0m |   /**
+2025-07-23 13:28:21 +02:00:  [2m1568[0m |    * Load Wurlitzer Electric Piano
+2025-07-23 13:28:21 +02:00:  [2m1569[0m |    */
+2025-07-23 13:28:21 +02:00:  [2m1570[0m |   private async loadWurlitzerSampler(): Promise<boolean> {
+2025-07-23 13:28:21 +02:00:       : [35;1m  ^[0m
+2025-07-23 13:28:21 +02:00:  [2m1571[0m |     try {
+2025-07-23 13:28:21 +02:00:  [2m1572[0m |       console.log('🎹 Loading Wurlitzer Electric Piano...');
+2025-07-23 13:28:21 +02:00:  [2m1573[0m |       
+2025-07-23 13:28:21 +02:00:       `----
+2025-07-23 13:28:21 +02:00:   [31mx[0m Expression expected
+2025-07-23 13:28:21 +02:00:       ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/services/plugins/ChordInstrumentProcessor.ts[0m:1570:1]
+2025-07-23 13:28:21 +02:00:  [2m1567[0m |   /**
+2025-07-23 13:28:21 +02:00:  [2m1568[0m |    * Load Wurlitzer Electric Piano
+2025-07-23 13:28:21 +02:00:  [2m1569[0m |    */
+2025-07-23 13:28:21 +02:00:  [2m1570[0m |   private async loadWurlitzerSampler(): Promise<boolean> {
+2025-07-23 13:28:21 +02:00:       : [35;1m  ^^^^^^^[0m
+2025-07-23 13:28:21 +02:00:  [2m1571[0m |     try {
+2025-07-23 13:28:21 +02:00:  [2m1572[0m |       console.log('🎹 Loading Wurlitzer Electric Piano...');
+2025-07-23 13:28:21 +02:00:  [2m1573[0m |       
+2025-07-23 13:28:21 +02:00:       `----
+2025-07-23 13:28:21 +02:00: Caused by:
+2025-07-23 13:28:21 +02:00:     Syntax Error
+2025-07-23 13:28:21 +02:00: Import trace for requested module:
+2025-07-23 13:28:21 +02:00: ./src/domains/playback/services/plugins/ChordInstrumentProcessor.ts
+2025-07-23 13:28:21 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-23 13:28:21 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/FourWidgetsCard.tsx
+2025-07-23 13:28:21 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-23 13:28:21 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-23 18:41:59 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-23 18:41:59 +02:00: Module parse failed: Identifier 'progression' has already been declared (272:11)
+2025-07-23 18:41:59 +02:00: |     ]);
+2025-07-23 18:41:59 +02:00: |     // Local state for progression and current chord that can be updated by sync events
+2025-07-23 18:41:59 +02:00: >     const [progression, setProgression] = useState(initialProgression);
+2025-07-23 18:41:59 +02:00: |     const [currentChord, setCurrentChord] = useState(initialCurrentChord);
+2025-07-23 18:41:59 +02:00: |     // Debug: Log the playing state only when it changes (reduced logging)
+2025-07-23 18:41:59 +02:00: Import trace for requested module:
+2025-07-23 18:41:59 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-23 18:41:59 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/FourWidgetsCard.tsx
+2025-07-23 18:41:59 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-23 18:41:59 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-23 18:42:39 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-23 18:42:39 +02:00: Module parse failed: Identifier 'chordProcessorRef' has already been declared (315:10)
+2025-07-23 18:42:39 +02:00: |     });
+2025-07-23 18:42:39 +02:00: |     // Professional chord processor for high-quality chord playback
+2025-07-23 18:42:39 +02:00: >     const chordProcessorRef = useRef(null);
+2025-07-23 18:42:39 +02:00: |     const [selectedPreset, setSelectedPreset] = useState(ChordPreset.PIANO);
+2025-07-23 18:42:39 +02:00: |     // Story 3.16: Professional keyboard selector state
+2025-07-23 18:42:39 +02:00: Import trace for requested module:
+2025-07-23 18:42:39 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-23 18:42:39 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/FourWidgetsCard.tsx
+2025-07-23 18:42:39 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-23 18:42:39 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-23 18:42:48 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-23 18:42:48 +02:00: Module parse failed: Identifier 'loopRef' has already been declared (627:10)
+2025-07-23 18:42:48 +02:00: |     ]);
+2025-07-23 18:42:48 +02:00: |     // Harmony timing using Tone.js Loop synchronized with global Transport
+2025-07-23 18:42:48 +02:00: >     const loopRef = useRef(null);
+2025-07-23 18:42:48 +02:00: |     useEffect({
+2025-07-23 18:42:48 +02:00: |         "HarmonyWidgetContent.useEffect": ()=>{
+2025-07-23 18:42:48 +02:00: Import trace for requested module:
+2025-07-23 18:42:48 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/HarmonyWidget.tsx
+2025-07-23 18:42:48 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/FourWidgetsCard.tsx
+2025-07-23 18:42:48 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-23 18:42:48 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-23 19:12:44 +02:00:  [31m[1m⨯[22m[39m ReferenceError: navigator is not defined
+2025-07-23 19:12:44 +02:00:     at new CorePlaybackEngine (src/domains/playback/services/CorePlaybackEngine.ts:111:33)
+2025-07-23 19:12:44 +02:00:     at CorePlaybackEngine.getInstance (src/domains/playback/services/CorePlaybackEngine.ts:223:36)
+2025-07-23 19:12:44 +02:00:     at new MusicalTimeEngine (src/domains/playback/services/MusicalTimeEngine.ts:94:41)
+2025-07-23 19:12:44 +02:00:     at MusicalTimeEngine.getInstance (src/domains/playback/services/MusicalTimeEngine.ts:127:35)
+2025-07-23 19:12:44 +02:00:     at eval (src/domains/playback/services/MusicalTimeEngine.ts:638:51)
+2025-07-23 19:12:44 +02:00:     at (ssr)/./src/domains/playback/services/MusicalTimeEngine.ts (.next/server/app/library/[tutorialId]/page.js:685:1)
+2025-07-23 19:12:44 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:12:44 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/services/PlaybackOrchestrator.ts:7:102)
+2025-07-23 19:12:44 +02:00:     at (ssr)/./src/domains/widgets/services/PlaybackOrchestrator.ts (.next/server/app/library/[tutorialId]/page.js:1653:1)
+2025-07-23 19:12:44 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:12:44 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/hooks/usePlaybackOrchestrator.ts:7:88)
+2025-07-23 19:12:44 +02:00:     at (ssr)/./src/domains/widgets/hooks/usePlaybackOrchestrator.ts (.next/server/app/library/[tutorialId]/page.js:1587:1)
+2025-07-23 19:12:44 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:12:44 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:21:104)
+2025-07-23 19:12:44 +02:00:     at (ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx (.next/server/app/library/[tutorialId]/page.js:1389:1)
+2025-07-23 19:12:44 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:12:44 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControlsCard.tsx:10:73)
+2025-07-23 19:12:44 +02:00:     at (ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControlsCard.tsx (.next/server/app/library/[tutorialId]/page.js:1400:1)
+2025-07-23 19:12:44 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:12:44 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx:13:88)
+2025-07-23 19:12:44 +02:00:     at (ssr)/./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx (.next/server/app/library/[tutorialId]/page.js:1334:1)
+2025-07-23 19:12:44 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:12:44 +02:00:     at eval (webpack-internal:///(ssr)/./src/app/library/[tutorialId]/page.tsx:9:121)
+2025-07-23 19:12:44 +02:00:     at (ssr)/./src/app/library/[tutorialId]/page.tsx (.next/server/app/library/[tutorialId]/page.js:575:1)
+2025-07-23 19:12:44 +02:00:     at Object.__webpack_require__ [as require] (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:12:44 +02:00:     at JSON.parse (<anonymous>)
+2025-07-23 19:12:44 +02:00: [0m [90m 109 |[39m     backgroundProcessing[33m:[39m {[0m
+2025-07-23 19:12:44 +02:00: [0m [90m 110 |[39m       enableWorkerThreads[33m:[39m [36mtrue[39m[33m,[39m[0m
+2025-07-23 19:12:44 +02:00: [0m[31m[1m>[22m[39m[90m 111 |[39m       maxWorkerThreads[33m:[39m [33mMath[39m[33m.[39mmin(navigator[33m.[39mhardwareConcurrency [33m||[39m [35m4[39m[33m,[39m [35m6[39m)[33m,[39m[0m
+2025-07-23 19:12:44 +02:00: [0m [90m     |[39m                                 [31m[1m^[22m[39m[0m
+2025-07-23 19:12:44 +02:00: [0m [90m 112 |[39m       priorityScheduling[33m:[39m [36mtrue[39m[33m,[39m[0m
+2025-07-23 19:12:44 +02:00: [0m [90m 113 |[39m       adaptiveScaling[33m:[39m [36mtrue[39m[33m,[39m[0m
+2025-07-23 19:12:44 +02:00: [0m [90m 114 |[39m       batteryOptimization[33m:[39m [36mtrue[39m[33m,[39m[0m {
+2025-07-23 19:12:44 +02:00:   digest: [32m'4264573372'[39m
+2025-07-23 19:12:44 +02:00: }
+2025-07-23 19:14:52 +02:00:  [31m[1m⨯[22m[39m ReferenceError: navigator is not defined
+2025-07-23 19:14:52 +02:00:     at new CorePlaybackEngine (src/domains/playback/services/CorePlaybackEngine.ts:111:33)
+2025-07-23 19:14:52 +02:00:     at CorePlaybackEngine.getInstance (src/domains/playback/services/CorePlaybackEngine.ts:223:36)
+2025-07-23 19:14:52 +02:00:     at new MusicalTimeEngine (src/domains/playback/services/MusicalTimeEngine.ts:94:41)
+2025-07-23 19:14:52 +02:00:     at MusicalTimeEngine.getInstance (src/domains/playback/services/MusicalTimeEngine.ts:127:35)
+2025-07-23 19:14:52 +02:00:     at eval (src/domains/playback/services/MusicalTimeEngine.ts:638:51)
+2025-07-23 19:14:52 +02:00:     at (ssr)/./src/domains/playback/services/MusicalTimeEngine.ts (.next/server/app/library/[tutorialId]/page.js:685:1)
+2025-07-23 19:14:52 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:14:52 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/services/PlaybackOrchestrator.ts:7:102)
+2025-07-23 19:14:52 +02:00:     at (ssr)/./src/domains/widgets/services/PlaybackOrchestrator.ts (.next/server/app/library/[tutorialId]/page.js:1653:1)
+2025-07-23 19:14:52 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:14:52 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/hooks/usePlaybackOrchestrator.ts:7:88)
+2025-07-23 19:14:52 +02:00:     at (ssr)/./src/domains/widgets/hooks/usePlaybackOrchestrator.ts (.next/server/app/library/[tutorialId]/page.js:1587:1)
+2025-07-23 19:14:52 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:14:52 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:21:104)
+2025-07-23 19:14:52 +02:00:     at (ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx (.next/server/app/library/[tutorialId]/page.js:1389:1)
+2025-07-23 19:14:52 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:14:52 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControlsCard.tsx:10:73)
+2025-07-23 19:14:52 +02:00:     at (ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControlsCard.tsx (.next/server/app/library/[tutorialId]/page.js:1400:1)
+2025-07-23 19:14:52 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:14:52 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx:13:88)
+2025-07-23 19:14:52 +02:00:     at (ssr)/./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx (.next/server/app/library/[tutorialId]/page.js:1334:1)
+2025-07-23 19:14:52 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:14:52 +02:00:     at eval (webpack-internal:///(ssr)/./src/app/library/[tutorialId]/page.tsx:9:121)
+2025-07-23 19:14:52 +02:00:     at (ssr)/./src/app/library/[tutorialId]/page.tsx (.next/server/app/library/[tutorialId]/page.js:575:1)
+2025-07-23 19:14:52 +02:00:     at Object.__webpack_require__ [as require] (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:14:52 +02:00:     at JSON.parse (<anonymous>)
+2025-07-23 19:14:52 +02:00: [0m [90m 109 |[39m     backgroundProcessing[33m:[39m {[0m
+2025-07-23 19:14:52 +02:00: [0m [90m 110 |[39m       enableWorkerThreads[33m:[39m [36mtrue[39m[33m,[39m[0m
+2025-07-23 19:14:52 +02:00: [0m[31m[1m>[22m[39m[90m 111 |[39m       maxWorkerThreads[33m:[39m [33mMath[39m[33m.[39mmin(navigator[33m.[39mhardwareConcurrency [33m||[39m [35m4[39m[33m,[39m [35m6[39m)[33m,[39m[0m
+2025-07-23 19:14:52 +02:00: [0m [90m     |[39m                                 [31m[1m^[22m[39m[0m
+2025-07-23 19:14:52 +02:00: [0m [90m 112 |[39m       priorityScheduling[33m:[39m [36mtrue[39m[33m,[39m[0m
+2025-07-23 19:14:52 +02:00: [0m [90m 113 |[39m       adaptiveScaling[33m:[39m [36mtrue[39m[33m,[39m[0m
+2025-07-23 19:14:52 +02:00: [0m [90m 114 |[39m       batteryOptimization[33m:[39m [36mtrue[39m[33m,[39m[0m {
+2025-07-23 19:14:52 +02:00:   digest: [32m'4264573372'[39m
+2025-07-23 19:14:52 +02:00: }
+2025-07-23 19:14:52 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-07-23 19:19:41 +02:00:  [31m[1m⨯[22m[39m ReferenceError: navigator is not defined
+2025-07-23 19:19:41 +02:00:     at new CorePlaybackEngine (src/domains/playback/services/CorePlaybackEngine.ts:111:33)
+2025-07-23 19:19:41 +02:00:     at CorePlaybackEngine.getInstance (src/domains/playback/services/CorePlaybackEngine.ts:223:36)
+2025-07-23 19:19:41 +02:00:     at new MusicalTimeEngine (src/domains/playback/services/MusicalTimeEngine.ts:94:41)
+2025-07-23 19:19:41 +02:00:     at MusicalTimeEngine.getInstance (src/domains/playback/services/MusicalTimeEngine.ts:127:35)
+2025-07-23 19:19:41 +02:00:     at eval (src/domains/playback/services/MusicalTimeEngine.ts:638:51)
+2025-07-23 19:19:41 +02:00:     at (ssr)/./src/domains/playback/services/MusicalTimeEngine.ts (.next/server/app/library/[tutorialId]/page.js:685:1)
+2025-07-23 19:19:41 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:19:41 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/services/PlaybackOrchestrator.ts:7:102)
+2025-07-23 19:19:41 +02:00:     at (ssr)/./src/domains/widgets/services/PlaybackOrchestrator.ts (.next/server/app/library/[tutorialId]/page.js:1653:1)
+2025-07-23 19:19:41 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:19:41 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/hooks/usePlaybackOrchestrator.ts:7:88)
+2025-07-23 19:19:41 +02:00:     at (ssr)/./src/domains/widgets/hooks/usePlaybackOrchestrator.ts (.next/server/app/library/[tutorialId]/page.js:1587:1)
+2025-07-23 19:19:41 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:19:41 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:21:104)
+2025-07-23 19:19:41 +02:00:     at (ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx (.next/server/app/library/[tutorialId]/page.js:1389:1)
+2025-07-23 19:19:41 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:19:41 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControlsCard.tsx:10:73)
+2025-07-23 19:19:41 +02:00:     at (ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControlsCard.tsx (.next/server/app/library/[tutorialId]/page.js:1400:1)
+2025-07-23 19:19:41 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:19:41 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx:13:88)
+2025-07-23 19:19:41 +02:00:     at (ssr)/./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx (.next/server/app/library/[tutorialId]/page.js:1334:1)
+2025-07-23 19:19:41 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:19:41 +02:00:     at eval (webpack-internal:///(ssr)/./src/app/library/[tutorialId]/page.tsx:9:121)
+2025-07-23 19:19:41 +02:00:     at (ssr)/./src/app/library/[tutorialId]/page.tsx (.next/server/app/library/[tutorialId]/page.js:575:1)
+2025-07-23 19:19:41 +02:00:     at Object.__webpack_require__ [as require] (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:19:41 +02:00:     at JSON.parse (<anonymous>)
+2025-07-23 19:19:41 +02:00: [0m [90m 109 |[39m     backgroundProcessing[33m:[39m {[0m
+2025-07-23 19:19:41 +02:00: [0m [90m 110 |[39m       enableWorkerThreads[33m:[39m [36mtrue[39m[33m,[39m[0m
+2025-07-23 19:19:41 +02:00: [0m[31m[1m>[22m[39m[90m 111 |[39m       maxWorkerThreads[33m:[39m [33mMath[39m[33m.[39mmin(navigator[33m.[39mhardwareConcurrency [33m||[39m [35m4[39m[33m,[39m [35m6[39m)[33m,[39m[0m
+2025-07-23 19:19:41 +02:00: [0m [90m     |[39m                                 [31m[1m^[22m[39m[0m
+2025-07-23 19:19:41 +02:00: [0m [90m 112 |[39m       priorityScheduling[33m:[39m [36mtrue[39m[33m,[39m[0m
+2025-07-23 19:19:41 +02:00: [0m [90m 113 |[39m       adaptiveScaling[33m:[39m [36mtrue[39m[33m,[39m[0m
+2025-07-23 19:19:41 +02:00: [0m [90m 114 |[39m       batteryOptimization[33m:[39m [36mtrue[39m[33m,[39m[0m {
+2025-07-23 19:19:41 +02:00:   digest: [32m'4264573372'[39m
+2025-07-23 19:19:41 +02:00: }
+2025-07-23 19:21:07 +02:00:  [31m[1m⨯[22m[39m ReferenceError: navigator is not defined
+2025-07-23 19:21:07 +02:00:     at new CorePlaybackEngine (src/domains/playback/services/CorePlaybackEngine.ts:111:33)
+2025-07-23 19:21:07 +02:00:     at CorePlaybackEngine.getInstance (src/domains/playback/services/CorePlaybackEngine.ts:223:36)
+2025-07-23 19:21:07 +02:00:     at new MusicalTimeEngine (src/domains/playback/services/MusicalTimeEngine.ts:94:41)
+2025-07-23 19:21:07 +02:00:     at MusicalTimeEngine.getInstance (src/domains/playback/services/MusicalTimeEngine.ts:127:35)
+2025-07-23 19:21:07 +02:00:     at eval (src/domains/playback/services/MusicalTimeEngine.ts:638:51)
+2025-07-23 19:21:07 +02:00:     at (ssr)/./src/domains/playback/services/MusicalTimeEngine.ts (.next/server/app/library/[tutorialId]/page.js:685:1)
+2025-07-23 19:21:07 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:21:07 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/services/PlaybackOrchestrator.ts:7:102)
+2025-07-23 19:21:07 +02:00:     at (ssr)/./src/domains/widgets/services/PlaybackOrchestrator.ts (.next/server/app/library/[tutorialId]/page.js:1653:1)
+2025-07-23 19:21:07 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:21:07 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/hooks/usePlaybackOrchestrator.ts:7:88)
+2025-07-23 19:21:07 +02:00:     at (ssr)/./src/domains/widgets/hooks/usePlaybackOrchestrator.ts (.next/server/app/library/[tutorialId]/page.js:1587:1)
+2025-07-23 19:21:07 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:21:07 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx:21:104)
+2025-07-23 19:21:07 +02:00:     at (ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControls.tsx (.next/server/app/library/[tutorialId]/page.js:1389:1)
+2025-07-23 19:21:07 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:21:07 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControlsCard.tsx:10:73)
+2025-07-23 19:21:07 +02:00:     at (ssr)/./src/domains/widgets/components/YouTubeWidgetPage/components/GlobalControlsCard.tsx (.next/server/app/library/[tutorialId]/page.js:1400:1)
+2025-07-23 19:21:07 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:21:07 +02:00:     at eval (webpack-internal:///(ssr)/./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx:13:88)
+2025-07-23 19:21:07 +02:00:     at (ssr)/./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx (.next/server/app/library/[tutorialId]/page.js:1334:1)
+2025-07-23 19:21:07 +02:00:     at __webpack_require__ (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:21:07 +02:00:     at eval (webpack-internal:///(ssr)/./src/app/library/[tutorialId]/page.tsx:9:121)
+2025-07-23 19:21:07 +02:00:     at (ssr)/./src/app/library/[tutorialId]/page.tsx (.next/server/app/library/[tutorialId]/page.js:575:1)
+2025-07-23 19:21:07 +02:00:     at Object.__webpack_require__ [as require] (.next/server/webpack-runtime.js:33:43)
+2025-07-23 19:21:07 +02:00:     at JSON.parse (<anonymous>)
+2025-07-23 19:21:07 +02:00: [0m [90m 109 |[39m     backgroundProcessing[33m:[39m {[0m
+2025-07-23 19:21:07 +02:00: [0m [90m 110 |[39m       enableWorkerThreads[33m:[39m [36mtrue[39m[33m,[39m[0m
+2025-07-23 19:21:07 +02:00: [0m[31m[1m>[22m[39m[90m 111 |[39m       maxWorkerThreads[33m:[39m [33mMath[39m[33m.[39mmin(navigator[33m.[39mhardwareConcurrency [33m||[39m [35m4[39m[33m,[39m [35m6[39m)[33m,[39m[0m
+2025-07-23 19:21:07 +02:00: [0m [90m     |[39m                                 [31m[1m^[22m[39m[0m
+2025-07-23 19:21:07 +02:00: [0m [90m 112 |[39m       priorityScheduling[33m:[39m [36mtrue[39m[33m,[39m[0m
+2025-07-23 19:21:07 +02:00: [0m [90m 113 |[39m       adaptiveScaling[33m:[39m [36mtrue[39m[33m,[39m[0m
+2025-07-23 19:21:07 +02:00: [0m [90m 114 |[39m       batteryOptimization[33m:[39m [36mtrue[39m[33m,[39m[0m {
+2025-07-23 19:21:07 +02:00:   digest: [32m'4264573372'[39m
+2025-07-23 19:21:07 +02:00: }
+2025-07-23 22:59:06 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/MetronomeWidget.tsx
+2025-07-23 22:59:06 +02:00: Module parse failed: Cannot use keyword 'await' outside an async function (223:53)
+2025-07-23 22:59:06 +02:00: |                     }["MetronomeWidget.useEffect.positionCheckInterval"], 1000);
+2025-07-23 22:59:06 +02:00: |                     // Get Tone from ref or fallback to import
+2025-07-23 22:59:06 +02:00: >                     const Tone1 = ToneRef.current || await import('tone');
+2025-07-23 22:59:06 +02:00: |                     console.log('🎵 Creating Tone.Loop, Transport.state:', Tone1.Transport.state);
+2025-07-23 22:59:06 +02:00: |                     loopRef.current = new Tone1.Loop({
+2025-07-23 22:59:06 +02:00: Import trace for requested module:
+2025-07-23 22:59:06 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/MetronomeWidget.tsx
+2025-07-23 22:59:06 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/FourWidgetsCard.tsx
+2025-07-23 22:59:06 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-23 22:59:06 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-23 22:59:08 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/MetronomeWidget.tsx
+2025-07-23 22:59:08 +02:00: Module parse failed: Cannot use keyword 'await' outside an async function (220:53)
+2025-07-23 22:59:08 +02:00: |                     }["MetronomeWidget.useEffect.positionCheckInterval"], 1000);
+2025-07-23 22:59:08 +02:00: |                     // Get Tone from ref or fallback to import
+2025-07-23 22:59:08 +02:00: >                     const Tone1 = ToneRef.current || await import('tone');
+2025-07-23 22:59:08 +02:00: |                     console.log('🎵 Creating Tone.Loop, Transport.state:', Tone1.Transport.state);
+2025-07-23 22:59:08 +02:00: |                     loopRef.current = new Tone1.Loop({
+2025-07-23 22:59:08 +02:00: Import trace for requested module:
+2025-07-23 22:59:08 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/MetronomeWidget.tsx
+2025-07-23 22:59:08 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/FourWidgetsCard.tsx
+2025-07-23 22:59:08 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-23 22:59:08 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-23 22:59:27 +02:00:  [31m[1m⨯[22m[39m ./src/domains/widgets/components/YouTubeWidgetPage/components/MetronomeWidget.tsx
+2025-07-23 22:59:27 +02:00: Error:   [31mx[0m Unexpected token `SyncedWidget`. Expected jsx identifier
+2025-07-23 22:59:27 +02:00:     ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/widgets/components/YouTubeWidgetPage/components/MetronomeWidget.tsx[0m:49:1]
+2025-07-23 22:59:27 +02:00:  [2m46[0m |   if (!isVisible) return null;
+2025-07-23 22:59:27 +02:00:  [2m47[0m | 
+2025-07-23 22:59:27 +02:00:  [2m48[0m |   return (
+2025-07-23 22:59:27 +02:00:  [2m49[0m |     <SyncedWidget
+2025-07-23 22:59:27 +02:00:     : [35;1m     ^^^^^^^^^^^^[0m
+2025-07-23 22:59:27 +02:00:  [2m50[0m |       widgetId="metronome-widget"
+2025-07-23 22:59:27 +02:00:  [2m51[0m |       widgetName="Metronome"
+2025-07-23 22:59:27 +02:00:  [2m52[0m |       syncOptions={{
+2025-07-23 22:59:27 +02:00:     `----
+2025-07-23 22:59:27 +02:00: Caused by:
+2025-07-23 22:59:27 +02:00:     Syntax Error
+2025-07-23 22:59:27 +02:00: Import trace for requested module:
+2025-07-23 22:59:27 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/MetronomeWidget.tsx
+2025-07-23 22:59:27 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/components/FourWidgetsCard.tsx
+2025-07-23 22:59:27 +02:00: ./src/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage.tsx
+2025-07-23 22:59:27 +02:00: ./src/app/library/[tutorialId]/page.tsx
+2025-07-23 22:59:46 +02:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload

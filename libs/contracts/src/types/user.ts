@@ -24,6 +24,12 @@ export interface UserPreferences {
   theme: 'light' | 'dark';
   emailNotifications: boolean;
   defaultMetronomeSettings: MetronomeSettings;
+  bassConfiguration: BassConfiguration;
+}
+
+export interface BassConfiguration {
+  stringCount: 4 | 5 | 6;
+  maxFrets: number;
 }
 
 export interface AuthCredentials {

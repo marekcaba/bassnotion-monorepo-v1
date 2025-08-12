@@ -8,13 +8,13 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { BassProcessor } from '../plugins/BassProcessor.js';
+import { BassProcessor } from '../plugins/BassProcessor';
 import {
   PluginState,
   PluginAudioContext,
   ProcessingResultStatus,
   PluginParameterType,
-} from '../../types/plugin.js';
+} from '../../types/plugin';
 
 // CRITICAL: Mock Tone.js to prevent AudioContext creation issues
 vi.mock('tone', () => ({

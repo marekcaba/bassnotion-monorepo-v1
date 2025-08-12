@@ -34,7 +34,9 @@ vi.mock('@/infrastructure/supabase/client', () => ({
       signInWithPassword: vi.fn(),
       signOut: vi.fn(),
       getSession: vi.fn(),
-      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+      onAuthStateChange: vi.fn(() => ({
+        data: { subscription: { unsubscribe: vi.fn() } },
+      })),
     },
     from: vi.fn(() => ({
       select: vi.fn(),
@@ -74,7 +76,9 @@ class MockHeaders {
     this.headers.set(name.toLowerCase(), value);
   }
 
-  forEach(callback: (value: string, name: string, parent: Headers) => void): void {
+  forEach(
+    callback: (value: string, name: string, parent: Headers) => void,
+  ): void {
     this.headers.forEach((value, name) => {
       callback(value, name, this as any);
     });
@@ -124,33 +128,39 @@ if (typeof globalThis.fetch === 'undefined') {
 
 // Mock Request and Response for fetch
 if (typeof globalThis.Request === 'undefined') {
-  globalThis.Request = vi.fn().mockImplementation((url: string, init?: RequestInit) => ({
-    url,
-    method: init?.method || 'GET',
-    headers: new MockHeaders(),
-    body: init?.body || null,
-    clone: vi.fn(),
-  })) as any;
+  globalThis.Request = vi
+    .fn()
+    .mockImplementation((url: string, init?: RequestInit) => ({
+      url,
+      method: init?.method || 'GET',
+      headers: new MockHeaders(),
+      body: init?.body || null,
+      clone: vi.fn(),
+    })) as any;
 }
 
 if (typeof globalThis.Response === 'undefined') {
-  globalThis.Response = vi.fn().mockImplementation((body?: any, init?: ResponseInit) => ({
-    ok: init?.status ? init.status < 400 : true,
-    status: init?.status || 200,
-    statusText: init?.statusText || 'OK',
-    headers: new MockHeaders(),
-    body,
-    json: vi.fn().mockResolvedValue(body),
-    text: vi.fn().mockResolvedValue(String(body || '')),
-    blob: vi.fn().mockResolvedValue(new Blob()),
-    arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)),
-    clone: vi.fn(),
-  })) as any;
+  globalThis.Response = vi
+    .fn()
+    .mockImplementation((body?: any, init?: ResponseInit) => ({
+      ok: init?.status ? init.status < 400 : true,
+      status: init?.status || 200,
+      statusText: init?.statusText || 'OK',
+      headers: new MockHeaders(),
+      body,
+      json: vi.fn().mockResolvedValue(body),
+      text: vi.fn().mockResolvedValue(String(body || '')),
+      blob: vi.fn().mockResolvedValue(new Blob()),
+      arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)),
+      clone: vi.fn(),
+    })) as any;
 }
 
 // Enhanced AudioContext Mock with close() method
 const mockAudioContext = {
-  get currentTime() { return mockPerformanceTime / 1000; }, // Convert ms to seconds for audio timing
+  get currentTime() {
+    return mockPerformanceTime / 1000;
+  }, // Convert ms to seconds for audio timing
   state: 'running',
   sampleRate: 44100,
   destination: {
@@ -158,14 +168,16 @@ const mockAudioContext = {
     channelCountMode: 'explicit',
     channelInterpretation: 'speakers',
   },
-  createBuffer: vi.fn((channels: number, length: number, sampleRate: number) => ({
-    numberOfChannels: channels,
-    length,
-    sampleRate,
-    getChannelData: vi.fn(() => new Float32Array(length)),
-    copyFromChannel: vi.fn(),
-    copyToChannel: vi.fn(),
-  })),
+  createBuffer: vi.fn(
+    (channels: number, length: number, sampleRate: number) => ({
+      numberOfChannels: channels,
+      length,
+      sampleRate,
+      getChannelData: vi.fn(() => new Float32Array(length)),
+      copyFromChannel: vi.fn(),
+      copyToChannel: vi.fn(),
+    }),
+  ),
   createBufferSource: vi.fn(() => ({
     buffer: null,
     connect: vi.fn(),
@@ -175,7 +187,11 @@ const mockAudioContext = {
     onended: null,
   })),
   createGain: vi.fn(() => ({
-    gain: { value: 1, setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn() },
+    gain: {
+      value: 1,
+      setValueAtTime: vi.fn(),
+      linearRampToValueAtTime: vi.fn(),
+    },
     connect: vi.fn(),
     disconnect: vi.fn(),
   })),
@@ -243,7 +259,10 @@ class MockAudioContext {
   };
 
   constructor(options?: AudioContextOptions) {
-    console.log('🔊 MockAudioContext constructor called with options:', options);
+    console.log(
+      '🔊 MockAudioContext constructor called with options:',
+      options,
+    );
     // Copy all methods from mockAudioContext
     Object.assign(this, mockAudioContext);
   }
@@ -313,7 +332,10 @@ if (typeof globalThis.HTMLCanvasElement === 'undefined') {
       return null;
     }),
     // ✅ CRITICAL FIX: Add toDataURL method that returns realistic data URL
-    toDataURL: vi.fn(() => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='),
+    toDataURL: vi.fn(
+      () =>
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    ),
     toBlob: vi.fn((callback: (blob: Blob) => void) => {
       const blob = new Blob(['mock-canvas-data'], { type: 'image/png' });
       callback(blob);
@@ -324,7 +346,7 @@ if (typeof globalThis.HTMLCanvasElement === 'undefined') {
   };
 
   globalThis.HTMLCanvasElement = vi.fn(() => mockCanvas) as any;
-  
+
   // Also mock document.createElement for canvas
   const originalCreateElement = document.createElement;
   document.createElement = vi.fn((tagName: string) => {
@@ -380,4 +402,4 @@ if (typeof globalThis.setTimeout === 'undefined') {
 
 if (typeof globalThis.clearTimeout === 'undefined') {
   globalThis.clearTimeout = vi.fn() as any;
-} 
+}

@@ -9,12 +9,8 @@ import {
   NetworkError,
   NetworkErrorCode,
   createNetworkError,
-} from '../../errors/NetworkError.js';
-import {
-  ErrorSeverity,
-  ErrorCategory,
-  ErrorContext,
-} from '../../errors/base.js';
+} from '../../errors/NetworkError';
+import { ErrorSeverity, ErrorCategory, ErrorContext } from '../../errors/base';
 
 describe('NetworkError Behavioral Tests', () => {
   // ================================

@@ -5,12 +5,14 @@ This document outlines the comprehensive solutions implemented to handle large-s
 ## 🚨 **The Scale Problem**
 
 ### **Original Issues**
+
 - **Memory Exhaustion**: `JS heap out of memory` when running 3000+ tests together
 - **DOM Corruption**: Audio-heavy tests corrupted global DOM environment
 - **Test Isolation**: Cumulative memory buildup over 5+ minutes of intensive testing
 - **CI/CD Failures**: Infrastructure couldn't handle the full test suite
 
 ### **Root Causes Identified**
+
 1. **Memory Leaks**: PluginManager intervals never cleared, accumulating over test runs
 2. **DOM Environment Corruption**: Audio tests corrupted global JSDOM environment
 3. **Resource Accumulation**: Mock objects and test data not properly cleaned up
@@ -24,6 +26,7 @@ This document outlines the comprehensive solutions implemented to handle large-s
 **Solution**: Split tests by domain and run separately
 
 #### **Package.json Scripts**
+
 ```json
 {
   "test:frontend:playback": "vitest run apps/frontend/src/domains/playback/",
@@ -35,6 +38,7 @@ This document outlines the comprehensive solutions implemented to handle large-s
 ```
 
 #### **Results**
+
 - ✅ **Playback Domain**: 2968/2968 tests passing (100%)
 - ✅ **User Domain**: 14/14 tests passing (100%)
 - ✅ **Shared Domain**: 23/23 tests passing (100%)
@@ -46,6 +50,7 @@ This document outlines the comprehensive solutions implemented to handle large-s
 **Solution**: Comprehensive memory configuration
 
 #### **Vitest Configuration (vitest.config.ts)**
+
 ```typescript
 export default defineConfig({
   test: {
@@ -54,7 +59,13 @@ export default defineConfig({
     poolOptions: {
       threads: {
         singleThread: process.env.CI === 'true',
-        maxThreads: process.env.CI === 'true' ? 1 : Math.min(4, Math.max(1, Math.floor(require('os').cpus().length / 2))),
+        maxThreads:
+          process.env.CI === 'true'
+            ? 1
+            : Math.min(
+                4,
+                Math.max(1, Math.floor(require('os').cpus().length / 2)),
+              ),
         minThreads: 1,
         isolate: true,
         execArgv: [
@@ -76,6 +87,7 @@ export default defineConfig({
 ```
 
 #### **Environment Variables**
+
 ```bash
 # For large domains (playback)
 NODE_OPTIONS="--max-old-space-size=6144"
@@ -90,22 +102,24 @@ NODE_OPTIONS="--max-old-space-size=2048"
 **Solution**: Parallel jobs with domain isolation
 
 #### **GitHub Actions (.github/workflows/test.yml)**
+
 ```yaml
 jobs:
   test-frontend-playback:
     runs-on: ubuntu-latest
     env:
-      NODE_OPTIONS: "--max-old-space-size=6144"
+      NODE_OPTIONS: '--max-old-space-size=6144'
     # ... run playback tests in isolation
 
   test-frontend-user:
     runs-on: ubuntu-latest
     env:
-      NODE_OPTIONS: "--max-old-space-size=2048"
+      NODE_OPTIONS: '--max-old-space-size=2048'
     # ... run user tests in isolation
 ```
 
 #### **Benefits**
+
 - ✅ **Parallel Execution**: Domains run simultaneously, reducing total CI time
 - ✅ **Memory Isolation**: Each job gets fresh memory environment
 - ✅ **Failure Isolation**: One domain failure doesn't affect others
@@ -117,6 +131,7 @@ jobs:
 **Solution**: Comprehensive memory monitoring script
 
 #### **Memory Monitor Script (scripts/test-memory-monitor.sh)**
+
 ```bash
 # Run with memory monitoring
 ./scripts/test-memory-monitor.sh run
@@ -129,6 +144,7 @@ jobs:
 ```
 
 #### **Features**
+
 - 🔍 **Real-time Memory Tracking**: Monitor memory usage during test execution
 - ⚠️ **Warning System**: Alert when memory usage exceeds thresholds
 - 📊 **Peak Memory Analysis**: Track maximum memory usage per domain
@@ -140,6 +156,7 @@ jobs:
 **Solution**: Robust DOM recovery and validation
 
 #### **Enhanced Test Utils (apps/frontend/src/domains/user/test/test-utils.tsx)**
+
 ```typescript
 function ensureCompleteJSDOMEnvironment(): void {
   try {
@@ -161,6 +178,7 @@ function ensureCompleteJSDOMEnvironment(): void {
 ```
 
 #### **Results**
+
 - ✅ **DOM Recovery**: Tests pass individually after corruption
 - ✅ **Robust Fallbacks**: Multiple recovery layers prevent complete failure
 - ✅ **Error Handling**: Clear error messages for debugging
@@ -168,6 +186,7 @@ function ensureCompleteJSDOMEnvironment(): void {
 ## 🎯 **Usage Patterns**
 
 ### **Local Development**
+
 ```bash
 # Run individual domains during development
 pnpm run test:frontend:playback
@@ -182,12 +201,14 @@ pnpm run test:frontend:ci
 ```
 
 ### **CI/CD Environment**
+
 ```bash
 # Automatic parallel execution via GitHub Actions
 # Each domain runs in isolated job with appropriate memory limits
 ```
 
 ### **Debugging Memory Issues**
+
 ```bash
 # Monitor specific command
 ./scripts/test-memory-monitor.sh monitor "your-command-here"
@@ -202,12 +223,14 @@ tail -f logs/test-memory-*.log
 ## 📊 **Performance Metrics**
 
 ### **Before Optimization**
+
 - ❌ **Full Suite**: Memory exhaustion after ~2500 tests
 - ❌ **Execution Time**: 8+ minutes before failure
 - ❌ **Success Rate**: 0% for full suite
 - ❌ **CI Reliability**: Frequent failures
 
 ### **After Optimization**
+
 - ✅ **Domain-Based**: 100% success rate for individual domains
 - ✅ **Execution Time**: ~4 minutes per domain (parallel in CI)
 - ✅ **Memory Usage**: Peak 2-4GB per domain (well within limits)
@@ -216,6 +239,7 @@ tail -f logs/test-memory-*.log
 ## 🔧 **Additional Optimizations**
 
 ### **Timer Management**
+
 ```typescript
 // For tests with setTimeout dependencies
 it('should handle async operations', async () => {
@@ -227,6 +251,7 @@ it('should handle async operations', async () => {
 ```
 
 ### **Memory Leak Prevention**
+
 ```typescript
 // PluginManager with proper cleanup
 private performanceMonitoringInterval?: NodeJS.Timeout;
@@ -250,16 +275,19 @@ dispose(): void {
 ## 🚀 **Future Improvements**
 
 ### **Short-term (Next Sprint)**
+
 1. **Test Sharding**: Implement automatic test sharding for even better parallelization
 2. **Memory Profiling**: Add heap snapshot analysis for deeper memory insights
 3. **Selective Testing**: Smart test selection based on changed files
 
 ### **Medium-term (Next Quarter)**
+
 1. **Custom Test Runner**: Build specialized test runner optimized for large suites
 2. **Distributed Testing**: Run tests across multiple machines
 3. **Caching Strategy**: Implement intelligent test result caching
 
 ### **Long-term (Next 6 Months)**
+
 1. **Test Architecture**: Refactor tests for better memory efficiency
 2. **Mock Optimization**: Optimize mock objects for lower memory footprint
 3. **Performance Regression Detection**: Automated performance regression testing
@@ -267,16 +295,19 @@ dispose(): void {
 ## 📋 **Troubleshooting Guide**
 
 ### **Memory Issues**
+
 1. **Check Node.js Memory Limit**: Ensure `NODE_OPTIONS="--max-old-space-size=XXXX"`
 2. **Monitor Memory Usage**: Use `./scripts/test-memory-monitor.sh monitor`
 3. **Run Domain Separately**: Test individual domains to isolate issues
 
 ### **DOM Corruption**
+
 1. **Check Test Isolation**: Ensure tests clean up after themselves
 2. **Verify DOM Environment**: Run user domain tests individually
 3. **Update Test Utils**: Ensure latest DOM recovery system is in place
 
 ### **CI Failures**
+
 1. **Check Memory Limits**: Verify CI environment has sufficient memory
 2. **Review Logs**: Check GitHub Actions logs for specific failures
 3. **Run Locally**: Reproduce issues using domain-based approach
@@ -289,4 +320,4 @@ dispose(): void {
 - ✅ **Developer Experience**: Fast, reliable feedback during development
 - ✅ **Maintainability**: Clear patterns for handling large test suites
 
-This comprehensive solution transforms a previously impossible testing scenario (3000+ tests) into a reliable, maintainable, and efficient testing strategy. 
+This comprehensive solution transforms a previously impossible testing scenario (3000+ tests) into a reliable, maintainable, and efficient testing strategy.

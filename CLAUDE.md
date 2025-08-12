@@ -5,11 +5,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Critical Rules
 
 ### Package Manager
+
 **ALWAYS use pnpm** - This is a pnpm workspace project. NEVER use npm or yarn commands.
 
 ### Import Rules (MUST FOLLOW)
+
 ```typescript
-// Relative imports: MUST include .js extension
+// Relative imports: MUST include .js extension (ESM requirement)
 import { AuthController } from './auth.controller.js';
 
 // Alias imports (@/ or @bassnotion/): MUST NOT include extension
@@ -22,28 +24,49 @@ import { Injectable } from '@nestjs/common';
 ## Commands
 
 ### Development
+
+⚠️ **IMPORTANT: THIS PROJECT USES PM2 FOR DEVELOPMENT SERVERS - DO NOT USE pnpm dev COMMANDS** ⚠️
+
 ```bash
 # Install dependencies
 pnpm install
 
-# Run development servers
-pnpm dev              # Run frontend and backend in parallel
-pnpm dev:frontend     # Frontend only
-pnpm dev:backend      # Backend only
+# ❌ DO NOT USE THESE - We use PM2 instead:
+# pnpm dev              # DON'T USE
+# pnpm dev:frontend     # DON'T USE  
+# pnpm dev:backend      # DON'T USE
+
+# ✅ CORRECT WAY - Using PM2:
+pm2 status                        # Check status of all processes
+pm2 restart bassnotion-frontend   # Restart frontend (port 3001)
+pm2 restart bassnotion-backend    # Restart backend (port 3000)
+pm2 logs bassnotion-frontend      # View frontend logs
+pm2 logs bassnotion-backend       # View backend logs
+pm2 restart all                   # Restart both frontend and backend
+pm2 stop all                      # Stop all processes
+pm2 start ecosystem.config.cjs    # Start all processes if not running
 ```
 
 ### Building
+
 ```bash
 # Build all projects
 pnpm nx run-many --target=build --all
 
 # Build specific project
-pnpm nx build @bassnotion/frontend
 pnpm nx build @bassnotion/backend
 pnpm nx build @bassnotion/contracts
+
+# Frontend build workaround (due to nx/Next.js 15.3.2 compatibility issue)
+# The nx build for frontend may fail with "Html import" errors
+# Use this direct Next.js build command instead:
+cd apps/frontend && pnpm next build
 ```
 
+**Note**: There's a known issue with @nx/next plugin and Next.js 15.3.2 App Router that causes build failures through nx. The frontend builds successfully using Next.js directly.
+
 ### Testing with Vitest
+
 ```bash
 # Run tests for specific directories (ALWAYS use this format)
 pnpm vitest run apps/backend/src/
@@ -58,6 +81,7 @@ pnpm vitest apps/frontend/src/ --watch
 ```
 
 ### Linting & Type Checking
+
 ```bash
 # Lint all projects
 pnpm lint
@@ -71,6 +95,7 @@ pnpm nx run @bassnotion/backend:typecheck
 ```
 
 ### E2E Testing
+
 ```bash
 # Run Playwright tests
 pnpm nx e2e @bassnotion/frontend-e2e
@@ -80,6 +105,7 @@ pnpm nx e2e @bassnotion/frontend-e2e --ui
 ```
 
 ### Production Serving (PM2)
+
 ```bash
 # Start with PM2
 pm2 start ecosystem.config.cjs
@@ -99,6 +125,7 @@ pm2 delete all
 ## Architecture Overview
 
 ### Monorepo Structure
+
 ```
 bassnotion-monorepo-v1/
 ├── apps/
@@ -113,6 +140,7 @@ bassnotion-monorepo-v1/
 ```
 
 ### Technology Stack
+
 - **Frontend**: Next.js 15.3.2 (App Router) + React 19.1.0 + TypeScript 5.7.2
 - **Backend**: NestJS 11.0.0 + TypeScript 5.7.2
 - **Database**: Supabase (PostgreSQL)
@@ -126,9 +154,11 @@ bassnotion-monorepo-v1/
 - **Testing**: Vitest (unit) + Playwright (e2e)
 
 ### Domain Architecture
+
 The project follows Domain-Driven Design with these core domains:
 
 #### Frontend Domains (`apps/frontend/src/domains/`)
+
 - **user**: Authentication, profiles, settings
 - **playback**: Audio/video playback, 3D fretboard visualization
 - **widgets**: YouTube integration, interactive tools
@@ -137,12 +167,14 @@ The project follows Domain-Driven Design with these core domains:
 - **creators**: Content creator features
 
 #### Backend Domains (`apps/backend/src/domains/`)
+
 - **user**: User management, authentication
 - **youtube**: YouTube API integration, batch processing
 - **exercises**: Exercise data management
 - **tutorials**: Tutorial content management
 
 ### Shared Contracts (`libs/contracts/src/`)
+
 - Type-safe API contracts using Zod schemas
 - Shared between frontend and backend
 - Ensures type safety across the entire stack
@@ -150,6 +182,7 @@ The project follows Domain-Driven Design with these core domains:
 ## Key Patterns & Conventions
 
 ### Component Structure (Frontend)
+
 ```typescript
 // Components follow this pattern:
 src/domains/[domain]/components/[ComponentName]/
@@ -160,25 +193,28 @@ src/domains/[domain]/components/[ComponentName]/
 ```
 
 ### API Routes (Backend)
+
 ```typescript
 // Controllers follow RESTful conventions:
 @Controller('api/v1/users')
 export class UserController {
   @Get(':id')
-  findOne(@Param('id') id: string) { }
-  
+  findOne(@Param('id') id: string) {}
+
   @Post()
-  create(@Body() dto: CreateUserDto) { }
+  create(@Body() dto: CreateUserDto) {}
 }
 ```
 
 ### Testing Approach
+
 - **Unit Tests**: Co-located with source files (`.test.ts` or `.spec.ts`)
 - **Integration Tests**: In `test/` subdirectories within domains
 - **E2E Tests**: Playwright tests in `apps/frontend-e2e/`
 - **Test Data**: Use factories and fixtures for consistent test data
 
 ### Error Handling
+
 - Frontend: Error boundaries + TanStack Query error states
 - Backend: NestJS exception filters + custom error classes
 - Validation: Zod schemas for runtime validation
@@ -186,6 +222,7 @@ export class UserController {
 ## Environment Configuration
 
 ### Frontend (.env.local)
+
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
@@ -194,6 +231,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3000
 ```
 
 ### Backend (.env)
+
 ```
 SUPABASE_URL=
 SUPABASE_ANON_KEY=

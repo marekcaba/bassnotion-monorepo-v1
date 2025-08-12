@@ -50,7 +50,60 @@ export const ExerciseDifficultySchema = z.enum([
   'advanced',
 ]);
 
-// Epic 4 Compatible Exercise Schema
+// Multi-track configuration schema
+export const TrackConfigurationSchema = z.object({
+  tracks: z.object({
+    bass: z.object({
+      enabled: z.boolean(),
+      volume: z.number().min(0).max(1),
+      pan: z.number().min(-1).max(1),
+    }),
+    drums: z.object({
+      enabled: z.boolean(),
+      volume: z.number().min(0).max(1),
+      pan: z.number().min(-1).max(1),
+    }),
+    harmony: z.object({
+      enabled: z.boolean(),
+      volume: z.number().min(0).max(1),
+      pan: z.number().min(-1).max(1),
+    }),
+  }),
+  globalSettings: z.object({
+    masterVolume: z.number().min(0).max(1),
+    tempo: z.number().int().min(40).max(300),
+    metronome: z.object({
+      enabled: z.boolean(),
+      volume: z.number().min(0).max(1),
+    }),
+  }),
+});
+
+// Drum pattern schema
+export const DrumPatternSchema = z.object({
+  enabled: z.boolean(),
+  pattern: z.array(
+    z.object({
+      timestamp: z.number().min(0),
+      type: z.enum(['kick', 'snare', 'hihat', 'crash', 'ride', 'tom']),
+      velocity: z.number().min(0).max(1),
+    }),
+  ),
+});
+
+// Harmony voicing schema
+export const HarmonyVoicingSchema = z.object({
+  enabled: z.boolean(),
+  voicing: z.array(
+    z.object({
+      timestamp: z.number().min(0),
+      chord: z.string().min(1),
+      notes: z.array(z.string().min(1)),
+    }),
+  ),
+});
+
+// Epic 4 Compatible Exercise Schema (with multi-track support)
 export const ExerciseSchema = z.object({
   id: z.string().min(1, 'Exercise ID is required'),
   title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
@@ -67,6 +120,12 @@ export const ExerciseSchema = z.object({
     .string()
     .max(2000, 'Teaching summary too long')
     .optional(),
+
+  // Multi-track data (unified exercise-centric architecture)
+  drum_pattern: DrumPatternSchema.optional(),
+  harmony_voicing: HarmonyVoicingSchema.optional(),
+  track_configuration: TrackConfigurationSchema.optional(),
+
   is_active: z.boolean(),
   created_by: z.string().optional(),
   created_at: z.string(),

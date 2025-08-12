@@ -8,14 +8,10 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ErrorRecovery } from '../../errors/ErrorRecovery.js';
-import {
-  PlaybackError,
-  ErrorCategory,
-  ErrorSeverity,
-} from '../../errors/base.js';
-import { CircuitBreakerManager } from '../../errors/CircuitBreaker.js';
-import { GracefulDegradation } from '../../errors/GracefulDegradation.js';
+import { ErrorRecovery } from '../../errors/ErrorRecovery';
+import { PlaybackError, ErrorCategory, ErrorSeverity } from '../../errors/base';
+import { CircuitBreakerManager } from '../../errors/CircuitBreaker';
+import { GracefulDegradation } from '../../errors/GracefulDegradation';
 
 // Test Environment Setup
 const setupErrorRecoveryEnvironment = () => {

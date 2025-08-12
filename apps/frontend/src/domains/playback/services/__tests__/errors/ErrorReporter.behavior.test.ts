@@ -5,14 +5,14 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ErrorReporter } from '../../errors/ErrorReporter.js';
+import { ErrorReporter } from '../../errors/ErrorReporter';
 import {
   PlaybackError,
   ErrorDetails,
   ErrorSeverity,
   ErrorCategory,
   createErrorContext,
-} from '../../errors/base.js';
+} from '../../errors/base';
 
 describe('ErrorReporter Behavioral Tests', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;

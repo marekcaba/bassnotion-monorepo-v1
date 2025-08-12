@@ -1,0 +1,82 @@
+{
+  "kits": [
+    {
+      "id": "studio-acoustic",
+      "name": "Studio Acoustic Kit",
+      "description": "High-quality studio recorded acoustic drum kit",
+      "source": "admin",
+      "style": "acoustic",
+      "quality": "studio",
+      "sampleCount": 24,
+      "size": 45000000,
+      "metadata": {
+        "recordedAt": "Abbey Road Studios",
+        "engineer": "Platform Admin",
+        "microphones": "Neumann U87, AKG D112",
+        "preamps": "Neve 1073"
+      },
+      "samples": {
+        "kick": ["kick-v1.wav", "kick-v2.wav", "kick-v3.wav"],
+        "snare": ["snare-v1.wav", "snare-v2.wav", "snare-v3.wav"],
+        "hihat": ["hihat-v1.wav", "hihat-v2.wav", "hihat-v3.wav"],
+        "openHihat": ["open-hihat-v1.wav", "open-hihat-v2.wav"],
+        "crash": ["crash-v1.wav", "crash-v2.wav"],
+        "ride": ["ride-v1.wav", "ride-v2.wav"],
+        "tom1": ["tom1-v1.wav", "tom1-v2.wav"],
+        "tom2": ["tom2-v1.wav", "tom2-v2.wav"],
+        "tom3": ["tom3-v1.wav", "tom3-v2.wav"]
+      }
+    },
+    {
+      "id": "vintage-electronic",
+      "name": "Vintage Electronic Kit",
+      "description": "Classic 80s electronic drum sounds",
+      "source": "admin",
+      "style": "electronic",
+      "quality": "studio",
+      "sampleCount": 16,
+      "size": 20000000,
+      "metadata": {
+        "inspiration": "Linn LM-1, DMX",
+        "processing": "Analog saturation, tape compression"
+      },
+      "samples": {
+        "kick": ["kick-v1.wav", "kick-v2.wav"],
+        "snare": ["snare-v1.wav", "snare-v2.wav"],
+        "hihat": ["hihat-v1.wav", "hihat-v2.wav"],
+        "openHihat": ["open-hihat-v1.wav"],
+        "clap": ["clap-v1.wav", "clap-v2.wav"],
+        "cowbell": ["cowbell-v1.wav"],
+        "rimshot": ["rimshot-v1.wav"],
+        "tom": ["tom-v1.wav", "tom-v2.wav"]
+      }
+    },
+    {
+      "id": "jazz-brushes",
+      "name": "Jazz Brushes Kit",
+      "description": "Acoustic jazz kit with brush samples",
+      "source": "admin",
+      "style": "jazz",
+      "quality": "studio",
+      "sampleCount": 20,
+      "size": 35000000,
+      "metadata": {
+        "technique": "Brush and stick samples",
+        "tuning": "Jazz standard tuning"
+      },
+      "samples": {
+        "kick": ["kick-v1.wav", "kick-v2.wav"],
+        "snare": [
+          "snare-brush-v1.wav",
+          "snare-brush-v2.wav",
+          "snare-stick-v1.wav"
+        ],
+        "hihat": ["hihat-v1.wav", "hihat-v2.wav", "hihat-foot.wav"],
+        "ride": ["ride-v1.wav", "ride-v2.wav", "ride-bell.wav"],
+        "crash": ["crash-v1.wav"],
+        "tom1": ["tom1-v1.wav", "tom1-v2.wav"],
+        "tom2": ["tom2-v1.wav", "tom2-v2.wav"]
+      }
+    }
+  ]
+}

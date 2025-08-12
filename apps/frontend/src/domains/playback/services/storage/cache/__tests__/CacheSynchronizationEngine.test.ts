@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { CacheSynchronizationEngine } from '../CacheSynchronizationEngine.js';
+import { CacheSynchronizationEngine } from '../CacheSynchronizationEngine';
 import {
   CacheSynchronizationConfig,
   CacheLayer,

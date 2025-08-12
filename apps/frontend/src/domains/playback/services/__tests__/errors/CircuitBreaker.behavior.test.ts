@@ -15,7 +15,7 @@ import {
   CircuitBreakerConfig,
   CircuitBreakerMetrics,
   RetryContext,
-} from '../../errors/CircuitBreaker.js';
+} from '../../errors/CircuitBreaker';
 
 // Test Environment Setup
 const setupCircuitBreakerEnvironment = () => {

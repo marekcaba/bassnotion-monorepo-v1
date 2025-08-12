@@ -5,9 +5,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AdaptiveAudioStreamer } from '../AdaptiveAudioStreamer.js';
-import { SupabaseAssetClient } from '../SupabaseAssetClient.js';
-import { AudioCompressionEngine } from '../../AudioCompressionEngine.js';
+import { AdaptiveAudioStreamer } from '../AdaptiveAudioStreamer';
+import { SupabaseAssetClient } from '../SupabaseAssetClient';
+import { AudioCompressionEngine } from '../../AudioCompressionEngine';
 import {
   AdaptiveAudioStreamingConfig,
   AudioSampleMetadata,
@@ -16,8 +16,8 @@ import {
 } from '@bassnotion/contracts';
 
 // Mock dependencies
-vi.mock('../SupabaseAssetClient.js');
-vi.mock('../../AudioCompressionEngine.js');
+vi.mock('../SupabaseAssetClient');
+vi.mock('../../AudioCompressionEngine');
 
 // Mock Navigator Connection API
 const mockConnection = {

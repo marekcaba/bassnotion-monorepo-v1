@@ -1,0 +1,85 @@
+{
+  "generated": "2025-07-21T10:40:04.373Z",
+  "kits": [
+    {
+      "id": "classic-808",
+      "name": "Classic TR-808 Kit",
+      "description": "Authentic Roland TR-808 electronic drum sounds",
+      "source": "hydrogen",
+      "style": "electronic",
+      "quality": "studio",
+      "sampleCount": 5,
+      "size": 3145728
+    },
+    {
+      "id": "tr808909",
+      "name": "TR-808/909 Hybrid Kit",
+      "description": "Combined Roland TR-808 and TR-909 samples",
+      "source": "hydrogen",
+      "style": "electronic",
+      "quality": "studio",
+      "sampleCount": 4,
+      "size": 4194304
+    },
+    {
+      "id": "boss-dr110",
+      "name": "Boss DR-110 Kit",
+      "description": "Classic Boss DR-110 drum machine sounds",
+      "source": "hydrogen",
+      "style": "vintage",
+      "quality": "studio",
+      "sampleCount": 2,
+      "size": 2097152
+    },
+    {
+      "id": "techno-1",
+      "name": "Techno Kit 1",
+      "description": "Modern techno and electronic dance music kit",
+      "source": "hydrogen",
+      "style": "electronic",
+      "quality": "studio",
+      "sampleCount": 5,
+      "size": 5242880
+    },
+    {
+      "id": "hip-hop-1",
+      "name": "Hip-Hop Kit 1",
+      "description": "Urban hip-hop drum kit with deep bass",
+      "source": "hydrogen",
+      "style": "urban",
+      "quality": "studio",
+      "sampleCount": 4,
+      "size": 6291456
+    },
+    {
+      "id": "colombo-acoustic",
+      "name": "Colombo Acoustic Kit",
+      "description": "Professional acoustic drum kit recordings",
+      "source": "hydrogen",
+      "style": "acoustic",
+      "quality": "studio",
+      "sampleCount": 5,
+      "size": 15728640
+    },
+    {
+      "id": "yamaha-vintage",
+      "name": "Yamaha Vintage Kit",
+      "description": "Classic Yamaha vintage drum sounds",
+      "source": "hydrogen",
+      "style": "vintage",
+      "quality": "studio",
+      "sampleCount": 2,
+      "size": 8388608
+    },
+    {
+      "id": "electric-empire",
+      "name": "Electric Empire Kit",
+      "description": "Synthesized drum and percussion sounds",
+      "source": "hydrogen",
+      "style": "electronic",
+      "quality": "studio",
+      "sampleCount": 5,
+      "size": 7340032
+    }
+  ]
+}

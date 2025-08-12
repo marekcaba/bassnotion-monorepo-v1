@@ -1,0 +1,1671 @@
+2025-07-22 10:11:24 +02:00: 🚨 TestHarmonyPage component is rendering!
+2025-07-22 10:11:24 +02:00:  GET /test-harmony [32m200[39m in 368ms
+2025-07-22 10:11:24 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 65ms
+2025-07-22 10:11:25 +02:00:  GET /meta.json [33m404[39m in 51ms
+2025-07-22 11:05:53 +02:00:  [32m[1m✓[22m[39m Compiled in 902ms (1652 modules)
+2025-07-22 11:08:13 +02:00:  [32m[1m✓[22m[39m Compiled in 1561ms (3435 modules)
+2025-07-22 11:08:14 +02:00:  GET /test-harmony [32m200[39m in 68ms
+2025-07-22 11:08:30 +02:00:  [32m[1m✓[22m[39m Compiled in 839ms (3435 modules)
+2025-07-22 11:08:30 +02:00:  GET /test-harmony [32m200[39m in 68ms
+2025-07-22 11:08:44 +02:00:  [32m[1m✓[22m[39m Compiled in 858ms (3435 modules)
+2025-07-22 11:08:44 +02:00:  GET /test-harmony [32m200[39m in 51ms
+2025-07-22 11:11:25 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 468ms (1770 modules)
+2025-07-22 11:11:29 +02:00:  [37m[1m○[22m[39m Compiling /_error ...
+2025-07-22 11:11:31 +02:00:  [32m[1m✓[22m[39m Compiled /_error in 1885ms (3762 modules)
+2025-07-22 11:11:31 +02:00:  GET /meta.json [31m500[39m in 6059ms
+2025-07-22 11:11:31 +02:00:  GET /meta.json [31m500[39m in 6330ms
+2025-07-22 11:11:31 +02:00:  GET /test-harmony [32m200[39m in 1475ms
+2025-07-22 11:11:31 +02:00:  GET /meta.json [33m404[39m in 127ms
+2025-07-22 11:11:31 +02:00:  GET /test-harmony [32m200[39m in 10ms
+2025-07-22 11:11:31 +02:00:  GET /_next/static/css/app/layout.css?v=1753175491865 [33m404[39m in 25ms
+2025-07-22 11:11:31 +02:00:  GET /_next/static/css/app/layout.css?v=1753175491865 [33m404[39m in 29ms
+2025-07-22 11:11:35 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 57ms
+2025-07-22 11:11:36 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 36ms
+2025-07-22 11:11:36 +02:00:  GET /meta.json [33m404[39m in 25ms
+2025-07-22 11:14:41 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 96ms
+2025-07-22 11:14:41 +02:00:  GET /Tone.js.map [33m404[39m in 32ms
+2025-07-22 11:14:41 +02:00:  GET /meta.json [33m404[39m in 37ms
+2025-07-22 11:14:43 +02:00:  GET /samples/salamander-piano/D [33m404[39m in 117ms
+2025-07-22 11:14:43 +02:00:  GET /samples/salamander-piano/F [33m404[39m in 118ms
+2025-07-22 11:14:43 +02:00:  GET /samples/salamander-piano/D [33m404[39m in 65ms
+2025-07-22 11:14:43 +02:00:  GET /samples/salamander-piano/F [33m404[39m in 65ms
+2025-07-22 11:14:44 +02:00:  GET /samples/salamander-piano/D [33m404[39m in 51ms
+2025-07-22 11:14:44 +02:00:  GET /samples/salamander-piano/F [33m404[39m in 52ms
+2025-07-22 11:14:44 +02:00:  GET /samples/salamander-piano/F [33m404[39m in 51ms
+2025-07-22 11:14:44 +02:00:  GET /samples/salamander-piano/D [33m404[39m in 51ms
+2025-07-22 11:14:44 +02:00:  GET /samples/salamander-piano/D [33m404[39m in 52ms
+2025-07-22 11:14:44 +02:00:  GET /samples/salamander-piano/F [33m404[39m in 52ms
+2025-07-22 11:14:44 +02:00:  GET /samples/salamander-piano/D [33m404[39m in 52ms
+2025-07-22 11:14:44 +02:00:  GET /samples/salamander-piano/F [33m404[39m in 51ms
+2025-07-22 11:14:44 +02:00:  GET /samples/salamander-piano/F [33m404[39m in 52ms
+2025-07-22 11:14:44 +02:00:  GET /samples/salamander-piano/D [33m404[39m in 53ms
+2025-07-22 11:21:49 +02:00:  [32m[1m✓[22m[39m Compiled in 1852ms (3732 modules)
+2025-07-22 11:21:49 +02:00:  GET /test-harmony [32m200[39m in 104ms
+2025-07-22 11:21:49 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 294ms (1815 modules)
+2025-07-22 11:21:50 +02:00:  GET /_next/static/css/app/layout.css?v=1753176109548 [33m404[39m in 458ms
+2025-07-22 11:21:50 +02:00:  GET /_next/static/css/app/layout.css?v=1753176109548 [33m404[39m in 23ms
+2025-07-22 11:22:32 +02:00:  GET /meta.json [33m404[39m in 129ms
+2025-07-22 11:22:33 +02:00:  GET /meta.json [33m404[39m in 81ms
+2025-07-22 11:24:27 +02:00:  GET /samples/salamander-piano/F [33m404[39m in 260ms
+2025-07-22 11:24:27 +02:00:  GET /samples/salamander-piano/D [33m404[39m in 264ms
+2025-07-22 11:24:27 +02:00:  GET /samples/salamander-piano/F [33m404[39m in 79ms
+2025-07-22 11:24:27 +02:00:  GET /samples/salamander-piano/D [33m404[39m in 80ms
+2025-07-22 11:24:27 +02:00:  GET /samples/salamander-piano/D [33m404[39m in 64ms
+2025-07-22 11:24:27 +02:00:  GET /samples/salamander-piano/F [33m404[39m in 64ms
+2025-07-22 11:24:27 +02:00:  GET /samples/salamander-piano/D [33m404[39m in 54ms
+2025-07-22 11:24:27 +02:00:  GET /samples/salamander-piano/F [33m404[39m in 55ms
+2025-07-22 11:24:27 +02:00:  GET /samples/salamander-piano/D [33m404[39m in 62ms
+2025-07-22 11:24:27 +02:00:  GET /samples/salamander-piano/F [33m404[39m in 62ms
+2025-07-22 11:24:27 +02:00:  GET /samples/salamander-piano/D [33m404[39m in 50ms
+2025-07-22 11:24:27 +02:00:  GET /samples/salamander-piano/F [33m404[39m in 50ms
+2025-07-22 11:24:27 +02:00:  GET /samples/salamander-piano/D [33m404[39m in 54ms
+2025-07-22 11:24:27 +02:00:  GET /samples/salamander-piano/F [33m404[39m in 54ms
+2025-07-22 11:49:06 +02:00:  [32m[1m✓[22m[39m Compiled in 907ms (1918 modules)
+2025-07-22 11:49:06 +02:00:  GET /test-harmony [32m200[39m in 40ms
+2025-07-22 11:49:06 +02:00:  GET /_next/static/css/app/layout.css?v=1753177746131 [33m404[39m in 30ms
+2025-07-22 11:49:06 +02:00:  GET /_next/static/css/app/layout.css?v=1753177746131 [33m404[39m in 22ms
+2025-07-22 11:50:39 +02:00:  GET /meta.json [33m404[39m in 97ms
+2025-07-22 11:50:40 +02:00:  GET /meta.json [33m404[39m in 36ms
+2025-07-22 12:02:46 +02:00:  [32m[1m✓[22m[39m Compiled in 934ms (1918 modules)
+2025-07-22 12:02:46 +02:00:  GET /test-harmony [32m200[39m in 12ms
+2025-07-22 12:02:46 +02:00:  GET /_next/static/css/app/layout.css?v=1753178566905 [33m404[39m in 23ms
+2025-07-22 12:02:47 +02:00:  GET /_next/static/css/app/layout.css?v=1753178566905 [33m404[39m in 22ms
+2025-07-22 12:03:46 +02:00:  [32m[1m✓[22m[39m Compiled in 1326ms (3733 modules)
+2025-07-22 12:03:46 +02:00:  GET /test-harmony [32m200[39m in 74ms
+2025-07-22 12:03:46 +02:00:  GET /_next/static/css/app/layout.css?v=1753178626406 [33m404[39m in 119ms
+2025-07-22 12:03:46 +02:00:  GET /_next/static/css/app/layout.css?v=1753178626406 [33m404[39m in 26ms
+2025-07-22 12:04:02 +02:00:  [32m[1m✓[22m[39m Compiled in 1099ms (3733 modules)
+2025-07-22 12:04:02 +02:00:  GET /test-harmony [32m200[39m in 68ms
+2025-07-22 12:04:02 +02:00:  GET /_next/static/css/app/layout.css?v=1753178642326 [33m404[39m in 106ms
+2025-07-22 12:04:02 +02:00:  GET /_next/static/css/app/layout.css?v=1753178642326 [33m404[39m in 20ms
+2025-07-22 12:04:20 +02:00:  [32m[1m✓[22m[39m Compiled in 1143ms (3733 modules)
+2025-07-22 12:04:20 +02:00:  GET /test-harmony [32m200[39m in 42ms
+2025-07-22 12:04:20 +02:00:  GET /_next/static/css/app/layout.css?v=1753178660648 [33m404[39m in 79ms
+2025-07-22 12:04:20 +02:00:  GET /_next/static/css/app/layout.css?v=1753178660648 [33m404[39m in 21ms
+2025-07-22 12:04:32 +02:00:  [32m[1m✓[22m[39m Compiled in 1120ms (3735 modules)
+2025-07-22 12:04:32 +02:00:  GET /test-harmony [32m200[39m in 44ms
+2025-07-22 12:04:32 +02:00:  GET /_next/static/css/app/layout.css?v=1753178672250 [33m404[39m in 76ms
+2025-07-22 12:04:32 +02:00:  GET /_next/static/css/app/layout.css?v=1753178672250 [33m404[39m in 22ms
+2025-07-22 12:06:32 +02:00:  [32m[1m✓[22m[39m Compiled in 1391ms (3734 modules)
+2025-07-22 12:06:32 +02:00:  GET /test-harmony [32m200[39m in 49ms
+2025-07-22 12:06:33 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 252ms (1816 modules)
+2025-07-22 12:06:33 +02:00:  GET /_next/static/css/app/layout.css?v=1753178792906 [33m404[39m in 346ms
+2025-07-22 12:06:33 +02:00:  GET /_next/static/css/app/layout.css?v=1753178792906 [33m404[39m in 22ms
+2025-07-22 12:06:42 +02:00:  [32m[1m✓[22m[39m Compiled in 741ms (3735 modules)
+2025-07-22 12:06:42 +02:00:  GET /test-harmony [32m200[39m in 47ms
+2025-07-22 12:06:42 +02:00:  GET /_next/static/css/app/layout.css?v=1753178802843 [33m404[39m in 70ms
+2025-07-22 12:06:42 +02:00:  GET /_next/static/css/app/layout.css?v=1753178802843 [33m404[39m in 27ms
+2025-07-22 12:06:59 +02:00:  [32m[1m✓[22m[39m Compiled in 1201ms (3735 modules)
+2025-07-22 12:06:59 +02:00:  GET /test-harmony [32m200[39m in 45ms
+2025-07-22 12:06:59 +02:00:  GET /_next/static/css/app/layout.css?v=1753178819217 [33m404[39m in 80ms
+2025-07-22 12:06:59 +02:00:  GET /_next/static/css/app/layout.css?v=1753178819217 [33m404[39m in 21ms
+2025-07-22 12:07:42 +02:00: 🚨 TestHarmonyPage component is rendering!
+2025-07-22 12:07:42 +02:00:  GET /test-harmony [32m200[39m in 416ms
+2025-07-22 12:07:42 +02:00:  GET /_next/static/css/app/layout.css?v=1753178862526 [33m404[39m in 48ms
+2025-07-22 12:07:43 +02:00:  GET /_next/static/chunks/main-app.js?v=1753178862526 [33m404[39m in 128ms
+2025-07-22 12:07:43 +02:00:  GET /_next/static/chunks/app-pages-internals.js [33m404[39m in 125ms
+2025-07-22 12:07:43 +02:00:  GET /meta.json [33m404[39m in 131ms
+2025-07-22 12:07:43 +02:00:  GET /_next/static/chunks/app/error.js [33m404[39m in 125ms
+2025-07-22 12:07:43 +02:00:  GET /meta.json [33m404[39m in 35ms
+2025-07-22 12:07:47 +02:00: 🚨 TestHarmonyPage component is rendering!
+2025-07-22 12:07:47 +02:00:  GET /test-harmony [32m200[39m in 63ms
+2025-07-22 12:07:47 +02:00:  GET /_next/static/css/app/layout.css?v=1753178867112 [33m404[39m in 42ms
+2025-07-22 12:07:47 +02:00:  GET /_next/static/chunks/main-app.js?v=1753178867112 [33m404[39m in 34ms
+2025-07-22 12:07:47 +02:00:  GET /_next/static/chunks/app-pages-internals.js [33m404[39m in 50ms
+2025-07-22 12:07:47 +02:00:  GET /_next/static/chunks/app/error.js [33m404[39m in 48ms
+2025-07-22 12:07:47 +02:00:  GET /meta.json [33m404[39m in 23ms
+2025-07-22 12:08:00 +02:00: 🚨 TestHarmonyPage component is rendering!
+2025-07-22 12:08:00 +02:00:  GET /test-harmony [32m200[39m in 74ms
+2025-07-22 12:08:00 +02:00:  GET /_next/static/css/app/layout.css?v=1753178880165 [33m404[39m in 86ms
+2025-07-22 12:08:00 +02:00:  GET /_next/static/chunks/main-app.js?v=1753178880165 [33m404[39m in 32ms
+2025-07-22 12:08:00 +02:00:  GET /_next/static/chunks/app-pages-internals.js [33m404[39m in 52ms
+2025-07-22 12:08:00 +02:00:  GET /_next/static/chunks/app/error.js [33m404[39m in 52ms
+2025-07-22 12:08:00 +02:00:  GET /meta.json [33m404[39m in 31ms
+2025-07-22 12:08:38 +02:00: 🚨 TestHarmonyPage component is rendering!
+2025-07-22 12:08:38 +02:00:  GET /test-harmony [32m200[39m in 139ms
+2025-07-22 12:08:38 +02:00:  GET /_next/static/css/app/layout.css?v=1753178918804 [33m404[39m in 33ms
+2025-07-22 12:08:39 +02:00:  GET /_next/static/chunks/main-app.js?v=1753178918804 [33m404[39m in 95ms
+2025-07-22 12:08:39 +02:00:  GET /_next/static/chunks/app-pages-internals.js [33m404[39m in 93ms
+2025-07-22 12:08:39 +02:00:  GET /_next/static/chunks/app/error.js [33m404[39m in 91ms
+2025-07-22 12:08:39 +02:00:  GET /meta.json [33m404[39m in 32ms
+2025-07-22 12:08:41 +02:00:  GET /meta.json [33m404[39m in 33ms
+2025-07-22 12:08:44 +02:00: 🚨 TestHarmonyPage component is rendering!
+2025-07-22 12:08:44 +02:00:  GET /test-harmony [32m200[39m in 60ms
+2025-07-22 12:08:44 +02:00:  GET /_next/static/css/app/layout.css?v=1753178924123 [33m404[39m in 29ms
+2025-07-22 12:08:44 +02:00:  GET /_next/static/chunks/main-app.js?v=1753178924123 [33m404[39m in 76ms
+2025-07-22 12:08:44 +02:00:  GET /_next/static/chunks/app-pages-internals.js [33m404[39m in 74ms
+2025-07-22 12:08:44 +02:00:  GET /_next/static/chunks/app/error.js [33m404[39m in 75ms
+2025-07-22 12:08:44 +02:00:  GET /meta.json [33m404[39m in 29ms
+2025-07-22 12:09:48 +02:00:  [32m[1m✓[22m[39m Compiled in 1922ms (3720 modules)
+2025-07-22 12:09:48 +02:00:  GET /test-harmony [32m200[39m in 74ms
+2025-07-22 12:10:38 +02:00: 🚨 TestHarmonyPage component is rendering!
+2025-07-22 12:10:38 +02:00:  GET /test-harmony [32m200[39m in 375ms
+2025-07-22 12:10:39 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 456ms (1816 modules)
+2025-07-22 12:10:39 +02:00:  GET /_next/static/chunks/app-pages-internals.js [33m404[39m in 625ms
+2025-07-22 12:10:39 +02:00:  GET /_next/static/chunks/app/error.js [33m404[39m in 624ms
+2025-07-22 12:10:39 +02:00:  GET /meta.json [33m404[39m in 232ms
+2025-07-22 12:10:39 +02:00:  GET /_next/static/chunks/main-app.js?v=1753179038564 [33m404[39m in 673ms
+2025-07-22 12:10:49 +02:00: 🚨 TestHarmonyPage component is rendering!
+2025-07-22 12:10:49 +02:00:  GET /test-harmony [32m200[39m in 338ms
+2025-07-22 12:10:49 +02:00:  GET /_next/static/chunks/main-app.js?v=1753179048964 [33m404[39m in 38ms
+2025-07-22 12:10:49 +02:00:  GET /_next/static/chunks/app-pages-internals.js [33m404[39m in 52ms
+2025-07-22 12:10:49 +02:00:  GET /_next/static/chunks/app/error.js [33m404[39m in 47ms
+2025-07-22 12:10:49 +02:00:  GET /meta.json [33m404[39m in 50ms
+2025-07-22 12:11:01 +02:00: 🚨 TestHarmonyPage component is rendering!
+2025-07-22 12:11:01 +02:00:  GET /test-harmony [32m200[39m in 61ms
+2025-07-22 12:11:02 +02:00:  GET /_next/static/chunks/main-app.js?v=1753179061931 [33m404[39m in 104ms
+2025-07-22 12:11:02 +02:00:  GET /_next/static/chunks/app-pages-internals.js [33m404[39m in 103ms
+2025-07-22 12:11:02 +02:00:  GET /_next/static/chunks/app/error.js [33m404[39m in 25ms
+2025-07-22 12:11:02 +02:00:  GET /meta.json [33m404[39m in 38ms
+2025-07-22 12:11:06 +02:00:  [32m[1m✓[22m[39m Compiled in 783ms (1919 modules)
+2025-07-22 12:11:06 +02:00:  GET /test-harmony [32m200[39m in 12ms
+2025-07-22 12:11:14 +02:00:  [32m[1m✓[22m[39m Compiled in 424ms (1919 modules)
+2025-07-22 12:11:14 +02:00:  GET /test-harmony [32m200[39m in 12ms
+2025-07-22 12:11:22 +02:00:  [32m[1m✓[22m[39m Compiled in 323ms (1919 modules)
+2025-07-22 12:11:22 +02:00:  GET /test-harmony [32m200[39m in 8ms
+2025-07-22 12:11:33 +02:00:  [37m[1m○[22m[39m Compiling /test-velocity-16 ...
+2025-07-22 12:11:34 +02:00:  GET /test-velocity-16 [31m500[39m in 1202ms
+2025-07-22 12:11:34 +02:00:  GET /_next/static/chunks/app-pages-internals.js [33m404[39m in 91ms
+2025-07-22 12:11:34 +02:00:  GET /meta.json [33m404[39m in 89ms
+2025-07-22 12:11:34 +02:00:  GET /_next/static/chunks/main-app.js [33m404[39m in 90ms
+2025-07-22 12:11:35 +02:00:  GET /meta.json [33m404[39m in 29ms
+2025-07-22 12:11:42 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 49ms
+2025-07-22 12:11:46 +02:00:  GET /test-velocity-16 [31m500[39m in 211ms
+2025-07-22 12:11:46 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 24ms
+2025-07-22 12:11:47 +02:00:  GET /_next/static/chunks/app-pages-internals.js [33m404[39m in 54ms
+2025-07-22 12:11:47 +02:00:  GET /_next/static/chunks/main-app.js [33m404[39m in 54ms
+2025-07-22 12:11:47 +02:00:  GET /meta.json [33m404[39m in 25ms
+2025-07-22 12:12:32 +02:00: 
+2025-07-22 12:12:32 +02:00: > nx run @bassnotion/frontend:serve
+2025-07-22 12:12:32 +02:00: 
+2025-07-22 12:12:33 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-07-22 12:12:33 +02:00:    - Local:        http://localhost:3001
+2025-07-22 12:12:33 +02:00:    - Network:      http://10.0.0.6:3001
+2025-07-22 12:12:33 +02:00:    - Environments: .env.local, .env
+2025-07-22 12:12:33 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-07-22 12:12:34 +02:00:  [32m[1m✓[22m[39m Ready in 1775ms
+2025-07-22 12:13:13 +02:00:  [37m[1m○[22m[39m Compiling /test-velocity-16 ...
+2025-07-22 12:13:22 +02:00:  GET /test-velocity-16 [31m500[39m in 9416ms
+2025-07-22 12:13:25 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 2206ms
+2025-07-22 12:13:25 +02:00:  GET /meta.json [33m404[39m in 1076ms
+2025-07-22 12:13:25 +02:00:  GET /test-velocity-16 [32m200[39m in 437ms
+2025-07-22 12:13:25 +02:00:  GET /test-velocity-16 [31m500[39m in 441ms
+2025-07-22 12:13:25 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 25ms
+2025-07-22 12:13:27 +02:00:  GET /meta.json [33m404[39m in 679ms
+2025-07-22 12:14:05 +02:00:  GET /test-velocity-16 [32m200[39m in 433ms
+2025-07-22 12:14:05 +02:00:  GET /test-velocity-16 [31m500[39m in 433ms
+2025-07-22 12:14:06 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 45ms
+2025-07-22 12:14:07 +02:00:  GET /meta.json [33m404[39m in 31ms
+2025-07-22 12:14:14 +02:00:  GET /test-velocity-16 [32m200[39m in 435ms
+2025-07-22 12:14:14 +02:00:  GET /test-velocity-16 [31m500[39m in 437ms
+2025-07-22 12:14:15 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 30ms
+2025-07-22 12:14:16 +02:00:  GET /meta.json [33m404[39m in 30ms
+2025-07-22 12:14:22 +02:00:  GET /test-velocity-16 [32m200[39m in 283ms
+2025-07-22 12:14:22 +02:00:  GET /test-velocity-16 [31m500[39m in 284ms
+2025-07-22 12:14:22 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 32ms
+2025-07-22 12:14:23 +02:00:  GET /meta.json [33m404[39m in 92ms
+2025-07-22 12:14:41 +02:00:  GET /test-velocity-16 [31m500[39m in 242ms
+2025-07-22 12:14:41 +02:00:  GET /meta.json [33m404[39m in 38ms
+2025-07-22 12:14:41 +02:00:  GET /meta.json [33m404[39m in 19ms
+2025-07-22 12:16:18 +02:00:  GET /test-velocity-16 [32m200[39m in 446ms
+2025-07-22 12:16:18 +02:00:  GET /test-velocity-16 [31m500[39m in 454ms
+2025-07-22 12:16:18 +02:00:  GET /test-velocity-16 [32m200[39m in 25ms
+2025-07-22 12:16:19 +02:00:  GET /test-velocity-16 [31m500[39m in 321ms
+2025-07-22 12:16:19 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 411ms
+2025-07-22 12:16:19 +02:00:  GET /meta.json [33m404[39m in 162ms
+2025-07-22 12:16:20 +02:00:  GET /meta.json [33m404[39m in 74ms
+2025-07-22 12:16:44 +02:00:  GET /test-velocity-simple [32m200[39m in 1571ms
+2025-07-22 12:16:44 +02:00:  GET /meta.json [33m404[39m in 58ms
+2025-07-22 12:16:45 +02:00:  GET /meta.json [33m404[39m in 104ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v1/Fs1.mp3 [33m404[39m in 86ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v1/Ds2.mp3 [33m404[39m in 85ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v1/Ds1.mp3 [33m404[39m in 89ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v1/Fs2.mp3 [33m404[39m in 82ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v1/Fs3.mp3 [33m404[39m in 81ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v1/Ds4.mp3 [33m404[39m in 79ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v1/Ds3.mp3 [33m404[39m in 84ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v1/Fs4.mp3 [33m404[39m in 104ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v1/Ds5.mp3 [33m404[39m in 89ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v1/Ds6.mp3 [33m404[39m in 112ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v1/Fs5.mp3 [33m404[39m in 116ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v1/Fs6.mp3 [33m404[39m in 87ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v1/Ds7.mp3 [33m404[39m in 57ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v1/Fs7.mp3 [33m404[39m in 57ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v8/Ds2.mp3 [33m404[39m in 106ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v8/Fs1.mp3 [33m404[39m in 113ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v8/Fs2.mp3 [33m404[39m in 109ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v8/Ds1.mp3 [33m404[39m in 114ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v8/Ds4.mp3 [33m404[39m in 83ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v8/Fs4.mp3 [33m404[39m in 83ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v8/Fs3.mp3 [33m404[39m in 87ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v8/Ds3.mp3 [33m404[39m in 91ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v8/Fs5.mp3 [33m404[39m in 84ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v8/Ds5.mp3 [33m404[39m in 85ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v8/Fs6.mp3 [33m404[39m in 80ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v8/Ds6.mp3 [33m404[39m in 81ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v8/Ds7.mp3 [33m404[39m in 42ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v8/Fs7.mp3 [33m404[39m in 41ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v16/Ds1.mp3 [33m404[39m in 43ms
+2025-07-22 12:16:47 +02:00:  GET /samples/salamander-mp3/v16/Fs1.mp3 [33m404[39m in 43ms
+2025-07-22 12:16:48 +02:00:  GET /samples/salamander-mp3/v16/Ds2.mp3 [33m404[39m in 50ms
+2025-07-22 12:16:48 +02:00:  GET /samples/salamander-mp3/v16/Fs2.mp3 [33m404[39m in 51ms
+2025-07-22 12:16:48 +02:00:  GET /samples/salamander-mp3/v16/Fs3.mp3 [33m404[39m in 59ms
+2025-07-22 12:16:48 +02:00:  GET /samples/salamander-mp3/v16/Ds3.mp3 [33m404[39m in 63ms
+2025-07-22 12:16:48 +02:00:  GET /samples/salamander-mp3/v16/Ds4.mp3 [33m404[39m in 60ms
+2025-07-22 12:16:48 +02:00:  GET /samples/salamander-mp3/v16/Fs4.mp3 [33m404[39m in 77ms
+2025-07-22 12:16:48 +02:00:  GET /samples/salamander-mp3/v16/Ds5.mp3 [33m404[39m in 79ms
+2025-07-22 12:16:48 +02:00:  GET /samples/salamander-mp3/v16/Fs5.mp3 [33m404[39m in 80ms
+2025-07-22 12:16:48 +02:00:  GET /samples/salamander-mp3/v16/Ds6.mp3 [33m404[39m in 103ms
+2025-07-22 12:16:48 +02:00:  GET /samples/salamander-mp3/v16/Fs6.mp3 [33m404[39m in 65ms
+2025-07-22 12:16:48 +02:00:  GET /samples/salamander-mp3/v16/Ds7.mp3 [33m404[39m in 49ms
+2025-07-22 12:16:48 +02:00:  GET /samples/salamander-mp3/v16/Fs7.mp3 [33m404[39m in 49ms
+2025-07-22 12:16:55 +02:00:  GET /samples/salamander-mp3/v3/Fs1.mp3 [33m404[39m in 111ms
+2025-07-22 12:16:55 +02:00:  GET /samples/salamander-mp3/v3/Ds1.mp3 [33m404[39m in 116ms
+2025-07-22 12:16:55 +02:00:  GET /samples/salamander-mp3/v3/Fs2.mp3 [33m404[39m in 112ms
+2025-07-22 12:16:55 +02:00:  GET /samples/salamander-mp3/v3/Ds2.mp3 [33m404[39m in 142ms
+2025-07-22 12:16:55 +02:00:  GET /samples/salamander-mp3/v3/Ds3.mp3 [33m404[39m in 50ms
+2025-07-22 12:16:55 +02:00:  GET /samples/salamander-mp3/v3/Fs3.mp3 [33m404[39m in 50ms
+2025-07-22 12:16:55 +02:00:  GET /samples/salamander-mp3/v3/Fs4.mp3 [33m404[39m in 68ms
+2025-07-22 12:16:55 +02:00:  GET /samples/salamander-mp3/v3/Ds4.mp3 [33m404[39m in 69ms
+2025-07-22 12:16:55 +02:00:  GET /samples/salamander-mp3/v3/Ds5.mp3 [33m404[39m in 102ms
+2025-07-22 12:16:55 +02:00:  GET /samples/salamander-mp3/v3/Fs5.mp3 [33m404[39m in 102ms
+2025-07-22 12:16:55 +02:00:  GET /samples/salamander-mp3/v3/Ds6.mp3 [33m404[39m in 117ms
+2025-07-22 12:16:55 +02:00:  GET /samples/salamander-mp3/v3/Fs6.mp3 [33m404[39m in 110ms
+2025-07-22 12:16:55 +02:00:  GET /samples/salamander-mp3/v3/Fs7.mp3 [33m404[39m in 48ms
+2025-07-22 12:16:55 +02:00:  GET /samples/salamander-mp3/v3/Ds7.mp3 [33m404[39m in 52ms
+2025-07-22 12:17:07 +02:00:  GET /samples/salamander-mp3/v2/Ds1.mp3 [33m404[39m in 144ms
+2025-07-22 12:17:07 +02:00:  GET /samples/salamander-mp3/v2/Fs1.mp3 [33m404[39m in 182ms
+2025-07-22 12:17:07 +02:00:  GET /samples/salamander-mp3/v2/Ds2.mp3 [33m404[39m in 92ms
+2025-07-22 12:17:07 +02:00:  GET /samples/salamander-mp3/v2/Fs2.mp3 [33m404[39m in 93ms
+2025-07-22 12:17:07 +02:00:  GET /samples/salamander-mp3/v2/Ds3.mp3 [33m404[39m in 90ms
+2025-07-22 12:17:07 +02:00:  GET /samples/salamander-mp3/v2/Fs3.mp3 [33m404[39m in 89ms
+2025-07-22 12:17:07 +02:00:  GET /samples/salamander-mp3/v2/Ds4.mp3 [33m404[39m in 90ms
+2025-07-22 12:17:07 +02:00:  GET /samples/salamander-mp3/v2/Fs4.mp3 [33m404[39m in 90ms
+2025-07-22 12:17:07 +02:00:  GET /samples/salamander-mp3/v2/Ds5.mp3 [33m404[39m in 93ms
+2025-07-22 12:17:07 +02:00:  GET /samples/salamander-mp3/v2/Fs5.mp3 [33m404[39m in 107ms
+2025-07-22 12:17:07 +02:00:  GET /samples/salamander-mp3/v2/Ds6.mp3 [33m404[39m in 48ms
+2025-07-22 12:17:07 +02:00:  GET /samples/salamander-mp3/v2/Fs6.mp3 [33m404[39m in 41ms
+2025-07-22 12:17:07 +02:00:  GET /samples/salamander-mp3/v2/Ds7.mp3 [33m404[39m in 88ms
+2025-07-22 12:17:07 +02:00:  GET /samples/salamander-mp3/v2/Fs7.mp3 [33m404[39m in 90ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v4/Ds1.mp3 [33m404[39m in 62ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v4/Fs1.mp3 [33m404[39m in 56ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v4/Ds2.mp3 [33m404[39m in 84ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v4/Fs2.mp3 [33m404[39m in 85ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v4/Ds3.mp3 [33m404[39m in 84ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v4/Fs3.mp3 [33m404[39m in 85ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v4/Ds4.mp3 [33m404[39m in 62ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v4/Fs4.mp3 [33m404[39m in 50ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v4/Ds5.mp3 [33m404[39m in 133ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v4/Fs5.mp3 [33m404[39m in 135ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v4/Ds6.mp3 [33m404[39m in 131ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v4/Fs6.mp3 [33m404[39m in 131ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v4/Fs7.mp3 [33m404[39m in 88ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v4/Ds7.mp3 [33m404[39m in 89ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v5/Ds1.mp3 [33m404[39m in 90ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v5/Fs1.mp3 [33m404[39m in 93ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v5/Ds3.mp3 [33m404[39m in 104ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v5/Ds2.mp3 [33m404[39m in 115ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v5/Fs2.mp3 [33m404[39m in 158ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v5/Fs3.mp3 [33m404[39m in 155ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v5/Ds4.mp3 [33m404[39m in 83ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v5/Fs4.mp3 [33m404[39m in 83ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v5/Ds5.mp3 [33m404[39m in 107ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v5/Fs5.mp3 [33m404[39m in 103ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v5/Ds6.mp3 [33m404[39m in 103ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v5/Fs6.mp3 [33m404[39m in 103ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v5/Fs7.mp3 [33m404[39m in 105ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v5/Ds7.mp3 [33m404[39m in 111ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v6/Fs1.mp3 [33m404[39m in 69ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v6/Ds1.mp3 [33m404[39m in 70ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v6/Ds2.mp3 [33m404[39m in 130ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v6/Fs2.mp3 [33m404[39m in 129ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v6/Fs3.mp3 [33m404[39m in 83ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v6/Ds3.mp3 [33m404[39m in 121ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v6/Ds4.mp3 [33m404[39m in 62ms
+2025-07-22 12:17:08 +02:00:  GET /samples/salamander-mp3/v6/Fs4.mp3 [33m404[39m in 58ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v6/Ds5.mp3 [33m404[39m in 99ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v6/Fs5.mp3 [33m404[39m in 100ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v6/Ds6.mp3 [33m404[39m in 98ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v6/Fs6.mp3 [33m404[39m in 100ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v6/Fs7.mp3 [33m404[39m in 56ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v6/Ds7.mp3 [33m404[39m in 58ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v7/Ds1.mp3 [33m404[39m in 65ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v7/Fs1.mp3 [33m404[39m in 81ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v7/Fs2.mp3 [33m404[39m in 63ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v7/Ds2.mp3 [33m404[39m in 66ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v7/Fs3.mp3 [33m404[39m in 68ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v7/Ds3.mp3 [33m404[39m in 84ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v7/Fs4.mp3 [33m404[39m in 113ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v7/Ds4.mp3 [33m404[39m in 117ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v7/Ds5.mp3 [33m404[39m in 125ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v7/Fs5.mp3 [33m404[39m in 134ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v7/Fs6.mp3 [33m404[39m in 238ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v7/Ds6.mp3 [33m404[39m in 243ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v7/Ds7.mp3 [33m404[39m in 199ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v7/Fs7.mp3 [33m404[39m in 198ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v9/Fs1.mp3 [33m404[39m in 163ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v9/Ds1.mp3 [33m404[39m in 166ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v9/Ds2.mp3 [33m404[39m in 139ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v9/Fs2.mp3 [33m404[39m in 139ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v9/Fs3.mp3 [33m404[39m in 100ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v9/Ds3.mp3 [33m404[39m in 103ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v9/Fs4.mp3 [33m404[39m in 57ms
+2025-07-22 12:17:09 +02:00:  GET /samples/salamander-mp3/v9/Ds4.mp3 [33m404[39m in 60ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v9/Ds5.mp3 [33m404[39m in 98ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v9/Fs5.mp3 [33m404[39m in 99ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v9/Ds6.mp3 [33m404[39m in 128ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v9/Fs6.mp3 [33m404[39m in 101ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v9/Fs7.mp3 [33m404[39m in 97ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v9/Ds7.mp3 [33m404[39m in 98ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v10/Ds1.mp3 [33m404[39m in 111ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v10/Fs1.mp3 [33m404[39m in 114ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v10/Fs2.mp3 [33m404[39m in 116ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v10/Ds2.mp3 [33m404[39m in 118ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v10/Ds3.mp3 [33m404[39m in 115ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v10/Fs3.mp3 [33m404[39m in 115ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v10/Ds4.mp3 [33m404[39m in 105ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v10/Fs4.mp3 [33m404[39m in 104ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v10/Ds5.mp3 [33m404[39m in 53ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v10/Fs5.mp3 [33m404[39m in 53ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v10/Ds6.mp3 [33m404[39m in 54ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v10/Fs6.mp3 [33m404[39m in 55ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v10/Ds7.mp3 [33m404[39m in 45ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v10/Fs7.mp3 [33m404[39m in 46ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v11/Ds1.mp3 [33m404[39m in 57ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v11/Fs1.mp3 [33m404[39m in 55ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v11/Ds2.mp3 [33m404[39m in 75ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v11/Fs2.mp3 [33m404[39m in 76ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v11/Fs3.mp3 [33m404[39m in 105ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v11/Ds3.mp3 [33m404[39m in 107ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v11/Fs4.mp3 [33m404[39m in 65ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v11/Ds4.mp3 [33m404[39m in 66ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v11/Ds5.mp3 [33m404[39m in 55ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v11/Fs5.mp3 [33m404[39m in 55ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v11/Ds6.mp3 [33m404[39m in 94ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v11/Fs6.mp3 [33m404[39m in 95ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v11/Ds7.mp3 [33m404[39m in 99ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v11/Fs7.mp3 [33m404[39m in 100ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v12/Fs1.mp3 [33m404[39m in 144ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v12/Ds1.mp3 [33m404[39m in 146ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v12/Ds2.mp3 [33m404[39m in 139ms
+2025-07-22 12:17:10 +02:00:  GET /samples/salamander-mp3/v12/Fs2.mp3 [33m404[39m in 148ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v12/Ds3.mp3 [33m404[39m in 112ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v12/Fs3.mp3 [33m404[39m in 112ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v12/Ds4.mp3 [33m404[39m in 112ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v12/Fs4.mp3 [33m404[39m in 103ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v12/Fs6.mp3 [33m404[39m in 119ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v12/Ds5.mp3 [33m404[39m in 121ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v12/Ds6.mp3 [33m404[39m in 121ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v12/Fs5.mp3 [33m404[39m in 121ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v12/Fs7.mp3 [33m404[39m in 51ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v12/Ds7.mp3 [33m404[39m in 54ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v13/Ds2.mp3 [33m404[39m in 100ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v13/Fs1.mp3 [33m404[39m in 102ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v13/Ds1.mp3 [33m404[39m in 102ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v13/Fs2.mp3 [33m404[39m in 102ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v13/Ds3.mp3 [33m404[39m in 108ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v13/Fs3.mp3 [33m404[39m in 108ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v13/Ds4.mp3 [33m404[39m in 109ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v13/Fs4.mp3 [33m404[39m in 111ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v13/Fs5.mp3 [33m404[39m in 86ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v13/Ds6.mp3 [33m404[39m in 84ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v13/Fs6.mp3 [33m404[39m in 86ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v13/Ds5.mp3 [33m404[39m in 88ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v13/Ds7.mp3 [33m404[39m in 110ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v13/Fs7.mp3 [33m404[39m in 112ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v14/Ds1.mp3 [33m404[39m in 110ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v14/Fs1.mp3 [33m404[39m in 110ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v14/Ds2.mp3 [33m404[39m in 100ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v14/Fs2.mp3 [33m404[39m in 101ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v14/Fs3.mp3 [33m404[39m in 96ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v14/Ds3.mp3 [33m404[39m in 97ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v14/Fs4.mp3 [33m404[39m in 101ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v14/Ds4.mp3 [33m404[39m in 102ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v14/Ds5.mp3 [33m404[39m in 99ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v14/Fs5.mp3 [33m404[39m in 100ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v14/Fs6.mp3 [33m404[39m in 78ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v14/Ds7.mp3 [33m404[39m in 78ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v14/Ds6.mp3 [33m404[39m in 80ms
+2025-07-22 12:17:11 +02:00:  GET /samples/salamander-mp3/v14/Fs7.mp3 [33m404[39m in 82ms
+2025-07-22 12:17:12 +02:00:  GET /samples/salamander-mp3/v15/Ds1.mp3 [33m404[39m in 93ms
+2025-07-22 12:17:12 +02:00:  GET /samples/salamander-mp3/v15/Fs1.mp3 [33m404[39m in 94ms
+2025-07-22 12:17:12 +02:00:  GET /samples/salamander-mp3/v15/Ds2.mp3 [33m404[39m in 94ms
+2025-07-22 12:17:12 +02:00:  GET /samples/salamander-mp3/v15/Fs2.mp3 [33m404[39m in 93ms
+2025-07-22 12:17:12 +02:00:  GET /samples/salamander-mp3/v15/Ds3.mp3 [33m404[39m in 86ms
+2025-07-22 12:17:12 +02:00:  GET /samples/salamander-mp3/v15/Fs3.mp3 [33m404[39m in 86ms
+2025-07-22 12:17:12 +02:00:  GET /samples/salamander-mp3/v15/Fs4.mp3 [33m404[39m in 81ms
+2025-07-22 12:17:12 +02:00:  GET /samples/salamander-mp3/v15/Ds4.mp3 [33m404[39m in 86ms
+2025-07-22 12:17:12 +02:00:  GET /samples/salamander-mp3/v15/Fs5.mp3 [33m404[39m in 127ms
+2025-07-22 12:17:12 +02:00:  GET /samples/salamander-mp3/v15/Ds5.mp3 [33m404[39m in 131ms
+2025-07-22 12:17:12 +02:00:  GET /samples/salamander-mp3/v15/Ds6.mp3 [33m404[39m in 127ms
+2025-07-22 12:17:12 +02:00:  GET /samples/salamander-mp3/v15/Fs6.mp3 [33m404[39m in 126ms
+2025-07-22 12:17:12 +02:00:  GET /samples/salamander-mp3/v15/Fs7.mp3 [33m404[39m in 126ms
+2025-07-22 12:17:12 +02:00:  GET /samples/salamander-mp3/v15/Ds7.mp3 [33m404[39m in 127ms
+2025-07-22 12:17:16 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 40ms
+2025-07-22 12:17:17 +02:00:  GET /test-velocity-simple [32m200[39m in 31ms
+2025-07-22 12:17:17 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 34ms
+2025-07-22 12:17:18 +02:00:  GET /meta.json [33m404[39m in 26ms
+2025-07-22 12:17:22 +02:00:  GET /samples/salamander-mp3/v1/Ds1.mp3 [33m404[39m in 165ms
+2025-07-22 12:17:22 +02:00:  GET /samples/salamander-mp3/v1/Fs1.mp3 [33m404[39m in 163ms
+2025-07-22 12:17:22 +02:00:  GET /samples/salamander-mp3/v1/Ds2.mp3 [33m404[39m in 156ms
+2025-07-22 12:17:22 +02:00:  GET /samples/salamander-mp3/v1/Fs2.mp3 [33m404[39m in 155ms
+2025-07-22 12:17:22 +02:00:  GET /samples/salamander-mp3/v1/Fs3.mp3 [33m404[39m in 152ms
+2025-07-22 12:17:22 +02:00:  GET /samples/salamander-mp3/v1/Ds3.mp3 [33m404[39m in 152ms
+2025-07-22 12:17:22 +02:00:  GET /samples/salamander-mp3/v1/Fs4.mp3 [33m404[39m in 140ms
+2025-07-22 12:17:22 +02:00:  GET /samples/salamander-mp3/v1/Ds4.mp3 [33m404[39m in 141ms
+2025-07-22 12:17:22 +02:00:  GET /samples/salamander-mp3/v1/Ds5.mp3 [33m404[39m in 141ms
+2025-07-22 12:17:22 +02:00:  GET /samples/salamander-mp3/v1/Fs5.mp3 [33m404[39m in 141ms
+2025-07-22 12:17:22 +02:00:  GET /samples/salamander-mp3/v1/Ds6.mp3 [33m404[39m in 142ms
+2025-07-22 12:17:22 +02:00:  GET /samples/salamander-mp3/v1/Fs6.mp3 [33m404[39m in 142ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v1/Fs7.mp3 [33m404[39m in 155ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v1/Ds7.mp3 [33m404[39m in 155ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v8/Ds1.mp3 [33m404[39m in 145ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v8/Fs1.mp3 [33m404[39m in 145ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v8/Fs2.mp3 [33m404[39m in 144ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v8/Ds2.mp3 [33m404[39m in 146ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v8/Fs3.mp3 [33m404[39m in 133ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v8/Ds3.mp3 [33m404[39m in 135ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v8/Fs4.mp3 [33m404[39m in 130ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v8/Ds4.mp3 [33m404[39m in 132ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v8/Ds5.mp3 [33m404[39m in 132ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v8/Fs5.mp3 [33m404[39m in 133ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v8/Ds6.mp3 [33m404[39m in 155ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v8/Fs6.mp3 [33m404[39m in 154ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v8/Ds7.mp3 [33m404[39m in 154ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v8/Fs7.mp3 [33m404[39m in 155ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v16/Ds1.mp3 [33m404[39m in 155ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v16/Fs1.mp3 [33m404[39m in 131ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v16/Ds2.mp3 [33m404[39m in 158ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v16/Fs2.mp3 [33m404[39m in 153ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v16/Fs3.mp3 [33m404[39m in 154ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v16/Ds3.mp3 [33m404[39m in 154ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v16/Fs4.mp3 [33m404[39m in 129ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v16/Ds4.mp3 [33m404[39m in 149ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v16/Fs5.mp3 [33m404[39m in 170ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v16/Ds5.mp3 [33m404[39m in 185ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v16/Ds6.mp3 [33m404[39m in 183ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v16/Fs6.mp3 [33m404[39m in 184ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v16/Fs7.mp3 [33m404[39m in 184ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v16/Ds7.mp3 [33m404[39m in 186ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v2/Ds1.mp3 [33m404[39m in 254ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v2/Fs1.mp3 [33m404[39m in 253ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v2/Fs2.mp3 [33m404[39m in 250ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v2/Fs3.mp3 [33m404[39m in 249ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v2/Ds3.mp3 [33m404[39m in 250ms
+2025-07-22 12:17:23 +02:00:  GET /samples/salamander-mp3/v2/Ds2.mp3 [33m404[39m in 252ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v2/Ds5.mp3 [33m404[39m in 172ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v2/Ds6.mp3 [33m404[39m in 169ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v2/Fs5.mp3 [33m404[39m in 172ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v2/Fs4.mp3 [33m404[39m in 174ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v2/Ds4.mp3 [33m404[39m in 176ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v2/Fs6.mp3 [33m404[39m in 174ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v2/Fs7.mp3 [33m404[39m in 187ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v2/Ds7.mp3 [33m404[39m in 189ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v3/Fs1.mp3 [33m404[39m in 179ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v3/Ds2.mp3 [33m404[39m in 178ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v3/Ds1.mp3 [33m404[39m in 183ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v3/Fs2.mp3 [33m404[39m in 93ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v3/Ds5.mp3 [33m404[39m in 145ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v3/Fs3.mp3 [33m404[39m in 150ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v3/Fs4.mp3 [33m404[39m in 148ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v3/Ds4.mp3 [33m404[39m in 151ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v3/Ds3.mp3 [33m404[39m in 153ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v3/Fs5.mp3 [33m404[39m in 154ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v3/Fs6.mp3 [33m404[39m in 137ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v3/Fs7.mp3 [33m404[39m in 135ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v3/Ds6.mp3 [33m404[39m in 139ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v3/Ds7.mp3 [33m404[39m in 138ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v4/Fs1.mp3 [33m404[39m in 139ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v4/Ds1.mp3 [33m404[39m in 140ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v4/Ds3.mp3 [33m404[39m in 153ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v4/Fs3.mp3 [33m404[39m in 153ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v4/Fs2.mp3 [33m404[39m in 157ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v4/Ds2.mp3 [33m404[39m in 161ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v4/Ds4.mp3 [33m404[39m in 157ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v4/Fs4.mp3 [33m404[39m in 158ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v4/Ds5.mp3 [33m404[39m in 162ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v4/Ds6.mp3 [33m404[39m in 160ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v4/Fs5.mp3 [33m404[39m in 162ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v4/Fs6.mp3 [33m404[39m in 156ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v4/Ds7.mp3 [33m404[39m in 159ms
+2025-07-22 12:17:24 +02:00:  GET /samples/salamander-mp3/v4/Fs7.mp3 [33m404[39m in 158ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v5/Ds1.mp3 [33m404[39m in 148ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v5/Ds2.mp3 [33m404[39m in 145ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v5/Fs1.mp3 [33m404[39m in 149ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v5/Fs2.mp3 [33m404[39m in 149ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v5/Ds3.mp3 [33m404[39m in 149ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v5/Fs3.mp3 [33m404[39m in 150ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v5/Ds4.mp3 [33m404[39m in 146ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v5/Fs4.mp3 [33m404[39m in 146ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v5/Fs5.mp3 [33m404[39m in 144ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v5/Ds5.mp3 [33m404[39m in 146ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v5/Fs6.mp3 [33m404[39m in 145ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v5/Ds6.mp3 [33m404[39m in 146ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v5/Ds7.mp3 [33m404[39m in 155ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v5/Fs7.mp3 [33m404[39m in 155ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v6/Ds1.mp3 [33m404[39m in 155ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v6/Fs1.mp3 [33m404[39m in 157ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v6/Ds2.mp3 [33m404[39m in 156ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v6/Fs2.mp3 [33m404[39m in 156ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v6/Ds3.mp3 [33m404[39m in 67ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v6/Fs3.mp3 [33m404[39m in 69ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v6/Fs5.mp3 [33m404[39m in 99ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v6/Ds4.mp3 [33m404[39m in 103ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v6/Ds5.mp3 [33m404[39m in 102ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v6/Fs4.mp3 [33m404[39m in 104ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v6/Fs6.mp3 [33m404[39m in 69ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v6/Ds6.mp3 [33m404[39m in 73ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v6/Ds7.mp3 [33m404[39m in 107ms
+2025-07-22 12:17:25 +02:00:  GET /samples/salamander-mp3/v6/Fs7.mp3 [33m404[39m in 106ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v7/Ds2.mp3 [33m404[39m in 154ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v7/Fs1.mp3 [33m404[39m in 252ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v7/Fs2.mp3 [33m404[39m in 154ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v7/Ds1.mp3 [33m404[39m in 257ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v7/Fs3.mp3 [33m404[39m in 147ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v7/Ds3.mp3 [33m404[39m in 150ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v7/Fs5.mp3 [33m404[39m in 157ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v7/Ds4.mp3 [33m404[39m in 165ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v7/Ds5.mp3 [33m404[39m in 159ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v7/Fs4.mp3 [33m404[39m in 165ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v7/Fs6.mp3 [33m404[39m in 160ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v7/Ds6.mp3 [33m404[39m in 162ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v7/Ds7.mp3 [33m404[39m in 135ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v9/Fs1.mp3 [33m404[39m in 128ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v7/Fs7.mp3 [33m404[39m in 135ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v9/Ds1.mp3 [33m404[39m in 130ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v9/Ds2.mp3 [33m404[39m in 130ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v9/Fs2.mp3 [33m404[39m in 133ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v9/Ds3.mp3 [33m404[39m in 145ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v9/Fs3.mp3 [33m404[39m in 152ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v9/Ds4.mp3 [33m404[39m in 171ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v9/Ds5.mp3 [33m404[39m in 165ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v9/Fs4.mp3 [33m404[39m in 173ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v9/Fs5.mp3 [33m404[39m in 158ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v9/Ds6.mp3 [33m404[39m in 61ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v9/Fs6.mp3 [33m404[39m in 63ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v9/Ds7.mp3 [33m404[39m in 173ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v10/Ds1.mp3 [33m404[39m in 172ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v9/Fs7.mp3 [33m404[39m in 179ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v10/Fs1.mp3 [33m404[39m in 183ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v10/Ds2.mp3 [33m404[39m in 143ms
+2025-07-22 12:17:26 +02:00:  GET /samples/salamander-mp3/v10/Fs2.mp3 [33m404[39m in 146ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v10/Ds3.mp3 [33m404[39m in 278ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v10/Fs4.mp3 [33m404[39m in 248ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v10/Fs3.mp3 [33m404[39m in 278ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v10/Ds4.mp3 [33m404[39m in 255ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v10/Ds5.mp3 [33m404[39m in 85ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v10/Fs5.mp3 [33m404[39m in 79ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v10/Fs6.mp3 [33m404[39m in 160ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v10/Ds7.mp3 [33m404[39m in 158ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v10/Ds6.mp3 [33m404[39m in 164ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v11/Ds1.mp3 [33m404[39m in 150ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v11/Fs1.mp3 [33m404[39m in 150ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v10/Fs7.mp3 [33m404[39m in 160ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v11/Ds3.mp3 [33m404[39m in 152ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v11/Ds2.mp3 [33m404[39m in 161ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v11/Fs2.mp3 [33m404[39m in 161ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v11/Fs3.mp3 [33m404[39m in 154ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v11/Ds4.mp3 [33m404[39m in 158ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v11/Fs4.mp3 [33m404[39m in 157ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v11/Ds6.mp3 [33m404[39m in 145ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v11/Ds5.mp3 [33m404[39m in 150ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v11/Fs5.mp3 [33m404[39m in 150ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v11/Fs6.mp3 [33m404[39m in 147ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v11/Ds7.mp3 [33m404[39m in 148ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v11/Fs7.mp3 [33m404[39m in 149ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v12/Ds2.mp3 [33m404[39m in 183ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v12/Fs1.mp3 [33m404[39m in 184ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v12/Ds1.mp3 [33m404[39m in 187ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v12/Fs2.mp3 [33m404[39m in 183ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v12/Ds3.mp3 [33m404[39m in 184ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v12/Fs3.mp3 [33m404[39m in 185ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v12/Ds4.mp3 [33m404[39m in 135ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v12/Fs4.mp3 [33m404[39m in 134ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v12/Ds5.mp3 [33m404[39m in 126ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v12/Ds6.mp3 [33m404[39m in 126ms
+2025-07-22 12:17:27 +02:00:  GET /samples/salamander-mp3/v12/Fs5.mp3 [33m404[39m in 128ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v12/Fs6.mp3 [33m404[39m in 122ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v12/Fs7.mp3 [33m404[39m in 162ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v12/Ds7.mp3 [33m404[39m in 163ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v13/Ds1.mp3 [33m404[39m in 161ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v13/Fs1.mp3 [33m404[39m in 162ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v13/Ds2.mp3 [33m404[39m in 162ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v13/Fs2.mp3 [33m404[39m in 76ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v13/Ds4.mp3 [33m404[39m in 190ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v13/Ds3.mp3 [33m404[39m in 197ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v13/Fs4.mp3 [33m404[39m in 191ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v13/Fs3.mp3 [33m404[39m in 194ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v13/Ds5.mp3 [33m404[39m in 193ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v13/Fs5.mp3 [33m404[39m in 195ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v13/Ds7.mp3 [33m404[39m in 138ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v14/Ds1.mp3 [33m404[39m in 132ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v13/Fs7.mp3 [33m404[39m in 139ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v13/Fs6.mp3 [33m404[39m in 141ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v13/Ds6.mp3 [33m404[39m in 143ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v14/Fs1.mp3 [33m404[39m in 140ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v14/Ds4.mp3 [33m404[39m in 132ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v14/Fs2.mp3 [33m404[39m in 136ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v14/Ds2.mp3 [33m404[39m in 138ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v14/Ds3.mp3 [33m404[39m in 137ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v14/Fs3.mp3 [33m404[39m in 138ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v14/Fs4.mp3 [33m404[39m in 138ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v14/Ds7.mp3 [33m404[39m in 130ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v14/Fs6.mp3 [33m404[39m in 132ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v14/Ds5.mp3 [33m404[39m in 134ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v14/Fs5.mp3 [33m404[39m in 135ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v14/Ds6.mp3 [33m404[39m in 135ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v14/Fs7.mp3 [33m404[39m in 138ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v15/Fs1.mp3 [33m404[39m in 178ms
+2025-07-22 12:17:28 +02:00:  GET /samples/salamander-mp3/v15/Ds1.mp3 [33m404[39m in 181ms
+2025-07-22 12:17:29 +02:00:  GET /samples/salamander-mp3/v15/Fs3.mp3 [33m404[39m in 235ms
+2025-07-22 12:17:29 +02:00:  GET /samples/salamander-mp3/v15/Ds4.mp3 [33m404[39m in 234ms
+2025-07-22 12:17:29 +02:00:  GET /samples/salamander-mp3/v15/Ds3.mp3 [33m404[39m in 236ms
+2025-07-22 12:17:29 +02:00:  GET /samples/salamander-mp3/v15/Ds2.mp3 [33m404[39m in 238ms
+2025-07-22 12:17:29 +02:00:  GET /samples/salamander-mp3/v15/Fs4.mp3 [33m404[39m in 237ms
+2025-07-22 12:17:29 +02:00:  GET /samples/salamander-mp3/v15/Fs2.mp3 [33m404[39m in 239ms
+2025-07-22 12:17:29 +02:00:  GET /samples/salamander-mp3/v15/Ds5.mp3 [33m404[39m in 129ms
+2025-07-22 12:17:29 +02:00:  GET /samples/salamander-mp3/v15/Ds7.mp3 [33m404[39m in 125ms
+2025-07-22 12:17:29 +02:00:  GET /samples/salamander-mp3/v15/Fs5.mp3 [33m404[39m in 126ms
+2025-07-22 12:17:29 +02:00:  GET /samples/salamander-mp3/v15/Fs7.mp3 [33m404[39m in 126ms
+2025-07-22 12:17:29 +02:00:  GET /samples/salamander-mp3/v15/Fs6.mp3 [33m404[39m in 128ms
+2025-07-22 12:17:29 +02:00:  GET /samples/salamander-mp3/v15/Ds6.mp3 [33m404[39m in 129ms
+2025-07-22 12:23:35 +02:00:  GET /test-velocity-16 [32m200[39m in 494ms
+2025-07-22 12:23:35 +02:00:  GET /test-velocity-16 [31m500[39m in 512ms
+2025-07-22 12:23:35 +02:00:  GET /test-velocity-simple [32m200[39m in 516ms
+2025-07-22 12:23:35 +02:00:  GET /test-velocity-16 [32m200[39m in 272ms
+2025-07-22 12:23:35 +02:00:  GET /test-velocity-16 [31m500[39m in 241ms
+2025-07-22 12:23:35 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 376ms
+2025-07-22 12:23:35 +02:00:  GET /meta.json [33m404[39m in 30ms
+2025-07-22 12:23:36 +02:00:  GET /meta.json [33m404[39m in 48ms
+2025-07-22 12:24:27 +02:00:  GET /test-velocity-simple [31m500[39m in 302ms
+2025-07-22 12:28:01 +02:00:  GET /test-velocity-simple [31m500[39m in 341ms
+2025-07-22 12:28:01 +02:00:  GET /meta.json [33m404[39m in 41ms
+2025-07-22 12:28:02 +02:00:  GET /meta.json [33m404[39m in 36ms
+2025-07-22 12:28:42 +02:00:  GET /test-velocity-simple [32m200[39m in 296ms
+2025-07-22 12:28:42 +02:00:  GET /test-velocity-simple [32m200[39m in 311ms
+2025-07-22 12:28:43 +02:00:  GET /meta.json [33m404[39m in 44ms
+2025-07-22 12:28:46 +02:00:  GET /test-velocity-simple [32m200[39m in 30ms
+2025-07-22 12:29:31 +02:00:  GET /test-velocity-simple [32m200[39m in 75ms
+2025-07-22 12:29:32 +02:00:  GET /meta.json [33m404[39m in 41ms
+2025-07-22 12:30:09 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 51ms
+2025-07-22 12:31:07 +02:00:  GET /test-velocity-simple [32m200[39m in 53ms
+2025-07-22 12:31:24 +02:00:  GET /test-velocity-simple [32m200[39m in 75ms
+2025-07-22 12:31:41 +02:00:  GET /test-velocity-simple [32m200[39m in 56ms
+2025-07-22 12:32:19 +02:00:  GET /test-velocity-simple [32m200[39m in 46ms
+2025-07-22 12:32:38 +02:00:  GET /test-velocity-simple [32m200[39m in 53ms
+2025-07-22 12:32:46 +02:00:  GET /test-velocity-simple [32m200[39m in 436ms
+2025-07-22 12:32:56 +02:00:  GET /test-velocity-simple [32m200[39m in 50ms
+2025-07-22 12:32:57 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 787ms
+2025-07-22 12:32:57 +02:00:  GET /meta.json [33m404[39m in 25ms
+2025-07-22 12:34:37 +02:00:  GET /test-velocity-simple [32m200[39m in 102ms
+2025-07-22 12:34:53 +02:00:  GET /test-velocity-simple [32m200[39m in 77ms
+2025-07-22 12:35:08 +02:00:  GET /test-velocity-simple [32m200[39m in 50ms
+2025-07-22 12:35:31 +02:00:  GET /test-velocity-simple [32m200[39m in 55ms
+2025-07-22 12:35:54 +02:00:  GET /test-velocity-simple [32m200[39m in 428ms
+2025-07-22 12:35:55 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 716ms
+2025-07-22 12:35:55 +02:00:  GET /meta.json [33m404[39m in 28ms
+2025-07-22 12:36:58 +02:00:  GET /test-velocity-simple [32m200[39m in 41ms
+2025-07-22 12:37:06 +02:00:  GET /test-velocity-simple [32m200[39m in 296ms
+2025-07-22 12:37:06 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 56ms
+2025-07-22 12:37:07 +02:00:  GET /meta.json [33m404[39m in 41ms
+2025-07-22 12:37:47 +02:00:  GET /test-velocity-simple [32m200[39m in 60ms
+2025-07-22 12:38:48 +02:00:  GET /test-velocity-simple [32m200[39m in 311ms
+2025-07-22 12:38:48 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 44ms
+2025-07-22 12:38:49 +02:00:  GET /meta.json [33m404[39m in 39ms
+2025-07-22 14:23:18 +02:00:  GET /test-velocity-simple [32m200[39m in 18ms
+2025-07-22 14:24:45 +02:00:  GET /test-velocity-simple [32m200[39m in 106ms
+2025-07-22 14:30:02 +02:00:  GET /test-velocity-simple [32m200[39m in 89ms
+2025-07-22 15:06:54 +02:00: 
+2025-07-22 15:06:54 +02:00: > nx run @bassnotion/frontend:serve
+2025-07-22 15:06:54 +02:00: 
+2025-07-22 15:06:55 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-07-22 15:06:55 +02:00:    - Local:        http://localhost:3001
+2025-07-22 15:06:55 +02:00:    - Network:      http://10.0.0.6:3001
+2025-07-22 15:06:55 +02:00:    - Environments: .env.local, .env
+2025-07-22 15:06:55 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-07-22 15:06:57 +02:00:  [32m[1m✓[22m[39m Ready in 1935ms
+2025-07-22 15:09:44 +02:00:  [37m[1m○[22m[39m Compiling /test-professional-pianos ...
+2025-07-22 15:09:48 +02:00:  [32m[1m✓[22m[39m Compiled /test-professional-pianos in 4.1s (3286 modules)
+2025-07-22 15:09:48 +02:00:  GET /test-professional-pianos [32m200[39m in 4619ms
+2025-07-22 15:09:49 +02:00:  [32m[1m✓[22m[39m Compiled in 631ms (1587 modules)
+2025-07-22 15:09:49 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 15:09:51 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.2s (3287 modules)
+2025-07-22 15:09:51 +02:00:  GET /meta.json [33m404[39m in 2359ms
+2025-07-22 15:09:51 +02:00:  GET /meta.json [33m404[39m in 1545ms
+2025-07-22 15:09:51 +02:00:  GET /meta.json [33m404[39m in 34ms
+2025-07-22 15:09:51 +02:00:  GET /meta.json [33m404[39m in 24ms
+2025-07-22 15:09:56 +02:00:  GET /undefined [33m404[39m in 44ms
+2025-07-22 15:09:56 +02:00:  GET /undefined [33m404[39m in 36ms
+2025-07-22 15:10:12 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 42ms
+2025-07-22 15:10:52 +02:00:  [32m[1m✓[22m[39m Compiled in 4.2s (3301 modules)
+2025-07-22 15:10:52 +02:00:  GET /test-professional-pianos [32m200[39m in 60ms
+2025-07-22 15:11:21 +02:00:  [32m[1m✓[22m[39m Compiled in 965ms (3300 modules)
+2025-07-22 15:11:22 +02:00:  GET /test-professional-pianos [32m200[39m in 83ms
+2025-07-22 15:11:32 +02:00:  [32m[1m✓[22m[39m Compiled in 589ms (3300 modules)
+2025-07-22 15:11:32 +02:00:  GET /test-professional-pianos [32m200[39m in 54ms
+2025-07-22 15:11:42 +02:00:  [32m[1m✓[22m[39m Compiled in 498ms (3300 modules)
+2025-07-22 15:11:42 +02:00:  GET /test-professional-pianos [32m200[39m in 38ms
+2025-07-22 15:11:54 +02:00:  [32m[1m✓[22m[39m Compiled in 714ms (3300 modules)
+2025-07-22 15:11:54 +02:00:  GET /test-professional-pianos [32m200[39m in 36ms
+2025-07-22 15:12:23 +02:00:  [32m[1m✓[22m[39m Compiled in 781ms (3300 modules)
+2025-07-22 15:12:23 +02:00:  GET /test-professional-pianos [32m200[39m in 98ms
+2025-07-22 15:13:14 +02:00:  GET /test-professional-pianos [32m200[39m in 321ms
+2025-07-22 15:13:15 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 15:13:15 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1006ms (1700 modules)
+2025-07-22 15:13:16 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1176ms
+2025-07-22 15:13:16 +02:00:  GET /meta.json [33m404[39m in 402ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 37ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 32ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 44ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 34ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 34ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 37ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 38ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 32ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 37ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 29ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 31ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 28ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 29ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 31ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 27ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 31ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 28ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 27ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 31ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 25ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 27ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 29ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 26ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 31ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 31ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 27ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 31ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 28ms
+2025-07-22 15:13:19 +02:00:  GET /undefined [33m404[39m in 27ms
+2025-07-22 15:14:30 +02:00:  [32m[1m✓[22m[39m Compiled in 982ms (3300 modules)
+2025-07-22 15:14:30 +02:00:  GET /test-professional-pianos [32m200[39m in 67ms
+2025-07-22 15:14:42 +02:00:  [32m[1m✓[22m[39m Compiled in 504ms (3300 modules)
+2025-07-22 15:14:42 +02:00:  GET /test-professional-pianos [32m200[39m in 53ms
+2025-07-22 15:14:58 +02:00:  GET /test-professional-pianos [32m200[39m in 243ms
+2025-07-22 15:14:58 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 270ms (1700 modules)
+2025-07-22 15:14:58 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 396ms
+2025-07-22 15:14:59 +02:00:  GET /meta.json [33m404[39m in 26ms
+2025-07-22 15:18:56 +02:00:  [32m[1m✓[22m[39m Compiled in 1030ms (3300 modules)
+2025-07-22 15:18:56 +02:00:  GET /test-professional-pianos [32m200[39m in 59ms
+2025-07-22 15:19:01 +02:00:  [32m[1m✓[22m[39m Compiled in 432ms (3300 modules)
+2025-07-22 15:19:01 +02:00:  GET /test-professional-pianos [32m200[39m in 50ms
+2025-07-22 15:19:12 +02:00:  [32m[1m✓[22m[39m Compiled in 471ms (3300 modules)
+2025-07-22 15:19:12 +02:00:  GET /test-professional-pianos [32m200[39m in 36ms
+2025-07-22 15:19:25 +02:00:  [32m[1m✓[22m[39m Compiled in 582ms (3300 modules)
+2025-07-22 15:19:25 +02:00:  GET /test-professional-pianos [32m200[39m in 42ms
+2025-07-22 15:19:42 +02:00:  [32m[1m✓[22m[39m Compiled in 439ms (3300 modules)
+2025-07-22 15:19:42 +02:00:  GET /test-professional-pianos [32m200[39m in 50ms
+2025-07-22 15:19:50 +02:00:  [32m[1m✓[22m[39m Compiled in 554ms (3300 modules)
+2025-07-22 15:19:50 +02:00:  GET /test-professional-pianos [32m200[39m in 36ms
+2025-07-22 15:20:05 +02:00:  [32m[1m✓[22m[39m Compiled in 1129ms (3300 modules)
+2025-07-22 15:20:05 +02:00:  GET /test-professional-pianos [32m200[39m in 37ms
+2025-07-22 15:21:09 +02:00: 
+2025-07-22 15:21:09 +02:00: > nx run @bassnotion/frontend:serve
+2025-07-22 15:21:09 +02:00: 
+2025-07-22 15:21:10 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-07-22 15:21:10 +02:00:    - Local:        http://localhost:3001
+2025-07-22 15:21:10 +02:00:    - Network:      http://10.0.0.6:3001
+2025-07-22 15:21:10 +02:00:    - Environments: .env.local, .env
+2025-07-22 15:21:10 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-07-22 15:21:12 +02:00:  [32m[1m✓[22m[39m Ready in 1762ms
+2025-07-22 15:22:40 +02:00:  [37m[1m○[22m[39m Compiling /test-professional-pianos ...
+2025-07-22 15:22:43 +02:00:  [32m[1m✓[22m[39m Compiled /test-professional-pianos in 3.5s (3286 modules)
+2025-07-22 15:22:43 +02:00:  GET /test-professional-pianos [32m200[39m in 3991ms
+2025-07-22 15:22:44 +02:00:  [32m[1m✓[22m[39m Compiled in 662ms (1587 modules)
+2025-07-22 15:22:44 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 15:22:44 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 689ms (3287 modules)
+2025-07-22 15:22:44 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 854ms
+2025-07-22 15:22:45 +02:00:  GET /meta.json [33m404[39m in 279ms
+2025-07-22 15:23:39 +02:00:  [32m[1m✓[22m[39m Compiled in 2.9s (3301 modules)
+2025-07-22 15:23:39 +02:00:  GET /test-professional-pianos [32m200[39m in 68ms
+2025-07-22 15:23:51 +02:00:  [32m[1m✓[22m[39m Compiled in 843ms (3300 modules)
+2025-07-22 15:23:51 +02:00:  GET /test-professional-pianos [32m200[39m in 59ms
+2025-07-22 15:24:22 +02:00:  [32m[1m✓[22m[39m Compiled in 567ms (3300 modules)
+2025-07-22 15:24:22 +02:00:  GET /test-professional-pianos [32m200[39m in 46ms
+2025-07-22 15:24:32 +02:00:  [32m[1m✓[22m[39m Compiled in 459ms (3300 modules)
+2025-07-22 15:24:32 +02:00:  GET /test-professional-pianos [32m200[39m in 36ms
+2025-07-22 15:24:46 +02:00:  [32m[1m✓[22m[39m Compiled in 675ms (3300 modules)
+2025-07-22 15:24:46 +02:00:  GET /test-professional-pianos [32m200[39m in 51ms
+2025-07-22 15:25:03 +02:00:  [32m[1m✓[22m[39m Compiled in 715ms (3300 modules)
+2025-07-22 15:25:03 +02:00:  GET /test-professional-pianos [32m200[39m in 65ms
+2025-07-22 15:25:19 +02:00: 
+2025-07-22 15:25:19 +02:00: > nx run @bassnotion/frontend:serve
+2025-07-22 15:25:19 +02:00: 
+2025-07-22 15:25:20 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-07-22 15:25:20 +02:00:    - Local:        http://localhost:3001
+2025-07-22 15:25:20 +02:00:    - Network:      http://10.0.0.6:3001
+2025-07-22 15:25:20 +02:00:    - Environments: .env.local, .env
+2025-07-22 15:25:20 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-07-22 15:25:22 +02:00:  [32m[1m✓[22m[39m Ready in 1738ms
+2025-07-22 15:26:23 +02:00:  [37m[1m○[22m[39m Compiling /test-professional-pianos ...
+2025-07-22 15:26:29 +02:00:  [32m[1m✓[22m[39m Compiled /test-professional-pianos in 6.1s (3300 modules)
+2025-07-22 15:26:29 +02:00:  GET /test-professional-pianos [32m200[39m in 6803ms
+2025-07-22 15:26:30 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 15:26:30 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1636ms (3287 modules)
+2025-07-22 15:26:31 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1079ms
+2025-07-22 15:26:31 +02:00:  GET /meta.json [33m404[39m in 320ms
+2025-07-22 15:27:32 +02:00:  GET /meta.json [33m404[39m in 43ms
+2025-07-22 15:28:12 +02:00:  [32m[1m✓[22m[39m Compiled in 1048ms (3301 modules)
+2025-07-22 15:28:12 +02:00:  GET /test-professional-pianos [32m200[39m in 64ms
+2025-07-22 15:28:15 +02:00:  GET /test-professional-pianos [32m200[39m in 238ms
+2025-07-22 15:28:15 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 50ms
+2025-07-22 15:28:17 +02:00:  GET /meta.json [33m404[39m in 53ms
+2025-07-22 15:28:25 +02:00:  [32m[1m✓[22m[39m Compiled in 558ms (3301 modules)
+2025-07-22 15:28:25 +02:00:  GET /test-professional-pianos [32m200[39m in 101ms
+2025-07-22 15:28:47 +02:00:  GET /test-professional-pianos [32m200[39m in 208ms
+2025-07-22 15:28:47 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 38ms
+2025-07-22 15:28:48 +02:00:  GET /meta.json [33m404[39m in 33ms
+2025-07-22 15:40:47 +02:00:  [32m[1m✓[22m[39m Compiled in 1172ms (3300 modules)
+2025-07-22 15:40:47 +02:00:  GET /test-professional-pianos [32m200[39m in 108ms
+2025-07-22 15:41:18 +02:00:  [32m[1m✓[22m[39m Compiled in 590ms (3300 modules)
+2025-07-22 15:41:18 +02:00:  GET /test-professional-pianos [32m200[39m in 52ms
+2025-07-22 15:41:41 +02:00:  [32m[1m✓[22m[39m Compiled in 536ms (3300 modules)
+2025-07-22 15:41:41 +02:00:  GET /test-professional-pianos [32m200[39m in 59ms
+2025-07-22 15:42:14 +02:00:  [32m[1m✓[22m[39m Compiled in 550ms (3300 modules)
+2025-07-22 15:42:14 +02:00:  GET /test-professional-pianos [32m200[39m in 55ms
+2025-07-22 15:44:13 +02:00:  [32m[1m✓[22m[39m Compiled in 1072ms (3300 modules)
+2025-07-22 15:44:13 +02:00:  GET /test-professional-pianos [32m200[39m in 60ms
+2025-07-22 15:44:24 +02:00: 
+2025-07-22 15:44:24 +02:00: > nx run @bassnotion/frontend:serve
+2025-07-22 15:44:24 +02:00: 
+2025-07-22 15:44:24 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-07-22 15:44:24 +02:00:    - Local:        http://localhost:3001
+2025-07-22 15:44:24 +02:00:    - Network:      http://10.0.0.6:3001
+2025-07-22 15:44:24 +02:00:    - Environments: .env.local, .env
+2025-07-22 15:44:24 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-07-22 15:44:26 +02:00:  [32m[1m✓[22m[39m Ready in 1771ms
+2025-07-22 15:46:09 +02:00:  [37m[1m○[22m[39m Compiling /test-professional-pianos ...
+2025-07-22 15:46:14 +02:00:  [32m[1m✓[22m[39m Compiled /test-professional-pianos in 6s (3300 modules)
+2025-07-22 15:46:15 +02:00:  GET /test-professional-pianos [32m200[39m in 6832ms
+2025-07-22 15:46:16 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 15:46:16 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1714ms (3287 modules)
+2025-07-22 15:46:16 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1145ms
+2025-07-22 15:46:16 +02:00:  GET /meta.json [33m404[39m in 521ms
+2025-07-22 15:48:57 +02:00:  [32m[1m✓[22m[39m Compiled in 1338ms (3300 modules)
+2025-07-22 15:48:57 +02:00:  GET /test-professional-pianos [32m200[39m in 75ms
+2025-07-22 15:49:07 +02:00:  [32m[1m✓[22m[39m Compiled in 556ms (3300 modules)
+2025-07-22 15:49:07 +02:00:  GET /test-professional-pianos [32m200[39m in 78ms
+2025-07-22 15:49:22 +02:00:  [32m[1m✓[22m[39m Compiled in 679ms (3300 modules)
+2025-07-22 15:49:22 +02:00:  GET /test-professional-pianos [32m200[39m in 56ms
+2025-07-22 15:49:48 +02:00: 
+2025-07-22 15:49:48 +02:00: > nx run @bassnotion/frontend:serve
+2025-07-22 15:49:48 +02:00: 
+2025-07-22 15:49:49 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-07-22 15:49:49 +02:00:    - Local:        http://localhost:3001
+2025-07-22 15:49:49 +02:00:    - Network:      http://10.0.0.6:3001
+2025-07-22 15:49:49 +02:00:    - Environments: .env.local, .env
+2025-07-22 15:49:49 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-07-22 15:49:51 +02:00:  [32m[1m✓[22m[39m Ready in 1899ms
+2025-07-22 15:51:16 +02:00:  [37m[1m○[22m[39m Compiling /test-professional-pianos ...
+2025-07-22 15:51:20 +02:00:  [32m[1m✓[22m[39m Compiled /test-professional-pianos in 3.9s (3286 modules)
+2025-07-22 15:51:20 +02:00:  GET /test-professional-pianos [32m200[39m in 4403ms
+2025-07-22 15:51:21 +02:00:  [32m[1m✓[22m[39m Compiled in 753ms (1587 modules)
+2025-07-22 15:51:21 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 15:51:21 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 781ms (3287 modules)
+2025-07-22 15:51:22 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 959ms
+2025-07-22 15:51:22 +02:00:  GET /meta.json [33m404[39m in 348ms
+2025-07-22 15:53:32 +02:00:  [32m[1m✓[22m[39m Compiled in 3.7s (3300 modules)
+2025-07-22 15:53:32 +02:00:  GET /test-professional-pianos [32m200[39m in 69ms
+2025-07-22 15:53:54 +02:00:  [32m[1m✓[22m[39m Compiled in 940ms (3300 modules)
+2025-07-22 15:53:54 +02:00:  GET /test-professional-pianos [32m200[39m in 64ms
+2025-07-22 15:54:13 +02:00:  [32m[1m✓[22m[39m Compiled in 636ms (3300 modules)
+2025-07-22 15:54:13 +02:00:  GET /test-professional-pianos [32m200[39m in 56ms
+2025-07-22 15:54:24 +02:00: 
+2025-07-22 15:54:24 +02:00: > nx run @bassnotion/frontend:serve
+2025-07-22 15:54:24 +02:00: 
+2025-07-22 15:54:24 +02:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-07-22 15:54:24 +02:00:    - Local:        http://localhost:3001
+2025-07-22 15:54:24 +02:00:    - Network:      http://10.0.0.6:3001
+2025-07-22 15:54:24 +02:00:    - Environments: .env.local, .env
+2025-07-22 15:54:24 +02:00:  [32m[1m✓[22m[39m Starting...
+2025-07-22 15:54:26 +02:00:  [32m[1m✓[22m[39m Ready in 1924ms
+2025-07-22 15:55:30 +02:00:  [37m[1m○[22m[39m Compiling /test-professional-pianos ...
+2025-07-22 15:55:33 +02:00:  [32m[1m✓[22m[39m Compiled /test-professional-pianos in 3.5s (3286 modules)
+2025-07-22 15:55:34 +02:00:  GET /test-professional-pianos [32m200[39m in 4037ms
+2025-07-22 15:55:35 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 15:55:35 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1673ms (3287 modules)
+2025-07-22 15:55:35 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1193ms
+2025-07-22 15:55:35 +02:00:  GET /meta.json [33m404[39m in 503ms
+2025-07-22 16:02:03 +02:00:  [32m[1m✓[22m[39m Compiled in 3.6s (3300 modules)
+2025-07-22 16:02:03 +02:00:  GET /test-professional-pianos [32m200[39m in 61ms
+2025-07-22 16:02:20 +02:00:  [32m[1m✓[22m[39m Compiled in 851ms (3300 modules)
+2025-07-22 16:02:20 +02:00:  GET /test-professional-pianos [32m200[39m in 63ms
+2025-07-22 16:02:37 +02:00:  [32m[1m✓[22m[39m Compiled in 573ms (3300 modules)
+2025-07-22 16:02:37 +02:00:  GET /test-professional-pianos [32m200[39m in 53ms
+2025-07-22 16:03:10 +02:00:  [32m[1m✓[22m[39m Compiled in 525ms (3300 modules)
+2025-07-22 16:03:10 +02:00:  GET /test-professional-pianos [32m200[39m in 37ms
+2025-07-22 16:03:18 +02:00:  [32m[1m✓[22m[39m Compiled in 631ms (3300 modules)
+2025-07-22 16:03:18 +02:00:  GET /test-professional-pianos [32m200[39m in 34ms
+2025-07-22 16:03:34 +02:00:  [32m[1m✓[22m[39m Compiled in 440ms (3300 modules)
+2025-07-22 16:03:34 +02:00:  GET /test-professional-pianos [32m200[39m in 36ms
+2025-07-22 16:03:50 +02:00:  [32m[1m✓[22m[39m Compiled in 414ms (3300 modules)
+2025-07-22 16:03:50 +02:00:  GET /test-professional-pianos [32m200[39m in 52ms
+2025-07-22 16:04:47 +02:00:  GET /test-professional-pianos [32m200[39m in 287ms
+2025-07-22 16:04:48 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 357ms (1700 modules)
+2025-07-22 16:04:48 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 528ms
+2025-07-22 16:04:48 +02:00:  GET /meta.json [33m404[39m in 25ms
+2025-07-22 16:05:16 +02:00:  GET /test-professional-pianos [32m200[39m in 157ms
+2025-07-22 16:05:16 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 37ms
+2025-07-22 16:05:17 +02:00:  GET /meta.json [33m404[39m in 49ms
+2025-07-22 16:06:14 +02:00:  [32m[1m✓[22m[39m Compiled in 1001ms (3301 modules)
+2025-07-22 16:06:14 +02:00:  GET /test-professional-pianos [32m200[39m in 54ms
+2025-07-22 16:06:42 +02:00:  [32m[1m✓[22m[39m Compiled in 576ms (3300 modules)
+2025-07-22 16:06:42 +02:00:  GET /test-professional-pianos [32m200[39m in 38ms
+2025-07-22 16:06:52 +02:00:  [32m[1m✓[22m[39m Compiled in 478ms (3300 modules)
+2025-07-22 16:06:52 +02:00:  GET /test-professional-pianos [32m200[39m in 35ms
+2025-07-22 16:07:01 +02:00:  [32m[1m✓[22m[39m Compiled in 656ms (3300 modules)
+2025-07-22 16:07:01 +02:00:  GET /test-professional-pianos [32m200[39m in 35ms
+2025-07-22 16:07:12 +02:00:  [32m[1m✓[22m[39m Compiled in 800ms (3300 modules)
+2025-07-22 16:07:12 +02:00:  GET /test-professional-pianos [32m200[39m in 42ms
+2025-07-22 16:07:18 +02:00:  [32m[1m✓[22m[39m Compiled in 457ms (3300 modules)
+2025-07-22 16:07:18 +02:00:  GET /test-professional-pianos [32m200[39m in 40ms
+2025-07-22 16:07:58 +02:00:  GET /test-professional-pianos [32m200[39m in 283ms
+2025-07-22 16:07:58 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 358ms (1700 modules)
+2025-07-22 16:07:58 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 537ms
+2025-07-22 16:07:58 +02:00:  GET /meta.json [33m404[39m in 23ms
+2025-07-22 16:09:19 +02:00:  [32m[1m✓[22m[39m Compiled in 1082ms (3300 modules)
+2025-07-22 16:09:19 +02:00:  GET /test-professional-pianos [32m200[39m in 62ms
+2025-07-22 16:09:27 +02:00:  [32m[1m✓[22m[39m Compiled in 491ms (3300 modules)
+2025-07-22 16:09:27 +02:00:  GET /test-professional-pianos [32m200[39m in 57ms
+2025-07-22 16:09:43 +02:00:  [32m[1m✓[22m[39m Compiled in 620ms (3300 modules)
+2025-07-22 16:09:43 +02:00:  GET /test-professional-pianos [32m200[39m in 35ms
+2025-07-22 16:09:56 +02:00:  [32m[1m✓[22m[39m Compiled in 457ms (3300 modules)
+2025-07-22 16:09:56 +02:00:  GET /test-professional-pianos [32m200[39m in 39ms
+2025-07-22 16:10:05 +02:00:  [32m[1m✓[22m[39m Compiled in 662ms (3300 modules)
+2025-07-22 16:10:05 +02:00:  GET /test-professional-pianos [32m200[39m in 43ms
+2025-07-22 16:10:25 +02:00:  [32m[1m✓[22m[39m Compiled in 704ms (3300 modules)
+2025-07-22 16:10:25 +02:00:  GET /test-professional-pianos [32m200[39m in 59ms
+2025-07-22 16:10:48 +02:00:  [32m[1m✓[22m[39m Compiled in 474ms (3300 modules)
+2025-07-22 16:10:48 +02:00:  GET /test-professional-pianos [32m200[39m in 67ms
+2025-07-22 16:11:06 +02:00:  [32m[1m✓[22m[39m Compiled in 629ms (3300 modules)
+2025-07-22 16:11:06 +02:00:  GET /test-professional-pianos [32m200[39m in 40ms
+2025-07-22 16:11:29 +02:00:  GET /test-professional-pianos [32m200[39m in 289ms
+2025-07-22 16:11:29 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 254ms (1700 modules)
+2025-07-22 16:11:29 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 406ms
+2025-07-22 16:11:30 +02:00:  GET /meta.json [33m404[39m in 37ms
+2025-07-22 16:16:13 +02:00:  [32m[1m✓[22m[39m Compiled in 1712ms (3300 modules)
+2025-07-22 16:16:14 +02:00:  GET /test-professional-pianos [32m200[39m in 56ms
+2025-07-22 16:16:21 +02:00:  [32m[1m✓[22m[39m Compiled in 482ms (3300 modules)
+2025-07-22 16:16:21 +02:00:  GET /test-professional-pianos [32m200[39m in 51ms
+2025-07-22 16:16:28 +02:00:  [32m[1m✓[22m[39m Compiled in 534ms (3300 modules)
+2025-07-22 16:16:28 +02:00:  GET /test-professional-pianos [32m200[39m in 49ms
+2025-07-22 16:16:37 +02:00:  [32m[1m✓[22m[39m Compiled in 494ms (3300 modules)
+2025-07-22 16:16:37 +02:00:  GET /test-professional-pianos [32m200[39m in 82ms
+2025-07-22 16:16:46 +02:00:  [32m[1m✓[22m[39m Compiled in 792ms (3300 modules)
+2025-07-22 16:16:46 +02:00:  GET /test-professional-pianos [32m200[39m in 38ms
+2025-07-22 16:20:58 +02:00:  [32m[1m✓[22m[39m Compiled in 1236ms (3300 modules)
+2025-07-22 16:20:58 +02:00:  GET /test-professional-pianos [32m200[39m in 55ms
+2025-07-22 16:21:07 +02:00:  [32m[1m✓[22m[39m Compiled in 472ms (3300 modules)
+2025-07-22 16:21:07 +02:00:  GET /test-professional-pianos [32m200[39m in 69ms
+2025-07-22 16:21:14 +02:00:  [32m[1m✓[22m[39m Compiled in 458ms (3300 modules)
+2025-07-22 16:21:14 +02:00:  GET /test-professional-pianos [32m200[39m in 38ms
+2025-07-22 16:21:24 +02:00:  [32m[1m✓[22m[39m Compiled in 483ms (3300 modules)
+2025-07-22 16:21:24 +02:00:  GET /test-professional-pianos [32m200[39m in 56ms
+2025-07-22 16:23:00 +02:00:  GET /test-professional-pianos [32m200[39m in 292ms
+2025-07-22 16:23:00 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 16:23:00 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 595ms (1700 modules)
+2025-07-22 16:23:00 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 762ms
+2025-07-22 16:23:00 +02:00:  GET /meta.json [33m404[39m in 24ms
+2025-07-22 16:25:31 +02:00:  [32m[1m✓[22m[39m Compiled in 1112ms (3300 modules)
+2025-07-22 16:25:31 +02:00:  GET /test-professional-pianos [32m200[39m in 55ms
+2025-07-22 16:25:44 +02:00:  [32m[1m✓[22m[39m Compiled in 489ms (3300 modules)
+2025-07-22 16:25:44 +02:00:  GET /test-professional-pianos [32m200[39m in 64ms
+2025-07-22 16:25:55 +02:00:  [32m[1m✓[22m[39m Compiled in 449ms (3300 modules)
+2025-07-22 16:25:55 +02:00:  GET /test-professional-pianos [32m200[39m in 58ms
+2025-07-22 16:26:11 +02:00:  [32m[1m✓[22m[39m Compiled in 569ms (3300 modules)
+2025-07-22 16:26:11 +02:00:  GET /test-professional-pianos [32m200[39m in 69ms
+2025-07-22 16:26:19 +02:00:  [32m[1m✓[22m[39m Compiled in 699ms (3300 modules)
+2025-07-22 16:26:19 +02:00:  GET /test-professional-pianos [32m200[39m in 35ms
+2025-07-22 16:26:28 +02:00:  [32m[1m✓[22m[39m Compiled in 454ms (3300 modules)
+2025-07-22 16:26:28 +02:00:  GET /test-professional-pianos [32m200[39m in 58ms
+2025-07-22 16:26:37 +02:00:  [32m[1m✓[22m[39m Compiled in 453ms (3300 modules)
+2025-07-22 16:26:37 +02:00:  GET /test-professional-pianos [32m200[39m in 35ms
+2025-07-22 16:26:44 +02:00:  [32m[1m✓[22m[39m Compiled in 650ms (3300 modules)
+2025-07-22 16:26:44 +02:00:  GET /test-professional-pianos [32m200[39m in 38ms
+2025-07-22 16:26:55 +02:00:  [32m[1m✓[22m[39m Compiled in 874ms (3300 modules)
+2025-07-22 16:26:55 +02:00:  GET /test-professional-pianos [32m200[39m in 39ms
+2025-07-22 16:27:51 +02:00:  GET /test-professional-pianos [32m200[39m in 321ms
+2025-07-22 16:27:51 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 291ms (1700 modules)
+2025-07-22 16:27:52 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 481ms
+2025-07-22 16:27:52 +02:00:  GET /meta.json [33m404[39m in 31ms
+2025-07-22 16:28:58 +02:00:  [32m[1m✓[22m[39m Compiled in 1069ms (3301 modules)
+2025-07-22 16:28:58 +02:00:  GET /test-professional-pianos [32m200[39m in 52ms
+2025-07-22 16:29:12 +02:00:  [32m[1m✓[22m[39m Compiled in 469ms (3300 modules)
+2025-07-22 16:29:13 +02:00:  GET /test-professional-pianos [32m200[39m in 78ms
+2025-07-22 16:29:54 +02:00:  GET /test-professional-pianos [32m200[39m in 303ms
+2025-07-22 16:29:54 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 292ms (1700 modules)
+2025-07-22 16:29:54 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 412ms
+2025-07-22 16:29:55 +02:00:  GET /meta.json [33m404[39m in 25ms
+2025-07-22 16:31:12 +02:00:  [32m[1m✓[22m[39m Compiled in 990ms (3300 modules)
+2025-07-22 16:31:13 +02:00:  GET /test-professional-pianos [32m200[39m in 54ms
+2025-07-22 16:31:19 +02:00:  [32m[1m✓[22m[39m Compiled in 450ms (3300 modules)
+2025-07-22 16:31:19 +02:00:  GET /test-professional-pianos [32m200[39m in 50ms
+2025-07-22 16:31:29 +02:00:  [32m[1m✓[22m[39m Compiled in 396ms (3300 modules)
+2025-07-22 16:31:29 +02:00:  GET /test-professional-pianos [32m200[39m in 34ms
+2025-07-22 16:31:36 +02:00:  [32m[1m✓[22m[39m Compiled in 485ms (3300 modules)
+2025-07-22 16:31:36 +02:00:  GET /test-professional-pianos [32m200[39m in 35ms
+2025-07-22 16:31:49 +02:00:  [32m[1m✓[22m[39m Compiled in 557ms (3300 modules)
+2025-07-22 16:31:49 +02:00:  GET /test-professional-pianos [32m200[39m in 75ms
+2025-07-22 16:33:21 +02:00:  GET /test-professional-pianos [32m200[39m in 291ms
+2025-07-22 16:33:22 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 16:33:22 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 636ms (1700 modules)
+2025-07-22 16:33:22 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 803ms
+2025-07-22 16:33:22 +02:00:  GET /meta.json [33m404[39m in 24ms
+2025-07-22 16:34:30 +02:00:  [32m[1m✓[22m[39m Compiled in 1229ms (3300 modules)
+2025-07-22 16:34:30 +02:00:  GET /test-professional-pianos [32m200[39m in 53ms
+2025-07-22 16:34:39 +02:00:  [32m[1m✓[22m[39m Compiled in 478ms (3300 modules)
+2025-07-22 16:34:39 +02:00:  GET /test-professional-pianos [32m200[39m in 55ms
+2025-07-22 16:34:50 +02:00:  [32m[1m✓[22m[39m Compiled in 499ms (3300 modules)
+2025-07-22 16:34:50 +02:00:  GET /test-professional-pianos [32m200[39m in 36ms
+2025-07-22 16:34:59 +02:00:  [32m[1m✓[22m[39m Compiled in 540ms (3300 modules)
+2025-07-22 16:34:59 +02:00:  GET /test-professional-pianos [32m200[39m in 39ms
+2025-07-22 16:35:12 +02:00:  [32m[1m✓[22m[39m Compiled in 565ms (3300 modules)
+2025-07-22 16:35:12 +02:00:  GET /test-professional-pianos [32m200[39m in 124ms
+2025-07-22 16:35:53 +02:00:  GET /test-professional-pianos [32m200[39m in 304ms
+2025-07-22 16:35:54 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 479ms (1700 modules)
+2025-07-22 16:35:54 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 641ms
+2025-07-22 16:35:54 +02:00:  GET /meta.json [33m404[39m in 24ms
+2025-07-22 16:36:46 +02:00:  GET /test-professional-pianos [32m200[39m in 258ms
+2025-07-22 16:36:46 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 47ms
+2025-07-22 16:36:47 +02:00:  GET /meta.json [33m404[39m in 64ms
+2025-07-22 16:37:51 +02:00:  [32m[1m✓[22m[39m Compiled in 1241ms (3301 modules)
+2025-07-22 16:37:52 +02:00:  GET /test-professional-pianos [32m200[39m in 52ms
+2025-07-22 16:37:58 +02:00:  [32m[1m✓[22m[39m Compiled in 484ms (3300 modules)
+2025-07-22 16:37:58 +02:00:  GET /test-professional-pianos [32m200[39m in 53ms
+2025-07-22 16:38:07 +02:00:  [32m[1m✓[22m[39m Compiled in 546ms (3300 modules)
+2025-07-22 16:38:07 +02:00:  GET /test-professional-pianos [32m200[39m in 87ms
+2025-07-22 16:38:43 +02:00:  GET /test-professional-pianos [32m200[39m in 303ms
+2025-07-22 16:38:44 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 337ms (1700 modules)
+2025-07-22 16:38:44 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 479ms
+2025-07-22 16:38:44 +02:00:  GET /meta.json [33m404[39m in 23ms
+2025-07-22 16:39:41 +02:00:  [32m[1m✓[22m[39m Compiled in 1251ms (3301 modules)
+2025-07-22 16:39:41 +02:00:  GET /test-professional-pianos [32m200[39m in 52ms
+2025-07-22 16:41:12 +02:00:  [32m[1m✓[22m[39m Compiled in 1092ms (3300 modules)
+2025-07-22 16:41:12 +02:00:  GET /test-professional-pianos [32m200[39m in 57ms
+2025-07-22 16:43:26 +02:00:  GET /test-professional-pianos [32m200[39m in 337ms
+2025-07-22 16:43:27 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 16:43:27 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 588ms (1700 modules)
+2025-07-22 16:43:27 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 730ms
+2025-07-22 16:43:27 +02:00:  GET /meta.json [33m404[39m in 24ms
+2025-07-22 16:46:21 +02:00:  [32m[1m✓[22m[39m Compiled in 1344ms (3300 modules)
+2025-07-22 16:46:21 +02:00:  GET /test-professional-pianos [32m200[39m in 87ms
+2025-07-22 16:46:58 +02:00:  [37m[1m○[22m[39m Compiling /_error ...
+2025-07-22 16:46:59 +02:00:  GET /test-professional-pianos [31m500[39m in 3306ms
+2025-07-22 16:46:59 +02:00:  GET /test-professional-pianos [31m500[39m in 7ms
+2025-07-22 16:46:59 +02:00:  GET /test-professional-pianos [31m500[39m in 7ms
+2025-07-22 16:46:59 +02:00:  GET /test-professional-pianos [31m500[39m in 7ms
+2025-07-22 16:47:00 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [31m500[39m in 445ms
+2025-07-22 16:47:00 +02:00:  GET /meta.json [31m500[39m in 7ms
+2025-07-22 16:47:26 +02:00:  GET /test-professional-pianos [31m500[39m in 29ms
+2025-07-22 16:47:26 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [31m500[39m in 13ms
+2025-07-22 16:47:27 +02:00:  GET /meta.json [31m500[39m in 20ms
+2025-07-22 16:49:38 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1861ms (3667 modules)
+2025-07-22 16:49:38 +02:00:  GET /_next/static/webpack/142c0e40cdc79365.webpack.hot-update.json [33m404[39m in 2026ms
+2025-07-22 16:49:38 +02:00:  GET /test-professional-pianos [32m200[39m in 7ms
+2025-07-22 16:49:38 +02:00:  GET /test-professional-pianos [32m200[39m in 34ms
+2025-07-22 16:49:39 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 60ms
+2025-07-22 16:49:40 +02:00:  GET /meta.json [33m404[39m in 53ms
+2025-07-22 16:49:56 +02:00:  GET /test-professional-pianos [32m200[39m in 128ms
+2025-07-22 16:49:56 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 35ms
+2025-07-22 16:49:57 +02:00:  GET /meta.json [33m404[39m in 59ms
+2025-07-22 16:50:10 +02:00:  GET /undefined [33m404[39m in 64ms
+2025-07-22 16:50:42 +02:00:  [32m[1m✓[22m[39m Compiled in 1481ms (3667 modules)
+2025-07-22 16:50:42 +02:00:  GET /test-professional-pianos [32m200[39m in 67ms
+2025-07-22 16:51:45 +02:00:  [32m[1m✓[22m[39m Compiled in 1241ms (3666 modules)
+2025-07-22 16:51:45 +02:00:  GET /test-professional-pianos [32m200[39m in 54ms
+2025-07-22 16:52:28 +02:00:  GET /test-professional-pianos [32m200[39m in 364ms
+2025-07-22 16:52:28 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 359ms (1813 modules)
+2025-07-22 16:52:28 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 490ms
+2025-07-22 16:52:29 +02:00:  GET /meta.json [33m404[39m in 25ms
+2025-07-22 16:52:37 +02:00:  GET /undefined [33m404[39m in 45ms
+2025-07-22 16:53:13 +02:00:  [32m[1m✓[22m[39m Compiled in 938ms (3667 modules)
+2025-07-22 16:53:13 +02:00:  GET /test-professional-pianos [32m200[39m in 52ms
+2025-07-22 16:53:41 +02:00:  [32m[1m✓[22m[39m Compiled in 628ms (3666 modules)
+2025-07-22 16:53:41 +02:00:  GET /test-professional-pianos [32m200[39m in 74ms
+2025-07-22 16:54:00 +02:00:  GET /test-professional-pianos [32m200[39m in 365ms
+2025-07-22 16:54:00 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 301ms (1813 modules)
+2025-07-22 16:54:01 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 459ms
+2025-07-22 16:54:01 +02:00:  GET /meta.json [33m404[39m in 27ms
+2025-07-22 16:54:27 +02:00:  GET /test-professional-pianos [32m200[39m in 201ms
+2025-07-22 16:54:28 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 35ms
+2025-07-22 16:54:29 +02:00:  GET /meta.json [33m404[39m in 28ms
+2025-07-22 16:55:32 +02:00:  [32m[1m✓[22m[39m Compiled in 1952ms (3667 modules)
+2025-07-22 16:55:32 +02:00:  GET /test-professional-pianos [32m200[39m in 64ms
+2025-07-22 16:55:40 +02:00:  [32m[1m✓[22m[39m Compiled in 660ms (3666 modules)
+2025-07-22 16:55:40 +02:00:  GET /test-professional-pianos [32m200[39m in 54ms
+2025-07-22 16:55:52 +02:00:  [32m[1m✓[22m[39m Compiled in 535ms (3666 modules)
+2025-07-22 16:55:53 +02:00:  GET /test-professional-pianos [32m200[39m in 64ms
+2025-07-22 16:56:05 +02:00:  [32m[1m✓[22m[39m Compiled in 841ms (3666 modules)
+2025-07-22 16:56:05 +02:00:  GET /test-professional-pianos [32m200[39m in 66ms
+2025-07-22 16:57:02 +02:00:  GET /test-professional-pianos [32m200[39m in 362ms
+2025-07-22 16:57:02 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 365ms (1813 modules)
+2025-07-22 16:57:02 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 554ms
+2025-07-22 16:57:02 +02:00:  GET /meta.json [33m404[39m in 32ms
+2025-07-22 16:59:12 +02:00:  [32m[1m✓[22m[39m Compiled in 1517ms (3666 modules)
+2025-07-22 16:59:12 +02:00:  GET /test-professional-pianos [32m200[39m in 51ms
+2025-07-22 16:59:23 +02:00:  [32m[1m✓[22m[39m Compiled in 653ms (3666 modules)
+2025-07-22 16:59:23 +02:00:  GET /test-professional-pianos [32m200[39m in 56ms
+2025-07-22 16:59:34 +02:00:  [32m[1m✓[22m[39m Compiled in 860ms (3666 modules)
+2025-07-22 16:59:34 +02:00:  GET /test-professional-pianos [32m200[39m in 39ms
+2025-07-22 17:03:18 +02:00:  GET /test-professional-pianos [32m200[39m in 358ms
+2025-07-22 17:03:19 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 17:03:19 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 665ms (1813 modules)
+2025-07-22 17:03:19 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 787ms
+2025-07-22 17:03:19 +02:00:  GET /meta.json [33m404[39m in 24ms
+2025-07-22 17:03:54 +02:00:  [32m[1m✓[22m[39m Compiled in 1177ms (3667 modules)
+2025-07-22 17:03:54 +02:00:  GET /test-professional-pianos [32m200[39m in 34ms
+2025-07-22 17:04:32 +02:00:  GET /test-professional-pianos [32m200[39m in 273ms
+2025-07-22 17:04:32 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 40ms
+2025-07-22 17:04:34 +02:00:  GET /meta.json [33m404[39m in 53ms
+2025-07-22 17:05:41 +02:00:  [32m[1m✓[22m[39m Compiled in 1623ms (3666 modules)
+2025-07-22 17:05:41 +02:00:  GET /test-professional-pianos [32m200[39m in 55ms
+2025-07-22 17:05:57 +02:00:  GET /test-professional-pianos [32m200[39m in 316ms
+2025-07-22 17:05:57 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 280ms (1813 modules)
+2025-07-22 17:05:57 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 411ms
+2025-07-22 17:05:58 +02:00:  GET /meta.json [33m404[39m in 37ms
+2025-07-22 17:07:12 +02:00:  [32m[1m✓[22m[39m Compiled in 1437ms (3666 modules)
+2025-07-22 17:07:12 +02:00:  GET /test-professional-pianos [32m200[39m in 63ms
+2025-07-22 17:07:55 +02:00:  GET /test-professional-pianos [32m200[39m in 282ms
+2025-07-22 17:07:55 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 390ms (1813 modules)
+2025-07-22 17:07:55 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 482ms
+2025-07-22 17:07:55 +02:00:  GET /meta.json [33m404[39m in 22ms
+2025-07-22 17:09:34 +02:00:  [32m[1m✓[22m[39m Compiled in 1650ms (3666 modules)
+2025-07-22 17:09:34 +02:00:  GET /test-professional-pianos [32m200[39m in 45ms
+2025-07-22 17:11:54 +02:00:  GET /test-professional-pianos [32m200[39m in 378ms
+2025-07-22 17:11:54 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 17:11:54 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 742ms (1813 modules)
+2025-07-22 17:11:55 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 874ms
+2025-07-22 17:11:55 +02:00:  GET /meta.json [33m404[39m in 44ms
+2025-07-22 17:12:20 +02:00:  [32m[1m✓[22m[39m Compiled in 1604ms (3667 modules)
+2025-07-22 17:12:20 +02:00:  GET /test-professional-pianos [32m200[39m in 50ms
+2025-07-22 17:13:17 +02:00:  GET /test-professional-pianos [32m200[39m in 243ms
+2025-07-22 17:13:17 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 93ms
+2025-07-22 17:13:18 +02:00:  GET /meta.json [33m404[39m in 54ms
+2025-07-22 17:17:16 +02:00:  [32m[1m✓[22m[39m Compiled in 1571ms (3666 modules)
+2025-07-22 17:17:16 +02:00:  GET /test-professional-pianos [32m200[39m in 58ms
+2025-07-22 17:17:27 +02:00:  [32m[1m✓[22m[39m Compiled in 583ms (3666 modules)
+2025-07-22 17:17:27 +02:00:  GET /test-professional-pianos [32m200[39m in 56ms
+2025-07-22 17:28:36 +02:00:  GET /test-professional-pianos [32m200[39m in 285ms
+2025-07-22 17:28:37 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 17:28:37 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 813ms (1813 modules)
+2025-07-22 17:28:37 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 927ms
+2025-07-22 17:28:37 +02:00:  GET /meta.json [33m404[39m in 119ms
+2025-07-22 17:29:13 +02:00:  [32m[1m✓[22m[39m Compiled in 960ms (3667 modules)
+2025-07-22 17:29:13 +02:00:  GET /test-professional-pianos [32m200[39m in 41ms
+2025-07-22 17:29:21 +02:00:  GET /test-professional-pianos [32m200[39m in 157ms
+2025-07-22 17:29:21 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 41ms
+2025-07-22 17:29:22 +02:00:  GET /meta.json [33m404[39m in 42ms
+2025-07-22 17:31:12 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (3666 modules)
+2025-07-22 17:31:12 +02:00:  GET /test-professional-pianos [32m200[39m in 42ms
+2025-07-22 17:31:36 +02:00:  GET /test-professional-pianos [32m200[39m in 225ms
+2025-07-22 17:31:36 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 280ms (1813 modules)
+2025-07-22 17:31:36 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 378ms
+2025-07-22 17:31:37 +02:00:  GET /meta.json [33m404[39m in 48ms
+2025-07-22 17:32:01 +02:00:  [32m[1m✓[22m[39m Compiled in 619ms (3667 modules)
+2025-07-22 17:32:01 +02:00:  GET /test-professional-pianos [32m200[39m in 65ms
+2025-07-22 17:32:17 +02:00:  GET /test-professional-pianos [32m200[39m in 190ms
+2025-07-22 17:32:17 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 49ms
+2025-07-22 17:32:18 +02:00:  GET /meta.json [33m404[39m in 37ms
+2025-07-22 17:32:40 +02:00:  [32m[1m✓[22m[39m Compiled in 897ms (3667 modules)
+2025-07-22 17:32:40 +02:00:  GET /test-professional-pianos [32m200[39m in 86ms
+2025-07-22 17:32:53 +02:00:  [32m[1m✓[22m[39m Compiled in 1090ms (3667 modules)
+2025-07-22 17:32:53 +02:00:  GET /test-professional-pianos [32m200[39m in 37ms
+2025-07-22 17:33:30 +02:00:  GET /meta.json [33m404[39m in 154ms
+2025-07-22 17:33:30 +02:00:  GET /meta.json [33m404[39m in 28ms
+2025-07-22 17:33:35 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 32ms
+2025-07-22 17:33:37 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 44ms
+2025-07-22 17:33:38 +02:00:  GET /meta.json [33m404[39m in 48ms
+2025-07-22 17:34:36 +02:00:  [32m[1m✓[22m[39m Compiled in 1282ms (3667 modules)
+2025-07-22 17:34:36 +02:00:  GET /test-professional-pianos [32m200[39m in 39ms
+2025-07-22 17:34:59 +02:00:  [32m[1m✓[22m[39m Compiled in 565ms (3666 modules)
+2025-07-22 17:34:59 +02:00:  GET /test-professional-pianos [32m200[39m in 113ms
+2025-07-22 17:35:20 +02:00:  GET /test-professional-pianos [32m200[39m in 232ms
+2025-07-22 17:35:20 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 203ms (1813 modules)
+2025-07-22 17:35:20 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 310ms
+2025-07-22 17:35:21 +02:00:  GET /meta.json [33m404[39m in 62ms
+2025-07-22 17:46:24 +02:00:  [32m[1m✓[22m[39m Compiled in 1603ms (3666 modules)
+2025-07-22 17:46:24 +02:00:  GET /test-professional-pianos [32m200[39m in 54ms
+2025-07-22 17:47:14 +02:00:  [32m[1m✓[22m[39m Compiled in 928ms (3666 modules)
+2025-07-22 17:47:14 +02:00:  GET /test-professional-pianos [32m200[39m in 56ms
+2025-07-22 17:47:31 +02:00:  [32m[1m✓[22m[39m Compiled in 1834ms (3666 modules)
+2025-07-22 17:47:31 +02:00:  GET /test-professional-pianos [32m200[39m in 39ms
+2025-07-22 17:48:07 +02:00:  [32m[1m✓[22m[39m Compiled in 1508ms (3666 modules)
+2025-07-22 17:48:07 +02:00:  GET /test-professional-pianos [32m200[39m in 33ms
+2025-07-22 17:48:22 +02:00:  [32m[1m✓[22m[39m Compiled in 1760ms (3666 modules)
+2025-07-22 17:48:22 +02:00:  GET /test-professional-pianos [32m200[39m in 53ms
+2025-07-22 17:48:34 +02:00:  [32m[1m✓[22m[39m Compiled in 1252ms (3666 modules)
+2025-07-22 17:48:34 +02:00:  GET /test-professional-pianos [32m200[39m in 47ms
+2025-07-22 17:48:44 +02:00:  [32m[1m✓[22m[39m Compiled in 781ms (3666 modules)
+2025-07-22 17:48:44 +02:00:  GET /test-professional-pianos [32m200[39m in 52ms
+2025-07-22 17:48:56 +02:00:  [32m[1m✓[22m[39m Compiled in 1171ms (3666 modules)
+2025-07-22 17:48:56 +02:00:  GET /test-professional-pianos [32m200[39m in 41ms
+2025-07-22 17:49:02 +02:00:  [32m[1m✓[22m[39m Compiled in 955ms (3666 modules)
+2025-07-22 17:49:02 +02:00:  GET /test-professional-pianos [32m200[39m in 37ms
+2025-07-22 17:49:09 +02:00:  [32m[1m✓[22m[39m Compiled in 793ms (3666 modules)
+2025-07-22 17:49:09 +02:00:  GET /test-professional-pianos [32m200[39m in 40ms
+2025-07-22 17:49:18 +02:00:  [32m[1m✓[22m[39m Compiled in 1356ms (3666 modules)
+2025-07-22 17:49:18 +02:00:  GET /test-professional-pianos [32m200[39m in 43ms
+2025-07-22 17:51:41 +02:00:  GET /test-professional-pianos [31m500[39m in 580ms
+2025-07-22 17:51:41 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 17:51:42 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1070ms (1813 modules)
+2025-07-22 17:51:42 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1302ms
+2025-07-22 17:51:42 +02:00:  GET /meta.json [33m404[39m in 595ms
+2025-07-22 17:52:08 +02:00:  [32m[1m✓[22m[39m Compiled in 2.2s (3667 modules)
+2025-07-22 17:52:09 +02:00:  GET /test-professional-pianos [32m200[39m in 314ms
+2025-07-22 17:52:09 +02:00:  GET /test-professional-pianos [32m200[39m in 332ms
+2025-07-22 17:52:09 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 57ms
+2025-07-22 17:52:10 +02:00:  GET /meta.json [33m404[39m in 40ms
+2025-07-22 17:52:16 +02:00:  [32m[1m✓[22m[39m Compiled in 891ms (3667 modules)
+2025-07-22 17:52:16 +02:00:  GET /test-professional-pianos [32m200[39m in 58ms
+2025-07-22 17:52:25 +02:00:  [32m[1m✓[22m[39m Compiled in 1484ms (3667 modules)
+2025-07-22 17:52:25 +02:00:  GET /test-professional-pianos [32m200[39m in 33ms
+2025-07-22 17:52:43 +02:00:  [32m[1m✓[22m[39m Compiled in 902ms (3667 modules)
+2025-07-22 17:52:43 +02:00:  GET /test-professional-pianos [32m200[39m in 69ms
+2025-07-22 17:52:52 +02:00:  [32m[1m✓[22m[39m Compiled in 1183ms (3667 modules)
+2025-07-22 17:52:52 +02:00:  GET /test-professional-pianos [32m200[39m in 39ms
+2025-07-22 17:53:00 +02:00:  [32m[1m✓[22m[39m Compiled in 1477ms (3667 modules)
+2025-07-22 17:53:00 +02:00:  GET /test-professional-pianos [32m200[39m in 42ms
+2025-07-22 17:53:15 +02:00:  [32m[1m✓[22m[39m Compiled in 836ms (3666 modules)
+2025-07-22 17:53:15 +02:00:  GET /test-professional-pianos [32m200[39m in 43ms
+2025-07-22 17:53:26 +02:00:  GET /test-professional-pianos [32m200[39m in 324ms
+2025-07-22 17:53:26 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 319ms (1813 modules)
+2025-07-22 17:53:26 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 453ms
+2025-07-22 17:53:28 +02:00:  GET /meta.json [33m404[39m in 454ms
+2025-07-22 17:53:30 +02:00:  GET /undefined [33m404[39m in 44ms
+2025-07-22 17:53:59 +02:00:  [32m[1m✓[22m[39m Compiled in 1331ms (3667 modules)
+2025-07-22 17:53:59 +02:00:  GET /test-professional-pianos [32m200[39m in 37ms
+2025-07-22 17:58:48 +02:00:  GET /test-professional-pianos [32m200[39m in 262ms
+2025-07-22 17:58:48 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 90ms
+2025-07-22 17:58:50 +02:00:  GET /meta.json [33m404[39m in 63ms
+2025-07-22 18:00:11 +02:00:  GET /test-professional-pianos [32m200[39m in 135ms
+2025-07-22 18:00:11 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 56ms
+2025-07-22 18:00:13 +02:00:  GET /meta.json [33m404[39m in 55ms
+2025-07-22 18:00:39 +02:00:  [32m[1m✓[22m[39m Compiled in 1670ms (3667 modules)
+2025-07-22 18:00:39 +02:00:  GET /test-professional-pianos [32m200[39m in 38ms
+2025-07-22 18:00:40 +02:00:  GET /test-professional-pianos [32m200[39m in 207ms
+2025-07-22 18:00:40 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 43ms
+2025-07-22 18:00:42 +02:00:  GET /meta.json [33m404[39m in 51ms
+2025-07-22 18:00:54 +02:00:  [32m[1m✓[22m[39m Compiled in 924ms (3667 modules)
+2025-07-22 18:00:54 +02:00:  GET /test-professional-pianos [32m200[39m in 56ms
+2025-07-22 18:00:55 +02:00:  GET /test-professional-pianos [32m200[39m in 145ms
+2025-07-22 18:00:55 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 47ms
+2025-07-22 18:00:56 +02:00:  GET /meta.json [33m404[39m in 74ms
+2025-07-22 18:01:56 +02:00:  [32m[1m✓[22m[39m Compiled in 1334ms (3667 modules)
+2025-07-22 18:01:57 +02:00:  GET /test-professional-pianos [32m200[39m in 39ms
+2025-07-22 18:02:22 +02:00:  [32m[1m✓[22m[39m Compiled in 669ms (3666 modules)
+2025-07-22 18:02:22 +02:00:  GET /test-professional-pianos [32m200[39m in 43ms
+2025-07-22 18:02:41 +02:00:  [32m[1m✓[22m[39m Compiled in 1094ms (3666 modules)
+2025-07-22 18:02:41 +02:00:  GET /test-professional-pianos [32m200[39m in 41ms
+2025-07-22 21:09:55 +02:00:  GET /test-professional-pianos [32m200[39m in 518ms
+2025-07-22 21:09:55 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 21:09:56 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1057ms (1813 modules)
+2025-07-22 21:09:56 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1262ms
+2025-07-22 21:09:56 +02:00:  GET /meta.json [33m404[39m in 158ms
+2025-07-22 21:12:11 +02:00:  [32m[1m✓[22m[39m Compiled in 2s (3666 modules)
+2025-07-22 21:12:11 +02:00:  GET /test-professional-pianos [32m200[39m in 46ms
+2025-07-22 21:14:00 +02:00:  GET /test-professional-pianos [32m200[39m in 395ms
+2025-07-22 21:14:00 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 21:14:01 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1186ms (1813 modules)
+2025-07-22 21:14:01 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1329ms
+2025-07-22 21:14:01 +02:00:  GET /meta.json [33m404[39m in 149ms
+2025-07-22 21:14:59 +02:00:  [32m[1m✓[22m[39m Compiled in 599ms (3667 modules)
+2025-07-22 21:14:59 +02:00:  GET /test-professional-pianos [32m200[39m in 44ms
+2025-07-22 21:17:01 +02:00:  [32m[1m✓[22m[39m Compiled in 1328ms (3666 modules)
+2025-07-22 21:17:01 +02:00:  GET /test-professional-pianos [32m200[39m in 47ms
+2025-07-22 21:17:08 +02:00:  [32m[1m✓[22m[39m Compiled in 530ms (3666 modules)
+2025-07-22 21:17:08 +02:00:  GET /test-professional-pianos [32m200[39m in 37ms
+2025-07-22 21:17:17 +02:00:  [32m[1m✓[22m[39m Compiled in 500ms (3666 modules)
+2025-07-22 21:17:17 +02:00:  GET /test-professional-pianos [32m200[39m in 37ms
+2025-07-22 21:21:08 +02:00:  GET /test-professional-pianos [32m200[39m in 269ms
+2025-07-22 21:21:09 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 21:21:09 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 752ms (1813 modules)
+2025-07-22 21:21:09 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 918ms
+2025-07-22 21:21:09 +02:00:  GET /meta.json [33m404[39m in 169ms
+2025-07-22 21:21:40 +02:00:  [32m[1m✓[22m[39m Compiled in 1734ms (3667 modules)
+2025-07-22 21:21:40 +02:00:  GET /test-professional-pianos [32m200[39m in 58ms
+2025-07-22 21:23:07 +02:00:  GET /test-professional-pianos [32m200[39m in 343ms
+2025-07-22 21:23:07 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 108ms
+2025-07-22 21:23:09 +02:00:  GET /meta.json [33m404[39m in 59ms
+2025-07-22 21:25:09 +02:00:  [32m[1m✓[22m[39m Compiled in 1678ms (3666 modules)
+2025-07-22 21:25:09 +02:00:  GET /test-professional-pianos [32m200[39m in 53ms
+2025-07-22 21:25:15 +02:00:  [32m[1m✓[22m[39m Compiled in 544ms (3666 modules)
+2025-07-22 21:25:15 +02:00:  GET /test-professional-pianos [32m200[39m in 56ms
+2025-07-22 21:25:23 +02:00:  [32m[1m✓[22m[39m Compiled in 496ms (3666 modules)
+2025-07-22 21:25:23 +02:00:  GET /test-professional-pianos [32m200[39m in 39ms
+2025-07-22 21:25:34 +02:00:  GET /test-professional-pianos [32m200[39m in 241ms
+2025-07-22 21:25:34 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 297ms (1813 modules)
+2025-07-22 21:25:34 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 394ms
+2025-07-22 21:25:35 +02:00:  GET /meta.json [33m404[39m in 59ms
+2025-07-22 21:26:11 +02:00:  [32m[1m✓[22m[39m Compiled in 743ms (3667 modules)
+2025-07-22 21:26:11 +02:00:  GET /test-professional-pianos [32m200[39m in 50ms
+2025-07-22 21:26:23 +02:00:  [32m[1m✓[22m[39m Compiled in 903ms (3667 modules)
+2025-07-22 21:26:23 +02:00:  GET /test-professional-pianos [32m200[39m in 42ms
+2025-07-22 21:51:03 +02:00:  GET /test-professional-pianos [32m200[39m in 368ms
+2025-07-22 21:51:03 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 50ms
+2025-07-22 21:51:05 +02:00:  GET /meta.json [33m404[39m in 51ms
+2025-07-22 21:52:12 +02:00:  [32m[1m✓[22m[39m Compiled in 1769ms (3666 modules)
+2025-07-22 21:52:12 +02:00:  GET /test-professional-pianos [32m200[39m in 54ms
+2025-07-22 21:52:21 +02:00:  [32m[1m✓[22m[39m Compiled in 541ms (3666 modules)
+2025-07-22 21:52:21 +02:00:  GET /test-professional-pianos [32m200[39m in 50ms
+2025-07-22 21:53:10 +02:00:  GET /test-professional-pianos [32m200[39m in 338ms
+2025-07-22 21:53:11 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 402ms (1813 modules)
+2025-07-22 21:53:11 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 535ms
+2025-07-22 21:53:11 +02:00:  GET /meta.json [33m404[39m in 27ms
+2025-07-22 21:53:50 +02:00:  [32m[1m✓[22m[39m Compiled in 1795ms (3667 modules)
+2025-07-22 21:53:50 +02:00:  GET /test-professional-pianos [32m200[39m in 37ms
+2025-07-22 21:54:04 +02:00:  [32m[1m✓[22m[39m Compiled in 808ms (3667 modules)
+2025-07-22 21:54:04 +02:00:  GET /test-professional-pianos [32m200[39m in 52ms
+2025-07-22 21:54:41 +02:00:  GET /test-professional-pianos [32m200[39m in 293ms
+2025-07-22 21:54:41 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 44ms
+2025-07-22 21:54:42 +02:00:  GET /meta.json [33m404[39m in 52ms
+2025-07-22 21:56:34 +02:00:  [32m[1m✓[22m[39m Compiled in 1630ms (3666 modules)
+2025-07-22 21:56:34 +02:00:  GET /test-professional-pianos [32m200[39m in 37ms
+2025-07-22 21:56:51 +02:00:  [32m[1m✓[22m[39m Compiled in 500ms (3666 modules)
+2025-07-22 21:56:51 +02:00:  GET /test-professional-pianos [32m200[39m in 38ms
+2025-07-22 21:57:05 +02:00:  [32m[1m✓[22m[39m Compiled in 659ms (3666 modules)
+2025-07-22 21:57:05 +02:00:  GET /test-professional-pianos [32m200[39m in 53ms
+2025-07-22 21:57:12 +02:00:  [32m[1m✓[22m[39m Compiled in 532ms (3666 modules)
+2025-07-22 21:57:12 +02:00:  GET /test-professional-pianos [32m200[39m in 45ms
+2025-07-22 21:57:28 +02:00:  [32m[1m✓[22m[39m Compiled in 605ms (3666 modules)
+2025-07-22 21:57:28 +02:00:  GET /test-professional-pianos [32m200[39m in 52ms
+2025-07-22 21:57:37 +02:00:  [32m[1m✓[22m[39m Compiled in 510ms (3666 modules)
+2025-07-22 21:57:37 +02:00:  GET /test-professional-pianos [32m200[39m in 34ms
+2025-07-22 21:58:28 +02:00:  GET /test-professional-pianos [32m200[39m in 370ms
+2025-07-22 21:58:28 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 21:58:29 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 744ms (1813 modules)
+2025-07-22 21:58:29 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1092ms
+2025-07-22 21:58:29 +02:00:  GET /meta.json [33m404[39m in 536ms
+2025-07-22 21:59:16 +02:00:  [32m[1m✓[22m[39m Compiled in 1589ms (3667 modules)
+2025-07-22 21:59:17 +02:00:  GET /test-professional-pianos [32m200[39m in 53ms
+2025-07-22 21:59:25 +02:00:  [32m[1m✓[22m[39m Compiled in 572ms (3667 modules)
+2025-07-22 21:59:25 +02:00:  GET /test-professional-pianos [32m200[39m in 57ms
+2025-07-22 21:59:37 +02:00:  [32m[1m✓[22m[39m Compiled in 506ms (3666 modules)
+2025-07-22 21:59:37 +02:00:  GET /test-professional-pianos [32m200[39m in 37ms
+2025-07-22 21:59:54 +02:00:  GET /test-professional-pianos [32m200[39m in 345ms
+2025-07-22 21:59:55 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 303ms (1813 modules)
+2025-07-22 21:59:55 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 407ms
+2025-07-22 21:59:56 +02:00:  GET /meta.json [33m404[39m in 32ms
+2025-07-22 22:00:37 +02:00:  [32m[1m✓[22m[39m Compiled in 849ms (3667 modules)
+2025-07-22 22:00:38 +02:00:  GET /test-professional-pianos [32m200[39m in 45ms
+2025-07-22 22:00:47 +02:00:  [32m[1m✓[22m[39m Compiled in 973ms (3667 modules)
+2025-07-22 22:00:47 +02:00:  GET /test-professional-pianos [32m200[39m in 36ms
+2025-07-22 22:01:07 +02:00:  GET /test-professional-pianos [32m200[39m in 241ms
+2025-07-22 22:01:07 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 71ms
+2025-07-22 22:01:08 +02:00:  GET /meta.json [33m404[39m in 64ms
+2025-07-22 22:01:47 +02:00:  [32m[1m✓[22m[39m Compiled in 1401ms (3667 modules)
+2025-07-22 22:01:47 +02:00:  GET /test-professional-pianos [32m200[39m in 105ms
+2025-07-22 22:02:03 +02:00:  GET /test-professional-pianos [32m200[39m in 266ms
+2025-07-22 22:02:03 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 56ms
+2025-07-22 22:02:04 +02:00:  GET /meta.json [33m404[39m in 52ms
+2025-07-22 22:02:58 +02:00:  [32m[1m✓[22m[39m Compiled in 1925ms (3667 modules)
+2025-07-22 22:02:58 +02:00:  GET /test-professional-pianos [32m200[39m in 59ms
+2025-07-22 22:03:13 +02:00:  [32m[1m✓[22m[39m Compiled in 913ms (3666 modules)
+2025-07-22 22:03:13 +02:00:  GET /test-professional-pianos [32m200[39m in 57ms
+2025-07-22 22:04:19 +02:00:  GET /test-professional-pianos [32m200[39m in 290ms
+2025-07-22 22:04:21 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 22:04:21 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1107ms (1813 modules)
+2025-07-22 22:04:21 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1237ms
+2025-07-22 22:04:21 +02:00:  GET /meta.json [33m404[39m in 136ms
+2025-07-22 22:08:39 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (3666 modules)
+2025-07-22 22:08:39 +02:00:  GET /test-professional-pianos [32m200[39m in 43ms
+2025-07-22 22:08:59 +02:00:  [32m[1m✓[22m[39m Compiled in 598ms (3666 modules)
+2025-07-22 22:08:59 +02:00:  GET /test-professional-pianos [32m200[39m in 38ms
+2025-07-22 22:09:13 +02:00:  [32m[1m✓[22m[39m Compiled in 671ms (3666 modules)
+2025-07-22 22:09:13 +02:00:  GET /test-professional-pianos [32m200[39m in 45ms
+2025-07-22 22:09:40 +02:00:  [32m[1m✓[22m[39m Compiled in 1636ms (3666 modules)
+2025-07-22 22:09:40 +02:00:  GET /test-professional-pianos [32m200[39m in 45ms
+2025-07-22 22:09:56 +02:00:  [32m[1m✓[22m[39m Compiled in 1168ms (3666 modules)
+2025-07-22 22:09:56 +02:00:  GET /test-professional-pianos [32m200[39m in 48ms
+2025-07-22 22:11:25 +02:00:  GET /test-professional-pianos [32m200[39m in 393ms
+2025-07-22 22:11:26 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 22:11:27 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1281ms (1813 modules)
+2025-07-22 22:11:27 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1553ms
+2025-07-22 22:11:27 +02:00:  GET /meta.json [33m404[39m in 800ms
+2025-07-22 22:13:31 +02:00:  [32m[1m✓[22m[39m Compiled in 1722ms (3666 modules)
+2025-07-22 22:13:31 +02:00:  GET /test-professional-pianos [32m200[39m in 43ms
+2025-07-22 22:13:37 +02:00:  [32m[1m✓[22m[39m Compiled in 588ms (3666 modules)
+2025-07-22 22:13:37 +02:00:  GET /test-professional-pianos [32m200[39m in 46ms
+2025-07-22 22:14:13 +02:00:  GET /test-professional-pianos [32m200[39m in 344ms
+2025-07-22 22:14:13 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 385ms (1813 modules)
+2025-07-22 22:14:13 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 496ms
+2025-07-22 22:14:14 +02:00:  GET /meta.json [33m404[39m in 47ms
+2025-07-22 22:15:09 +02:00:  [32m[1m✓[22m[39m Compiled in 1007ms (3667 modules)
+2025-07-22 22:15:09 +02:00:  GET /test-professional-pianos [32m200[39m in 37ms
+2025-07-22 22:15:15 +02:00:  [32m[1m✓[22m[39m Compiled in 499ms (3666 modules)
+2025-07-22 22:15:15 +02:00:  GET /test-professional-pianos [32m200[39m in 36ms
+2025-07-22 22:15:52 +02:00:  GET /test-professional-pianos [32m200[39m in 323ms
+2025-07-22 22:15:52 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 465ms (1813 modules)
+2025-07-22 22:15:52 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 582ms
+2025-07-22 22:15:53 +02:00:  GET /meta.json [33m404[39m in 25ms
+2025-07-22 22:17:33 +02:00:  GET /test-professional-pianos [32m200[39m in 188ms
+2025-07-22 22:17:33 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 51ms
+2025-07-22 22:17:34 +02:00:  GET /meta.json [33m404[39m in 56ms
+2025-07-22 22:18:37 +02:00:  [32m[1m✓[22m[39m Compiled in 2s (3667 modules)
+2025-07-22 22:18:37 +02:00:  GET /test-professional-pianos [32m200[39m in 59ms
+2025-07-22 22:19:35 +02:00:  GET /test-professional-pianos [32m200[39m in 380ms
+2025-07-22 22:19:35 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 40ms
+2025-07-22 22:19:36 +02:00:  GET /meta.json [33m404[39m in 64ms
+2025-07-22 22:20:41 +02:00:  [32m[1m✓[22m[39m Compiled in 1665ms (3666 modules)
+2025-07-22 22:20:41 +02:00:  GET /test-professional-pianos [32m200[39m in 61ms
+2025-07-22 22:21:41 +02:00:  GET /test-professional-pianos [32m200[39m in 606ms
+2025-07-22 22:21:41 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 22:21:41 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 546ms (1813 modules)
+2025-07-22 22:21:42 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 746ms
+2025-07-22 22:21:42 +02:00:  GET /meta.json [33m404[39m in 40ms
+2025-07-22 22:22:54 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (3666 modules)
+2025-07-22 22:22:54 +02:00:  GET /test-professional-pianos [32m200[39m in 59ms
+2025-07-22 22:23:05 +02:00:  [32m[1m✓[22m[39m Compiled in 581ms (3666 modules)
+2025-07-22 22:23:05 +02:00:  GET /test-professional-pianos [32m200[39m in 55ms
+2025-07-22 22:23:23 +02:00:  GET /test-professional-pianos [32m200[39m in 251ms
+2025-07-22 22:23:23 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 264ms (1813 modules)
+2025-07-22 22:23:23 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 389ms
+2025-07-22 22:23:24 +02:00:  GET /meta.json [33m404[39m in 49ms
+2025-07-22 22:24:48 +02:00:  [32m[1m✓[22m[39m Compiled in 1990ms (3666 modules)
+2025-07-22 22:24:48 +02:00:  GET /test-professional-pianos [32m200[39m in 45ms
+2025-07-22 22:26:33 +02:00:  GET /test-professional-pianos [32m200[39m in 288ms
+2025-07-22 22:26:34 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 22:26:34 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 849ms (1813 modules)
+2025-07-22 22:26:34 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 988ms
+2025-07-22 22:26:34 +02:00:  GET /meta.json [33m404[39m in 149ms
+2025-07-22 22:30:43 +02:00:  [32m[1m✓[22m[39m Compiled in 1406ms (3666 modules)
+2025-07-22 22:30:43 +02:00:  GET /test-professional-pianos [32m200[39m in 38ms
+2025-07-22 22:32:01 +02:00:  [32m[1m✓[22m[39m Compiled in 1773ms (3666 modules)
+2025-07-22 22:32:01 +02:00:  GET /test-professional-pianos [32m200[39m in 38ms
+2025-07-22 22:32:29 +02:00:  [32m[1m✓[22m[39m Compiled in 1275ms (3666 modules)
+2025-07-22 22:32:29 +02:00:  GET /test-professional-pianos [32m200[39m in 41ms
+2025-07-22 22:33:44 +02:00:  GET /test-professional-pianos [32m200[39m in 271ms
+2025-07-22 22:33:45 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 22:33:45 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 705ms (1813 modules)
+2025-07-22 22:33:45 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 844ms
+2025-07-22 22:33:45 +02:00:  GET /meta.json [33m404[39m in 28ms
+2025-07-22 23:15:38 +02:00:  [32m[1m✓[22m[39m Compiled in 1270ms (1854 modules)
+2025-07-22 23:15:38 +02:00:  GET /test-professional-pianos [32m200[39m in 25ms
+2025-07-22 23:15:49 +02:00:  [32m[1m✓[22m[39m Compiled in 1144ms (3666 modules)
+2025-07-22 23:15:49 +02:00:  GET /test-professional-pianos [32m200[39m in 42ms
+2025-07-22 23:16:03 +02:00:  [32m[1m✓[22m[39m Compiled in 669ms (3666 modules)
+2025-07-22 23:16:03 +02:00:  GET /test-professional-pianos [32m200[39m in 55ms
+2025-07-22 23:16:16 +02:00:  [32m[1m✓[22m[39m Compiled in 564ms (3666 modules)
+2025-07-22 23:16:16 +02:00:  GET /test-professional-pianos [32m200[39m in 72ms
+2025-07-22 23:16:29 +02:00:  [32m[1m✓[22m[39m Compiled in 1233ms (3668 modules)
+2025-07-22 23:16:29 +02:00:  GET /test-professional-pianos [32m200[39m in 69ms
+2025-07-22 23:16:40 +02:00:  [32m[1m✓[22m[39m Compiled in 1367ms (3668 modules)
+2025-07-22 23:16:40 +02:00:  GET /test-professional-pianos [32m200[39m in 41ms
+2025-07-22 23:16:54 +02:00:  [32m[1m✓[22m[39m Compiled in 702ms (3668 modules)
+2025-07-22 23:16:54 +02:00:  GET /test-professional-pianos [32m200[39m in 62ms
+2025-07-22 23:17:11 +02:00:  [32m[1m✓[22m[39m Compiled in 1548ms (3668 modules)
+2025-07-22 23:17:11 +02:00:  GET /test-professional-pianos [32m200[39m in 39ms
+2025-07-22 23:17:28 +02:00:  [32m[1m✓[22m[39m Compiled in 910ms (3668 modules)
+2025-07-22 23:17:28 +02:00:  GET /test-professional-pianos [32m200[39m in 41ms
+2025-07-22 23:17:56 +02:00:  [32m[1m✓[22m[39m Compiled in 738ms (3668 modules)
+2025-07-22 23:17:56 +02:00:  GET /test-professional-pianos [32m200[39m in 52ms
+2025-07-22 23:25:32 +02:00:  [32m[1m✓[22m[39m Compiled in 2.3s (3668 modules)
+2025-07-22 23:25:33 +02:00:  GET /test-professional-pianos [32m200[39m in 54ms
+2025-07-22 23:26:41 +02:00:  [32m[1m✓[22m[39m Compiled in 1988ms (3668 modules)
+2025-07-22 23:26:41 +02:00:  GET /test-professional-pianos [32m200[39m in 63ms
+2025-07-22 23:26:52 +02:00:  [32m[1m✓[22m[39m Compiled in 1243ms (3668 modules)
+2025-07-22 23:26:52 +02:00:  GET /test-professional-pianos [32m200[39m in 52ms
+2025-07-22 23:27:06 +02:00:  [32m[1m✓[22m[39m Compiled in 786ms (3668 modules)
+2025-07-22 23:27:06 +02:00:  GET /test-professional-pianos [32m200[39m in 58ms
+2025-07-22 23:27:16 +02:00:  [32m[1m✓[22m[39m Compiled in 1752ms (3668 modules)
+2025-07-22 23:27:16 +02:00:  GET /test-professional-pianos [32m200[39m in 43ms
+2025-07-22 23:27:26 +02:00:  [32m[1m✓[22m[39m Compiled in 1220ms (3668 modules)
+2025-07-22 23:27:26 +02:00:  GET /test-professional-pianos [32m200[39m in 67ms
+2025-07-22 23:27:33 +02:00:  [32m[1m✓[22m[39m Compiled in 1255ms (3668 modules)
+2025-07-22 23:27:33 +02:00:  GET /test-professional-pianos [32m200[39m in 41ms
+2025-07-22 23:27:45 +02:00:  [32m[1m✓[22m[39m Compiled in 1001ms (3668 modules)
+2025-07-22 23:27:45 +02:00:  GET /test-professional-pianos [32m200[39m in 82ms
+2025-07-22 23:31:09 +02:00:  [32m[1m✓[22m[39m Compiled in 2s (3668 modules)
+2025-07-22 23:31:09 +02:00:  GET /test-professional-pianos [32m200[39m in 52ms
+2025-07-22 23:31:31 +02:00:  [32m[1m✓[22m[39m Compiled in 1254ms (3668 modules)
+2025-07-22 23:31:31 +02:00:  GET /test-professional-pianos [32m200[39m in 46ms
+2025-07-22 23:31:50 +02:00:  [32m[1m✓[22m[39m Compiled in 1093ms (3668 modules)
+2025-07-22 23:31:51 +02:00:  GET /test-professional-pianos [32m200[39m in 502ms
+2025-07-22 23:32:06 +02:00:  [32m[1m✓[22m[39m Compiled in 1629ms (3668 modules)
+2025-07-22 23:32:06 +02:00:  GET /test-professional-pianos [32m200[39m in 45ms
+2025-07-22 23:34:36 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (3668 modules)
+2025-07-22 23:34:36 +02:00:  GET /test-professional-pianos [32m200[39m in 42ms
+2025-07-22 23:34:57 +02:00:  GET /test-professional-pianos [31m500[39m in 18ms
+2025-07-22 23:34:57 +02:00:  GET /test-professional-pianos [31m500[39m in 10ms
+2025-07-22 23:34:57 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 23:34:58 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [31m500[39m in 721ms
+2025-07-22 23:34:58 +02:00:  GET /meta.json [31m500[39m in 14ms
+2025-07-22 23:35:21 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 2.1s (3669 modules)
+2025-07-22 23:35:21 +02:00:  [32m[1m✓[22m[39m Compiled (3655 modules)
+2025-07-22 23:35:21 +02:00:  GET /_next/static/webpack/142c0e40cdc79365.webpack.hot-update.json [31m500[39m in 2114ms
+2025-07-22 23:35:22 +02:00:  GET /test-professional-pianos [32m200[39m in 358ms
+2025-07-22 23:35:22 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 167ms
+2025-07-22 23:35:23 +02:00:  GET /meta.json [33m404[39m in 86ms
+2025-07-22 23:36:01 +02:00:  GET /test-professional-pianos [32m200[39m in 117ms
+2025-07-22 23:36:01 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 89ms
+2025-07-22 23:36:03 +02:00:  GET /meta.json [33m404[39m in 64ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/02.%20FILTER%20DOWN_Juno_C [33m404[39m in 81ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/04.%20FILTER%20DOWN_Juno_D [33m404[39m in 74ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/09.%20FILTER%20DOWN_Juno_G [33m404[39m in 92ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/07.%20FILTER%20DOWN_Juno_F [33m404[39m in 101ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/11.%20FILTER%20DOWN_Juno_A [33m404[39m in 93ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/16.%20FILTER%20DOWN_Juno_D [33m404[39m in 58ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/14.%20FILTER%20DOWN_Juno_C [33m404[39m in 63ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/19.%20FILTER%20DOWN_Juno_F [33m404[39m in 75ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/21.%20FILTER%20DOWN_Juno_G [33m404[39m in 74ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/23.%20FILTER%20DOWN_Juno_A [33m404[39m in 73ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/26.%20FILTER%20DOWN_Juno_C [33m404[39m in 71ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/28.%20FILTER%20DOWN_Juno_D [33m404[39m in 72ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/31.%20FILTER%20DOWN_Juno_F [33m404[39m in 67ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/33.%20FILTER%20DOWN_Juno_G [33m404[39m in 68ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/35.%20FILTER%20DOWN_Juno_A [33m404[39m in 50ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/40.%20FILTER%20DOWN_Juno_D [33m404[39m in 90ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/38.%20FILTER%20DOWN_Juno_C [33m404[39m in 94ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/43.%20FILTER%20DOWN_Juno_F [33m404[39m in 79ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/45.%20FILTER%20DOWN_Juno_G [33m404[39m in 77ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/47.%20FILTER%20DOWN_Juno_A [33m404[39m in 76ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/50.%20FILTER%20DOWN_Juno_C [33m404[39m in 56ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/52.%20FILTER%20DOWN_Juno_D [33m404[39m in 57ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/55.%20FILTER%20DOWN_Juno_F [33m404[39m in 82ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/57.%20FILTER%20DOWN_Juno_G [33m404[39m in 82ms
+2025-07-22 23:36:05 +02:00:  GET /samples/long-pad/59.%20FILTER%20DOWN_Juno_A [33m404[39m in 82ms
+2025-07-22 23:37:11 +02:00:  [32m[1m✓[22m[39m Compiled in 2.1s (3668 modules)
+2025-07-22 23:37:12 +02:00:  GET /test-professional-pianos [32m200[39m in 59ms
+2025-07-22 23:38:34 +02:00:  GET /test-professional-pianos [32m200[39m in 293ms
+2025-07-22 23:38:35 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 23:38:35 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 691ms (1814 modules)
+2025-07-22 23:38:35 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 840ms
+2025-07-22 23:38:35 +02:00:  GET /meta.json [33m404[39m in 28ms
+2025-07-22 23:38:49 +02:00:  GET /test-professional-pianos [32m200[39m in 176ms
+2025-07-22 23:38:49 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 29ms
+2025-07-22 23:38:51 +02:00:  GET /meta.json [33m404[39m in 49ms
+2025-07-22 23:39:30 +02:00:  [32m[1m✓[22m[39m Compiled in 1614ms (3669 modules)
+2025-07-22 23:39:30 +02:00:  GET /test-professional-pianos [32m200[39m in 46ms
+2025-07-22 23:39:37 +02:00:  [32m[1m✓[22m[39m Compiled in 566ms (3669 modules)
+2025-07-22 23:39:37 +02:00:  GET /test-professional-pianos [32m200[39m in 36ms
+2025-07-22 23:39:50 +02:00:  [32m[1m✓[22m[39m Compiled in 538ms (3669 modules)
+2025-07-22 23:39:50 +02:00:  GET /test-professional-pianos [32m200[39m in 38ms
+2025-07-22 23:40:24 +02:00:  [32m[1m✓[22m[39m Compiled in 796ms (3668 modules)
+2025-07-22 23:40:24 +02:00:  GET /test-professional-pianos [32m200[39m in 53ms
+2025-07-22 23:40:32 +02:00:  [32m[1m✓[22m[39m Compiled in 1241ms (3668 modules)
+2025-07-22 23:40:32 +02:00:  GET /test-professional-pianos [32m200[39m in 39ms
+2025-07-22 23:40:57 +02:00:  [32m[1m✓[22m[39m Compiled in 840ms (3668 modules)
+2025-07-22 23:40:57 +02:00:  GET /test-professional-pianos [32m200[39m in 53ms
+2025-07-22 23:41:06 +02:00:  [32m[1m✓[22m[39m Compiled in 559ms (3668 modules)
+2025-07-22 23:41:06 +02:00:  GET /test-professional-pianos [32m200[39m in 42ms
+2025-07-22 23:41:17 +02:00:  [32m[1m✓[22m[39m Compiled in 804ms (3668 modules)
+2025-07-22 23:41:17 +02:00:  GET /test-professional-pianos [32m200[39m in 36ms
+2025-07-22 23:41:24 +02:00:  [32m[1m✓[22m[39m Compiled in 556ms (3668 modules)
+2025-07-22 23:41:24 +02:00:  GET /test-professional-pianos [32m200[39m in 39ms
+2025-07-22 23:42:25 +02:00:  GET /test-professional-pianos [32m200[39m in 214ms
+2025-07-22 23:42:26 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 23:42:26 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 844ms (1814 modules)
+2025-07-22 23:42:26 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1152ms
+2025-07-22 23:42:26 +02:00:  GET /meta.json [33m404[39m in 368ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/09.%20FILTER%20DOWN_Juno_G [33m404[39m in 216ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/04.%20FILTER%20DOWN_Juno_D [33m404[39m in 220ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/02.%20FILTER%20DOWN_Juno_C [33m404[39m in 222ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/07.%20FILTER%20DOWN_Juno_F [33m404[39m in 222ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/11.%20FILTER%20DOWN_Juno_A [33m404[39m in 190ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/14.%20FILTER%20DOWN_Juno_C [33m404[39m in 192ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/16.%20FILTER%20DOWN_Juno_D [33m404[39m in 183ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/19.%20FILTER%20DOWN_Juno_F [33m404[39m in 183ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/21.%20FILTER%20DOWN_Juno_G [33m404[39m in 184ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/23.%20FILTER%20DOWN_Juno_A [33m404[39m in 183ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/26.%20FILTER%20DOWN_Juno_C [33m404[39m in 160ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/35.%20FILTER%20DOWN_Juno_A [33m404[39m in 147ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/28.%20FILTER%20DOWN_Juno_D [33m404[39m in 151ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/31.%20FILTER%20DOWN_Juno_F [33m404[39m in 149ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/38.%20FILTER%20DOWN_Juno_C [33m404[39m in 147ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/33.%20FILTER%20DOWN_Juno_G [33m404[39m in 148ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/40.%20FILTER%20DOWN_Juno_D [33m404[39m in 149ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/47.%20FILTER%20DOWN_Juno_A [33m404[39m in 165ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/45.%20FILTER%20DOWN_Juno_G [33m404[39m in 165ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/43.%20FILTER%20DOWN_Juno_F [33m404[39m in 167ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/50.%20FILTER%20DOWN_Juno_C [33m404[39m in 166ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/52.%20FILTER%20DOWN_Juno_D [33m404[39m in 166ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/55.%20FILTER%20DOWN_Juno_F [33m404[39m in 170ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/57.%20FILTER%20DOWN_Juno_G [33m404[39m in 91ms
+2025-07-22 23:42:29 +02:00:  GET /samples/long-pad/59.%20FILTER%20DOWN_Juno_A [33m404[39m in 91ms
+2025-07-22 23:51:24 +02:00:  [32m[1m✓[22m[39m Compiled in 2.4s (3668 modules)
+2025-07-22 23:51:24 +02:00:  GET /test-professional-pianos [32m200[39m in 41ms
+2025-07-22 23:51:30 +02:00:  [32m[1m✓[22m[39m Compiled in 886ms (3668 modules)
+2025-07-22 23:51:30 +02:00:  GET /test-professional-pianos [32m200[39m in 49ms
+2025-07-22 23:51:38 +02:00:  [32m[1m✓[22m[39m Compiled in 604ms (3668 modules)
+2025-07-22 23:51:38 +02:00:  GET /test-professional-pianos [32m200[39m in 48ms
+2025-07-22 23:51:46 +02:00:  [32m[1m✓[22m[39m Compiled in 1081ms (3668 modules)
+2025-07-22 23:51:46 +02:00:  GET /test-professional-pianos [32m200[39m in 50ms
+2025-07-22 23:51:53 +02:00:  [32m[1m✓[22m[39m Compiled in 649ms (3668 modules)
+2025-07-22 23:51:53 +02:00:  GET /test-professional-pianos [32m200[39m in 41ms
+2025-07-22 23:54:19 +02:00:  GET /test-professional-pianos [32m200[39m in 335ms
+2025-07-22 23:54:19 +02:00:  [37m[1m○[22m[39m Compiling /_not-found ...
+2025-07-22 23:54:20 +02:00:  [32m[1m✓[22m[39m Compiled /_not-found in 1282ms (1814 modules)
+2025-07-22 23:54:20 +02:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 1560ms
+2025-07-22 23:54:20 +02:00:  GET /meta.json [33m404[39m in 756ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/04.%20FILTER%20DOWN_Juno_D [33m404[39m in 112ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/02.%20FILTER%20DOWN_Juno_C [33m404[39m in 115ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/09.%20FILTER%20DOWN_Juno_G [33m404[39m in 104ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/07.%20FILTER%20DOWN_Juno_F [33m404[39m in 106ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/11.%20FILTER%20DOWN_Juno_A [33m404[39m in 103ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/14.%20FILTER%20DOWN_Juno_C [33m404[39m in 158ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/16.%20FILTER%20DOWN_Juno_D [33m404[39m in 162ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/19.%20FILTER%20DOWN_Juno_F [33m404[39m in 161ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/21.%20FILTER%20DOWN_Juno_G [33m404[39m in 121ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/23.%20FILTER%20DOWN_Juno_A [33m404[39m in 89ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/26.%20FILTER%20DOWN_Juno_C [33m404[39m in 102ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/28.%20FILTER%20DOWN_Juno_D [33m404[39m in 172ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/31.%20FILTER%20DOWN_Juno_F [33m404[39m in 220ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/35.%20FILTER%20DOWN_Juno_A [33m404[39m in 217ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/33.%20FILTER%20DOWN_Juno_G [33m404[39m in 220ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/38.%20FILTER%20DOWN_Juno_C [33m404[39m in 137ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/40.%20FILTER%20DOWN_Juno_D [33m404[39m in 92ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/43.%20FILTER%20DOWN_Juno_F [33m404[39m in 96ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/45.%20FILTER%20DOWN_Juno_G [33m404[39m in 93ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/47.%20FILTER%20DOWN_Juno_A [33m404[39m in 94ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/50.%20FILTER%20DOWN_Juno_C [33m404[39m in 123ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/52.%20FILTER%20DOWN_Juno_D [33m404[39m in 153ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/55.%20FILTER%20DOWN_Juno_F [33m404[39m in 172ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/57.%20FILTER%20DOWN_Juno_G [33m404[39m in 170ms
+2025-07-22 23:54:23 +02:00:  GET /samples/long-pad-mp3/59.%20FILTER%20DOWN_Juno_A [33m404[39m in 140ms
+2025-07-22 23:57:05 +02:00:  [32m[1m✓[22m[39m Compiled in 2.2s (3668 modules)
+2025-07-22 23:57:05 +02:00:  GET /test-professional-pianos [32m200[39m in 56ms

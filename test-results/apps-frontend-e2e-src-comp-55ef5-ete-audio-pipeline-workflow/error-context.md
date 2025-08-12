@@ -1,0 +1,228 @@
+# Page snapshot
+
+```yaml
+- text: "🎵 Tutorial Audio System Status: ✅ Ready AudioEngine: ⚡ Pre-Init Transport: ✅ Active CoreServices: ✅ Connected Loading: 🔄 Active 📊 Transport Metrics Drift: 0ms Jitter: 0ms Frame Rate: 0 fps Audio Latency: 0ms Update Interval: 0ms [300] Global vars: __globalCoreServices=true, __coreServices=true [300] ✅ CoreServices detected and loaded [300] ⏳ Audio will be enabled when user clicks play button [683] 📊 Auto-load metronome: essential (20%) [683] 📊 Auto-load metronome: essential (20%) [683] 📊 Auto-load metronome: essential (20%) [683] 📊 Auto-load metronome: essential (20%) [683] 📊 Auto-load metronome: essential (20%) [731] 📊 Auto-load metronome: essential (20%) [732] 📊 Auto-load metronome: essential (20%)"
+- img
+- text: Not logged in
+- button "Back to Library":
+  - img
+  - text: Back to Library
+- img "Video thumbnail"
+- link "The Beatles avatar":
+  - /url: https://www.youtube.com/channel/UCc4K7bAqpdBP8jh1j9XZAww
+  - img "The Beatles avatar"
+- link "The Beatles":
+  - /url: https://www.youtube.com/channel/UCc4K7bAqpdBP8jh1j9XZAww
+- paragraph: 9.0M subscribers
+- button "Subscribe"
+- text: advanced
+- heading "Come Together" [level=1]
+- paragraph: This bassline doesn’t just support the song — it is the song. With its sliding notes, bluesy phrasing, and gritty tone, it creates a dark, slinky atmosphere that sets the mood from the first bar. It’s a perfect exercise in expressive playing, behind-the-beat groove, and shaping a song’s identity through bass alone.
+- heading "Core Concept" [level=3]
+- paragraph: Use different modes starting from the same root note (D) over a 2-5-1 progression to create intentional tension and release without shifting the root.
+- text: Modal interchange over static root notes Advanced tension and release techniques II-V-I progression variations
+- heading "Exercise Selector" [level=3]
+- paragraph: Choose practice exercise
+- text: "#1"
+- heading "II-V-I Progression Study" [level=4]
+- img
+- img
+- text: 0:12
+- img
+- text: "120 BPM Key: C Advanced Use mouse or keyboard to select fretboard positions. Press Tab to navigate between positions, Enter or Space to select. Selected positions can be dragged to reorder them."
+- img
+- button "E string open position": E
+- button "E string fret 1"
+- button "E string fret 2"
+- button "E string fret 3, fret marker position, selected as position 9, part of exercise" [pressed]
+- button "E string fret 4"
+- button "E string fret 5, fret marker position, selected as position 4, part of exercise" [pressed]
+- button "E string fret 6"
+- button "E string fret 7, fret marker position, selected as position 10, part of exercise" [pressed]
+- button "E string fret 8, selected as position 6, part of exercise" [pressed]
+- button "E string fret 9, fret marker position"
+- button "E string fret 10, selected as position 12, part of exercise" [pressed]
+- button "E string fret 11"
+- button "E string fret 12, fret marker position": E
+- button "E string fret 13"
+- button "E string fret 14"
+- button "E string fret 15, fret marker position"
+- button "E string fret 16"
+- button "E string fret 17, fret marker position"
+- button "E string fret 18"
+- button "E string fret 19, fret marker position"
+- button "E string fret 20"
+- button "E string fret 21, fret marker position"
+- button "E string fret 22"
+- button "E string fret 23"
+- button "E string fret 24, fret marker position"
+- button "E string fret 25"
+- button "A string open position": A
+- button "A string fret 1"
+- button "A string fret 2"
+- button "A string fret 3, fret marker position, selected as position 8, part of exercise" [pressed]
+- button "A string fret 4"
+- button "A string fret 5, fret marker position, selected as position 3, part of exercise" [pressed]
+- button "A string fret 6"
+- button "A string fret 7, fret marker position"
+- button "A string fret 8"
+- button "A string fret 9, fret marker position"
+- button "A string fret 10, selected as position 11, part of exercise" [pressed]
+- button "A string fret 11"
+- button "A string fret 12, fret marker position": A
+- button "A string fret 13"
+- button "A string fret 14"
+- button "A string fret 15, fret marker position"
+- button "A string fret 16"
+- button "A string fret 17, fret marker position"
+- button "A string fret 18"
+- button "A string fret 19, fret marker position"
+- button "A string fret 20"
+- button "A string fret 21, fret marker position"
+- button "A string fret 22"
+- button "A string fret 23"
+- button "A string fret 24, fret marker position"
+- button "A string fret 25"
+- button "D string open position": D
+- button "D string fret 1"
+- button "D string fret 2"
+- button "D string fret 3, fret marker position"
+- button "D string fret 4"
+- button "D string fret 5, fret marker position, selected as position 7, part of exercise" [pressed]
+- button "D string fret 6"
+- button "D string fret 7, fret marker position"
+- button "D string fret 8"
+- button "D string fret 9, fret marker position"
+- button "D string fret 10"
+- button "D string fret 11"
+- button "D string fret 12, fret marker position": D
+- button "D string fret 13"
+- button "D string fret 14"
+- button "D string fret 15, fret marker position"
+- button "D string fret 16"
+- button "D string fret 17, fret marker position"
+- button "D string fret 18"
+- button "D string fret 19, fret marker position"
+- button "D string fret 20"
+- button "D string fret 21, fret marker position"
+- button "D string fret 22"
+- button "D string fret 23"
+- button "D string fret 24, fret marker position"
+- button "D string fret 25"
+- button "G string open position": G
+- button "G string fret 1"
+- button "G string fret 2"
+- button "G string fret 3, fret marker position"
+- button "G string fret 4"
+- button "G string fret 5, fret marker position"
+- button "G string fret 6"
+- button "G string fret 7, fret marker position"
+- button "G string fret 8"
+- button "G string fret 9, fret marker position"
+- button "G string fret 10"
+- button "G string fret 11"
+- button "G string fret 12, fret marker position": G
+- button "G string fret 13"
+- button "G string fret 14"
+- button "G string fret 15, fret marker position"
+- button "G string fret 16"
+- button "G string fret 17, fret marker position"
+- button "G string fret 18"
+- button "G string fret 19, fret marker position"
+- button "G string fret 20"
+- button "G string fret 21, fret marker position"
+- button "G string fret 22"
+- button "G string fret 23"
+- button "G string fret 24, fret marker position"
+- button "G string fret 25"
+- img
+- heading "Transport Clock" [level=3]
+- img
+- text: "Updates: 3 Position 1:1:00 0.000s State STOPPED Audio: not initialized Tempo 120 BPM Time Sig 4/4 Ticks: 0 Raw position: bars:0 beats:0 16ths:0 Transport ready: YES"
+- button "3D Mode"
+- button:
+  - img
+- button:
+  - img
+- button:
+  - img
+- button:
+  - img
+- button:
+  - img
+- button "Overview"
+- button "−"
+- slider: "120"
+- text: 120 BPM
+- button "+"
+- img
+- button "Import":
+  - img
+  - text: Import
+- button "Save":
+  - img
+  - text: Save
+- button "PDF":
+  - img
+  - text: PDF
+- button "Reset":
+  - img
+  - text: Reset
+- text: No exercise loaded 1 2 4 8
+- img
+- heading "Loop Control" [level=3]
+- paragraph: Set loop regions for practice
+- text: 1 2 3 4 5 6
+- heading "Metronome" [level=3]
+- paragraph: 120 BPM | 4/4
+- button "120"
+- heading "Drummer" [level=3]
+- paragraph: "Jazz Swing | Error: TypeError: Cannot read properties of undefined (reading 'from')"
+- button
+- heading "Bass Line" [level=3]
+- paragraph: Modal Walking
+- button
+- heading "Harmony (Salamander Piano)" [level=3]
+- paragraph: ✅ Ready (16/16 velocity layers) | 4 chords
+- button "Dm7"
+- button "G7"
+- button "CMaj7"
+- button "CMaj7"
+- paragraph: All widgets synchronized with fretboard visualizer
+- img
+- heading "💡 Teaching Takeaway" [level=2]
+- paragraph: Key learning points and practice tips
+- heading "Core Learning" [level=3]
+- paragraph: "This lesson encourages interval thinking, melodic phrasing, and rhythmic creativity — all through a familiar tool: the pentatonic scale. Great for breaking out of \"box scale\" habits."
+- text: 3 Key Concepts 15 Minutes Int Level
+- heading "What You'll Master" [level=3]
+- text: "1"
+- img
+- heading "Modal Interchange" [level=4]
+- text: advanced
+- paragraph: Using different modes from the same root note to create tension
+- text: "2"
+- img
+- heading "Tension & Release" [level=4]
+- text: intermediate
+- paragraph: Strategic use of dissonance to enhance musical expression
+- text: "3"
+- img
+- heading "II-V-I Variations" [level=4]
+- text: fundamental
+- paragraph: Creative approaches to the most common jazz progression
+- img
+- heading "Practice Tip" [level=4]
+- paragraph: Start slowly with each modal concept. Practice the exercises at 60-80 BPM before increasing tempo. Focus on hearing the tension and release rather than just playing the notes.
+- button "🟢 Show Timing Debug"
+- button "Open Tanstack query devtools":
+  - img
+- region "Notifications (F8)":
+  - list
+- alert
+- button "Open Next.js Dev Tools":
+  - img
+- button "Open issues overlay": 4 Issue
+- button "Collapse issues badge":
+  - img
+```

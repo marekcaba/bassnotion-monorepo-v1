@@ -12,8 +12,8 @@ import {
   AccessPatternAnalyzer,
   type CacheRoutingConfig,
   type AdvancedCacheEntry,
-} from '../IntelligentCacheRouter.js';
-import { setupCacheMocks, teardownCacheMocks } from './cache-mocks.js';
+} from '../IntelligentCacheRouter';
+import { setupCacheMocks, teardownCacheMocks } from './cache-mocks';
 import type { CacheLayer } from '@bassnotion/contracts';
 
 describe('Story 2.4 Task 6.2: Intelligent Cache Router', () => {

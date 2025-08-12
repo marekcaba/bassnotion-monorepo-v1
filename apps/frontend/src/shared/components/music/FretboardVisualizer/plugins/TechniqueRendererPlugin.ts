@@ -235,7 +235,15 @@ export class TechniqueRendererManager {
     currentTime: number,
   ): number {
     const elapsed = currentTime - animation.startTime;
-    const duration = animation.note.duration;
+    // Convert musical duration to milliseconds (approximate)
+    const durationMap: Record<string, number> = {
+      whole: 2000,
+      half: 1000,
+      quarter: 500,
+      eighth: 250,
+      sixteenth: 125,
+    };
+    const duration = durationMap[animation.note.duration] || 500;
     return Math.min(elapsed / duration, 1.0);
   }
 }

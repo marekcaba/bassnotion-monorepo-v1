@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { UserBasslinesAPI } from '../user-basslines.js';
-import { apiClient } from '@/lib/api-client.js';
+import { UserBasslinesAPI } from '../user-basslines';
+import { apiClient } from '@/lib/api-client';
 import type {
   BasslineMetadata,
   SavedBassline,
@@ -13,7 +13,7 @@ import type {
 } from '@bassnotion/contracts';
 
 // Mock the API client
-vi.mock('@/lib/api-client.js', () => ({
+vi.mock('@/lib/api-client', () => ({
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),

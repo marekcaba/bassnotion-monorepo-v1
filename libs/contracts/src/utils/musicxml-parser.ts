@@ -114,16 +114,21 @@ export class MusicXMLParser {
     }
 
     const { metadata, notes } = conversionResult;
+    const tempo = metadata.tempo || 120;
+    const durationBeats = Math.round(
+      (metadata.totalDuration * tempo) / (60 * 1000),
+    );
 
     return {
       id: this.generateExerciseId(),
       title: metadata.title || 'Imported MusicXML',
       difficulty: this.determineDifficulty(notes),
-      bpm: metadata.tempo || 120,
+      bpm: tempo,
       key: metadata.key || 'C',
       timeSignature: metadata.timeSignature || { numerator: 4, denominator: 4 },
       notes,
       duration: metadata.totalDuration,
+      duration_beats: durationBeats,
       description: `Imported from MusicXML${metadata.composer ? ` by ${metadata.composer}` : ''}`,
       is_active: true,
       created_at: new Date().toISOString(),

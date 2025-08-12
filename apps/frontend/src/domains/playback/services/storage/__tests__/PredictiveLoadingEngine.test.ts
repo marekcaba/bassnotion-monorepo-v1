@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PredictiveLoadingEngine } from '../PredictiveLoadingEngine.js';
+import { PredictiveLoadingEngine } from '../PredictiveLoadingEngine';
 import type {
   PredictiveLoadingEngineConfig,
   LearningEvent,

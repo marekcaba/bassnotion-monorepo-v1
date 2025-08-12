@@ -643,12 +643,17 @@ export class MIDIFileParser {
           }
         : { numerator: 4, denominator: 4 };
 
+    const durationBeats = Math.round(
+      (metadata.durationSeconds * Math.round(initialTempo)) / 60,
+    );
+
     return {
       id: `exercise-${Date.now()}`,
       title: `Bass Exercise from ${metadata.filename}`,
       description: `Converted from MIDI file: ${track.name}`,
       notes,
       duration: Math.round(metadata.durationSeconds * 1000), // Convert to milliseconds
+      duration_beats: durationBeats,
       bpm: Math.round(initialTempo),
       timeSignature,
       key:

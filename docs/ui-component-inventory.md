@@ -7,6 +7,7 @@
 ## Overview
 
 BassNotion uses a **multi-library approach** for maximum flexibility and best-in-class components. This inventory helps us:
+
 - Track what components we have from which libraries
 - Avoid duplicate implementations
 - Maintain consistent design patterns
@@ -17,12 +18,14 @@ BassNotion uses a **multi-library approach** for maximum flexibility and best-in
 ## Current Libraries
 
 ### 🎨 **Primary Libraries**
+
 - **shadcn/ui** - Base UI components (Radix UI + Tailwind)
 - **Radix UI** - Accessibility primitives (underlying shadcn/ui)
 - **Framer Motion** - Animations and transitions
 - **Lucide React** - Icon library
 
 ### 🔧 **Utility Libraries**
+
 - **class-variance-authority** - Component variants
 - **tailwind-merge** - Tailwind class merging
 - **clsx** - Conditional class names
@@ -33,82 +36,83 @@ BassNotion uses a **multi-library approach** for maximum flexibility and best-in
 
 ### 📋 **Forms & Inputs**
 
-| Component | Library | File | Status | Notes |
-|-----------|---------|------|--------|-------|
-| `Button` | shadcn/ui | `button.tsx` | ✅ Active | Base button component |
-| `Input` | shadcn/ui | `input.tsx` | ✅ Active | Text input field |
-| `Label` | shadcn/ui | `label.tsx` | ✅ Active | Form labels |
-| `Form` | shadcn/ui | `form.tsx` | ✅ Active | Form provider + utilities |
-| `FormField` | shadcn/ui | `form.tsx` | ✅ Active | Form field wrapper |
-| `FormItem` | shadcn/ui | `form.tsx` | ✅ Active | Form item container |
-| `FormLabel` | shadcn/ui | `form.tsx` | ✅ Active | Form-aware label |
-| `FormControl` | shadcn/ui | `form.tsx` | ✅ Active | Form control wrapper |
-| `FormDescription` | shadcn/ui | `form.tsx` | ✅ Active | Form field description |
-| `FormMessage` | shadcn/ui | `form.tsx` | ✅ Active | Form error messages |
+| Component         | Library   | File         | Status    | Notes                     |
+| ----------------- | --------- | ------------ | --------- | ------------------------- |
+| `Button`          | shadcn/ui | `button.tsx` | ✅ Active | Base button component     |
+| `Input`           | shadcn/ui | `input.tsx`  | ✅ Active | Text input field          |
+| `Label`           | shadcn/ui | `label.tsx`  | ✅ Active | Form labels               |
+| `Form`            | shadcn/ui | `form.tsx`   | ✅ Active | Form provider + utilities |
+| `FormField`       | shadcn/ui | `form.tsx`   | ✅ Active | Form field wrapper        |
+| `FormItem`        | shadcn/ui | `form.tsx`   | ✅ Active | Form item container       |
+| `FormLabel`       | shadcn/ui | `form.tsx`   | ✅ Active | Form-aware label          |
+| `FormControl`     | shadcn/ui | `form.tsx`   | ✅ Active | Form control wrapper      |
+| `FormDescription` | shadcn/ui | `form.tsx`   | ✅ Active | Form field description    |
+| `FormMessage`     | shadcn/ui | `form.tsx`   | ✅ Active | Form error messages       |
 
 ### 🎛️ **Navigation & Layout**
 
-| Component | Library | File | Status | Notes |
-|-----------|---------|------|--------|-------|
-| `Tabs` | shadcn/ui | `tabs.tsx` | ✅ Active | Tab navigation |
-| `TabsList` | shadcn/ui | `tabs.tsx` | ✅ Active | Tab list container |
-| `TabsTrigger` | shadcn/ui | `tabs.tsx` | ✅ Active | Individual tab trigger |
-| `TabsContent` | shadcn/ui | `tabs.tsx` | ✅ Active | Tab content panel |
-| `TransitionLink` | Custom | `transition-link.tsx` | ✅ Active | Animated page transitions |
+| Component        | Library   | File                  | Status    | Notes                     |
+| ---------------- | --------- | --------------------- | --------- | ------------------------- |
+| `Tabs`           | shadcn/ui | `tabs.tsx`            | ✅ Active | Tab navigation            |
+| `TabsList`       | shadcn/ui | `tabs.tsx`            | ✅ Active | Tab list container        |
+| `TabsTrigger`    | shadcn/ui | `tabs.tsx`            | ✅ Active | Individual tab trigger    |
+| `TabsContent`    | shadcn/ui | `tabs.tsx`            | ✅ Active | Tab content panel         |
+| `TransitionLink` | Custom    | `transition-link.tsx` | ✅ Active | Animated page transitions |
 
 ### 🗂️ **Data Display**
 
-| Component | Library | File | Status | Notes |
-|-----------|---------|------|--------|-------|
-| `Card` | shadcn/ui | `card.tsx` | ✅ Active | Base card component |
-| `CardHeader` | shadcn/ui | `card.tsx` | ✅ Active | Card header section |
-| `CardTitle` | shadcn/ui | `card.tsx` | ✅ Active | Card title |
-| `CardDescription` | shadcn/ui | `card.tsx` | ✅ Active | Card description |
-| `CardContent` | shadcn/ui | `card.tsx` | ✅ Active | Card main content |
-| `CardFooter` | shadcn/ui | `card.tsx` | ✅ Active | Card footer section |
-| `Badge` | shadcn/ui | `badge.tsx` | ✅ Active | Status badges |
+| Component         | Library   | File        | Status    | Notes               |
+| ----------------- | --------- | ----------- | --------- | ------------------- |
+| `Card`            | shadcn/ui | `card.tsx`  | ✅ Active | Base card component |
+| `CardHeader`      | shadcn/ui | `card.tsx`  | ✅ Active | Card header section |
+| `CardTitle`       | shadcn/ui | `card.tsx`  | ✅ Active | Card title          |
+| `CardDescription` | shadcn/ui | `card.tsx`  | ✅ Active | Card description    |
+| `CardContent`     | shadcn/ui | `card.tsx`  | ✅ Active | Card main content   |
+| `CardFooter`      | shadcn/ui | `card.tsx`  | ✅ Active | Card footer section |
+| `Badge`           | shadcn/ui | `badge.tsx` | ✅ Active | Status badges       |
 
 ### 🔧 **Utility & Feedback**
 
-| Component | Library | File | Status | Notes |
-|-----------|---------|------|--------|-------|
-| `Toast` | shadcn/ui | `toast.tsx` | ✅ Active | Toast notifications |
-| `Toaster` | shadcn/ui | `toaster.tsx` | ✅ Active | Toast container |
-| `Loading` | Custom | `loading.tsx` | ✅ Active | Loading spinner |
-| `ErrorMessage` | Custom | `error-message.tsx` | ✅ Active | Error display |
-| `Icons` | Custom | `icons.tsx` | ✅ Active | Icon collection |
+| Component      | Library   | File                | Status    | Notes               |
+| -------------- | --------- | ------------------- | --------- | ------------------- |
+| `Toast`        | shadcn/ui | `toast.tsx`         | ✅ Active | Toast notifications |
+| `Toaster`      | shadcn/ui | `toaster.tsx`       | ✅ Active | Toast container     |
+| `Loading`      | Custom    | `loading.tsx`       | ✅ Active | Loading spinner     |
+| `ErrorMessage` | Custom    | `error-message.tsx` | ✅ Active | Error display       |
+| `Icons`        | Custom    | `icons.tsx`         | ✅ Active | Icon collection     |
 
 ### 🔐 **Authentication**
 
-| Component | Library | File | Status | Notes |
-|-----------|---------|------|--------|-------|
-| `AuthGuard` | Custom | `auth-guard.tsx` | ✅ Active | Route protection |
-| `GoogleSignInButton` | Custom | `google-sign-in-button.tsx` | ✅ Active | Google OAuth button |
+| Component            | Library | File                        | Status    | Notes               |
+| -------------------- | ------- | --------------------------- | --------- | ------------------- |
+| `AuthGuard`          | Custom  | `auth-guard.tsx`            | ✅ Active | Route protection    |
+| `GoogleSignInButton` | Custom  | `google-sign-in-button.tsx` | ✅ Active | Google OAuth button |
 
 ### 📱 **Responsive & Layout**
 
-| Component | Library | File | Status | Notes |
-|-----------|---------|------|--------|-------|
-| `ResponsiveContainer` | Custom | `responsive-container.tsx` | ✅ Active | Responsive wrapper |
-| `ResponsiveGrid` | Custom | `responsive-container.tsx` | ✅ Active | Responsive grid layout |
-| `ResponsiveCard` | Custom | `responsive-container.tsx` | ✅ Active | Responsive card wrapper |
-| `ResponsiveDebug` | Custom | `responsive-debug.tsx` | ✅ Active | Debug responsive breakpoints |
-| `BreakpointIndicator` | Custom | `responsive-debug.tsx` | ✅ Active | Show current breakpoint |
-| `ResponsiveTestGrid` | Custom | `responsive-debug.tsx` | ✅ Active | Test responsive layouts |
+| Component             | Library | File                       | Status    | Notes                        |
+| --------------------- | ------- | -------------------------- | --------- | ---------------------------- |
+| `ResponsiveContainer` | Custom  | `responsive-container.tsx` | ✅ Active | Responsive wrapper           |
+| `ResponsiveGrid`      | Custom  | `responsive-container.tsx` | ✅ Active | Responsive grid layout       |
+| `ResponsiveCard`      | Custom  | `responsive-container.tsx` | ✅ Active | Responsive card wrapper      |
+| `ResponsiveDebug`     | Custom  | `responsive-debug.tsx`     | ✅ Active | Debug responsive breakpoints |
+| `BreakpointIndicator` | Custom  | `responsive-debug.tsx`     | ✅ Active | Show current breakpoint      |
+| `ResponsiveTestGrid`  | Custom  | `responsive-debug.tsx`     | ✅ Active | Test responsive layouts      |
 
 ### 🎭 **Overlays & Modals**
 
-| Component | Library | File | Status | Notes |
-|-----------|---------|------|--------|-------|
-| `Dialog` | shadcn/ui | `dialog.tsx` | ✅ Active | Modal dialogs |
-| `AlertDialog` | shadcn/ui | `alert-dialog.tsx` | ✅ Active | Confirmation dialogs |
-| `DropdownMenu` | shadcn/ui | `dropdown-menu.tsx` | ✅ Active | Dropdown menus |
+| Component      | Library   | File                | Status    | Notes                |
+| -------------- | --------- | ------------------- | --------- | -------------------- |
+| `Dialog`       | shadcn/ui | `dialog.tsx`        | ✅ Active | Modal dialogs        |
+| `AlertDialog`  | shadcn/ui | `alert-dialog.tsx`  | ✅ Active | Confirmation dialogs |
+| `DropdownMenu` | shadcn/ui | `dropdown-menu.tsx` | ✅ Active | Dropdown menus       |
 
 ---
 
 ## 🚀 **Planned Additions**
 
 ### HeroUI Components (Priority)
+
 - [ ] `Table` - Advanced data tables
 - [ ] `DatePicker` - Date selection
 - [ ] `Select` - Enhanced select dropdown
@@ -117,6 +121,7 @@ BassNotion uses a **multi-library approach** for maximum flexibility and best-in
 - [ ] `Modal` - Advanced modal system
 
 ### Aceternity UI Components (Priority)
+
 - [ ] `BackgroundBeams` - Animated backgrounds
 - [ ] `HeroSection` - Landing page heroes
 - [ ] `FloatingNav` - Floating navigation
@@ -124,6 +129,7 @@ BassNotion uses a **multi-library approach** for maximum flexibility and best-in
 - [ ] `TextGenerateEffect` - Text animations
 
 ### Other Potential Libraries
+
 - [ ] **Mantine** - Rich components (DatePicker, RichTextEditor)
 - [ ] **React Aria** - Accessibility primitives
 - [ ] **Headless UI** - Unstyled components
@@ -133,6 +139,7 @@ BassNotion uses a **multi-library approach** for maximum flexibility and best-in
 ## 📏 **Design System Rules**
 
 ### Color Palette
+
 - Primary: `bg-primary`, `text-primary`
 - Secondary: `bg-secondary`, `text-secondary`
 - Accent: `bg-accent`, `text-accent`
@@ -140,6 +147,7 @@ BassNotion uses a **multi-library approach** for maximum flexibility and best-in
 - Muted: `bg-muted`, `text-muted-foreground`
 
 ### Sizing Scale
+
 - **xs**: `h-4 w-4` (16px)
 - **sm**: `h-6 w-6` (24px)
 - **md**: `h-8 w-8` (32px)
@@ -147,6 +155,7 @@ BassNotion uses a **multi-library approach** for maximum flexibility and best-in
 - **xl**: `h-12 w-12` (48px)
 
 ### Border Radius
+
 - **none**: `rounded-none`
 - **sm**: `rounded-sm`
 - **md**: `rounded-md`
@@ -167,18 +176,20 @@ BassNotion uses a **multi-library approach** for maximum flexibility and best-in
    - Create custom for unique needs
 
 2. **Installation Process**
+
    ```bash
    # For shadcn/ui
    pnpm dlx shadcn-ui@latest add button
-   
+
    # For HeroUI
    pnpm add @heroui/react
-   
+
    # For Aceternity (copy source)
    # Copy component code to custom directory
    ```
 
 3. **File Organization**
+
    ```
    src/shared/components/ui/
    ├── shadcn/          # shadcn/ui components
@@ -188,15 +199,17 @@ BassNotion uses a **multi-library approach** for maximum flexibility and best-in
    ```
 
 4. **Import Rules** (Follow project standards)
+
    ```typescript
    // Relative imports - add .js extension
-   import { Button } from './button.js'
-   
+   import { Button } from './button.js';
+
    // Alias imports - no extension
-   import { Button } from '@/shared/components/ui/button'
+   import { Button } from '@/shared/components/ui/button';
    ```
 
 ### Component Wrapper Pattern
+
 Create wrappers for external components to maintain consistency:
 
 ```typescript
@@ -205,7 +218,7 @@ import { Button as HeroButton } from '@heroui/react'
 
 export function Button({ variant = 'default', ...props }) {
   return (
-    <HeroButton 
+    <HeroButton
       variant={variant}
       className={cn('your-custom-classes', props.className)}
       {...props}
@@ -218,24 +231,26 @@ export function Button({ variant = 'default', ...props }) {
 
 ## 📊 **Usage Statistics**
 
-| Library | Components | Usage | Maintenance |
-|---------|------------|-------|-------------|
-| shadcn/ui | 15+ | 🔥 High | ✅ Stable |
-| Custom | 10+ | 🔥 High | ⚠️ Manual |
-| HeroUI | 0 | 📋 Planned | ✅ Stable |
-| Aceternity | 0 | 📋 Planned | ⚠️ Manual |
+| Library    | Components | Usage      | Maintenance |
+| ---------- | ---------- | ---------- | ----------- |
+| shadcn/ui  | 15+        | 🔥 High    | ✅ Stable   |
+| Custom     | 10+        | 🔥 High    | ⚠️ Manual   |
+| HeroUI     | 0          | 📋 Planned | ✅ Stable   |
+| Aceternity | 0          | 📋 Planned | ⚠️ Manual   |
 
 ---
 
 ## 🔄 **Maintenance Tasks**
 
 ### Monthly
+
 - [ ] Update component usage statistics
 - [ ] Review new components from libraries
 - [ ] Check for deprecated components
 - [ ] Update documentation
 
 ### Quarterly
+
 - [ ] Audit unused components
 - [ ] Review design system consistency
 - [ ] Plan new component additions
@@ -255,4 +270,4 @@ export function Button({ variant = 'default', ...props }) {
 
 **Last Updated**: January 2025  
 **Maintained By**: BassNotion Team  
-**Next Review**: February 2025 
+**Next Review**: February 2025

@@ -7,12 +7,12 @@
  * Part of Story 2.2: Task 7, Subtask 7.3
  */
 
-import { AssetManager } from '../AssetManager.js';
+import { AssetManager } from '../AssetManager';
 import type {
   AssetLoadResult,
   DeviceCapabilities,
   NetworkCapabilities,
-} from '../../types/audio.js';
+} from '../../types/audio';
 
 export interface InstrumentOptimizationConfig {
   instrument: 'bass' | 'drums' | 'chords' | 'metronome';

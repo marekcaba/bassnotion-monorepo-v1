@@ -7,7 +7,9 @@ This document outlines the implementation of a fully 3D fretboard component for 
 ## Existing 3D Infrastructure Analysis
 
 ### Current Playback Domain Components
+
 ✅ **Already Available:**
+
 ```
 apps/frontend/src/domains/playback/components/FretboardVisualizer/
 ├── FretboardVisualizer.tsx       # Main wrapper component
@@ -23,6 +25,7 @@ apps/frontend/src/domains/playback/components/FretboardVisualizer/
 ```
 
 ### Current Capabilities
+
 - ✅ **3D Dot Rendering**: Cylinders/circles for frets, squares for open strings
 - ✅ **Camera System**: Three.js camera with perspective controls
 - ✅ **Performance Optimization**: FPS monitoring and optimization hooks
@@ -31,6 +34,7 @@ apps/frontend/src/domains/playback/components/FretboardVisualizer/
 - ✅ **Technique Support**: Modular technique rendering (hammer-ons, slides, etc.)
 
 ### Missing for Widgets Domain
+
 - ❌ **Interactive Selection**: Click to select dots
 - ❌ **Connection Logic**: Highlighting connections between selected dots
 - ❌ **Drag & Drop**: Moving selected dots
@@ -40,6 +44,7 @@ apps/frontend/src/domains/playback/components/FretboardVisualizer/
 ## Revised Implementation Strategy
 
 ### Approach: Extend, Don't Rebuild
+
 Instead of creating a completely new 3D system, we'll:
 
 1. **Extend Existing Components**: Build upon `Fretboard3D.tsx`
@@ -48,6 +53,7 @@ Instead of creating a completely new 3D system, we'll:
 4. **Create Widget Variant**: `FretboardWidget3D.tsx` in widgets domain
 
 ### Component Architecture
+
 ```
 apps/frontend/src/domains/widgets/components/FretboardWidget3D/
 ├── FretboardWidget3D.tsx        # Main interactive 3D fretboard
@@ -63,4 +69,4 @@ apps/frontend/src/domains/widgets/components/FretboardWidget3D/
 │   └── useConnectionLines.ts   # 3D line rendering
 └── types/
     └── widget-fretboard.ts     # Widget-specific types
-``` 
+```

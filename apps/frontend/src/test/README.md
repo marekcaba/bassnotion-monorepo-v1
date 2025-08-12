@@ -190,7 +190,6 @@ describe('WorkerPoolManager', () => {
 
 1. **Identify audio dependencies** - Does your service use Tone.js, Web Audio API?
 2. **Choose appropriate preset**:
-
    - `fullToneJS` - Complex audio processing, effects, analysis
    - `minimal` - Basic audio functionality testing
    - `withMIDI` - MIDI input/output required
@@ -276,12 +275,10 @@ vi.mock('tone', () => ({
 ### Common Issues
 
 1. **"Cannot read properties of undefined"**
-
    - Check that you're using the correct preset for your test needs
    - Verify cleanup is called in afterEach
 
 2. **"Mock function not called"**
-
    - Ensure your service is using the mocked Tone.js instances
    - Check that audio mocks are set up before service initialization
 

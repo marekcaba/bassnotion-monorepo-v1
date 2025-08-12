@@ -11,9 +11,9 @@ import { describe, test, expect, beforeEach } from 'vitest';
 import {
   MusicalContextAnalyzer,
   type UserBehaviorPattern,
-} from '../plugins/MusicalContextAnalyzer.js';
-import type { ParsedMidiData } from '../plugins/MidiParserProcessor.js';
-import { TrackType } from '../plugins/MidiParserProcessor.js';
+} from '../plugins/MusicalContextAnalyzer';
+import type { ParsedMidiData } from '../plugins/MidiParserProcessor';
+import { TrackType } from '../plugins/MidiParserProcessor';
 
 // Helper function to create test data with type assertions for simpler test setup
 function createMockMidiData(overrides: any = {}): ParsedMidiData {

@@ -1,0 +1,59 @@
+{
+  "kits": [
+    {
+      "id": "rock-kit",
+      "name": "Hydrogen Rock Kit",
+      "description": "Professional rock drum kit with punchy kick and snare",
+      "source": "hydrogen",
+      "style": "rock",
+      "quality": "studio",
+      "sampleCount": 12,
+      "size": 26214400,
+      "previewUrl": "drums/hydrogen-kits/rock-kit/preview.mp3"
+    },
+    {
+      "id": "electronic-kit",
+      "name": "Hydrogen Electronic Kit",
+      "description": "Modern electronic drum sounds from Hydrogen",
+      "source": "hydrogen",
+      "style": "electronic",
+      "quality": "studio",
+      "sampleCount": 15,
+      "size": 20971520,
+      "previewUrl": "drums/hydrogen-kits/electronic-kit/preview.mp3"
+    },
+    {
+      "id": "jazz-kit",
+      "name": "Hydrogen Jazz Kit",
+      "description": "Acoustic jazz drum kit with natural resonance",
+      "source": "hydrogen",
+      "style": "jazz",
+      "quality": "studio",
+      "sampleCount": 18,
+      "size": 31457280,
+      "previewUrl": "drums/hydrogen-kits/jazz-kit/preview.mp3"
+    },
+    {
+      "id": "latin-kit",
+      "name": "Hydrogen Latin Kit",
+      "description": "Latin percussion and drums from Hydrogen collection",
+      "source": "hydrogen",
+      "style": "latin",
+      "quality": "studio",
+      "sampleCount": 20,
+      "size": 36700160,
+      "previewUrl": "drums/hydrogen-kits/latin-kit/preview.mp3"
+    },
+    {
+      "id": "hip-hop-kit",
+      "name": "Hydrogen Hip-Hop Kit",
+      "description": "Hard-hitting hip-hop drums from Hydrogen",
+      "source": "hydrogen",
+      "style": "hip-hop",
+      "quality": "studio",
+      "sampleCount": 10,
+      "size": 18874368,
+      "previewUrl": "drums/hydrogen-kits/hip-hop-kit/preview.mp3"
+    }
+  ]
+}

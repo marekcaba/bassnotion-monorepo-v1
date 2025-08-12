@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drum Sample Test</title>
+    <script src="https://unpkg.com/tone@15.1.22/build/Tone.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #fff;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .drum-button {
+            background-color: #2196F3;
+        }
+        .drum-button:hover {
+            background-color: #0b7dda;
+        }
+        #status {
+            padding: 10px;
+            margin: 20px 0;
+            background-color: #333;
+            border-radius: 4px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Boss DR-110 Drum Sample Test</h1>
+    
+    <div class="section">
+        <h2>1. Initialize Audio</h2>
+        <button onclick="initAudio()">Start Audio Context</button>
+        <div id="status">Status: Not initialized</div>
+    </div>
+
+    <div class="section">
+        <h2>2. Load Samples</h2>
+        <button onclick="loadSamples()">Load DR-110 Samples</button>
+    </div>
+
+    <div class="section">
+        <h2>3. Test Individual Sounds</h2>
+        <button class="drum-button" onclick="playSound('kick')">Kick</button>
+        <button class="drum-button" onclick="playSound('snare')">Snare</button>
+        <button class="drum-button" onclick="playSound('hihat')">Hi-Hat</button>
+    </div>
+
+    <div class="section">
+        <h2>4. Test Pattern</h2>
+        <button onclick="togglePattern()">Play/Stop Pattern</button>
+    </div>
+
+    <script>
+        let players = {};
+        let sequence = null;
+        let isPlaying = false;
+
+        const SUPABASE_URL = 'https://htuztkrbuewheehjspcz.supabase.co';
+        const SAMPLES = {
+            kick: '/storage/v1/object/public/audio-samples/drums/hydrogen-kits/mp3/electronic/boss-dr110/dr110kik.mp3',
+            snare: '/storage/v1/object/public/audio-samples/drums/hydrogen-kits/mp3/electronic/boss-dr110/dr110clp.mp3',
+            hihat: '/storage/v1/object/public/audio-samples/drums/hydrogen-kits/mp3/electronic/boss-dr110/dr110cht.mp3'
+        };
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = `Status: ${message}`;
+            console.log(message);
+        }
+
+        async function initAudio() {
+            try {
+                await Tone.start();
+                updateStatus(`Audio context started. State: ${Tone.context.state}`);
+            } catch (error) {
+                updateStatus(`Error starting audio: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        async function loadSamples() {
+            updateStatus('Loading samples...');
+            
+            try {
+                // Ensure audio is started
+                if (Tone.context.state === 'suspended') {
+                    await Tone.start();
+                }
+
+                for (const [name, path] of Object.entries(SAMPLES)) {
+                    const url = SUPABASE_URL + path;
+                    updateStatus(`Loading ${name} from ${url}...`);
+                    
+                    players[name] = new Tone.Player({
+                        url: url,
+                        onload: () => {
+                            console.log(`✅ Loaded ${name}`);
+                        },
+                        onerror: (error) => {
+                            console.error(`❌ Failed to load ${name}:`, error);
+                        }
+                    }).toDestination();
+                }
+
+                // Wait for all samples to load
+                await Tone.loaded();
+                updateStatus('All samples loaded successfully!');
+                
+                // Set up the pattern sequence
+                setupPattern();
+                
+            } catch (error) {
+                updateStatus(`Error loading samples: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        function setupPattern() {
+            // Basic drum pattern
+            const pattern = [
+                ['kick', 'hihat'],
+                ['hihat'],
+                ['snare', 'hihat'],
+                ['hihat'],
+                ['kick', 'hihat'],
+                ['kick', 'hihat'],
+                ['snare', 'hihat'],
+                ['hihat']
+            ];
+
+            sequence = new Tone.Sequence((time, drums) => {
+                drums.forEach(drum => {
+                    if (players[drum]) {
+                        players[drum].start(time);
+                    }
+                });
+            }, pattern, '8n');
+
+            Tone.Transport.bpm.value = 120;
+        }
+
+        async function playSound(name) {
+            try {
+                // Ensure audio is started
+                if (Tone.context.state === 'suspended') {
+                    await Tone.start();
+                }
+
+                if (players[name]) {
+                    players[name].start();
+                    updateStatus(`Playing ${name}`);
+                } else {
+                    updateStatus(`${name} not loaded yet`);
+                }
+            } catch (error) {
+                updateStatus(`Error playing ${name}: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        async function togglePattern() {
+            try {
+                // Ensure audio is started
+                if (Tone.context.state === 'suspended') {
+                    await Tone.start();
+                }
+
+                if (!sequence) {
+                    updateStatus('Pattern not set up yet. Load samples first.');
+                    return;
+                }
+
+                if (isPlaying) {
+                    Tone.Transport.stop();
+                    sequence.stop();
+                    isPlaying = false;
+                    updateStatus('Pattern stopped');
+                } else {
+                    Tone.Transport.start();
+                    sequence.start(0);
+                    isPlaying = true;
+                    updateStatus('Pattern playing');
+                }
+            } catch (error) {
+                updateStatus(`Error toggling pattern: ${error.message}`);
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

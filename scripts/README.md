@@ -13,7 +13,6 @@ Dependabot was creating too many PRs (running ~20 times per hour instead of week
 We've implemented a controlled dependency update approach:
 
 1. **Restrictive Dependabot Configuration** (`.github/dependabot.yml`):
-
    - Updates only **monthly** (15th for npm, 1st for GitHub Actions)
    - Limited to 3 concurrent PRs max
    - Only patch-level updates for most dependencies

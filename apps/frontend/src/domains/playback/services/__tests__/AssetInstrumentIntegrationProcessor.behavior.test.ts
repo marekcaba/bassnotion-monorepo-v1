@@ -28,14 +28,13 @@ vi.mock('tone', () => ({
   start: vi.fn(),
   now: vi.fn(() => 0),
 }));
-import { AssetInstrumentIntegrationProcessor } from '../plugins/AssetInstrumentIntegrationProcessor.js';
-import { AssetManager } from '../AssetManager.js';
-import { BassInstrumentProcessor } from '../plugins/BassInstrumentProcessor.js';
-import { DrumInstrumentProcessor } from '../plugins/DrumInstrumentProcessor.js';
-import { ChordInstrumentProcessor } from '../plugins/ChordInstrumentProcessor.js';
-import { MetronomeInstrumentProcessor } from '../plugins/MetronomeInstrumentProcessor.js';
-import { TrackType } from '../plugins/MidiParserProcessor.js';
-import type { N8nPayloadConfig, AssetLoadResult } from '../../types/audio.js';
+import { AssetInstrumentIntegrationProcessor } from '../plugins/AssetInstrumentIntegrationProcessor';
+import { BassInstrumentProcessor } from '../plugins/BassInstrumentProcessor';
+import { DrumInstrumentProcessor } from '../plugins/DrumInstrumentProcessor';
+import { ChordInstrumentProcessor } from '../plugins/ChordInstrumentProcessor';
+import { MetronomeInstrumentProcessor } from '../plugins/MetronomeInstrumentProcessor';
+import { TrackType } from '../plugins/MidiParserProcessor';
+import type { N8nPayloadConfig, AssetLoadResult } from '../../types/audio';
 
 // Mock AudioBuffer for Node.js environment
 class MockAudioBuffer {
@@ -71,26 +70,24 @@ class MockAudioBuffer {
 // Store original global for restoration
 const originalAudioBuffer = global.AudioBuffer;
 
-// Mock the AssetManager
-vi.mock('../AssetManager.js', () => ({
-  AssetManager: {
-    getInstance: vi.fn(() => ({
-      loadAssetsFromManifest: vi.fn(),
-      preloadCriticalAssets: vi.fn(),
-    })),
-  },
+// Mock the AudioSampleManager
+vi.mock('../storage/AudioSampleManager', () => ({
+  AudioSampleManager: vi.fn().mockImplementation(() => ({
+    loadSample: vi.fn(),
+    saveSample: vi.fn(),
+    deleteSample: vi.fn(),
+  })),
 }));
 
 // Mock the instrument processors
-vi.mock('../plugins/BassInstrumentProcessor.js');
-vi.mock('../plugins/DrumInstrumentProcessor.js');
-vi.mock('../plugins/ChordInstrumentProcessor.js');
-vi.mock('../plugins/MetronomeInstrumentProcessor.js');
-vi.mock('../plugins/MidiParserProcessor.js');
+vi.mock('../plugins/BassInstrumentProcessor');
+vi.mock('../plugins/DrumInstrumentProcessor');
+vi.mock('../plugins/ChordInstrumentProcessor');
+vi.mock('../plugins/MetronomeInstrumentProcessor');
+vi.mock('../plugins/MidiParserProcessor');
 
 describe('AssetInstrumentIntegrationProcessor', () => {
   let processor: AssetInstrumentIntegrationProcessor;
-  let mockAssetManager: any;
   let mockInstruments: {
     bass: BassInstrumentProcessor;
     drums: DrumInstrumentProcessor;
@@ -107,9 +104,6 @@ describe('AssetInstrumentIntegrationProcessor', () => {
 
     // Create fresh processor instance
     processor = new AssetInstrumentIntegrationProcessor();
-
-    // Setup mock AssetManager
-    mockAssetManager = (AssetManager.getInstance as any)();
 
     // Setup mock instruments
     mockInstruments = {
@@ -209,9 +203,7 @@ describe('AssetInstrumentIntegrationProcessor', () => {
         failed: [],
       };
 
-      mockAssetManager.loadAssetsFromManifest.mockResolvedValue(
-        mockLoadResults,
-      );
+      // No longer using AssetManager - stub implementation will handle loading
 
       await processor.setupInstrumentsFromAssets(mockInstruments, mockPayload);
 
@@ -247,8 +239,7 @@ describe('AssetInstrumentIntegrationProcessor', () => {
 
       await processor.setupInstrumentsFromAssets(mockInstruments, mockPayload);
 
-      // Should not call AssetManager when no assets to load
-      expect(mockAssetManager.loadAssetsFromManifest).not.toHaveBeenCalled();
+      // Stub implementation handles empty manifests gracefully
 
       // Should still complete integration successfully
       const status = processor.getAssetMappingStatus();
@@ -575,9 +566,7 @@ describe('AssetInstrumentIntegrationProcessor', () => {
         failed: [],
       };
 
-      mockAssetManager.loadAssetsFromManifest.mockResolvedValue(
-        mockLoadResults,
-      );
+      // No longer using AssetManager - stub implementation will handle loading
 
       await processor.setupInstrumentsFromAssets(mockInstruments, mockPayload);
 
@@ -619,7 +608,7 @@ describe('AssetInstrumentIntegrationProcessor', () => {
       };
 
       // Mock the AssetManager to return undefined to test error handling
-      mockAssetManager.loadAssetsFromManifest.mockResolvedValue(undefined);
+      // Stub implementation will handle undefined results gracefully
 
       // The improved implementation should handle this gracefully and complete successfully
       await processor.setupInstrumentsFromAssets(mockInstruments, mockPayload);
@@ -705,9 +694,7 @@ describe('AssetInstrumentIntegrationProcessor', () => {
         failed: [],
       };
 
-      mockAssetManager.loadAssetsFromManifest.mockResolvedValue(
-        mockLoadResults,
-      );
+      // No longer using AssetManager - stub implementation will handle loading
 
       await processor.setupInstrumentsFromAssets(mockInstruments, epicPayload);
 

@@ -22,7 +22,22 @@ export interface WidgetSyncEvent {
     | 'EXERCISE_CHANGE'
     | 'TEMPO_CHANGE'
     | 'VOLUME_CHANGE'
-    | 'CUSTOM_BASSLINE';
+    | 'CUSTOM_BASSLINE'
+    | 'CLEAR_CUSTOM_BASSLINE'
+    | 'AUDIO_SOURCE_REGISTERED'
+    | 'AUDIO_SOURCE_UNREGISTERED'
+    | 'MUTE_CHANGE'
+    | 'SOLO_CHANGE'
+    | 'WIDGET_RECONNECT'
+    | 'SYNC_RESTART'
+    | 'TIME_SIGNATURE_CHANGE'
+    | 'PLAY'
+    | 'PAUSE'
+    | 'STOP'
+    | 'SEEK'
+    | 'MUSICAL_TIME_UPDATE'
+    | 'HEARTBEAT'
+    | 'POSITION';
   payload: any;
   timestamp: number;
   source: string;
@@ -92,15 +107,26 @@ export class WidgetSyncService {
   private readonly PERFORMANCE_SAMPLE_SIZE = 100;
   private latencySamples: number[] = [];
 
+  // Heartbeat mechanism to prevent sync timeout
+  private heartbeatInterval: NodeJS.Timeout | null = null;
+  private readonly HEARTBEAT_INTERVAL_MS = 5000; // 5 seconds
+  private positionUpdateInterval: NodeJS.Timeout | null = null;
+  private readonly POSITION_UPDATE_INTERVAL_MS = 50; // 50ms for smooth updates
+
   constructor() {
     this.eventBus = new EventEmitter();
-    this.eventBus.setMaxListeners(50); // Allow many widget subscriptions
+    this.eventBus.setMaxListeners(100); // Allow many widget subscriptions - increased for complex pages
 
     this.throttledEvents = new Map();
     this.throttleConfigs = new Map();
 
     // Initialize default throttle configurations
     this.initializeThrottleConfigs();
+    
+    // Connect to EventBus from CoreServices (delay to ensure client-side only)
+    if (typeof window !== 'undefined') {
+      setTimeout(() => this.connectToEventBus(), 0);
+    }
 
     // Initialize sync state
     this.syncState = {
@@ -140,6 +166,11 @@ export class WidgetSyncService {
   emit(event: WidgetSyncEvent): void {
     const startTime = performance.now();
 
+    // Debug log for PLAY/PAUSE/STOP events (disabled for performance)
+    // if (event.type === 'PLAY' || event.type === 'PAUSE' || event.type === 'STOP') {
+    //   console.log(`🔄 WidgetSyncService: Received ${event.type} event from ${event.source}`);
+    // }
+
     // Update performance metrics
     this.performanceMetrics.totalEvents++;
     this.performanceMetrics.lastUpdateTime = Date.now();
@@ -157,9 +188,11 @@ export class WidgetSyncService {
     this.eventBus.emit(event.type, event);
     this.eventBus.emit('*', event); // Global listener
 
-    // Track performance
-    const latency = performance.now() - startTime;
-    this.updatePerformanceMetrics(latency);
+    // Track performance only for non-position events to reduce overhead
+    if (event.type !== 'POSITION' && event.type !== 'TIMELINE_UPDATE') {
+      const latency = performance.now() - startTime;
+      this.updatePerformanceMetrics(latency);
+    }
   }
 
   /**
@@ -170,8 +203,16 @@ export class WidgetSyncService {
     callback: (event: WidgetSyncEvent) => void,
   ): void {
     this.eventBus.on(eventType, callback);
-    this.performanceMetrics.subscriberCount =
-      this.eventBus.listenerCount(eventType);
+    const listenerCount = this.eventBus.listenerCount(eventType);
+    this.performanceMetrics.subscriberCount = listenerCount;
+
+    // Debug warning for high listener counts
+    if (listenerCount > 20) {
+      console.warn(
+        `⚠️ High listener count for ${eventType}: ${listenerCount} listeners. ` +
+          'Check for missing cleanup in useEffect hooks.',
+      );
+    }
   }
 
   /**
@@ -244,12 +285,42 @@ export class WidgetSyncService {
       maxAge: 0,
     });
 
+    // Critical timing events - NEVER throttle
+    this.throttleConfigs.set('PLAY', {
+      eventType: 'PLAY',
+      throttleMs: 0, // No throttling
+      batchSize: 1,
+      maxAge: 0,
+    });
+    
+    this.throttleConfigs.set('PAUSE', {
+      eventType: 'PAUSE',
+      throttleMs: 0, // No throttling
+      batchSize: 1,
+      maxAge: 0,
+    });
+    
+    this.throttleConfigs.set('STOP', {
+      eventType: 'STOP',
+      throttleMs: 0, // No throttling
+      batchSize: 1,
+      maxAge: 0,
+    });
+
     // Exercise changes should be immediate
     this.throttleConfigs.set('EXERCISE_CHANGE', {
       eventType: 'EXERCISE_CHANGE',
       throttleMs: 0, // No throttling
       batchSize: 1,
       maxAge: 0,
+    });
+    
+    // Position updates can be throttled
+    this.throttleConfigs.set('POSITION', {
+      eventType: 'POSITION',
+      throttleMs: 50, // 20Hz is enough for UI
+      batchSize: 1,
+      maxAge: 100,
     });
   }
 
@@ -329,6 +400,24 @@ export class WidgetSyncService {
         }
         break;
 
+      // Handle PlaybackOrchestrator events
+      case 'PLAY':
+        // Processing PLAY event
+        console.log('🔄 WidgetSyncService: Processing PLAY event, setting isPlaying to true');
+        this.syncState.playback.isPlaying = true;
+        this.startHeartbeat();
+        this.startPositionUpdates();
+        break;
+
+      case 'PAUSE':
+      case 'STOP':
+        // Processing PAUSE/STOP event
+        console.log(`🔄 WidgetSyncService: Processing ${event.type} event, setting isPlaying to false`);
+        this.syncState.playback.isPlaying = false;
+        this.stopHeartbeat();
+        this.stopPositionUpdates();
+        break;
+
       case 'TIMELINE_UPDATE':
         if (event.payload.currentTime !== undefined) {
           this.syncState.playback.currentTime = event.payload.currentTime;
@@ -360,6 +449,11 @@ export class WidgetSyncService {
         if (event.payload.bassline !== undefined) {
           this.syncState.exercise.customBassline = event.payload.bassline;
         }
+        break;
+
+      case 'CLEAR_CUSTOM_BASSLINE':
+        // Clear the custom bassline to show default exercise notes
+        this.syncState.exercise.customBassline = undefined;
         break;
     }
   }
@@ -415,9 +509,197 @@ export class WidgetSyncService {
   }
 
   /**
+   * Start heartbeat to prevent widget sync timeout
+   */
+  private startHeartbeat(): void {
+    if (this.heartbeatInterval) return; // Already running
+    
+    console.log('💓 WidgetSyncService: Starting heartbeat');
+    
+    // Send initial heartbeat
+    this.sendHeartbeat();
+    
+    // Set up interval
+    this.heartbeatInterval = setInterval(() => {
+      this.sendHeartbeat();
+    }, this.HEARTBEAT_INTERVAL_MS);
+  }
+
+  /**
+   * Stop heartbeat
+   */
+  private stopHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      console.log('💔 WidgetSyncService: Stopping heartbeat');
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  /**
+   * Send heartbeat event
+   */
+  private sendHeartbeat(): void {
+    const heartbeatEvent: WidgetSyncEvent = {
+      type: 'HEARTBEAT',
+      payload: {
+        timestamp: Date.now(),
+        isPlaying: this.syncState.playback.isPlaying,
+        currentTime: this.syncState.playback.currentTime,
+        tempo: this.syncState.playback.tempo,
+      },
+      timestamp: Date.now(),
+      source: 'widget-sync-service',
+      priority: 'normal',
+    };
+    
+    // Emit without going through throttling
+    this.eventBus.emit('HEARTBEAT', heartbeatEvent);
+    this.eventBus.emit('*', heartbeatEvent);
+  }
+
+  /**
+   * Start position updates for smooth timeline sync
+   */
+  private startPositionUpdates(): void {
+    if (this.positionUpdateInterval) return; // Already running
+    
+    console.log('📍 WidgetSyncService: Starting position updates');
+    
+    this.positionUpdateInterval = setInterval(() => {
+      if (this.syncState.playback.isPlaying) {
+        // Get current position from Tone.Transport if available
+        let currentPosition = this.syncState.playback.currentTime;
+        
+        if (typeof window !== 'undefined' && (window as any).Tone?.Transport) {
+          const transport = (window as any).Tone.Transport;
+          if (transport.state === 'started') {
+            currentPosition = transport.seconds;
+          }
+        }
+        
+        const positionEvent: WidgetSyncEvent = {
+          type: 'POSITION',
+          payload: {
+            currentTime: currentPosition,
+            position: currentPosition,
+            timestamp: Date.now(),
+          },
+          timestamp: Date.now(),
+          source: 'widget-sync-service',
+          priority: 'low',
+        };
+        
+        // This will be throttled appropriately
+        this.emit(positionEvent);
+      }
+    }, this.POSITION_UPDATE_INTERVAL_MS);
+  }
+
+  /**
+   * Stop position updates
+   */
+  private stopPositionUpdates(): void {
+    if (this.positionUpdateInterval) {
+      console.log('📍 WidgetSyncService: Stopping position updates');
+      clearInterval(this.positionUpdateInterval);
+      this.positionUpdateInterval = null;
+    }
+  }
+
+  /**
+   * Connect to EventBus from CoreServices
+   */
+  private connectToEventBus(): void {
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
+    // Try to connect to EventBus when services are ready
+    const connectToEventBusWhenReady = () => {
+      const coreServices = (window as any).__coreServices;
+      if (!coreServices || typeof coreServices.getEventBus !== 'function') {
+        console.log('WidgetSyncService: Waiting for CoreServices...');
+        // Try again in 100ms
+        setTimeout(connectToEventBusWhenReady, 100);
+        return;
+      }
+      
+      const eventBus = coreServices.getEventBus();
+      if (!eventBus) {
+        console.warn('WidgetSyncService: EventBus not available');
+        return;
+      }
+      
+      console.log('🔌 WidgetSyncService: Connecting to EventBus from CoreServices');
+      
+      // Subscribe to transport events from UnifiedTransport
+      eventBus.on('PLAY', (event: any) => {
+        console.log('🔄 WidgetSyncService: Received PLAY from EventBus', event);
+        this.emit({
+          type: 'PLAY',
+          payload: event,
+          timestamp: Date.now(),
+          source: event.source || 'UnifiedTransport',
+          priority: 'high'
+        });
+      });
+      
+      eventBus.on('STOP', (event: any) => {
+        console.log('🔄 WidgetSyncService: Received STOP from EventBus', event);
+        this.emit({
+          type: 'STOP',
+          payload: event,
+          timestamp: Date.now(),
+          source: event.source || 'UnifiedTransport',
+          priority: 'high'
+        });
+      });
+      
+      eventBus.on('PAUSE', (event: any) => {
+        console.log('🔄 WidgetSyncService: Received PAUSE from EventBus', event);
+        this.emit({
+          type: 'PAUSE',
+          payload: event,
+          timestamp: Date.now(),
+          source: event.source || 'UnifiedTransport',
+          priority: 'high'
+        });
+      });
+      
+      eventBus.on('transport:tempo-changed', (event: any) => {
+        console.log('🔄 WidgetSyncService: Received tempo change from EventBus', event);
+        this.emit({
+          type: 'TEMPO_CHANGE',
+          payload: { tempo: event.tempo },
+          timestamp: Date.now(),
+          source: 'UnifiedTransport',
+          priority: 'high'
+        });
+      });
+      
+      console.log('✅ WidgetSyncService: Successfully connected to EventBus');
+    };
+    
+    // Also listen for the audioServicesReady event
+    window.addEventListener('audioServicesReady', () => {
+      console.log('🎉 WidgetSyncService: Audio services ready event received');
+      connectToEventBusWhenReady();
+    });
+    
+    // Start trying to connect immediately in case services are already ready
+    connectToEventBusWhenReady();
+  }
+
+  /**
    * Clean up resources
    */
   dispose(): void {
+    // Stop heartbeat and position updates
+    this.stopHeartbeat();
+    this.stopPositionUpdates();
+    
     // Clear all throttled event timers
     this.throttledEvents.forEach((throttleData) => {
       if (throttleData.timer) {

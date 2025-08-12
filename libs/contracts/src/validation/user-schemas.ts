@@ -17,6 +17,16 @@ export const userProfileSchema = z.object({
 export type UserProfileData = z.infer<typeof userProfileSchema>;
 
 /**
+ * Bass configuration schema
+ */
+export const bassConfigurationSchema = z.object({
+  stringCount: z.union([z.literal(4), z.literal(5), z.literal(6)]).default(4),
+  maxFrets: z.number().min(19).max(25).default(24),
+});
+
+export type BassConfigurationData = z.infer<typeof bassConfigurationSchema>;
+
+/**
  * User preferences schema
  */
 export const userPreferencesSchema = z.object({
@@ -26,6 +36,10 @@ export const userPreferencesSchema = z.object({
     bpm: z.number().min(40).max(300).default(120),
     timeSignature: z.string().default('4/4'),
     sound: z.enum(['click', 'beep', 'wood']).default('click'),
+  }),
+  bassConfiguration: bassConfigurationSchema.default({
+    stringCount: 4,
+    maxFrets: 24,
   }),
 });
 
