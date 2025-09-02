@@ -1,9 +1,9 @@
 /**
  * UnifiedTransport - The ONE Master Clock
- * 
+ *
  * Professional-grade transport system achieving Logic Pro X/Ableton-level timing stability.
  * Merges the best of TransportController and ProfessionalTimingEngine.
- * 
+ *
  * Features:
  * - Sample-accurate timing with AudioWorklet support
  * - Advanced drift compensation with predictive algorithms
@@ -11,7 +11,7 @@
  * - Triple buffering for smooth playback
  * - Adaptive performance optimization
  * - Musical time representation (bars:beats:sixteenths)
- * 
+ *
  * Performance Targets:
  * - Timing Stability: >99.5%
  * - Maximum Drift: <1ms
@@ -21,11 +21,25 @@
  */
 
 import { Service } from './ServiceRegistry.js';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { EventBus } from './EventBus.js';
 import { AudioEngine } from './AudioEngine.js';
 import { CommandQueue } from '../../commands/CommandQueue.js';
-import { EnhancedCircuitBreaker, CircuitBreakerFactory } from '../../patterns/CircuitBreaker.js';
+import {
+  EnhancedCircuitBreaker,
+  CircuitBreakerFactory,
+} from '../../patterns/CircuitBreaker.js';
+import { getLogger } from '@/utils/logger.js';
 import * as Tone from 'tone';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import {
+  createModularTransport,
+  TransportDelegator,
+  TransportPerformanceComparator,
+} from './UnifiedTransport.delegation.js';
+import { AUDIO_ARCHITECTURE_FLAGS } from '../../config/featureFlags.js';
+
+const logger = createStructuredLogger('UnifiedTransport');
 
 // Types
 export interface MusicalPosition {
@@ -97,74 +111,104 @@ const DEFAULT_CONFIG: TransportConfig = {
   enableAudioWorklet: true,
   enableWebWorker: true, // Only used as fallback if AudioWorklet fails
   driftCompensation: 'adaptive',
-  bufferStrategy: 'adaptive'
+  bufferStrategy: 'adaptive',
 };
 
 export class UnifiedTransport implements Service {
   private static instance: UnifiedTransport | null = null;
-  
+  private static staticLogger = getLogger('transport-static');
+
+  // Delegation support for modular transport
+  private delegator: TransportDelegator | null = null;
+  private performanceComparator: TransportPerformanceComparator | null = null;
+
+  // Logger instances (lazy initialization)
+  private logger: ReturnType<typeof getLogger> | null = null;
+  private timingLogger: ReturnType<typeof getLogger> | null = null;
+  private driftLogger: ReturnType<typeof getLogger> | null = null;
+  private positionLogger: ReturnType<typeof getLogger> | null = null;
+
+  // Helper to get logger instances
+  private getLoggers() {
+    if (!this.logger) {
+      this.logger = getLogger('transport');
+      this.timingLogger = getLogger('transport:timing');
+      this.driftLogger = getLogger('transport:drift');
+      this.positionLogger = getLogger('transport:position');
+    }
+    return {
+      logger: this.logger!,
+      timingLogger: this.timingLogger!,
+      driftLogger: this.driftLogger!,
+      positionLogger: this.positionLogger!,
+    };
+  }
+
   // Core state
   private state: TransportState = 'stopped';
   private config: TransportConfig;
   private isInitialized = false;
-  
+
   // Service dependencies
   private eventBus: EventBus;
   private audioEngine: AudioEngine;
   private commandQueue: CommandQueue;
   private circuitBreaker: EnhancedCircuitBreaker;
-  
+
   // Timing core
   private audioContext: AudioContext | null = null;
-  private startTime: number = 0;
-  private pauseTime: number = 0;
-  private pausePosition: string = '0:0:0'; // Store musical position as well
-  private pauseSampleTime: number = 0; // Sample-accurate pause time
-  private pauseQuantum: string = '128n'; // Quantum for pause/resume (128th note for ultra-precision)
-  private scheduledUntil: number = 0;
-  
+  private startTime = 0;
+  private pauseTime = 0;
+  private pausePosition = '0:0:0'; // Store musical position as well
+  private pauseSampleTime = 0; // Sample-accurate pause time
+  private pausedAudioWorkletTime = 0; // AudioWorklet time at pause
+  private pauseFrame = 0; // Store exact frame position for sample-accurate resume
+  private pauseQuantum = '128n'; // Quantum for pause/resume (128th note for ultra-precision)
+  private scheduledUntil = 0;
+
   // Pre-buffer mechanism
-  private preBufferTime: number = 0.1; // 100ms pre-buffer (configurable)
-  private preBufferedEvents: Array<{time: number, callback: () => void}> = [];
-  private isPreBuffering: boolean = false;
-  
+  private preBufferTime = 0.1; // 100ms pre-buffer (configurable)
+  private preBufferedEvents: Array<{ time: number; callback: () => void }> = [];
+  private isPreBuffering = false;
+
   // Hardware clock synchronization
-  private useHardwareClock: boolean = true;
-  private hardwareClockOffset: number = 0;
+  private useHardwareClock = true;
+  private hardwareClockOffset = 0;
   private clockSyncInterval: number | null = null;
   private clockSyncHistory: number[] = [];
   private readonly clockSyncHistorySize = 10;
-  
+
   // Event management
   private eventQueue: TimingEvent[] = [];
   private scheduledEvents = new Map<string, number>(); // eventId -> Tone scheduleId
   private eventIdCounter = 0;
-  
+
   // High-precision timing
   private timingWorker: Worker | null = null;
   private audioWorkletNode: AudioWorkletNode | null = null;
-  private audioWorkletMessageHandler: ((event: MessageEvent) => void) | null = null;
+  private audioWorkletMessageHandler: ((event: MessageEvent) => void) | null =
+    null;
   private updateTimer: number | null = null;
-  private lastAudioWorkletTime: number = 0;
-  private lastAudioWorkletFrame: number = 0;
-  private audioWorkletStartTime: number = 0; // Store the Transport.seconds when AudioWorklet starts
+  private lastAudioWorkletTime = 0;
+  private lastAudioWorkletFrame = 0;
+  private audioWorkletStartTime = 0; // Store the Transport.seconds when AudioWorklet starts
   private audioWorkletModuleLoaded = false; // Track if module is preloaded
   private audioWorkletReady = false; // Track if AudioWorklet is ready for use
-  private audioWorkletBaselineTime: number = 0; // Store baseline time for sync
-  private skipInitialSyncUpdates: number = 0; // Skip updates during initial sync
-  private audioWorkletTimeOffset: number = 0; // Offset between AudioWorklet and Transport time
-  private expectedSessionId: number = 0; // Track expected AudioWorklet session ID to reject stale updates
-  private expectedMessageSequence: number = 0; // Track expected message sequence within session
+  private audioWorkletBaselineTime = 0; // Store baseline time for sync
+  private skipInitialSyncUpdates = 0; // Skip updates during initial sync
+  private audioWorkletTimeOffset = 0; // Offset between AudioWorklet and Transport time
+  private expectedSessionId = 0; // Track expected AudioWorklet session ID to reject stale updates
+  private expectedMessageSequence = 0; // Track expected message sequence within session
   private useAudioWorkletAsMasterClock = true; // Use AudioWorklet as master clock when available
-  private lastReinitializationTime: number = 0; // Prevent rapid reinitialization loops
+  private lastReinitializationTime = 0; // Prevent rapid reinitialization loops
   private smoothedDrift?: number; // For exponential moving average in fallback mode
-  
+
   // Drift compensation
   private driftHistory: number[] = [];
   private readonly driftHistorySize = 100;
   private currentDrift = 0;
   private driftPredictor: DriftPredictor | null = null;
-  
+
   // Performance monitoring
   private metrics: TimingMetrics = {
     stability: 100,
@@ -175,186 +219,280 @@ export class UnifiedTransport implements Service {
     bufferHealth: 100,
     cpuLoad: 0,
     totalEvents: 0,
-    missedEvents: 0
+    missedEvents: 0,
   };
   private lastUpdateTime = 0;
   private lastTransportTime: number | undefined;
   private updateCount = 0;
   private skipDriftChecks = 0; // Number of drift checks to skip after resume
-  
+
   // Musical timing
-  private musicalPosition: MusicalPosition = { bars: 0, beats: 0, sixteenths: 0, ticks: 0 };
+  private musicalPosition: MusicalPosition = {
+    bars: 0,
+    beats: 0,
+    sixteenths: 0,
+    ticks: 0,
+  };
   private loopEnabled = false;
-  private loopStart: MusicalPosition = { bars: 0, beats: 0, sixteenths: 0, ticks: 0 };
-  private loopEnd: MusicalPosition = { bars: 4, beats: 0, sixteenths: 0, ticks: 0 };
-  
+  private loopStart: MusicalPosition = {
+    bars: 0,
+    beats: 0,
+    sixteenths: 0,
+    ticks: 0,
+  };
+  private loopEnd: MusicalPosition = {
+    bars: 4,
+    beats: 0,
+    sixteenths: 0,
+    ticks: 0,
+  };
+
   private constructor(
     eventBus: EventBus,
     audioEngine: AudioEngine,
-    config: Partial<TransportConfig> = {}
+    config: Partial<TransportConfig> = {},
   ) {
-    console.log('UnifiedTransport constructor called with:', {
-      hasEventBus: !!eventBus,
-      hasAudioEngine: !!audioEngine,
-      audioEngineType: audioEngine?.constructor?.name
-    });
+    UnifiedTransport.staticLogger.debug(
+      'UnifiedTransport constructor called with:',
+      {
+        hasEventBus: !!eventBus,
+        hasAudioEngine: !!audioEngine,
+        audioEngineType: audioEngine?.constructor?.name,
+      },
+    );
     this.eventBus = eventBus;
     this.audioEngine = audioEngine;
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.commandQueue = new CommandQueue();
-    
+
     // Create CircuitBreakerFactory instance first
     const circuitBreakerFactory = new CircuitBreakerFactory(this.eventBus);
-    this.circuitBreaker = circuitBreakerFactory.create('UnifiedTransport', 'critical', {
-      failureThreshold: 5,
-      recoveryTimeout: 5000,
-      timeout: 3000,
-      retryPolicy: {
-        maxRetries: 3,
-        retryDelay: 1000,
-        retryableErrors: ['TimeoutError', 'NetworkError', 'TransientError']
-      }
-    });
-    
+    this.circuitBreaker = circuitBreakerFactory.create(
+      'UnifiedTransport',
+      'critical',
+      {
+        failureThreshold: 5,
+        recoveryTimeout: 5000,
+        timeout: 3000,
+        retryPolicy: {
+          maxRetries: 3,
+          retryDelay: 1000,
+          retryableErrors: ['TimeoutError', 'NetworkError', 'TransientError'],
+        },
+      },
+    );
+
     if (this.config.driftCompensation === 'adaptive') {
       this.driftPredictor = new DriftPredictor();
     }
+
+    // Initialize delegation if feature flag is enabled
+    this.initializeDelegation();
   }
-  
+
   static getInstance(
     eventBus?: EventBus,
     audioEngine?: AudioEngine,
-    config?: Partial<TransportConfig>
+    config?: Partial<TransportConfig>,
   ): UnifiedTransport {
-    console.log('UnifiedTransport.getInstance called:', {
-      hasExistingInstance: !!UnifiedTransport.instance,
-      hasEventBus: !!eventBus,
-      hasAudioEngine: !!audioEngine,
-      audioEngineType: audioEngine?.constructor?.name
-    });
-    
+    // Use console.log in static method since logger might not be initialized yet
+    UnifiedTransport.staticLogger.debug(
+      'UnifiedTransport.getInstance called:',
+      {
+        hasExistingInstance: !!UnifiedTransport.instance,
+        hasEventBus: !!eventBus,
+        hasAudioEngine: !!audioEngine,
+        audioEngineType: audioEngine?.constructor?.name,
+      },
+    );
+
     if (!UnifiedTransport.instance) {
       // If no instance exists, we need both dependencies
       if (!eventBus || !audioEngine) {
-        throw new Error('UnifiedTransport: Cannot create instance without EventBus and AudioEngine');
+        throw new Error(
+          'UnifiedTransport: Cannot create instance without EventBus and AudioEngine',
+        );
       }
-      console.log('UnifiedTransport: Creating new singleton instance');
-      UnifiedTransport.instance = new UnifiedTransport(eventBus, audioEngine, config);
+      UnifiedTransport.staticLogger.debug(
+        'UnifiedTransport: Creating new singleton instance',
+      );
+      UnifiedTransport.instance = new UnifiedTransport(
+        eventBus,
+        audioEngine,
+        config,
+      );
     } else {
       // DEFENSIVE: Update references if they've changed or are missing
       // This handles cases where getInstance is called without dependencies
       if (eventBus && UnifiedTransport.instance.eventBus !== eventBus) {
-        console.warn('UnifiedTransport: EventBus reference changed - updating singleton');
+        UnifiedTransport.staticLogger.warn(
+          'UnifiedTransport: EventBus reference changed - updating singleton',
+        );
         UnifiedTransport.instance.eventBus = eventBus;
       }
-      
-      if (audioEngine && UnifiedTransport.instance.audioEngine !== audioEngine) {
-        console.warn('UnifiedTransport: AudioEngine reference changed - updating singleton');
+
+      if (
+        audioEngine &&
+        UnifiedTransport.instance.audioEngine !== audioEngine
+      ) {
+        UnifiedTransport.staticLogger.warn(
+          'UnifiedTransport: AudioEngine reference changed - updating singleton',
+        );
         UnifiedTransport.instance.audioEngine = audioEngine;
       }
-      
+
       // EXTRA DEFENSIVE: Check if references are somehow null
       if (!UnifiedTransport.instance.audioEngine && audioEngine) {
-        console.warn('UnifiedTransport: AudioEngine was null in singleton - fixing!');
+        UnifiedTransport.staticLogger.warn(
+          'UnifiedTransport: AudioEngine was null in singleton - fixing!',
+        );
         UnifiedTransport.instance.audioEngine = audioEngine;
       }
       if (!UnifiedTransport.instance.eventBus && eventBus) {
-        console.warn('UnifiedTransport: EventBus was null in singleton - fixing!');
+        UnifiedTransport.staticLogger.warn(
+          'UnifiedTransport: EventBus was null in singleton - fixing!',
+        );
         UnifiedTransport.instance.eventBus = eventBus;
       }
     }
-    
-    console.log('UnifiedTransport.getInstance returning instance:', {
-      hasAudioEngine: !!UnifiedTransport.instance.audioEngine,
-      hasEventBus: !!UnifiedTransport.instance.eventBus
-    });
-    
+
+    UnifiedTransport.staticLogger.debug(
+      'UnifiedTransport.getInstance returning instance:',
+      {
+        hasAudioEngine: !!UnifiedTransport.instance.audioEngine,
+        hasEventBus: !!UnifiedTransport.instance.eventBus,
+      },
+    );
+
     return UnifiedTransport.instance;
   }
-  
+
+  /**
+   * Initialize delegation to modular transport if enabled
+   */
+  private initializeDelegation(): void {
+    try {
+      const modularTransport = createModularTransport(
+        this.eventBus,
+        this.audioEngine,
+        this.config
+      );
+      
+      if (modularTransport) {
+        this.delegator = new TransportDelegator(modularTransport);
+        
+        if (AUDIO_ARCHITECTURE_FLAGS.COMPARE_TRANSPORT_PERFORMANCE) {
+          this.performanceComparator = new TransportPerformanceComparator();
+        }
+        
+        UnifiedTransport.staticLogger.info(
+          'Modular transport delegation initialized',
+          {
+            comparePerformance: AUDIO_ARCHITECTURE_FLAGS.COMPARE_TRANSPORT_PERFORMANCE,
+          }
+        );
+      }
+    } catch (error) {
+      UnifiedTransport.staticLogger.error(
+        'Failed to initialize transport delegation',
+        error
+      );
+    }
+  }
+
   /**
    * Pre-buffer upcoming events for seamless resume
    */
   private preBufferUpcomingEvents(fromTime: number): void {
     this.preBufferedEvents = [];
     const tone = this.audioEngine.getTone();
-    
+
     // Look ahead for events in the pre-buffer window
     const bufferEndTime = fromTime + this.preBufferTime;
-    
+
     // Store events that would play during the pre-buffer period
-    this.eventQueue.forEach(event => {
+    this.eventQueue.forEach((event) => {
       if (event.time >= fromTime && event.time <= bufferEndTime) {
         this.preBufferedEvents.push({
           time: event.time,
-          callback: () => event.callback(event.time)
+          callback: () => event.callback(event.time),
         });
       }
     });
-    
-    console.log(`📦 Pre-buffered ${this.preBufferedEvents.length} events for resume`);
+
+    UnifiedTransport.staticLogger.info(
+      `Pre-buffered ${this.preBufferedEvents.length} events for resume`,
+    );
   }
-  
+
   /**
    * Apply pre-buffered events on resume
    */
   private applyPreBufferedEvents(resumeTime: number): void {
     const tone = this.audioEngine.getTone();
-    
-    this.preBufferedEvents.forEach(event => {
+
+    this.preBufferedEvents.forEach((event) => {
       // Reschedule the event relative to resume time
       const relativeTime = event.time - this.pauseTime;
       const scheduleTime = resumeTime + relativeTime;
-      
+
       tone.Transport.schedule((time) => {
         event.callback();
       }, scheduleTime);
     });
-    
-    console.log(`📦 Applied ${this.preBufferedEvents.length} pre-buffered events`);
+
+    UnifiedTransport.staticLogger.info(
+      `Applied ${this.preBufferedEvents.length} pre-buffered events`,
+    );
     this.preBufferedEvents = [];
   }
-  
+
   /**
    * Set the pre-buffer time for seamless resume
    * @param seconds - Pre-buffer time in seconds (0.05 - 0.5)
    */
   setPreBufferTime(seconds: number): void {
     this.preBufferTime = Math.max(0.05, Math.min(0.5, seconds));
-    console.log(`📦 Pre-buffer time set to ${this.preBufferTime}s`);
+    UnifiedTransport.staticLogger.info(
+      `Pre-buffer time set to ${this.preBufferTime}s`,
+    );
   }
-  
+
   /**
    * Enable hardware clock synchronization
    * @param enable - Enable or disable hardware clock sync
    */
   enableHardwareClockSync(enable: boolean): void {
     this.useHardwareClock = enable;
-    
+
     if (enable) {
       this.startClockSync();
-      console.log('🔧 Hardware clock synchronization enabled');
+      this.getLoggers().timingLogger.info(
+        'Hardware clock synchronization enabled',
+      );
     } else {
       this.stopClockSync();
-      console.log('🔧 Hardware clock synchronization disabled');
+      this.getLoggers().timingLogger.info(
+        'Hardware clock synchronization disabled',
+      );
     }
   }
-  
+
   /**
    * Start hardware clock synchronization
    */
   private startClockSync(): void {
     if (this.clockSyncInterval) return;
-    
+
     // Sync every 100ms
     this.clockSyncInterval = window.setInterval(() => {
       this.syncHardwareClock();
     }, 100);
-    
+
     // Initial sync
     this.syncHardwareClock();
   }
-  
+
   /**
    * Stop hardware clock synchronization
    */
@@ -366,37 +504,45 @@ export class UnifiedTransport implements Service {
     this.clockSyncHistory = [];
     this.hardwareClockOffset = 0;
   }
-  
+
   /**
    * Sync with hardware clock
    */
   private syncHardwareClock(): void {
     if (!this.audioContext) return;
-    
+
     // Get high-resolution timestamps
     const perfTime = performance.now();
     const audioTime = this.audioContext.currentTime * 1000; // Convert to ms
     const offset = perfTime - audioTime;
-    
+
     // Add to history
     this.clockSyncHistory.push(offset);
     if (this.clockSyncHistory.length > this.clockSyncHistorySize) {
       this.clockSyncHistory.shift();
     }
-    
+
     // Calculate average offset for stability
-    const avgOffset = this.clockSyncHistory.reduce((a, b) => a + b, 0) / this.clockSyncHistory.length;
+    const avgOffset =
+      this.clockSyncHistory.reduce((a, b) => a + b, 0) /
+      this.clockSyncHistory.length;
     const oldOffset = this.hardwareClockOffset;
     this.hardwareClockOffset = avgOffset;
-    
+
     // Log significant changes (the offset is the normal difference between performance.now() and AudioContext time)
     const adjustment = avgOffset - oldOffset;
-    if (Math.abs(adjustment) > 1 && this.clockSyncHistory.length > 1 && !this.audioWorkletNode) {
+    if (
+      Math.abs(adjustment) > 1 &&
+      this.clockSyncHistory.length > 1 &&
+      !this.audioWorkletNode
+    ) {
       // Only log for non-AudioWorklet mode since it's not relevant with AudioWorklet
-      console.log(`🔧 Clock sync adjustment: ${adjustment.toFixed(2)}ms (offset: ${avgOffset.toFixed(2)}ms)`);
+      this.getLoggers().timingLogger.verbose(
+        `Clock sync adjustment: ${adjustment.toFixed(2)}ms (offset: ${avgOffset.toFixed(2)}ms)`,
+      );
     }
   }
-  
+
   /**
    * Get hardware-synced time
    */
@@ -404,11 +550,11 @@ export class UnifiedTransport implements Service {
     if (!this.useHardwareClock || !this.audioContext) {
       return performance.now() / 1000;
     }
-    
+
     // Use AudioContext time with offset compensation
-    return this.audioContext.currentTime + (this.hardwareClockOffset / 1000);
+    return this.audioContext.currentTime + this.hardwareClockOffset / 1000;
   }
-  
+
   /**
    * Set the quantum for pause/resume operations
    * @param quantum - Subdivision for quantization ('1n', '4n', '8n', '16n', '32n', '64n', '128n')
@@ -416,52 +562,62 @@ export class UnifiedTransport implements Service {
   setPauseResumeQuantum(quantum: string): void {
     const validQuantums = ['1n', '2n', '4n', '8n', '16n', '32n', '64n', '128n'];
     if (!validQuantums.includes(quantum)) {
-      console.warn(`Invalid quantum: ${quantum}. Using default '16n'`);
+      UnifiedTransport.staticLogger.warn(
+        `Invalid quantum: ${quantum}. Using default '16n'`,
+      );
       return;
     }
-    
+
     this.pauseQuantum = quantum;
-    console.log(`🎯 Pause/Resume quantum set to: ${quantum}`);
+    UnifiedTransport.staticLogger.info(
+      `Pause/Resume quantum set to: ${quantum}`,
+    );
   }
-  
+
   /**
    * Get current pause/resume quantum
    */
   getPauseResumeQuantum(): string {
     return this.pauseQuantum;
   }
-  
+
   /**
    * Get hardware clock sync status
    */
   get isHardwareClockSyncEnabled(): boolean {
     return this.useHardwareClock;
   }
-  
+
   /**
    * Get current pre-buffer time
    */
   get currentPreBufferTime(): number {
     return this.preBufferTime;
   }
-  
+
   /**
    * Initialize the transport system
    */
   async initialize(): Promise<void> {
-    console.log('🚀 UnifiedTransport.initialize() called, isInitialized:', this.isInitialized);
-    
+    UnifiedTransport.staticLogger.info('initialize() called', {
+      isInitialized: this.isInitialized,
+    });
+
     if (this.isInitialized) {
-      console.log('UnifiedTransport.initialize(): Already initialized, returning early');
+      UnifiedTransport.staticLogger.info(
+        'Already initialized, returning early',
+      );
       return;
     }
-    
-    console.log('🚀 UnifiedTransport.initialize() proceeding with initialization');
-    
+
+    UnifiedTransport.staticLogger.info('Proceeding with initialization');
+
     // DEFENSIVE: Try to get dependencies from ServiceRegistry if they're missing
     if (!this.audioEngine || !this.eventBus) {
-      console.log('UnifiedTransport.initialize(): Missing dependencies, attempting to retrieve from ServiceRegistry');
-      
+      UnifiedTransport.staticLogger.info(
+        'Missing dependencies, attempting to retrieve from ServiceRegistry',
+      );
+
       // Try to get from global service registry
       const registry = (window as any).__serviceRegistry;
       if (registry) {
@@ -469,117 +625,161 @@ export class UnifiedTransport implements Service {
           const audioEngineService = registry.get('audioEngine');
           if (audioEngineService) {
             this.audioEngine = audioEngineService;
-            console.log('UnifiedTransport.initialize(): Retrieved AudioEngine from ServiceRegistry');
+            UnifiedTransport.staticLogger.info(
+              'Retrieved AudioEngine from ServiceRegistry',
+            );
           }
         }
-        
+
         if (!this.eventBus) {
           const eventBusService = registry.get('eventBus');
           if (eventBusService) {
             this.eventBus = eventBusService;
-            console.log('UnifiedTransport.initialize(): Retrieved EventBus from ServiceRegistry');
+            UnifiedTransport.staticLogger.info(
+              'Retrieved EventBus from ServiceRegistry',
+            );
           }
         }
       }
     }
-    
+
     // Final check - ensure we have audioEngine reference
     if (!this.audioEngine) {
-      console.error('UnifiedTransport.initialize(): AudioEngine is still null after recovery attempt!', {
-        instance: this,
-        hasEventBus: !!this.eventBus,
-        hasAudioEngine: !!this.audioEngine,
-        isSingleton: this === UnifiedTransport.instance
-      });
-      throw new Error('UnifiedTransport: AudioEngine reference is missing. This indicates a dependency injection issue.');
+      UnifiedTransport.staticLogger.error(
+        'AudioEngine is still null after recovery attempt!',
+        {
+          instance: this,
+          hasEventBus: !!this.eventBus,
+          hasAudioEngine: !!this.audioEngine,
+          isSingleton: this === UnifiedTransport.instance,
+        },
+      );
+      throw new Error(
+        'UnifiedTransport: AudioEngine reference is missing. This indicates a dependency injection issue.',
+      );
     }
-    
+
     try {
       // Get audio context from audio engine
       const tone = this.audioEngine.getTone();
-      console.log('UnifiedTransport.initialize(): Got Tone from AudioEngine:', !!tone);
-      
+      UnifiedTransport.staticLogger.info('Got Tone from AudioEngine', {
+        hasTone: !!tone,
+      });
+
       // Get the raw AudioContext - Tone.js wraps it, we need the native one
       const toneContext = tone.getContext();
-      
+
       // Get the actual native AudioContext instance (Tone.js GitHub issue #1298)
-      if ((toneContext as any).rawContext?._nativeAudioContext instanceof AudioContext) {
+      if (
+        (toneContext as any).rawContext?._nativeAudioContext instanceof
+        AudioContext
+      ) {
         this.audioContext = (toneContext as any).rawContext._nativeAudioContext;
       } else {
         // Fallback to AudioEngine's context which should already have the native one
         this.audioContext = this.audioEngine.getContext();
       }
-      
-      console.log('UnifiedTransport.initialize(): Got AudioContext:', this.audioContext?.state);
-      
+
+      UnifiedTransport.staticLogger.info('Got AudioContext', {
+        state: this.audioContext?.state,
+      });
+
       // Check audio context state but don't block initialization
       if (this.audioContext.state === 'suspended') {
-        console.warn('UnifiedTransport: AudioContext is suspended. Transport features will be limited until audio context is resumed.');
+        UnifiedTransport.staticLogger.warn(
+          'AudioContext is suspended. Transport features will be limited until audio context is resumed.',
+        );
         // Continue initialization - we can still set up everything except actual playback
       }
-      
+
       // Configure Tone.js for professional timing
       tone.context.lookAhead = this.config.lookAheadTime;
       tone.context.updateInterval = this.config.scheduleInterval;
-      
+
       // Pattern scheduler initialization removed - now handled by tracks
       tone.Transport.PPQ = 960; // Professional PPQ for accurate MIDI timing
-      
+
       // Preload AudioWorklet module for faster startup if available
-      if (this.config.enableAudioWorklet && this.audioContext && 'audioWorklet' in this.audioContext) {
+      if (
+        this.config.enableAudioWorklet &&
+        this.audioContext &&
+        'audioWorklet' in this.audioContext
+      ) {
         try {
           // Preload the worklet module even if context is suspended
-          console.log('🚀 Preloading AudioWorklet module for faster startup...');
-          await this.audioContext.audioWorklet.addModule('/worklets/timing-processor.js');
+          this.getLoggers().timingLogger.info(
+            'Preloading AudioWorklet module for faster startup',
+          );
+          await this.audioContext.audioWorklet.addModule(
+            '/worklets/timing-processor.js',
+          );
           this.audioWorkletModuleLoaded = true;
-          console.log('✅ AudioWorklet module preloaded successfully');
+          this.getLoggers().timingLogger.info(
+            'AudioWorklet module preloaded successfully',
+          );
         } catch (error) {
-          console.warn('Failed to preload AudioWorklet module:', error);
+          this.getLoggers().timingLogger.warn(
+            'Failed to preload AudioWorklet module',
+            { error },
+          );
           // Don't fail initialization, AudioWorklet will be loaded on demand
         }
       }
-      
+
       // AudioWorklet node will be created when transport starts
       this.audioWorkletReady = false;
-      
+
       // Initialize WebWorker as backup timing source
       if (this.config.enableWebWorker) {
         await this.initializeWebWorker();
-        console.log('⚡ Web Worker initialized as backup timing source');
+        this.getLoggers().timingLogger.info(
+          'Web Worker initialized as backup timing source',
+        );
       } else {
         this.initializeIntervalTiming();
-        console.log('⏱️ Using setInterval fallback timing');
+        this.getLoggers().timingLogger.info(
+          'Using setInterval fallback timing',
+        );
       }
-      
+
       // Set initial tempo and time signature
       tone.Transport.bpm.value = this.config.tempo;
       tone.Transport.timeSignature = [
         this.config.timeSignature.numerator,
-        this.config.timeSignature.denominator
+        this.config.timeSignature.denominator,
       ];
-      
+
       this.isInitialized = true;
-      console.log('UnifiedTransport.initialize(): Setting isInitialized = true');
-      
-      console.log('🎯 UnifiedTransport initialized', {
-        mode: this.audioWorkletNode ? 'AudioWorklet' : this.timingWorker ? 'WebWorker' : 'Interval',
+      UnifiedTransport.staticLogger.info('Setting isInitialized = true');
+
+      UnifiedTransport.staticLogger.info('UnifiedTransport initialized', {
+        mode: this.audioWorkletNode
+          ? 'AudioWorklet'
+          : this.timingWorker
+            ? 'WebWorker'
+            : 'Interval',
         audioWorkletNode: !!this.audioWorkletNode,
         timingWorker: !!this.timingWorker,
         lookAhead: `${this.config.lookAheadTime * 1000}ms`,
         updateRate: `${1 / this.config.scheduleInterval}Hz`,
         driftCompensation: this.config.driftCompensation,
         audioContextState: this.audioContext?.state,
-        isInitialized: this.isInitialized
+        isInitialized: this.isInitialized,
       });
-      
-      console.log('UnifiedTransport.initialize() completed successfully! isInitialized:', this.isInitialized);
-      
+
+      UnifiedTransport.staticLogger.info(
+        'initialize() completed successfully!',
+        { isInitialized: this.isInitialized },
+      );
     } catch (error) {
-      console.error('Failed to initialize UnifiedTransport:', error);
+      UnifiedTransport.staticLogger.error(
+        'Failed to initialize UnifiedTransport',
+        { error },
+      );
       throw error;
     }
   }
-  
+
   /**
    * Initialize AudioWorklet for sample-accurate timing
    */
@@ -587,49 +787,71 @@ export class UnifiedTransport implements Service {
     try {
       // Get the AudioContext from AudioEngine (which is the same one Tone.js uses)
       const audioContext = this.audioEngine.getContext();
-      
+
       if (!audioContext || !(audioContext instanceof AudioContext)) {
         throw new Error('Could not get AudioContext from AudioEngine');
       }
-      
+
       // Ensure AudioContext is running - CRITICAL for AudioWorklet
       if (audioContext.state === 'suspended') {
-        console.warn('AudioContext is suspended, trying to resume...');
+        UnifiedTransport.staticLogger.warn(
+          'AudioContext is suspended, trying to resume...',
+        );
         try {
           await audioContext.resume();
-          console.log('AudioContext resumed, state:', audioContext.state);
+          UnifiedTransport.staticLogger.debug(
+            'AudioContext resumed, state:',
+            audioContext.state,
+          );
         } catch (e) {
-          console.warn('Could not resume AudioContext:', e);
-          console.warn('AudioWorklet will not process until AudioContext is resumed from user gesture');
+          UnifiedTransport.staticLogger.warn(
+            'Could not resume AudioContext:',
+            e,
+          );
+          UnifiedTransport.staticLogger.warn(
+            'AudioWorklet will not process until AudioContext is resumed from user gesture',
+          );
         }
       }
-      
+
       // Load the worklet processor if not already loaded
       if (!this.audioWorkletModuleLoaded) {
-        console.log('Loading AudioWorklet module from /worklets/timing-processor.js...');
-        await audioContext.audioWorklet.addModule('/worklets/timing-processor.js');
+        UnifiedTransport.staticLogger.debug(
+          'Loading AudioWorklet module from /worklets/timing-processor.js...',
+        );
+        await audioContext.audioWorklet.addModule(
+          '/worklets/timing-processor.js',
+        );
         this.audioWorkletModuleLoaded = true;
-        console.log('AudioWorklet module loaded successfully');
+        UnifiedTransport.staticLogger.debug(
+          'AudioWorklet module loaded successfully',
+        );
       } else {
-        console.log('AudioWorklet module already preloaded');
+        UnifiedTransport.staticLogger.debug(
+          'AudioWorklet module already preloaded',
+        );
       }
-      
+
       // Create the worklet node
       // IMPORTANT: Need at least 1 output to ensure process() is called
-      this.audioWorkletNode = new AudioWorkletNode(audioContext, 'timing-processor', {
-        numberOfInputs: 0,
-        numberOfOutputs: 1,  // Need at least 1 output to process
-        outputChannelCount: [1],  // Single channel is enough
-        processorOptions: {
-          updateInterval: this.config.scheduleInterval,
-          lookAheadTime: this.config.lookAheadTime
-        }
-      });
-      
+      this.audioWorkletNode = new AudioWorkletNode(
+        audioContext,
+        'timing-processor',
+        {
+          numberOfInputs: 0,
+          numberOfOutputs: 1, // Need at least 1 output to process
+          outputChannelCount: [1], // Single channel is enough
+          processorOptions: {
+            updateInterval: this.config.scheduleInterval,
+            lookAheadTime: this.config.lookAheadTime,
+          },
+        },
+      );
+
       // CRITICAL: Connect to destination to start processing
       // Without this, the AudioWorklet won't run its process() method
       this.audioWorkletNode.connect(audioContext.destination);
-      
+
       // HACK: Create a silent oscillator to ensure the audio graph is running
       // This forces the AudioWorklet to start processing
       const silentOsc = audioContext.createOscillator();
@@ -638,92 +860,124 @@ export class UnifiedTransport implements Service {
       silentOsc.connect(gainNode);
       gainNode.connect(audioContext.destination);
       silentOsc.start();
-      console.log('🔊 Started silent oscillator to ensure audio graph is running');
-      
+      UnifiedTransport.staticLogger.debug(
+        '🔊 Started silent oscillator to ensure audio graph is running',
+      );
+
       // Final check of audio context state
-      console.log('AudioContext state after setup:', audioContext.state);
+      UnifiedTransport.staticLogger.debug(
+        'AudioContext state after setup:',
+        audioContext.state,
+      );
       // AudioWorklet connected
-      
+
       // Send a test message to verify communication
       this.audioWorkletNode.port.postMessage({ type: 'get-stats' });
-      
+
       // Create a bound message handler so we can remove it later
       this.audioWorkletMessageHandler = (event: MessageEvent) => {
         if (event.data.type === 'timing-update') {
           // Debug sessionId validation for first few updates (reduced)
           if (event.data.updateCount <= 2) {
-            console.log(`🔍 SessionId check: received=${event.data.sessionId}, expected=${this.expectedSessionId}, updateCount=${event.data.updateCount}`);
+            UnifiedTransport.staticLogger.debug(
+              `🔍 SessionId check: received=${event.data.sessionId}, expected=${this.expectedSessionId}, updateCount=${event.data.updateCount}`,
+            );
           }
-          
+
           // Validate session ID to reject stale timing updates
           if (event.data.sessionId !== this.expectedSessionId) {
-            console.warn(`🚫 Rejecting stale AudioWorklet[${event.data.processorId}] update: sessionId=${event.data.sessionId}, expected=${this.expectedSessionId}`);
+            UnifiedTransport.staticLogger.warn(
+              `🚫 Rejecting stale AudioWorklet[${event.data.processorId}] update: sessionId=${event.data.sessionId}, expected=${this.expectedSessionId}`,
+            );
             return;
           }
-          
+
           // Validate message sequence to reject out-of-order timing updates
           if (event.data.messageSequence <= this.expectedMessageSequence) {
-            console.warn(`🚫 Rejecting out-of-order AudioWorklet[${event.data.processorId}] update: sequence=${event.data.messageSequence}, expected>${this.expectedMessageSequence}, time=${event.data.time.toFixed(6)}s`);
+            UnifiedTransport.staticLogger.warn(
+              `🚫 Rejecting out-of-order AudioWorklet[${event.data.processorId}] update: sequence=${event.data.messageSequence}, expected>${this.expectedMessageSequence}, time=${event.data.time.toFixed(6)}s`,
+            );
             return;
           }
           this.expectedMessageSequence = event.data.messageSequence;
-          
-          
+
           // Log first timing update for debugging
           if (event.data.updateCount === 1) {
-            console.log(`🎵 AudioWorklet[${event.data.processorId}] timing started: time=${event.data.time.toFixed(4)}s, frame=${event.data.playbackFrame || event.data.frame}`);
-            
+            UnifiedTransport.staticLogger.debug(
+              `🎵 AudioWorklet[${event.data.processorId}] timing started: time=${event.data.time.toFixed(4)}s, frame=${event.data.playbackFrame || event.data.frame}`,
+            );
+
             // Store the baseline time for reference
             this.audioWorkletBaselineTime = event.data.time;
-            
+
             // In master clock mode, AudioWorklet IS the source of truth
             // No offset calculation needed - Transport will follow AudioWorklet
           }
-          
+
           // CRITICAL: Reject stale timing updates from message queue
           // Check if this timing update shows an unreasonable jump from the last good update
           if (this.lastAudioWorkletTime > 0) {
-            const timingSinceLastUpdate = event.data.time - this.lastAudioWorkletTime;
+            const timingSinceLastUpdate =
+              event.data.time - this.lastAudioWorkletTime;
             const expectedMaxInterval = 0.01; // 10ms max expected between updates (way more than 2.67ms normal)
-            
+
             if (timingSinceLastUpdate > expectedMaxInterval) {
               // This looks like a stale accumulated update - reject it
-              console.warn(`🚫 Rejecting stale AudioWorklet[${event.data.processorId}] update: time=${event.data.time.toFixed(6)}s, last=${this.lastAudioWorkletTime.toFixed(6)}s, gap=${(timingSinceLastUpdate * 1000).toFixed(0)}ms`);
+              UnifiedTransport.staticLogger.warn(
+                `🚫 Rejecting stale AudioWorklet[${event.data.processorId}] update: time=${event.data.time.toFixed(6)}s, last=${this.lastAudioWorkletTime.toFixed(6)}s, gap=${(timingSinceLastUpdate * 1000).toFixed(0)}ms`,
+              );
               return; // Skip this stale update
             }
           }
-          
+
           // Store sample-accurate timing from AudioWorklet AFTER all validation passes
           this.lastAudioWorkletTime = event.data.time;
-          this.lastAudioWorkletFrame = event.data.playbackFrame || event.data.frame || 0;
-          
+          this.lastAudioWorkletFrame =
+            event.data.playbackFrame || event.data.frame || 0;
+
           // Debug log frame updates periodically - expand to show more frequently
-          if (event.data.updateCount <= 20 || event.data.updateCount % 10 === 0) {
-            console.log(`🎯 Frame tracking update ${event.data.updateCount}: playbackFrame=${event.data.playbackFrame}, frame=${event.data.frame}, stored=${this.lastAudioWorkletFrame}`);
+          if (
+            event.data.updateCount <= 20 ||
+            event.data.updateCount % 10 === 0
+          ) {
+            UnifiedTransport.staticLogger.debug(
+              `🎯 Frame tracking update ${event.data.updateCount}: playbackFrame=${event.data.playbackFrame}, frame=${event.data.frame}, stored=${this.lastAudioWorkletFrame}`,
+            );
           }
-          
+
           this.handleTimingUpdate('AudioWorklet');
         } else if (event.data.type === 'timing-warning') {
-          console.warn('⚠️ AudioWorklet timing warning:', event.data.message);
+          UnifiedTransport.staticLogger.warn(
+            '⚠️ AudioWorklet timing warning:',
+            event.data.message,
+          );
         } else if (event.data.type === 'stats') {
-          console.log('📊 AudioWorklet stats:', event.data);
+          UnifiedTransport.staticLogger.debug(
+            '📊 AudioWorklet stats:',
+            event.data,
+          );
         }
       };
-      
+
       // Handle messages from the worklet
       this.audioWorkletNode.port.onmessage = this.audioWorkletMessageHandler;
-      
+
       // Connect to destination (required for processing)
       this.audioWorkletNode.connect(audioContext.destination);
-      
+
       // AudioWorklet timing initialized - sample-accurate timing enabled
     } catch (error) {
-      console.error('AudioWorklet initialization error:', error);
-      console.warn('AudioWorklet initialization failed, falling back to WebWorker');
+      UnifiedTransport.staticLogger.error(
+        'AudioWorklet initialization error:',
+        error,
+      );
+      UnifiedTransport.staticLogger.warn(
+        'AudioWorklet initialization failed, falling back to WebWorker',
+      );
       await this.initializeWebWorker();
     }
   }
-  
+
   /**
    * Reinitialize AudioWorklet after context is resumed
    * This is needed because AudioWorklet won't process if created while context is suspended
@@ -731,74 +985,96 @@ export class UnifiedTransport implements Service {
   async reinitializeAudioWorklet(): Promise<void> {
     // Get fresh context from audioEngine in case our reference is stale
     if (!this.audioEngine) {
-      console.error('Cannot reinitialize AudioWorklet - audioEngine is null');
+      UnifiedTransport.staticLogger.error(
+        'Cannot reinitialize AudioWorklet - audioEngine is null',
+      );
       return;
     }
-    
+
     // Get the raw AudioContext - Tone.js wraps it, we need the native one
     const tone = this.audioEngine.getTone();
     let audioContext: AudioContext;
-    
+
     // Try to get the raw AudioContext from Tone.js (GitHub issue #1298)
     const toneContext = tone?.getContext();
-    if ((toneContext as any)?.rawContext?._nativeAudioContext instanceof AudioContext) {
+    if (
+      (toneContext as any)?.rawContext?._nativeAudioContext instanceof
+      AudioContext
+    ) {
       audioContext = (toneContext as any).rawContext._nativeAudioContext;
     } else {
       // Fallback to AudioEngine's context which should already have the native one
       audioContext = this.audioEngine.getContext();
     }
-    
+
     if (!audioContext) {
-      console.error('Cannot reinitialize AudioWorklet - no AudioContext available');
+      UnifiedTransport.staticLogger.error(
+        'Cannot reinitialize AudioWorklet - no AudioContext available',
+      );
       return;
     }
-    
+
     // Debug: check what type we actually got
-    console.log('AudioContext type check:', {
+    UnifiedTransport.staticLogger.debug('AudioContext type check:', {
       constructor: audioContext.constructor.name,
       isAudioContext: audioContext instanceof AudioContext,
       isBaseAudioContext: audioContext instanceof BaseAudioContext,
-      hasAudioWorklet: 'audioWorklet' in audioContext
+      hasAudioWorklet: 'audioWorklet' in audioContext,
     });
-    
+
     // Update our reference
     this.audioContext = audioContext;
-    
+
     if (!this.config.enableAudioWorklet || !audioContext.audioWorklet) {
-      console.log('AudioWorklet not enabled or not supported');
+      UnifiedTransport.staticLogger.debug(
+        'AudioWorklet not enabled or not supported',
+      );
       return;
     }
 
     // Check if context is now running
     if (audioContext.state !== 'running') {
-      console.warn('Cannot reinitialize AudioWorklet - context still not running:', audioContext.state);
+      UnifiedTransport.staticLogger.warn(
+        'Cannot reinitialize AudioWorklet - context still not running:',
+        audioContext.state,
+      );
       return;
     }
 
     // Prevent rapid reinitialization loops (minimum 100ms between reinitializations)
     const now = performance.now();
     if (now - this.lastReinitializationTime < 100) {
-      console.warn('🚫 Preventing rapid AudioWorklet reinitialization - too soon after last attempt');
+      UnifiedTransport.staticLogger.warn(
+        '🚫 Preventing rapid AudioWorklet reinitialization - too soon after last attempt',
+      );
       return;
     }
     this.lastReinitializationTime = now;
 
-    console.log('🔄 Reinitializing AudioWorklet with running context...', {
-      hasAudioWorklet: !!audioContext?.audioWorklet,
-      currentNode: !!this.audioWorkletNode,
-      moduleLoaded: this.audioWorkletModuleLoaded
-    });
-    
+    UnifiedTransport.staticLogger.debug(
+      '🔄 Reinitializing AudioWorklet with running context...',
+      {
+        hasAudioWorklet: !!audioContext?.audioWorklet,
+        currentNode: !!this.audioWorkletNode,
+        moduleLoaded: this.audioWorkletModuleLoaded,
+      },
+    );
+
     // CRITICAL: Always disconnect and clean up old node completely
     if (this.audioWorkletNode) {
-      console.log('🧹 Cleaning up old AudioWorklet node...');
+      UnifiedTransport.staticLogger.debug(
+        '🧹 Cleaning up old AudioWorklet node...',
+      );
       // Send stop message to old processor first
       try {
         this.audioWorkletNode.port.postMessage({ type: 'stop' });
       } catch (e) {
-        console.warn('Failed to send stop message to old AudioWorklet:', e);
+        UnifiedTransport.staticLogger.warn(
+          'Failed to send stop message to old AudioWorklet:',
+          e,
+        );
       }
-      
+
       // Disconnect and nullify
       this.audioWorkletNode.disconnect();
       // CRITICAL: Remove the old message handler to prevent duplicate processing
@@ -807,45 +1083,53 @@ export class UnifiedTransport implements Service {
         this.audioWorkletMessageHandler = null;
       }
       this.audioWorkletNode = null;
-      
+
       // Give it a moment to fully cleanup
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     }
 
     // Create new AudioWorklet node with proper setup
     try {
       // Use the audioContext we already validated above
       // (removed duplicate const declaration that was shadowing the outer audioContext)
-      
+
       if (!audioContext) {
-        console.error('Cannot create AudioWorklet - no AudioContext available');
+        UnifiedTransport.staticLogger.error(
+          'Cannot create AudioWorklet - no AudioContext available',
+        );
         return;
       }
-      
+
       // Update our reference
       this.audioContext = audioContext;
-      
+
       // Load the worklet module if not already loaded
       if (!this.audioWorkletModuleLoaded) {
-        console.log('Loading AudioWorklet module...');
-        await audioContext.audioWorklet.addModule('/worklets/timing-processor.js');
+        UnifiedTransport.staticLogger.debug('Loading AudioWorklet module...');
+        await audioContext.audioWorklet.addModule(
+          '/worklets/timing-processor.js',
+        );
         this.audioWorkletModuleLoaded = true;
       }
-      
+
       // CRITICAL: Reset AudioWorklet timing state for clean initialization
       this.audioWorkletStartTime = 0; // Keep for compatibility but not used in master clock mode
       this.lastAudioWorkletTime = 0; // Reset timing tracking
       this.lastAudioWorkletFrame = 0;
-      
+
       // Create the AudioWorklet node
-      this.audioWorkletNode = new AudioWorkletNode(audioContext, 'timing-processor', {
-        outputChannelCount: [1],
-        processorOptions: {
-          updateInterval: this.config.scheduleInterval,
-          lookAheadTime: this.config.lookAheadTime
-        }
-      });
-      
+      this.audioWorkletNode = new AudioWorkletNode(
+        audioContext,
+        'timing-processor',
+        {
+          outputChannelCount: [1],
+          processorOptions: {
+            updateInterval: this.config.scheduleInterval,
+            lookAheadTime: this.config.lookAheadTime,
+          },
+        },
+      );
+
       // Configure output to ensure it runs
       if (this.audioWorkletNode.numberOfOutputs > 0) {
         const gainNode = audioContext.createGain();
@@ -853,109 +1137,141 @@ export class UnifiedTransport implements Service {
         this.audioWorkletNode.connect(gainNode);
         gainNode.connect(audioContext.destination);
       }
-      
+
       // Create a new bound message handler for the reinitialized node
       this.audioWorkletMessageHandler = (event: MessageEvent) => {
         if (event.data.type === 'timing-update') {
           // Debug sessionId validation for first few updates (reduced)
           if (event.data.updateCount <= 2) {
-            console.log(`🔍 SessionId check: received=${event.data.sessionId}, expected=${this.expectedSessionId}, updateCount=${event.data.updateCount}`);
+            UnifiedTransport.staticLogger.debug(
+              `🔍 SessionId check: received=${event.data.sessionId}, expected=${this.expectedSessionId}, updateCount=${event.data.updateCount}`,
+            );
           }
-          
+
           // Validate session ID to reject stale timing updates
           if (event.data.sessionId !== this.expectedSessionId) {
-            console.warn(`🚫 Rejecting stale AudioWorklet[${event.data.processorId}] update: sessionId=${event.data.sessionId}, expected=${this.expectedSessionId}`);
+            UnifiedTransport.staticLogger.warn(
+              `🚫 Rejecting stale AudioWorklet[${event.data.processorId}] update: sessionId=${event.data.sessionId}, expected=${this.expectedSessionId}`,
+            );
             return;
           }
-          
+
           // Validate message sequence to reject out-of-order timing updates
           if (event.data.messageSequence <= this.expectedMessageSequence) {
-            console.warn(`🚫 Rejecting out-of-order AudioWorklet[${event.data.processorId}] update: sequence=${event.data.messageSequence}, expected>${this.expectedMessageSequence}, time=${event.data.time.toFixed(6)}s`);
+            UnifiedTransport.staticLogger.warn(
+              `🚫 Rejecting out-of-order AudioWorklet[${event.data.processorId}] update: sequence=${event.data.messageSequence}, expected>${this.expectedMessageSequence}, time=${event.data.time.toFixed(6)}s`,
+            );
             return;
           }
           this.expectedMessageSequence = event.data.messageSequence;
-          
-          
+
           // Log first timing update for debugging
           if (event.data.updateCount === 1) {
-            console.log(`🎵 AudioWorklet[${event.data.processorId}] timing started: time=${event.data.time.toFixed(4)}s, frame=${event.data.playbackFrame || event.data.frame}`);
-            
+            UnifiedTransport.staticLogger.debug(
+              `🎵 AudioWorklet[${event.data.processorId}] timing started: time=${event.data.time.toFixed(4)}s, frame=${event.data.playbackFrame || event.data.frame}`,
+            );
+
             // Store the baseline time for reference
             this.audioWorkletBaselineTime = event.data.time;
-            
+
             // In master clock mode, AudioWorklet IS the source of truth
             // No offset calculation needed - Transport will follow AudioWorklet
           }
-          
+
           // CRITICAL: Reject stale timing updates from message queue
           // Check if this timing update shows an unreasonable jump from the last good update
           if (this.lastAudioWorkletTime > 0) {
-            const timingSinceLastUpdate = event.data.time - this.lastAudioWorkletTime;
+            const timingSinceLastUpdate =
+              event.data.time - this.lastAudioWorkletTime;
             const expectedMaxInterval = 0.01; // 10ms max expected between updates (way more than 2.67ms normal)
-            
+
             if (timingSinceLastUpdate > expectedMaxInterval) {
               // This looks like a stale accumulated update - reject it
-              console.warn(`🚫 Rejecting stale AudioWorklet[${event.data.processorId}] update: time=${event.data.time.toFixed(6)}s, last=${this.lastAudioWorkletTime.toFixed(6)}s, gap=${(timingSinceLastUpdate * 1000).toFixed(0)}ms`);
+              UnifiedTransport.staticLogger.warn(
+                `🚫 Rejecting stale AudioWorklet[${event.data.processorId}] update: time=${event.data.time.toFixed(6)}s, last=${this.lastAudioWorkletTime.toFixed(6)}s, gap=${(timingSinceLastUpdate * 1000).toFixed(0)}ms`,
+              );
               return; // Skip this stale update
             }
           }
-          
+
           // Store sample-accurate timing from AudioWorklet AFTER validation passes
           this.lastAudioWorkletTime = event.data.time;
-          this.lastAudioWorkletFrame = event.data.playbackFrame || event.data.frame || 0;
-          
+          this.lastAudioWorkletFrame =
+            event.data.playbackFrame || event.data.frame || 0;
+
           // Debug log frame updates periodically (reduced logging)
           if (event.data.updateCount <= 5) {
-            console.log(`🎯 Frame tracking update ${event.data.updateCount}: playbackFrame=${event.data.playbackFrame}, frame=${event.data.frame}, stored=${this.lastAudioWorkletFrame}`);
+            UnifiedTransport.staticLogger.debug(
+              `🎯 Frame tracking update ${event.data.updateCount}: playbackFrame=${event.data.playbackFrame}, frame=${event.data.frame}, stored=${this.lastAudioWorkletFrame}`,
+            );
           }
-          
+
           // Forward timing update to handler
           this.handleTimingUpdate('AudioWorklet-reinit');
         } else if (event.data.type === 'timing-warning') {
-          console.warn('⚠️ AudioWorklet timing warning:', event.data.message);
+          UnifiedTransport.staticLogger.warn(
+            '⚠️ AudioWorklet timing warning:',
+            event.data.message,
+          );
         } else if (event.data.type === 'stats') {
-          console.log('📊 AudioWorklet stats:', event.data);
+          UnifiedTransport.staticLogger.debug(
+            '📊 AudioWorklet stats:',
+            event.data,
+          );
         }
       };
-      
+
       // IMPORTANT: Set up message handler for the new node
       this.audioWorkletNode.port.onmessage = this.audioWorkletMessageHandler;
-      
+
       this.audioWorkletReady = true;
-      console.log('✅ AudioWorklet reinitialized successfully with message handler');
-      
+      UnifiedTransport.staticLogger.debug(
+        '✅ AudioWorklet reinitialized successfully with message handler',
+      );
+
       // If we're already playing, send start message
       if (this.state === 'playing') {
         const tone = this.audioEngine.getTone();
         const currentSeconds = tone.Transport.seconds;
-        const currentFrames = Math.floor(currentSeconds * this.audioContext.sampleRate);
-        
+        const currentFrames = Math.floor(
+          currentSeconds * this.audioContext.sampleRate,
+        );
+
         // CRITICAL: Reset AudioWorklet timing state for clean sync
         // AudioWorklet will track absolute position, so we reset our tracking
         this.audioWorkletStartTime = 0; // Keep for compatibility but not used in master clock mode
         this.lastAudioWorkletTime = 0; // Reset to start fresh timing tracking
         this.lastAudioWorkletFrame = currentFrames;
-        
+
         // Ensure we're starting from a clean state when Transport is at 0
         const startFrame = currentSeconds < 0.001 ? 0 : currentFrames;
-        
-        console.log('🎵 Sending start message to reinitialized AudioWorklet', {
-          state: this.state,
-          fromFrame: startFrame,
-          startTime: currentSeconds
-        });
-        this.audioWorkletNode.port.postMessage({ 
+
+        UnifiedTransport.staticLogger.debug(
+          '🎵 Sending start message to reinitialized AudioWorklet',
+          {
+            state: this.state,
+            fromFrame: startFrame,
+            startTime: currentSeconds,
+          },
+        );
+        this.audioWorkletNode.port.postMessage({
           type: 'start',
-          fromFrame: startFrame
+          fromFrame: startFrame,
         });
       }
-      
-      console.log('✅ AudioWorklet reinitializtion completed successfully', {
-        nodeCreated: !!this.audioWorkletNode,
-        ready: this.audioWorkletReady
-      });
+
+      UnifiedTransport.staticLogger.debug(
+        '✅ AudioWorklet reinitializtion completed successfully',
+        {
+          nodeCreated: !!this.audioWorkletNode,
+          ready: this.audioWorkletReady,
+        },
+      );
     } catch (error) {
-      console.error('Failed to reinitialize AudioWorklet:', error);
+      UnifiedTransport.staticLogger.error(
+        'Failed to reinitialize AudioWorklet:',
+        error,
+      );
       this.audioWorkletReady = false;
       // Fall back to Web Worker timing
       await this.initializeWebWorker();
@@ -994,28 +1310,31 @@ export class UnifiedTransport implements Service {
           }
         };
       `;
-      
+
       const blob = new Blob([workerCode], { type: 'application/javascript' });
       const workerUrl = URL.createObjectURL(blob);
       this.timingWorker = new Worker(workerUrl);
-      
+
       // Handle worker messages
       this.timingWorker.onmessage = (event) => {
         if (event.data.type === 'tick') {
           this.handleTimingUpdate('WebWorker');
         }
       };
-      
+
       // Don't start the worker until transport starts
       // this.timingWorker.postMessage({ type: 'start' });
-      
-      console.log('✅ WebWorker timing initialized');
+
+      UnifiedTransport.staticLogger.debug('✅ WebWorker timing initialized');
     } catch (error) {
-      console.warn('WebWorker initialization failed, falling back to interval timing:', error);
+      UnifiedTransport.staticLogger.warn(
+        'WebWorker initialization failed, falling back to interval timing:',
+        error,
+      );
       this.initializeIntervalTiming();
     }
   }
-  
+
   /**
    * Fallback to standard interval timing
    */
@@ -1025,18 +1344,23 @@ export class UnifiedTransport implements Service {
       clearInterval(this.updateTimer);
       this.updateTimer = null;
     }
-    
-    console.log(`🕐 Creating interval timer with ${this.config.scheduleInterval * 1000}ms interval`);
+
+    UnifiedTransport.staticLogger.debug(
+      `🕐 Creating interval timer with ${this.config.scheduleInterval * 1000}ms interval`,
+    );
     this.updateTimer = window.setInterval(() => {
       // Only process if transport is actually initialized and playing
       if (this.isInitialized && this.state === 'playing') {
         this.handleTimingUpdate('Interval');
       }
     }, this.config.scheduleInterval * 1000);
-    
-    console.log('✅ Interval timing initialized, timer ID:', this.updateTimer);
+
+    UnifiedTransport.staticLogger.debug(
+      '✅ Interval timing initialized, timer ID:',
+      this.updateTimer,
+    );
   }
-  
+
   /**
    * Core timing update handler
    */
@@ -1044,45 +1368,47 @@ export class UnifiedTransport implements Service {
     if (!this.isInitialized || this.state !== 'playing') {
       return;
     }
-    
+
     // Debug log the source of timing updates (reduced)
     if (this.updateCount <= 5 || this.updateCount % 100 === 0) {
-      console.log(`⏱️ handleTimingUpdate called from: ${source || 'unknown'}, updateCount: ${this.updateCount}`);
+      UnifiedTransport.staticLogger.debug(
+        `⏱️ handleTimingUpdate called from: ${source || 'unknown'}, updateCount: ${this.updateCount}`,
+      );
     }
-    
+
     // Update timing
     const tone = this.audioEngine.getTone();
     const currentTime = tone.Transport.seconds;
-    
+
     // Detect and compensate for drift
     if (this.config.driftCompensation !== 'off') {
       this.detectAndCompensateDrift();
     }
-    
+
     // Schedule events
     this.scheduleEvents(currentTime);
-    
+
     // Update metrics
     this.updateMetrics();
-    
+
     // Update musical position
     this.updateMusicalPosition();
-    
+
     // Emit timing update event
     this.eventBus.emit('transport:timing-update', {
       time: currentTime,
       position: this.musicalPosition,
       state: this.state,
-      metrics: this.metrics
+      metrics: this.metrics,
     });
   }
-  
+
   /**
    * Detect timing drift and apply compensation
    */
   private detectAndCompensateDrift(): void {
     if (!this.audioContext) return;
-    
+
     // Skip drift checks after resume
     if (this.skipDriftChecks > 0) {
       this.skipDriftChecks--;
@@ -1090,39 +1416,45 @@ export class UnifiedTransport implements Service {
       this.lastTransportTime = this.audioEngine.getTone().Transport.seconds;
       return;
     }
-    
+
     // Get actual transport position
     const tone = this.audioEngine.getTone();
     const transportTime = tone.Transport.seconds;
-    
+
     // For the first update, just record the time
     if (this.lastTransportTime === undefined) {
       this.lastTransportTime = transportTime;
       this.lastUpdateTime = performance.now();
       return;
     }
-    
+
     // Calculate drift using sample-accurate timing
     let drift = 0;
-    let actualDifference = 0; // Track actual difference for metrics
-    
+    const actualDifference = 0; // Track actual difference for metrics
+
     // Debug log drift compensation mode selection (reduced)
     if (this.updateCount === 10 || this.updateCount % 200 === 0) {
-      console.log(`🎯 Drift mode check: audioWorkletNode=${!!this.audioWorkletNode}, lastAudioWorkletTime=${this.lastAudioWorkletTime}, useAudioWorkletAsMasterClock=${this.useAudioWorkletAsMasterClock}`);
+      UnifiedTransport.staticLogger.debug(
+        `🎯 Drift mode check: audioWorkletNode=${!!this.audioWorkletNode}, lastAudioWorkletTime=${this.lastAudioWorkletTime}, useAudioWorkletAsMasterClock=${this.useAudioWorkletAsMasterClock}`,
+      );
     }
-    
-    if (this.audioWorkletNode && this.lastAudioWorkletTime > 0 && this.useAudioWorkletAsMasterClock) {
+
+    if (
+      this.audioWorkletNode &&
+      this.lastAudioWorkletTime > 0 &&
+      this.useAudioWorkletAsMasterClock
+    ) {
       // MASTER CLOCK MODE: AudioWorklet is the ONLY source of truth
       // We completely ignore Transport's internal timing and force it to match AudioWorklet
       const audioWorkletPosition = this.lastAudioWorkletTime;
-      
+
       // Always set Transport to match AudioWorklet exactly
       // This ensures Transport is just a follower, not trying to maintain its own timing
       tone.Transport.seconds = audioWorkletPosition;
-      
+
       // Update our tracked position
       this.lastTransportTime = audioWorkletPosition;
-      
+
       // No drift in master clock mode - AudioWorklet IS the time
       drift = 0;
     } else if (this.audioWorkletNode && this.lastAudioWorkletTime > 0) {
@@ -1130,27 +1462,30 @@ export class UnifiedTransport implements Service {
       // lastAudioWorkletTime is already an absolute position, no need to add baseline
       const expectedTransportTime = this.lastAudioWorkletTime;
       drift = transportTime - expectedTransportTime;
-      
+
       // Apply exponential moving average
       const DRIFT_SMOOTHING = 0.1;
       if (!this.smoothedDrift) {
         this.smoothedDrift = drift;
       } else {
-        this.smoothedDrift = this.smoothedDrift * (1 - DRIFT_SMOOTHING) + drift * DRIFT_SMOOTHING;
+        this.smoothedDrift =
+          this.smoothedDrift * (1 - DRIFT_SMOOTHING) + drift * DRIFT_SMOOTHING;
       }
-      
+
       // Apply correction if needed
       if (Math.abs(this.smoothedDrift) > 0.001) {
         const correction = this.smoothedDrift * 0.1;
         tone.Transport.seconds = tone.Transport.seconds - correction;
-        
+
         if (Math.abs(this.smoothedDrift) > 0.005) {
-          console.log(`🎯 Drift correction (hybrid mode): ${(this.smoothedDrift * 1000).toFixed(2)}ms`);
+          UnifiedTransport.staticLogger.debug(
+            `🎯 Drift correction (hybrid mode): ${(this.smoothedDrift * 1000).toFixed(2)}ms`,
+          );
         }
-        
+
         drift = drift - correction;
       }
-      
+
       this.lastTransportTime = tone.Transport.seconds;
     } else {
       // FALLBACK MODE: Use performance.now() timing with drift compensation
@@ -1158,57 +1493,67 @@ export class UnifiedTransport implements Service {
       const deltaTime = (currentTime - this.lastUpdateTime) / 1000;
       const actualDelta = transportTime - this.lastTransportTime;
       drift = actualDelta - deltaTime;
-      
+
       // Apply drift compensation only in fallback mode
-      if (Math.abs(drift) > 0.005) { // 5ms threshold
+      if (Math.abs(drift) > 0.005) {
+        // 5ms threshold
         const correction = drift * 0.5; // 50% correction factor
         tone.Transport.seconds = tone.Transport.seconds - correction;
         drift = drift - correction;
-        console.log(`🎯 Fallback drift correction: ${(drift * 1000).toFixed(2)}ms`);
+        UnifiedTransport.staticLogger.debug(
+          `🎯 Fallback drift correction: ${(drift * 1000).toFixed(2)}ms`,
+        );
       }
-      
+
       this.lastTransportTime = tone.Transport.seconds;
     }
-    
+
     // Update timing reference
     this.lastUpdateTime = performance.now();
-    
+
     // Add to drift history
     this.driftHistory.push(drift);
     if (this.driftHistory.length > this.driftHistorySize) {
       this.driftHistory.shift();
     }
-    
+
     // Calculate metrics
-    const avgDrift = this.driftHistory.length > 0 
-      ? this.driftHistory.reduce((a, b) => a + b, 0) / this.driftHistory.length 
-      : 0;
-    const maxDrift = this.driftHistory.length > 0 
-      ? Math.max(...this.driftHistory.map(Math.abs)) 
-      : 0;
-    
+    const avgDrift =
+      this.driftHistory.length > 0
+        ? this.driftHistory.reduce((a, b) => a + b, 0) /
+          this.driftHistory.length
+        : 0;
+    const maxDrift =
+      this.driftHistory.length > 0
+        ? Math.max(...this.driftHistory.map(Math.abs))
+        : 0;
+
     // Calculate jitter (RMS of drift variations)
-    const jitter = this.driftHistory.length > 0
-      ? Math.sqrt(
-          this.driftHistory
-            .map(d => Math.pow(d - avgDrift, 2))
-            .reduce((a, b) => a + b, 0) / this.driftHistory.length
-        )
-      : 0;
-    
+    const jitter =
+      this.driftHistory.length > 0
+        ? Math.sqrt(
+            this.driftHistory
+              .map((d) => Math.pow(d - avgDrift, 2))
+              .reduce((a, b) => a + b, 0) / this.driftHistory.length,
+          )
+        : 0;
+
     // Calculate stability based on how many samples are within tolerance
     const driftTolerance = 0.001; // 1ms tolerance
-    const samplesWithinTolerance = this.driftHistory.filter(d => Math.abs(d) <= driftTolerance).length;
-    const stability = this.driftHistory.length > 0 
-      ? (samplesWithinTolerance / this.driftHistory.length) * 100 
-      : 100; // Default to 100% if no data
-    
+    const samplesWithinTolerance = this.driftHistory.filter(
+      (d) => Math.abs(d) <= driftTolerance,
+    ).length;
+    const stability =
+      this.driftHistory.length > 0
+        ? (samplesWithinTolerance / this.driftHistory.length) * 100
+        : 100; // Default to 100% if no data
+
     // Update metrics
     this.metrics.avgDrift = avgDrift * 1000; // Convert to ms
     this.metrics.maxDrift = maxDrift * 1000;
     this.metrics.jitter = jitter * 1000;
     this.metrics.stability = stability;
-    
+
     // With AudioWorklet, we shouldn't need drift compensation
     if (!this.audioWorkletNode) {
       // Apply drift compensation only for fallback modes
@@ -1223,26 +1568,30 @@ export class UnifiedTransport implements Service {
       // With AudioWorklet, drift should be negligible
       this.currentDrift = 0;
     }
-    
+
     // Only warn if drift is significant and we're not using AudioWorklet
-    if (!this.audioWorkletNode && Math.abs(avgDrift) > 0.020) { // 20ms threshold
-      console.warn(`⚠️ High timing drift detected: ${(avgDrift * 1000).toFixed(2)}ms`);
+    if (!this.audioWorkletNode && Math.abs(avgDrift) > 0.02) {
+      // 20ms threshold
+      UnifiedTransport.staticLogger.warn(
+        `⚠️ High timing drift detected: ${(avgDrift * 1000).toFixed(2)}ms`,
+      );
     }
   }
-  
+
   /**
    * Schedule events within the lookahead window
    */
   private scheduleEvents(currentTime: number): void {
     const scheduleUntil = currentTime + this.config.lookAheadTime;
-    
+
     // Filter events to schedule
-    const eventsToSchedule = this.eventQueue.filter(event => 
-      event.time > currentTime && 
-      event.time <= scheduleUntil &&
-      !this.scheduledEvents.has(event.id)
+    const eventsToSchedule = this.eventQueue.filter(
+      (event) =>
+        event.time > currentTime &&
+        event.time <= scheduleUntil &&
+        !this.scheduledEvents.has(event.id),
     );
-    
+
     // Sort by priority and time
     eventsToSchedule.sort((a, b) => {
       if (a.priority !== b.priority) {
@@ -1251,48 +1600,50 @@ export class UnifiedTransport implements Service {
       }
       return a.time - b.time;
     });
-    
+
     // Schedule each event
     const tone = this.audioEngine.getTone();
     for (const event of eventsToSchedule) {
       try {
         // Apply drift compensation
         const compensatedTime = event.time - this.currentDrift;
-        
+
         // Schedule with Tone.js
         const scheduleId = tone.Transport.schedule((time) => {
           try {
             event.callback(time);
             this.metrics.totalEvents++;
           } catch (error) {
-            console.error('Event callback error:', error);
+            UnifiedTransport.staticLogger.error('Event callback error:', error);
             this.metrics.missedEvents++;
           }
           this.scheduledEvents.delete(event.id);
         }, compensatedTime);
-        
+
         this.scheduledEvents.set(event.id, scheduleId);
       } catch (error) {
-        console.error('Failed to schedule event:', error);
+        UnifiedTransport.staticLogger.error('Failed to schedule event:', error);
         this.metrics.missedEvents++;
       }
     }
-    
+
     // Clean up old events
     this.cleanupOldEvents(currentTime);
-    
+
     this.scheduledUntil = scheduleUntil;
   }
-  
+
   /**
    * Clean up events that have passed
    */
   private cleanupOldEvents(currentTime: number): void {
-    this.eventQueue = this.eventQueue.filter(event => {
+    this.eventQueue = this.eventQueue.filter((event) => {
       if (event.time <= currentTime) {
         // Remove from scheduled map if still there (shouldn't happen)
         if (this.scheduledEvents.has(event.id)) {
-          console.warn(`Event ${event.id} passed without execution`);
+          UnifiedTransport.staticLogger.warn(
+            `Event ${event.id} passed without execution`,
+          );
           this.scheduledEvents.delete(event.id);
           this.metrics.missedEvents++;
         }
@@ -1301,16 +1652,16 @@ export class UnifiedTransport implements Service {
       return true;
     });
   }
-  
+
   /**
    * Update performance metrics
    */
   private updateMetrics(): void {
     const now = performance.now();
-    
+
     if (this.lastUpdateTime > 0) {
       const actualInterval = now - this.lastUpdateTime;
-      
+
       // Calculate update rate (protect against division by zero)
       if (actualInterval > 0) {
         this.metrics.updateRate = 1000 / actualInterval;
@@ -1318,27 +1669,33 @@ export class UnifiedTransport implements Service {
         this.metrics.updateRate = 0; // Avoid Infinity
       }
     }
-    
+
     // Note: stability is now calculated in detectAndCompensateDrift() based on drift history
     this.updateCount++;
-    
+
     // Estimate CPU load (simplified)
     const processingTime = performance.now() - now;
-    this.metrics.cpuLoad = Math.min(100, (processingTime / (this.config.scheduleInterval * 1000)) * 100);
-    
+    this.metrics.cpuLoad = Math.min(
+      100,
+      (processingTime / (this.config.scheduleInterval * 1000)) * 100,
+    );
+
     // Buffer health (based on lookahead utilization)
     const tone = this.audioEngine.getTone();
     const bufferedTime = this.scheduledUntil - tone.Transport.seconds;
-    this.metrics.bufferHealth = Math.min(100, (bufferedTime / this.config.lookAheadTime) * 100);
+    this.metrics.bufferHealth = Math.min(
+      100,
+      (bufferedTime / this.config.lookAheadTime) * 100,
+    );
   }
-  
+
   /**
    * Update musical position from transport
    */
   private updateMusicalPosition(): void {
     const tone = this.audioEngine.getTone();
     let calculatedSeconds = 0; // Define at method scope
-    
+
     // Use AudioWorklet frame position for continuous updates if available
     if (this.audioWorkletNode && this.lastAudioWorkletFrame > 0) {
       // Calculate position from sample-accurate frame count
@@ -1349,7 +1706,7 @@ export class UnifiedTransport implements Service {
       const beatsPerSecond = bpm / 60;
       const totalBeats = calculatedSeconds * beatsPerSecond;
       const beatsPerBar = this.config.timeSignature.numerator;
-      
+
       const bars = Math.floor(totalBeats / beatsPerBar);
       const beatsInBar = totalBeats % beatsPerBar;
       const beats = Math.floor(beatsInBar);
@@ -1357,19 +1714,19 @@ export class UnifiedTransport implements Service {
       const sixteenthsInBeat = fractionalBeat * 4;
       const sixteenths = Math.floor(sixteenthsInBeat);
       const fractionalSixteenth = sixteenthsInBeat % 1;
-      
+
       // Calculate ticks with sub-sixteenth precision
       // 960 ticks per quarter note, so 240 ticks per sixteenth
       const ticksPerSixteenth = 240;
       const ticks = Math.floor(sixteenthsInBeat * ticksPerSixteenth);
-      
+
       this.musicalPosition = {
         bars,
         beats,
         sixteenths,
-        ticks // Now includes fractional sixteenth precision
+        ticks, // Now includes fractional sixteenth precision
       };
-      
+
       // Update Tone.js transport to match our position (prevents freezing)
       const newPosition = `${bars}:${beats}:${sixteenths}`;
       if (tone.Transport.position !== newPosition) {
@@ -1379,132 +1736,185 @@ export class UnifiedTransport implements Service {
       // Fallback to Tone.js position
       const position = tone.Transport.position as string; // "bars:beats:sixteenths"
       const [bars, beats, sixteenths] = position.split(':').map(Number);
-      
+
       this.musicalPosition = {
         bars: bars || 0,
         beats: beats || 0,
         sixteenths: sixteenths || 0,
-        ticks: Math.floor((sixteenths || 0) * (960 / 16)) // Convert to MIDI ticks
+        ticks: Math.floor((sixteenths || 0) * (960 / 16)), // Convert to MIDI ticks
       };
     }
-    
+
     // Emit position update event for UI
     const currentPosition = this.getCurrentPosition();
-    
+
     // Debug: Log tick changes to verify smooth updates
     if (this.updateCount <= 10) {
-      console.log('🎯 Position update:', {
+      UnifiedTransport.staticLogger.debug('🎯 Position update:', {
         bars: this.musicalPosition.bars,
-        beats: this.musicalPosition.beats, 
+        beats: this.musicalPosition.beats,
         sixteenths: this.musicalPosition.sixteenths,
         ticks: this.musicalPosition.ticks,
-        frameBasedSeconds: calculatedSeconds
+        frameBasedSeconds: calculatedSeconds,
       });
     }
-    
+
     if (this.updateCount <= 5 || this.updateCount % 100 === 0) {
-      console.log('📡 Emitting transport:position-updated event:', currentPosition, 'EventBus ID:', (this.eventBus as any)._instanceId || 'no-id');
+      UnifiedTransport.staticLogger.debug(
+        '📡 Emitting transport:position-updated event:',
+        currentPosition,
+        'EventBus ID:',
+        (this.eventBus as any)._instanceId || 'no-id',
+      );
     }
     this.eventBus.emit('transport:position-updated', {
-      position: currentPosition
+      position: currentPosition,
     });
-    
+
     // Debug log every 200th update to avoid spam
     if (this.updateCount % 200 === 0) {
-      console.log('updateMusicalPosition:', {
+      UnifiedTransport.staticLogger.debug('updateMusicalPosition:', {
         usingAudioWorklet: !!this.audioWorkletNode,
         lastAudioWorkletFrame: this.lastAudioWorkletFrame,
-        calculatedSeconds: this.lastAudioWorkletFrame > 0 ? (this.lastAudioWorkletFrame / (this.audioContext?.sampleRate || 48000)) : 0,
+        calculatedSeconds:
+          this.lastAudioWorkletFrame > 0
+            ? this.lastAudioWorkletFrame /
+              (this.audioContext?.sampleRate || 48000)
+            : 0,
         position: this.musicalPosition,
         transportPosition: tone.Transport.position,
-        seconds: tone.Transport.seconds
+        seconds: tone.Transport.seconds,
       });
     }
-    
+
     // Handle looping
     if (this.loopEnabled) {
-      const currentTotalSixteenths = this.positionToSixteenths(this.musicalPosition);
+      const currentTotalSixteenths = this.positionToSixteenths(
+        this.musicalPosition,
+      );
       const loopEndSixteenths = this.positionToSixteenths(this.loopEnd);
-      
+
       if (currentTotalSixteenths >= loopEndSixteenths) {
         this.seek(this.loopStart);
       }
     }
   }
-  
+
   /**
    * Convert musical position to total sixteenths
    */
   private positionToSixteenths(position: MusicalPosition): number {
     const beatsPerBar = this.config.timeSignature.numerator;
     const sixteenthsPerBeat = 4; // Always 4 sixteenths per beat
-    
-    return position.bars * beatsPerBar * sixteenthsPerBeat +
-           position.beats * sixteenthsPerBeat +
-           position.sixteenths;
+
+    return (
+      position.bars * beatsPerBar * sixteenthsPerBeat +
+      position.beats * sixteenthsPerBeat +
+      position.sixteenths
+    );
   }
-  
+
   // Public API
-  
+
   /**
    * Start transport playback
    */
   async start(): Promise<void> {
+    // Try delegation first if enabled
+    if (this.delegator) {
+      return this.delegator.delegateAsync(
+        'start',
+        async () => {
+          const modularTransport = this.delegator!.getModularTransport()!;
+          await modularTransport.start();
+          this.state = 'playing';
+        },
+        () => this.startLegacy()
+      );
+    }
+
+    return this.startLegacy();
+  }
+
+  private async startLegacy(): Promise<void> {
     // CRITICAL: Ensure transport is initialized before starting
     if (!this.isInitialized) {
-      console.error('UnifiedTransport.start(): Transport not initialized! Call initialize() first.');
+      UnifiedTransport.staticLogger.error(
+        'UnifiedTransport.start(): Transport not initialized! Call initialize() first.',
+      );
       await this.initialize();
     }
-    
+
     await this.circuitBreaker.execute(async () => {
       if (this.state === 'playing') return;
-      
+
       const tone = this.audioEngine.getTone();
-      
+
       // CRITICAL: Use AudioEngine's context directly, not tone.context
       // Tone.js context should be the same, but let's be explicit
       const audioEngineContext = this.audioEngine.getContext();
       const toneContext = tone.context;
-      
+
       // Debug context references
       // Note: toneContext is a Tone.Context wrapper, get the raw AudioContext for comparison
-      const toneRawContext = (toneContext as any)._context || (toneContext as any).rawContext || toneContext;
-      console.log('UnifiedTransport.start() context check:', {
-        audioEngineContext: audioEngineContext?.state,
-        toneContext: toneContext.state,
-        sameInstance: audioEngineContext === toneRawContext,
-        audioEngineCtx: audioEngineContext,
-        toneRawCtx: toneRawContext
-      });
-      
+      const toneRawContext =
+        (toneContext as any)._context ||
+        (toneContext as any).rawContext ||
+        toneContext;
+      UnifiedTransport.staticLogger.debug(
+        'UnifiedTransport.start() context check:',
+        {
+          audioEngineContext: audioEngineContext?.state,
+          toneContext: toneContext.state,
+          sameInstance: audioEngineContext === toneRawContext,
+          audioEngineCtx: audioEngineContext,
+          toneRawCtx: toneRawContext,
+        },
+      );
+
       // Use AudioEngine's context as the source of truth
       if (audioEngineContext?.state === 'suspended') {
-        console.log('UnifiedTransport: AudioEngine context is suspended, attempting to resume...');
+        UnifiedTransport.staticLogger.debug(
+          'UnifiedTransport: AudioEngine context is suspended, attempting to resume...',
+        );
         try {
           // Use AudioEngine's start method which handles context resume properly
           await this.audioEngine.start();
-          
+
           // Give it a moment to actually start
-          await new Promise(resolve => setTimeout(resolve, 50));
-          console.log(`UnifiedTransport: AudioContext state after AudioEngine.start(): ${audioEngineContext.state}`);
-          
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          UnifiedTransport.staticLogger.debug(
+            `UnifiedTransport: AudioContext state after AudioEngine.start(): ${audioEngineContext.state}`,
+          );
+
           // If still suspended, we have a problem
           if (audioEngineContext.state === 'suspended') {
-            throw new Error('AudioContext could not be resumed - ensure this is called from a user gesture');
+            throw new Error(
+              'AudioContext could not be resumed - ensure this is called from a user gesture',
+            );
           }
         } catch (error) {
-          console.error('UnifiedTransport: Failed to resume AudioContext:', error);
-          throw new Error('AudioContext suspended - could not resume from current context');
+          UnifiedTransport.staticLogger.error(
+            'UnifiedTransport: Failed to resume AudioContext:',
+            error,
+          );
+          throw new Error(
+            'AudioContext suspended - could not resume from current context',
+          );
         }
       }
-      
+
       // CRITICAL: Ensure Tone.js context is also started
       if (toneContext.state === 'suspended') {
-        console.log('UnifiedTransport: Tone.js context is suspended, starting...');
+        UnifiedTransport.staticLogger.debug(
+          'UnifiedTransport: Tone.js context is suspended, starting...',
+        );
         await tone.start();
-        console.log(`UnifiedTransport: Tone.js context state after start: ${toneContext.state}`);
+        UnifiedTransport.staticLogger.debug(
+          `UnifiedTransport: Tone.js context state after start: ${toneContext.state}`,
+        );
       }
-      
+
       // CRITICAL: Reset transport position FIRST to ensure clean state
       if (tone.Transport.seconds > 0.01) {
         tone.Transport.stop();
@@ -1512,34 +1922,44 @@ export class UnifiedTransport implements Service {
         tone.Transport.seconds = 0;
         tone.Transport.cancel(); // Clear all scheduled events
       }
-      
+
       // CRITICAL: Reset AudioWorklet timing state BEFORE starting
       this.audioWorkletBaselineTime = 0;
       this.lastAudioWorkletTime = 0;
       this.lastAudioWorkletFrame = 0;
       this.skipInitialSyncUpdates = 0;
-      
-      // CRITICAL: If AudioContext is now running but we don't have a working AudioWorklet, reinitialize it
-      // This must happen AFTER transport reset to ensure both start from the same baseline
-      console.log('🔍 AudioWorklet check:', {
+
+      // CRITICAL: Only reinitialize AudioWorklet if it doesn't exist
+      // DO NOT reinitialize on every start - it breaks pause/resume continuity
+      UnifiedTransport.staticLogger.debug('🔍 AudioWorklet check:', {
         audioEngineContextState: audioEngineContext?.state,
         toneContextState: toneContext.state,
         enableAudioWorklet: this.config.enableAudioWorklet,
         audioWorkletNode: !!this.audioWorkletNode,
-        shouldInitialize: audioEngineContext?.state === 'running' && this.config.enableAudioWorklet && !this.audioWorkletNode
+        audioWorkletReady: this.audioWorkletReady,
+        shouldInitialize:
+          audioEngineContext?.state === 'running' &&
+          this.config.enableAudioWorklet &&
+          !this.audioWorkletNode,
       });
-      
-      if (audioEngineContext?.state === 'running' && this.config.enableAudioWorklet && !this.audioWorkletNode) {
-        console.log('🎯 AudioContext is running but AudioWorklet not initialized - reinitializing...');
+
+      if (
+        audioEngineContext?.state === 'running' &&
+        this.config.enableAudioWorklet &&
+        !this.audioWorkletNode
+      ) {
+        UnifiedTransport.staticLogger.debug(
+          '🎯 AudioContext is running but AudioWorklet not initialized - initializing for first time...',
+        );
         await this.reinitializeAudioWorklet();
       }
-      
+
       // Update state
       this.state = 'playing';
       this.startTime = tone.context.currentTime;
-      
+
       // Pattern scheduling now handled by individual tracks
-      
+
       // Reset ALL timing state to prevent drift
       this.lastUpdateTime = performance.now();
       this.lastTransportTime = undefined; // Will be set on first update
@@ -1548,15 +1968,23 @@ export class UnifiedTransport implements Service {
       this.skipDriftChecks = 0; // No need to skip on fresh start
       this.lastAudioWorkletTime = 0;
       this.lastAudioWorkletFrame = 0;
-      
+
       // Reset metrics
       this.metrics.avgDrift = 0;
       this.metrics.maxDrift = 0;
       this.metrics.jitter = 0;
-      
+
       // FINAL AudioWorklet check right before starting transport
-      if (audioEngineContext?.state === 'running' && this.config.enableAudioWorklet && !this.audioWorkletNode) {
-        console.log('🎯 FINAL CHECK: AudioContext is running but AudioWorklet still not initialized - last attempt...');
+      // Only reinitialize if we truly don't have an AudioWorklet node
+      if (
+        audioEngineContext?.state === 'running' &&
+        this.config.enableAudioWorklet &&
+        !this.audioWorkletNode &&
+        !this.audioWorkletReady
+      ) {
+        UnifiedTransport.staticLogger.debug(
+          '🎯 FINAL CHECK: AudioContext is running but AudioWorklet still not initialized - last attempt...',
+        );
         await this.reinitializeAudioWorklet();
       }
 
@@ -1564,7 +1992,7 @@ export class UnifiedTransport implements Service {
       if (this.audioWorkletNode) {
         // CRITICAL: First send stop to reset AudioWorklet internal state
         this.audioWorkletNode.port.postMessage({ type: 'stop' });
-        
+
         // Reset our tracking variables immediately
         this.lastAudioWorkletTime = 0;
         this.lastAudioWorkletFrame = 0;
@@ -1572,78 +2000,102 @@ export class UnifiedTransport implements Service {
         this.audioWorkletTimeOffset = 0; // Reset offset - will be recalculated on first update
         this.expectedSessionId++; // Increment expected session ID
         this.expectedMessageSequence = 0; // Reset expected sequence for new session
-        
+
         // Add a small delay to ensure stop message is processed before start
         // AudioWorklet processes messages asynchronously from the audio thread
-        await new Promise(resolve => setTimeout(resolve, 5)); // 5ms delay
-        
+        await new Promise((resolve) => setTimeout(resolve, 5)); // 5ms delay
+
         // Start AudioWorklet BEFORE Transport to minimize timing offset
-        this.audioWorkletNode.port.postMessage({ 
+        this.audioWorkletNode.port.postMessage({
           type: 'start',
-          fromFrame: 0
+          fromFrame: 0,
         });
-        
+
         // Small delay to let AudioWorklet start processing
-        await new Promise(resolve => setTimeout(resolve, 10)); // 10ms delay
+        await new Promise((resolve) => setTimeout(resolve, 10)); // 10ms delay
       }
-      
+
       // Now start transport - both should be synchronized
       tone.Transport.start();
-      
+
       if (!this.audioWorkletNode && this.timingWorker) {
-        this.timingWorker.postMessage({ 
+        this.timingWorker.postMessage({
           type: 'start',
-          startTime: performance.now()
+          startTime: performance.now(),
         });
-      } else if (!this.audioWorkletNode && !this.timingWorker && !this.updateTimer) {
+      } else if (
+        !this.audioWorkletNode &&
+        !this.timingWorker &&
+        !this.updateTimer
+      ) {
         // Fallback: Create interval timer if no other timing source is available
-        console.log('⚠️ No timing source available, creating fallback interval timer');
+        UnifiedTransport.staticLogger.debug(
+          '⚠️ No timing source available, creating fallback interval timer',
+        );
         this.initializeIntervalTiming();
       }
-      
+
       // Restart hardware clock sync if enabled
       if (this.useHardwareClock) {
         this.startClockSync();
       }
-      
+
       // Emit event
       this.eventBus.emit('transport:start', {
         position: this.musicalPosition,
         tempo: this.config.tempo,
-        timeSignature: this.config.timeSignature
+        timeSignature: this.config.timeSignature,
       });
-      
-      console.log('▶️ UnifiedTransport started');
+
+      UnifiedTransport.staticLogger.debug('▶️ UnifiedTransport started');
     });
   }
-  
+
   /**
    * Stop transport playback
    */
   async stop(): Promise<void> {
+    // Try delegation first if enabled
+    if (this.delegator) {
+      return this.delegator.delegateAsync(
+        'stop',
+        async () => {
+          const modularTransport = this.delegator!.getModularTransport()!;
+          await modularTransport.stop();
+          this.state = 'stopped';
+          this.musicalPosition = { bars: 0, beats: 0, sixteenths: 0, ticks: 0 };
+        },
+        () => this.stopLegacy()
+      );
+    }
+
+    return this.stopLegacy();
+  }
+
+  private async stopLegacy(): Promise<void> {
     await this.circuitBreaker.execute(async () => {
       if (this.state === 'stopped') return;
-      
+
       const tone = this.audioEngine.getTone();
-      
+
       // Stop transport and reset position to 0
       tone.Transport.stop();
       tone.Transport.position = 0;
       tone.Transport.seconds = 0;
-      
+
       // Clear all scheduled events
       for (const [eventId, scheduleId] of this.scheduledEvents) {
         tone.Transport.clear(scheduleId);
       }
       this.scheduledEvents.clear();
       this.eventQueue = [];
-      
+
       // Update state
       this.state = 'stopped';
       this.musicalPosition = { bars: 0, beats: 0, sixteenths: 0, ticks: 0 };
-      
+
       // Pattern scheduling stopped with tracks
-      
+
       // Reset timing state
       this.lastUpdateTime = 0;
       this.lastTransportTime = undefined;
@@ -1651,6 +2103,7 @@ export class UnifiedTransport implements Service {
       this.driftHistory = [];
       this.pauseTime = 0;
       this.pausePosition = '0:0:0';
+      this.pauseFrame = 0;
       this.lastAudioWorkletTime = 0;
       this.lastAudioWorkletFrame = 0;
       this.audioWorkletStartTime = 0;
@@ -1658,23 +2111,28 @@ export class UnifiedTransport implements Service {
       // Increment expected session ID to match AudioWorklet's behavior
       this.expectedSessionId++;
       this.expectedMessageSequence = 0; // Reset message sequence for new session
-      console.log(`🔄 UnifiedTransport stop: Incremented expectedSessionId to ${this.expectedSessionId}`)
-      
+      UnifiedTransport.staticLogger.debug(
+        `🔄 UnifiedTransport stop: Incremented expectedSessionId to ${this.expectedSessionId}`,
+      );
+
       // Stop timing updates
       if (this.audioWorkletNode) {
         // First increment expected session ID before sending stop
         // This ensures we ignore any remaining messages from the current session
         this.audioWorkletNode.port.postMessage({ type: 'stop' });
-        
+
         // Clear any pending messages by temporarily removing the message handler
         // This prevents processing stale timing updates that might still be in flight
         if (this.audioWorkletMessageHandler) {
           const originalHandler = this.audioWorkletMessageHandler;
           this.audioWorkletNode.port.onmessage = null;
-          
+
           // Restore handler after a brief delay to allow clearing of message queue
           setTimeout(() => {
-            if (this.audioWorkletNode && originalHandler === this.audioWorkletMessageHandler) {
+            if (
+              this.audioWorkletNode &&
+              originalHandler === this.audioWorkletMessageHandler
+            ) {
               this.audioWorkletNode.port.onmessage = originalHandler;
             }
           }, 50); // 50ms should be enough to clear any pending messages
@@ -1686,69 +2144,114 @@ export class UnifiedTransport implements Service {
         clearInterval(this.updateTimer);
         this.updateTimer = null;
       }
-      
+
       // Stop hardware clock sync if enabled
       if (this.useHardwareClock) {
         this.stopClockSync();
       }
-      
+
       // Emit event
       this.eventBus.emit('transport:stop', {
-        position: this.musicalPosition
+        position: this.musicalPosition,
       });
-      
-      console.log('⏹️ UnifiedTransport stopped');
+
+      UnifiedTransport.staticLogger.debug('⏹️ UnifiedTransport stopped');
     });
   }
-  
+
   /**
    * Pause transport playback immediately (<2ms response)
    */
   async pauseImmediate(): Promise<void> {
+    // Try delegation first if enabled
+    if (this.delegator) {
+      return this.delegator.delegateAsync(
+        'pause',
+        async () => {
+          const modularTransport = this.delegator!.getModularTransport()!;
+          await modularTransport.pause();
+          this.state = 'paused';
+        },
+        () => this.pauseImmediateLegacy()
+      );
+    }
+
+    return this.pauseImmediateLegacy();
+  }
+
+  private async pauseImmediateLegacy(): Promise<void> {
     await this.circuitBreaker.execute(async () => {
       if (this.state !== 'playing') return;
-      
+
       const tone = this.audioEngine.getTone();
-      
+
       // Immediate pause - no quantum scheduling
       const currentPosition = tone.Transport.position as string;
       const currentSeconds = tone.Transport.seconds;
-      
+
       // Immediate pause with <2ms latency
-      
+
       // Stop transport immediately
       tone.Transport.pause();
-      
+
       // Store exact pause position
       this.pauseTime = currentSeconds;
       this.pausePosition = currentPosition;
       this.pauseSampleTime = this.audioContext?.currentTime || 0;
-      
+
+      // Store the exact frame position for sample-accurate resume
+      if (this.audioWorkletNode && this.lastAudioWorkletFrame > 0) {
+        // Use the current AudioWorklet frame position
+        this.pauseFrame = this.lastAudioWorkletFrame;
+        UnifiedTransport.staticLogger.debug(
+          `⏸️ Pause: Using AudioWorklet frame position: ${this.pauseFrame}, Transport seconds: ${currentSeconds}`,
+        );
+      } else {
+        // Fallback to calculating from seconds
+        this.pauseFrame = Math.floor(
+          currentSeconds * (this.audioContext?.sampleRate || 48000),
+        );
+        UnifiedTransport.staticLogger.debug(
+          `⏸️ Pause: Calculated frame position from seconds: ${this.pauseFrame}, Transport seconds: ${currentSeconds}`,
+        );
+      }
+
+      // CRITICAL: Store the AudioWorklet time for continuity
+      if (this.audioWorkletNode) {
+        this.pausedAudioWorkletTime = this.lastAudioWorkletTime;
+      }
+
       // Pre-buffer upcoming events for seamless resume
       this.preBufferUpcomingEvents(currentSeconds);
-      
+
       // Update state
       this.state = 'paused';
-      
+
       // Stop timing updates
       if (this.audioWorkletNode) {
         this.audioWorkletNode.port.postMessage({ type: 'pause' });
       } else if (this.timingWorker) {
         this.timingWorker.postMessage({ type: 'stop' });
+      } else if (this.updateTimer) {
+        // Clear interval timer if it's being used
+        clearInterval(this.updateTimer);
+        this.updateTimer = null;
       }
-      
+
       // Stop hardware clock sync during pause
       if (this.useHardwareClock) {
         this.stopClockSync();
       }
-      
+
       // Emit event
       this.eventBus.emit('transport:pause', {
         position: this.musicalPosition,
-        immediate: true
+        immediate: true,
       });
-      
-      console.log('⏸️ UnifiedTransport paused immediately');
+
+      UnifiedTransport.staticLogger.debug(
+        '⏸️ UnifiedTransport paused immediately',
+      );
     });
   }
 
@@ -1759,49 +2262,51 @@ export class UnifiedTransport implements Service {
     // For backward compatibility, use immediate pause by default
     return this.pauseImmediate();
   }
-  
+
   /**
    * Pause transport at quantum boundary (original behavior)
    */
   async pauseAtQuantum(quantum?: string): Promise<void> {
     await this.circuitBreaker.execute(async () => {
       if (this.state !== 'playing') return;
-      
+
       const tone = this.audioEngine.getTone();
-      
+
       // Professional approach: Schedule pause at next quantum boundary
-      const nextQuantum = tone.Transport.nextSubdivision(quantum || this.pauseQuantum);
-      
+      const nextQuantum = tone.Transport.nextSubdivision(
+        quantum || this.pauseQuantum,
+      );
+
       // Store the exact position we'll pause at
       const currentPosition = tone.Transport.position as string;
       const currentSeconds = tone.Transport.seconds;
-      const currentSampleTime = this.useHardwareClock ? 
-        this.getHardwareSyncedTime() : 
-        tone.context.currentTime;
-      
+      const currentSampleTime = this.useHardwareClock
+        ? this.getHardwareSyncedTime()
+        : tone.context.currentTime;
+
       // Calculate exact pause position
       const quantumOffset = nextQuantum - currentSeconds;
       const pauseAtSeconds = currentSeconds + quantumOffset;
-      
-      console.log('🎯 Professional PAUSE scheduling:', {
+
+      UnifiedTransport.staticLogger.debug('🎯 Professional PAUSE scheduling:', {
         currentPosition,
         currentSeconds,
         nextQuantum,
         quantumOffset,
         willPauseAt: pauseAtSeconds,
-        sampleTime: currentSampleTime
+        sampleTime: currentSampleTime,
       });
-      
+
       // Schedule the pause at the quantum boundary
       tone.Transport.pause(nextQuantum);
-      
+
       // Store sample-accurate position data
       this.pauseTime = pauseAtSeconds;
       this.pauseSampleTime = currentSampleTime + quantumOffset;
-      
+
       // Pre-buffer upcoming events for seamless resume
       this.preBufferUpcomingEvents(pauseAtSeconds);
-      
+
       // Calculate the musical position at pause time
       const beatsPerBar = this.config.timeSignature.numerator;
       const secondsPerBeat = 60 / tone.Transport.bpm.value;
@@ -1809,66 +2314,89 @@ export class UnifiedTransport implements Service {
       const bars = Math.floor(totalBeats / beatsPerBar);
       const beats = Math.floor(totalBeats % beatsPerBar);
       const sixteenths = Math.floor((totalBeats % 1) * 4);
-      
+
       this.pausePosition = `${bars}:${beats}:${sixteenths}`;
-      
-      console.log('🔍 PAUSE scheduled:', {
+
+      UnifiedTransport.staticLogger.debug('🔍 PAUSE scheduled:', {
         pauseTime: this.pauseTime,
         pausePosition: this.pausePosition,
         pauseSampleTime: this.pauseSampleTime,
-        transportState: tone.Transport.state
+        transportState: tone.Transport.state,
       });
-      
+
       // Update state
       this.state = 'paused';
-      
+
       // Stop timing updates
       if (this.audioWorkletNode) {
         this.audioWorkletNode.port.postMessage({ type: 'pause' });
       } else if (this.timingWorker) {
         this.timingWorker.postMessage({ type: 'stop' });
       }
-      
+
       // Stop hardware clock sync during pause
       if (this.useHardwareClock) {
         this.stopClockSync();
       }
-      
+
       // Emit event
       this.eventBus.emit('transport:pause', {
         position: this.musicalPosition,
-        scheduledAt: pauseAtSeconds
+        scheduledAt: pauseAtSeconds,
       });
-      
-      console.log('⏸️ UnifiedTransport pause scheduled');
+
+      UnifiedTransport.staticLogger.debug(
+        '⏸️ UnifiedTransport pause scheduled',
+      );
     });
   }
-  
+
   /**
    * Resume from pause immediately (<2ms response)
    */
   async resumeImmediate(): Promise<void> {
     if (this.state !== 'paused') return;
-    
+
+    // Try delegation first if enabled
+    if (this.delegator) {
+      return this.delegator.delegateAsync(
+        'resume',
+        async () => {
+          const modularTransport = this.delegator!.getModularTransport()!;
+          await modularTransport.resume();
+          this.state = 'playing';
+        },
+        () => this.resumeImmediateLegacy()
+      );
+    }
+
+    return this.resumeImmediateLegacy();
+  }
+
+  private async resumeImmediateLegacy(): Promise<void> {
     await this.circuitBreaker.execute(async () => {
       const tone = this.audioEngine.getTone();
-      
+
       // Immediate resume with <2ms latency
-      
+
       // Stop transport to reset state
       tone.Transport.stop();
-      
+
       // Set transport to exact pause position
       tone.Transport.seconds = this.pauseTime;
       tone.Transport.position = this.pausePosition;
-      
+
+      UnifiedTransport.staticLogger.debug(
+        `▶️ Resume: Setting Transport position to pauseTime: ${this.pauseTime}s, pausePosition: ${this.pausePosition}`,
+      );
+
       // Start immediately
       tone.Transport.start('+0', this.pauseTime);
-      
+
       // Apply pre-buffered events for seamless resume
       const currentTime = tone.context.currentTime;
       this.applyPreBufferedEvents(currentTime);
-      
+
       // Reset drift tracking immediately
       this.lastUpdateTime = performance.now();
       this.lastTransportTime = this.pauseTime;
@@ -1878,33 +2406,42 @@ export class UnifiedTransport implements Service {
       // Don't reset AudioWorklet timing - it needs to continue from pause position
       // this.lastAudioWorkletTime = 0;  // REMOVED - was breaking continuous timing
       // this.lastAudioWorkletFrame = 0; // REMOVED - was breaking continuous timing
-      
+
       // Update state
       this.state = 'playing';
-      
+
       // Restart timing updates
       if (this.audioWorkletNode) {
-        const pauseFrames = Math.floor(this.pauseTime * this.audioContext!.sampleRate);
-        this.audioWorkletNode.port.postMessage({ 
+        // Use the stored pause frame for exact position
+        UnifiedTransport.staticLogger.debug(
+          `▶️ Resume: Sending start message to AudioWorklet with pauseFrame: ${this.pauseFrame}`,
+        );
+        this.audioWorkletNode.port.postMessage({
           type: 'start',
-          fromFrame: pauseFrames
+          fromFrame: this.pauseFrame,
         });
+        // Also update our tracking to match
+        this.lastAudioWorkletFrame = this.pauseFrame;
+        // Restore the AudioWorklet time for proper continuity
+        this.lastAudioWorkletTime = this.pausedAudioWorkletTime;
       } else if (this.timingWorker) {
         this.timingWorker.postMessage({ type: 'start' });
       }
-      
+
       // Restart hardware clock sync if enabled
       if (this.useHardwareClock) {
         this.startClockSync();
       }
-      
+
       // Emit event
       this.eventBus.emit('transport:resume', {
         position: this.musicalPosition,
-        immediate: true
+        immediate: true,
       });
-      
-      console.log('▶️ UnifiedTransport resumed immediately');
+
+      UnifiedTransport.staticLogger.debug(
+        '▶️ UnifiedTransport resumed immediately',
+      );
     });
   }
 
@@ -1915,56 +2452,61 @@ export class UnifiedTransport implements Service {
     // For backward compatibility, use immediate resume by default
     return this.resumeImmediate();
   }
-  
+
   /**
    * Resume at quantum boundary (original behavior)
    */
   async resumeAtQuantum(quantum?: string): Promise<void> {
     if (this.state !== 'paused') return;
-    
+
     await this.circuitBreaker.execute(async () => {
       const tone = this.audioEngine.getTone();
-      
-      console.log('🎯 Professional RESUME scheduling:', {
-        pauseTime: this.pauseTime,
-        pausePosition: this.pausePosition,
-        pauseSampleTime: this.pauseSampleTime,
-        currentSampleTime: tone.context.currentTime
-      });
-      
+
+      UnifiedTransport.staticLogger.debug(
+        '🎯 Professional RESUME scheduling:',
+        {
+          pauseTime: this.pauseTime,
+          pausePosition: this.pausePosition,
+          pauseSampleTime: this.pauseSampleTime,
+          currentSampleTime: tone.context.currentTime,
+        },
+      );
+
       // Professional approach: Pre-calculate exact resume timing
-      const currentTime = this.useHardwareClock ? 
-        this.getHardwareSyncedTime() : 
-        tone.context.currentTime;
-      const resumeQuantum = tone.Transport.nextSubdivision(quantum || this.pauseQuantum);
-      
+      const currentTime = this.useHardwareClock
+        ? this.getHardwareSyncedTime()
+        : tone.context.currentTime;
+      const resumeQuantum = tone.Transport.nextSubdivision(
+        quantum || this.pauseQuantum,
+      );
+
       // Stop transport to reset state
       tone.Transport.stop();
-      
+
       // Set transport to exact pause position
       tone.Transport.seconds = this.pauseTime;
       tone.Transport.position = this.pausePosition;
-      
+
       // Calculate sample-accurate offset
       const sampleOffset = this.pauseSampleTime - currentTime;
-      
+
       // Schedule the start with sample accuracy
       // Use AudioContext time for perfect synchronization
       const resumeTime = Math.max(currentTime + 0.005, resumeQuantum); // 5ms minimum buffer
-      
-      console.log('🎯 Scheduling resume:', {
+
+      UnifiedTransport.staticLogger.debug('🎯 Scheduling resume:', {
         resumeAt: resumeTime,
         currentContextTime: currentTime,
         offset: resumeTime - currentTime,
-        transportPosition: this.pausePosition
+        transportPosition: this.pausePosition,
       });
-      
+
       // Schedule the transport start at the precise time
       tone.Transport.start(resumeTime, this.pauseTime);
-      
+
       // Apply pre-buffered events for seamless resume
       this.applyPreBufferedEvents(resumeTime);
-      
+
       // Reset drift tracking immediately
       this.lastUpdateTime = performance.now();
       this.lastTransportTime = this.pauseTime;
@@ -1974,68 +2516,93 @@ export class UnifiedTransport implements Service {
       // Don't reset AudioWorklet timing - it needs to continue from pause position
       // this.lastAudioWorkletTime = 0;  // REMOVED - was breaking continuous timing
       // this.lastAudioWorkletFrame = 0; // REMOVED - was breaking continuous timing
-      
-      console.log('📍 Position tracking reset at resume');
-      
+
+      UnifiedTransport.staticLogger.debug(
+        '📍 Position tracking reset at resume',
+      );
+
       // Update state
       this.state = 'playing';
-      
+
       // Restart timing updates
       if (this.audioWorkletNode) {
-        // Resume from the exact pause frame
-        const pauseFrames = Math.floor(this.pauseTime * this.audioContext!.sampleRate);
-        this.audioWorkletNode.port.postMessage({ 
+        // Use the stored pause frame for exact position
+        this.audioWorkletNode.port.postMessage({
           type: 'start',
-          fromFrame: pauseFrames
+          fromFrame: this.pauseFrame,
         });
+        // Also update our tracking to match
+        this.lastAudioWorkletFrame = this.pauseFrame;
       } else if (this.timingWorker) {
         this.timingWorker.postMessage({ type: 'start' });
       }
-      
+
       // Restart hardware clock sync if enabled
       if (this.useHardwareClock) {
         this.startClockSync();
       }
-      
+
       // Emit event with scheduled time
       this.eventBus.emit('transport:resume', {
         position: this.musicalPosition,
-        scheduledAt: resumeTime
+        scheduledAt: resumeTime,
       });
-      
-      console.log('▶️ UnifiedTransport resume scheduled');
+
+      UnifiedTransport.staticLogger.debug(
+        '▶️ UnifiedTransport resume scheduled',
+      );
     });
   }
-  
+
   /**
    * Seek to a specific position
    */
   async seek(position: MusicalPosition): Promise<void> {
+    // Try delegation first if enabled
+    if (this.delegator) {
+      return this.delegator.delegateAsync(
+        'seek',
+        async () => {
+          const modularTransport = this.delegator!.getModularTransport()!;
+          await modularTransport.seek(position);
+          this.musicalPosition = { ...position };
+        },
+        () => this.seekLegacy(position)
+      );
+    }
+
+    return this.seekLegacy(position);
+  }
+
+  private async seekLegacy(position: MusicalPosition): Promise<void> {
     await this.circuitBreaker.execute(async () => {
       const tone = this.audioEngine.getTone();
-      
+
       // Convert to transport position string
       const transportPosition = `${position.bars}:${position.beats}:${position.sixteenths}`;
       tone.Transport.position = transportPosition;
-      
+
       // Update internal position
       this.musicalPosition = { ...position };
-      
+
       // Update AudioWorklet position
       if (this.audioWorkletNode) {
         // Convert musical position to seconds
         const bpm = tone.Transport.bpm.value;
         const beatsPerSecond = bpm / 60;
         const beatsPerBar = this.config.timeSignature.numerator;
-        const totalBeats = position.bars * beatsPerBar + position.beats + position.sixteenths / 4;
+        const totalBeats =
+          position.bars * beatsPerBar +
+          position.beats +
+          position.sixteenths / 4;
         const seconds = totalBeats / beatsPerSecond;
-        
-        this.audioWorkletNode.port.postMessage({ 
+
+        this.audioWorkletNode.port.postMessage({
           type: 'seek',
-          position: seconds
+          position: seconds,
         });
       }
-      
+
       // Clear and reschedule events if playing
       if (this.state === 'playing') {
         // Clear current events
@@ -2043,18 +2610,23 @@ export class UnifiedTransport implements Service {
           tone.Transport.clear(scheduleId);
         }
         this.scheduledEvents.clear();
-        
+
         // Force immediate reschedule
         this.handleTimingUpdate('Seek');
       }
-      
-      // Emit event
+
+      // Emit events
       this.eventBus.emit('transport:seek', {
-        position: this.musicalPosition
+        position: this.musicalPosition,
+      });
+
+      // Also emit position update immediately so UI updates
+      this.eventBus.emit('transport:position-updated', {
+        position: this.musicalPosition,
       });
     });
   }
-  
+
   /**
    * Set tempo (BPM)
    */
@@ -2062,14 +2634,31 @@ export class UnifiedTransport implements Service {
     if (bpm < 20 || bpm > 999) {
       throw new Error(`Invalid tempo: ${bpm}. Must be between 20 and 999 BPM.`);
     }
-    
+
+    // Try delegation first if enabled
+    if (this.delegator) {
+      this.delegator.delegateSync(
+        'setTempo',
+        () => {
+          const modularTransport = this.delegator!.getModularTransport()!;
+          modularTransport.setTempo(bpm);
+          this.config.tempo = bpm;
+        },
+        () => this.setTempoLegacy(bpm)
+      );
+    } else {
+      this.setTempoLegacy(bpm);
+    }
+  }
+
+  private setTempoLegacy(bpm: number): void {
     this.config.tempo = bpm;
     const tone = this.audioEngine.getTone();
     tone.Transport.bpm.value = bpm;
-    
+
     this.eventBus.emit('transport:tempo-change', { tempo: bpm });
   }
-  
+
   /**
    * Set time signature
    */
@@ -2077,40 +2666,70 @@ export class UnifiedTransport implements Service {
     this.config.timeSignature = { numerator, denominator };
     const tone = this.audioEngine.getTone();
     tone.Transport.timeSignature = [numerator, denominator];
-    
-    this.eventBus.emit('transport:time-signature-change', { 
-      timeSignature: this.config.timeSignature 
+
+    this.eventBus.emit('transport:time-signature-change', {
+      timeSignature: this.config.timeSignature,
     });
   }
-  
+
   /**
    * Enable/disable loop with musical positions
    */
-  setLoopMusical(enabled: boolean, start?: MusicalPosition, end?: MusicalPosition): void {
+  setLoopMusical(
+    enabled: boolean,
+    start?: MusicalPosition,
+    end?: MusicalPosition,
+  ): void {
+    // Try delegation first if enabled
+    if (this.delegator) {
+      this.delegator.delegateSync(
+        'setLoopMusical',
+        () => {
+          const modularTransport = this.delegator!.getModularTransport()!;
+          modularTransport.setLoopEnabled(enabled);
+          if (start && end) {
+            modularTransport.setLoopPoints(start, end);
+          }
+          this.loopEnabled = enabled;
+          if (start) this.loopStart = { ...start };
+          if (end) this.loopEnd = { ...end };
+        },
+        () => this.setLoopMusicalLegacy(enabled, start, end)
+      );
+    } else {
+      this.setLoopMusicalLegacy(enabled, start, end);
+    }
+  }
+
+  private setLoopMusicalLegacy(
+    enabled: boolean,
+    start?: MusicalPosition,
+    end?: MusicalPosition,
+  ): void {
     this.loopEnabled = enabled;
-    
+
     if (start) this.loopStart = { ...start };
     if (end) this.loopEnd = { ...end };
-    
+
     // Note: We handle looping manually in updateMusicalPosition()
     // instead of using Tone.Transport.loop to have more control
-    
+
     this.eventBus.emit('transport:loop-change', {
       enabled,
       start: this.loopStart,
-      end: this.loopEnd
+      end: this.loopEnd,
     });
   }
-  
+
   /**
    * Schedule a timing event
    */
   scheduleEvent(event: Omit<TimingEvent, 'id'>): string {
     const id = `event_${++this.eventIdCounter}`;
     const fullEvent: TimingEvent = { ...event, id };
-    
+
     this.eventQueue.push(fullEvent);
-    
+
     // If we're playing and the event is within lookahead, schedule immediately
     if (this.state === 'playing') {
       const tone = this.audioEngine.getTone();
@@ -2119,17 +2738,17 @@ export class UnifiedTransport implements Service {
         this.scheduleEvents(currentTime);
       }
     }
-    
+
     return id;
   }
-  
+
   /**
    * Cancel a scheduled event
    */
   cancelEvent(eventId: string): void {
     // Remove from queue
-    this.eventQueue = this.eventQueue.filter(e => e.id !== eventId);
-    
+    this.eventQueue = this.eventQueue.filter((e) => e.id !== eventId);
+
     // Cancel if already scheduled
     const scheduleId = this.scheduledEvents.get(eventId);
     if (scheduleId !== undefined) {
@@ -2138,7 +2757,7 @@ export class UnifiedTransport implements Service {
       this.scheduledEvents.delete(eventId);
     }
   }
-  
+
   /**
    * Schedule a repeating event
    */
@@ -2146,60 +2765,100 @@ export class UnifiedTransport implements Service {
     callback: (time: number) => void,
     interval: string | number,
     startTime?: number,
-    priority: 'high' | 'normal' | 'low' = 'normal'
+    priority: 'high' | 'normal' | 'low' = 'normal',
   ): string {
     const tone = this.audioEngine.getTone();
     const id = `repeat_${++this.eventIdCounter}`;
-    
+
     // Use Tone's scheduleRepeat for efficiency
-    const scheduleId = tone.Transport.scheduleRepeat((time) => {
-      try {
-        callback(time);
-        this.metrics.totalEvents++;
-      } catch (error) {
-        console.error('Repeat callback error:', error);
-        this.metrics.missedEvents++;
-      }
-    }, interval, startTime);
-    
+    const scheduleId = tone.Transport.scheduleRepeat(
+      (time) => {
+        try {
+          callback(time);
+          this.metrics.totalEvents++;
+        } catch (error) {
+          UnifiedTransport.staticLogger.error('Repeat callback error:', error);
+          this.metrics.missedEvents++;
+        }
+      },
+      interval,
+      startTime,
+    );
+
     this.scheduledEvents.set(id, scheduleId);
-    
+
     return id;
   }
-  
+
   /**
    * Get current state
    */
   getState(): TransportState {
+    // Try delegation first if enabled
+    if (this.delegator) {
+      return this.delegator.delegateSync(
+        'getState',
+        () => {
+          const modularTransport = this.delegator!.getModularTransport()!;
+          return modularTransport.getState();
+        },
+        () => this.state
+      );
+    }
+
     return this.state;
   }
-  
+
   /**
    * Get current position
    */
   getPosition(): MusicalPosition {
+    // Try delegation first if enabled
+    if (this.delegator) {
+      return this.delegator.delegateSync(
+        'getPosition',
+        () => {
+          const modularTransport = this.delegator!.getModularTransport()!;
+          return modularTransport.getPosition();
+        },
+        () => ({ ...this.musicalPosition })
+      );
+    }
+
     return { ...this.musicalPosition };
   }
-  
+
   /**
    * Get current tempo
    */
   getTempo(): number {
+    // Try delegation first if enabled
+    if (this.delegator) {
+      return this.delegator.delegateSync(
+        'getTempo',
+        () => {
+          const modularTransport = this.delegator!.getModularTransport()!;
+          return modularTransport.getTempo();
+        },
+        () => this.config.tempo
+      );
+    }
+
     return this.config.tempo;
   }
-  
+
   /**
    * Get timing metrics
    */
   getMetrics(): TimingMetrics {
     return { ...this.metrics };
   }
-  
+
   /**
    * @deprecated Pattern scheduling is now handled by the track system
    * This method has been removed as part of the track system migration
    */
-  
+
   /**
    * Get transport response latency
    * @returns Latency in milliseconds (<2ms with AudioWorklet)
@@ -2217,21 +2876,21 @@ export class UnifiedTransport implements Service {
       return this.config.scheduleInterval * 1000;
     }
   }
-  
+
   /**
    * Get configuration
    */
   getConfig(): Readonly<TransportConfig> {
     return { ...this.config };
   }
-  
+
   /**
    * Get current time signature (backward compatibility)
    */
   getTimeSignature(): TimeSignature {
     return { ...this.config.timeSignature };
   }
-  
+
   /**
    * Get current position (backward compatibility - returns TransportPosition format)
    */
@@ -2239,12 +2898,13 @@ export class UnifiedTransport implements Service {
     const tone = this.audioEngine.getTone();
     const audioContext = this.audioEngine.getContext();
     const sampleRate = audioContext?.sampleRate || 48000;
-    
+
     // Calculate seconds from frames for consistency
-    const frameBasedSeconds = this.lastAudioWorkletFrame > 0 
-      ? this.lastAudioWorkletFrame / sampleRate
-      : tone.Transport.seconds;
-    
+    const frameBasedSeconds =
+      this.lastAudioWorkletFrame > 0
+        ? this.lastAudioWorkletFrame / sampleRate
+        : tone.Transport.seconds;
+
     return {
       bars: this.musicalPosition.bars,
       beats: this.musicalPosition.beats,
@@ -2253,17 +2913,17 @@ export class UnifiedTransport implements Service {
       seconds: frameBasedSeconds,
       // Add frame data for widgets to use
       frame: this.lastAudioWorkletFrame,
-      sampleRate: sampleRate
+      sampleRate: sampleRate,
     };
   }
-  
+
   /**
    * Check if loop is enabled (backward compatibility)
    */
   isLoopEnabled(): boolean {
     return this.loopEnabled;
   }
-  
+
   /**
    * Seek to position (backward compatibility - synchronous wrapper)
    */
@@ -2272,22 +2932,22 @@ export class UnifiedTransport implements Service {
       // Seek to seconds
       const tone = this.audioEngine.getTone();
       tone.Transport.seconds = position;
-      
+
       // Update musical position
       this.updateMusicalPosition();
-      
+
       // Emit event
       this.eventBus.emit('transport:seeked', {
-        position: this.musicalPosition
+        position: this.musicalPosition,
       });
     } else {
       // Seek to musical position - use async seek but don't await
-      this.seek(position).catch(error => {
-        console.error('Seek error:', error);
+      this.seek(position).catch((error) => {
+        UnifiedTransport.staticLogger.error('Seek error:', error);
       });
     }
   }
-  
+
   /**
    * Schedule a callback (backward compatibility)
    */
@@ -2295,7 +2955,7 @@ export class UnifiedTransport implements Service {
     const tone = this.audioEngine.getTone();
     tone.Transport.schedule(callback, time);
   }
-  
+
   /**
    * Clear a scheduled event (backward compatibility)
    */
@@ -2303,7 +2963,7 @@ export class UnifiedTransport implements Service {
     const tone = this.audioEngine.getTone();
     tone.Transport.clear(id);
   }
-  
+
   /**
    * Get next beat time (backward compatibility)
    */
@@ -2311,57 +2971,57 @@ export class UnifiedTransport implements Service {
     const currentPos = this.musicalPosition;
     const nextBeat = currentPos.beats + 1;
     const beatsPerBar = this.config.timeSignature.numerator;
-    
+
     let nextPosition: MusicalPosition;
     if (nextBeat >= beatsPerBar) {
       nextPosition = {
         bars: currentPos.bars + 1,
         beats: 0,
         sixteenths: 0,
-        ticks: 0
+        ticks: 0,
       };
     } else {
       nextPosition = {
         bars: currentPos.bars,
         beats: nextBeat,
         sixteenths: 0,
-        ticks: 0
+        ticks: 0,
       };
     }
-    
+
     // Convert to seconds (simplified - assumes 4/4 time)
     const bpm = this.config.tempo;
     const beatDuration = 60 / bpm;
     const barDuration = beatDuration * beatsPerBar;
-    
+
     return nextPosition.bars * barDuration + nextPosition.beats * beatDuration;
   }
-  
+
   /**
    * Get next bar time (backward compatibility)
    */
   getNextBarTime(): number {
     const currentPos = this.musicalPosition;
     const nextBar = currentPos.bars + 1;
-    
+
     // Convert to seconds
     const bpm = this.config.tempo;
     const beatDuration = 60 / bpm;
     const beatsPerBar = this.config.timeSignature.numerator;
     const barDuration = beatDuration * beatsPerBar;
-    
+
     return nextBar * barDuration;
   }
-  
+
   // Additional backward compatibility methods
-  
+
   /**
    * Check if transport is playing (backward compatibility)
    */
   isPlaying(): boolean {
     return this.state === 'playing';
   }
-  
+
   /**
    * Get position in seconds (backward compatibility)
    */
@@ -2369,28 +3029,28 @@ export class UnifiedTransport implements Service {
     const tone = this.audioEngine.getTone();
     return tone.Transport.seconds;
   }
-  
+
   /**
    * Set position in seconds (backward compatibility - async wrapper)
    */
   async setPosition(seconds: number): Promise<void> {
     this.seekTo(seconds);
   }
-  
+
   /**
    * Get BPM (backward compatibility)
    */
   getBPM(): number {
     return this.getTempo();
   }
-  
+
   /**
    * Set BPM (backward compatibility - async wrapper)
    */
   async setBPM(bpm: number): Promise<void> {
     this.setTempo(bpm);
   }
-  
+
   /**
    * Get loop start in seconds (backward compatibility)
    */
@@ -2399,11 +3059,13 @@ export class UnifiedTransport implements Service {
     const bpm = this.config.tempo;
     const beatDuration = 60 / bpm;
     const beatsPerBar = this.config.timeSignature.numerator;
-    return this.loopStart.bars * beatsPerBar * beatDuration + 
-           this.loopStart.beats * beatDuration +
-           this.loopStart.sixteenths * (beatDuration / 4);
+    return (
+      this.loopStart.bars * beatsPerBar * beatDuration +
+      this.loopStart.beats * beatDuration +
+      this.loopStart.sixteenths * (beatDuration / 4)
+    );
   }
-  
+
   /**
    * Get loop end in seconds (backward compatibility)
    */
@@ -2412,18 +3074,20 @@ export class UnifiedTransport implements Service {
     const bpm = this.config.tempo;
     const beatDuration = 60 / bpm;
     const beatsPerBar = this.config.timeSignature.numerator;
-    return this.loopEnd.bars * beatsPerBar * beatDuration + 
-           this.loopEnd.beats * beatDuration +
-           this.loopEnd.sixteenths * (beatDuration / 4);
+    return (
+      this.loopEnd.bars * beatsPerBar * beatDuration +
+      this.loopEnd.beats * beatDuration +
+      this.loopEnd.sixteenths * (beatDuration / 4)
+    );
   }
-  
+
   /**
    * Disable loop (backward compatibility)
    */
   async disableLoop(): Promise<void> {
     this.setLoop(false);
   }
-  
+
   /**
    * Set loop with start/end in seconds (backward compatibility override)
    */
@@ -2434,7 +3098,7 @@ export class UnifiedTransport implements Service {
       this.eventBus.emit('transport:loop-change', {
         enabled: startOrEnabled,
         start: this.loopStart,
-        end: this.loopEnd
+        end: this.loopEnd,
       });
     } else {
       // Backward compatibility: setLoop(start, end) with seconds
@@ -2442,78 +3106,80 @@ export class UnifiedTransport implements Service {
       if (end === undefined) {
         throw new Error('End time required when setting loop with start time');
       }
-      
+
       // Convert seconds to musical position
       const bpm = this.config.tempo;
       const beatDuration = 60 / bpm;
       const beatsPerBar = this.config.timeSignature.numerator;
-      
+
       // Convert start seconds to musical position
       const startBars = Math.floor(start / (beatsPerBar * beatDuration));
-      const startBeatsRemainder = (start % (beatsPerBar * beatDuration)) / beatDuration;
+      const startBeatsRemainder =
+        (start % (beatsPerBar * beatDuration)) / beatDuration;
       const startBeats = Math.floor(startBeatsRemainder);
       const startSixteenths = Math.floor((startBeatsRemainder % 1) * 4);
-      
+
       // Convert end seconds to musical position
       const endBars = Math.floor(end / (beatsPerBar * beatDuration));
-      const endBeatsRemainder = (end % (beatsPerBar * beatDuration)) / beatDuration;
+      const endBeatsRemainder =
+        (end % (beatsPerBar * beatDuration)) / beatDuration;
       const endBeats = Math.floor(endBeatsRemainder);
       const endSixteenths = Math.floor((endBeatsRemainder % 1) * 4);
-      
+
       this.loopStart = {
         bars: startBars,
         beats: startBeats,
         sixteenths: startSixteenths,
-        ticks: 0
+        ticks: 0,
       };
-      
+
       this.loopEnd = {
         bars: endBars,
         beats: endBeats,
         sixteenths: endSixteenths,
-        ticks: 0
+        ticks: 0,
       };
-      
+
       this.loopEnabled = true;
-      
+
       this.eventBus.emit('transport:loop-change', {
         enabled: true,
         start: this.loopStart,
-        end: this.loopEnd
+        end: this.loopEnd,
       });
     }
   }
-  
+
   /**
    * Update configuration
    */
   updateConfig(config: Partial<TransportConfig>): void {
     this.config = { ...this.config, ...config };
-    
+
     // Apply relevant changes
     if (config.lookAheadTime !== undefined) {
       const tone = this.audioEngine.getTone();
       tone.context.lookAhead = config.lookAheadTime;
     }
-    
+
     if (config.scheduleInterval !== undefined) {
       const tone = this.audioEngine.getTone();
       tone.context.updateInterval = config.scheduleInterval;
-      
+
       // Update worker interval if using web worker
       if (this.timingWorker) {
-        this.timingWorker.postMessage({ 
-          type: 'updateInterval', 
-          interval: config.scheduleInterval * 1000 
+        this.timingWorker.postMessage({
+          type: 'updateInterval',
+          interval: config.scheduleInterval * 1000,
         });
       }
     }
-    
+
     if (config.driftCompensation === 'adaptive' && !this.driftPredictor) {
       this.driftPredictor = new DriftPredictor();
     }
   }
-  
+
   /**
    * Cleanup resources
    */
@@ -2522,16 +3188,16 @@ export class UnifiedTransport implements Service {
     if (this.state !== 'stopped') {
       await this.stop();
     }
-    
+
     // Cleanup timing resources
     if (this.updateTimer) {
       clearInterval(this.updateTimer);
     }
-    
+
     if (this.timingWorker) {
       this.timingWorker.terminate();
     }
-    
+
     if (this.audioWorkletNode) {
       if (this.audioWorkletMessageHandler) {
         this.audioWorkletNode.port.onmessage = null;
@@ -2540,29 +3206,41 @@ export class UnifiedTransport implements Service {
       this.audioWorkletNode.disconnect();
       this.audioWorkletNode = null;
     }
-    
+
     // DON'T clear instance - UnifiedTransport is a singleton that should survive
     // UnifiedTransport.instance = null; // This breaks the singleton pattern!
   }
-  
+
   // Service interface implementation
   getName(): string {
     return 'UnifiedTransport';
   }
-  
-  getHealth(): { status: 'healthy' | 'degraded' | 'unhealthy'; message?: string } {
+
+  getHealth(): {
+    status: 'healthy' | 'degraded' | 'unhealthy';
+    message?: string;
+  } {
     if (this.metrics.stability < 90) {
-      return { status: 'degraded', message: `Low timing stability: ${this.metrics.stability.toFixed(1)}%` };
+      return {
+        status: 'degraded',
+        message: `Low timing stability: ${this.metrics.stability.toFixed(1)}%`,
+      };
     }
-    
+
     if (this.metrics.avgDrift > 5) {
-      return { status: 'degraded', message: `High timing drift: ${this.metrics.avgDrift.toFixed(1)}ms` };
+      return {
+        status: 'degraded',
+        message: `High timing drift: ${this.metrics.avgDrift.toFixed(1)}ms`,
+      };
     }
-    
+
     if (this.metrics.missedEvents > 10) {
-      return { status: 'unhealthy', message: `Too many missed events: ${this.metrics.missedEvents}` };
+      return {
+        status: 'unhealthy',
+        message: `Too many missed events: ${this.metrics.missedEvents}`,
+      };
     }
-    
+
     return { status: 'healthy' };
   }
 }
@@ -2572,7 +3250,7 @@ export class UnifiedTransport implements Service {
  */
 class DriftPredictor {
   private kalmanFilter: KalmanFilter;
-  
+
   constructor() {
     // Initialize Kalman filter for drift prediction
     this.kalmanFilter = new KalmanFilter({
@@ -2585,11 +3263,11 @@ class DriftPredictor {
       P: 1, // Initial covariance
     });
   }
-  
+
   predict(measuredDrift: number): number {
     // Update Kalman filter with new measurement
     const prediction = this.kalmanFilter.filter(measuredDrift);
-    
+
     // Return predicted drift for compensation
     return prediction;
   }
@@ -2606,7 +3284,7 @@ class KalmanFilter {
   private x: number; // State estimate
   private P: number; // Error covariance
   private K: number; // Kalman gain
-  
+
   constructor(config: {
     R: number;
     Q: number;
@@ -2624,17 +3302,17 @@ class KalmanFilter {
     this.P = config.P;
     this.K = 0;
   }
-  
+
   filter(measurement: number): number {
     // Prediction step
     this.x = this.A * this.x;
     this.P = this.A * this.P * this.A + this.Q;
-    
+
     // Update step
-    this.K = this.P * this.C / (this.C * this.P * this.C + this.R);
+    this.K = (this.P * this.C) / (this.C * this.P * this.C + this.R);
     this.x = this.x + this.K * (measurement - this.C * this.x);
     this.P = (1 - this.K * this.C) * this.P;
-    
+
     return this.x;
   }
 }

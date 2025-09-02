@@ -114,7 +114,7 @@ describe('ServiceRegistry', () => {
 
     it('should use custom initialization order when provided', async () => {
       const customRegistry = new ServiceRegistry({
-        initializationOrder: ['service3', 'service2', 'service1']
+        initializationOrder: ['service3', 'service2', 'service1'],
       });
 
       const service1 = new MockService();
@@ -146,7 +146,7 @@ describe('ServiceRegistry', () => {
       registry.register('service', service);
 
       await expect(registry.initialize()).resolves.not.toThrow();
-      
+
       const status = registry.getServiceStatus('service');
       expect(status?.status).toBe('initialized');
     });
@@ -233,7 +233,7 @@ describe('ServiceRegistry', () => {
     it('should handle restart without dedicated restart method', async () => {
       const service = {
         start: vi.fn(),
-        stop: vi.fn()
+        stop: vi.fn(),
       };
       registry.register('service', service);
 
@@ -294,7 +294,7 @@ describe('ServiceRegistry', () => {
       let status = registry.getServiceStatus('service');
       expect(status).toMatchObject({
         registered: true,
-        status: 'registered'
+        status: 'registered',
       });
 
       await registry.initialize();

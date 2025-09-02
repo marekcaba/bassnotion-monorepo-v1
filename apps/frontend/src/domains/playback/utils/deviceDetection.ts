@@ -33,6 +33,7 @@ export interface MobileAudioConstraints {
  * Detect device capabilities and constraints
  */
 export function detectDeviceCapabilities(): DeviceCapabilities {
+  const { correlationId, logger } = useCorrelation('detectDeviceCapabilities');
   try {
     const userAgent = getUserAgentSafely();
     const isMobile =
@@ -93,7 +94,7 @@ export function detectDeviceCapabilities(): DeviceCapabilities {
     return cleanCapabilities as DeviceCapabilities;
   } catch (error) {
     // Return safe defaults in case of any error
-    console.warn('Device detection failed, using defaults:', error);
+    logger.warn('Device detection failed, using defaults:', error);
     return createSafeDefaults();
   }
 }
@@ -342,7 +343,7 @@ function getUserAgentSafely(): string {
   } catch {
     // Safely handle errors without exposing system information
     if (typeof console !== 'undefined' && console.warn) {
-      console.warn(
+      logger.warn(
         'Device detection: Using safe defaults due to user agent access error',
       );
     }

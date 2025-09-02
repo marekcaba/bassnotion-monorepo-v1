@@ -182,6 +182,7 @@ export function setupTestEnvironment(): void {
   // Mock external modules globally
   vi.mock('@supabase/supabase-js', () => ({
     createClient: vi.fn(() => createMockDatabaseService().supabase),
+    SupabaseClient: class MockSupabaseClient {},
   }));
 
   // Mock node-fetch for HaveIBeenPwned API calls

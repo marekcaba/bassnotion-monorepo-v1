@@ -21,6 +21,7 @@ import {
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
 import { useToast } from '@/shared/hooks/use-toast';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Custom schema that properly handles empty optional fields
 const profileEditSchema = z.object({
@@ -52,6 +53,7 @@ export function ProfileEditForm({
   onCancel,
   isLoading = false,
 }: ProfileEditFormProps) {
+  const { correlationId, logger } = useCorrelation('ProfileEditForm');
   const { toast } = useToast();
 
   const form = useForm<ProfileEditData>({
@@ -82,7 +84,7 @@ export function ProfileEditForm({
         description: 'Your profile has been updated successfully.',
       });
     } catch (error) {
-      console.error('Profile update error:', error);
+      logger.error('Profile update error:', error);
       toast({
         title: 'Failed to update profile',
         description:

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCorePlaybackEngine } from '@/domains/playback';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Simple exercise interface for playback integration
 interface PlaybackExercise {
@@ -85,7 +86,7 @@ export function usePlaybackIntegration(
     controls: engineControls,
   } = useCorePlaybackEngine({
     autoInitialize: true,
-    enablePerformanceMonitoring: true,
+    enablePerformanceMonitoring: false, // Disable to prevent 1-second re-renders
     mobileOptimized: true,
   });
 
@@ -152,7 +153,7 @@ export function usePlaybackIntegration(
 
       return { notes, progression };
     } catch (error) {
-      console.error('❌ Error processing exercise data:', error);
+      logger.error('❌ Error processing exercise data:', error);
       return { notes: [], progression: [] };
     }
   }, []);
@@ -282,7 +283,7 @@ export function usePlaybackIntegration(
         }));
         // Playback reset
       } catch (error) {
-        console.error('❌ Error resetting playback:', error);
+        logger.error('❌ Error resetting playback:', error);
         setIntegrationState((prev) => ({
           ...prev,
           error: error as Error,

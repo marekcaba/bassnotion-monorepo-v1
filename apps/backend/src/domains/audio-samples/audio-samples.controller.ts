@@ -1,14 +1,7 @@
-import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-  Logger,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '../user/auth/guards/auth.guard.js';
 import { AudioSamplesService } from './audio-samples.service.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 interface UploadSampleDto {
   path: string;
@@ -22,7 +15,7 @@ interface BatchUploadDto {
 
 @Controller('api/v1/audio-samples')
 export class AudioSamplesController {
-  private readonly logger = new Logger(AudioSamplesController.name);
+  private readonly staticLogger = createStructuredLogger(AudioSamplesController.name);
 
   constructor(private readonly audioSamplesService: AudioSamplesService) {}
 
@@ -31,8 +24,9 @@ export class AudioSamplesController {
   async uploadSample(@Body() dto: UploadSampleDto) {
     try {
       const buffer = Buffer.from(dto.buffer, 'base64');
-      
-      if (buffer.length > 10 * 1024 * 1024) { // 10MB limit
+
+      if (buffer.length > 10 * 1024 * 1024) {
+        // 10MB limit
         throw new HttpException(
           'File size exceeds 10MB limit',
           HttpStatus.BAD_REQUEST,
@@ -47,10 +41,11 @@ export class AudioSamplesController {
 
       return {
         success: true,
-        ...result,
-      };
+        ...result };
     } catch (error) {
-      this.logger.error(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.staticLogger.error(
+        `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
       throw new HttpException(
         error instanceof Error ? error.message : 'Upload failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -65,12 +60,12 @@ export class AudioSamplesController {
       const samples = dto.samples.map((sample) => ({
         path: sample.path,
         buffer: Buffer.from(sample.buffer, 'base64'),
-        contentType: sample.contentType,
-      }));
+        contentType: sample.contentType }));
 
       // Check total size
       const totalSize = samples.reduce((sum, s) => sum + s.buffer.length, 0);
-      if (totalSize > 50 * 1024 * 1024) { // 50MB total limit
+      if (totalSize > 50 * 1024 * 1024) {
+        // 50MB total limit
         throw new HttpException(
           'Total batch size exceeds 50MB limit',
           HttpStatus.BAD_REQUEST,
@@ -85,11 +80,11 @@ export class AudioSamplesController {
         summary: {
           total: results.length,
           successful: results.filter((r) => r.success).length,
-          failed: results.filter((r) => !r.success).length,
-        },
-      };
+          failed: results.filter((r) => !r.success).length } };
     } catch (error) {
-      this.logger.error(`Batch upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.staticLogger.error(
+        `Batch upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
       throw new HttpException(
         error instanceof Error ? error.message : 'Batch upload failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -104,13 +99,14 @@ export class AudioSamplesController {
   ) {
     try {
       await this.audioSamplesService.createMetadata(dto.path, dto.metadata);
-      
+
       return {
         success: true,
-        message: 'Metadata created successfully',
-      };
+        message: 'Metadata created successfully' };
     } catch (error) {
-      this.logger.error(`Metadata creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.staticLogger.error(
+        `Metadata creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
       throw new HttpException(
         error instanceof Error ? error.message : 'Metadata creation failed',
         HttpStatus.INTERNAL_SERVER_ERROR,

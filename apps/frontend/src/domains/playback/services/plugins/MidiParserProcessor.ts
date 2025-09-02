@@ -11,6 +11,7 @@
  * - Built-in music theory analysis (chord/scale/key recognition)
  */
 
+import { createStructuredLogger } from '@bassnotion/contracts';
 import {
   WebMidi,
   Input,
@@ -19,6 +20,8 @@ import {
   MessageEvent,
   InputChannel,
 } from 'webmidi';
+
+const logger = createStructuredLogger('MidiParserProcessor');
 
 // Enhanced types for comprehensive MIDI data structures
 export interface ParsedMidiData {
@@ -283,7 +286,7 @@ export class MidiParserProcessor {
     this.musicTheoryAnalyzer = new MusicTheoryAnalyzer();
     // Initialize WebMidi asynchronously without blocking constructor
     this.initializeWebMidi().catch((error) => {
-      console.warn(
+      logger.warn(
         'WebMidi initialization failed, continuing without MIDI input:',
         error,
       );
@@ -300,12 +303,12 @@ export class MidiParserProcessor {
     try {
       await WebMidi.enable({ sysex: true });
       // TODO: Review non-null assertion - consider null safety
-      console.log('WebMidi enabled successfully!');
+      logger.info('WebMidi enabled successfully!');
 
       // Setup input device handling
       WebMidi.addListener('connected', (e) => {
         if (e.port.type === 'input') {
-          console.log('MIDI input connected:', e.port.name);
+          logger.info('MIDI input connected:', e.port.name);
           this.handleInputConnected(e.port as Input);
         }
       });
@@ -319,7 +322,7 @@ export class MidiParserProcessor {
         }
       }
     } catch (err) {
-      console.error('WebMidi could not be enabled:', err);
+      logger.error('WebMidi could not be enabled:', err);
       // Instead of throwing, we gracefully handle the error
       // This allows the processor to work in environments where WebMidi is not supported
       // The processor can still be used for parsing MIDI files even without live input
@@ -473,7 +476,7 @@ export class MidiParserProcessor {
     };
 
     this.sysExEvents.push(sysExEvent);
-    console.log('Enhanced SysEx message processed:', sysExEvent);
+    logger.info('Enhanced SysEx message processed:', sysExEvent);
   }
 
   /**

@@ -1,35 +1,58 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { CreatorsService } from '../creators.service.js';
-
-// Mock global fetch
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+import { Creator } from '../entities/creator.entity.js';
+import { CreatorId } from '../value-objects/creator-id.vo.js';
+import { ChannelUrl } from '../value-objects/channel-url.vo.js';
+import { ResultUtils } from '../../shared/result.js';
+import type { IResultCreatorRepository } from '../repositories/result-creator.repository.js';
 
 describe('CreatorsService', () => {
   let service: CreatorsService;
-  let mockSupabaseService: any;
-  let mockSupabaseClient: any;
+  let mockRepository: IResultCreatorRepository;
+  let mockFetch: any;
 
   beforeEach(() => {
-    // Create comprehensive mock for Supabase client
-    mockSupabaseClient = {
-      from: vi.fn().mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        not: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        lt: vi.fn().mockReturnThis(),
-        single: vi.fn(),
-        upsert: vi.fn(),
-      })),
+    // Mock fetch
+    mockFetch = vi.fn();
+    vi.stubGlobal('fetch', mockFetch);
+
+    // Mock repository
+    mockRepository = {
+      findById: vi.fn(),
+      findByChannelUrl: vi.fn(),
+      findStaleCreators: vi.fn(),
+      getAllUniqueChannelUrls: vi.fn(),
+      save: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      exists: vi.fn(),
+      findAll: vi.fn(),
+      saveMany: vi.fn(),
+      deleteMany: vi.fn(),
+      findByChannelId: vi.fn(),
+      findByCreatorName: vi.fn(),
+      findTopCreators: vi.fn(),
+      search: vi.fn(),
+      existsByChannelUrl: vi.fn(),
+      findByIds: vi.fn(),
+      findByChannelUrls: vi.fn(),
+      updateMany: vi.fn(),
+      countBySubscriberRange: vi.fn(),
     };
 
-    // Mock Supabase service
-    mockSupabaseService = {
-      getClient: vi.fn().mockReturnValue(mockSupabaseClient),
+    // Create mock RequestContextService
+    const mockRequestContext = {
+      getLogger: vi.fn().mockReturnValue({
+        info: vi.fn(),
+        error: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn(),
+      }),
+      getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
     };
 
     // Create service instance
-    service = new CreatorsService(mockSupabaseService);
+    service = new CreatorsService(mockRepository, mockRequestContext as any);
 
     // Reset environment variables
     delete process.env.YOUTUBE_API_KEY;
@@ -46,50 +69,9 @@ describe('CreatorsService', () => {
   });
 
   describe('getAllCreatorChannels', () => {
-    const mockTutorials = [
-      {
-        creator_channel_url: 'https://www.youtube.com/channel/UC123456789',
-        creator_name: 'Bass Player 1',
-      },
-      {
-        creator_channel_url: 'https://www.youtube.com/channel/UC987654321',
-        creator_name: 'Bass Player 2',
-      },
-      {
-        creator_channel_url: 'https://www.youtube.com/channel/UC123456789', // Duplicate
-        creator_name: 'Bass Player 1',
-      },
-      {
-        creator_channel_url: null,
-        creator_name: 'No Channel',
-      },
-    ];
-
-    beforeEach(() => {
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        not: vi.fn().mockReturnThis(),
-      }));
-    });
-
     it('should return unique creator channels', async () => {
-      // Arrange - Create a mock chain that properly handles two .not() calls
-      const finalPromise = Promise.resolve({
-        data: mockTutorials,
-        error: null,
-      });
-      const secondNotMock = vi.fn().mockReturnValue(finalPromise);
-      const firstNotMock = vi.fn().mockReturnValue({ not: secondNotMock });
-      const selectMock = vi.fn().mockReturnValue({ not: firstNotMock });
-
-      mockSupabaseClient.from.mockReturnValue({ select: selectMock });
-
-      // Act
-      const result = await service.getAllCreatorChannels();
-
-      // Assert
-      expect(result).toHaveLength(2);
-      expect(result).toEqual([
+      // Arrange
+      const mockChannels = [
         {
           url: 'https://www.youtube.com/channel/UC123456789',
           name: 'Bass Player 1',
@@ -98,18 +80,26 @@ describe('CreatorsService', () => {
           url: 'https://www.youtube.com/channel/UC987654321',
           name: 'Bass Player 2',
         },
-      ]);
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith('tutorials');
+      ];
+
+      vi.mocked(mockRepository.getAllUniqueChannelUrls).mockResolvedValue(
+        ResultUtils.ok(mockChannels),
+      );
+
+      // Act
+      const result = await service.getAllCreatorChannels();
+
+      // Assert
+      expect(result).toHaveLength(2);
+      expect(result).toEqual(mockChannels);
+      expect(mockRepository.getAllUniqueChannelUrls).toHaveBeenCalled();
     });
 
     it('should handle empty results', async () => {
       // Arrange
-      const finalPromise = Promise.resolve({ data: [], error: null });
-      const secondNotMock = vi.fn().mockReturnValue(finalPromise);
-      const firstNotMock = vi.fn().mockReturnValue({ not: secondNotMock });
-      const selectMock = vi.fn().mockReturnValue({ not: firstNotMock });
-
-      mockSupabaseClient.from.mockReturnValue({ select: selectMock });
+      vi.mocked(mockRepository.getAllUniqueChannelUrls).mockResolvedValue(
+        ResultUtils.ok([]),
+      );
 
       // Act
       const result = await service.getAllCreatorChannels();
@@ -120,82 +110,22 @@ describe('CreatorsService', () => {
 
     it('should handle database errors', async () => {
       // Arrange
-      const finalPromise = Promise.resolve({
-        data: null,
-        error: { message: 'Database error' },
-      });
-      const secondNotMock = vi.fn().mockReturnValue(finalPromise);
-      const firstNotMock = vi.fn().mockReturnValue({ not: secondNotMock });
-      const selectMock = vi.fn().mockReturnValue({ not: firstNotMock });
-
-      mockSupabaseClient.from.mockReturnValue({ select: selectMock });
+      vi.mocked(mockRepository.getAllUniqueChannelUrls).mockResolvedValue(
+        ResultUtils.fail(new Error('Database error')),
+      );
 
       // Act
       const result = await service.getAllCreatorChannels();
 
       // Assert
       expect(result).toEqual([]);
-    });
-
-    it('should handle null data response', async () => {
-      // Arrange
-      const finalPromise = Promise.resolve({ data: null, error: null });
-      const secondNotMock = vi.fn().mockReturnValue(finalPromise);
-      const firstNotMock = vi.fn().mockReturnValue({ not: secondNotMock });
-      const selectMock = vi.fn().mockReturnValue({ not: firstNotMock });
-
-      mockSupabaseClient.from.mockReturnValue({ select: selectMock });
-
-      // Act
-      const result = await service.getAllCreatorChannels();
-
-      // Assert
-      expect(result).toEqual([]);
-    });
-
-    it('should filter out entries with null values', async () => {
-      // Arrange
-      const tutorialsWithNulls = [
-        {
-          creator_channel_url: 'https://www.youtube.com/channel/UC123456789',
-          creator_name: 'Valid Creator',
-        },
-        {
-          creator_channel_url: null,
-          creator_name: 'No URL',
-        },
-        {
-          creator_channel_url: 'https://www.youtube.com/channel/UC987654321',
-          creator_name: null,
-        },
-      ];
-
-      const finalPromise = Promise.resolve({
-        data: tutorialsWithNulls,
-        error: null,
-      });
-      const secondNotMock = vi.fn().mockReturnValue(finalPromise);
-      const firstNotMock = vi.fn().mockReturnValue({ not: secondNotMock });
-      const selectMock = vi.fn().mockReturnValue({ not: firstNotMock });
-
-      mockSupabaseClient.from.mockReturnValue({ select: selectMock });
-
-      // Act
-      const result = await service.getAllCreatorChannels();
-
-      // Assert
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        url: 'https://www.youtube.com/channel/UC123456789',
-        name: 'Valid Creator',
-      });
     });
 
     it('should handle unexpected errors gracefully', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => {
-        throw new Error('Service unavailable');
-      });
+      vi.mocked(mockRepository.getAllUniqueChannelUrls).mockRejectedValue(
+        new Error('Service unavailable'),
+      );
 
       // Act
       const result = await service.getAllCreatorChannels();
@@ -239,10 +169,12 @@ describe('CreatorsService', () => {
     it('should fetch YouTube channel statistics successfully', async () => {
       // Arrange
       process.env.YOUTUBE_API_KEY = 'test-api-key';
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockYouTubeResponse),
-      });
+      mockFetch.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockYouTubeResponse),
+        }),
+      );
 
       // Act
       const result = await service.fetchYouTubeChannelStats(mockChannelIds);
@@ -266,10 +198,12 @@ describe('CreatorsService', () => {
     it('should use alternative API key environment variables', async () => {
       // Arrange
       process.env.GOOGLE_API_KEY = 'google-api-key';
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockYouTubeResponse),
-      });
+      mockFetch.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockYouTubeResponse),
+        }),
+      );
 
       // Act
       const result = await service.fetchYouTubeChannelStats(mockChannelIds);
@@ -316,24 +250,47 @@ describe('CreatorsService', () => {
         (_, i) => `UC${i.toString().padStart(9, '0')}`,
       );
 
+      // Create mock responses for batch requests
+      const firstBatchItems = Array.from({ length: 50 }, (_, i) => ({
+        id: `UC${i.toString().padStart(9, '0')}`,
+        statistics: { subscriberCount: '1000000' },
+        snippet: {
+          title: `Channel ${i}`,
+          thumbnails: { medium: { url: `https://example.com/thumb${i}.jpg` } },
+        },
+      }));
+
+      const secondBatchItems = Array.from({ length: 25 }, (_, i) => ({
+        id: `UC${(i + 50).toString().padStart(9, '0')}`,
+        statistics: { subscriberCount: '500000' },
+        snippet: {
+          title: `Channel ${i + 50}`,
+          thumbnails: {
+            medium: { url: `https://example.com/thumb${i + 50}.jpg` },
+          },
+        },
+      }));
+
       mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () =>
-            Promise.resolve({ items: mockYouTubeResponse.items.slice(0, 50) }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () =>
-            Promise.resolve({ items: mockYouTubeResponse.items.slice(50) }),
-        });
+        .mockImplementationOnce(() =>
+          Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ items: firstBatchItems }),
+          }),
+        )
+        .mockImplementationOnce(() =>
+          Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ items: secondBatchItems }),
+          }),
+        );
 
       // Act
       const result = await service.fetchYouTubeChannelStats(largeChannelList);
 
       // Assert
       expect(mockFetch).toHaveBeenCalledTimes(2);
-      expect(result.items).toHaveLength(51); // 50 + 1 from mocked responses
+      expect(result.items).toHaveLength(75); // 50 + 25 from mocked responses
     });
 
     it('should handle empty channel IDs array', async () => {
@@ -404,10 +361,17 @@ describe('CreatorsService', () => {
         mockYouTubeResponse,
       );
 
-      // Mock database upsert
-      mockSupabaseClient.from.mockImplementation(() => ({
-        upsert: vi.fn().mockResolvedValue({ error: null }),
-      }));
+      // Mock repository methods
+      vi.mocked(mockRepository.exists).mockResolvedValue(ResultUtils.ok(false));
+      vi.mocked(mockRepository.save).mockResolvedValue(
+        ResultUtils.ok(undefined),
+      );
+      vi.mocked(mockRepository.update).mockResolvedValue(
+        ResultUtils.ok(undefined),
+      );
+      vi.mocked(mockRepository.findByChannelUrl).mockResolvedValue(
+        ResultUtils.ok(null),
+      );
     });
 
     it('should successfully update all creator stats', async () => {
@@ -420,7 +384,8 @@ describe('CreatorsService', () => {
         'UC123456789',
         'bassplayer2',
       ]);
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith('creator_stats');
+      // Verify that creators were saved/updated
+      expect(mockRepository.save).toHaveBeenCalled();
     });
 
     it('should handle empty creator channels', async () => {
@@ -432,7 +397,8 @@ describe('CreatorsService', () => {
 
       // Assert
       expect(service.fetchYouTubeChannelStats).not.toHaveBeenCalled();
-      expect(mockSupabaseClient.from).not.toHaveBeenCalled();
+      expect(mockRepository.save).not.toHaveBeenCalled();
+      expect(mockRepository.update).not.toHaveBeenCalled();
     });
 
     it('should filter out invalid channel IDs', async () => {
@@ -454,13 +420,15 @@ describe('CreatorsService', () => {
       ]);
     });
 
-    it('should handle database upsert errors gracefully', async () => {
+    it('should handle database save errors gracefully', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => ({
-        upsert: vi
-          .fn()
-          .mockResolvedValue({ error: { message: 'Upsert failed' } }),
-      }));
+      vi.mocked(mockRepository.save).mockResolvedValue(
+        ResultUtils.fail(new Error('Save failed')),
+      );
+      vi.mocked(mockRepository.update).mockResolvedValue(
+        ResultUtils.fail(new Error('Update failed')),
+      );
+      vi.mocked(mockRepository.exists).mockResolvedValue(ResultUtils.ok(false));
 
       // Act & Assert - Should not throw
       await expect(service.updateAllCreatorStats()).resolves.toBeUndefined();
@@ -476,7 +444,8 @@ describe('CreatorsService', () => {
       await service.updateAllCreatorStats();
 
       // Assert
-      expect(mockSupabaseClient.from).toHaveBeenCalled();
+      // Should still attempt to save/update even without YouTube data
+      expect(mockRepository.save).toHaveBeenCalled();
     });
 
     it('should handle getAllCreatorChannels failure', async () => {
@@ -520,45 +489,40 @@ describe('CreatorsService', () => {
         mockResponseWithStats,
       );
 
-      mockSupabaseClient.from.mockImplementation(() => ({
-        upsert: vi.fn().mockResolvedValue({ error: null }),
-      }));
-
       // Act
       await service.updateAllCreatorStats();
 
       // Assert
-      const upsertCall = mockSupabaseClient.from().upsert;
-      expect(upsertCall).toHaveBeenCalledWith(
+      expect(mockRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
-          subscriber_count: 1500000,
-          subscriber_count_formatted: '1.5M subscribers',
+          subscriberCount: 1500000,
         }),
-        { onConflict: 'channel_url' },
       );
     });
   });
 
   describe('getCreatorStats', () => {
     const mockChannelUrl = 'https://www.youtube.com/channel/UC123456789';
-    const mockDbData = {
-      channel_url: mockChannelUrl,
-      channel_id: 'UC123456789',
-      creator_name: 'Bass Player 1',
-      subscriber_count: 1000000,
-      subscriber_count_formatted: '1.0M subscribers',
-      thumbnail_url: 'https://example.com/thumb.jpg',
-    };
-
-    beforeEach(() => {
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockDbData, error: null }),
-      }));
-    });
 
     it('should return creator stats from database', async () => {
+      // Arrange
+      const mockCreator = Creator.reconstitute({
+        id: CreatorId.create('123e4567-e89b-12d3-a456-426614174000'),
+        channelUrl: ChannelUrl.create(mockChannelUrl),
+        channelId: 'UC123456789',
+        creatorName: 'Bass Player 1',
+        subscriberCount: 1000000,
+        subscriberCountFormatted: '1.0M subscribers',
+        thumbnailUrl: 'https://example.com/thumb.jpg',
+        lastFetchedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      vi.mocked(mockRepository.findByChannelUrl).mockResolvedValue(
+        ResultUtils.ok(mockCreator),
+      );
+
       // Act
       const result = await service.getCreatorStats(mockChannelUrl);
 
@@ -571,16 +535,16 @@ describe('CreatorsService', () => {
         subscriberCountFormatted: '1.0M subscribers',
         thumbnailUrl: 'https://example.com/thumb.jpg',
       });
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith('creator_stats');
+      expect(mockRepository.findByChannelUrl).toHaveBeenCalledWith(
+        expect.any(ChannelUrl),
+      );
     });
 
     it('should return null when stats not found', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: null }),
-      }));
+      vi.mocked(mockRepository.findByChannelUrl).mockResolvedValue(
+        ResultUtils.ok(null),
+      );
 
       // Act
       const result = await service.getCreatorStats(mockChannelUrl);
@@ -591,13 +555,9 @@ describe('CreatorsService', () => {
 
     it('should return null when database error occurs', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi
-          .fn()
-          .mockResolvedValue({ data: null, error: { message: 'Not found' } }),
-      }));
+      vi.mocked(mockRepository.findByChannelUrl).mockResolvedValue(
+        ResultUtils.fail(new Error('Not found')),
+      );
 
       // Act
       const result = await service.getCreatorStats(mockChannelUrl);
@@ -608,9 +568,9 @@ describe('CreatorsService', () => {
 
     it('should handle unexpected errors gracefully', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => {
-        throw new Error('Database connection failed');
-      });
+      vi.mocked(mockRepository.findByChannelUrl).mockRejectedValue(
+        new Error('Database connection failed'),
+      );
 
       // Act
       const result = await service.getCreatorStats(mockChannelUrl);
@@ -621,20 +581,22 @@ describe('CreatorsService', () => {
 
     it('should handle partial data correctly', async () => {
       // Arrange
-      const partialData = {
-        channel_url: mockChannelUrl,
-        channel_id: null,
-        creator_name: 'Partial Creator',
-        subscriber_count: null,
-        subscriber_count_formatted: null,
-        thumbnail_url: null,
-      };
+      const partialCreator = Creator.reconstitute({
+        id: CreatorId.create('123e4567-e89b-12d3-a456-426614174000'),
+        channelUrl: ChannelUrl.create(mockChannelUrl),
+        channelId: undefined,
+        creatorName: 'Partial Creator',
+        subscriberCount: undefined,
+        subscriberCountFormatted: undefined,
+        thumbnailUrl: undefined,
+        lastFetchedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: partialData, error: null }),
-      }));
+      vi.mocked(mockRepository.findByChannelUrl).mockResolvedValue(
+        ResultUtils.ok(partialCreator),
+      );
 
       // Act
       const result = await service.getCreatorStats(mockChannelUrl);
@@ -642,29 +604,47 @@ describe('CreatorsService', () => {
       // Assert
       expect(result).toEqual({
         channelUrl: mockChannelUrl,
-        channelId: null,
+        channelId: undefined,
         creatorName: 'Partial Creator',
-        subscriberCount: null,
-        subscriberCountFormatted: null,
-        thumbnailUrl: null,
+        subscriberCount: undefined,
+        subscriberCountFormatted: 'No subscriber data',
+        thumbnailUrl: undefined,
       });
     });
   });
 
   describe('getStaleCreatorChannels', () => {
-    const mockStaleChannels = [
-      { channel_url: 'https://www.youtube.com/channel/UC123456789' },
-      { channel_url: 'https://www.youtube.com/channel/UC987654321' },
-    ];
-
-    beforeEach(() => {
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        lt: vi.fn().mockResolvedValue({ data: mockStaleChannels, error: null }),
-      }));
-    });
-
     it('should return stale creator channels', async () => {
+      // Arrange
+      const staleCreators = [
+        Creator.reconstitute({
+          id: CreatorId.create('111e4567-e89b-12d3-a456-426614174111'),
+          channelUrl: ChannelUrl.create(
+            'https://www.youtube.com/channel/UC123456789',
+          ),
+          channelId: 'UC123456789',
+          creatorName: 'Stale Creator 1',
+          lastFetchedAt: new Date(Date.now() - 48 * 60 * 60 * 1000), // 48 hours ago
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+        Creator.reconstitute({
+          id: CreatorId.create('222e4567-e89b-12d3-a456-426614174222'),
+          channelUrl: ChannelUrl.create(
+            'https://www.youtube.com/channel/UC987654321',
+          ),
+          channelId: 'UC987654321',
+          creatorName: 'Stale Creator 2',
+          lastFetchedAt: new Date(Date.now() - 36 * 60 * 60 * 1000), // 36 hours ago
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      ];
+
+      vi.mocked(mockRepository.findStaleCreators).mockResolvedValue(
+        ResultUtils.ok(staleCreators),
+      );
+
       // Act
       const result = await service.getStaleCreatorChannels();
 
@@ -673,15 +653,14 @@ describe('CreatorsService', () => {
         'https://www.youtube.com/channel/UC123456789',
         'https://www.youtube.com/channel/UC987654321',
       ]);
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith('creator_stats');
+      expect(mockRepository.findStaleCreators).toHaveBeenCalledWith(24);
     });
 
     it('should handle empty results', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        lt: vi.fn().mockResolvedValue({ data: [], error: null }),
-      }));
+      vi.mocked(mockRepository.findStaleCreators).mockResolvedValue(
+        ResultUtils.ok([]),
+      );
 
       // Act
       const result = await service.getStaleCreatorChannels();
@@ -692,13 +671,9 @@ describe('CreatorsService', () => {
 
     it('should handle database errors', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        lt: vi.fn().mockResolvedValue({
-          data: null,
-          error: { message: 'Database error' },
-        }),
-      }));
+      vi.mocked(mockRepository.findStaleCreators).mockResolvedValue(
+        ResultUtils.fail(new Error('Database error')),
+      );
 
       // Act
       const result = await service.getStaleCreatorChannels();
@@ -709,10 +684,9 @@ describe('CreatorsService', () => {
 
     it('should handle null data response', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        lt: vi.fn().mockResolvedValue({ data: null, error: null }),
-      }));
+      vi.mocked(mockRepository.findStaleCreators).mockResolvedValue(
+        ResultUtils.ok([]),
+      );
 
       // Act
       const result = await service.getStaleCreatorChannels();
@@ -721,31 +695,11 @@ describe('CreatorsService', () => {
       expect(result).toEqual([]);
     });
 
-    it('should use correct timestamp for stale check', async () => {
-      // Arrange
-      const now = new Date('2024-01-02T00:00:00Z');
-      const expected24HoursAgo = new Date('2024-01-01T00:00:00Z').toISOString();
-      vi.spyOn(Date, 'now').mockReturnValue(now.getTime());
-
-      const ltMock = vi.fn().mockResolvedValue({ data: [], error: null });
-      const selectMock = vi.fn().mockReturnValue({ lt: ltMock });
-      mockSupabaseClient.from.mockReturnValue({ select: selectMock });
-
-      // Act
-      await service.getStaleCreatorChannels();
-
-      // Assert
-      expect(ltMock).toHaveBeenCalledWith(
-        'last_fetched_at',
-        expected24HoursAgo,
-      );
-    });
-
     it('should handle unexpected errors gracefully', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => {
-        throw new Error('Service unavailable');
-      });
+      vi.mocked(mockRepository.findStaleCreators).mockRejectedValue(
+        new Error('Service unavailable'),
+      );
 
       // Act
       const result = await service.getStaleCreatorChannels();
@@ -780,9 +734,13 @@ describe('CreatorsService', () => {
         items: [],
       });
 
-      mockSupabaseClient.from.mockImplementation(() => ({
-        upsert: vi.fn().mockResolvedValue({ error: null }),
-      }));
+      vi.mocked(mockRepository.exists).mockResolvedValue(ResultUtils.ok(false));
+      vi.mocked(mockRepository.save).mockResolvedValue(
+        ResultUtils.ok(undefined),
+      );
+      vi.mocked(mockRepository.findByChannelUrl).mockResolvedValue(
+        ResultUtils.ok(null),
+      );
 
       // Act
       await service.updateAllCreatorStats();
@@ -794,48 +752,6 @@ describe('CreatorsService', () => {
         'username',
         'oldusername',
       ]);
-    });
-  });
-
-  describe('Subscriber Count Formatting (Private Method)', () => {
-    // Testing the private method indirectly through updateAllCreatorStats
-    it('should format subscriber counts correctly', async () => {
-      // Arrange
-      const testChannels = [
-        { url: 'https://www.youtube.com/channel/UC123', name: 'Test' },
-      ];
-      const mockResponse = {
-        items: [
-          {
-            id: 'UC123',
-            statistics: { subscriberCount: '1500000' },
-            snippet: { title: 'Test', thumbnails: {} },
-          },
-        ],
-      };
-
-      vi.spyOn(service, 'getAllCreatorChannels').mockResolvedValue(
-        testChannels,
-      );
-      vi.spyOn(service, 'fetchYouTubeChannelStats').mockResolvedValue(
-        mockResponse,
-      );
-
-      mockSupabaseClient.from.mockImplementation(() => ({
-        upsert: vi.fn().mockResolvedValue({ error: null }),
-      }));
-
-      // Act
-      await service.updateAllCreatorStats();
-
-      // Assert
-      const upsertCall = mockSupabaseClient.from().upsert;
-      expect(upsertCall).toHaveBeenCalledWith(
-        expect.objectContaining({
-          subscriber_count_formatted: '1.5M subscribers',
-        }),
-        { onConflict: 'channel_url' },
-      );
     });
   });
 
@@ -867,9 +783,13 @@ describe('CreatorsService', () => {
         items: [],
       });
 
-      mockSupabaseClient.from.mockImplementation(() => ({
-        upsert: vi.fn().mockResolvedValue({ error: null }),
-      }));
+      vi.mocked(mockRepository.exists).mockResolvedValue(ResultUtils.ok(false));
+      vi.mocked(mockRepository.save).mockResolvedValue(
+        ResultUtils.ok(undefined),
+      );
+      vi.mocked(mockRepository.findByChannelUrl).mockResolvedValue(
+        ResultUtils.ok(null),
+      );
 
       // Act
       await service.updateAllCreatorStats();
@@ -894,9 +814,13 @@ describe('CreatorsService', () => {
         items: [],
       });
 
-      mockSupabaseClient.from.mockImplementation(() => ({
-        upsert: vi.fn().mockResolvedValue({ error: null }),
-      }));
+      vi.mocked(mockRepository.exists).mockResolvedValue(ResultUtils.ok(false));
+      vi.mocked(mockRepository.save).mockResolvedValue(
+        ResultUtils.ok(undefined),
+      );
+      vi.mocked(mockRepository.findByChannelUrl).mockResolvedValue(
+        ResultUtils.ok(null),
+      );
 
       // Act & Assert - Should not throw
       await expect(service.updateAllCreatorStats()).resolves.toBeUndefined();

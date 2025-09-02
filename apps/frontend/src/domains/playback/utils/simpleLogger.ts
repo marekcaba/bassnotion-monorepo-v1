@@ -4,10 +4,10 @@
 
 export const initLogger = {
   toneInitialized: () => {
-    console.log('✅ Tone.JS initialized');
+    logger.info('✅ Tone.JS initialized');
   },
-  
+
   widgetsLoaded: () => {
-    console.log('✅ Widgets loaded');
-  }
+    logger.info('✅ Widgets loaded');
+  },
 };

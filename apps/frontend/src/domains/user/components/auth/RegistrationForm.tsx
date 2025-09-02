@@ -20,6 +20,7 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { GoogleSignInButton } from '@/shared/components/ui/google-sign-in-button';
 import { TransitionLink } from '@/shared/components/ui/transition-link';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface RegistrationFormProps {
   onSubmit: (data: RegistrationData) => Promise<void>;
@@ -38,6 +39,7 @@ export function RegistrationForm({
   initialValues,
   className,
 }: RegistrationFormProps) {
+  const { correlationId, logger } = useCorrelation('RegistrationForm');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -68,7 +70,7 @@ export function RegistrationForm({
       await onSubmit(data);
     } catch (error) {
       // Error handling will be done by the parent component
-      console.error('Registration error:', error);
+      logger.error('Registration error:', error);
     }
   };
 

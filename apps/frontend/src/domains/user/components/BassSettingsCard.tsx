@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { profileService } from '../api/profile';
 import { useUserProfile } from '../hooks/use-user-profile';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface BassSettings {
   stringCount: 4 | 5 | 6;
@@ -14,6 +15,7 @@ interface BassSettingsCardProps {
 }
 
 export function BassSettingsCard({ onSettingsChange }: BassSettingsCardProps) {
+  const { correlationId, logger } = useCorrelation('BassSettingsCard');
   const { profile, isLoading: isLoadingProfile } = useUserProfile();
   const [settings, setSettings] = useState<BassSettings | null>(null);
   const [originalSettings, setOriginalSettings] = useState<BassSettings | null>(
@@ -91,7 +93,7 @@ export function BassSettingsCard({ onSettingsChange }: BassSettingsCardProps) {
         setJustSaved(false);
       }, 2000);
     } catch (error) {
-      console.error('Failed to save bass configuration:', error);
+      logger.error('Failed to save bass configuration:', error);
     } finally {
       setIsSaving(false);
     }

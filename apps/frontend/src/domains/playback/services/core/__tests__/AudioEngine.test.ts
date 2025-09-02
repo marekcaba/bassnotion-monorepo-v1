@@ -84,9 +84,9 @@ class MockAudioContext {
     numberOfInputs: 1,
     numberOfOutputs: 0,
     connect: vi.fn(),
-    disconnect: vi.fn()
+    disconnect: vi.fn(),
   };
-  
+
   listener = {
     forwardX: { value: 0 },
     forwardY: { value: 0 },
@@ -96,35 +96,35 @@ class MockAudioContext {
     upZ: { value: 0 },
     positionX: { value: 0 },
     positionY: { value: 0 },
-    positionZ: { value: 0 }
+    positionZ: { value: 0 },
   };
-  
+
   resume = vi.fn().mockImplementation(() => {
     this.state = 'running';
     return Promise.resolve();
   });
-  
+
   suspend = vi.fn().mockImplementation(() => {
     this.state = 'suspended';
     return Promise.resolve();
   });
-  
+
   close = vi.fn().mockImplementation(() => {
     this.state = 'closed';
     return Promise.resolve();
   });
-  
+
   addEventListener = vi.fn();
-  
+
   createGain = vi.fn().mockReturnValue({
     gain: {
       value: 1,
       setValueAtTime: vi.fn(),
       linearRampToValueAtTime: vi.fn(),
-      exponentialRampToValueAtTime: vi.fn()
+      exponentialRampToValueAtTime: vi.fn(),
     },
     connect: vi.fn(),
-    disconnect: vi.fn()
+    disconnect: vi.fn(),
   });
 }
 
@@ -152,7 +152,7 @@ describe('AudioEngine', () => {
     eventBus = new EventBus();
     audioEngine = new AudioEngine(eventBus, {
       enableBrowserCheck: false,
-      retryOptions: { maxRetries: 0 }
+      retryOptions: { maxRetries: 0 },
     });
   });
 
@@ -167,12 +167,18 @@ describe('AudioEngine', () => {
       await audioEngine.initialize();
 
       expect(audioEngine.isReady()).toBe(true);
-      expect(emitSpy).toHaveBeenCalledWith('audio:tone-loaded', expect.any(Object));
-      expect(emitSpy).toHaveBeenCalledWith('audio:initialized', expect.objectContaining({
-        context: expect.any(MockAudioContext),
-        sampleRate: 48000,
-        latency: 0.03,
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'audio:tone-loaded',
+        expect.any(Object),
+      );
+      expect(emitSpy).toHaveBeenCalledWith(
+        'audio:initialized',
+        expect.objectContaining({
+          context: expect.any(MockAudioContext),
+          sampleRate: 48000,
+          latency: 0.03,
+        }),
+      );
     });
 
     it('should return same promise for concurrent initialization', async () => {
@@ -181,9 +187,9 @@ describe('AudioEngine', () => {
 
       // Both calls should return the same promise instance
       expect(promise1 === promise2).toBe(true);
-      
+
       await Promise.all([promise1, promise2]);
-      
+
       // Verify initialization happened only once
       expect(mockTone.setContext).toHaveBeenCalledTimes(1);
     });
@@ -205,7 +211,7 @@ describe('AudioEngine', () => {
         sampleRate: 44100,
         latencyHint: 'playback',
         enableBrowserCheck: false,
-        retryOptions: { maxRetries: 0 }
+        retryOptions: { maxRetries: 0 },
       });
 
       await customEngine.initialize();
@@ -222,7 +228,7 @@ describe('AudioEngine', () => {
 
     it('should start audio context', async () => {
       const emitSpy = vi.spyOn(eventBus, 'emit');
-      
+
       // Mock state change when Tone.start is called
       mockTone.start.mockImplementation(() => {
         const context = audioEngine.getContext() as MockAudioContext;
@@ -233,10 +239,13 @@ describe('AudioEngine', () => {
       await audioEngine.start();
 
       expect(mockTone.start).toHaveBeenCalled();
-      expect(emitSpy).toHaveBeenCalledWith('audio:started', expect.objectContaining({
-        state: 'running',
-        timestamp: expect.any(Number),
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'audio:started',
+        expect.objectContaining({
+          state: 'running',
+          timestamp: expect.any(Number),
+        }),
+      );
     });
 
     it('should not start if already running', async () => {
@@ -258,10 +267,13 @@ describe('AudioEngine', () => {
       await audioEngine.stop();
 
       expect(context.suspend).toHaveBeenCalled();
-      expect(emitSpy).toHaveBeenCalledWith('audio:stopped', expect.objectContaining({
-        state: 'suspended',
-        timestamp: expect.any(Number),
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'audio:stopped',
+        expect.objectContaining({
+          state: 'suspended',
+          timestamp: expect.any(Number),
+        }),
+      );
     });
 
     it('should handle start without initialization', async () => {
@@ -301,11 +313,14 @@ describe('AudioEngine', () => {
       expect(sampler).toHaveProperty('triggerAttack');
       expect(sampler).toHaveProperty('triggerRelease');
       expect(sampler).toHaveProperty('triggerAttackRelease');
-      expect(emitSpy).toHaveBeenCalledWith('audio:sampler-created', expect.objectContaining({
-        samplerCount: 1,
-        creationTime: expect.any(Number),
-        timestamp: expect.any(Number),
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'audio:sampler-created',
+        expect.objectContaining({
+          samplerCount: 1,
+          creationTime: expect.any(Number),
+          timestamp: expect.any(Number),
+        }),
+      );
     });
 
     it('should track sampler disposal', async () => {
@@ -314,10 +329,13 @@ describe('AudioEngine', () => {
 
       sampler.dispose();
 
-      expect(emitSpy).toHaveBeenCalledWith('audio:sampler-disposed', expect.objectContaining({
-        samplerCount: 0,
-        timestamp: expect.any(Number),
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'audio:sampler-disposed',
+        expect.objectContaining({
+          samplerCount: 0,
+          timestamp: expect.any(Number),
+        }),
+      );
     });
 
     it('should handle sampler creation errors', async () => {
@@ -331,7 +349,9 @@ describe('AudioEngine', () => {
 
     it('should throw error if creating sampler before initialization', async () => {
       const uninitializedEngine = new AudioEngine(eventBus);
-      await expect(uninitializedEngine.createSampler({})).rejects.toThrow(AudioError);
+      await expect(uninitializedEngine.createSampler({})).rejects.toThrow(
+        AudioError,
+      );
     });
   });
 
@@ -388,7 +408,10 @@ describe('AudioEngine', () => {
 
       expect(context.close).toHaveBeenCalled();
       expect(audioEngine.isReady()).toBe(false);
-      expect(emitSpy).toHaveBeenCalledWith('audio:disposed', expect.any(Object));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'audio:disposed',
+        expect.any(Object),
+      );
     });
 
     it('should warn about active samplers during disposal', async () => {
@@ -398,9 +421,12 @@ describe('AudioEngine', () => {
 
       await audioEngine.dispose();
 
-      expect(emitSpy).toHaveBeenCalledWith('audio:warning', expect.objectContaining({
-        message: expect.stringContaining('1 active samplers'),
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'audio:warning',
+        expect.objectContaining({
+          message: expect.stringContaining('1 active samplers'),
+        }),
+      );
     });
 
     it('should handle disposal without initialization', async () => {

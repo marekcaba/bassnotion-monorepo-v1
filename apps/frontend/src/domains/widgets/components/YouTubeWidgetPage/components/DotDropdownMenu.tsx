@@ -14,6 +14,7 @@ import {
 } from '@/shared/components/ui/dropdown-menu';
 import { cn } from '@/shared/utils';
 import { type NoteDuration } from '@bassnotion/contracts';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Icon components similar to Hero UI examples
 export const AddNoteIcon = (props: React.SVGProps<SVGSVGElement>) => {
@@ -255,12 +256,13 @@ export function DotDropdownMenu({
   onAction,
   onOpenChange,
 }: DotDropdownMenuProps) {
+  const { correlationId, logger } = useCorrelation('DotDropdownMenu');
   const iconClasses =
     'text-lg text-slate-500 pointer-events-none flex-shrink-0';
   const [isOpen, setIsOpen] = React.useState(false);
 
   const handleAction = (action: string, data?: any) => {
-    console.log('🎯 DotDropdownMenu: Action triggered:', {
+    logger.info('🎯 DotDropdownMenu: Action triggered:', {
       action,
       data,
       stringIndex,
@@ -268,25 +270,25 @@ export function DotDropdownMenu({
       currentIsOpen: isOpen,
     });
     onAction(action, stringIndex, fret, data);
-    console.log('🔴 DotDropdownMenu: Force closing dropdown');
+    logger.info('🔴 DotDropdownMenu: Force closing dropdown');
     setIsOpen(false);
     // Explicitly trigger onOpenChange to ensure parent state is cleared
-    console.log('🔴 DotDropdownMenu: Manually calling onOpenChange(false)');
+    logger.info('🔴 DotDropdownMenu: Manually calling onOpenChange(false)');
     onOpenChange?.(false, stringIndex, fret);
-    console.log('🔴 DotDropdownMenu: Manual onOpenChange(false) called');
+    logger.info('🔴 DotDropdownMenu: Manual onOpenChange(false) called');
   };
 
   const handleOpenChange = (open: boolean) => {
-    console.log('🔄 DotDropdownMenu: onOpenChange called:', {
+    logger.info('🔄 DotDropdownMenu: onOpenChange called:', {
       open,
       stringIndex,
       fret,
       previousIsOpen: isOpen,
     });
     setIsOpen(open);
-    console.log('🔄 DotDropdownMenu: setIsOpen called with:', open);
+    logger.info('🔄 DotDropdownMenu: setIsOpen called with:', open);
     onOpenChange?.(open, stringIndex, fret);
-    console.log('🔄 DotDropdownMenu: parent onOpenChange called');
+    logger.info('🔄 DotDropdownMenu: parent onOpenChange called');
   };
 
   return (

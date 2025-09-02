@@ -1,12 +1,13 @@
 /**
  * CommandHistory - Command History Tracking and Persistence
  * Story 3.18.4: Service Architecture Implementation
- * 
+ *
  * Tracks command execution history with persistence and audit trail capabilities.
  */
 
 import { ICommand, CommandMetadata, CommandResult } from './Command.js';
 import { EventBus } from '../services/core/EventBus.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 export interface CommandHistoryEntry {
   id: string;
@@ -76,7 +77,11 @@ export class CommandHistory {
   /**
    * Record command execution
    */
-  recordExecution(command: ICommand, result: CommandResult, userId?: string): void {
+  recordExecution(
+    command: ICommand,
+    result: CommandResult,
+    userId?: string,
+  ): void {
     const entry: CommandHistoryEntry = {
       id: this.generateEntryId(),
       command: command.metadata,
@@ -88,7 +93,7 @@ export class CommandHistory {
 
     this.addEntry(entry);
     this.updateCommandFrequency(command.metadata.name);
-    
+
     if (result.success && entry.executedAt && command.metadata.timestamp) {
       this.totalExecutionTime += entry.executedAt - command.metadata.timestamp;
     }
@@ -135,22 +140,30 @@ export class CommandHistory {
 
     if (filter) {
       if (filter.startTime) {
-        filtered = filtered.filter(entry => entry.executedAt >= filter.startTime!);
+        filtered = filtered.filter(
+          (entry) => entry.executedAt >= filter.startTime!,
+        );
       }
       if (filter.endTime) {
-        filtered = filtered.filter(entry => entry.executedAt <= filter.endTime!);
+        filtered = filtered.filter(
+          (entry) => entry.executedAt <= filter.endTime!,
+        );
       }
       if (filter.commandName) {
-        filtered = filtered.filter(entry => entry.command.name === filter.commandName);
+        filtered = filtered.filter(
+          (entry) => entry.command.name === filter.commandName,
+        );
       }
       if (filter.userId) {
-        filtered = filtered.filter(entry => entry.userId === filter.userId);
+        filtered = filtered.filter((entry) => entry.userId === filter.userId);
       }
       if (filter.sessionId) {
-        filtered = filtered.filter(entry => entry.sessionId === filter.sessionId);
+        filtered = filtered.filter(
+          (entry) => entry.sessionId === filter.sessionId,
+        );
       }
       if (filter.onlySuccessful) {
-        filtered = filtered.filter(entry => entry.result.success);
+        filtered = filtered.filter((entry) => entry.result.success);
       }
     }
 
@@ -161,10 +174,12 @@ export class CommandHistory {
    * Get statistics
    */
   getStats(): CommandHistoryStats {
-    const successful = this.entries.filter(entry => entry.result.success).length;
+    const successful = this.entries.filter(
+      (entry) => entry.result.success,
+    ).length;
     const failed = this.entries.length - successful;
-    const undone = this.entries.filter(entry => entry.undoneAt).length;
-    const redone = this.entries.filter(entry => entry.redoneAt).length;
+    const undone = this.entries.filter((entry) => entry.undoneAt).length;
+    const redone = this.entries.filter((entry) => entry.redoneAt).length;
 
     const commandFrequency: Record<string, number> = {};
     this.commandFrequency.forEach((count, command) => {
@@ -177,9 +192,10 @@ export class CommandHistory {
       failedCommands: failed,
       undoneCommands: undone,
       redoneCommands: redone,
-      averageExecutionTime: this.entries.length > 0 
-        ? this.totalExecutionTime / this.entries.length 
-        : 0,
+      averageExecutionTime:
+        this.entries.length > 0
+          ? this.totalExecutionTime / this.entries.length
+          : 0,
       commandFrequency,
     };
   }
@@ -190,11 +206,11 @@ export class CommandHistory {
   generateAuditReport(
     startTime?: number,
     endTime?: number,
-    filter?: Parameters<typeof this.getHistory>[0]
+    filter?: Parameters<typeof this.getHistory>[0],
   ): CommandAuditReport {
     const entries = this.getHistory({
       ...filter,
-      startTime: startTime || (this.entries[0]?.executedAt || Date.now()),
+      startTime: startTime || this.entries[0]?.executedAt || Date.now(),
       endTime: endTime || Date.now(),
     });
 
@@ -204,7 +220,7 @@ export class CommandHistory {
       entries,
       stats,
       timeRange: {
-        start: startTime || (entries[0]?.executedAt || Date.now()),
+        start: startTime || entries[0]?.executedAt || Date.now(),
         end: endTime || Date.now(),
       },
       generatedAt: Date.now(),
@@ -215,12 +231,16 @@ export class CommandHistory {
    * Export history to JSON
    */
   exportToJSON(): string {
-    return JSON.stringify({
-      sessionId: this.sessionId,
-      entries: this.entries,
-      stats: this.getStats(),
-      exportedAt: Date.now(),
-    }, null, 2);
+    return JSON.stringify(
+      {
+        sessionId: this.sessionId,
+        entries: this.entries,
+        stats: this.getStats(),
+        exportedAt: Date.now(),
+      },
+      null,
+      2,
+    );
   }
 
   /**
@@ -238,7 +258,9 @@ export class CommandHistory {
         });
       }
     } catch (error) {
-      throw new Error(`Failed to import command history: ${error instanceof Error ? error.message : 'Invalid JSON'}`);
+      throw new Error(
+        `Failed to import command history: ${error instanceof Error ? error.message : 'Invalid JSON'}`,
+      );
     }
   }
 
@@ -293,7 +315,7 @@ export class CommandHistory {
     return this.entries
       .slice()
       .reverse()
-      .find(entry => entry.command.id === commandId);
+      .find((entry) => entry.command.id === commandId);
   }
 
   /**
@@ -311,7 +333,7 @@ export class CommandHistory {
     this.commandFrequency.clear();
     this.totalExecutionTime = 0;
 
-    this.entries.forEach(entry => {
+    this.entries.forEach((entry) => {
       this.updateCommandFrequency(entry.command.name);
       if (entry.result.success && entry.executedAt && entry.command.timestamp) {
         this.totalExecutionTime += entry.executedAt - entry.command.timestamp;
@@ -322,19 +344,22 @@ export class CommandHistory {
   /**
    * Calculate stats for specific entries
    */
-  private calculateStatsForEntries(entries: CommandHistoryEntry[]): CommandHistoryStats {
-    const successful = entries.filter(entry => entry.result.success).length;
+  private calculateStatsForEntries(
+    entries: CommandHistoryEntry[],
+  ): CommandHistoryStats {
+    const successful = entries.filter((entry) => entry.result.success).length;
     const failed = entries.length - successful;
-    const undone = entries.filter(entry => entry.undoneAt).length;
-    const redone = entries.filter(entry => entry.redoneAt).length;
+    const undone = entries.filter((entry) => entry.undoneAt).length;
+    const redone = entries.filter((entry) => entry.redoneAt).length;
 
     const commandFrequency: Record<string, number> = {};
-    entries.forEach(entry => {
-      commandFrequency[entry.command.name] = (commandFrequency[entry.command.name] || 0) + 1;
+    entries.forEach((entry) => {
+      commandFrequency[entry.command.name] =
+        (commandFrequency[entry.command.name] || 0) + 1;
     });
 
     let totalTime = 0;
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
       if (entry.result.success && entry.executedAt && entry.command.timestamp) {
         totalTime += entry.executedAt - entry.command.timestamp;
       }
@@ -363,7 +388,7 @@ export class CommandHistory {
       const data = JSON.stringify(this.entries);
       localStorage.setItem(this.config.persistenceKey, data);
     } catch (error) {
-      console.error('Failed to persist command history:', error);
+      logger.error('Failed to persist command history:', error);
     }
   }
 
@@ -382,7 +407,7 @@ export class CommandHistory {
         this.rebuildFrequencyMap();
       }
     } catch (error) {
-      console.error('Failed to load command history:', error);
+      logger.error('Failed to load command history:', error);
     }
   }
 

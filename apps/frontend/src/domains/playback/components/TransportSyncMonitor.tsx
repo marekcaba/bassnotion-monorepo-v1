@@ -3,7 +3,7 @@ import { TransportSyncManager } from '../services/core/TransportSyncManager';
 
 /**
  * FAANG-style Monitoring Dashboard
- * 
+ *
  * Provides real-time visibility into transport sync health
  */
 
@@ -31,7 +31,7 @@ export function TransportSyncMonitor() {
     reconnections: 0,
     avgLatency: 0,
     connectedClients: 0,
-    lastSyncTime: 0
+    lastSyncTime: 0,
   });
 
   const [clients, setClients] = useState<ClientStatus[]>([]);
@@ -39,12 +39,12 @@ export function TransportSyncMonitor() {
 
   useEffect(() => {
     const syncManager = TransportSyncManager.getInstance();
-    
+
     // Update metrics every second
     const interval = setInterval(() => {
       const currentMetrics = syncManager.getMetrics();
       setMetrics(currentMetrics);
-      
+
       // Get client statuses
       const clientList: ClientStatus[] = [];
       // This would need to be exposed by TransportSyncManager
@@ -56,13 +56,15 @@ export function TransportSyncMonitor() {
   }, []);
 
   const getHealthStatus = useCallback(() => {
-    const missRate = metrics.totalHeartbeats > 0 
-      ? (metrics.missedHeartbeats / metrics.totalHeartbeats) * 100 
-      : 0;
-    
+    const missRate =
+      metrics.totalHeartbeats > 0
+        ? (metrics.missedHeartbeats / metrics.totalHeartbeats) * 100
+        : 0;
+
     if (missRate > 10) return { status: 'critical', color: '#ef4444' };
     if (missRate > 5) return { status: 'warning', color: '#f59e0b' };
-    if (metrics.avgLatency > 100) return { status: 'warning', color: '#f59e0b' };
+    if (metrics.avgLatency > 100)
+      return { status: 'warning', color: '#f59e0b' };
     return { status: 'healthy', color: '#10b981' };
   }, [metrics]);
 
@@ -94,7 +96,7 @@ export function TransportSyncMonitor() {
       <div className="space-y-2">
         {/* Health Status */}
         <div className="flex items-center gap-2">
-          <div 
+          <div
             className="w-2 h-2 rounded-full animate-pulse"
             style={{ backgroundColor: health.color }}
           />
@@ -117,7 +119,9 @@ export function TransportSyncMonitor() {
           </div>
           <div>
             <span className="text-gray-400">Missed:</span>
-            <span className="ml-1 text-orange-400">{metrics.missedHeartbeats}</span>
+            <span className="ml-1 text-orange-400">
+              {metrics.missedHeartbeats}
+            </span>
           </div>
           <div>
             <span className="text-gray-400">Reconnects:</span>
@@ -126,7 +130,7 @@ export function TransportSyncMonitor() {
           <div>
             <span className="text-gray-400">Last Sync:</span>
             <span className="ml-1">
-              {metrics.lastSyncTime 
+              {metrics.lastSyncTime
                 ? `${((Date.now() - metrics.lastSyncTime) / 1000).toFixed(1)}s ago`
                 : 'Never'}
             </span>
@@ -138,10 +142,14 @@ export function TransportSyncMonitor() {
           <div className="mt-3 pt-3 border-t border-gray-700">
             <h4 className="text-xs font-semibold mb-1">Connected Widgets</h4>
             <div className="space-y-1">
-              {clients.map(client => (
+              {clients.map((client) => (
                 <div key={client.id} className="flex justify-between text-xs">
                   <span className="text-gray-400">{client.id}</span>
-                  <span className={client.connected ? 'text-green-400' : 'text-red-400'}>
+                  <span
+                    className={
+                      client.connected ? 'text-green-400' : 'text-red-400'
+                    }
+                  >
                     {client.latency}ms
                   </span>
                 </div>

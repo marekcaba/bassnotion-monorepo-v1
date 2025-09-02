@@ -1,7 +1,7 @@
 /**
  * EventBus Enhanced Tests
  * Story 3.18.4: Service Architecture Implementation
- * 
+ *
  * Comprehensive tests for enhanced EventBus features including:
  * - Event batching
  * - Schema validation
@@ -32,7 +32,7 @@ describe('EventBus - Enhanced Features', () => {
   describe('Event Batching', () => {
     it('should batch events when enabled', async () => {
       vi.useFakeTimers();
-      
+
       eventBus = new EventBus({
         enableBatching: true,
         batchSize: 3,
@@ -45,7 +45,7 @@ describe('EventBus - Enhanced Features', () => {
       // Emit multiple events
       await eventBus.emit('test-event', { value: 1 });
       await eventBus.emit('test-event', { value: 2 });
-      
+
       // Events should not be processed yet
       expect(handler).not.toHaveBeenCalled();
 
@@ -56,11 +56,11 @@ describe('EventBus - Enhanced Features', () => {
       expect(handler).toHaveBeenCalledTimes(2);
       expect(handler).toHaveBeenCalledWith(
         expect.objectContaining({ value: 1 }),
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(handler).toHaveBeenCalledWith(
         expect.objectContaining({ value: 2 }),
-        expect.any(Object)
+        expect.any(Object),
       );
 
       vi.useRealTimers();
@@ -86,7 +86,7 @@ describe('EventBus - Enhanced Features', () => {
 
     it('should emit batch-processed event after batch execution', async () => {
       vi.useFakeTimers();
-      
+
       eventBus = new EventBus({
         enableBatching: true,
         batchSize: 5,
@@ -103,7 +103,7 @@ describe('EventBus - Enhanced Features', () => {
 
       expect(batchHandler).toHaveBeenCalledWith(
         expect.objectContaining({ batchSize: 2 }),
-        expect.any(Object)
+        expect.any(Object),
       );
 
       vi.useRealTimers();
@@ -124,15 +124,16 @@ describe('EventBus - Enhanced Features', () => {
           action: { type: 'string' },
         },
       };
-      
+
       eventBus.registerSchema('user-action', schema);
 
       // Mock validation to return false for invalid data
-      const validateSpy = vi.spyOn(eventBus as any, 'validateEventData')
+      const validateSpy = vi
+        .spyOn(eventBus as any, 'validateEventData')
         .mockReturnValue(false);
 
       await expect(
-        eventBus.emit('user-action', { invalid: 'data' })
+        eventBus.emit('user-action', { invalid: 'data' }),
       ).rejects.toThrow('Event data validation failed');
 
       validateSpy.mockRestore();
@@ -153,7 +154,7 @@ describe('EventBus - Enhanced Features', () => {
       eventBus.on('test-event', handler);
 
       await expect(
-        eventBus.emit('test-event', { valid: 'data' })
+        eventBus.emit('test-event', { valid: 'data' }),
       ).resolves.not.toThrow();
 
       expect(handler).toHaveBeenCalled();
@@ -171,7 +172,7 @@ describe('EventBus - Enhanced Features', () => {
       }
 
       const analytics = eventBus.getEventAnalytics();
-      
+
       expect(analytics['test-event']).toBeDefined();
       expect(analytics['test-event'].count).toBe(5);
       expect(analytics['test-event'].lastEmitted).toBeDefined();
@@ -181,9 +182,9 @@ describe('EventBus - Enhanced Features', () => {
 
     it('should calculate average execution time', async () => {
       const handler = vi.fn(async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
       });
-      
+
       eventBus.on('slow-event', handler);
 
       await eventBus.emit('slow-event', {});
@@ -197,7 +198,9 @@ describe('EventBus - Enhanced Features', () => {
 
   describe('Circuit Breaker Metrics', () => {
     it('should track circuit breaker metrics per event', async () => {
-      const failingHandler = vi.fn().mockRejectedValue(new Error('Handler failed'));
+      const failingHandler = vi
+        .fn()
+        .mockRejectedValue(new Error('Handler failed'));
       eventBus.on('failing-event', failingHandler);
 
       // Trigger multiple failures
@@ -218,7 +221,7 @@ describe('EventBus - Enhanced Features', () => {
   describe('Event History with Batching', () => {
     it('should maintain history even with batching enabled', async () => {
       vi.useFakeTimers();
-      
+
       eventBus = new EventBus({
         enableBatching: true,
         enableReplay: true,
@@ -268,7 +271,7 @@ describe('EventBus - Enhanced Features', () => {
 
     it('should efficiently batch high volume events', async () => {
       vi.useFakeTimers();
-      
+
       eventBus = new EventBus({
         enableBatching: true,
         batchSize: 100,
@@ -297,7 +300,7 @@ describe('EventBus - Enhanced Features', () => {
   describe('Stop and Dispose with Batching', () => {
     it('should flush pending batch on stop', async () => {
       vi.useFakeTimers();
-      
+
       eventBus = new EventBus({
         enableBatching: true,
         batchTimeout: 1000, // Long timeout
@@ -307,7 +310,7 @@ describe('EventBus - Enhanced Features', () => {
       eventBus.on('test-event', handler);
 
       await eventBus.emit('test-event', { value: 1 });
-      
+
       // Stop should flush batch
       await eventBus.stop();
 
@@ -324,9 +327,9 @@ describe('EventBus - Enhanced Features', () => {
 
       eventBus.registerSchema('test', {});
       eventBus.on('test', vi.fn());
-      
+
       await eventBus.emit('test', {});
-      
+
       await eventBus.dispose();
 
       expect(eventBus.getHistory()).toEqual([]);
@@ -338,15 +341,17 @@ describe('EventBus - Enhanced Features', () => {
   describe('Error Handling in Batch Mode', () => {
     it('should handle errors in batch processing', async () => {
       vi.useFakeTimers();
-      
+
       eventBus = new EventBus({
         enableBatching: true,
         batchTimeout: 50,
       });
 
-      const errorHandler = vi.fn().mockRejectedValue(new Error('Batch handler error'));
+      const errorHandler = vi
+        .fn()
+        .mockRejectedValue(new Error('Batch handler error'));
       const successHandler = vi.fn();
-      
+
       eventBus.on('error-event', errorHandler);
       eventBus.on('success-event', successHandler);
 

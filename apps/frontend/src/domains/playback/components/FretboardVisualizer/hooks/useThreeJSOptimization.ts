@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { PerformanceSettings } from '../types/fretboard';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Performance settings based on device type
 const PERFORMANCE_SETTINGS: PerformanceSettings = {
@@ -98,7 +99,7 @@ export function useThreeJSOptimization() {
 
       // Auto-adjust quality if FPS drops below target
       if (fps < PERFORMANCE_SETTINGS.targetFPS * 0.8) {
-        console.warn(
+        logger.warn(
           `FPS dropped to ${fps.toFixed(1)}, consider reducing quality`,
         );
       }

@@ -16,6 +16,7 @@
  */
 
 import React from 'react';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 export interface MemoryUsageMetrics {
   heapUsed: number;
@@ -105,7 +106,7 @@ export class MemoryManager {
     this.components.set(name, componentInfo);
 
     // Log registration
-    console.debug(
+    logger.debug(
       `[MemoryManager] Registered component: ${name} (${estimatedSize}MB estimated)`,
     );
   }
@@ -116,7 +117,7 @@ export class MemoryManager {
   public unregisterComponent(name: string): void {
     const component = this.components.get(name);
     if (!component) {
-      console.warn(
+      logger.warn(
         `[MemoryManager] Attempted to unregister unknown component: ${name}`,
       );
       return;
@@ -127,7 +128,7 @@ export class MemoryManager {
       try {
         callback();
       } catch (error) {
-        console.error(
+        logger.error(
           `[MemoryManager] Error in cleanup callback for ${name}:`,
           error,
         );
@@ -135,7 +136,7 @@ export class MemoryManager {
     });
 
     this.components.delete(name);
-    console.debug(`[MemoryManager] Unregistered component: ${name}`);
+    logger.debug(`[MemoryManager] Unregistered component: ${name}`);
   }
 
   /**
@@ -146,7 +147,7 @@ export class MemoryManager {
     if (component) {
       component.cleanupCallbacks.push(callback);
     } else {
-      console.warn(
+      logger.warn(
         `[MemoryManager] Cannot add cleanup to unknown component: ${name}`,
       );
     }
@@ -304,7 +305,7 @@ export class MemoryManager {
     const currentUsage = this.getCurrentMemoryUsage();
 
     if (force || currentUsage.heapUsed > this.thresholds.critical) {
-      console.warn(
+      logger.warn(
         `[MemoryManager] Triggering cleanup - Memory usage: ${currentUsage.heapUsed.toFixed(1)}MB`,
       );
 
@@ -313,7 +314,7 @@ export class MemoryManager {
         try {
           callback();
         } catch (error) {
-          console.error(
+          logger.error(
             '[MemoryManager] Error in global cleanup callback:',
             error,
           );
@@ -411,7 +412,7 @@ Generated: ${new Date().toISOString()}
       const alerts = this.checkForMemoryLeaks();
       alerts.forEach((alert) => {
         if (alert.severity === 'critical' || alert.severity === 'high') {
-          console.warn('[MemoryManager] Memory Alert:', alert.message);
+          logger.warn('[MemoryManager] Memory Alert:', alert.message);
         }
       });
 
@@ -456,7 +457,7 @@ Generated: ${new Date().toISOString()}
     for (let i = 0; i < maxCleanup; i++) {
       const [name] = componentsToCleanup[i] ?? [];
       if (name) {
-        console.warn(`[MemoryManager] Auto-cleaning stale component: ${name}`);
+        logger.warn(`[MemoryManager] Auto-cleaning stale component: ${name}`);
         this.unregisterComponent(name);
       }
     }
@@ -490,7 +491,7 @@ Generated: ${new Date().toISOString()}
     if (typeof window !== 'undefined' && (window as any).gc) {
       try {
         (window as any).gc();
-        console.debug('[MemoryManager] Triggered garbage collection');
+        logger.debug('[MemoryManager] Triggered garbage collection');
       } catch {
         // Ignore errors - GC not available
       }
@@ -499,7 +500,7 @@ Generated: ${new Date().toISOString()}
     // Log memory usage for debugging
     if (typeof performance !== 'undefined' && (performance as any).memory) {
       const memory = (performance as any).memory;
-      console.debug('[MemoryManager] Memory after cleanup:', {
+      logger.debug('[MemoryManager] Memory after cleanup:', {
         used: this.bytesToMB(memory.usedJSHeapSize).toFixed(1) + 'MB',
         total: this.bytesToMB(memory.totalJSHeapSize).toFixed(1) + 'MB',
       });

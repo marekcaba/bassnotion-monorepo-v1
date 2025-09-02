@@ -1,4 +1,8 @@
-import type { Region, MidiEvent, QuantizationSettings } from '../types/region.js';
+import type {
+  Region,
+  MidiEvent,
+  QuantizationSettings,
+} from '../types/region.js';
 import type { MusicalPosition } from '../types/pattern.js';
 import { parseMusicalPosition, toMusicalPosition } from '../types/pattern.js';
 import { nanoid } from 'nanoid';
@@ -23,14 +27,17 @@ export function createRegion(params: {
     loopCount: 0, // Infinite by default
     muted: false,
     color: generateRegionColor(),
-    laneIndex: 0
+    laneIndex: 0,
   };
 }
 
 /**
  * Validate region properties
  */
-export function validateRegion(region: Region): { valid: boolean; errors: string[] } {
+export function validateRegion(region: Region): {
+  valid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   if (!region.id) {
@@ -58,19 +65,24 @@ export function validateRegion(region: Region): { valid: boolean; errors: string
   }
 
   if (!region.pattern && !region.midiEvents && !region.audioClipId) {
-    errors.push('Region must have content (pattern, MIDI events, or audio clip)');
+    errors.push(
+      'Region must have content (pattern, MIDI events, or audio clip)',
+    );
   }
 
   return {
     valid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
 /**
  * Add two musical positions together
  */
-export function addMusicalTime(pos1: MusicalPosition, pos2: MusicalPosition): MusicalPosition {
+export function addMusicalTime(
+  pos1: MusicalPosition,
+  pos2: MusicalPosition,
+): MusicalPosition {
   const p1 = parseMusicalPosition(pos1);
   const p2 = parseMusicalPosition(pos2);
 
@@ -95,16 +107,19 @@ export function addMusicalTime(pos1: MusicalPosition, pos2: MusicalPosition): Mu
 /**
  * Subtract two musical positions
  */
-export function subtractMusicalTime(pos1: MusicalPosition, pos2: MusicalPosition): MusicalPosition {
+export function subtractMusicalTime(
+  pos1: MusicalPosition,
+  pos2: MusicalPosition,
+): MusicalPosition {
   const p1 = parseMusicalPosition(pos1);
   const p2 = parseMusicalPosition(pos2);
 
   // Convert to total sixteenths for easier calculation
   const totalSixteenths1 = p1.bar * 16 + p1.beat * 4 + p1.sixteenth;
   const totalSixteenths2 = p2.bar * 16 + p2.beat * 4 + p2.sixteenth;
-  
+
   const difference = totalSixteenths1 - totalSixteenths2;
-  
+
   if (difference < 0) {
     return '0:0:0'; // Can't have negative time
   }
@@ -120,7 +135,10 @@ export function subtractMusicalTime(pos1: MusicalPosition, pos2: MusicalPosition
 /**
  * Compare two musical positions
  */
-export function compareMusicalPositions(pos1: MusicalPosition, pos2: MusicalPosition): number {
+export function compareMusicalPositions(
+  pos1: MusicalPosition,
+  pos2: MusicalPosition,
+): number {
   const p1 = parseMusicalPosition(pos1);
   const p2 = parseMusicalPosition(pos2);
 
@@ -136,10 +154,12 @@ export function compareMusicalPositions(pos1: MusicalPosition, pos2: MusicalPosi
 export function isPositionInRange(
   position: MusicalPosition,
   rangeStart: MusicalPosition,
-  rangeEnd: MusicalPosition
+  rangeEnd: MusicalPosition,
 ): boolean {
-  return compareMusicalPositions(position, rangeStart) >= 0 &&
-         compareMusicalPositions(position, rangeEnd) < 0;
+  return (
+    compareMusicalPositions(position, rangeStart) >= 0 &&
+    compareMusicalPositions(position, rangeEnd) < 0
+  );
 }
 
 /**
@@ -150,15 +170,15 @@ export function getRegionEndPosition(region: Region): MusicalPosition {
     // Infinite loop - return a very large number
     return '9999:0:0';
   }
-  
+
   const loopCount = Math.max(1, region.loopCount);
   let endPosition = region.startPosition;
-  
+
   // Add duration for each loop iteration
   for (let i = 0; i < loopCount; i++) {
     endPosition = addMusicalTime(endPosition, region.duration);
   }
-  
+
   return endPosition;
 }
 
@@ -169,8 +189,10 @@ export function doRegionsOverlap(region1: Region, region2: Region): boolean {
   const end1 = getRegionEndPosition(region1);
   const end2 = getRegionEndPosition(region2);
 
-  return !(compareMusicalPositions(end1, region2.startPosition) <= 0 ||
-           compareMusicalPositions(end2, region1.startPosition) <= 0);
+  return !(
+    compareMusicalPositions(end1, region2.startPosition) <= 0 ||
+    compareMusicalPositions(end2, region1.startPosition) <= 0
+  );
 }
 
 /**
@@ -187,7 +209,7 @@ function generateRegionColor(): string {
     '#14B8A6', // Teal
     '#F97316', // Orange
   ];
-  
+
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
@@ -197,12 +219,19 @@ function generateRegionColor(): string {
 function isValidMusicalPosition(position: MusicalPosition): boolean {
   const parts = position.split(':');
   if (parts.length !== 3) return false;
-  
+
   const [bar, beat, sixteenth] = parts.map(Number);
-  
-  return !isNaN(bar) && bar >= 0 &&
-         !isNaN(beat) && beat >= 0 && beat < 4 &&
-         !isNaN(sixteenth) && sixteenth >= 0 && sixteenth < 4;
+
+  return (
+    !isNaN(bar) &&
+    bar >= 0 &&
+    !isNaN(beat) &&
+    beat >= 0 &&
+    beat < 4 &&
+    !isNaN(sixteenth) &&
+    sixteenth >= 0 &&
+    sixteenth < 4
+  );
 }
 
 /**
@@ -210,12 +239,15 @@ function isValidMusicalPosition(position: MusicalPosition): boolean {
  */
 export function secondsToMusicalPosition(
   seconds: number,
-  tempo: number = 120,
-  timeSignature: { numerator: number; denominator: number } = { numerator: 4, denominator: 4 }
+  tempo = 120,
+  timeSignature: { numerator: number; denominator: number } = {
+    numerator: 4,
+    denominator: 4,
+  },
 ): MusicalPosition {
   const beatsPerSecond = tempo / 60;
   const totalBeats = seconds * beatsPerSecond;
-  
+
   const beatsPerBar = timeSignature.numerator;
   const bars = Math.floor(totalBeats / beatsPerBar);
   const remainingBeats = totalBeats % beatsPerBar;
@@ -230,15 +262,19 @@ export function secondsToMusicalPosition(
  */
 export function musicalPositionToSeconds(
   position: MusicalPosition,
-  tempo: number = 120,
-  timeSignature: { numerator: number; denominator: number } = { numerator: 4, denominator: 4 }
+  tempo = 120,
+  timeSignature: { numerator: number; denominator: number } = {
+    numerator: 4,
+    denominator: 4,
+  },
 ): number {
   const parsed = parseMusicalPosition(position);
   const beatsPerBar = timeSignature.numerator;
-  
-  const totalBeats = parsed.bar * beatsPerBar + parsed.beat + (parsed.sixteenth / 4);
+
+  const totalBeats =
+    parsed.bar * beatsPerBar + parsed.beat + parsed.sixteenth / 4;
   const beatsPerSecond = tempo / 60;
-  
+
   return totalBeats / beatsPerSecond;
 }
 
@@ -250,7 +286,7 @@ export function createDefaultQuantization(): QuantizationSettings {
     enabled: false,
     gridSize: '1/16',
     strength: 1.0,
-    swing: 0
+    swing: 0,
   };
 }
 
@@ -259,7 +295,7 @@ export function createDefaultQuantization(): QuantizationSettings {
  */
 export function quantizePosition(
   position: MusicalPosition,
-  settings: QuantizationSettings
+  settings: QuantizationSettings,
 ): MusicalPosition {
   if (!settings.enabled) return position;
 
@@ -269,19 +305,33 @@ export function quantizePosition(
   // Calculate grid size in sixteenths
   let gridSixteenths: number;
   switch (settings.gridSize) {
-    case '1/4': gridSixteenths = 4; break;
-    case '1/8': gridSixteenths = 2; break;
-    case '1/16': gridSixteenths = 1; break;
-    case '1/32': gridSixteenths = 0.5; break;
-    case 'triplet': gridSixteenths = 16 / 3; break;
-    default: gridSixteenths = 1;
+    case '1/4':
+      gridSixteenths = 4;
+      break;
+    case '1/8':
+      gridSixteenths = 2;
+      break;
+    case '1/16':
+      gridSixteenths = 1;
+      break;
+    case '1/32':
+      gridSixteenths = 0.5;
+      break;
+    case 'triplet':
+      gridSixteenths = 16 / 3;
+      break;
+    default:
+      gridSixteenths = 1;
   }
 
   // Find nearest grid point
-  const quantizedSixteenths = Math.round(totalSixteenths / gridSixteenths) * gridSixteenths;
-  
+  const quantizedSixteenths =
+    Math.round(totalSixteenths / gridSixteenths) * gridSixteenths;
+
   // Apply strength (interpolate between original and quantized)
-  const finalSixteenths = totalSixteenths + (quantizedSixteenths - totalSixteenths) * settings.strength;
+  const finalSixteenths =
+    totalSixteenths +
+    (quantizedSixteenths - totalSixteenths) * settings.strength;
 
   // Convert back to musical position
   const bars = Math.floor(finalSixteenths / 16);
@@ -296,7 +346,9 @@ export function quantizePosition(
  * Sort regions by start position
  */
 export function sortRegionsByPosition(regions: Region[]): Region[] {
-  return [...regions].sort((a, b) => compareMusicalPositions(a.startPosition, b.startPosition));
+  return [...regions].sort((a, b) =>
+    compareMusicalPositions(a.startPosition, b.startPosition),
+  );
 }
 
 /**
@@ -305,14 +357,16 @@ export function sortRegionsByPosition(regions: Region[]): Region[] {
 export function findRegionsInRange(
   regions: Region[],
   startPos: MusicalPosition,
-  endPos: MusicalPosition
+  endPos: MusicalPosition,
 ): Region[] {
-  return regions.filter(region => {
+  return regions.filter((region) => {
     const regionEnd = getRegionEndPosition(region);
     // A region is in range if:
     // 1. It starts before the range ends AND
     // 2. It ends at or after the range starts
-    return compareMusicalPositions(region.startPosition, endPos) < 0 &&
-           compareMusicalPositions(regionEnd, startPos) >= 0;
+    return (
+      compareMusicalPositions(region.startPosition, endPos) < 0 &&
+      compareMusicalPositions(regionEnd, startPos) >= 0
+    );
   });
 }

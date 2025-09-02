@@ -8,6 +8,8 @@
  */
 
 import { ErrorCategory, ErrorSeverity } from './base';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 export enum DegradationLevel {
   NONE = 'none', // Full functionality
@@ -111,11 +113,12 @@ export class GracefulDegradation {
 
     // TODO: Review non-null assertion - consider null safety
     if (!strategy) {
-      console.log('No degradation strategy required for current context');
+  const { correlationId, logger } = useCorrelation('strategy');
+      logger.info('No degradation strategy required for current context');
       return true;
     }
 
-    console.log(`Applying degradation strategy: ${strategy.description}`);
+    logger.info(`Applying degradation strategy: ${strategy.description}`);
 
     try {
       // Apply all degradation actions
@@ -133,11 +136,11 @@ export class GracefulDegradation {
         this.notifyDegradationChange();
         return true;
       } else {
-        console.error('Some degradation actions failed:', results);
+        logger.error('Some degradation actions failed:', results);
         return false;
       }
     } catch (error) {
-      console.error('Failed to apply degradation strategy:', error);
+      logger.error('Failed to apply degradation strategy:', error);
       return false;
     }
   }
@@ -151,7 +154,7 @@ export class GracefulDegradation {
     }
 
     this.state.recoveryAttempts++;
-    console.log(`Attempting recovery (attempt ${this.state.recoveryAttempts})`);
+    logger.info(`Attempting recovery (attempt ${this.state.recoveryAttempts})`);
 
     try {
       // Try to rollback applied actions in reverse order
@@ -166,15 +169,15 @@ export class GracefulDegradation {
             const success = await rollbackFn();
             // TODO: Review non-null assertion - consider null safety
             if (!success) {
-              console.warn(`Failed to rollback action: ${action.description}`);
+              logger.warn(`Failed to rollback action: ${action.description}`);
             }
           } else {
-            console.warn(
+            logger.warn(
               `No rollback function for action: ${action.description}`,
             );
           }
         } catch (error) {
-          console.error(
+          logger.error(
             `Error during rollback of ${action.description}:`,
             error,
           );
@@ -185,10 +188,10 @@ export class GracefulDegradation {
       this.resetToNormalOperation();
       this.notifyDegradationChange();
 
-      console.log('Recovery successful - restored to full functionality');
+      logger.info('Recovery successful - restored to full functionality');
       return true;
     } catch (error) {
-      console.error('Recovery failed:', error);
+      logger.error('Recovery failed:', error);
       return false;
     }
   }
@@ -432,7 +435,7 @@ export class GracefulDegradation {
    */
   private async executeAction(action: DegradationAction): Promise<boolean> {
     try {
-      console.log(`Executing degradation action: ${action.description}`);
+      logger.info(`Executing degradation action: ${action.description}`);
       const result = await action.implementation();
 
       if (result) {
@@ -441,7 +444,7 @@ export class GracefulDegradation {
 
       return result;
     } catch (error) {
-      console.error(
+      logger.error(
         `Failed to execute degradation action ${action.description}:`,
         error,
       );
@@ -485,7 +488,7 @@ export class GracefulDegradation {
         try {
           handler(this.getState());
         } catch (error) {
-          console.error('Error in degradation change handler:', error);
+          logger.error('Error in degradation change handler:', error);
         }
       });
     }
@@ -540,13 +543,13 @@ export class GracefulDegradation {
           description: 'Disable audio engine completely',
           implementation: async () => {
             // Implementation would disable audio completely
-            console.log(
+            logger.info(
               'Audio engine disabled - no audio functionality available',
             );
             return true;
           },
           rollback: async () => {
-            console.log('Attempting to re-enable audio engine');
+            logger.info('Attempting to re-enable audio engine');
             return true;
           },
         },
@@ -573,11 +576,11 @@ export class GracefulDegradation {
           target: 'audio_quality',
           description: 'Reduce audio quality to improve performance',
           implementation: async () => {
-            console.log('Reducing audio quality for better performance');
+            logger.info('Reducing audio quality for better performance');
             return true;
           },
           rollback: async () => {
-            console.log('Restoring original audio quality');
+            logger.info('Restoring original audio quality');
             return true;
           },
         },
@@ -586,11 +589,11 @@ export class GracefulDegradation {
           target: 'visualizations',
           description: 'Disable real-time visualizations',
           implementation: async () => {
-            console.log('Disabling visualizations');
+            logger.info('Disabling visualizations');
             return true;
           },
           rollback: async () => {
-            console.log('Re-enabling visualizations');
+            logger.info('Re-enabling visualizations');
             return true;
           },
         },
@@ -613,11 +616,11 @@ export class GracefulDegradation {
           target: 'content_loading',
           description: 'Switch to offline mode with cached content',
           implementation: async () => {
-            console.log('Switching to offline mode');
+            logger.info('Switching to offline mode');
             return true;
           },
           rollback: async () => {
-            console.log('Switching back to online mode');
+            logger.info('Switching back to online mode');
             return true;
           },
         },
@@ -644,11 +647,11 @@ export class GracefulDegradation {
           target: 'audio_processing',
           description: 'Use simplified audio processing',
           implementation: async () => {
-            console.log('Switching to simplified audio processing');
+            logger.info('Switching to simplified audio processing');
             return true;
           },
           rollback: async () => {
-            console.log('Restoring full audio processing');
+            logger.info('Restoring full audio processing');
             return true;
           },
         },
@@ -657,11 +660,11 @@ export class GracefulDegradation {
           target: 'background_workers',
           description: 'Disable background worker threads',
           implementation: async () => {
-            console.log('Disabling background workers');
+            logger.info('Disabling background workers');
             return true;
           },
           rollback: async () => {
-            console.log('Re-enabling background workers');
+            logger.info('Re-enabling background workers');
             return true;
           },
         },
@@ -685,11 +688,11 @@ export class GracefulDegradation {
           target: 'audio_effects_quality',
           description: 'Slightly reduce audio effects quality',
           implementation: async () => {
-            console.log('Minimal degradation: reducing audio effects quality');
+            logger.info('Minimal degradation: reducing audio effects quality');
             return true;
           },
           rollback: async () => {
-            console.log('Restoring full audio effects quality');
+            logger.info('Restoring full audio effects quality');
             return true;
           },
         },
@@ -710,11 +713,11 @@ export class GracefulDegradation {
           target: 'audio_context_features',
           description: 'Reduce non-essential audio context features',
           implementation: async () => {
-            console.log('Minimal degradation: reducing audio context features');
+            logger.info('Minimal degradation: reducing audio context features');
             return true;
           },
           rollback: async () => {
-            console.log('Restoring full audio context features');
+            logger.info('Restoring full audio context features');
             return true;
           },
         },
@@ -735,11 +738,11 @@ export class GracefulDegradation {
           target: 'background_sync',
           description: 'Reduce background synchronization frequency',
           implementation: async () => {
-            console.log('Minimal degradation: reducing background sync');
+            logger.info('Minimal degradation: reducing background sync');
             return true;
           },
           rollback: async () => {
-            console.log('Restoring normal background sync');
+            logger.info('Restoring normal background sync');
             return true;
           },
         },
@@ -767,13 +770,13 @@ export class GracefulDegradation {
           target: 'all_non_essential',
           description: 'Disable all non-essential features',
           implementation: async () => {
-            console.log(
+            logger.info(
               'Critical degradation: disabling all non-essential features',
             );
             return true;
           },
           rollback: async () => {
-            console.log('Attempting to restore non-essential features');
+            logger.info('Attempting to restore non-essential features');
             return true;
           },
         },
@@ -801,11 +804,11 @@ export class GracefulDegradation {
           target: 'non_critical_features',
           description: 'Disable non-critical features',
           implementation: async () => {
-            console.log('High severity: disabling non-critical features');
+            logger.info('High severity: disabling non-critical features');
             return true;
           },
           rollback: async () => {
-            console.log('Attempting to restore non-critical features');
+            logger.info('Attempting to restore non-critical features');
             return true;
           },
         },
@@ -830,11 +833,11 @@ export class GracefulDegradation {
           target: 'feature_quality',
           description: 'Reduce feature quality',
           implementation: async () => {
-            console.log('Moderate degradation: reducing feature quality');
+            logger.info('Moderate degradation: reducing feature quality');
             return true;
           },
           rollback: async () => {
-            console.log('Restoring original feature quality');
+            logger.info('Restoring original feature quality');
             return true;
           },
         },
@@ -861,11 +864,11 @@ export class GracefulDegradation {
           target: 'performance_heavy_features',
           description: 'Disable all performance-heavy features',
           implementation: async () => {
-            console.log('Critical performance issue: disabling heavy features');
+            logger.info('Critical performance issue: disabling heavy features');
             return true;
           },
           rollback: async () => {
-            console.log('Attempting to restore performance features');
+            logger.info('Attempting to restore performance features');
             return true;
           },
         },
@@ -889,11 +892,11 @@ export class GracefulDegradation {
           target: 'audio_context',
           description: 'Use fallback audio context',
           implementation: async () => {
-            console.log('Using fallback audio context');
+            logger.info('Using fallback audio context');
             return true;
           },
           rollback: async () => {
-            console.log('Attempting to restore primary audio context');
+            logger.info('Attempting to restore primary audio context');
             return true;
           },
         },
@@ -920,11 +923,11 @@ export class GracefulDegradation {
           target: 'resource_intensive_features',
           description: 'Disable resource-intensive features',
           implementation: async () => {
-            console.log('Disabling resource-intensive features');
+            logger.info('Disabling resource-intensive features');
             return true;
           },
           rollback: async () => {
-            console.log('Attempting to restore resource features');
+            logger.info('Attempting to restore resource features');
             return true;
           },
         },
@@ -949,11 +952,11 @@ export class GracefulDegradation {
           target: 'all_network_features',
           description: 'Switch to full offline mode',
           implementation: async () => {
-            console.log('Critical network failure: full offline mode');
+            logger.info('Critical network failure: full offline mode');
             return true;
           },
           rollback: async () => {
-            console.log('Attempting to restore network features');
+            logger.info('Attempting to restore network features');
             return true;
           },
         },

@@ -4,8 +4,10 @@ import {
   useViewTransitionRouter,
 } from '@/lib/hooks/use-view-transition-router';
 import { BassSettingsCard } from '../BassSettingsCard';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 export function DashboardContent() {
+  const { correlationId, logger } = useCorrelation('DashboardContent');
   // This ensures transitions are pre-heated for smooth first navigation
   const { isPreHeated } = useTransitionPreHeat();
   const { navigateWithTransition } = useViewTransitionRouter();
@@ -17,14 +19,14 @@ export function DashboardContent() {
     ) {
       (window as any).__bassnotionTransitionStats();
     } else {
-      console.log(
+      logger.info(
         'No transition stats available yet. Navigate between pages to see stats.',
       );
     }
   };
 
   const testTransitions = () => {
-    console.log('Testing transitions...');
+    logger.info('Testing transitions...');
     // Test navigation to home and back
     setTimeout(() => navigateWithTransition('/'), 100);
   };

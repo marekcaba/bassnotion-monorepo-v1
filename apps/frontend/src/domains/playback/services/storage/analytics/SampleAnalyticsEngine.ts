@@ -5,6 +5,7 @@
 
 import { EventEmitter } from 'events';
 import {
+import { createStructuredLogger } from '@bassnotion/contracts';
   SampleAnalyticsConfig,
   SampleAnalyticsData,
   AudioSampleMetadata,
@@ -154,11 +155,11 @@ export class SampleAnalyticsEngine extends EventEmitter {
   private initialize(): void {
     if (this.config.enabled) {
       this.startMonitoring();
-      console.log(
+      logger.info(
         '🔍 SampleAnalyticsEngine initialized with monitoring enabled',
       );
     } else {
-      console.log(
+      logger.info(
         '🔍 SampleAnalyticsEngine initialized with monitoring disabled',
       );
     }
@@ -435,7 +436,7 @@ export class SampleAnalyticsEngine extends EventEmitter {
       this.performQualityCheck();
     }, this.config.qualityCheckInterval);
 
-    console.log('🔍 Quality monitoring started');
+    logger.info('🔍 Quality monitoring started');
     this.emit('qualityMonitoringStarted');
   }
 
@@ -446,7 +447,7 @@ export class SampleAnalyticsEngine extends EventEmitter {
     if (this.qualityMonitoringInterval) {
       clearInterval(this.qualityMonitoringInterval);
       this.qualityMonitoringInterval = undefined;
-      console.log('🔍 Quality monitoring stopped');
+      logger.info('🔍 Quality monitoring stopped');
       this.emit('qualityMonitoringStopped');
     }
   }
@@ -467,7 +468,7 @@ export class SampleAnalyticsEngine extends EventEmitter {
       this.performPerformanceCheck();
     }, this.config.performanceMetricsInterval);
 
-    console.log('📊 Performance monitoring started');
+    logger.info('📊 Performance monitoring started');
     this.emit('performanceMonitoringStarted');
   }
 
@@ -478,7 +479,7 @@ export class SampleAnalyticsEngine extends EventEmitter {
     if (this.performanceMonitoringInterval) {
       clearInterval(this.performanceMonitoringInterval);
       this.performanceMonitoringInterval = undefined;
-      console.log('📊 Performance monitoring stopped');
+      logger.info('📊 Performance monitoring stopped');
       this.emit('performanceMonitoringStopped');
     }
   }
@@ -540,7 +541,7 @@ export class SampleAnalyticsEngine extends EventEmitter {
     }
 
     this.removeAllListeners();
-    console.log('🔍 SampleAnalyticsEngine disposed');
+    logger.info('🔍 SampleAnalyticsEngine disposed');
   }
 
   // Private helper methods

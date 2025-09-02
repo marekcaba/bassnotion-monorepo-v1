@@ -1,0 +1,80 @@
+{
+  "root": true,
+  "ignorePatterns": [
+    "**/node_modules/*",
+    "**/dist/*",
+    "**/coverage/*",
+    "**/.nx/*",
+    "**/vite.config.ts",
+    "**/vitest.config.ts",
+    "**/vitest.config.e2e.ts",
+    "scripts/migrate-exercises-to-musical-timing.ts",
+    "src/test/setup.ts",
+    "**/.next/*",
+    "**/build/*",
+    "**/*.js",
+    "logs/*",
+    "temp/*",
+    "temp-downloads/*",
+    "test-results/*"
+  ],
+  "plugins": ["@nx", "@typescript-eslint", "prettier", "react-hooks"],
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx"],
+      "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "prettier"
+      ],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "ecmaVersion": 2022,
+        "sourceType": "module"
+      },
+      "rules": {
+        "prettier/prettier": "error",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unused-vars": [
+          "error",
+          {
+            "argsIgnorePattern": "^_",
+            "varsIgnorePattern": "^_"
+          }
+        ],
+        "@typescript-eslint/ban-ts-comment": "off",
+        "@typescript-eslint/no-non-null-assertion": "off",
+        "react-hooks/rules-of-hooks": "error",
+        "react-hooks/exhaustive-deps": ["warn", {
+          "additionalHooks": "(useCallback|useMemo|useEffect|useLayoutEffect)"
+        }],
+        "@nx/enforce-module-boundaries": [
+          "error",
+          {
+            "enforceBuildableLibDependency": true,
+            "allow": [],
+            "depConstraints": [
+              {
+                "sourceTag": "scope:frontend",
+                "onlyDependOnLibsWithTags": ["scope:shared"]
+              },
+              {
+                "sourceTag": "scope:backend",
+                "onlyDependOnLibsWithTags": ["scope:shared"]
+              },
+              {
+                "sourceTag": "scope:shared",
+                "onlyDependOnLibsWithTags": ["scope:shared"]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["*.json"],
+      "parser": "jsonc-eslint-parser",
+      "rules": {}
+    }
+  ]
+}

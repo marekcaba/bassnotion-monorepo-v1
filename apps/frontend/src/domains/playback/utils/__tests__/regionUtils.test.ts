@@ -12,7 +12,7 @@ import {
   musicalPositionToSeconds,
   quantizePosition,
   sortRegionsByPosition,
-  findRegionsInRange
+  findRegionsInRange,
 } from '../regionUtils';
 import type { Region, QuantizationSettings } from '../../types/region';
 
@@ -21,7 +21,7 @@ describe('regionUtils', () => {
     it('should create a region with default values', () => {
       const region = createRegion({
         trackId: 'test-track',
-        name: 'Test Region'
+        name: 'Test Region',
       });
 
       expect(region).toMatchObject({
@@ -31,7 +31,7 @@ describe('regionUtils', () => {
         duration: '1:0:0',
         loopCount: 0,
         muted: false,
-        laneIndex: 0
+        laneIndex: 0,
       });
       expect(region.id).toBeDefined();
       expect(region.color).toBeDefined();
@@ -42,7 +42,7 @@ describe('regionUtils', () => {
         trackId: 'test-track',
         name: 'Custom Region',
         startPosition: '4:0:0',
-        duration: '2:0:0'
+        duration: '2:0:0',
       });
 
       expect(region.startPosition).toBe('4:0:0');
@@ -60,7 +60,7 @@ describe('regionUtils', () => {
         duration: '1:0:0',
         loopCount: 1,
         muted: false,
-        pattern: { id: 'pattern-1', events: [], loopLength: 1 } as any
+        pattern: { id: 'pattern-1', events: [], loopLength: 1 } as any,
       };
 
       const result = validateRegion(region);
@@ -76,7 +76,7 @@ describe('regionUtils', () => {
         startPosition: 'invalid',
         duration: '1:0:0',
         loopCount: -1,
-        muted: false
+        muted: false,
       };
 
       const result = validateRegion(region);
@@ -136,7 +136,7 @@ describe('regionUtils', () => {
         startPosition: '0:0:0',
         duration: '1:0:0',
         loopCount: 3,
-        muted: false
+        muted: false,
       };
 
       expect(getRegionEndPosition(region)).toBe('3:0:0');
@@ -150,7 +150,7 @@ describe('regionUtils', () => {
         startPosition: '0:0:0',
         duration: '1:0:0',
         loopCount: 0,
-        muted: false
+        muted: false,
       };
 
       expect(getRegionEndPosition(region)).toBe('9999:0:0');
@@ -164,7 +164,7 @@ describe('regionUtils', () => {
         startPosition: '0:0:0',
         duration: '2:0:0',
         loopCount: 1,
-        muted: false
+        muted: false,
       };
 
       const region2: Region = {
@@ -174,7 +174,7 @@ describe('regionUtils', () => {
         startPosition: '1:0:0',
         duration: '2:0:0',
         loopCount: 1,
-        muted: false
+        muted: false,
       };
 
       const region3: Region = {
@@ -184,7 +184,7 @@ describe('regionUtils', () => {
         startPosition: '4:0:0',
         duration: '1:0:0',
         loopCount: 1,
-        muted: false
+        muted: false,
       };
 
       expect(doRegionsOverlap(region1, region2)).toBe(true);
@@ -215,7 +215,7 @@ describe('regionUtils', () => {
         enabled: true,
         gridSize: '1/4',
         strength: 1.0,
-        swing: 0
+        swing: 0,
       };
 
       expect(quantizePosition('0:0:2', settings)).toBe('0:1:0');
@@ -228,7 +228,7 @@ describe('regionUtils', () => {
         enabled: true,
         gridSize: '1/4',
         strength: 0.5,
-        swing: 0
+        swing: 0,
       };
 
       // With 50% strength, position should move halfway to grid
@@ -243,7 +243,7 @@ describe('regionUtils', () => {
         enabled: false,
         gridSize: '1/4',
         strength: 1.0,
-        swing: 0
+        swing: 0,
       };
 
       expect(quantizePosition('0:0:3', settings)).toBe('0:0:3');
@@ -259,7 +259,7 @@ describe('regionUtils', () => {
         startPosition: '2:0:0',
         duration: '1:0:0',
         loopCount: 1,
-        muted: false
+        muted: false,
       },
       {
         id: 'r2',
@@ -268,7 +268,7 @@ describe('regionUtils', () => {
         startPosition: '0:0:0',
         duration: '1:0:0',
         loopCount: 1,
-        muted: false
+        muted: false,
       },
       {
         id: 'r3',
@@ -277,8 +277,8 @@ describe('regionUtils', () => {
         startPosition: '4:0:0',
         duration: '2:0:0',
         loopCount: 1,
-        muted: false
-      }
+        muted: false,
+      },
     ];
 
     it('should sort regions by position', () => {
@@ -291,8 +291,8 @@ describe('regionUtils', () => {
     it('should find regions in range', () => {
       const inRange = findRegionsInRange(regions, '1:0:0', '3:0:0');
       expect(inRange).toHaveLength(2);
-      expect(inRange.map(r => r.id)).toContain('r1');
-      expect(inRange.map(r => r.id)).toContain('r2');
+      expect(inRange.map((r) => r.id)).toContain('r1');
+      expect(inRange.map((r) => r.id)).toContain('r2');
     });
   });
 });

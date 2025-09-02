@@ -1,13 +1,14 @@
 /**
  * CommandQueue - Command Execution and History Management
  * Story 3.18.4: Service Architecture Implementation
- * 
+ *
  * Manages command execution, queuing, history, and undo/redo functionality.
  */
 
 import { Command, CommandResult, ICommand } from './Command.js';
 import { EventBus } from '../services/core/EventBus.js';
 import { CircuitBreaker } from '../services/errors/CircuitBreaker.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 export interface CommandQueueConfig {
   maxHistorySize?: number;
@@ -74,7 +75,7 @@ export class CommandQueue {
 
     this.circuitBreaker = new CircuitBreaker(
       'CommandQueue',
-      this.config.circuitBreakerConfig
+      this.config.circuitBreakerConfig,
     );
   }
 
@@ -89,7 +90,9 @@ export class CommandQueue {
       try {
         // Validate command
         if (!(await command.validate())) {
-          throw new Error(`Command validation failed: ${command.metadata.name}`);
+          throw new Error(
+            `Command validation failed: ${command.metadata.name}`,
+          );
         }
 
         // Execute with timeout
@@ -124,7 +127,10 @@ export class CommandQueue {
 
         const result: CommandResult = {
           success: false,
-          error: error instanceof Error ? error : new Error('Command execution failed'),
+          error:
+            error instanceof Error
+              ? error
+              : new Error('Command execution failed'),
           timestamp: Date.now(),
         };
 
@@ -153,7 +159,9 @@ export class CommandQueue {
     };
 
     // Insert based on priority
-    const insertIndex = this.queue.findIndex(item => item.priority < priority);
+    const insertIndex = this.queue.findIndex(
+      (item) => item.priority < priority,
+    );
     if (insertIndex === -1) {
       this.queue.push(queuedCommand);
     } else {
@@ -194,14 +202,17 @@ export class CommandQueue {
         this.stats.queued = this.queue.length;
 
         try {
-          const result = await this.execute(queuedCommand.command, queuedCommand.priority);
-          
+          const result = await this.execute(
+            queuedCommand.command,
+            queuedCommand.priority,
+          );
+
           if (queuedCommand.callback) {
             queuedCommand.callback(result);
           }
         } catch (error) {
           // Continue processing even if one command fails
-          console.error('Command execution failed:', error);
+          logger.error('Command execution failed:', error);
         }
       }
     } finally {
@@ -219,7 +230,7 @@ export class CommandQueue {
       this.executeBatch();
       return;
     }
-    
+
     if (this.batchTimer) {
       return;
     }
@@ -248,7 +259,9 @@ export class CommandQueue {
 
     // Execute batch
     const results = await Promise.allSettled(
-      batch.map(queuedCommand => this.execute(queuedCommand.command, queuedCommand.priority))
+      batch.map((queuedCommand) =>
+        this.execute(queuedCommand.command, queuedCommand.priority),
+      ),
     );
 
     // Handle callbacks
@@ -284,7 +297,7 @@ export class CommandQueue {
     }
 
     const command = this.history.pop()!;
-    
+
     try {
       const result = await this.executeWithTimeout(() => command.undo());
 
@@ -317,7 +330,7 @@ export class CommandQueue {
     }
 
     const command = this.redoStack.pop()!;
-    
+
     try {
       const result = await this.execute(command);
 
@@ -343,24 +356,24 @@ export class CommandQueue {
    * Execute command with timeout
    */
   private async executeWithTimeout(
-    commandOrFunction: ICommand | (() => Promise<CommandResult>)
+    commandOrFunction: ICommand | (() => Promise<CommandResult>),
   ): Promise<CommandResult> {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error('Command execution timeout'));
       }, this.config.executionTimeout);
 
-      const executePromise = 
+      const executePromise =
         typeof commandOrFunction === 'function'
           ? commandOrFunction()
           : commandOrFunction.execute();
 
       executePromise
-        .then(result => {
+        .then((result) => {
           clearTimeout(timeout);
           resolve(result);
         })
-        .catch(error => {
+        .catch((error) => {
           clearTimeout(timeout);
           reject(error);
         });
@@ -427,12 +440,12 @@ export class CommandQueue {
   clearQueue(): void {
     this.queue = [];
     this.stats.queued = 0;
-    
+
     if (this.batchTimer) {
       clearTimeout(this.batchTimer);
       this.batchTimer = null;
     }
-    
+
     this.updateStats();
     this.eventBus.emit('commandqueue:queue-cleared', {});
   }
@@ -441,7 +454,9 @@ export class CommandQueue {
    * Can undo
    */
   canUndo(): boolean {
-    return this.history.length > 0 && this.history[this.history.length - 1].canUndo();
+    return (
+      this.history.length > 0 && this.history[this.history.length - 1].canUndo()
+    );
   }
 
   /**

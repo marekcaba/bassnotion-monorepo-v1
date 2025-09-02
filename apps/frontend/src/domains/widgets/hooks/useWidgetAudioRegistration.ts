@@ -12,6 +12,7 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { useCorePlaybackEngine } from '@/domains/playback/hooks/useCorePlaybackEngine';
 // Removed useWidgetSync - part of old pattern registration system
 import type { AudioSourceConfig } from '@/domains/playback/types/audio';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // ============================================================================
 // INTERFACES
@@ -178,7 +179,7 @@ export function useWidgetAudioRegistration(
   // TODO: Migrate to track-based system
   const syncActions = {
     emitAudioSourceRegistered: () => {},
-    emitAudioSourceUnregistered: () => {}
+    emitAudioSourceUnregistered: () => {},
   };
 
   // ============================================================================
@@ -262,7 +263,7 @@ export function useWidgetAudioRegistration(
       }
 
       // Debug log disabled for performance
-      // console.log(`[${widgetId}] Audio source registered successfully`);
+      // logger.info(`[${widgetId}] Audio source registered successfully`);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Registration failed';
@@ -272,7 +273,7 @@ export function useWidgetAudioRegistration(
         onError(err instanceof Error ? err : new Error(errorMessage));
       }
 
-      console.error(`[${widgetId}] Audio registration failed:`, err);
+      logger.error(`[${widgetId}] Audio registration failed:`, err);
     }
   }, [
     isRegistered,
@@ -311,9 +312,9 @@ export function useWidgetAudioRegistration(
       }
 
       // Debug log disabled for performance
-      // console.log(`[${widgetId}] Audio source unregistered`);
+      // logger.info(`[${widgetId}] Audio source unregistered`);
     } catch (err) {
-      console.error(`[${widgetId}] Unregistration failed:`, err);
+      logger.error(`[${widgetId}] Unregistration failed:`, err);
     }
   }, [isRegistered, playbackControls, syncActions, widgetId, onUnregistered]);
 

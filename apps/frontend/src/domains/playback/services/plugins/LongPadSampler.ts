@@ -1,4 +1,6 @@
 import { loadGlobalTone } from './toneLoader';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Use global Tone instance to ensure same AudioContext
 let Tone: any = null;
@@ -131,7 +133,7 @@ export class LongPadSampler {
   private async ensureToneLoaded(): Promise<void> {
     if (!Tone) {
       Tone = await loadGlobalTone();
-      console.log('🎵 Using global Tone.js instance in LongPadSampler');
+      logger.info('🎵 Using global Tone.js instance in LongPadSampler');
     }
   }
 
@@ -141,7 +143,7 @@ export class LongPadSampler {
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
-    console.log('🎹 Initializing Long Pad...');
+    logger.info('🎹 Initializing Long Pad...');
 
     try {
       // Ensure Tone is loaded before initializing
@@ -159,18 +161,18 @@ export class LongPadSampler {
         release: this.envelope.release,
         curve: 'exponential',
         onload: () => {
-          console.log('✅ Long Pad samples loaded successfully');
+          logger.info('✅ Long Pad samples loaded successfully');
           if (this.sampler && this.sampler._buffers) {
-            console.log(
+            logger.info(
               'Loaded buffer count:',
               Object.keys(this.sampler._buffers._buffers || {}).length,
             );
           }
         },
         onerror: (error: any) => {
-          console.error('❌ Error loading Long Pad samples:', error);
+          logger.error('❌ Error loading Long Pad samples:', error);
           if (error && error.toString) {
-            console.error('Error details:', error.toString());
+            logger.error('Error details:', error.toString());
           }
         },
       });
@@ -201,9 +203,9 @@ export class LongPadSampler {
       }
 
       this.isInitialized = true;
-      console.log('✅ Long Pad ready');
+      logger.info('✅ Long Pad ready');
     } catch (error) {
-      console.error('Failed to initialize Long Pad:', error);
+      logger.error('Failed to initialize Long Pad:', error);
       throw error;
     }
   }
@@ -244,7 +246,7 @@ export class LongPadSampler {
     velocity = 0.7,
   ): Promise<void> {
     if (!this.sampler || !this.isInitialized) {
-      console.warn('Long Pad not initialized');
+      logger.warn('Long Pad not initialized');
       return;
     }
 
@@ -255,8 +257,8 @@ export class LongPadSampler {
       // Trigger all notes
       this.sampler.triggerAttackRelease(notes, duration, noteTime, velocity);
     } catch (error) {
-      console.error('Error playing Long Pad note:', error);
-      console.error('Note requested:', note);
+      logger.error('Error playing Long Pad note:', error);
+      logger.error('Note requested:', note);
     }
   }
 
@@ -269,14 +271,14 @@ export class LongPadSampler {
     velocity = 0.7,
   ): Promise<void> {
     if (!this.sampler || !this.isInitialized) {
-      console.warn('Long Pad not initialized');
+      logger.warn('Long Pad not initialized');
       return;
     }
 
     try {
       this.sampler.triggerAttack(note, time, velocity);
     } catch (error) {
-      console.error('Error triggering Long Pad attack:', error);
+      logger.error('Error triggering Long Pad attack:', error);
     }
   }
 
@@ -359,7 +361,7 @@ export class LongPadSampler {
           }
         }, 50);
       } catch (error) {
-        console.warn('Failed to release notes on Long Pad sampler:', error);
+        logger.warn('Failed to release notes on Long Pad sampler:', error);
       }
     }
   }
@@ -377,7 +379,7 @@ export class LongPadSampler {
     }
 
     this.isInitialized = false;
-    console.log('🗑️ Disposed Long Pad sampler');
+    logger.info('🗑️ Disposed Long Pad sampler');
   }
 }
 

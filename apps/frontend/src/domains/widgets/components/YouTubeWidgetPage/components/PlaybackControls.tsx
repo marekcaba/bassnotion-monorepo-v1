@@ -14,6 +14,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { UsePlaybackIntegrationReturn } from '../../../hooks/usePlaybackIntegration';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface PlaybackControlsProps {
   /** Playback integration instance */
@@ -61,13 +62,14 @@ export function PlaybackControls({
   onSourceMuteToggle,
   onSeek: _onSeek,
 }: PlaybackControlsProps) {
+  const { correlationId, logger } = useCorrelation('PlaybackControls');
   const { state, controls } = playbackIntegration;
 
   const handlePlay = async () => {
     try {
       await controls.play();
     } catch (error) {
-      console.error('❌ Failed to start playback:', error);
+      logger.error('❌ Failed to start playback:', error);
     }
   };
 

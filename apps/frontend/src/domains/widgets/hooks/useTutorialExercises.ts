@@ -1,6 +1,8 @@
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchTutorialExercises, TutorialsApiError } from '../api/tutorials';
 import type { Tutorial } from '@bassnotion/contracts';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface UseTutorialExercisesResult {
   tutorial: Tutorial | null;
@@ -14,9 +16,25 @@ interface UseTutorialExercisesResult {
 /**
  * Hook to fetch tutorial with its exercises
  */
+// Track render count
+let useTutorialExercisesCallCount = 0;
+
 export function useTutorialExercises(
   slug: string | null,
 ): UseTutorialExercisesResult {
+  useTutorialExercisesCallCount++;
+
+  // Log every 10th call
+  if (useTutorialExercisesCallCount % 10 === 0) {
+    logger.info(
+      `🔄 useTutorialExercises CALL #${useTutorialExercisesCallCount}`,
+      {
+        slug,
+        timestamp: Date.now(),
+      },
+    );
+  }
+
   const { data, isLoading, error, isError, refetch } = useQuery({
     queryKey: ['tutorial-exercises', slug],
     queryFn: () => {
@@ -28,6 +46,9 @@ export function useTutorialExercises(
     enabled: !!slug, // Only run query if slug is provided
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false, // CRITICAL: Disable automatic refetch on window focus
+    refetchOnMount: false, // CRITICAL: Disable automatic refetch on mount
+    refetchInterval: false, // CRITICAL: Disable periodic refetch
     retry: (failureCount, error) => {
       // Don't retry on 4xx errors (client errors)
       if (
@@ -44,14 +65,18 @@ export function useTutorialExercises(
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
-  return {
-    tutorial: data?.tutorial || null,
-    exercises: data?.exercises || [],
-    isLoading,
-    error,
-    isError,
-    refetch,
-  };
+  // Memoize the return object to prevent unnecessary re-renders
+  return React.useMemo(
+    () => ({
+      tutorial: data?.tutorial || null,
+      exercises: data?.exercises || [],
+      isLoading,
+      error,
+      isError,
+      refetch,
+    }),
+    [data, isLoading, error, isError, refetch],
+  );
 }
 
 /**

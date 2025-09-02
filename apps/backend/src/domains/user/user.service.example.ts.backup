@@ -1,0 +1,95 @@
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Inject } from '@nestjs/common';
+import { DatabaseService } from '../../infrastructure/database/database.service.js';
+import type {
+  UserProfile,
+  UserProfileData,
+  BassConfiguration } from '@bassnotion/contracts';
+import { userProfileSchema, createStructuredLogger } from '@bassnotion/contracts';
+import type { IResultUserRepository } from './repositories/result-user.repository.js';
+import { UserId } from './value-objects/user-id.vo.js';
+import { Email } from './value-objects/email.vo.js';
+import { UserRole } from './value-objects/user-role.vo.js';
+import { User } from './entities/user.entity.js';
+import { RequestContextService } from '../../shared/services/request-context.service.js';
+
+/**
+ * Example of UserService with structured logging and correlation ID support
+ * 
+ * Two approaches:
+ * 1. Request-scoped logging (preferred for API endpoints)
+ * 2. Static service logger (for background tasks, startup, etc.)
+ */
+@Injectable()
+export class UserService {
+  // Static logger for non-request contexts (startup, background tasks)
+  private readonly staticLogger = createStructuredLogger(UserService.name);
+
+  constructor(
+    private readonly db: DatabaseService,
+    @Inject('IResultUserRepository')
+    private readonly userRepository: IResultUserRepository,
+    // Optional: Inject request context for request-scoped logging
+    @Inject(RequestContextService)
+    private readonly requestContext: RequestContextService,
+  ) {}
+
+  async findProfileById(userId: string): Promise<UserProfile> {
+    // Get request-scoped logger with correlation ID
+    const logger = this.requestContext.getLogger();
+    const correlationId = this.requestContext.getCorrelationId();
+    
+    logger.debug('Finding profile for user', { userId, correlationId });
+
+    // Validate user ID format
+    if (!UserId.isValid(userId)) {
+      logger.warn('Invalid user ID format provided', { userId, correlationId });
+      throw new BadRequestException('Invalid user ID format');
+    }
+
+    const userIdVO = UserId.create(userId);
+    const result = await this.userRepository.findById(userIdVO);
+
+    if (!result.ok) {
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error fetching user from repository', result.error, {
+        userId,
+        correlationId,
+        errorCode: result.error?.code });
+      throw new Error(`Failed to fetch user: ${result.error?.message}`);
+    }
+
+    if (!result.value) {
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.info('User not found', { userId, correlationId });
+      throw new NotFoundException(`User not found: ${userId}`);
+    }
+
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug('User profile found successfully', { 
+      userId, 
+      correlationId,
+      hasProfile: !!result.value.profile });
+
+    return result.value.toProfile();
+  }
+
+  /**
+   * Example of background task using static logger
+   */
+  async performBackgroundTask() {
+    const taskCorrelationId = crypto.randomUUID();
+    
+    this.staticLogger.info('Starting background task', { 
+      correlationId: taskCorrelationId,
+      timestamp: new Date().toISOString() });
+    
+    // Task logic here...
+  }
+}

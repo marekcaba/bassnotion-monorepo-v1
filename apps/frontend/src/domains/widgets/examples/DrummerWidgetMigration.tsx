@@ -1,7 +1,7 @@
 /**
  * DrummerWidget Migration Example
  * Story 3.22: Professional DAW Sequencer
- * 
+ *
  * This example demonstrates how to migrate from the old pattern-based
  * approach to the new region-based system while maintaining backward compatibility.
  */
@@ -9,7 +9,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useTrack } from '@/domains/playback/hooks/useTrack';
 import { nanoid } from 'nanoid';
-import type { DrumPattern, DrumPatternEvent } from '@/domains/playback/types/pattern';
+import type {
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
+  DrumPattern,
+  DrumPatternEvent,
+} from '@/domains/playback/types/pattern';
 
 /**
  * Example 1: OLD APPROACH - Direct Pattern Registration
@@ -24,7 +28,7 @@ export function DrummerWidgetOldApproach() {
       { position: '0:2:0', drum: 'kick', velocity: 0.8 },
       { position: '0:3:0', drum: 'snare', velocity: 0.6 },
     ],
-    loopLength: 1
+    loopLength: 1,
   }));
 
   // In the old system, widgets would register patterns directly
@@ -48,19 +52,19 @@ export function DrummerWidgetOldApproach() {
  * This is the professional DAW approach introduced in Story 3.22
  */
 export function DrummerWidgetNewApproach() {
-  const { 
-    track, 
-    regions, 
+  const {
+    track,
+    regions,
     createRegionFromPattern,
     addRegion,
     removeRegion,
     updateRegion,
     selectedRegions,
-    selectRegion
+    selectRegion,
   } = useTrack({
     trackId: 'drums-main',
     name: 'Main Drums',
-    type: 'drums'
+    type: 'drums',
   });
 
   // Create an initial pattern
@@ -72,7 +76,7 @@ export function DrummerWidgetNewApproach() {
       { position: '0:2:0', drum: 'kick', velocity: 0.8 },
       { position: '0:3:0', drum: 'snare', velocity: 0.6 },
     ],
-    loopLength: 1
+    loopLength: 1,
   }));
 
   // Create regions from patterns
@@ -83,10 +87,10 @@ export function DrummerWidgetNewApproach() {
       name: 'Drum Loop',
       startPosition: '0:0:0',
       duration: '1:0:0',
-      loopCount: 4 // Play 4 times instead of infinite
+      loopCount: 4, // Play 4 times instead of infinite
     });
 
-    console.log('Created region:', region);
+    logger.info('Created region:', region);
   }, [track, currentPattern, createRegionFromPattern]);
 
   // Create multiple regions on timeline
@@ -100,7 +104,7 @@ export function DrummerWidgetNewApproach() {
         { position: '0:0:0', drum: 'kick', velocity: 0.8 },
         { position: '0:2:0', drum: 'kick', velocity: 0.8 },
       ],
-      loopLength: 1
+      loopLength: 1,
     };
 
     // Verse - full pattern
@@ -118,7 +122,7 @@ export function DrummerWidgetNewApproach() {
         { position: '0:3:0', drum: 'snare', velocity: 0.8 },
         { position: '0:3:2', drum: 'hihat', velocity: 0.5 },
       ],
-      loopLength: 1
+      loopLength: 1,
     };
 
     // Create regions for song structure
@@ -126,41 +130,38 @@ export function DrummerWidgetNewApproach() {
       name: 'Intro',
       startPosition: '0:0:0',
       duration: '4:0:0',
-      loopCount: 1
+      loopCount: 1,
     });
 
     createRegionFromPattern(versePattern, {
       name: 'Verse 1',
       startPosition: '4:0:0',
       duration: '8:0:0',
-      loopCount: 1
+      loopCount: 1,
     });
 
     createRegionFromPattern(chorusPattern, {
       name: 'Chorus',
       startPosition: '12:0:0',
       duration: '8:0:0',
-      loopCount: 1
+      loopCount: 1,
     });
 
     createRegionFromPattern(versePattern, {
       name: 'Verse 2',
       startPosition: '20:0:0',
       duration: '8:0:0',
-      loopCount: 1
+      loopCount: 1,
     });
-
   }, [track, currentPattern, createRegionFromPattern]);
 
   return (
     <div>
       <h3>New Approach (Region-Based)</h3>
-      
+
       <div>
         <h4>Track: {track?.name}</h4>
-        <button onClick={handleCreateRegion}>
-          Create Region from Pattern
-        </button>
+        <button onClick={handleCreateRegion}>Create Region from Pattern</button>
         <button onClick={handleCreateArrangement}>
           Create Full Arrangement
         </button>
@@ -168,24 +169,35 @@ export function DrummerWidgetNewApproach() {
 
       <div>
         <h4>Regions ({regions.length})</h4>
-        {regions.map(region => (
-          <div 
+        {regions.map((region) => (
+          <div
             key={region.id}
             style={{
               padding: '8px',
               margin: '4px',
-              backgroundColor: selectedRegions.includes(region.id) ? '#e0e0e0' : '#f5f5f5',
-              cursor: 'pointer'
+              backgroundColor: selectedRegions.includes(region.id)
+                ? '#e0e0e0'
+                : '#f5f5f5',
+              cursor: 'pointer',
             }}
             onClick={() => selectRegion(region.id)}
           >
             <strong>{region.name}</strong>
-            <div>Start: {region.startPosition} | Duration: {region.duration}</div>
-            <div>Loop: {region.loopCount === 0 ? 'Infinite' : `${region.loopCount}x`}</div>
-            <button onClick={(e) => {
-              e.stopPropagation();
-              removeRegion(region.id);
-            }}>Remove</button>
+            <div>
+              Start: {region.startPosition} | Duration: {region.duration}
+            </div>
+            <div>
+              Loop:{' '}
+              {region.loopCount === 0 ? 'Infinite' : `${region.loopCount}x`}
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                removeRegion(region.id);
+              }}
+            >
+              Remove
+            </button>
           </div>
         ))}
       </div>
@@ -198,10 +210,11 @@ export function DrummerWidgetNewApproach() {
  * Shows how to support both old and new approaches during transition
  */
 export function DrummerWidgetMigration() {
+  const { correlationId, logger } = useCorrelation('DrummerWidgetMigration');
   const { track, migratePatternToRegion } = useTrack({
     trackId: 'drums-migration',
     name: 'Drums (Migration)',
-    type: 'drums'
+    type: 'drums',
   });
 
   // Old pattern from legacy code
@@ -211,7 +224,7 @@ export function DrummerWidgetMigration() {
       { position: '0:0:0', drum: 'kick', velocity: 0.8 },
       { position: '0:2:0', drum: 'snare', velocity: 0.6 },
     ],
-    loopLength: 1
+    loopLength: 1,
   };
 
   // Automatically migrate on mount
@@ -219,14 +232,17 @@ export function DrummerWidgetMigration() {
     if (track) {
       // This creates a region that behaves exactly like the old pattern system
       const region = migratePatternToRegion('drums-widget', legacyPattern);
-      console.log('Migrated legacy pattern to region:', region);
+      logger.info('Migrated legacy pattern to region:', region);
     }
   }, [track, migratePatternToRegion]);
 
   return (
     <div>
       <h3>Migration Example</h3>
-      <p>Legacy patterns are automatically converted to regions with infinite loop</p>
+      <p>
+        Legacy patterns are automatically converted to regions with infinite
+        loop
+      </p>
     </div>
   );
 }
@@ -240,18 +256,26 @@ export function DrummerWidgetMigrationShowcase() {
   return (
     <div style={{ padding: '20px' }}>
       <h2>DrummerWidget Migration Example</h2>
-      
+
       <div style={{ marginBottom: '20px' }}>
         <button onClick={() => setApproach('old')}>Old Approach</button>
         <button onClick={() => setApproach('new')}>New Approach</button>
-        <button onClick={() => setApproach('migration')}>Migration Helper</button>
+        <button onClick={() => setApproach('migration')}>
+          Migration Helper
+        </button>
       </div>
 
       {approach === 'old' && <DrummerWidgetOldApproach />}
       {approach === 'new' && <DrummerWidgetNewApproach />}
       {approach === 'migration' && <DrummerWidgetMigration />}
 
-      <div style={{ marginTop: '40px', padding: '20px', backgroundColor: '#f0f0f0' }}>
+      <div
+        style={{
+          marginTop: '40px',
+          padding: '20px',
+          backgroundColor: '#f0f0f0',
+        }}
+      >
         <h4>Benefits of the New Region System:</h4>
         <ul>
           <li>Timeline-based composition (like Logic/Ableton)</li>

@@ -19,6 +19,7 @@ import {
 import { useToast } from '@/shared/hooks/use-toast';
 import { UserBasslinesAPI } from '../../api/user-basslines';
 import type {
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
   SavedBassline,
   BasslineListFilters,
   ExerciseDifficulty,
@@ -35,6 +36,7 @@ export function BasslineList({
   onEditBassline,
   refreshTrigger = 0,
 }: BasslineListProps) {
+  const { correlationId, logger } = useCorrelation('BasslineList');
   const [basslines, setBasslines] = useState<SavedBassline[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -72,7 +74,7 @@ export function BasslineList({
       setBasslines(response.basslines);
       setTotal(response.total);
     } catch (error: any) {
-      console.error('Error loading basslines:', error);
+      logger.error('Error loading basslines:', error);
       toast({
         title: 'Error',
         description: 'Failed to load basslines',
@@ -105,7 +107,7 @@ export function BasslineList({
       });
       loadBasslines(); // Refresh list
     } catch (error: any) {
-      console.error('Error deleting bassline:', error);
+      logger.error('Error deleting bassline:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete bassline',
@@ -133,7 +135,7 @@ export function BasslineList({
       });
       loadBasslines(); // Refresh list
     } catch (error: any) {
-      console.error('Error duplicating bassline:', error);
+      logger.error('Error duplicating bassline:', error);
       toast({
         title: 'Error',
         description: 'Failed to duplicate bassline',
@@ -160,7 +162,7 @@ export function BasslineList({
       });
       loadBasslines(); // Refresh list
     } catch (error: any) {
-      console.error('Error renaming bassline:', error);
+      logger.error('Error renaming bassline:', error);
       toast({
         title: 'Error',
         description: 'Failed to rename bassline',
@@ -194,7 +196,7 @@ export function BasslineList({
       setSelectedBasslines(new Set());
       loadBasslines();
     } catch (error: any) {
-      console.error('Error in bulk delete:', error);
+      logger.error('Error in bulk delete:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete some basslines',

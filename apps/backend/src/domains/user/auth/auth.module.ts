@@ -1,4 +1,5 @@
-import { Module, Logger, forwardRef } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
@@ -21,16 +22,15 @@ import { DatabaseModule } from '../../../infrastructure/database/database.module
     AuthGuard,
     PasswordSecurityService,
     AuthSecurityService,
-  ],
-})
+  ] })
 export class AuthModule {
-  private readonly logger = new Logger(AuthModule.name);
+  private readonly staticLogger = createStructuredLogger(AuthModule.name);
 
   constructor() {
-    this.logger.debug('AuthModule constructor called');
+    this.staticLogger.debug('AuthModule constructor called');
   }
 
   onModuleInit() {
-    this.logger.debug('AuthModule initialized');
+    this.staticLogger.debug('AuthModule initialized');
   }
 }

@@ -1,12 +1,13 @@
 /**
  * ProductionLogger - Comprehensive production logging
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Professional logging system for production environments
  */
 
 import { EventBus } from '../core/EventBus.js';
 import { AudioError } from '../../errors/AudioErrors.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
@@ -58,7 +59,7 @@ export interface LoggerStats {
 
 export class ProductionLogger {
   private static instance: ProductionLogger | null = null;
-  
+
   private eventBus: EventBus;
   private config: Required<LoggerConfig>;
   private buffer: LogEntry[] = [];
@@ -72,7 +73,7 @@ export class ProductionLogger {
     info: 1,
     warn: 2,
     error: 3,
-    fatal: 4
+    fatal: 4,
   };
 
   private constructor(eventBus: EventBus, config: LoggerConfig = {}) {
@@ -87,7 +88,7 @@ export class ProductionLogger {
       remoteEndpoint: '/api/logs',
       contextEnricher: () => ({}),
       sanitizers: [],
-      ...config
+      ...config,
     };
 
     this.sessionId = this.generateSessionId();
@@ -101,7 +102,10 @@ export class ProductionLogger {
   /**
    * Get singleton instance
    */
-  static getInstance(eventBus: EventBus, config?: LoggerConfig): ProductionLogger {
+  static getInstance(
+    eventBus: EventBus,
+    config?: LoggerConfig,
+  ): ProductionLogger {
     if (!ProductionLogger.instance) {
       ProductionLogger.instance = new ProductionLogger(eventBus, config);
     }
@@ -132,13 +136,20 @@ export class ProductionLogger {
   /**
    * Log error
    */
-  error(category: string, message: string, error?: Error | AudioError, data?: Record<string, any>): void {
-    const errorData = error ? {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      code: error instanceof AudioError ? error.code : undefined
-    } : undefined;
+  error(
+    category: string,
+    message: string,
+    error?: Error | AudioError,
+    data?: Record<string, any>,
+  ): void {
+    const errorData = error
+      ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+          code: error instanceof AudioError ? error.code : undefined,
+        }
+      : undefined;
 
     this.log('error', category, message, data, errorData);
   }
@@ -146,16 +157,23 @@ export class ProductionLogger {
   /**
    * Log fatal error
    */
-  fatal(category: string, message: string, error?: Error | AudioError, data?: Record<string, any>): void {
-    const errorData = error ? {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      code: error instanceof AudioError ? error.code : undefined
-    } : undefined;
+  fatal(
+    category: string,
+    message: string,
+    error?: Error | AudioError,
+    data?: Record<string, any>,
+  ): void {
+    const errorData = error
+      ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+          code: error instanceof AudioError ? error.code : undefined,
+        }
+      : undefined;
 
     this.log('fatal', category, message, data, errorData);
-    
+
     // Immediately flush on fatal errors
     this.flush();
   }
@@ -168,10 +186,10 @@ export class ProductionLogger {
     category: string,
     message: string,
     data?: Record<string, any>,
-    error?: LogEntry['error']
+    error?: LogEntry['error'],
   ): void {
     if (!this.config.enabled) return;
-    
+
     // Check minimum log level
     if (this.LOG_LEVELS[level] < this.LOG_LEVELS[this.config.minLevel]) {
       return;
@@ -185,7 +203,7 @@ export class ProductionLogger {
       message,
       data,
       error,
-      context: this.enrichContext()
+      context: this.enrichContext(),
     };
 
     // Apply sanitizers
@@ -218,13 +236,13 @@ export class ProductionLogger {
    */
   private enrichContext(): LogEntry['context'] {
     const customContext = this.config.contextEnricher();
-    
+
     return {
       sessionId: this.sessionId,
       browserInfo: navigator.userAgent,
       audioState: this.getAudioState(),
       performance: this.getPerformanceContext(),
-      ...customContext
+      ...customContext,
     };
   }
 
@@ -240,13 +258,15 @@ export class ProductionLogger {
    * Get performance context
    */
   private getPerformanceContext(): LogEntry['context']['performance'] {
-    const memory = performance.memory ? {
-      memory: Math.round(performance.memory.usedJSHeapSize / (1024 * 1024))
-    } : {};
+    const memory = performance.memory
+      ? {
+          memory: Math.round(performance.memory.usedJSHeapSize / (1024 * 1024)),
+        }
+      : {};
 
     return {
       ...memory,
-      latency: 0 // Would be retrieved from AudioEngine
+      latency: 0, // Would be retrieved from AudioEngine
     };
   }
 
@@ -259,20 +279,20 @@ export class ProductionLogger {
       info: 'color: blue',
       warn: 'color: orange',
       error: 'color: red',
-      fatal: 'color: red; font-weight: bold'
+      fatal: 'color: red; font-weight: bold',
     };
 
     const timestamp = new Date(entry.timestamp).toISOString();
     const prefix = `[${timestamp}] [${entry.level.toUpperCase()}] [${entry.category}]`;
 
-    console.log(`%c${prefix} ${entry.message}`, styles[entry.level]);
-    
+    logger.info(`%c${prefix} ${entry.message}`, styles[entry.level]);
+
     if (entry.data) {
-      console.log('Data:', entry.data);
+      logger.info('Data:', entry.data);
     }
-    
+
     if (entry.error) {
-      console.error('Error:', entry.error);
+      logger.error('Error:', entry.error);
     }
   }
 
@@ -282,16 +302,16 @@ export class ProductionLogger {
   private updateStats(entry: LogEntry): void {
     this.stats.totalLogs++;
     this.stats.byLevel[entry.level]++;
-    
+
     if (!this.stats.byCategory[entry.category]) {
       this.stats.byCategory[entry.category] = 0;
     }
     this.stats.byCategory[entry.category]++;
-    
+
     if (entry.level === 'error' || entry.level === 'fatal') {
       this.stats.errors++;
     }
-    
+
     this.stats.bufferSize = this.buffer.length;
   }
 
@@ -311,12 +331,12 @@ export class ProductionLogger {
       await this.sendToRemote(logs);
       this.eventBus.emit('logger:flushed', {
         count: logs.length,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     } catch (error) {
       // Re-add logs to buffer on failure
       this.buffer.unshift(...logs);
-      
+
       // Log the logging failure (meta!)
       this.eventBus.emit('logger:flush-failed', { error });
     }
@@ -331,13 +351,13 @@ export class ProductionLogger {
     const response = await fetch(this.config.remoteEndpoint, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         logs,
         sessionId: this.sessionId,
-        timestamp: Date.now()
-      })
+        timestamp: Date.now(),
+      }),
     });
 
     if (!response.ok) {
@@ -394,13 +414,17 @@ export class ProductionLogger {
         this.error('window', 'Uncaught error', new Error(event.message), {
           filename: event.filename,
           lineno: event.lineno,
-          colno: event.colno
+          colno: event.colno,
         });
       });
 
       window.addEventListener('unhandledrejection', (event) => {
-        this.error('window', 'Unhandled promise rejection', 
-          event.reason instanceof Error ? event.reason : new Error(String(event.reason))
+        this.error(
+          'window',
+          'Unhandled promise rejection',
+          event.reason instanceof Error
+            ? event.reason
+            : new Error(String(event.reason)),
         );
       });
 
@@ -429,12 +453,12 @@ export class ProductionLogger {
         info: 0,
         warn: 0,
         error: 0,
-        fatal: 0
+        fatal: 0,
       },
       byCategory: {},
       errors: 0,
       bufferSize: 0,
-      lastFlush: 0
+      lastFlush: 0,
     };
   }
 

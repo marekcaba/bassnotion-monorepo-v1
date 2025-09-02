@@ -24,6 +24,7 @@ import {
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
 import { useToast } from '@/shared/hooks/use-toast';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 const deleteAccountSchema = z.object({
   password: z.string().min(1, 'Password is required for account deletion'),
@@ -44,6 +45,7 @@ export function DeleteAccountDialog({
   onConfirm,
   isLoading = false,
 }: DeleteAccountDialogProps) {
+  const { correlationId, logger } = useCorrelation('DeleteAccountDialog');
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
@@ -60,7 +62,7 @@ export function DeleteAccountDialog({
       form.reset();
       onClose();
     } catch (error) {
-      console.error('Account deletion error:', error);
+      logger.error('Account deletion error:', error);
       toast({
         title: 'Failed to delete account',
         description:

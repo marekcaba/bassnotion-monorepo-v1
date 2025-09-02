@@ -1,7 +1,6 @@
 import {
   FastifyAdapter,
-  NestFastifyApplication,
-} from '@nestjs/platform-fastify';
+  NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   describe,
@@ -10,8 +9,7 @@ import {
   beforeAll,
   beforeEach,
   afterEach,
-  afterAll,
-} from 'vitest';
+  afterAll } from 'vitest';
 
 import { AppModule } from '../../../../app.module.js';
 import { User } from '../../entities/user.entity.js';
@@ -26,8 +24,7 @@ describe('User E2E Tests', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+      imports: [AppModule] }).compile();
 
     app = moduleFixture.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter(),
@@ -61,8 +58,7 @@ describe('User E2E Tests', () => {
     it('should return user by id', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: `/users/${testUser.id}`,
-      });
+        url: `/users/${testUser.id}` });
 
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.payload);
@@ -75,8 +71,7 @@ describe('User E2E Tests', () => {
     it('should return 404 for non-existent user', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/users/non-existent-id',
-      });
+        url: '/users/non-existent-id' });
 
       expect(response.statusCode).toBe(404);
     });
@@ -86,14 +81,12 @@ describe('User E2E Tests', () => {
     it('should update user profile', async () => {
       const updateData = {
         displayName: 'Updated Name',
-        avatarUrl: 'https://example.com/avatar.jpg',
-      };
+        avatarUrl: 'https://example.com/avatar.jpg' };
 
       const response = await app.inject({
         method: 'PUT',
         url: `/users/${testUser.id}`,
-        payload: updateData,
-      });
+        payload: updateData });
 
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.payload);
@@ -113,8 +106,7 @@ describe('User E2E Tests', () => {
       const response = await app.inject({
         method: 'PUT',
         url: '/users/non-existent-id',
-        payload: { displayName: 'Test' },
-      });
+        payload: { displayName: 'Test' } });
 
       expect(response.statusCode).toBe(404);
     });
@@ -124,8 +116,7 @@ describe('User E2E Tests', () => {
     it('should delete user', async () => {
       const response = await app.inject({
         method: 'DELETE',
-        url: `/users/${testUser.id}`,
-      });
+        url: `/users/${testUser.id}` });
 
       expect(response.statusCode).toBe(204);
 
@@ -137,8 +128,7 @@ describe('User E2E Tests', () => {
     it('should return 404 for non-existent user', async () => {
       const response = await app.inject({
         method: 'DELETE',
-        url: '/users/non-existent-id',
-      });
+        url: '/users/non-existent-id' });
 
       expect(response.statusCode).toBe(404);
     });

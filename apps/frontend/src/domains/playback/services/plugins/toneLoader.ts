@@ -5,66 +5,67 @@
  */
 
 import { getAudioArchitectureFlags } from '@/domains/playback/config/featureFlags';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { audioContextManager } from '../../utils/contextManager.js';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 /**
  * Get the global Tone.js instance, waiting if necessary
  * @param preferredContext - Optional AudioContext to use instead of default
  * @returns Promise<Tone> The global Tone.js instance
  */
-export async function loadGlobalTone(preferredContext?: AudioContext): Promise<any> {
+export async function loadGlobalTone(
+  preferredContext?: AudioContext,
+): Promise<any> {
   const flags = getAudioArchitectureFlags();
-  
-  // If we have a preferred context and Tone is available, set it immediately
+
+  // If we have a preferred context and Tone is available, just return Tone
+  // DON'T switch contexts - this causes buffer invalidation issues
   if (preferredContext && (window as any).Tone) {
     const Tone = (window as any).Tone;
-    if (Tone.context._context !== preferredContext) {
-      console.log('🎵 toneLoader: Setting Tone.js to use preferred AudioContext');
-      try {
-        Tone.setContext(preferredContext);
-      } catch (error) {
-        console.error('Failed to set preferred context:', error);
-      }
-    }
+    logger.info(
+      '🎵 toneLoader: Using shared AudioContext, not switching Tone.js context',
+    );
     return Tone;
   }
-  
+
   // Epic 3.18: Get CoreServices from window (set by AudioProvider)
   const coreServices = (window as any).__coreServices;
-  
+
   if (!coreServices) {
     // Wait a bit for CoreServices to be available
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
     const coreServicesRetry = (window as any).__coreServices;
     if (!coreServicesRetry) {
-      throw new Error('CoreServices not found on window. Make sure AudioProvider is mounted.');
+      throw new Error(
+        'CoreServices not found on window. Make sure AudioProvider is mounted.',
+      );
     }
     return loadGlobalTone(preferredContext); // Retry
   }
-  
+
   const audioEngine = coreServices.getAudioEngine();
-  
+
   if (!audioEngine) {
     throw new Error('AudioEngine not found in CoreServices');
   }
-  
+
   const tone = audioEngine.getTone();
-  
-  // If we have a preferred context, set it
+
+  // If we have a preferred context, just log but don't switch
+  // DON'T switch contexts - this causes buffer invalidation issues
   if (preferredContext && tone && tone.context._context !== preferredContext) {
-    console.log('🎵 toneLoader: Setting Tone.js to use preferred AudioContext after load');
-    try {
-      tone.setContext(preferredContext);
-    } catch (error) {
-      console.error('Failed to set preferred context after load:', error);
-    }
+    logger.info(
+      '🎵 toneLoader: Preferred context provided but NOT switching to avoid buffer invalidation',
+    );
   }
-  
+
   if (flags.ENABLE_MIGRATION_MONITORING) {
-    console.log('🎵 toneLoader: Got Tone instance from AudioEngine', {
+    logger.info('🎵 toneLoader: Got Tone instance from AudioEngine', {
       contextState: tone.context.state,
     });
   }
-  
+
   return tone;
 }
 

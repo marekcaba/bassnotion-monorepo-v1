@@ -13,30 +13,29 @@ export async function initializeToneWithoutAudioContext() {
 
   try {
     // No longer manipulate global window.AudioContext
-    
+
     // Import Tone.js
     const Tone = await import('tone');
-    
-    // Create a custom context that won't auto-start
-    const context = new AudioContext();
-    // Immediately suspend it
-    await context.suspend();
-    
-    // Set this context for Tone.js
-    Tone.setContext(context);
-    
+
+    // Don't create a new AudioContext here - this causes multiple contexts
+    // Let AudioEngine handle AudioContext creation and management
+    // Just ensure Tone.js doesn't auto-start
+    if (Tone.context.state !== 'suspended') {
+      await Tone.context.suspend();
+    }
+
     // Store the instance
     toneInstance = Tone;
     isInitialized = true;
-    
+
     // Configure global settings
     Tone.Transport.bpm.value = 120;
     Tone.Transport.swing = 0;
     Tone.Transport.swingSubdivision = '8n';
-    
+
     return { Tone, Transport: Tone.Transport };
   } catch (error) {
-    console.error('Failed to initialize Tone.js:', error);
+    logger.error('Failed to initialize Tone.js:', error);
     throw error;
   }
 }

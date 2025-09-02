@@ -1,21 +1,21 @@
-import { Module, Logger, Global } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { createStructuredLogger } from '@bassnotion/contracts';
 import { SupabaseService } from './supabase.service.js';
 
 @Global()
 @Module({
   imports: [ConfigModule],
   providers: [SupabaseService],
-  exports: [SupabaseService],
-})
+  exports: [SupabaseService] })
 export class SupabaseModule {
-  private readonly logger = new Logger(SupabaseModule.name);
+  private readonly staticLogger = createStructuredLogger(SupabaseModule.name);
 
   constructor() {
-    this.logger.debug('SupabaseModule constructor called');
+    this.staticLogger.debug('SupabaseModule constructor called');
   }
 
   onModuleInit() {
-    this.logger.debug('SupabaseModule initialized');
+    this.staticLogger.debug('SupabaseModule initialized');
   }
 }

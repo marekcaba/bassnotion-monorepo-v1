@@ -1,5 +1,6 @@
 import { UserBasslinesAPI } from '../api/user-basslines';
 import type {
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
   ExerciseNote,
   BasslineMetadata,
   AutoSaveConfig,
@@ -199,7 +200,7 @@ export class AutoSaveService {
         }
         // If no basslineId returned but no error thrown, continue retrying
       } catch (error) {
-        console.error(`Auto-save retry ${localRetryCount} failed:`, error);
+        logger.error(`Auto-save retry ${localRetryCount} failed:`, error);
         // Continue with next retry
       }
     }
@@ -315,7 +316,7 @@ export class AutoSaveService {
 
       return response.basslineId;
     } catch (error: any) {
-      console.error('Manual save failed:', error);
+      logger.error('Manual save failed:', error);
 
       const errorMessage =
         error?.response?.data?.message || error?.message || 'Save failed';
@@ -368,7 +369,7 @@ export class AutoSaveService {
 
       return response.basslineId;
     } catch (error: any) {
-      console.error('Auto-save failed:', error);
+      logger.error('Auto-save failed:', error);
 
       const errorMessage =
         error?.response?.data?.message || error?.message || 'Auto-save failed';
@@ -380,7 +381,7 @@ export class AutoSaveService {
       // Check if this is a conflict error
       if (error?.response?.status === 409) {
         // Handle conflict - for now, just log it
-        console.warn('Auto-save conflict detected:', errorMessage);
+        logger.warn('Auto-save conflict detected:', errorMessage);
       }
 
       return null;

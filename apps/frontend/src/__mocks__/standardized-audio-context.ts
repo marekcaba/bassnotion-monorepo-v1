@@ -1,8 +1,9 @@
 // Mock for standardized-audio-context library used by Tone.js
 import { vi } from 'vitest';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 // TODO: Review non-null assertion - consider null safety
-console.log('🔊 STANDARDIZED-AUDIO-CONTEXT MOCK LOADED!');
+logger.info('🔊 STANDARDIZED-AUDIO-CONTEXT MOCK LOADED!');
 
 // Enhanced mock for AudioContext listener with all required properties
 const mockListener = {
@@ -17,7 +18,7 @@ const mockListener = {
   positionZ: { value: 0, setValueAtTime: vi.fn() },
 };
 
-console.log('🔊 Mock listener created with forwardX:', mockListener.forwardX);
+logger.info('🔊 Mock listener created with forwardX:', mockListener.forwardX);
 
 // Enhanced mock AudioContext compatible with standardized-audio-context
 const createMockAudioContext = () => ({
@@ -222,7 +223,7 @@ const createMockAudioContext = () => ({
 // Mock AudioContext constructor
 export class AudioContext {
   constructor(_options: any = {}) {
-    console.log(
+    logger.info(
       '🔊 Standardized AudioContext mock constructor called with options:',
       _options,
     );
@@ -233,7 +234,7 @@ export class AudioContext {
 // Mock OfflineAudioContext
 export class OfflineAudioContext {
   constructor(numberOfChannels: number, length: number, sampleRate: number) {
-    console.log('🔊 Standardized OfflineAudioContext mock constructor called');
+    logger.info('🔊 Standardized OfflineAudioContext mock constructor called');
     const context = createMockAudioContext();
     return {
       ...context,

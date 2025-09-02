@@ -60,3 +60,7 @@ Thumbs.db
 .env
 .env.test
 .vercel
+
+# Logs (SECURITY: Never commit logs to repository)
+logs/
+*.log

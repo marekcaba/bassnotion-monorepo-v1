@@ -37,6 +37,7 @@ import {
 } from '@bassnotion/contracts';
 
 import { SampleCacheManager } from './SampleCacheManager';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 // ===============================
 // Advanced Cache Manager Types
@@ -277,9 +278,9 @@ export class AdvancedCacheManager {
     try {
       // Implementation would load pre-trained models from storage
       // For now, we'll use basic heuristics
-      console.log('ML models loaded successfully');
+      logger.info('ML models loaded successfully');
     } catch (error) {
-      console.warn('Failed to load ML models, using defaults:', error);
+      logger.warn('Failed to load ML models, using defaults:', error);
     }
   }
 
@@ -1211,7 +1212,7 @@ export class AdvancedCacheManager {
     this.errorCount++;
     this.lastError = error;
 
-    console.error(`AdvancedCacheManager Error in ${context}:`, error);
+    logger.error(`AdvancedCacheManager Error in ${context}:`, error);
 
     // Implement error recovery if enabled
     if (this.config.enableErrorRecovery) {
@@ -1224,7 +1225,7 @@ export class AdvancedCacheManager {
    */
   private performErrorRecovery(error: Error, context: string): void {
     // Implementation would perform appropriate error recovery
-    console.log(`Performing error recovery for ${context}:`, error.message);
+    logger.info(`Performing error recovery for ${context}:`, error.message);
   }
 
   // ===============================

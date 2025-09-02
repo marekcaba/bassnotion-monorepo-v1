@@ -69,7 +69,24 @@ export class User extends AggregateRoot {
     );
   }
 
-  // Factory method
+  // Business logic methods
+  canAccessAdminPanel(): boolean {
+    return this._role.value === 'admin' || this._role.value === 'moderator';
+  }
+
+  isActive(): boolean {
+    // User is considered active if they logged in within last 30 days
+    if (!this._lastLoginAt) return false;
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return this._lastLoginAt > thirtyDaysAgo;
+  }
+
+  hasCompletedProfile(): boolean {
+    return !!this._displayName && !!this._avatarUrl;
+  }
+
+  // Factory methods
   static create(
     id: UserId,
     email: Email,
@@ -82,9 +99,30 @@ export class User extends AggregateRoot {
       new UserCreatedEvent(user.id, {
         email: email.value,
         displayName,
-        role: role.value,
-      }),
+        role: role.value }),
     );
     return user;
+  }
+
+  static reconstitute(
+    id: UserId,
+    email: Email,
+    role: UserRole,
+    displayName: string,
+    avatarUrl?: string,
+    lastLoginAt?: Date,
+  ): User {
+    return new User(id, email, role, displayName, avatarUrl, lastLoginAt);
+  }
+
+  // Conversion method for persistence
+  toPersistence(): any {
+    return {
+      id: this._id.value,
+      email: this._email.value,
+      display_name: this._displayName,
+      role: this._role.value,
+      avatar_url: this._avatarUrl,
+      last_login_at: this._lastLoginAt?.toISOString() };
   }
 }

@@ -1,7 +1,7 @@
 /**
  * MetricsCollector - Performance metrics collection
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Comprehensive metrics collection for production monitoring
  */
 
@@ -56,7 +56,7 @@ export interface MetricsSnapshot {
 
 export class MetricsCollector {
   private static instance: MetricsCollector | null = null;
-  
+
   private eventBus: EventBus;
   private logger: ProductionLogger;
   private config: Required<MetricsConfig>;
@@ -72,7 +72,7 @@ export class MetricsCollector {
   private constructor(
     eventBus: EventBus,
     logger: ProductionLogger,
-    config: MetricsConfig = {}
+    config: MetricsConfig = {},
   ) {
     this.eventBus = eventBus;
     this.logger = logger;
@@ -85,9 +85,9 @@ export class MetricsCollector {
       enableRemoteExport: true,
       remoteEndpoint: '/api/metrics',
       customTags: {},
-      ...config
+      ...config,
     };
-    
+
     this.startTime = Date.now();
     this.setupEventListeners();
     this.startAggregation();
@@ -99,10 +99,14 @@ export class MetricsCollector {
   static getInstance(
     eventBus: EventBus,
     logger: ProductionLogger,
-    config?: MetricsConfig
+    config?: MetricsConfig,
   ): MetricsCollector {
     if (!MetricsCollector.instance) {
-      MetricsCollector.instance = new MetricsCollector(eventBus, logger, config);
+      MetricsCollector.instance = new MetricsCollector(
+        eventBus,
+        logger,
+        config,
+      );
     }
     return MetricsCollector.instance;
   }
@@ -113,9 +117,9 @@ export class MetricsCollector {
   record(
     name: string,
     value: number,
-    unit: string = 'count',
-    category: string = 'general',
-    tags?: Record<string, string>
+    unit = 'count',
+    category = 'general',
+    tags?: Record<string, string>,
   ): void {
     if (!this.config.enabled) return;
 
@@ -125,7 +129,7 @@ export class MetricsCollector {
       value,
       unit,
       timestamp: Date.now(),
-      tags: { ...this.config.customTags, ...tags }
+      tags: { ...this.config.customTags, ...tags },
     };
 
     this.metricsBuffer.push(metric);
@@ -143,18 +147,18 @@ export class MetricsCollector {
   /**
    * Increment a counter
    */
-  increment(name: string, value: number = 1, tags?: Record<string, string>): void {
+  increment(name: string, value = 1, tags?: Record<string, string>): void {
     const key = this.getMetricKey(name, tags);
     const current = this.counters.get(key) || 0;
     this.counters.set(key, current + value);
-    
+
     this.record(name, value, 'count', 'counter', tags);
   }
 
   /**
    * Decrement a counter
    */
-  decrement(name: string, value: number = 1, tags?: Record<string, string>): void {
+  decrement(name: string, value = 1, tags?: Record<string, string>): void {
     this.increment(name, -value, tags);
   }
 
@@ -164,7 +168,7 @@ export class MetricsCollector {
   gauge(name: string, value: number, tags?: Record<string, string>): void {
     const key = this.getMetricKey(name, tags);
     this.gauges.set(key, value);
-    
+
     this.record(name, value, 'gauge', 'gauge', tags);
   }
 
@@ -173,7 +177,7 @@ export class MetricsCollector {
    */
   timing(name: string, duration: number, tags?: Record<string, string>): void {
     this.record(name, duration, 'ms', 'timing', tags);
-    
+
     if (this.config.enableHistograms) {
       this.addToHistogram(name, duration, tags);
     }
@@ -184,7 +188,7 @@ export class MetricsCollector {
    */
   startTimer(name: string, tags?: Record<string, string>): () => void {
     const start = performance.now();
-    
+
     return () => {
       const duration = performance.now() - start;
       this.timing(name, duration, tags);
@@ -197,10 +201,10 @@ export class MetricsCollector {
   async measure<T>(
     name: string,
     operation: () => Promise<T>,
-    tags?: Record<string, string>
+    tags?: Record<string, string>,
   ): Promise<T> {
     const timer = this.startTimer(name, tags);
-    
+
     try {
       const result = await operation();
       timer();
@@ -233,7 +237,7 @@ export class MetricsCollector {
         p99: metric.value,
         stdDev: 0,
         lastValue: metric.value,
-        lastTimestamp: metric.timestamp
+        lastTimestamp: metric.timestamp,
       });
     } else {
       existing.count++;
@@ -243,7 +247,7 @@ export class MetricsCollector {
       existing.average = existing.sum / existing.count;
       existing.lastValue = metric.value;
       existing.lastTimestamp = metric.timestamp;
-      
+
       // Percentiles and stdDev are calculated during aggregation
     }
   }
@@ -251,17 +255,21 @@ export class MetricsCollector {
   /**
    * Add value to histogram
    */
-  private addToHistogram(name: string, value: number, tags?: Record<string, string>): void {
+  private addToHistogram(
+    name: string,
+    value: number,
+    tags?: Record<string, string>,
+  ): void {
     const key = this.getMetricKey(name, tags);
     const histogram = this.histograms.get(key) || [];
-    
+
     histogram.push(value);
-    
+
     // Limit histogram size
     if (histogram.length > 1000) {
       histogram.shift();
     }
-    
+
     this.histograms.set(key, histogram);
   }
 
@@ -285,7 +293,7 @@ export class MetricsCollector {
     return {
       p50: sorted[p50Index] || 0,
       p95: sorted[p95Index] || 0,
-      p99: sorted[p99Index] || 0
+      p99: sorted[p99Index] || 0,
     };
   }
 
@@ -294,11 +302,11 @@ export class MetricsCollector {
    */
   private calculateStdDev(values: number[], average: number): number {
     if (values.length === 0) return 0;
-    
-    const variance = values.reduce((sum, value) => 
-      sum + Math.pow(value - average, 2), 0
-    ) / values.length;
-    
+
+    const variance =
+      values.reduce((sum, value) => sum + Math.pow(value - average, 2), 0) /
+      values.length;
+
     return Math.sqrt(variance);
   }
 
@@ -329,12 +337,12 @@ export class MetricsCollector {
     // Update percentiles and standard deviation
     for (const [key, aggregation] of this.aggregations) {
       const metricName = aggregation.name;
-      const categoryMetrics = this.metricsBuffer.filter(m => 
-        m.category === aggregation.category && m.name === metricName
+      const categoryMetrics = this.metricsBuffer.filter(
+        (m) => m.category === aggregation.category && m.name === metricName,
       );
 
       if (categoryMetrics.length > 0) {
-        const values = categoryMetrics.map(m => m.value);
+        const values = categoryMetrics.map((m) => m.value);
         const percentiles = this.calculatePercentiles(values);
         const stdDev = this.calculateStdDev(values, aggregation.average);
 
@@ -347,13 +355,15 @@ export class MetricsCollector {
 
     // Clean old metrics
     const cutoffTime = Date.now() - this.config.retentionPeriod;
-    this.metricsBuffer = this.metricsBuffer.filter(m => m.timestamp > cutoffTime);
+    this.metricsBuffer = this.metricsBuffer.filter(
+      (m) => m.timestamp > cutoffTime,
+    );
 
     const duration = performance.now() - startTime;
     this.logger.debug('metrics', 'Aggregation completed', {
       duration,
       metricsCount: this.metricsBuffer.length,
-      aggregationsCount: this.aggregations.size
+      aggregationsCount: this.aggregations.size,
     });
   }
 
@@ -364,12 +374,12 @@ export class MetricsCollector {
     if (!tags || Object.keys(tags).length === 0) {
       return name;
     }
-    
+
     const tagString = Object.entries(tags)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([k, v]) => `${k}:${v}`)
       .join(',');
-    
+
     return `${name}{${tagString}}`;
   }
 
@@ -428,7 +438,7 @@ export class MetricsCollector {
       duration: Date.now() - this.startTime,
       metrics: {},
       counters: {},
-      gauges: {}
+      gauges: {},
     };
 
     // Add aggregations
@@ -467,20 +477,24 @@ export class MetricsCollector {
 
     try {
       const snapshot = this.getSnapshot();
-      
+
       await fetch(this.config.remoteEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           snapshot,
           sessionId: this.logger.getStats().totalLogs > 0 ? 'active' : 'new',
-          timestamp: Date.now()
-        })
+          timestamp: Date.now(),
+        }),
       });
-      
+
       this.logger.debug('metrics', 'Metrics exported successfully');
     } catch (error) {
-      this.logger.error('metrics', 'Failed to export metrics', error instanceof Error ? error : new Error(String(error)));
+      this.logger.error(
+        'metrics',
+        'Failed to export metrics',
+        error instanceof Error ? error : new Error(String(error)),
+      );
     }
   }
 
@@ -504,12 +518,12 @@ export class MetricsCollector {
       clearInterval(this.aggregationTimer);
       this.aggregationTimer = undefined;
     }
-    
+
     if (this.exportTimer) {
       clearInterval(this.exportTimer);
       this.exportTimer = undefined;
     }
-    
+
     // Export final metrics
     this.exportMetrics();
   }

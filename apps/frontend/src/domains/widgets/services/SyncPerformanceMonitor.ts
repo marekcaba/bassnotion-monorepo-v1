@@ -9,7 +9,9 @@
  */
 
 import { playbackOrchestrator } from './PlaybackOrchestrator';
+import { createStructuredLogger } from '@bassnotion/contracts';
 import { widgetSyncService } from './WidgetSyncService';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // ============================================================================
 // INTERFACES
@@ -239,6 +241,13 @@ export class SyncPerformanceMonitor {
 
     this.isMonitoring = true;
 
+    // CRITICAL FIX: Disable performance monitoring loop to stop infinite re-render loop
+    // This setInterval was causing React component re-renders every 100ms by updating performance metrics
+    logger.info(
+      '🚫 SyncPerformanceMonitor: Main monitoring loop disabled to fix infinite re-render loop',
+    );
+    return; // Early return to disable monitoring entirely
+
     // Start performance monitoring loop
     this.monitoringInterval = setInterval(() => {
       this.performMonitoringCycle();
@@ -253,7 +262,7 @@ export class SyncPerformanceMonitor {
     // Set up system resource monitoring
     this.startSystemResourceMonitoring();
 
-    console.log('[SyncPerformanceMonitor] Performance monitoring started');
+    logger.info('[SyncPerformanceMonitor] Performance monitoring started');
   }
 
   public stopMonitoring(): void {
@@ -276,7 +285,7 @@ export class SyncPerformanceMonitor {
       this.resizeObserver = null;
     }
 
-    console.log('[SyncPerformanceMonitor] Performance monitoring stopped');
+    logger.info('[SyncPerformanceMonitor] Performance monitoring stopped');
   }
 
   // ============================================================================
@@ -303,7 +312,7 @@ export class SyncPerformanceMonitor {
       // Generate optimization recommendations
       this.generateRecommendations();
     } catch (error) {
-      console.error('[SyncPerformanceMonitor] Monitoring cycle error:', error);
+      logger.error('[SyncPerformanceMonitor] Monitoring cycle error:', error);
     }
   }
 
@@ -332,7 +341,7 @@ export class SyncPerformanceMonitor {
       // Update latency metrics
       this.updateLatencyMetrics(latency);
     } catch (error) {
-      console.error(
+      logger.error(
         '[SyncPerformanceMonitor] Latency measurement failed:',
         error,
       );
@@ -708,7 +717,7 @@ export class SyncPerformanceMonitor {
       this.alerts = this.alerts.slice(-100);
     }
 
-    console.warn(
+    logger.warn(
       `[SyncPerformanceMonitor] ${alert.severity.toUpperCase()}: ${alert.message}`,
     );
   }
@@ -729,7 +738,7 @@ export class SyncPerformanceMonitor {
         entryTypes: ['measure', 'navigation'],
       });
     } catch (error) {
-      console.warn(
+      logger.warn(
         '[SyncPerformanceMonitor] PerformanceObserver setup failed:',
         error,
       );
@@ -752,6 +761,13 @@ export class SyncPerformanceMonitor {
   }
 
   private startSystemResourceMonitoring(): void {
+    // CRITICAL FIX: Disable 1-second system resource monitoring to stop infinite re-render loop
+    // This setInterval was causing React component re-renders every second by updating system metrics
+    logger.info(
+      '🚫 SyncPerformanceMonitor: System resource monitoring disabled to fix infinite re-render loop',
+    );
+    return; // Early return to disable monitoring
+
     // Monitor system resources periodically
     setInterval(() => {
       if (!this.isMonitoring) return;
@@ -819,7 +835,7 @@ export class SyncPerformanceMonitor {
       await recommendation.implementation();
       return true;
     } catch (error) {
-      console.error(
+      logger.error(
         `[SyncPerformanceMonitor] Failed to apply recommendation ${recommendationId}:`,
         error,
       );

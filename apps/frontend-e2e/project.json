@@ -30,6 +30,6 @@
       }
     }
   },
-  "tags": [],
+  "tags": ["scope:frontend", "type:e2e"],
   "implicitDependencies": ["@bassnotion/frontend"]
 }

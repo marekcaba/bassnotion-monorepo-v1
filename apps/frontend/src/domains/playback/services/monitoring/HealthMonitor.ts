@@ -1,13 +1,14 @@
 /**
  * HealthMonitor - Health monitoring and alerting system
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Production health monitoring with alerting capabilities
  */
 
 import { EventBus } from '../core/EventBus.js';
 import { AudioEngine } from '../core/AudioEngine.js';
 import { ProductionLogger } from '../logging/ProductionLogger.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 export type HealthStatus = 'healthy' | 'degraded' | 'unhealthy' | 'critical';
 
@@ -65,7 +66,7 @@ export class HealthMonitor {
   constructor(
     eventBus: EventBus,
     logger: ProductionLogger,
-    alertConfig: AlertConfig = {}
+    alertConfig: AlertConfig = {},
   ) {
     this.eventBus = eventBus;
     this.logger = logger;
@@ -76,9 +77,9 @@ export class HealthMonitor {
       emailRecipients: [],
       throttleMinutes: 5,
       criticalOnly: false,
-      ...alertConfig
+      ...alertConfig,
     };
-    
+
     this.startTime = Date.now();
     this.registerDefaultChecks();
   }
@@ -95,20 +96,20 @@ export class HealthMonitor {
       interval: 30000, // 30 seconds
       check: async () => {
         const start = performance.now();
-        
+
         try {
           const audioEngine = this.getAudioEngine();
           if (!audioEngine || !audioEngine.isReady()) {
             return {
               status: 'critical',
               message: 'Audio engine not initialized',
-              duration: performance.now() - start
+              duration: performance.now() - start,
             };
           }
 
           const context = audioEngine.getContext();
           const state = context.state;
-          
+
           if (state === 'running') {
             return {
               status: 'healthy',
@@ -117,22 +118,22 @@ export class HealthMonitor {
               details: {
                 sampleRate: context.sampleRate,
                 baseLatency: context.baseLatency,
-                outputLatency: context.outputLatency
-              }
+                outputLatency: context.outputLatency,
+              },
             };
           } else if (state === 'suspended') {
             return {
               status: 'degraded',
               message: 'Audio context is suspended',
               duration: performance.now() - start,
-              details: { state }
+              details: { state },
             };
           } else {
             return {
               status: 'unhealthy',
               message: `Audio context in unexpected state: ${state}`,
               duration: performance.now() - start,
-              details: { state }
+              details: { state },
             };
           }
         } catch (error) {
@@ -140,10 +141,10 @@ export class HealthMonitor {
             status: 'critical',
             message: 'Failed to check audio context',
             duration: performance.now() - start,
-            error: error instanceof Error ? error : new Error(String(error))
+            error: error instanceof Error ? error : new Error(String(error)),
           };
         }
-      }
+      },
     });
 
     // Memory usage check
@@ -153,12 +154,12 @@ export class HealthMonitor {
       interval: 60000, // 1 minute
       check: async () => {
         const start = performance.now();
-        
+
         if (!performance.memory) {
           return {
             status: 'healthy',
             message: 'Memory monitoring not available',
-            duration: performance.now() - start
+            duration: performance.now() - start,
           };
         }
 
@@ -184,10 +185,10 @@ export class HealthMonitor {
           details: {
             usedMB: used,
             limitMB: limit,
-            percentage
-          }
+            percentage,
+          },
         };
-      }
+      },
     });
 
     // Audio performance check
@@ -197,22 +198,22 @@ export class HealthMonitor {
       interval: 45000,
       check: async () => {
         const start = performance.now();
-        
+
         try {
           const audioEngine = this.getAudioEngine();
           const metrics = audioEngine?.getPerformanceMetrics();
-          
+
           if (!metrics) {
             return {
               status: 'degraded',
               message: 'Performance metrics not available',
-              duration: performance.now() - start
+              duration: performance.now() - start,
             };
           }
 
           const dropouts = metrics.audioDropouts || 0;
           const bufferUnderruns = metrics.bufferUnderruns || 0;
-          
+
           let status: HealthStatus;
           if (dropouts === 0 && bufferUnderruns === 0) {
             status = 'healthy';
@@ -226,17 +227,17 @@ export class HealthMonitor {
             status,
             message: `Audio performance: ${dropouts} dropouts, ${bufferUnderruns} underruns`,
             duration: performance.now() - start,
-            details: metrics
+            details: metrics,
           };
         } catch (error) {
           return {
             status: 'unhealthy',
             message: 'Failed to check audio performance',
             duration: performance.now() - start,
-            error: error instanceof Error ? error : new Error(String(error))
+            error: error instanceof Error ? error : new Error(String(error)),
           };
         }
-      }
+      },
     });
 
     // Error rate check
@@ -247,10 +248,9 @@ export class HealthMonitor {
       check: async () => {
         const start = performance.now();
         const stats = this.logger.getStats();
-        
-        const errorRate = stats.totalLogs > 0 
-          ? (stats.errors / stats.totalLogs) * 100 
-          : 0;
+
+        const errorRate =
+          stats.totalLogs > 0 ? (stats.errors / stats.totalLogs) * 100 : 0;
 
         let status: HealthStatus;
         if (errorRate < 1) {
@@ -270,10 +270,10 @@ export class HealthMonitor {
           details: {
             totalLogs: stats.totalLogs,
             errors: stats.errors,
-            errorRate
-          }
+            errorRate,
+          },
         };
-      }
+      },
     });
 
     // Network connectivity check
@@ -284,11 +284,11 @@ export class HealthMonitor {
       timeout: 5000,
       check: async () => {
         const start = performance.now();
-        
+
         try {
           const response = await fetch('/api/health/ping', {
             method: 'GET',
-            signal: AbortSignal.timeout(5000)
+            signal: AbortSignal.timeout(5000),
           });
 
           if (response.ok) {
@@ -298,15 +298,15 @@ export class HealthMonitor {
               duration: performance.now() - start,
               details: {
                 responseTime: performance.now() - start,
-                status: response.status
-              }
+                status: response.status,
+              },
             };
           } else {
             return {
               status: 'degraded',
               message: `Network request returned ${response.status}`,
               duration: performance.now() - start,
-              details: { status: response.status }
+              details: { status: response.status },
             };
           }
         } catch (error) {
@@ -314,10 +314,10 @@ export class HealthMonitor {
             status: 'unhealthy',
             message: 'Network connectivity check failed',
             duration: performance.now() - start,
-            error: error instanceof Error ? error : new Error(String(error))
+            error: error instanceof Error ? error : new Error(String(error)),
           };
         }
-      }
+      },
     });
   }
 
@@ -326,15 +326,15 @@ export class HealthMonitor {
    */
   registerCheck(check: HealthCheck): void {
     this.checks.set(check.name, check);
-    
+
     if (this.isMonitoring && check.interval) {
       this.startCheckTimer(check);
     }
-    
+
     this.logger.info('health', `Registered health check: ${check.name}`, {
       category: check.category,
       critical: check.critical,
-      interval: check.interval
+      interval: check.interval,
     });
   }
 
@@ -343,23 +343,23 @@ export class HealthMonitor {
    */
   startMonitoring(): void {
     if (this.isMonitoring) return;
-    
+
     this.isMonitoring = true;
     this.logger.info('health', 'Health monitoring started');
-    
+
     // Start all check timers
     for (const check of this.checks.values()) {
       if (check.interval) {
         this.startCheckTimer(check);
       }
     }
-    
+
     // Run initial check
     this.runAllChecks();
-    
+
     this.eventBus.emit('health:monitoring-started', {
       timestamp: Date.now(),
-      checks: Array.from(this.checks.keys())
+      checks: Array.from(this.checks.keys()),
     });
   }
 
@@ -368,18 +368,18 @@ export class HealthMonitor {
    */
   stopMonitoring(): void {
     if (!this.isMonitoring) return;
-    
+
     this.isMonitoring = false;
-    
+
     // Clear all timers
     for (const timer of this.checkTimers.values()) {
       clearInterval(timer);
     }
     this.checkTimers.clear();
-    
+
     this.logger.info('health', 'Health monitoring stopped');
     this.eventBus.emit('health:monitoring-stopped', {
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -389,20 +389,20 @@ export class HealthMonitor {
   async runAllChecks(): Promise<HealthReport> {
     const results: Record<string, HealthCheckResult> = {};
     const promises: Promise<void>[] = [];
-    
+
     for (const [name, check] of this.checks) {
       promises.push(
-        this.runCheck(check).then(result => {
+        this.runCheck(check).then((result) => {
           results[name] = result;
-        })
+        }),
       );
     }
-    
+
     await Promise.all(promises);
-    
+
     const report = this.generateReport(results);
     this.processReport(report);
-    
+
     return report;
   }
 
@@ -411,33 +411,33 @@ export class HealthMonitor {
    */
   private async runCheck(check: HealthCheck): Promise<HealthCheckResult> {
     this.checksRunCount++;
-    
+
     try {
       const timeout = check.timeout || 10000;
       const result = await Promise.race([
         check.check(),
-        new Promise<HealthCheckResult>((_, reject) => 
-          setTimeout(() => reject(new Error('Check timeout')), timeout)
-        )
+        new Promise<HealthCheckResult>((_, reject) =>
+          setTimeout(() => reject(new Error('Check timeout')), timeout),
+        ),
       ]);
-      
+
       this.lastResults.set(check.name, result);
-      
+
       if (result.status === 'unhealthy' || result.status === 'critical') {
         this.failedChecksCount++;
       }
-      
+
       return result;
     } catch (error) {
       this.failedChecksCount++;
-      
+
       const result: HealthCheckResult = {
         status: 'critical',
         message: `Check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         duration: 0,
-        error: error instanceof Error ? error : new Error(String(error))
+        error: error instanceof Error ? error : new Error(String(error)),
       };
-      
+
       this.lastResults.set(check.name, result);
       return result;
     }
@@ -448,40 +448,42 @@ export class HealthMonitor {
    */
   private startCheckTimer(check: HealthCheck): void {
     if (!check.interval) return;
-    
+
     // Clear existing timer
     const existingTimer = this.checkTimers.get(check.name);
     if (existingTimer) {
       clearInterval(existingTimer);
     }
-    
+
     // Run immediately
     this.runCheck(check);
-    
+
     // Set up interval
     const timer = setInterval(() => {
       this.runCheck(check);
     }, check.interval);
-    
+
     this.checkTimers.set(check.name, timer);
   }
 
   /**
    * Generate health report
    */
-  private generateReport(results: Record<string, HealthCheckResult>): HealthReport {
+  private generateReport(
+    results: Record<string, HealthCheckResult>,
+  ): HealthReport {
     // Determine overall status
     let overallStatus: HealthStatus = 'healthy';
     let hasCritical = false;
     let hasUnhealthy = false;
     let hasDegraded = false;
-    
+
     for (const result of Object.values(results)) {
       if (result.status === 'critical') hasCritical = true;
       if (result.status === 'unhealthy') hasUnhealthy = true;
       if (result.status === 'degraded') hasDegraded = true;
     }
-    
+
     if (hasCritical) {
       overallStatus = 'critical';
     } else if (hasUnhealthy) {
@@ -489,10 +491,10 @@ export class HealthMonitor {
     } else if (hasDegraded) {
       overallStatus = 'degraded';
     }
-    
-    const lastError = Object.values(results)
-      .find(r => r.error)?.error?.message;
-    
+
+    const lastError = Object.values(results).find((r) => r.error)?.error
+      ?.message;
+
     return {
       timestamp: Date.now(),
       overallStatus,
@@ -501,8 +503,8 @@ export class HealthMonitor {
         uptime: Date.now() - this.startTime,
         checksRun: this.checksRunCount,
         failedChecks: this.failedChecksCount,
-        lastError
-      }
+        lastError,
+      },
     };
   }
 
@@ -514,14 +516,18 @@ export class HealthMonitor {
     if (report.overallStatus === 'healthy') {
       this.logger.debug('health', 'Health check passed', report);
     } else {
-      this.logger.warn('health', `Health check ${report.overallStatus}`, report);
+      this.logger.warn(
+        'health',
+        `Health check ${report.overallStatus}`,
+        report,
+      );
     }
-    
+
     // Send alerts if needed
     if (this.alertConfig.enabled) {
       this.checkAlerts(report);
     }
-    
+
     // Emit to event bus
     this.eventBus.emit('health:report', report);
   }
@@ -531,19 +537,20 @@ export class HealthMonitor {
    */
   private checkAlerts(report: HealthReport): void {
     // Check if we should alert
-    const shouldAlert = report.overallStatus === 'critical' || 
+    const shouldAlert =
+      report.overallStatus === 'critical' ||
       (!this.alertConfig.criticalOnly && report.overallStatus === 'unhealthy');
-    
+
     if (!shouldAlert) return;
-    
+
     // Check throttling
     const lastAlert = this.alertThrottle.get(report.overallStatus) || 0;
     const throttleMs = this.alertConfig.throttleMinutes * 60 * 1000;
-    
+
     if (Date.now() - lastAlert < throttleMs) {
       return;
     }
-    
+
     // Send alerts
     this.sendAlerts(report);
     this.alertThrottle.set(report.overallStatus, Date.now());
@@ -554,23 +561,28 @@ export class HealthMonitor {
    */
   private async sendAlerts(report: HealthReport): Promise<void> {
     const alertPromises: Promise<void>[] = [];
-    
+
     for (const channel of this.alertConfig.channels) {
       switch (channel) {
         case 'console':
-          console.error('🚨 HEALTH ALERT:', report);
+          logger.error('🚨 HEALTH ALERT:', report);
           break;
-          
+
         case 'logger':
-          this.logger.error('health', `Health alert: ${report.overallStatus}`, undefined, report);
+          this.logger.error(
+            'health',
+            `Health alert: ${report.overallStatus}`,
+            undefined,
+            report,
+          );
           break;
-          
+
         case 'webhook':
           if (this.alertConfig.webhookUrl) {
             alertPromises.push(this.sendWebhookAlert(report));
           }
           break;
-          
+
         case 'email':
           if (this.alertConfig.emailRecipients?.length) {
             alertPromises.push(this.sendEmailAlert(report));
@@ -578,7 +590,7 @@ export class HealthMonitor {
           break;
       }
     }
-    
+
     await Promise.allSettled(alertPromises);
   }
 
@@ -594,11 +606,15 @@ export class HealthMonitor {
           type: 'health_alert',
           severity: report.overallStatus,
           timestamp: report.timestamp,
-          report
-        })
+          report,
+        }),
       });
     } catch (error) {
-      this.logger.error('health', 'Failed to send webhook alert', error instanceof Error ? error : new Error(String(error)));
+      this.logger.error(
+        'health',
+        'Failed to send webhook alert',
+        error instanceof Error ? error : new Error(String(error)),
+      );
     }
   }
 
@@ -609,7 +625,7 @@ export class HealthMonitor {
     // In production, this would integrate with an email service
     this.logger.info('health', 'Email alert would be sent', {
       recipients: this.alertConfig.emailRecipients,
-      severity: report.overallStatus
+      severity: report.overallStatus,
     });
   }
 
@@ -626,11 +642,11 @@ export class HealthMonitor {
    */
   getCurrentStatus(): HealthReport {
     const results: Record<string, HealthCheckResult> = {};
-    
+
     for (const [name, result] of this.lastResults) {
       results[name] = result;
     }
-    
+
     return this.generateReport(results);
   }
 
@@ -642,11 +658,13 @@ export class HealthMonitor {
     history: Array<{ name: string; result: HealthCheckResult }>;
   } {
     const report = this.getCurrentStatus();
-    const history = Array.from(this.lastResults.entries()).map(([name, result]) => ({
-      name,
-      result
-    }));
-    
+    const history = Array.from(this.lastResults.entries()).map(
+      ([name, result]) => ({
+        name,
+        result,
+      }),
+    );
+
     return { report, history };
   }
 

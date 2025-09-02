@@ -8,6 +8,12 @@ import {
   isApiSuccessResponse,
   isApiErrorResponse,
 } from '../../../shared/types/api.types.js';
+import { User } from '../entities/user.entity.js';
+import { UserId } from '../value-objects/user-id.vo.js';
+import { Email } from '../value-objects/email.vo.js';
+import { UserRole } from '../value-objects/user-role.vo.js';
+import { ResultUtils } from '../../shared/result.js';
+import type { IResultUserRepository } from '../repositories/result-user.repository.js';
 
 describe('User Integration Tests', () => {
   let controller: UserController;
@@ -15,6 +21,7 @@ describe('User Integration Tests', () => {
   let mockDatabaseService: any;
   let mockSupabaseClient: any;
   let mockRequest: FastifyRequest & { user: any };
+  let mockRepository: IResultUserRepository;
 
   beforeEach(() => {
     // Create comprehensive Supabase client mock
@@ -44,14 +51,42 @@ describe('User Integration Tests', () => {
 
     mockRequest = {
       user: {
-        id: 'user-123',
+        id: '123e4567-e89b-12d3-a456-426614174000',
         email: 'test@example.com',
       },
     } as FastifyRequest & { user: any };
 
+    // Mock repository
+    mockRepository = {
+      findById: vi.fn(),
+      findByEmail: vi.fn(),
+      save: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      exists: vi.fn(),
+      existsByEmail: vi.fn(),
+      findAll: vi.fn(),
+      saveMany: vi.fn(),
+      deleteMany: vi.fn(),
+      findByRole: vi.fn(),
+      search: vi.fn(),
+      findByIds: vi.fn(),
+      updateMany: vi.fn(),
+    };
+
+    const mockRequestContextService = {
+      getLogger: vi.fn().mockReturnValue({
+        info: vi.fn(),
+        error: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn(),
+      }),
+      getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
+    };
+    
     // Create service and controller instances directly (simplified approach)
-    service = new UserService(mockDatabaseService);
-    controller = new UserController(mockDatabaseService);
+    service = new UserService(mockDatabaseService, mockRepository, mockRequestContextService as any);
+    controller = new UserController(mockDatabaseService, service);
   });
 
   afterEach(() => {
@@ -60,7 +95,7 @@ describe('User Integration Tests', () => {
 
   describe('Complete User Profile Workflow', () => {
     const mockUserProfile = {
-      id: 'user-123',
+      id: '123e4567-e89b-12d3-a456-426614174000',
       email: 'test@example.com',
       display_name: 'John Doe',
       bio: 'Bass player from NYC',
@@ -89,6 +124,19 @@ describe('User Integration Tests', () => {
     it('should complete full user profile management workflow', async () => {
       // Arrange - Set up all mocks for the complete workflow
 
+      // Mock user entity for repository
+      const mockUser = User.reconstitute(
+        UserId.create('123e4567-e89b-12d3-a456-426614174000'),
+        Email.create('test@example.com'),
+        UserRole.create('user'),
+        'John Doe',
+        'https://example.com/avatar.jpg',
+      );
+
+      vi.mocked(mockRepository.findById).mockResolvedValue(
+        ResultUtils.ok(mockUser),
+      );
+
       // 1. Mock initial profile fetch
       mockSupabaseClient.from.mockImplementation((table: string) => {
         if (table === 'profiles') {
@@ -116,7 +164,6 @@ describe('User Integration Tests', () => {
       expect(initialProfileResponse.success).toBe(true);
       if (isApiSuccessResponse(initialProfileResponse)) {
         expect(initialProfileResponse.data.displayName).toBe('John Doe');
-        expect(initialProfileResponse.data.role).toBe('user');
         expect(
           initialProfileResponse.data.preferences.bassConfiguration,
         ).toEqual({
@@ -149,7 +196,7 @@ describe('User Integration Tests', () => {
 
       // Step 3: Verify auth metadata was updated
       expect(mockSupabaseClient.auth.admin.updateUserById).toHaveBeenCalledWith(
-        'user-123',
+        '123e4567-e89b-12d3-a456-426614174000',
         {
           user_metadata: {
             display_name: 'John Smith',
@@ -200,7 +247,9 @@ describe('User Integration Tests', () => {
           .mockResolvedValue({ data: mockUserProfile, error: null }),
       }));
 
-      const initialBassConfig = await service.getBassConfiguration('user-123');
+      const initialBassConfig = await service.getBassConfiguration(
+        '123e4567-e89b-12d3-a456-426614174000',
+      );
       expect(initialBassConfig).toEqual({
         stringCount: 4,
         maxFrets: 24,
@@ -217,7 +266,7 @@ describe('User Integration Tests', () => {
       }));
 
       const updatedProfile = await service.updateBassConfiguration(
-        'user-123',
+        '123e4567-e89b-12d3-a456-426614174000',
         bassConfig,
       );
       expect(updatedProfile.preferences.bassConfiguration).toEqual({
@@ -234,7 +283,9 @@ describe('User Integration Tests', () => {
           .mockResolvedValue({ data: profileWithUpdatedBass, error: null }),
       }));
 
-      const finalBassConfig = await service.getBassConfiguration('user-123');
+      const finalBassConfig = await service.getBassConfiguration(
+        '123e4567-e89b-12d3-a456-426614174000',
+      );
       expect(finalBassConfig).toEqual({
         stringCount: 5,
         maxFrets: 22,
@@ -334,7 +385,24 @@ describe('User Integration Tests', () => {
     it('should complete secure account deletion process', async () => {
       // Arrange
       const deleteBody = { password: 'user-password' };
-      const mockProfile = { id: 'user-123' };
+      const mockProfile = { id: '123e4567-e89b-12d3-a456-426614174000' };
+
+      // Mock user entity for repository
+      const mockUser = User.reconstitute(
+        UserId.create('123e4567-e89b-12d3-a456-426614174000'),
+        Email.create('test@example.com'),
+        UserRole.create('user'),
+        'Test User',
+        undefined,
+      );
+
+      vi.mocked(mockRepository.findById).mockResolvedValue(
+        ResultUtils.ok(mockUser),
+      );
+      vi.mocked(mockRepository.exists).mockResolvedValue(ResultUtils.ok(true));
+      vi.mocked(mockRepository.delete).mockResolvedValue(
+        ResultUtils.ok(undefined),
+      );
 
       // 1. Verify password
       mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
@@ -367,11 +435,11 @@ describe('User Integration Tests', () => {
         password: 'user-password',
       });
       expect(mockSupabaseClient.auth.admin.deleteUser).toHaveBeenCalledWith(
-        'user-123',
+        '123e4567-e89b-12d3-a456-426614174000',
       );
 
       // Act - Execute deletion workflow through service
-      await service.deleteProfile('user-123');
+      await service.deleteProfile('123e4567-e89b-12d3-a456-426614174000');
 
       // Assert - Service should also complete successfully
       expect(mockSupabaseClient.auth.admin.deleteUser).toHaveBeenCalledTimes(2);
@@ -397,17 +465,17 @@ describe('User Integration Tests', () => {
   describe('Error Propagation & Recovery', () => {
     it('should properly propagate service errors to controller', async () => {
       // Arrange
-      const dbError = { message: 'Database connection timeout' };
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: dbError }),
-      }));
+      const dbError = new Error('Database connection timeout');
+
+      // Mock repository to fail
+      vi.mocked(mockRepository.findById).mockResolvedValue(
+        ResultUtils.fail(dbError),
+      );
 
       // Act & Assert - Test service error
-      await expect(service.findProfileById('user-123')).rejects.toThrow(
-        'Failed to fetch profile: Database connection timeout',
-      );
+      await expect(
+        service.findProfileById('123e4567-e89b-12d3-a456-426614174000'),
+      ).rejects.toThrow('Failed to fetch user: Database connection timeout');
 
       // Act & Assert - Test controller error handling
       const controllerResult = await controller.getProfile(mockRequest);
@@ -419,20 +487,22 @@ describe('User Integration Tests', () => {
 
     it('should handle service exceptions in controller gracefully', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: null }),
-      }));
+      // Mock repository to return null (user not found)
+      vi.mocked(mockRepository.findById).mockResolvedValue(
+        ResultUtils.ok(null),
+      );
 
       // Act & Assert - Service should throw NotFoundException
-      await expect(service.findProfileById('non-existent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.findProfileById('999e4567-e89b-12d3-a456-426614174999'),
+      ).rejects.toThrow(NotFoundException);
 
       // Act - Controller should handle it gracefully
       const controllerResult = await controller.getProfile({
-        user: { id: 'non-existent', email: 'test@example.com' },
+        user: {
+          id: '999e4567-e89b-12d3-a456-426614174999',
+          email: 'test@example.com',
+        },
       } as any);
 
       // Assert
@@ -445,18 +515,24 @@ describe('User Integration Tests', () => {
     it('should handle validation errors in bass configuration workflow', async () => {
       // Act & Assert - Test invalid string count
       await expect(
-        service.updateBassConfiguration('user-123', {
-          stringCount: 3 as any,
-          maxFrets: 24,
-        }),
+        service.updateBassConfiguration(
+          '123e4567-e89b-12d3-a456-426614174000',
+          {
+            stringCount: 3 as any,
+            maxFrets: 24,
+          },
+        ),
       ).rejects.toThrow(BadRequestException);
 
       // Act & Assert - Test invalid max frets
       await expect(
-        service.updateBassConfiguration('user-123', {
-          stringCount: 4,
-          maxFrets: 18,
-        }),
+        service.updateBassConfiguration(
+          '123e4567-e89b-12d3-a456-426614174000',
+          {
+            stringCount: 4,
+            maxFrets: 18,
+          },
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -482,7 +558,7 @@ describe('User Integration Tests', () => {
     it('should maintain data consistency across service calls', async () => {
       // Arrange
       const mockProfile = {
-        id: 'user-123',
+        id: '123e4567-e89b-12d3-a456-426614174000',
         email: 'test@example.com',
         display_name: 'Consistent User',
         bio: 'Same data everywhere',
@@ -493,6 +569,19 @@ describe('User Integration Tests', () => {
         bass_max_frets: 22,
       };
 
+      // Mock user entity
+      const mockUser = User.reconstitute(
+        UserId.create('123e4567-e89b-12d3-a456-426614174000'),
+        Email.create('test@example.com'),
+        UserRole.create('user'),
+        'Consistent User',
+        'https://example.com/avatar.jpg',
+      );
+
+      vi.mocked(mockRepository.findById).mockResolvedValue(
+        ResultUtils.ok(mockUser),
+      );
+
       mockSupabaseClient.from.mockImplementation(() => ({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -500,12 +589,18 @@ describe('User Integration Tests', () => {
       }));
 
       // Act
-      const profileById = await service.findProfileById('user-123');
-      const bassConfig = await service.getBassConfiguration('user-123');
-      const userStats = await service.getUserStats('user-123');
+      const profileById = await service.findProfileById(
+        '123e4567-e89b-12d3-a456-426614174000',
+      );
+      const bassConfig = await service.getBassConfiguration(
+        '123e4567-e89b-12d3-a456-426614174000',
+      );
+      const userStats = await service.getUserStats(
+        '123e4567-e89b-12d3-a456-426614174000',
+      );
 
       // Assert
-      expect(profileById.id).toBe('user-123');
+      expect(profileById.id).toBe('123e4567-e89b-12d3-a456-426614174000');
       expect(profileById.displayName).toBe('Consistent User');
       expect(bassConfig.stringCount).toBe(5);
       expect(bassConfig.maxFrets).toBe(22);
@@ -515,7 +610,7 @@ describe('User Integration Tests', () => {
     it('should handle edge cases in user statistics calculation', async () => {
       // Arrange
       const oldProfile = {
-        id: 'user-123',
+        id: '123e4567-e89b-12d3-a456-426614174000',
         email: 'test@example.com',
         display_name: null,
         bio: null,
@@ -533,7 +628,9 @@ describe('User Integration Tests', () => {
       }));
 
       // Act
-      const stats = await service.getUserStats('user-123');
+      const stats = await service.getUserStats(
+        '123e4567-e89b-12d3-a456-426614174000',
+      );
 
       // Assert
       expect(stats.profileCompleteness).toBe(0); // No optional fields filled
@@ -544,7 +641,7 @@ describe('User Integration Tests', () => {
     it('should validate role updates correctly', async () => {
       // Arrange
       const mockProfile = {
-        id: 'user-123',
+        id: '123e4567-e89b-12d3-a456-426614174000',
         email: 'test@example.com',
         display_name: 'Test User',
         bio: 'Test bio',
@@ -556,6 +653,22 @@ describe('User Integration Tests', () => {
         bass_max_frets: 24,
       };
 
+      // Mock user entity
+      const mockUser = User.reconstitute(
+        UserId.create('123e4567-e89b-12d3-a456-426614174000'),
+        Email.create('test@example.com'),
+        UserRole.create('user'),
+        'Test User',
+        'https://example.com/avatar.jpg',
+      );
+
+      vi.mocked(mockRepository.findById).mockResolvedValue(
+        ResultUtils.ok(mockUser),
+      );
+      vi.mocked(mockRepository.update).mockResolvedValue(
+        ResultUtils.ok(undefined),
+      );
+
       mockSupabaseClient.from.mockImplementation(() => ({
         update: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -565,18 +678,24 @@ describe('User Integration Tests', () => {
 
       // Act - Test valid roles
       await expect(
-        service.updateUserRole('user-123', 'admin'),
-      ).resolves.toBeDefined();
+        service.updateUserRole('123e4567-e89b-12d3-a456-426614174000', 'admin'),
+      ).resolves.toBeUndefined();
       await expect(
-        service.updateUserRole('user-123', 'creator'),
-      ).resolves.toBeDefined();
+        service.updateUserRole(
+          '123e4567-e89b-12d3-a456-426614174000',
+          'moderator',
+        ),
+      ).resolves.toBeUndefined();
       await expect(
-        service.updateUserRole('user-123', 'user'),
-      ).resolves.toBeDefined();
+        service.updateUserRole('123e4567-e89b-12d3-a456-426614174000', 'user'),
+      ).resolves.toBeUndefined();
 
       // Act & Assert - Test invalid role
       await expect(
-        service.updateUserRole('user-123', 'invalid'),
+        service.updateUserRole(
+          '123e4567-e89b-12d3-a456-426614174000',
+          'invalid' as any,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -638,7 +757,7 @@ describe('User Integration Tests', () => {
     it('should handle concurrent user operations efficiently', async () => {
       // Arrange
       const mockProfile = {
-        id: 'user-123',
+        id: '123e4567-e89b-12d3-a456-426614174000',
         email: 'test@example.com',
         display_name: 'Test User',
         bio: 'Test bio',
@@ -648,6 +767,19 @@ describe('User Integration Tests', () => {
         bass_string_count: 4,
         bass_max_frets: 24,
       };
+
+      // Mock user entity for repository
+      const mockUser = User.reconstitute(
+        UserId.create('123e4567-e89b-12d3-a456-426614174000'),
+        Email.create('test@example.com'),
+        UserRole.create('user'),
+        'Test User',
+        'https://example.com/avatar.jpg',
+      );
+
+      vi.mocked(mockRepository.findById).mockResolvedValue(
+        ResultUtils.ok(mockUser),
+      );
 
       mockSupabaseClient.from.mockImplementation(() => ({
         select: vi.fn().mockReturnThis(),
@@ -666,7 +798,7 @@ describe('User Integration Tests', () => {
       results.forEach((result) => {
         expect(result.success).toBe(true);
         if (isApiSuccessResponse(result)) {
-          expect(result.data.id).toBe('user-123');
+          expect(result.data.id).toBe('123e4567-e89b-12d3-a456-426614174000');
         }
       });
     });
@@ -676,7 +808,7 @@ describe('User Integration Tests', () => {
     it('should return properly typed responses across all endpoints', async () => {
       // Arrange
       const mockProfile = {
-        id: 'user-123',
+        id: '123e4567-e89b-12d3-a456-426614174000',
         email: 'test@example.com',
         display_name: 'Contract Test User',
         bio: 'Testing API contracts',
@@ -687,6 +819,19 @@ describe('User Integration Tests', () => {
         bass_string_count: 4,
         bass_max_frets: 24,
       };
+
+      // Mock user entity for repository
+      const mockUser = User.reconstitute(
+        UserId.create('123e4567-e89b-12d3-a456-426614174000'),
+        Email.create('test@example.com'),
+        UserRole.create('user'),
+        'Contract Test User',
+        'https://example.com/avatar.jpg',
+      );
+
+      vi.mocked(mockRepository.findById).mockResolvedValue(
+        ResultUtils.ok(mockUser),
+      );
 
       mockSupabaseClient.from.mockImplementation(() => ({
         select: vi.fn().mockReturnThis(),

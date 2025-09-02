@@ -23,10 +23,9 @@ const __dirname = path.dirname(__filename);
 // Load test environment variables BEFORE importing any modules
 const envPath = path.join(__dirname, '../../../../../.env.test');
 console.log('🔧 [Test] Loading .env.test from:', envPath);
-console.log(
-  '🔧 [Test] File exists:',
-  await import('fs').then((fs) => fs.existsSync(envPath)),
-);
+import('fs').then((fs) => {
+  console.log('🔧 [Test] File exists:', fs.existsSync(envPath));
+});
 config({ path: envPath });
 
 import { AuthModule } from '../../auth/auth.module.js';

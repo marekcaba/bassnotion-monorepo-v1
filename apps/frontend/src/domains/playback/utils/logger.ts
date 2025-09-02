@@ -35,7 +35,10 @@ class Logger {
 
   private constructor() {
     // Set initial log level based on environment
-    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    if (
+      typeof window !== 'undefined' &&
+      window.location.hostname === 'localhost'
+    ) {
       this.config.level = LogLevel.ERROR; // Only errors
     } else {
       this.config.level = LogLevel.ERROR;
@@ -125,17 +128,26 @@ class Logger {
       'persistence',
     ];
 
-    return initPatterns.some(pattern => 
-      message.toLowerCase().includes(pattern.toLowerCase())
+    return initPatterns.some((pattern) =>
+      message.toLowerCase().includes(pattern.toLowerCase()),
     );
   }
 
-  private formatMessage(level: LogLevel, prefix: string, message: string, ...args: any[]): void {
+  private formatMessage(
+    level: LogLevel,
+    prefix: string,
+    message: string,
+    ...args: any[]
+  ): void {
     // Skip duplicate logs
     if (this.isDuplicate(message)) return;
 
     // Handle initialization logs
-    if (this.config.compactInitialization && this.initPhaseActive && this.isInitializationLog(message)) {
+    if (
+      this.config.compactInitialization &&
+      this.initPhaseActive &&
+      this.isInitializationLog(message)
+    ) {
       // Group similar initialization logs
       const category = this.categorizeInitLog(message);
       if (this.initializationLogs.has(category)) {
@@ -145,22 +157,24 @@ class Logger {
     }
 
     // Format and output based on level
-    const timestamp = this.config.enableTimestamps ? `[${new Date().toISOString()}] ` : '';
+    const timestamp = this.config.enableTimestamps
+      ? `[${new Date().toISOString()}] `
+      : '';
     const formattedMessage = `${timestamp}${prefix} ${message}`;
 
     switch (level) {
       case LogLevel.ERROR:
-        console.error(formattedMessage, ...args);
+        logger.error(formattedMessage, ...args);
         break;
       case LogLevel.WARN:
-        console.warn(formattedMessage, ...args);
+        logger.warn(formattedMessage, ...args);
         break;
       case LogLevel.INFO:
-        console.log(formattedMessage, ...args);
+        logger.info(formattedMessage, ...args);
         break;
       case LogLevel.DEBUG:
       case LogLevel.VERBOSE:
-        console.log(formattedMessage, ...args);
+        logger.info(formattedMessage, ...args);
         break;
     }
   }
@@ -169,10 +183,13 @@ class Logger {
     // Categorize similar logs to prevent duplicates
     if (message.includes('AudioContext')) return 'audio-context';
     if (message.includes('Transport')) return 'transport';
-    if (message.includes('sampler') || message.includes('Sampler')) return 'sampler';
-    if (message.includes('Widget') || message.includes('widget')) return 'widget';
+    if (message.includes('sampler') || message.includes('Sampler'))
+      return 'sampler';
+    if (message.includes('Widget') || message.includes('widget'))
+      return 'widget';
     if (message.includes('Asset') || message.includes('asset')) return 'asset';
-    if (message.includes('Tone.js') || message.includes('ToneProvider')) return 'tone-init';
+    if (message.includes('Tone.js') || message.includes('ToneProvider'))
+      return 'tone-init';
     return message.substring(0, 20); // Use first 20 chars as category
   }
 
@@ -206,12 +223,15 @@ class Logger {
     }
   }
 
-  public group(title: string, logs: Array<{ prefix: string; message: string }>): void {
+  public group(
+    title: string,
+    logs: Array<{ prefix: string; message: string }>,
+  ): void {
     if (!this.shouldLog(LogLevel.INFO)) return;
 
     console.group(title);
     logs.forEach(({ prefix, message }) => {
-      console.log(`${prefix} ${message}`);
+      logger.info(`${prefix} ${message}`);
     });
     console.groupEnd();
   }
@@ -221,20 +241,22 @@ class Logger {
 export const logger = Logger.getInstance();
 
 // Export convenience functions
-export const logError = (prefix: string, message: string, ...args: any[]) => 
+export const logError = (prefix: string, message: string, ...args: any[]) =>
   logger.error(prefix, message, ...args);
 
-export const logWarn = (prefix: string, message: string, ...args: any[]) => 
+export const logWarn = (prefix: string, message: string, ...args: any[]) =>
   logger.warn(prefix, message, ...args);
 
-export const logInfo = (prefix: string, message: string, ...args: any[]) => 
+export const logInfo = (prefix: string, message: string, ...args: any[]) =>
   logger.info(prefix, message, ...args);
 
-export const logDebug = (prefix: string, message: string, ...args: any[]) => 
+export const logDebug = (prefix: string, message: string, ...args: any[]) =>
   logger.debug(prefix, message, ...args);
 
-export const logVerbose = (prefix: string, message: string, ...args: any[]) => 
+export const logVerbose = (prefix: string, message: string, ...args: any[]) =>
   logger.verbose(prefix, message, ...args);
 
-export const logGroup = (title: string, logs: Array<{ prefix: string; message: string }>) => 
-  logger.group(title, logs);
+export const logGroup = (
+  title: string,
+  logs: Array<{ prefix: string; message: string }>,
+) => logger.group(title, logs);

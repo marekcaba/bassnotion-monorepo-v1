@@ -5,17 +5,17 @@ describe('Widget Sync Timeout Issue Diagnosis', () => {
     // This test documents the issue found in the logs
     const logEntries = [
       '[enhanced-metronome-widget] Sync connection lost (30029ms since last sync)',
-      '[drummer-widget] Sync connection lost (30046ms since last sync)'
+      '[drummer-widget] Sync connection lost (30046ms since last sync)',
     ];
 
     // Parse timeout values
-    const timeouts = logEntries.map(log => {
+    const timeouts = logEntries.map((log) => {
       const match = log.match(/\((\d+)ms since last sync\)/);
       return match ? parseInt(match[1]) : 0;
     });
 
     // All timeouts are around 30 seconds
-    timeouts.forEach(timeout => {
+    timeouts.forEach((timeout) => {
       expect(timeout).toBeGreaterThan(30000);
       expect(timeout).toBeLessThan(31000);
     });
@@ -23,27 +23,55 @@ describe('Widget Sync Timeout Issue Diagnosis', () => {
     console.log('\n=== ISSUE IDENTIFIED ===');
     console.log('Widgets lose sync connection after ~30 seconds');
     console.log('Root cause: No heartbeat/keepalive mechanism');
-    console.log('Widgets receive initial PLAY event but no subsequent sync updates');
+    console.log(
+      'Widgets receive initial PLAY event but no subsequent sync updates',
+    );
   });
 
   it('demonstrates the event flow problem', () => {
     const eventLog = [
-      { time: 0, event: 'PLAY', widget: 'all', description: 'Initial play event received' },
-      { time: 100, event: 'START_LOOP', widget: 'drummer', description: 'Drum loop starts' },
-      { time: 100, event: 'START_LOOP', widget: 'harmony', description: 'Harmony loop starts' },
-      { time: 30000, event: 'TIMEOUT', widget: 'metronome', description: 'Sync connection lost' },
-      { time: 30046, event: 'TIMEOUT', widget: 'drummer', description: 'Sync connection lost' }
+      {
+        time: 0,
+        event: 'PLAY',
+        widget: 'all',
+        description: 'Initial play event received',
+      },
+      {
+        time: 100,
+        event: 'START_LOOP',
+        widget: 'drummer',
+        description: 'Drum loop starts',
+      },
+      {
+        time: 100,
+        event: 'START_LOOP',
+        widget: 'harmony',
+        description: 'Harmony loop starts',
+      },
+      {
+        time: 30000,
+        event: 'TIMEOUT',
+        widget: 'metronome',
+        description: 'Sync connection lost',
+      },
+      {
+        time: 30046,
+        event: 'TIMEOUT',
+        widget: 'drummer',
+        description: 'Sync connection lost',
+      },
     ];
 
     // After initial events, no sync events for 30 seconds
-    const syncEvents = eventLog.filter(e => 
-      e.event === 'SYNC' || e.event === 'HEARTBEAT' || e.event === 'POSITION'
+    const syncEvents = eventLog.filter(
+      (e) =>
+        e.event === 'SYNC' || e.event === 'HEARTBEAT' || e.event === 'POSITION',
     );
 
     expect(syncEvents.length).toBe(0);
-    
+
     console.log('\n=== EVENT FLOW ANALYSIS ===');
-    console.log('Events found:', eventLog.map(e => e.event).join(', '));
+    console.log('Events found:', eventLog.map((e) => e.event).join(', '));
     console.log('Missing: HEARTBEAT, SYNC, or regular POSITION updates');
   });
 
@@ -51,34 +79,38 @@ describe('Widget Sync Timeout Issue Diagnosis', () => {
     const states = {
       transport: {
         state: 'started',
-        position: '0:0:0.736'
+        position: '0:0:0.736',
       },
       widgets: {
         drummer: {
           syncIsPlaying: true,
           isConnected: false, // <-- This is the problem
-          loopState: 'started'
+          loopState: 'started',
         },
         harmony: {
           syncIsPlaying: true,
           isConnected: false, // <-- This is the problem
-          loopState: 'started'
-        }
-      }
+          loopState: 'started',
+        },
+      },
     };
 
     // Transport is playing but widgets are not connected
     expect(states.transport.state).toBe('started');
-    Object.values(states.widgets).forEach(widget => {
+    Object.values(states.widgets).forEach((widget) => {
       expect(widget.isConnected).toBe(false);
     });
 
     console.log('\n=== STATE MISMATCH ===');
     console.log('Transport state:', states.transport.state);
-    console.log('Widget connection states:', 
+    console.log(
+      'Widget connection states:',
       Object.entries(states.widgets)
-        .map(([name, state]) => `${name}: ${state.isConnected ? 'connected' : 'NOT CONNECTED'}`)
-        .join(', ')
+        .map(
+          ([name, state]) =>
+            `${name}: ${state.isConnected ? 'connected' : 'NOT CONNECTED'}`,
+        )
+        .join(', '),
     );
   });
 
@@ -94,7 +126,7 @@ describe('Widget Sync Timeout Issue Diagnosis', () => {
             type: 'HEARTBEAT',
             timestamp: Date.now(),
             transportState: 'started',
-            position: '0:0:0'
+            position: '0:0:0',
           });
         }, 5000); // Every 5 seconds
       }
@@ -111,7 +143,7 @@ describe('Widget Sync Timeout Issue Diagnosis', () => {
       }
 
       private broadcast(data: any) {
-        this.listeners.forEach(listener => listener(data));
+        this.listeners.forEach((listener) => listener(data));
       }
     }
 
@@ -130,7 +162,7 @@ describe('Widget Sync Timeout Issue Diagnosis', () => {
     });
 
     heartbeat.start();
-    
+
     // Simulate heartbeats
     for (let i = 0; i < 10; i++) {
       mockInterval({ timestamp: Date.now() + i * 5000 });
@@ -153,30 +185,30 @@ describe('Widget Sync Timeout Issue Diagnosis', () => {
           'Add heartbeatInterval property',
           'Start heartbeat in startSync() method',
           'Stop heartbeat in stopSync() method',
-          'Emit HEARTBEAT event with transport state'
-        ]
+          'Emit HEARTBEAT event with transport state',
+        ],
       },
       {
         file: 'useWidgetSync.ts',
         changes: [
           'Listen for HEARTBEAT events',
           'Update lastSyncTime on heartbeat',
-          'Reset connection timeout counter'
-        ]
+          'Reset connection timeout counter',
+        ],
       },
       {
         file: 'TransportController.ts',
         changes: [
           'Notify WidgetSyncService on start/stop',
-          'Include position in state updates'
-        ]
-      }
+          'Include position in state updates',
+        ],
+      },
     ];
 
     console.log('\n=== IMPLEMENTATION STEPS ===');
     fixSteps.forEach((step, index) => {
       console.log(`\n${index + 1}. ${step.file}:`);
-      step.changes.forEach(change => {
+      step.changes.forEach((change) => {
         console.log(`   - ${change}`);
       });
     });

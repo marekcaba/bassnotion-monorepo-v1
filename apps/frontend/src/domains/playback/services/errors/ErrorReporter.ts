@@ -4,6 +4,7 @@
  */
 
 import { PlaybackError } from './base';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 export class ErrorReporter {
   /**
@@ -14,7 +15,7 @@ export class ErrorReporter {
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.error('PlaybackError:', sanitizedReport);
+      logger.error('PlaybackError:', sanitizedReport);
     }
 
     // In production, you would send to monitoring service

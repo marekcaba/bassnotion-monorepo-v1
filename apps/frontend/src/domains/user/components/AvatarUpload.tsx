@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Camera, User, Loader2 } from 'lucide-react';
 import { supabase } from '@/infrastructure/supabase/client';
 import { useToast } from '@/shared/hooks/use-toast';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface AvatarUploadProps {
   currentAvatarUrl?: string;
@@ -18,6 +19,7 @@ export function AvatarUpload({
   disabled = false,
   userId,
 }: AvatarUploadProps) {
+  const { correlationId, logger } = useCorrelation('AvatarUpload');
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     currentAvatarUrl || null,
@@ -96,7 +98,7 @@ export function AvatarUpload({
         });
 
       if (uploadError) {
-        console.error('Upload error:', {
+        logger.error('Upload error:', {
           message: uploadError.message,
           statusCode: uploadError.statusCode,
           error: uploadError.error,
@@ -158,7 +160,7 @@ export function AvatarUpload({
         variant: 'success',
       });
     } catch (error) {
-      console.error('Avatar upload error:', {
+      logger.error('Avatar upload error:', {
         message: error instanceof Error ? error.message : 'Unknown error',
         error: error,
       });
@@ -183,7 +185,7 @@ export function AvatarUpload({
   };
 
   const handleImageError = () => {
-    console.error('[AvatarUpload] Image failed to load:', {
+    logger.error('[AvatarUpload] Image failed to load:', {
       previewUrl,
       isMobile,
       userAgent: navigator.userAgent,

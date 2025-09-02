@@ -1,12 +1,18 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { RequestContextService } from '../../shared/services/request-context.service.js';
 
 @Injectable()
 export class AudioSamplesService {
-  private readonly logger = new Logger(AudioSamplesService.name);
+  private readonly staticLogger = createStructuredLogger(AudioSamplesService.name);
   private readonly bucketName = 'audio-samples';
 
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    @Inject(RequestContextService)
+    private readonly requestContext: RequestContextService,
+  ) {}
 
   async uploadSample(
     filePath: string,
@@ -15,31 +21,37 @@ export class AudioSamplesService {
   ): Promise<{ url: string; path: string }> {
     try {
       const client = this.supabaseService.getClient();
-      
-      this.logger.log(`Uploading sample to: ${filePath}`);
-      
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+
+      logger.info(`Uploading sample to: ${filePath}`, { correlationId });
+
       const { error } = await client.storage
         .from(this.bucketName)
         .upload(filePath, fileBuffer, {
           contentType,
           cacheControl: '3600',
-          upsert: true,
-        });
+          upsert: true });
 
       if (error) {
         throw error;
       }
 
       const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${this.bucketName}/${filePath}`;
-      
-      this.logger.log(`Sample uploaded successfully: ${filePath}`);
-      
+
+      logger.info(`Sample uploaded successfully: ${filePath}`, { correlationId });
+
       return {
         url: publicUrl,
-        path: filePath,
-      };
+        path: filePath };
     } catch (error) {
-      this.logger.error(`Failed to upload sample: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error(
+        `Failed to upload sample: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error as Error,
+        { correlationId }
+      );
       throw error;
     }
   }
@@ -50,7 +62,9 @@ export class AudioSamplesService {
       buffer: Buffer;
       contentType: string;
     }>,
-  ): Promise<Array<{ path: string; url: string; success: boolean; error?: string }>> {
+  ): Promise<
+    Array<{ path: string; url: string; success: boolean; error?: string }>
+  > {
     const results = await Promise.all(
       samples.map(async (sample) => {
         try {
@@ -61,22 +75,23 @@ export class AudioSamplesService {
           );
           return {
             ...result,
-            success: true,
-          };
+            success: true };
         } catch (error) {
           return {
             path: sample.path,
             url: '',
             success: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
-          };
+            error: error instanceof Error ? error.message : 'Unknown error' };
         }
       }),
     );
 
     const successCount = results.filter((r) => r.success).length;
-    this.logger.log(
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.info(
       `Batch upload complete: ${successCount}/${samples.length} successful`,
+      { correlationId }
     );
 
     return results;
@@ -90,17 +105,22 @@ export class AudioSamplesService {
       const client = this.supabaseService.getClient();
       const metadataBuffer = Buffer.from(JSON.stringify(metadata, null, 2));
 
-      await client.storage
-        .from(this.bucketName)
-        .upload(path, metadataBuffer, {
-          contentType: 'application/json',
-          cacheControl: '3600',
-          upsert: true,
-        });
+      await client.storage.from(this.bucketName).upload(path, metadataBuffer, {
+        contentType: 'application/json',
+        cacheControl: '3600',
+        upsert: true });
 
-      this.logger.log(`Metadata created at: ${path}`);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.info(`Metadata created at: ${path}`, { correlationId });
     } catch (error) {
-      this.logger.error(`Failed to create metadata: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error(
+        `Failed to create metadata: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error as Error,
+        { correlationId }
+      );
       throw error;
     }
   }

@@ -10,6 +10,7 @@
 
 import { CorePlaybackEngine } from '@/domains/playback/services/CorePlaybackEngine/CorePlaybackEngine';
 import { widgetSyncService } from './WidgetSyncService';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // ============================================================================
 // INTERFACES
@@ -177,10 +178,10 @@ export class YouTubePlaybackSync {
       this.isInitialized = true;
 
       if (this.config.enableDebugLogging) {
-        console.log('[YouTubePlaybackSync] Initialized successfully');
+        logger.info('[YouTubePlaybackSync] Initialized successfully');
       }
     } catch (error) {
-      console.error('[YouTubePlaybackSync] Initialization failed:', error);
+      logger.error('[YouTubePlaybackSync] Initialization failed:', error);
       throw error;
     }
   }
@@ -206,10 +207,10 @@ export class YouTubePlaybackSync {
       this.isInitialized = false;
 
       if (this.config.enableDebugLogging) {
-        console.log('[YouTubePlaybackSync] Disposed successfully');
+        logger.info('[YouTubePlaybackSync] Disposed successfully');
       }
     } catch (error) {
-      console.error('[YouTubePlaybackSync] Disposal failed:', error);
+      logger.error('[YouTubePlaybackSync] Disposal failed:', error);
     }
   }
 
@@ -230,7 +231,7 @@ export class YouTubePlaybackSync {
     }
 
     if (this.config.enableDebugLogging) {
-      console.log('[YouTubePlaybackSync] YouTube player connected');
+      logger.info('[YouTubePlaybackSync] YouTube player connected');
     }
   }
 
@@ -244,7 +245,7 @@ export class YouTubePlaybackSync {
     this.disableSync();
 
     if (this.config.enableDebugLogging) {
-      console.log('[YouTubePlaybackSync] YouTube player disconnected');
+      logger.info('[YouTubePlaybackSync] YouTube player disconnected');
     }
   }
 
@@ -257,7 +258,7 @@ export class YouTubePlaybackSync {
       !this.syncState.isVideoPlayerReady ||
       !this.syncState.isAudioEngineReady
     ) {
-      console.warn(
+      logger.warn(
         '[YouTubePlaybackSync] Cannot enable sync - not all components ready',
       );
       return;
@@ -267,7 +268,7 @@ export class YouTubePlaybackSync {
     this.startSyncLoop();
 
     if (this.config.enableDebugLogging) {
-      console.log('[YouTubePlaybackSync] Synchronization enabled');
+      logger.info('[YouTubePlaybackSync] Synchronization enabled');
     }
   }
 
@@ -276,7 +277,7 @@ export class YouTubePlaybackSync {
     this.stopSync();
 
     if (this.config.enableDebugLogging) {
-      console.log('[YouTubePlaybackSync] Synchronization disabled');
+      logger.info('[YouTubePlaybackSync] Synchronization disabled');
     }
   }
 
@@ -308,12 +309,12 @@ export class YouTubePlaybackSync {
       await this.coreEngine.play();
 
       if (this.config.enableDebugLogging) {
-        console.log(
+        logger.info(
           `[YouTubePlaybackSync] Play - Video: ${videoTime}s, Audio: ${audioTime}s`,
         );
       }
     } catch (error) {
-      console.error('[YouTubePlaybackSync] Play failed:', error);
+      logger.error('[YouTubePlaybackSync] Play failed:', error);
     }
   }
 
@@ -326,10 +327,10 @@ export class YouTubePlaybackSync {
       await this.coreEngine.pause();
 
       if (this.config.enableDebugLogging) {
-        console.log('[YouTubePlaybackSync] Paused');
+        logger.info('[YouTubePlaybackSync] Paused');
       }
     } catch (error) {
-      console.error('[YouTubePlaybackSync] Pause failed:', error);
+      logger.error('[YouTubePlaybackSync] Pause failed:', error);
     }
   }
 
@@ -342,10 +343,10 @@ export class YouTubePlaybackSync {
       await this.coreEngine.stop();
 
       if (this.config.enableDebugLogging) {
-        console.log('[YouTubePlaybackSync] Stopped');
+        logger.info('[YouTubePlaybackSync] Stopped');
       }
     } catch (error) {
-      console.error('[YouTubePlaybackSync] Stop failed:', error);
+      logger.error('[YouTubePlaybackSync] Stop failed:', error);
     }
   }
 
@@ -370,12 +371,12 @@ export class YouTubePlaybackSync {
       });
 
       if (this.config.enableDebugLogging) {
-        console.log(
+        logger.info(
           `[YouTubePlaybackSync] Seek to ${seconds}s (compensated: ${compensatedVideoTime}s)`,
         );
       }
     } catch (error) {
-      console.error('[YouTubePlaybackSync] Seek failed:', error);
+      logger.error('[YouTubePlaybackSync] Seek failed:', error);
     }
   }
 
@@ -433,14 +434,14 @@ export class YouTubePlaybackSync {
         wasInSync !== this.syncState.isInSync &&
         this.config.enableDebugLogging
       ) {
-        console.log(
+        logger.info(
           `[YouTubePlaybackSync] Sync status changed: ${this.syncState.isInSync ? 'IN SYNC' : 'OUT OF SYNC'} (drift: ${drift.toFixed(1)}ms)`,
         );
       }
 
       this.syncState.lastSyncTime = this.highPrecisionClock();
     } catch (error) {
-      console.error('[YouTubePlaybackSync] Sync check failed:', error);
+      logger.error('[YouTubePlaybackSync] Sync check failed:', error);
     }
   }
 
@@ -450,7 +451,7 @@ export class YouTubePlaybackSync {
     // Only perform correction if within reasonable bounds
     if (driftSeconds > this.config.maxCorrectionJump) {
       if (this.config.enableDebugLogging) {
-        console.warn(
+        logger.warn(
           `[YouTubePlaybackSync] Drift too large for auto-correction: ${driftSeconds.toFixed(2)}s`,
         );
       }
@@ -484,12 +485,12 @@ export class YouTubePlaybackSync {
       this.syncState.correctionsMade++;
 
       if (this.config.enableDebugLogging) {
-        console.log(
+        logger.info(
           `[YouTubePlaybackSync] Auto-correction applied (drift was ${drift.toFixed(1)}ms)`,
         );
       }
     } catch (error) {
-      console.error('[YouTubePlaybackSync] Auto-correction failed:', error);
+      logger.error('[YouTubePlaybackSync] Auto-correction failed:', error);
     }
   }
 
@@ -584,7 +585,7 @@ export class YouTubePlaybackSync {
     this.config = { ...this.config, ...updates };
 
     if (this.config.enableDebugLogging) {
-      console.log('[YouTubePlaybackSync] Configuration updated:', updates);
+      logger.info('[YouTubePlaybackSync] Configuration updated:', updates);
     }
   }
 

@@ -8,6 +8,7 @@ import React, {
   useEffect,
 } from 'react';
 import type { Exercise, TimeSignature } from '@bassnotion/contracts';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 export interface LoopRegion {
   startMeasure: number;
@@ -42,6 +43,7 @@ export function LoopGridStrip({
   onSeek,
   className = '',
 }: LoopGridStripProps) {
+  const { correlationId, logger } = useCorrelation('LoopGridStrip');
   // Use prop value for loopRegion (controlled component)
   const loopRegion = loopRegionProp || null;
   const [isDragging, setIsDragging] = useState(false);
@@ -174,7 +176,7 @@ export function LoopGridStrip({
         const measure = measures[measureIndex - 1];
         if (measure) {
           onSeek(measure.startTime);
-          console.log(
+          logger.info(
             `🎵 Seeking to measure ${measureIndex} at ${measure.startTime}s`,
           );
         }

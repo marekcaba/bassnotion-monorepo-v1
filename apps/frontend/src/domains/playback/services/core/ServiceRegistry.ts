@@ -3,12 +3,18 @@
  * Central registry for managing service instances and their lifecycle
  */
 
+import { getLogger } from '@/utils/logger.js';
+
 // Handle timer functions for different environments
 declare const globalThis: any;
-const timerSetInterval = typeof setInterval !== 'undefined' ? setInterval : 
-  (globalThis?.setInterval || (global as any)?.setInterval || (() => null));
-const timerClearInterval = typeof clearInterval !== 'undefined' ? clearInterval :
-  (globalThis?.clearInterval || (global as any)?.clearInterval || (() => {}));
+const timerSetInterval =
+  typeof setInterval !== 'undefined'
+    ? setInterval
+    : globalThis?.setInterval || (global as any)?.setInterval || (() => null);
+const timerClearInterval =
+  typeof clearInterval !== 'undefined'
+    ? clearInterval
+    : globalThis?.clearInterval || (global as any)?.clearInterval || (() => {});
 
 export interface Service {
   initialize?(): Promise<void>;
@@ -34,7 +40,15 @@ export interface ServiceConfig {
 
 export interface ServiceInstance {
   instance: Service;
-  status: 'registered' | 'initializing' | 'initialized' | 'starting' | 'started' | 'stopping' | 'stopped' | 'failed';
+  status:
+    | 'registered'
+    | 'initializing'
+    | 'initialized'
+    | 'starting'
+    | 'started'
+    | 'stopping'
+    | 'stopped'
+    | 'failed';
   health: 'unknown' | 'healthy' | 'degraded' | 'unhealthy';
   lastHealthCheck: HealthCheckResult | null;
   config?: ServiceConfig;
@@ -62,7 +76,10 @@ export interface ServiceRegistryOptions {
 }
 
 export class ServiceError extends Error {
-  constructor(message: string, public serviceName?: string) {
+  constructor(
+    message: string,
+    public serviceName?: string,
+  ) {
     super(message);
     this.name = 'ServiceError';
   }
@@ -70,10 +87,23 @@ export class ServiceError extends Error {
 
 export class ServiceRegistry implements Service {
   private services = new Map<string, ServiceInstance>();
-  private initOrder: string[] = ['eventBus', 'audioEngine', 'unifiedTransport', 'pluginManager'];
+  private initOrder: string[] = [
+    'eventBus',
+    'audioEngine',
+    'unifiedTransport',
+    'pluginManager',
+  ];
   private healthCheckInterval: NodeJS.Timeout | null = null;
   private options: Required<ServiceRegistryOptions>;
   private isDisposed = false;
+
+  // Logger instance
+  private logger = getLogger('service');
+
+  private static instance: ServiceRegistry | null = null;
+  static resetInstance(): void {
+    ServiceRegistry.instance = null;
+  }
 
   constructor(options?: ServiceRegistryOptions) {
     this.options = {
@@ -89,7 +119,11 @@ export class ServiceRegistry implements Service {
   /**
    * Register a service with optional dependencies
    */
-  register<T extends Service>(name: string, service: T, dependencies: string[] = []): void {
+  register<T extends Service>(
+    name: string,
+    service: T,
+    dependencies: string[] = [],
+  ): void {
     if (this.services.has(name)) {
       throw new ServiceError(`Service ${name} is already registered`, name);
     }
@@ -146,41 +180,54 @@ export class ServiceRegistry implements Service {
 
     for (const serviceName of initializationOrder) {
       const serviceInstance = this.services.get(serviceName);
-      
+
       if (!serviceInstance) {
-        console.error(`ServiceRegistry: Service ${serviceName} not found in registry`);
-        throw new ServiceError(`Service ${serviceName} not found in registry`, serviceName);
+        this.logger.error(`Service ${serviceName} not found in registry`);
+        throw new ServiceError(
+          `Service ${serviceName} not found in registry`,
+          serviceName,
+        );
       }
-      
+
       if (!serviceInstance.status) {
-        console.error(`ServiceRegistry: Service ${serviceName} has no status property:`, serviceInstance);
-        throw new ServiceError(`Service ${serviceName} has invalid structure`, serviceName);
+        this.logger.error(`Service ${serviceName} has no status property`, {
+          serviceInstance,
+        });
+        throw new ServiceError(
+          `Service ${serviceName} has invalid structure`,
+          serviceName,
+        );
       }
-      
-      if (serviceInstance.status === 'initialized' || serviceInstance.status === 'started') {
+
+      if (
+        serviceInstance.status === 'initialized' ||
+        serviceInstance.status === 'started'
+      ) {
         continue;
       }
 
       this.updateServiceStatus(serviceName, 'initializing');
-      
+
       if (serviceInstance.instance.initialize) {
         try {
-          console.log(`ServiceRegistry: Initializing ${serviceName}...`);
+          this.logger.info(`Initializing ${serviceName}`);
           await serviceInstance.instance.initialize();
-          console.log(`ServiceRegistry: ${serviceName} initialized successfully`);
+          this.logger.info(`${serviceName} initialized successfully`);
           this.updateServiceStatus(serviceName, 'initialized');
         } catch (error) {
-          console.error(`ServiceRegistry: Failed to initialize ${serviceName}:`, error);
+          this.logger.error(`Failed to initialize ${serviceName}`, { error });
           this.updateServiceStatus(serviceName, 'failed');
           this.recordServiceError(serviceName, error, 'initialize');
           throw new ServiceError(
             `Failed to initialize service ${serviceName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            serviceName
+            serviceName,
           );
         }
       } else {
         // Mark as initialized even if no initialize method
-        console.log(`ServiceRegistry: ${serviceName} has no initialize method, marking as initialized`);
+        this.logger.info(
+          `${serviceName} has no initialize method, marking as initialized`,
+        );
         this.updateServiceStatus(serviceName, 'initialized');
       }
     }
@@ -201,21 +248,24 @@ export class ServiceRegistry implements Service {
 
     for (const serviceName of startOrder) {
       const serviceInstance = this.services.get(serviceName)!;
-      
+
       if (serviceInstance.status === 'started') {
         continue;
       }
 
       // Ensure service is initialized first
-      if (serviceInstance.status !== 'initialized' && serviceInstance.status !== 'stopped') {
+      if (
+        serviceInstance.status !== 'initialized' &&
+        serviceInstance.status !== 'stopped'
+      ) {
         throw new ServiceError(
           `Cannot start service ${serviceName}: not initialized (status: ${serviceInstance.status})`,
-          serviceName
+          serviceName,
         );
       }
 
       this.updateServiceStatus(serviceName, 'starting');
-      
+
       if (serviceInstance.instance.start) {
         try {
           await serviceInstance.instance.start();
@@ -225,7 +275,7 @@ export class ServiceRegistry implements Service {
           this.recordServiceError(serviceName, error, 'start');
           throw new ServiceError(
             `Failed to start service ${serviceName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            serviceName
+            serviceName,
           );
         }
       } else {
@@ -246,13 +296,13 @@ export class ServiceRegistry implements Service {
 
     for (const serviceName of stopOrder) {
       const serviceInstance = this.services.get(serviceName)!;
-      
+
       if (serviceInstance.status !== 'started') {
         continue;
       }
 
       this.updateServiceStatus(serviceName, 'stopping');
-      
+
       if (serviceInstance.instance.stop) {
         try {
           await serviceInstance.instance.stop();
@@ -260,9 +310,9 @@ export class ServiceRegistry implements Service {
         } catch (error) {
           this.recordServiceError(serviceName, error, 'stop');
           // Log error but continue stopping other services
-          console.warn(
-            `Error stopping service ${serviceName}: ${error instanceof Error ? error.message : 'Unknown error'}`
-          );
+          this.logger.warn(`Error stopping service ${serviceName}`, {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
           // Mark as stopped anyway to allow cleanup
           this.updateServiceStatus(serviceName, 'stopped');
         }
@@ -292,7 +342,10 @@ export class ServiceRegistry implements Service {
       } else {
         // Otherwise do stop/start sequence
         // Stop if running and has stop method
-        if (serviceInstance.status === 'started' && serviceInstance.instance.stop) {
+        if (
+          serviceInstance.status === 'started' &&
+          serviceInstance.instance.stop
+        ) {
           this.updateServiceStatus(serviceName, 'stopping');
           await serviceInstance.instance.stop();
           this.updateServiceStatus(serviceName, 'stopped');
@@ -305,7 +358,7 @@ export class ServiceRegistry implements Service {
           this.updateServiceStatus(serviceName, 'started');
         }
       }
-      
+
       // Reset health status after successful restart
       serviceInstance.health = 'unknown';
       serviceInstance.lastHealthCheck = null;
@@ -337,9 +390,9 @@ export class ServiceRegistry implements Service {
           await serviceInstance.instance.dispose();
         } catch (error) {
           this.recordServiceError(serviceName, error, 'dispose');
-          console.warn(
-            `Error disposing service ${serviceName}: ${error instanceof Error ? error.message : 'Unknown error'}`
-          );
+          this.logger.warn(`Error disposing service ${serviceName}`, {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
         }
       }
     }
@@ -347,6 +400,13 @@ export class ServiceRegistry implements Service {
     // Clear all state
     this.services.clear();
     this.isDisposed = true;
+  }
+
+  /**
+   * Get disposal status (useful for testing)
+   */
+  get disposed(): boolean {
+    return this.isDisposed;
   }
 
   /**
@@ -404,7 +464,7 @@ export class ServiceRegistry implements Service {
       try {
         const healthResult = await this.checkServiceHealth(serviceName);
         report.services[serviceName] = healthResult;
-        
+
         if (healthResult.status === 'unhealthy') {
           unhealthyCount++;
         } else if (healthResult.status === 'degraded') {
@@ -415,7 +475,8 @@ export class ServiceRegistry implements Service {
       } catch (error) {
         report.services[serviceName] = {
           status: 'unhealthy',
-          message: error instanceof Error ? error.message : 'Health check failed',
+          message:
+            error instanceof Error ? error.message : 'Health check failed',
           timestamp: Date.now(),
         };
         unhealthyCount++;
@@ -438,7 +499,9 @@ export class ServiceRegistry implements Service {
   /**
    * Check health of a specific service
    */
-  private async checkServiceHealth(serviceName: string): Promise<HealthCheckResult> {
+  private async checkServiceHealth(
+    serviceName: string,
+  ): Promise<HealthCheckResult> {
     const serviceInstance = this.services.get(serviceName);
     if (!serviceInstance) {
       throw new ServiceError(`Service ${serviceName} not found`, serviceName);
@@ -470,9 +533,11 @@ export class ServiceRegistry implements Service {
     serviceInstance.lastHealthCheck = healthResult;
 
     // Handle auto-recovery if enabled
-    if (this.options.enableAutoRecovery && 
-        healthResult.status === 'unhealthy' && 
-        serviceInstance.metadata.restartCount < this.options.maxRestartAttempts) {
+    if (
+      this.options.enableAutoRecovery &&
+      healthResult.status === 'unhealthy' &&
+      serviceInstance.metadata.restartCount < this.options.maxRestartAttempts
+    ) {
       await this.attemptServiceRecovery(serviceName);
     }
 
@@ -484,21 +549,27 @@ export class ServiceRegistry implements Service {
    */
   private async attemptServiceRecovery(serviceName: string): Promise<void> {
     const serviceInstance = this.services.get(serviceName)!;
-    
-    console.warn(`Attempting to recover service ${serviceName} (attempt ${serviceInstance.metadata.restartCount + 1}/${this.options.maxRestartAttempts})`);
-    
+
+    this.logger.warn(`Attempting to recover service ${serviceName}`, {
+      attempt: serviceInstance.metadata.restartCount + 1,
+      maxAttempts: this.options.maxRestartAttempts,
+    });
+
     // Use promise with timeout or immediate resolution for testing
-    const delay = this.options.restartDelay > 0 
-      ? new Promise(resolve => setTimeout(resolve, this.options.restartDelay))
-      : Promise.resolve();
-    
+    const delay =
+      this.options.restartDelay > 0
+        ? new Promise((resolve) =>
+            setTimeout(resolve, this.options.restartDelay),
+          )
+        : Promise.resolve();
+
     await delay;
-    
+
     try {
       await this.restart(serviceName);
-      console.log(`Service ${serviceName} recovered successfully`);
+      this.logger.info(`Service ${serviceName} recovered successfully`);
     } catch (error) {
-      console.error(`Failed to recover service ${serviceName}:`, error);
+      this.logger.error(`Failed to recover service ${serviceName}`, { error });
       this.recordServiceError(serviceName, error, 'recovery');
     }
   }
@@ -515,7 +586,7 @@ export class ServiceRegistry implements Service {
       try {
         await this.healthCheck();
       } catch (error) {
-        console.error('Health check failed:', error);
+        this.logger.error('Health check failed', { error });
       }
     }, this.options.healthCheckInterval);
   }
@@ -533,7 +604,10 @@ export class ServiceRegistry implements Service {
   /**
    * Update service status and metadata
    */
-  private updateServiceStatus(serviceName: string, status: ServiceInstance['status']): void {
+  private updateServiceStatus(
+    serviceName: string,
+    status: ServiceInstance['status'],
+  ): void {
     const serviceInstance = this.services.get(serviceName);
     if (serviceInstance) {
       serviceInstance.status = status;
@@ -544,7 +618,11 @@ export class ServiceRegistry implements Service {
   /**
    * Record service error
    */
-  private recordServiceError(serviceName: string, error: unknown, context?: string): void {
+  private recordServiceError(
+    serviceName: string,
+    error: unknown,
+    context?: string,
+  ): void {
     const serviceInstance = this.services.get(serviceName);
     if (serviceInstance) {
       serviceInstance.metadata.errors.push({
@@ -555,7 +633,8 @@ export class ServiceRegistry implements Service {
 
       // Keep only last 100 errors
       if (serviceInstance.metadata.errors.length > 100) {
-        serviceInstance.metadata.errors = serviceInstance.metadata.errors.slice(-100);
+        serviceInstance.metadata.errors =
+          serviceInstance.metadata.errors.slice(-100);
       }
     }
   }
@@ -571,7 +650,10 @@ export class ServiceRegistry implements Service {
   /**
    * Update service configuration
    */
-  async updateServiceConfig(serviceName: string, config: Partial<ServiceConfig>): Promise<void> {
+  async updateServiceConfig(
+    serviceName: string,
+    config: Partial<ServiceConfig>,
+  ): Promise<void> {
     const serviceInstance = this.services.get(serviceName);
     if (!serviceInstance) {
       throw new ServiceError(`Service ${serviceName} not found`, serviceName);
@@ -581,7 +663,10 @@ export class ServiceRegistry implements Service {
       await serviceInstance.instance.updateConfig(config);
       serviceInstance.config = { ...serviceInstance.config, ...config };
     } else {
-      throw new ServiceError(`Service ${serviceName} does not support configuration updates`, serviceName);
+      throw new ServiceError(
+        `Service ${serviceName} does not support configuration updates`,
+        serviceName,
+      );
     }
   }
 
@@ -590,7 +675,7 @@ export class ServiceRegistry implements Service {
    */
   getServiceReport(): Record<string, any> {
     const report: Record<string, any> = {};
-    
+
     for (const [serviceName, serviceInstance] of this.services) {
       report[serviceName] = {
         status: serviceInstance.status,
@@ -601,7 +686,7 @@ export class ServiceRegistry implements Service {
         config: serviceInstance.config,
       };
     }
-    
+
     return report;
   }
 
@@ -615,7 +700,7 @@ export class ServiceRegistry implements Service {
         if (!this.services.has(dep)) {
           throw new ServiceError(
             `Service ${serviceName} depends on ${dep}, which is not registered`,
-            serviceName
+            serviceName,
           );
         }
       }
@@ -663,10 +748,17 @@ let globalInstance: ServiceRegistry | null = null;
  * Get or create the global ServiceRegistry instance
  */
 export function getServiceRegistry(): ServiceRegistry {
-  if (!globalInstance) {
+  if (!globalInstance || globalInstance.disposed) {
     globalInstance = new ServiceRegistry();
   }
   return globalInstance;
+}
+
+/**
+ * Reset the global ServiceRegistry instance (for testing)
+ */
+export function resetServiceRegistry(): void {
+  globalInstance = null;
 }
 
 /**
@@ -683,6 +775,13 @@ export function isServiceRegistryInitialized(): boolean {
   return globalInstance !== null && globalInstance.getServiceNames().length > 0;
 }
 
+/**
+ * Reset the global ServiceRegistry instance
+ */
+export function resetGlobalServiceRegistry(): void {
+  globalInstance = null;
+}
+
 // Export singleton instance for global access (backwards compatibility)
 export const serviceRegistry = {
   get<T extends Service>(name: string): T {
@@ -690,7 +789,7 @@ export const serviceRegistry = {
     if (globalInstance && globalInstance.has(name)) {
       return globalInstance.get<T>(name);
     }
-    
+
     // Check window globals as fallback
     if (typeof window !== 'undefined') {
       const windowRegistry = (window as any).__serviceRegistry;
@@ -698,27 +797,34 @@ export const serviceRegistry = {
         return windowRegistry.get<T>(name);
       }
     }
-    
-    throw new ServiceError(`Service ${name} not found - ServiceRegistry may not be initialized yet`, name);
+
+    throw new ServiceError(
+      `Service ${name} not found - ServiceRegistry may not be initialized yet`,
+      name,
+    );
   },
-  
+
   has(name: string): boolean {
     if (globalInstance) {
       return globalInstance.has(name);
     }
-    
+
     if (typeof window !== 'undefined') {
       const windowRegistry = (window as any).__serviceRegistry;
       if (windowRegistry) {
         return windowRegistry.has(name);
       }
     }
-    
+
     return false;
   },
-  
-  register<T extends Service>(name: string, service: T, dependencies: string[] = []): void {
+
+  register<T extends Service>(
+    name: string,
+    service: T,
+    dependencies: string[] = [],
+  ): void {
     const registry = getServiceRegistry();
     registry.register(name, service, dependencies);
-  }
+  },
 };

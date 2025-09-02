@@ -1,0 +1,637 @@
+/**
+ * Channel - Audio channel strip for track mixing
+ * 
+ * Provides a complete channel strip with:
+ * - Gain control
+ * - Pan control
+ * - Mute/Solo
+ * - EQ
+ * - Dynamics (compression/gate)
+ * - Sends
+ * - Insert effects
+ */
+
+import * as Tone from 'tone';
+import type { TrackMixingState, TrackSend } from '../../../types/track.js';
+import { EventBus } from '../../../services/core/EventBus.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('Channel');
+
+export interface ChannelConfig {
+  channelId: string;
+  name?: string;
+  outputBus?: string;
+  initialState?: Partial<TrackMixingState>;
+}
+
+export interface ChannelInsert {
+  id: string;
+  effect: Tone.ToneAudioNode;
+  bypassed: boolean;
+  wetDry?: number;
+}
+
+export interface ChannelEQ {
+  highShelf: Tone.EQ3;
+  parametric: Tone.Filter[];
+  bypassed: boolean;
+}
+
+export interface ChannelDynamics {
+  gate?: Tone.Gate;
+  compressor?: Tone.Compressor;
+  limiter?: Tone.Limiter;
+  bypassed: boolean;
+}
+
+export class Channel {
+  // Identity
+  public readonly id: string;
+  public name: string;
+  
+  // Audio nodes
+  private input: Tone.Gain;
+  private output: Tone.Gain;
+  
+  // Channel strip components
+  private gainNode: Tone.Gain;
+  private pannerNode: Tone.Panner;
+  private muteNode: Tone.Gain;
+  private soloNode: Tone.Gain;
+  
+  // Processing
+  private eq: ChannelEQ;
+  private dynamics: ChannelDynamics;
+  private inserts: ChannelInsert[] = [];
+  private sends: Map<string, Tone.Gain> = new Map();
+  
+  // State
+  private state: TrackMixingState;
+  private isSoloed: boolean = false;
+  private isMuted: boolean = false;
+  private outputBus: string = 'master';
+  
+  // Metering
+  private meter: Tone.Meter;
+  private analyser: Tone.Analyser;
+  
+  // Event handling
+  private eventBus?: EventBus;
+
+  constructor(config: ChannelConfig) {
+    this.id = config.channelId;
+    this.name = config.name || `Channel ${this.id}`;
+    this.outputBus = config.outputBus || 'master';
+    
+    // Initialize state
+    this.state = {
+      volume: config.initialState?.volume ?? 0.75,
+      pan: config.initialState?.pan ?? 0,
+      mute: config.initialState?.mute ?? false,
+      solo: config.initialState?.solo ?? false,
+      recordArm: config.initialState?.recordArm ?? false,
+      phaseInvert: config.initialState?.phaseInvert ?? false,
+      delayCompensation: config.initialState?.delayCompensation ?? 0,
+    };
+    
+    // Create audio nodes
+    this.input = new Tone.Gain(1);
+    this.output = new Tone.Gain(1);
+    
+    // Create channel strip
+    this.gainNode = new Tone.Gain(this.state.volume);
+    this.pannerNode = new Tone.Panner(this.state.pan);
+    this.muteNode = new Tone.Gain(this.state.mute ? 0 : 1);
+    this.soloNode = new Tone.Gain(1);
+    
+    // Create EQ
+    this.eq = this.createEQ();
+    
+    // Create dynamics
+    this.dynamics = this.createDynamics();
+    
+    // Create metering
+    this.meter = new Tone.Meter();
+    this.analyser = new Tone.Analyser('waveform', 1024);
+    
+    // Build signal chain
+    this.buildSignalChain();
+    
+    // Apply initial state
+    this.applyState();
+  }
+
+  /**
+   * Create EQ section
+   */
+  private createEQ(): ChannelEQ {
+    const highShelf = new Tone.EQ3({
+      low: 0,
+      mid: 0,
+      high: 0,
+      lowFrequency: 320,
+      highFrequency: 3200,
+    });
+
+    // Create 4-band parametric EQ
+    const parametric = [
+      new Tone.Filter({
+        type: 'peaking',
+        frequency: 100,
+        Q: 1,
+        gain: 0,
+      }),
+      new Tone.Filter({
+        type: 'peaking',
+        frequency: 1000,
+        Q: 1,
+        gain: 0,
+      }),
+      new Tone.Filter({
+        type: 'peaking',
+        frequency: 5000,
+        Q: 1,
+        gain: 0,
+      }),
+      new Tone.Filter({
+        type: 'peaking',
+        frequency: 10000,
+        Q: 1,
+        gain: 0,
+      }),
+    ];
+
+    return {
+      highShelf,
+      parametric,
+      bypassed: false,
+    };
+  }
+
+  /**
+   * Create dynamics section
+   */
+  private createDynamics(): ChannelDynamics {
+    return {
+      compressor: new Tone.Compressor({
+        threshold: -12,
+        ratio: 4,
+        attack: 0.003,
+        release: 0.1,
+      }),
+      gate: new Tone.Gate({
+        threshold: -40,
+        attack: 0.001,
+        release: 0.1,
+      }),
+      bypassed: false,
+    };
+  }
+
+  /**
+   * Build the signal chain
+   */
+  private buildSignalChain(): void {
+    // Input -> Dynamics -> EQ -> Inserts -> Gain -> Pan -> Mute -> Solo -> Meter -> Output
+    let currentNode: Tone.ToneAudioNode = this.input;
+    
+    // Dynamics section (optional)
+    if (this.dynamics.gate && !this.dynamics.bypassed) {
+      currentNode.connect(this.dynamics.gate);
+      currentNode = this.dynamics.gate;
+    }
+    
+    if (this.dynamics.compressor && !this.dynamics.bypassed) {
+      currentNode.connect(this.dynamics.compressor);
+      currentNode = this.dynamics.compressor;
+    }
+    
+    // EQ section
+    if (!this.eq.bypassed) {
+      currentNode.connect(this.eq.highShelf);
+      currentNode = this.eq.highShelf;
+      
+      // Chain parametric bands
+      for (const band of this.eq.parametric) {
+        currentNode.connect(band);
+        currentNode = band;
+      }
+    }
+    
+    // Insert effects would go here
+    
+    // Channel strip
+    currentNode.connect(this.gainNode);
+    this.gainNode.connect(this.pannerNode);
+    this.pannerNode.connect(this.muteNode);
+    this.muteNode.connect(this.soloNode);
+    
+    // Metering
+    this.soloNode.connect(this.meter);
+    this.soloNode.connect(this.analyser);
+    
+    // Output
+    this.soloNode.connect(this.output);
+  }
+
+  /**
+   * Apply current state to audio nodes
+   */
+  private applyState(): void {
+    this.gainNode.gain.value = this.state.volume;
+    this.pannerNode.pan.value = this.state.pan;
+    this.muteNode.gain.value = this.state.mute ? 0 : 1;
+    this.isMuted = this.state.mute;
+    this.isSoloed = this.state.solo;
+  }
+
+  /**
+   * Set volume (0-1)
+   */
+  setVolume(volume: number, rampTime: number = 0.05): void {
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    this.state.volume = clampedVolume;
+    
+    if (rampTime > 0) {
+      this.gainNode.gain.rampTo(clampedVolume, rampTime);
+    } else {
+      this.gainNode.gain.value = clampedVolume;
+    }
+    
+    this.emitStateChange('volume', clampedVolume);
+  }
+
+  /**
+   * Set volume in dB
+   */
+  setVolumeDb(db: number, rampTime: number = 0.05): void {
+    const linear = Tone.dbToGain(db);
+    this.setVolume(linear, rampTime);
+  }
+
+  /**
+   * Set pan (-1 to 1)
+   */
+  setPan(pan: number, rampTime: number = 0.05): void {
+    const clampedPan = Math.max(-1, Math.min(1, pan));
+    this.state.pan = clampedPan;
+    
+    if (rampTime > 0) {
+      this.pannerNode.pan.rampTo(clampedPan, rampTime);
+    } else {
+      this.pannerNode.pan.value = clampedPan;
+    }
+    
+    this.emitStateChange('pan', clampedPan);
+  }
+
+  /**
+   * Set mute state
+   */
+  setMute(muted: boolean): void {
+    this.state.mute = muted;
+    this.isMuted = muted;
+    this.muteNode.gain.value = muted ? 0 : 1;
+    this.emitStateChange('mute', muted);
+  }
+
+  /**
+   * Toggle mute
+   */
+  toggleMute(): void {
+    this.setMute(!this.state.mute);
+  }
+
+  /**
+   * Set solo state
+   */
+  setSolo(soloed: boolean): void {
+    this.state.solo = soloed;
+    this.isSoloed = soloed;
+    this.emitStateChange('solo', soloed);
+  }
+
+  /**
+   * Toggle solo
+   */
+  toggleSolo(): void {
+    this.setSolo(!this.state.solo);
+  }
+
+  /**
+   * Add send
+   */
+  addSend(sendId: string, level: number = 0.5): Tone.Gain {
+    if (this.sends.has(sendId)) {
+      throw new Error(`Send ${sendId} already exists`);
+    }
+    
+    const sendGain = new Tone.Gain(level);
+    
+    // Connect from post-fader by default
+    this.pannerNode.connect(sendGain);
+    
+    this.sends.set(sendId, sendGain);
+    
+    logger.debug('Send added', {
+      channelId: this.id,
+      sendId,
+      level,
+    });
+    
+    return sendGain;
+  }
+
+  /**
+   * Remove send
+   */
+  removeSend(sendId: string): void {
+    const send = this.sends.get(sendId);
+    if (!send) {
+      return;
+    }
+    
+    send.disconnect();
+    send.dispose();
+    this.sends.delete(sendId);
+    
+    logger.debug('Send removed', {
+      channelId: this.id,
+      sendId,
+    });
+  }
+
+  /**
+   * Set send level
+   */
+  setSendLevel(sendId: string, level: number, rampTime: number = 0.05): void {
+    const send = this.sends.get(sendId);
+    if (!send) {
+      throw new Error(`Send ${sendId} not found`);
+    }
+    
+    const clampedLevel = Math.max(0, Math.min(1, level));
+    
+    if (rampTime > 0) {
+      send.gain.rampTo(clampedLevel, rampTime);
+    } else {
+      send.gain.value = clampedLevel;
+    }
+  }
+
+  /**
+   * Add insert effect
+   */
+  addInsert(effect: Tone.ToneAudioNode, position?: number): string {
+    const insertId = `insert-${Date.now()}`;
+    const insert: ChannelInsert = {
+      id: insertId,
+      effect,
+      bypassed: false,
+    };
+    
+    if (position !== undefined && position >= 0 && position <= this.inserts.length) {
+      this.inserts.splice(position, 0, insert);
+    } else {
+      this.inserts.push(insert);
+    }
+    
+    // Rebuild signal chain
+    this.rebuildInsertChain();
+    
+    logger.debug('Insert added', {
+      channelId: this.id,
+      insertId,
+      position: position ?? this.inserts.length - 1,
+    });
+    
+    return insertId;
+  }
+
+  /**
+   * Remove insert effect
+   */
+  removeInsert(insertId: string): void {
+    const index = this.inserts.findIndex(i => i.id === insertId);
+    if (index === -1) {
+      return;
+    }
+    
+    const insert = this.inserts[index];
+    insert.effect.disconnect();
+    insert.effect.dispose();
+    
+    this.inserts.splice(index, 1);
+    
+    // Rebuild signal chain
+    this.rebuildInsertChain();
+    
+    logger.debug('Insert removed', {
+      channelId: this.id,
+      insertId,
+    });
+  }
+
+  /**
+   * Bypass insert
+   */
+  bypassInsert(insertId: string, bypassed: boolean): void {
+    const insert = this.inserts.find(i => i.id === insertId);
+    if (!insert) {
+      throw new Error(`Insert ${insertId} not found`);
+    }
+    
+    insert.bypassed = bypassed;
+    this.rebuildInsertChain();
+  }
+
+  /**
+   * Rebuild insert chain
+   */
+  private rebuildInsertChain(): void {
+    // This would reconnect the entire signal chain with inserts
+    // For now, we'll keep it simple
+    logger.debug('Insert chain rebuilt', {
+      channelId: this.id,
+      insertCount: this.inserts.length,
+    });
+  }
+
+  /**
+   * Set EQ band gain
+   */
+  setEQBand(bandIndex: number, gain: number): void {
+    if (bandIndex < 0 || bandIndex >= this.eq.parametric.length) {
+      throw new Error(`Invalid EQ band index: ${bandIndex}`);
+    }
+    
+    const clampedGain = Math.max(-24, Math.min(24, gain));
+    this.eq.parametric[bandIndex].gain.value = clampedGain;
+  }
+
+  /**
+   * Set EQ band frequency
+   */
+  setEQFrequency(bandIndex: number, frequency: number): void {
+    if (bandIndex < 0 || bandIndex >= this.eq.parametric.length) {
+      throw new Error(`Invalid EQ band index: ${bandIndex}`);
+    }
+    
+    const clampedFreq = Math.max(20, Math.min(20000, frequency));
+    this.eq.parametric[bandIndex].frequency.value = clampedFreq;
+  }
+
+  /**
+   * Set EQ band Q
+   */
+  setEQQ(bandIndex: number, q: number): void {
+    if (bandIndex < 0 || bandIndex >= this.eq.parametric.length) {
+      throw new Error(`Invalid EQ band index: ${bandIndex}`);
+    }
+    
+    const clampedQ = Math.max(0.1, Math.min(30, q));
+    this.eq.parametric[bandIndex].Q.value = clampedQ;
+  }
+
+  /**
+   * Bypass EQ
+   */
+  bypassEQ(bypassed: boolean): void {
+    this.eq.bypassed = bypassed;
+    this.buildSignalChain();
+  }
+
+  /**
+   * Set compressor threshold
+   */
+  setCompressorThreshold(threshold: number): void {
+    if (this.dynamics.compressor) {
+      this.dynamics.compressor.threshold.value = threshold;
+    }
+  }
+
+  /**
+   * Set compressor ratio
+   */
+  setCompressorRatio(ratio: number): void {
+    if (this.dynamics.compressor) {
+      this.dynamics.compressor.ratio.value = ratio;
+    }
+  }
+
+  /**
+   * Bypass dynamics
+   */
+  bypassDynamics(bypassed: boolean): void {
+    this.dynamics.bypassed = bypassed;
+    this.buildSignalChain();
+  }
+
+  /**
+   * Get current level in dB
+   */
+  getLevel(): number {
+    return this.meter.getValue() as number;
+  }
+
+  /**
+   * Get waveform data
+   */
+  getWaveform(): Float32Array {
+    return this.analyser.getValue() as Float32Array;
+  }
+
+  /**
+   * Get input node
+   */
+  getInput(): Tone.ToneAudioNode {
+    return this.input;
+  }
+
+  /**
+   * Get output node
+   */
+  getOutput(): Tone.ToneAudioNode {
+    return this.output;
+  }
+
+  /**
+   * Get current state
+   */
+  getState(): TrackMixingState {
+    return { ...this.state };
+  }
+
+  /**
+   * Set event bus
+   */
+  setEventBus(eventBus: EventBus): void {
+    this.eventBus = eventBus;
+  }
+
+  /**
+   * Emit state change event
+   */
+  private emitStateChange(parameter: string, value: any): void {
+    if (this.eventBus) {
+      this.eventBus.emit('channel:stateChanged', {
+        channelId: this.id,
+        parameter,
+        value,
+        state: this.getState(),
+      });
+    }
+  }
+
+  /**
+   * Dispose channel
+   */
+  dispose(): void {
+    // Disconnect all nodes
+    this.input.disconnect();
+    this.output.disconnect();
+    this.gainNode.disconnect();
+    this.pannerNode.disconnect();
+    this.muteNode.disconnect();
+    this.soloNode.disconnect();
+    this.meter.disconnect();
+    this.analyser.disconnect();
+    
+    // Dispose nodes
+    this.input.dispose();
+    this.output.dispose();
+    this.gainNode.dispose();
+    this.pannerNode.dispose();
+    this.muteNode.dispose();
+    this.soloNode.dispose();
+    this.meter.dispose();
+    this.analyser.dispose();
+    
+    // Dispose EQ
+    this.eq.highShelf.dispose();
+    this.eq.parametric.forEach(band => band.dispose());
+    
+    // Dispose dynamics
+    this.dynamics.compressor?.dispose();
+    this.dynamics.gate?.dispose();
+    this.dynamics.limiter?.dispose();
+    
+    // Dispose inserts
+    this.inserts.forEach(insert => {
+      insert.effect.disconnect();
+      insert.effect.dispose();
+    });
+    
+    // Dispose sends
+    this.sends.forEach(send => {
+      send.disconnect();
+      send.dispose();
+    });
+    
+    this.sends.clear();
+    this.inserts = [];
+    
+    logger.info('Channel disposed', { channelId: this.id });
+  }
+}

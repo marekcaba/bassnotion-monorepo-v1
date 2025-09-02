@@ -1,13 +1,18 @@
 /**
  * Core Services Index
  * Story 3.18.2: Core Services Foundation
- * 
+ *
  * Central export point for all core services.
  * Import this to access the new FAANG-style architecture.
  */
 
 // Main integration
-export { CoreServices, createCoreServices, createCoreServicesWithPreInit, GlobalAudioSystem } from './CoreServices.js';
+export {
+  CoreServices,
+  createCoreServices,
+  createCoreServicesWithPreInit,
+  GlobalAudioSystem,
+} from './CoreServices.js';
 export type { CoreServicesConfig } from './CoreServices.js';
 
 // Individual services
@@ -35,20 +40,33 @@ export type { SchedulableEvent } from './PatternConverter.js';
 // Service types
 export type { Service } from './ServiceRegistry.js';
 export type { EventData, EventHandler, StoredEvent } from './EventBus.js';
-export type { AudioEngineConfig, AudioSampler, SamplerConfig } from './AudioEngine.js';
-export type { 
-  TransportConfig, 
+export type {
+  AudioEngineConfig,
+  AudioSampler,
+  SamplerConfig,
+} from './AudioEngine.js';
+export type {
+  TransportConfig,
   MusicalPosition,
   TransportState,
   TimingEvent,
-  TimingMetrics
+  TimingMetrics,
 } from './UnifiedTransport.js';
 export type { PluginRegistration } from './PluginManager.js';
 
 // Track types from Story 3.21
-export type { TrackTimingMetrics, TrackHealthMetrics } from './MultiTrackTimingSynchronizer.js';
-export type { LatencyReport, LatencyMeasurement } from './OutputLatencyCompensation.js';
-export type { IsolatedTrack, IsolationReport } from './TimingIsolationManager.js';
+export type {
+  TrackTimingMetrics,
+  TrackHealthMetrics,
+} from './MultiTrackTimingSynchronizer.js';
+export type {
+  LatencyReport,
+  LatencyMeasurement,
+} from './OutputLatencyCompensation.js';
+export type {
+  IsolatedTrack,
+  IsolationReport,
+} from './TimingIsolationManager.js';
 
 // Error types
 export { ServiceError } from './ServiceRegistry.js';

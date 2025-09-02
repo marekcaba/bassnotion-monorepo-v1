@@ -7,12 +7,23 @@ import type {
   CustomBasslineEvent,
 } from '../types/fretboardTypes';
 import { useAudioFretboard } from '../../../../hooks/useAudioFretboard';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 /**
  * Hook to manage exercise integration with the fretboard
  */
+// Minimal sync props interface to avoid unnecessary re-renders
+interface MinimalSyncProps {
+  selectedExercise: any;
+  isPlaying: boolean;
+  currentTime: number;
+  tempo: number;
+  masterVolume: number;
+  sync: any;
+}
+
 export const useFretboardExercise = (
-  syncProps: SyncedWidgetRenderProps,
+  syncProps: MinimalSyncProps,
   options?: {
     setSelectedDots?: (dots: Map<string, number[]>) => void;
     autoPopulateOnExerciseLoad?: boolean;
@@ -20,6 +31,15 @@ export const useFretboardExercise = (
     stringCount?: 4 | 5 | 6;
   },
 ) => {
+  logger.info(`🔥 useFretboardExercise: hook called`, {
+    selectedExerciseId: syncProps?.selectedExercise?.id,
+    isPlaying: syncProps?.isPlaying,
+    currentTime: syncProps?.currentTime,
+    optionsStringCount: options?.stringCount,
+    autoPopulate: options?.autoPopulateOnExerciseLoad,
+    timestamp: Date.now(),
+  });
+
   // Extract options with defaults
   const {
     setSelectedDots,
@@ -292,13 +312,29 @@ export const useFretboardExercise = (
     const currentExerciseId = exerciseData.selectedExercise?.id || null;
     const currentTimestamp = Date.now();
 
+    logger.info(`🔥 useFretboardExercise: auto-populate useEffect triggered`, {
+      currentExerciseId,
+      lastExerciseId: lastExerciseIdRef.current,
+      hasExercise: exerciseData.hasExercise,
+      exerciseNotesLength: exerciseData.exerciseNotes.length,
+      autoPopulateEnabled: autoPopulateOnExerciseLoad,
+      hasSetSelectedDots: !!setSelectedDots,
+      userHasManuallyReset: userHasManuallyResetRef.current,
+      currentTimestamp,
+      lastPopulationTimestamp: lastPopulationTimestampRef.current,
+      timeSinceLastPopulation:
+        currentTimestamp - lastPopulationTimestampRef.current,
+    });
+
     // Check if this is a new exercise selection or re-selection
     const isNewExercise = currentExerciseId !== lastExerciseIdRef.current;
-    // At least 500ms between populations (not currently used but kept for future reference)
-    // const isRecentSelection = currentTimestamp - lastPopulationTimestampRef.current > 500;
+    logger.info(`🔥 useFretboardExercise: isNewExercise=${isNewExercise}`);
 
     // Reset the manual reset flag when a new exercise is selected
     if (isNewExercise && currentExerciseId) {
+      logger.info(
+        `🔥 useFretboardExercise: resetting manual flags for new exercise`,
+      );
       userHasManuallyResetRef.current = false;
       lastExerciseIdRef.current = currentExerciseId;
     }
@@ -308,19 +344,30 @@ export const useFretboardExercise = (
     // 2. We have an exercise with notes
     // 3. It's a new exercise (disable re-selection auto-population as it's handled by FretboardCard)
     // 4. User hasn't manually reset
-    if (
+    const shouldAutoPopulate =
       autoPopulateOnExerciseLoad &&
       setSelectedDots &&
       exerciseData.hasExercise &&
       exerciseData.exerciseNotes.length > 0 &&
       isNewExercise && // Only auto-populate for NEW exercises, not re-selections
-      !userHasManuallyResetRef.current
-    ) {
-      // Auto-populate with exercise notes
+      !userHasManuallyResetRef.current;
+
+    logger.info(
+      `🔥 useFretboardExercise: shouldAutoPopulate=${shouldAutoPopulate}`,
+    );
+
+    if (shouldAutoPopulate) {
+      logger.info(
+        `🔥 useFretboardExercise: AUTO-POPULATING with exercise notes`,
+      );
 
       // Convert exercise notes to selected dots format
       const exerciseDotsMap = convertExerciseNotesToSelectedDots(
         exerciseData.exerciseNotes,
+      );
+
+      logger.info(
+        `🔥 useFretboardExercise: converted ${exerciseData.exerciseNotes.length} notes to ${exerciseDotsMap.size} dot positions`,
       );
 
       // Update the fretboard selected dots
@@ -331,6 +378,7 @@ export const useFretboardExercise = (
 
       // Emit bassline event for sync with other widgets
       setTimeout(() => {
+        logger.info(`🔥 useFretboardExercise: emitting bassline event`);
         emitBasslineEvent(exerciseDotsMap);
       }, 100); // Small delay to ensure state is updated
     }

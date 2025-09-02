@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import type { SelectedDotsMap, StringCount } from '../types/fretboardTypes';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface UseDotSynchronizationProps {
   is3DMode: boolean;
@@ -42,7 +43,7 @@ export function useDotSynchronization({
         .filter((order) => typeof order === 'number');
       return allOrders.length > 0 ? Math.max(...allOrders) : 0;
     } catch (error) {
-      console.error('Error calculating selection order:', error);
+      logger.error('Error calculating selection order:', error);
       return 0;
     }
   }, []);

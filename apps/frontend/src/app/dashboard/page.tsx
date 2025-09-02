@@ -17,6 +17,7 @@ import { DashboardContent } from '@/domains/user/components/DashboardContent/ind
 import type { UserProfileData } from '@bassnotion/contracts';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 export default function DashboardPage() {
   const { user, session, isAuthenticated, isReady, reset } = useAuth();
@@ -66,7 +67,7 @@ export default function DashboardPage() {
         avatarUrl: profile.avatarUrl,
       });
     } catch (error) {
-      console.error('Failed to load profile:', error);
+      logger.error('Failed to load profile:', error);
       // Use user data as fallback
       if (user) {
         const fallbackDisplayName =
@@ -107,7 +108,7 @@ export default function DashboardPage() {
         setIsSigningOut(false);
       }, 200); // Slightly longer than redirect delay to ensure transition completes
     } catch (error) {
-      console.error('Sign out error:', error);
+      logger.error('Sign out error:', error);
       setIsSigningOut(false); // Reset state on error
       toast({
         title: 'Sign out failed',
@@ -136,7 +137,7 @@ export default function DashboardPage() {
         variant: 'success',
       });
     } catch (error) {
-      console.error('Profile update error:', error);
+      logger.error('Profile update error:', error);
       toast({
         title: 'Failed to update profile',
         description:
@@ -171,7 +172,7 @@ export default function DashboardPage() {
         variant: 'success',
       });
     } catch (error) {
-      console.error('Avatar update error:', error);
+      logger.error('Avatar update error:', error);
       toast({
         title: 'Failed to update avatar',
         description:
@@ -200,7 +201,7 @@ export default function DashboardPage() {
 
       navigateWithTransition('/');
     } catch (error) {
-      console.error('Account deletion error:', error);
+      logger.error('Account deletion error:', error);
       toast({
         title: 'Failed to delete account',
         description:

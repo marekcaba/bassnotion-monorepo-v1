@@ -1,7 +1,7 @@
 /**
  * ErrorRecovery - Automatic error recovery mechanisms
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Implements recovery strategies for various error types
  */
 
@@ -13,7 +13,7 @@ import {
   SampleLoadError,
   PluginLoadError,
   TransportError,
-  NetworkError
+  NetworkError,
 } from './AudioErrors.js';
 
 export interface RecoveryStrategy {
@@ -48,7 +48,7 @@ export class ErrorRecovery {
       maxRecoveryAttempts: 3,
       recoveryTimeout: 5000,
       strategies: [],
-      ...config
+      ...config,
     };
 
     // Initialize default strategies
@@ -78,7 +78,7 @@ export class ErrorRecovery {
       this.eventBus.emit('recovery:max-attempts-exceeded', {
         error,
         context,
-        attempts: record.attempts
+        attempts: record.attempts,
       });
       return false;
     }
@@ -89,8 +89,8 @@ export class ErrorRecovery {
 
     try {
       // Find appropriate strategy
-      const strategy = this.strategies.find(s => s.canHandle(error));
-      
+      const strategy = this.strategies.find((s) => s.canHandle(error));
+
       if (!strategy) {
         this.eventBus.emit('recovery:no-strategy', { error, context });
         return false;
@@ -99,7 +99,7 @@ export class ErrorRecovery {
       // Attempt recovery with timeout
       const recovered = await this.withTimeout(
         strategy.recover(error, context),
-        this.config.recoveryTimeout
+        this.config.recoveryTimeout,
       );
 
       record.successful = recovered;
@@ -109,14 +109,14 @@ export class ErrorRecovery {
           error,
           context,
           strategy: strategy.constructor.name,
-          attempts: record.attempts
+          attempts: record.attempts,
         });
       } else {
         this.eventBus.emit('recovery:failed', {
           error,
           context,
           strategy: strategy.constructor.name,
-          attempts: record.attempts
+          attempts: record.attempts,
         });
       }
 
@@ -125,7 +125,7 @@ export class ErrorRecovery {
       this.eventBus.emit('recovery:error', {
         originalError: error,
         recoveryError,
-        context
+        context,
       });
       return false;
     }
@@ -143,13 +143,13 @@ export class ErrorRecovery {
     // Check recovery history
     const errorKey = this.getErrorKey(error, context);
     const record = this.recoveryHistory.get(errorKey);
-    
+
     if (record && record.attempts >= this.config.maxRecoveryAttempts) {
       return false;
     }
 
     // Check if we have a strategy for this error
-    return this.strategies.some(s => s.canHandle(error));
+    return this.strategies.some((s) => s.canHandle(error));
   }
 
   /**
@@ -161,14 +161,14 @@ export class ErrorRecovery {
       canHandle: (error) => error instanceof AudioContextSuspendedError,
       recover: async (error, context) => {
         if (!this.audioEngineRef) return false;
-        
+
         try {
           await this.audioEngineRef.start();
           return true;
         } catch {
           return false;
         }
-      }
+      },
     });
 
     // Sample load error recovery
@@ -177,15 +177,15 @@ export class ErrorRecovery {
       recover: async (error, context) => {
         // Wait and retry loading
         await this.delay(1000);
-        
+
         this.eventBus.emit('recovery:retry-sample-load', {
           error,
-          context
+          context,
         });
-        
+
         // The actual retry should be handled by the component that failed
         return true;
-      }
+      },
     });
 
     // Plugin load error recovery
@@ -196,12 +196,12 @@ export class ErrorRecovery {
         if (context.additionalData?.pluginName) {
           this.eventBus.emit('recovery:reload-plugin', {
             pluginName: context.additionalData.pluginName,
-            context
+            context,
           });
           return true;
         }
         return false;
-      }
+      },
     });
 
     // Transport error recovery
@@ -209,22 +209,22 @@ export class ErrorRecovery {
       canHandle: (error) => error instanceof TransportError,
       recover: async (error, context) => {
         if (!this.transportControllerRef) return false;
-        
+
         try {
           // Stop and reset transport
           await this.transportControllerRef.stop();
           await this.delay(500);
-          
+
           this.eventBus.emit('recovery:transport-reset', {
             error,
-            context
+            context,
           });
-          
+
           return true;
         } catch {
           return false;
         }
-      }
+      },
     });
 
     // Network error recovery
@@ -233,18 +233,18 @@ export class ErrorRecovery {
       recover: async (error, context) => {
         // Wait for network to potentially recover
         await this.delay(2000);
-        
+
         // Check if we're back online
         if (navigator.onLine) {
           this.eventBus.emit('recovery:network-restored', {
             error,
-            context
+            context,
           });
           return true;
         }
-        
+
         return false;
-      }
+      },
     });
 
     // Generic audio error recovery
@@ -252,7 +252,10 @@ export class ErrorRecovery {
       canHandle: (error) => error instanceof AudioError,
       recover: async (error, context) => {
         // Try to reinitialize audio if it's a critical error
-        if ((error as AudioError).getSeverity() === 'critical' && this.audioEngineRef) {
+        if (
+          (error as AudioError).getSeverity() === 'critical' &&
+          this.audioEngineRef
+        ) {
           try {
             await this.audioEngineRef.dispose();
             await this.delay(1000);
@@ -263,7 +266,7 @@ export class ErrorRecovery {
           }
         }
         return false;
-      }
+      },
     });
   }
 
@@ -272,17 +275,17 @@ export class ErrorRecovery {
    */
   private getOrCreateRecord(key: string, error: Error): RecoveryRecord {
     let record = this.recoveryHistory.get(key);
-    
+
     if (!record) {
       record = {
         errorType: error.constructor.name,
         attempts: 0,
         lastAttempt: 0,
-        successful: false
+        successful: false,
       };
       this.recoveryHistory.set(key, record);
     }
-    
+
     return record;
   }
 
@@ -296,12 +299,15 @@ export class ErrorRecovery {
   /**
    * Execute with timeout
    */
-  private async withTimeout<T>(promise: Promise<T>, timeout: number): Promise<T> {
+  private async withTimeout<T>(
+    promise: Promise<T>,
+    timeout: number,
+  ): Promise<T> {
     return Promise.race([
       promise,
-      new Promise<T>((_, reject) => 
-        setTimeout(() => reject(new Error('Recovery timeout')), timeout)
-      )
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error('Recovery timeout')), timeout),
+      ),
     ]);
   }
 
@@ -309,7 +315,7 @@ export class ErrorRecovery {
    * Utility delay function
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -324,7 +330,8 @@ export class ErrorRecovery {
   } {
     let totalAttempts = 0;
     let successfulRecoveries = 0;
-    const byErrorType: Record<string, { attempts: number; successes: number }> = {};
+    const byErrorType: Record<string, { attempts: number; successes: number }> =
+      {};
 
     this.recoveryHistory.forEach((record, key) => {
       totalAttempts += record.attempts;
@@ -333,7 +340,7 @@ export class ErrorRecovery {
       if (!byErrorType[record.errorType]) {
         byErrorType[record.errorType] = { attempts: 0, successes: 0 };
       }
-      
+
       byErrorType[record.errorType].attempts += record.attempts;
       if (record.successful) byErrorType[record.errorType].successes++;
     });
@@ -342,8 +349,9 @@ export class ErrorRecovery {
       totalAttempts,
       successfulRecoveries,
       failedRecoveries: totalAttempts - successfulRecoveries,
-      recoveryRate: totalAttempts > 0 ? successfulRecoveries / totalAttempts : 0,
-      byErrorType
+      recoveryRate:
+        totalAttempts > 0 ? successfulRecoveries / totalAttempts : 0,
+      byErrorType,
     };
   }
 

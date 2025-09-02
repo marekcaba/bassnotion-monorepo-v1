@@ -2,8 +2,7 @@ import {
   CreateExerciseRequestSchema,
   UpdateExerciseRequestSchema,
   type CreateExerciseRequestInput,
-  type UpdateExerciseRequestInput,
-} from '@bassnotion/contracts';
+  type UpdateExerciseRequestInput } from '@bassnotion/contracts';
 
 // Epic 5 Admin Operation DTOs - Use contract types directly
 export type CreateExerciseDto = CreateExerciseRequestInput;

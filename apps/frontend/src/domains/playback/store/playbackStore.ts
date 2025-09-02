@@ -10,6 +10,7 @@
  */
 
 import { create } from 'zustand';
+import { createStructuredLogger } from '@bassnotion/contracts';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type {
   PlaybackState,
@@ -544,9 +545,20 @@ export const usePlaybackStore = create<PlaybackStore>()(
 
     // Visualization synchronization
     updateSyncPosition: (position) =>
-      set((state) => ({
-        syncEvents: { ...state.syncEvents, currentPosition: position },
-      })),
+      set((state) => {
+        // Add debug logging to track position updates
+        if (Math.abs(state.syncEvents.currentPosition - position) > 0.01) {
+          logger.info('🕐 PlaybackStore: updateSyncPosition', {
+            from: state.syncEvents.currentPosition,
+            to: position,
+            delta: position - state.syncEvents.currentPosition,
+          });
+        }
+
+        return {
+          syncEvents: { ...state.syncEvents, currentPosition: position },
+        };
+      }),
 
     updateBeatCount: (beats) =>
       set((state) => ({

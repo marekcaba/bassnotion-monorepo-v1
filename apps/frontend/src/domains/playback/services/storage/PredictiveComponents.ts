@@ -7,6 +7,7 @@
  */
 
 import {
+import { createStructuredLogger } from '@bassnotion/contracts';
   BehaviorAnalysisConfig,
   IntelligentPrefetchingConfig,
   ExerciseProgressionModelConfig,
@@ -46,7 +47,7 @@ export class BehaviorAnalyzer {
   }
 
   async initialize(): Promise<void> {
-    console.log('🔍 Initializing Behavior Analyzer...');
+    logger.info('🔍 Initializing Behavior Analyzer...');
 
     // Initialize pattern recognition
     await this.initializePatternRecognition();
@@ -80,22 +81,22 @@ export class BehaviorAnalyzer {
   }
 
   async dispose(): Promise<void> {
-    console.log('🔍 Disposing Behavior Analyzer...');
+    logger.info('🔍 Disposing Behavior Analyzer...');
     this.practicePatterns.clear();
     this.userSegments.clear();
     this.correlationMatrices.clear();
   }
 
   private async initializePatternRecognition(): Promise<void> {
-    console.log('Initializing pattern recognition...');
+    logger.info('Initializing pattern recognition...');
   }
 
   private async initializeUserSegmentation(): Promise<void> {
-    console.log('Initializing user segmentation...');
+    logger.info('Initializing user segmentation...');
   }
 
   private async initializeCorrelationAnalysis(): Promise<void> {
-    console.log('Initializing correlation analysis...');
+    logger.info('Initializing correlation analysis...');
   }
 
   private async extractPatterns(
@@ -259,7 +260,7 @@ export class IntelligentPrefetcher {
   }
 
   async initialize(): Promise<void> {
-    console.log('🚀 Initializing Intelligent Prefetcher...');
+    logger.info('🚀 Initializing Intelligent Prefetcher...');
 
     // Initialize prefetch queue
     this.prefetchQueue = new Map();
@@ -277,7 +278,7 @@ export class IntelligentPrefetcher {
     userId: string,
     predictions: AssetPrediction[],
   ): Promise<PrefetchAssetResult[]> {
-    console.log(
+    logger.info(
       `⚡ Executing prefetching for user ${userId} with ${predictions.length} predictions`,
     );
 
@@ -290,7 +291,7 @@ export class IntelligentPrefetcher {
       results.push(result);
 
       if (await this.isResourceLimitReached()) {
-        console.log('Resource limit reached, stopping prefetching');
+        logger.info('Resource limit reached, stopping prefetching');
         break;
       }
     }
@@ -299,14 +300,14 @@ export class IntelligentPrefetcher {
   }
 
   async dispose(): Promise<void> {
-    console.log('⚡ Disposing Intelligent Prefetcher...');
+    logger.info('⚡ Disposing Intelligent Prefetcher...');
     this.activeStrategies.clear();
     this.prefetchQueue.clear();
   }
 
   private async initializePrefetchStrategies(): Promise<void> {
     // Initialize default prefetch strategies
-    console.log('Initializing prefetch strategies...');
+    logger.info('Initializing prefetch strategies...');
   }
 
   private startBackgroundPrefetching(): void {
@@ -443,7 +444,7 @@ export class ExerciseProgressionModel extends BasePredictiveModel {
   }
 
   async initialize(): Promise<void> {
-    console.log('📈 Initializing Exercise Progression Model...');
+    logger.info('📈 Initializing Exercise Progression Model...');
   }
 
   async generatePredictions(
@@ -503,7 +504,7 @@ export class ExerciseProgressionModel extends BasePredictiveModel {
   }
 
   async dispose(): Promise<void> {
-    console.log('📈 Disposing Exercise Progression Model...');
+    logger.info('📈 Disposing Exercise Progression Model...');
   }
 
   private getNextExercises(skillLevel: string): Array<{
@@ -544,7 +545,7 @@ export class AssetDemandModel extends BasePredictiveModel {
   }
 
   async initialize(): Promise<void> {
-    console.log('📊 Initializing Asset Demand Model...');
+    logger.info('📊 Initializing Asset Demand Model...');
   }
 
   async generatePredictions(
@@ -600,7 +601,7 @@ export class AssetDemandModel extends BasePredictiveModel {
   }
 
   async dispose(): Promise<void> {
-    console.log('📊 Disposing Asset Demand Model...');
+    logger.info('📊 Disposing Asset Demand Model...');
   }
 
   private getTimeBasedAssets(hour: number): Array<{
@@ -645,7 +646,7 @@ export class UserIntentModel extends BasePredictiveModel {
   }
 
   async initialize(): Promise<void> {
-    console.log('🎯 Initializing User Intent Model...');
+    logger.info('🎯 Initializing User Intent Model...');
   }
 
   async generatePredictions(
@@ -695,7 +696,7 @@ export class UserIntentModel extends BasePredictiveModel {
   }
 
   async dispose(): Promise<void> {
-    console.log('🎯 Disposing User Intent Model...');
+    logger.info('🎯 Disposing User Intent Model...');
   }
 
   private classifyIntent(context: PredictionContext): string {
@@ -771,7 +772,7 @@ export class SessionLengthModel extends BasePredictiveModel {
   }
 
   async initialize(): Promise<void> {
-    console.log('⏱️ Initializing Session Length Model...');
+    logger.info('⏱️ Initializing Session Length Model...');
   }
 
   async generatePredictions(
@@ -825,7 +826,7 @@ export class SessionLengthModel extends BasePredictiveModel {
   }
 
   async dispose(): Promise<void> {
-    console.log('⏱️ Disposing Session Length Model...');
+    logger.info('⏱️ Disposing Session Length Model...');
   }
 
   private predictSessionLength(context: PredictionContext): number {
@@ -905,7 +906,7 @@ export class SkillDevelopmentModel extends BasePredictiveModel {
   }
 
   async initialize(): Promise<void> {
-    console.log('🎓 Initializing Skill Development Model...');
+    logger.info('🎓 Initializing Skill Development Model...');
   }
 
   async generatePredictions(
@@ -957,7 +958,7 @@ export class SkillDevelopmentModel extends BasePredictiveModel {
   }
 
   async dispose(): Promise<void> {
-    console.log('🎓 Disposing Skill Development Model...');
+    logger.info('🎓 Disposing Skill Development Model...');
   }
 
   private identifySkillGaps(context: PredictionContext): string[] {
@@ -1052,7 +1053,7 @@ export class AdaptiveLearningManager {
   }
 
   async initialize(): Promise<void> {
-    console.log('🧠 Initializing Adaptive Learning Manager...');
+    logger.info('🧠 Initializing Adaptive Learning Manager...');
   }
 
   async processEvent(event: LearningEvent): Promise<void> {
@@ -1068,7 +1069,7 @@ export class AdaptiveLearningManager {
     userId: string,
     trigger: ModelUpdateTrigger,
   ): Promise<void> {
-    console.log(`Triggering model update for user ${userId} due to ${trigger}`);
+    logger.info(`Triggering model update for user ${userId} due to ${trigger}`);
 
     if (this.config.onlineLearning.enabled) {
       await this.performOnlineLearning(userId);
@@ -1080,25 +1081,25 @@ export class AdaptiveLearningManager {
   }
 
   async dispose(): Promise<void> {
-    console.log('🧠 Disposing Adaptive Learning Manager...');
+    logger.info('🧠 Disposing Adaptive Learning Manager...');
   }
 
   private async processFeedback(event: LearningEvent): Promise<void> {
     if (event.outcome) {
-      console.log(`Processing feedback: ${event.outcome.outcomeType}`);
+      logger.info(`Processing feedback: ${event.outcome.outcomeType}`);
     }
   }
 
   private async updateModelsIncrementally(event: LearningEvent): Promise<void> {
-    console.log(`Incremental model update for event: ${event.eventType}`);
+    logger.info(`Incremental model update for event: ${event.eventType}`);
   }
 
   private async performOnlineLearning(userId: string): Promise<void> {
-    console.log(`Performing online learning for user: ${userId}`);
+    logger.info(`Performing online learning for user: ${userId}`);
   }
 
   private async applyTransferLearning(userId: string): Promise<void> {
-    console.log(`Applying transfer learning for user: ${userId}`);
+    logger.info(`Applying transfer learning for user: ${userId}`);
   }
 }
 
@@ -1113,7 +1114,7 @@ export class AnalyticsIntegration {
   }
 
   async initialize(): Promise<void> {
-    console.log('📊 Initializing Analytics Integration...');
+    logger.info('📊 Initializing Analytics Integration...');
 
     if (this.config.behaviorPatternIntegration.enabled) {
       await this.setupBehaviorPatternSync();
@@ -1129,18 +1130,18 @@ export class AnalyticsIntegration {
   }
 
   async dispose(): Promise<void> {
-    console.log('📊 Disposing Analytics Integration...');
+    logger.info('📊 Disposing Analytics Integration...');
   }
 
   private async setupBehaviorPatternSync(): Promise<void> {
-    console.log('Setting up behavior pattern synchronization...');
+    logger.info('Setting up behavior pattern synchronization...');
   }
 
   private async setupPracticeSessionSync(): Promise<void> {
-    console.log('Setting up practice session synchronization...');
+    logger.info('Setting up practice session synchronization...');
   }
 
   private async setupProgressAnalysisSync(): Promise<void> {
-    console.log('Setting up progress analysis synchronization...');
+    logger.info('Setting up progress analysis synchronization...');
   }
 }

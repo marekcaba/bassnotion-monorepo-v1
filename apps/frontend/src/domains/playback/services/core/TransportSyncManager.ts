@@ -1,20 +1,26 @@
 import { EventEmitter } from 'events';
-import type { UnifiedTransport, TransportState, MusicalPosition, TimingMetrics } from './UnifiedTransport.js';
+import type {
+  UnifiedTransport,
+  TransportState,
+  MusicalPosition,
+  TimingMetrics,
+} from './UnifiedTransport.js';
 import type { EventBus } from './EventBus.js';
 import type { Service, ServiceRegistry } from './ServiceRegistry.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 /**
  * Transport Synchronization Manager - Refactored
- * 
+ *
  * Now serves as a pure broadcast layer for UnifiedTransport state.
  * No longer manages its own timing - uses UnifiedTransport as the master clock.
- * 
+ *
  * Responsibilities:
  * - Widget registration and heartbeat
  * - Broadcasting transport state changes
  * - Client connection management
  * - Event batching and throttling
- * 
+ *
  * NOT responsible for:
  * - Timing or clock management (handled by UnifiedTransport)
  * - Transport control (handled by UnifiedTransport)
@@ -59,13 +65,13 @@ interface SyncClient {
 
 export class TransportSyncManager extends EventEmitter {
   private static instance: TransportSyncManager;
-  
+
   private config: SyncConfig = {
-    heartbeatInterval: 1000,      // 1 second for client health checks
-    reconnectDelay: 1000,         // 1 second reconnect delay
-    maxReconnectAttempts: 5,      // Max reconnection attempts
-    batchSize: 10,                // Batch size for events
-    throttleMs: 16                // ~60fps throttling for UI updates
+    heartbeatInterval: 1000, // 1 second for client health checks
+    reconnectDelay: 1000, // 1 second reconnect delay
+    maxReconnectAttempts: 5, // Max reconnection attempts
+    batchSize: 10, // Batch size for events
+    throttleMs: 16, // ~60fps throttling for UI updates
   };
 
   private clients = new Map<string, SyncClient>();
@@ -78,7 +84,7 @@ export class TransportSyncManager extends EventEmitter {
     reconnections: 0,
     avgLatency: 0,
     connectedClients: 0,
-    lastSyncTime: 0
+    lastSyncTime: 0,
   };
 
   private unifiedTransport: UnifiedTransport | null = null;
@@ -104,17 +110,17 @@ export class TransportSyncManager extends EventEmitter {
   initialize(unifiedTransport: UnifiedTransport, eventBus: EventBus): void {
     this.unifiedTransport = unifiedTransport;
     this.eventBus = eventBus;
-    
+
     // Clean up any existing listeners
     this.cleanup();
-    
+
     // Subscribe to UnifiedTransport events via EventBus
     this.setupTransportListeners();
-    
+
     // Start heartbeat for client health monitoring
     this.startHeartbeat();
-    
-    console.log('🔄 TransportSyncManager initialized with UnifiedTransport');
+
+    logger.info('🔄 TransportSyncManager initialized with UnifiedTransport');
   }
 
   /**
@@ -122,74 +128,84 @@ export class TransportSyncManager extends EventEmitter {
    */
   private setupTransportListeners(): void {
     if (!this.eventBus) return;
-    
+
     // Listen to transport state changes
     const unsubStart = this.eventBus.on('transport:start', (data) => {
       this.broadcast('TRANSPORT_START', {
         position: data.position,
         tempo: data.tempo,
-        timeSignature: data.timeSignature
+        timeSignature: data.timeSignature,
       });
     });
-    
+
     const unsubStop = this.eventBus.on('transport:stop', (data) => {
       this.broadcast('TRANSPORT_STOP', {
-        position: data.position
+        position: data.position,
       });
     });
-    
+
     const unsubPause = this.eventBus.on('transport:pause', (data) => {
       this.broadcast('TRANSPORT_PAUSE', {
-        position: data.position
+        position: data.position,
       });
     });
-    
+
     const unsubResume = this.eventBus.on('transport:resume', (data) => {
       this.broadcast('TRANSPORT_RESUME', {
-        position: data.position
+        position: data.position,
       });
     });
-    
+
     const unsubSeek = this.eventBus.on('transport:seek', (data) => {
       this.broadcast('TRANSPORT_SEEK', {
-        position: data.position
+        position: data.position,
       });
     });
-    
+
     const unsubTempo = this.eventBus.on('transport:tempo-change', (data) => {
       this.broadcast('TEMPO_CHANGE', {
-        tempo: data.tempo
+        tempo: data.tempo,
       });
     });
-    
-    const unsubTimeSig = this.eventBus.on('transport:time-signature-change', (data) => {
-      this.broadcast('TIME_SIGNATURE_CHANGE', {
-        timeSignature: data.timeSignature
-      });
-    });
-    
+
+    const unsubTimeSig = this.eventBus.on(
+      'transport:time-signature-change',
+      (data) => {
+        this.broadcast('TIME_SIGNATURE_CHANGE', {
+          timeSignature: data.timeSignature,
+        });
+      },
+    );
+
     const unsubLoop = this.eventBus.on('transport:loop-change', (data) => {
       this.broadcast('LOOP_CHANGE', {
         enabled: data.enabled,
         start: data.start,
-        end: data.end
+        end: data.end,
       });
     });
-    
+
     // Listen to high-frequency timing updates
     const unsubTiming = this.eventBus.on('transport:timing-update', (data) => {
       // Throttle position updates to prevent overwhelming clients
       this.throttledBroadcast('POSITION_UPDATE', {
         time: data.time,
         position: data.position,
-        metrics: data.metrics
+        metrics: data.metrics,
       });
     });
-    
+
     // Store unsubscribers for cleanup
     this.eventUnsubscribers = [
-      unsubStart, unsubStop, unsubPause, unsubResume,
-      unsubSeek, unsubTempo, unsubTimeSig, unsubLoop, unsubTiming
+      unsubStart,
+      unsubStop,
+      unsubPause,
+      unsubResume,
+      unsubSeek,
+      unsubTempo,
+      unsubTimeSig,
+      unsubLoop,
+      unsubTiming,
     ];
   }
 
@@ -198,9 +214,9 @@ export class TransportSyncManager extends EventEmitter {
    */
   private getTransportSnapshot(): TransportStateSnapshot | null {
     if (!this.unifiedTransport) return null;
-    
+
     const config = this.unifiedTransport.getConfig();
-    
+
     return {
       state: this.unifiedTransport.getState(),
       position: this.unifiedTransport.getPosition(),
@@ -209,7 +225,7 @@ export class TransportSyncManager extends EventEmitter {
       loopStart: { bars: 0, beats: 0, sixteenths: 0, ticks: 0 },
       loopEnd: { bars: 4, beats: 0, sixteenths: 0, ticks: 0 },
       metrics: this.unifiedTransport.getMetrics(),
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
@@ -222,7 +238,7 @@ export class TransportSyncManager extends EventEmitter {
       lastHeartbeat: Date.now(),
       missedHeartbeats: 0,
       latency: 0,
-      connected: true
+      connected: true,
     };
 
     this.clients.set(clientId, client);
@@ -233,12 +249,14 @@ export class TransportSyncManager extends EventEmitter {
     if (snapshot) {
       this.sendToClient(clientId, 'SYNC_INIT', {
         ...snapshot,
-        config: this.config
+        config: this.config,
       });
     }
 
     this.emit('client:connected', { clientId });
-    console.log(`📡 Widget registered: ${clientId} (Total: ${this.clients.size})`);
+    logger.info(
+      `📡 Widget registered: ${clientId} (Total: ${this.clients.size})`,
+    );
   }
 
   /**
@@ -248,7 +266,9 @@ export class TransportSyncManager extends EventEmitter {
     this.clients.delete(clientId);
     this.metrics.connectedClients = this.clients.size;
     this.emit('client:disconnected', { clientId });
-    console.log(`📡 Widget unregistered: ${clientId} (Total: ${this.clients.size})`);
+    logger.info(
+      `📡 Widget unregistered: ${clientId} (Total: ${this.clients.size})`,
+    );
   }
 
   /**
@@ -257,16 +277,17 @@ export class TransportSyncManager extends EventEmitter {
   handleClientHeartbeat(clientId: string, clientTimestamp: number): void {
     const client = this.clients.get(clientId);
     if (!client) return;
-    
+
     // Calculate round-trip latency
     const now = Date.now();
     client.latency = now - clientTimestamp;
     client.lastHeartbeat = now;
     client.missedHeartbeats = 0;
-    
+
     // Update average latency
-    const latencies = Array.from(this.clients.values()).map(c => c.latency);
-    this.metrics.avgLatency = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+    const latencies = Array.from(this.clients.values()).map((c) => c.latency);
+    this.metrics.avgLatency =
+      latencies.reduce((a, b) => a + b, 0) / latencies.length;
   }
 
   /**
@@ -296,11 +317,11 @@ export class TransportSyncManager extends EventEmitter {
   private sendHeartbeat(): void {
     const snapshot = this.getTransportSnapshot();
     if (!snapshot) return;
-    
+
     const heartbeat = {
       timestamp: Date.now(),
       transportSnapshot: snapshot,
-      serverTime: Date.now()
+      serverTime: Date.now(),
     };
 
     this.metrics.totalHeartbeats++;
@@ -309,11 +330,11 @@ export class TransportSyncManager extends EventEmitter {
     const deadClients: string[] = [];
     this.clients.forEach((client, id) => {
       const timeSinceLastHeartbeat = Date.now() - client.lastHeartbeat;
-      
+
       if (timeSinceLastHeartbeat > this.config.heartbeatInterval * 3) {
         client.missedHeartbeats++;
         this.metrics.missedHeartbeats++;
-        
+
         if (client.missedHeartbeats > this.config.maxReconnectAttempts) {
           deadClients.push(id);
         } else {
@@ -323,8 +344,8 @@ export class TransportSyncManager extends EventEmitter {
     });
 
     // Remove dead clients
-    deadClients.forEach(id => {
-      console.warn(`💀 Removing unresponsive widget: ${id}`);
+    deadClients.forEach((id) => {
+      logger.warn(`💀 Removing unresponsive widget: ${id}`);
       this.unregisterClient(id);
     });
 
@@ -340,7 +361,7 @@ export class TransportSyncManager extends EventEmitter {
     if (now - this.lastBroadcastTime < this.config.throttleMs) {
       // Queue the event
       this.eventQueue.push({ type, data });
-      
+
       // Ensure queued events are eventually sent
       if (this.eventQueue.length === 1) {
         setTimeout(() => {
@@ -359,12 +380,12 @@ export class TransportSyncManager extends EventEmitter {
    */
   private flushEventQueue(): void {
     if (this.eventQueue.length === 0) return;
-    
+
     const batch = this.eventQueue.splice(0, this.config.batchSize);
     if (batch.length > 0) {
       this.broadcast('BATCH_UPDATE', batch);
     }
-    
+
     // Schedule next flush if more events
     if (this.eventQueue.length > 0) {
       setTimeout(() => {
@@ -380,7 +401,7 @@ export class TransportSyncManager extends EventEmitter {
     const message = {
       type,
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     this.clients.forEach((client, id) => {
@@ -402,7 +423,7 @@ export class TransportSyncManager extends EventEmitter {
 
     // Emit event for the client
     this.emit(`client:${clientId}:${type}`, data);
-    
+
     // Also emit generic event
     this.emit(type, { clientId, ...data });
   }
@@ -415,13 +436,13 @@ export class TransportSyncManager extends EventEmitter {
     if (!client) return;
 
     this.metrics.reconnections++;
-    
+
     setTimeout(() => {
       if (this.clients.has(clientId)) {
-        console.log(`🔄 Attempting to reconnect widget: ${clientId}`);
+        logger.info(`🔄 Attempting to reconnect widget: ${clientId}`);
         this.sendToClient(clientId, 'RECONNECT', {
           attempt: client.missedHeartbeats,
-          maxAttempts: this.config.maxReconnectAttempts
+          maxAttempts: this.config.maxReconnectAttempts,
         });
       }
     }, this.config.reconnectDelay);
@@ -432,7 +453,7 @@ export class TransportSyncManager extends EventEmitter {
    */
   updateConfig(config: Partial<SyncConfig>): void {
     this.config = { ...this.config, ...config };
-    
+
     // Restart heartbeat if interval changed
     if (config.heartbeatInterval !== undefined) {
       this.stopHeartbeat();
@@ -450,11 +471,15 @@ export class TransportSyncManager extends EventEmitter {
   /**
    * Get connected clients
    */
-  getConnectedClients(): Array<{ id: string; latency: number; connected: boolean }> {
-    return Array.from(this.clients.values()).map(client => ({
+  getConnectedClients(): Array<{
+    id: string;
+    latency: number;
+    connected: boolean;
+  }> {
+    return Array.from(this.clients.values()).map((client) => ({
       id: client.id,
       latency: client.latency,
-      connected: client.connected
+      connected: client.connected,
     }));
   }
 
@@ -464,7 +489,7 @@ export class TransportSyncManager extends EventEmitter {
   forceSync(): void {
     const snapshot = this.getTransportSnapshot();
     if (!snapshot) return;
-    
+
     this.broadcast('FORCE_SYNC', snapshot);
   }
 
@@ -474,15 +499,15 @@ export class TransportSyncManager extends EventEmitter {
   cleanup(): void {
     // Stop heartbeat
     this.stopHeartbeat();
-    
+
     // Unsubscribe from all events
-    this.eventUnsubscribers.forEach(unsub => unsub());
+    this.eventUnsubscribers.forEach((unsub) => unsub());
     this.eventUnsubscribers = [];
-    
+
     // Clear clients
     this.clients.clear();
     this.metrics.connectedClients = 0;
-    
+
     // Clear event queue
     this.eventQueue = [];
   }

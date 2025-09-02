@@ -30,7 +30,7 @@ const exerciseTimelineIntegrator = {
     totalMeasures: 0,
     progress: 0,
     nextSection: null,
-  })
+  }),
 };
 
 // Import hooks to get UnifiedTransport from AudioProvider
@@ -46,7 +46,7 @@ export function ExerciseTimelineIndicator({
   showDetails = true,
 }: ExerciseTimelineIndicatorProps) {
   const [status, setStatus] = useState<ExerciseStatus | null>(null);
-  
+
   // Get UnifiedTransport from AudioProvider - this ensures we get the correct singleton instance
   const { transportController, isInitialized } = useAudioServices();
 

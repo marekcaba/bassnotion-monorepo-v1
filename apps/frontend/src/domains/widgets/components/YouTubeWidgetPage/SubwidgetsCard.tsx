@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/shared/components/ui/card';
 import { Volume2 } from 'lucide-react';
 import { SyncedWidget } from '../base';
 import type { SyncedWidgetRenderProps } from '../base';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface MetronomeDot {
   id: number;
@@ -43,6 +44,7 @@ const basslineNotes = [
 const harmonyChords = ['C', 'Am', 'F', 'G'];
 
 export function SubwidgetsCard() {
+  const { correlationId, logger } = useCorrelation('SubwidgetsCard');
   return (
     <SyncedWidget
       widgetId="subwidgets-card"
@@ -78,7 +80,7 @@ function SubwidgetsCardContent({ syncProps }: SubwidgetsCardContentProps) {
     const globalTempo = syncProps.tempo;
     if (globalTempo && globalTempo !== 100) {
       // Update metronome tempo display or BPM logic here
-      console.log(`🎵 SubwidgetsCard: Tempo synced to ${globalTempo} BPM`);
+      logger.info(`🎵 SubwidgetsCard: Tempo synced to ${globalTempo} BPM`);
     }
   }, [syncProps.tempo]);
 

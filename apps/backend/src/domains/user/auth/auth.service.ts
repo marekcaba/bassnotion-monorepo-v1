@@ -1,19 +1,12 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  Logger,
-  forwardRef,
-  Inject,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, forwardRef, Inject, OnModuleInit } from '@nestjs/common';
 import { AuthError as SupabaseAuthError } from '@supabase/supabase-js';
 
 import type { User } from '@bassnotion/contracts';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 import {
   ApiSuccessResponse,
-  ApiErrorResponse,
-} from '../../../shared/types/api.types.js';
+  ApiErrorResponse } from '../../../shared/types/api.types.js';
 
 import { DatabaseService } from '../../../infrastructure/database/database.service.js';
 
@@ -22,10 +15,11 @@ import { SignUpDto } from './dto/sign-up.dto.js';
 import { AuthResponse, AuthError, AuthData } from './types/auth.types.js';
 import { AuthSecurityService } from './services/auth-security.service.js';
 import { PasswordSecurityService } from './services/password-security.service.js';
+import { RequestContextService } from '../../../shared/services/request-context.service.js';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
-  private readonly logger = new Logger(AuthService.name);
+  private readonly staticLogger = createStructuredLogger(AuthService.name);
 
   constructor(
     @Inject(forwardRef(() => DatabaseService))
@@ -34,12 +28,18 @@ export class AuthService implements OnModuleInit {
     private readonly authSecurityService: AuthSecurityService,
     @Inject(forwardRef(() => PasswordSecurityService))
     private readonly passwordSecurityService: PasswordSecurityService,
+    @Inject(RequestContextService)
+    private readonly requestContext: RequestContextService,
   ) {
-    this.logger.debug('AuthService constructor completed successfully');
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug('AuthService constructor completed successfully', { correlationId });
   }
 
   onModuleInit() {
-    this.logger.debug('AuthService module initialized');
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug('AuthService module initialized', { correlationId });
   }
 
   private normalizeError(error: unknown): AuthError {
@@ -49,8 +49,7 @@ export class AuthService implements OnModuleInit {
         code:
           error instanceof SupabaseAuthError
             ? String(error.status)
-            : 'UNKNOWN_ERROR',
-      };
+            : 'UNKNOWN_ERROR' };
     }
     if (
       error &&
@@ -60,23 +59,23 @@ export class AuthService implements OnModuleInit {
     ) {
       return {
         message: String(error.message),
-        code: String(error.status),
-      };
+        code: String(error.status) };
     }
     return {
       message: 'An unknown error occurred',
-      code: 'UNKNOWN_ERROR',
-    };
+      code: 'UNKNOWN_ERROR' };
   }
 
   async registerUser(signUpDto: SignUpDto): Promise<AuthResponse> {
-    this.logger.debug(`Registering user with email: ${signUpDto.email}`);
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug(`Registering user with email: ${signUpDto.email}`, { correlationId });
 
     try {
       // Basic validation is now handled by Zod at controller level
 
       // 1. VALIDATE PASSWORD SECURITY (Zod handles basic format validation)
-      this.logger.debug('Checking password security...');
+      logger.debug('Checking password security...', { correlationId });
 
       // Check password strength requirements
       const strengthRecommendations =
@@ -85,7 +84,7 @@ export class AuthService implements OnModuleInit {
         );
 
       if (strengthRecommendations.length > 0) {
-        this.logger.warn(
+        logger.warn(
           `Password does not meet requirements for ${signUpDto.email}`,
         );
         return {
@@ -93,9 +92,7 @@ export class AuthService implements OnModuleInit {
           message: 'Password does not meet security requirements',
           error: {
             code: 'PASSWORD_REQUIREMENTS_NOT_MET',
-            details: `Password requirements: ${strengthRecommendations.join(', ')}`,
-          },
-        };
+            details: `Password requirements: ${strengthRecommendations.join(', ')}` } };
       }
 
       // Check if password is compromised via HaveIBeenPwned
@@ -105,7 +102,7 @@ export class AuthService implements OnModuleInit {
         );
 
       if (securityCheck.isCompromised) {
-        this.logger.warn(
+        logger.warn(
           `Compromised password detected for ${signUpDto.email}: ${securityCheck.breachCount} breaches`,
         );
         return {
@@ -116,15 +113,13 @@ export class AuthService implements OnModuleInit {
             code: 'PASSWORD_COMPROMISED',
             details:
               securityCheck.recommendation ||
-              'This is a commonly used password that has been compromised in data breaches. Please choose a different password.',
-          },
-        };
+              'This is a commonly used password that has been compromised in data breaches. Please choose a different password.' } };
       }
 
-      this.logger.debug('Password security validation passed');
+      logger.debug('Password security validation passed', { correlationId });
 
       // 2. CHECK IF USER ALREADY EXISTS
-      this.logger.debug('Checking if user already exists...');
+      logger.debug('Checking if user already exists...', { correlationId });
       const { data: existingUser } = await this.db.supabase
         .from('profiles')
         .select('id')
@@ -137,28 +132,23 @@ export class AuthService implements OnModuleInit {
           message: 'User already exists',
           error: {
             code: 'USER_ALREADY_EXISTS',
-            details: 'A user with this email already exists.',
-          },
-        };
+            details: 'A user with this email already exists.' } };
       }
 
       // Create auth user
       const { data: auth, error: authError } =
         await this.db.supabase.auth.signUp({
           email: signUpDto.email,
-          password: signUpDto.password,
-        });
+          password: signUpDto.password });
 
       if (authError) {
-        this.logger.error(`Error registering user: ${authError.message}`);
+        logger.error(`Error registering user: ${authError.message}`, authError);
         return {
           success: false,
           message: authError.message,
           error: {
             code: String(authError.status || 'AUTH_ERROR'),
-            details: authError.message,
-          },
-        };
+            details: authError.message } };
       }
 
       if (!auth.user) {
@@ -167,9 +157,7 @@ export class AuthService implements OnModuleInit {
           message: 'User registration failed',
           error: {
             code: 'REGISTRATION_FAILED',
-            details: 'User registration failed',
-          },
-        };
+            details: 'User registration failed' } };
       }
 
       // Create user profile with retry logic
@@ -182,8 +170,7 @@ export class AuthService implements OnModuleInit {
             id: auth.user.id,
             email: auth.user.email,
             display_name: signUpDto.displayName,
-            bio: signUpDto.bio,
-          })
+            bio: signUpDto.bio })
           .select()
           .single();
 
@@ -200,18 +187,16 @@ export class AuthService implements OnModuleInit {
         // Clean up auth user if profile creation failed
         await this.db.supabase.auth.admin.deleteUser(auth.user.id);
 
-        this.logger.error(
+        logger.error(
           `Error creating user profile after 3 attempts: ${profileError?.message}`,
-          profileError?.stack,
+          profileError as Error,
         );
         return {
           success: false,
           message: profileError?.message || 'Failed to create user profile',
           error: {
             code: 'PROFILE_CREATION_FAILED',
-            details: 'Failed to create user profile after multiple attempts.',
-          },
-        };
+            details: 'Failed to create user profile after multiple attempts.' } };
       }
 
       const authData: AuthData = {
@@ -220,32 +205,26 @@ export class AuthService implements OnModuleInit {
           email: profile.email,
           displayName: profile.display_name,
           createdAt: profile.created_at,
-          updatedAt: profile.updated_at,
-        },
+          updatedAt: profile.updated_at },
         session: {
           accessToken: auth.session?.access_token || '',
           refreshToken: auth.session?.refresh_token || undefined,
-          expiresIn: auth.session?.expires_in || 3600,
-        },
-      };
+          expiresIn: auth.session?.expires_in || 3600 } };
 
       return {
         success: true,
         message: 'User registered successfully',
-        data: authData,
-      };
+        data: authData };
     } catch (error) {
       const authError = this.normalizeError(error);
-      this.logger.error(`Error in registerUser: ${authError.message}`);
+      logger.error(`Error in registerUser: ${authError.message}`, error as Error);
 
       return {
         success: false,
         message: authError.message,
         error: {
           code: authError.code,
-          details: authError.message,
-        },
-      };
+          details: authError.message } };
     }
   }
 
@@ -254,23 +233,23 @@ export class AuthService implements OnModuleInit {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<AuthResponse> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     // Force rebuild v2.0 - ensure Railway uses latest method signature
-    this.logger.debug(`Authenticating user with email: ${signInDto.email}`);
+    logger.debug(`Authenticating user with email: ${signInDto.email}`, { correlationId });
 
     const clientIp = ipAddress || 'unknown';
 
     try {
       // Check if database connection is available
       if (!this.db.supabase) {
-        this.logger.error('Database connection is not available');
+        logger.error('Database connection is not available', new Error('Database unavailable'), { correlationId });
         return {
           success: false,
           message: 'An unexpected error occurred',
           error: {
             code: 'DATABASE_UNAVAILABLE',
-            details: 'An unexpected error occurred',
-          },
-        };
+            details: 'An unexpected error occurred' } };
       }
 
       // Check rate limiting and account lockout BEFORE attempting authentication
@@ -280,8 +259,7 @@ export class AuthService implements OnModuleInit {
           clientIp,
         )) || {
           rateLimitInfo: { isRateLimited: false, attemptsRemaining: 999 },
-          lockoutInfo: { isLocked: false, failedAttempts: 0 },
-        };
+          lockoutInfo: { isLocked: false, failedAttempts: 0 } };
 
       // Block if rate limited or account locked
       if (rateLimitInfo.isRateLimited || lockoutInfo.isLocked) {
@@ -291,8 +269,9 @@ export class AuthService implements OnModuleInit {
             lockoutInfo,
           ) || 'Login blocked due to security measures';
 
-        this.logger.warn(
+        logger.warn(
           `Login blocked for ${signInDto.email} from IP ${clientIp}: ${errorMessage}`,
+          { correlationId }
         );
 
         // Still record the attempt for tracking
@@ -310,9 +289,7 @@ export class AuthService implements OnModuleInit {
             code: rateLimitInfo.isRateLimited
               ? 'RATE_LIMITED'
               : 'ACCOUNT_LOCKED',
-            details: errorMessage,
-          },
-        };
+            details: errorMessage } };
         return errorResponse;
       }
 
@@ -320,8 +297,7 @@ export class AuthService implements OnModuleInit {
       const { data: auth, error } =
         await this.db.supabase.auth.signInWithPassword({
           email: signInDto.email,
-          password: signInDto.password,
-        });
+          password: signInDto.password });
 
       // Record failed attempt if authentication failed
       if (error || !auth.user) {
@@ -332,17 +308,17 @@ export class AuthService implements OnModuleInit {
           userAgent,
         );
 
-        this.logger.error(
+        logger.error(
           `Error authenticating user: ${error?.message || 'Unknown error'}`,
+          error as Error,
+          { correlationId }
         );
         const errorResponse: ApiErrorResponse = {
           success: false,
           message: 'Invalid email or password',
           error: {
             code: 'INVALID_CREDENTIALS',
-            details: 'Invalid email or password',
-          },
-        };
+            details: 'Invalid email or password' } };
         return errorResponse;
       }
 
@@ -362,18 +338,17 @@ export class AuthService implements OnModuleInit {
           userAgent,
         );
 
-        this.logger.error(
+        logger.error(
           `Error fetching user profile: ${profileError.message}`,
-          profileError.stack,
+          profileError as Error,
+          { correlationId }
         );
         const errorResponse: ApiErrorResponse = {
           success: false,
           message: 'Authentication failed',
           error: {
             code: 'PROFILE_FETCH_FAILED',
-            details: 'Failed to fetch user profile.',
-          },
-        };
+            details: 'Failed to fetch user profile.' } };
         return errorResponse;
       }
 
@@ -386,17 +361,13 @@ export class AuthService implements OnModuleInit {
           userAgent,
         );
 
-        this.logger.error(
-          'User profile data is null after successful authentication.',
-        );
+        logger.error('User profile data is null after successful authentication.', new Error('Null profile'), { correlationId });
         const errorResponse: ApiErrorResponse = {
           success: false,
           message: 'Authentication failed',
           error: {
             code: 'PROFILE_DATA_MISSING',
-            details: 'User profile data missing.',
-          },
-        };
+            details: 'User profile data missing.' } };
         return errorResponse;
       }
 
@@ -408,8 +379,9 @@ export class AuthService implements OnModuleInit {
         userAgent,
       );
 
-      this.logger.log(
+      logger.info(
         `Successful login for ${signInDto.email} from IP ${clientIp}`,
+        { correlationId }
       );
 
       // Check if user's password has been compromised (after successful login)
@@ -427,15 +399,14 @@ export class AuthService implements OnModuleInit {
           passwordWarning =
             passwordCheck.recommendation ||
             'Your password may have been compromised. Please consider changing it.';
-          this.logger.warn(
+          logger.warn(
             `User ${signInDto.email} logged in with compromised password (${passwordCheck.breachCount} breaches)`,
+            { correlationId }
           );
         }
       } catch (error) {
-        this.logger.error(
-          'Error checking password security during login:',
-          error,
-        );
+        logger.error('Error checking password security during login:',
+          error as Error, { correlationId });
         // Continue with login - don't block user if security check fails
       }
 
@@ -445,22 +416,18 @@ export class AuthService implements OnModuleInit {
           email: profile.email,
           displayName: profile.display_name,
           createdAt: profile.created_at,
-          updatedAt: profile.updated_at,
-        },
+          updatedAt: profile.updated_at },
         session: {
           accessToken: auth.session?.access_token || '',
           refreshToken: auth.session?.refresh_token || undefined,
-          expiresIn: auth.session?.expires_in || 3600,
-        },
-      };
+          expiresIn: auth.session?.expires_in || 3600 } };
 
       const successResponse: ApiSuccessResponse<AuthData> = {
         success: true,
         message: passwordWarning
           ? `Successfully authenticated. Security Notice: ${passwordWarning}`
           : 'Successfully authenticated',
-        data: authData,
-      };
+        data: authData };
 
       return successResponse;
     } catch (error) {
@@ -473,16 +440,14 @@ export class AuthService implements OnModuleInit {
       );
 
       const authError = this.normalizeError(error);
-      this.logger.error(`Error in authenticateUser: ${authError.message}`);
+      logger.error(`Error in authenticateUser: ${authError.message}`, error as Error, { correlationId });
 
       const errorResponse: ApiErrorResponse = {
         success: false,
         message: 'Authentication failed',
         error: {
           code: authError.code,
-          details: authError.message,
-        },
-      };
+          details: authError.message } };
 
       return errorResponse;
     }
@@ -492,8 +457,7 @@ export class AuthService implements OnModuleInit {
     try {
       const {
         data: { user },
-        error,
-      } = await this.db.supabase.auth.getUser(token);
+        error } = await this.db.supabase.auth.getUser(token);
 
       if (error || !user) {
         throw new UnauthorizedException('Invalid token');
@@ -514,8 +478,7 @@ export class AuthService implements OnModuleInit {
         email: profile.email,
         displayName: profile.display_name,
         createdAt: profile.created_at,
-        updatedAt: profile.updated_at,
-      };
+        updatedAt: profile.updated_at };
     } catch {
       throw new UnauthorizedException('Invalid token');
     }
@@ -525,8 +488,7 @@ export class AuthService implements OnModuleInit {
     try {
       const {
         data: { session },
-        error,
-      } = await this.db.supabase.auth.getSession();
+        error } = await this.db.supabase.auth.getSession();
 
       if (error || !session?.user) {
         throw new UnauthorizedException('No active session');
@@ -547,8 +509,7 @@ export class AuthService implements OnModuleInit {
         email: profile.email,
         displayName: profile.display_name,
         createdAt: profile.created_at,
-        updatedAt: profile.updated_at,
-      };
+        updatedAt: profile.updated_at };
     } catch {
       throw new UnauthorizedException('No active session');
     }

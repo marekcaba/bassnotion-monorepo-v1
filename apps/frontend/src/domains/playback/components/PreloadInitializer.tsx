@@ -1,57 +1,28 @@
 'use client';
 
 import { useEffect } from 'react';
-import { PreloadStrategy } from '../utils/preloadStrategy';
 import { getSamplePreloader } from '../services/InitialSamplePreloader';
+import { getLogger } from '@/utils/logger.js';
+
+const logger = getLogger('preload');
 
 /**
  * Component that initializes preloading of audio resources
- * Two-phase approach:
- * 1. Immediate: Decode samples using OfflineAudioContext (no user gesture needed)
- * 2. Background: Progressive sample loading after page loads
+ * Uses InitialSamplePreloader which is triggered by ScrollTriggerLoader
+ * 
+ * @deprecated This component is no longer needed - preloading is handled by ScrollTriggerLoader
  */
 export function PreloadInitializer() {
   useEffect(() => {
-    // Phase 1: Start immediate sample decoding with OfflineAudioContext
-    const initializeImmediate = async () => {
-      console.log('🚀 PreloadInitializer: Starting immediate sample preloading...');
-      
-      // Start decoding samples immediately (no user gesture required)
-      const preloader = getSamplePreloader();
-      preloader.startPreloading().then(() => {
-        console.log('✅ Initial sample decoding complete');
-        
-        // Mark that samples are ready
-        (window as any).__samplesPreloaded = true;
-        
-        // Also start the legacy preload strategy for compatibility
-        PreloadStrategy.startPreload('immediate');
-      });
-    };
+    // Note: Preloading is now handled by ScrollTriggerLoader which triggers
+    // InitialSamplePreloader.loadEssentialSamples() on first user interaction
+    logger.info('PreloadInitializer: Preloading is now handled by ScrollTriggerLoader');
     
-    // Start immediately when component mounts
-    initializeImmediate();
-    
-    // Phase 2: Background loading starts automatically via PreloadStrategy
-    // No need to do anything here - it's handled internally
-    
-    // Optional: Listen for page visibility changes to pause/resume
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Page is hidden, might want to pause background loading
-        console.log('📱 Page hidden, background loading will pause');
-      } else {
-        // Page is visible again
-        console.log('📱 Page visible, background loading can resume');
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    // You can optionally check the preloader status here
+    const preloader = getSamplePreloader();
+    const stats = preloader.getStats();
+    logger.info('Current preloader stats:', stats);
   }, []);
-  
+
   return null; // This component doesn't render anything
 }

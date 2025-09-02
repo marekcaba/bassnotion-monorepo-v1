@@ -1,20 +1,21 @@
-import { Module, Logger } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { createStructuredLogger } from '@bassnotion/contracts';
 import { DatabaseService } from './database.service.js';
+import { DatabaseCoreService } from './database-core.service.js';
 
 @Module({
   imports: [ConfigModule],
-  providers: [DatabaseService],
-  exports: [DatabaseService],
-})
+  providers: [DatabaseService, DatabaseCoreService],
+  exports: [DatabaseService, DatabaseCoreService] })
 export class DatabaseModule {
-  private readonly logger = new Logger(DatabaseModule.name);
+  private readonly staticLogger = createStructuredLogger(DatabaseModule.name);
 
   constructor() {
-    this.logger.debug('DatabaseModule constructor called');
+    this.staticLogger.debug('DatabaseModule constructor called');
   }
 
   onModuleInit() {
-    this.logger.debug('DatabaseModule initialized');
+    this.staticLogger.debug('DatabaseModule initialized');
   }
 }

@@ -17,6 +17,7 @@ import type {
   AssetLoadingMetrics,
 } from '../store/playbackStore';
 import type { N8nPayloadConfig, AssetManifest } from '../types/audio';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // ============================================================================
 // HOOK INTERFACE
@@ -217,7 +218,7 @@ export function useAssetLoading(widgetId?: string): UseAssetLoadingReturn {
     (assetId: string): AssetLoadingItemProgress | undefined => {
       const progress = assetProgress.get(assetId);
       if (widgetId && progress) {
-        console.debug(
+        logger.debug(
           `Widget ${widgetId} checking asset progress for ${assetId}:`,
           progress.stage,
         );
@@ -231,7 +232,7 @@ export function useAssetLoading(widgetId?: string): UseAssetLoadingReturn {
     (assetId: string): AssetLoadingError | undefined => {
       const error = failedAssets.get(assetId);
       if (widgetId && error) {
-        console.debug(
+        logger.debug(
           `Widget ${widgetId} checking asset error for ${assetId}:`,
           error.errorMessage,
         );
@@ -245,7 +246,7 @@ export function useAssetLoading(widgetId?: string): UseAssetLoadingReturn {
     (assetId: string): boolean => {
       const retrying = retryingAssets.has(assetId);
       if (widgetId && retrying) {
-        console.debug(
+        logger.debug(
           `Widget ${widgetId} checking retry status for ${assetId}: retrying`,
         );
       }
@@ -266,7 +267,7 @@ export function useAssetLoading(widgetId?: string): UseAssetLoadingReturn {
     clearLoadingErrors();
 
     if (widgetId) {
-      console.debug(
+      logger.debug(
         `Widget ${widgetId} retrying ${failedAssets.size} failed assets`,
       );
     }
@@ -276,7 +277,7 @@ export function useAssetLoading(widgetId?: string): UseAssetLoadingReturn {
     resetAssetLoadingState();
 
     if (widgetId) {
-      console.debug(`Widget ${widgetId} reset asset loading state`);
+      logger.debug(`Widget ${widgetId} reset asset loading state`);
     }
   }, [resetAssetLoadingState, widgetId]);
 

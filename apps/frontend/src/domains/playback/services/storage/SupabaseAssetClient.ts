@@ -1,5 +1,7 @@
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import {
+import { createStructuredLogger } from '@bassnotion/contracts';
   SupabaseAssetClientConfig,
   DownloadOptions,
   DownloadResult,
@@ -266,6 +268,7 @@ export class SupabaseAssetClient {
     if (!SupabaseAssetClient.instance) {
       const configToUse = config || SupabaseAssetClient.defaultConfig;
       if (!configToUse) {
+  const { correlationId, logger } = useCorrelation('configToUse');
         throw new Error(
           'SupabaseAssetClient requires configuration on first initialization',
         );
@@ -1828,7 +1831,7 @@ class AuthenticationManager {
     try {
       // ✅ CRITICAL: Check if Canvas API is available before using it
       if (typeof HTMLCanvasElement === 'undefined') {
-        console.warn(
+        logger.warn(
           '🎨 HTMLCanvasElement not available, likely in test environment',
         );
         return (
@@ -1840,7 +1843,7 @@ class AuthenticationManager {
 
       // ✅ Check if canvas was created successfully
       if (!canvas || typeof canvas.getContext !== 'function') {
-        console.warn(
+        logger.warn(
           '🎨 Canvas creation failed or getContext not available, likely in test environment',
         );
         return (
@@ -1853,7 +1856,7 @@ class AuthenticationManager {
       try {
         ctx = canvas.getContext('2d');
       } catch (error) {
-        console.warn(
+        logger.warn(
           '🎨 Canvas getContext() not available, likely in test environment:',
           error,
         );
@@ -1868,7 +1871,7 @@ class AuthenticationManager {
           ctx.font = '14px Arial';
           ctx.fillText('BassNotion fingerprint', 2, 2);
         } catch (error) {
-          console.warn(
+          logger.warn(
             '🎨 Canvas context operations failed, likely in test environment:',
             error,
           );
@@ -1878,7 +1881,7 @@ class AuthenticationManager {
 
       // ✅ Check if toDataURL method exists before calling it
       if (typeof canvas.toDataURL !== 'function') {
-        console.warn(
+        logger.warn(
           '🎨 Canvas toDataURL method not available, likely in test environment',
         );
         return (
@@ -1891,7 +1894,7 @@ class AuthenticationManager {
       try {
         dataUrl = canvas.toDataURL();
       } catch (error) {
-        console.warn(
+        logger.warn(
           '🎨 Canvas toDataURL() not available, likely in test environment:',
           error,
         );
@@ -1903,7 +1906,7 @@ class AuthenticationManager {
       // ✅ CRITICAL FIX: Handle test environment where toDataURL() returns null
       // TODO: Review non-null assertion - consider null safety
       if (!dataUrl || dataUrl === 'data:,' || dataUrl === 'data:') {
-        console.warn(
+        logger.warn(
           '🎨 Canvas toDataURL() returned null/empty, likely in test environment',
         );
         return (
@@ -1913,7 +1916,7 @@ class AuthenticationManager {
 
       return dataUrl.slice(-50);
     } catch (error) {
-      console.warn(
+      logger.warn(
         '🎨 Canvas fingerprint generation failed, likely in test environment:',
         error,
       );
@@ -2193,7 +2196,7 @@ class SecurityMonitor {
     try {
       // ✅ CRITICAL: Check if Canvas API is available before using it
       if (typeof HTMLCanvasElement === 'undefined') {
-        console.warn(
+        logger.warn(
           '🔒 HTMLCanvasElement not available, likely in test environment',
         );
         return (
@@ -2205,7 +2208,7 @@ class SecurityMonitor {
 
       // ✅ Check if canvas was created successfully
       if (!canvas || typeof canvas.getContext !== 'function') {
-        console.warn(
+        logger.warn(
           '🔒 Canvas creation failed or getContext not available, likely in test environment',
         );
         return (
@@ -2218,7 +2221,7 @@ class SecurityMonitor {
       try {
         ctx = canvas.getContext('2d');
       } catch (error) {
-        console.warn(
+        logger.warn(
           '🔒 Security Canvas getContext() not available, likely in test environment:',
           error,
         );
@@ -2233,7 +2236,7 @@ class SecurityMonitor {
           ctx.font = '14px Arial';
           ctx.fillText('Security fingerprint', 2, 2);
         } catch (error) {
-          console.warn(
+          logger.warn(
             '🔒 Security Canvas context operations failed, likely in test environment:',
             error,
           );
@@ -2243,7 +2246,7 @@ class SecurityMonitor {
 
       // ✅ Check if toDataURL method exists before calling it
       if (typeof canvas.toDataURL !== 'function') {
-        console.warn(
+        logger.warn(
           '🔒 Canvas toDataURL method not available, likely in test environment',
         );
         return (
@@ -2256,7 +2259,7 @@ class SecurityMonitor {
       try {
         dataUrl = canvas.toDataURL();
       } catch (error) {
-        console.warn(
+        logger.warn(
           '🔒 Security Canvas toDataURL() not available, likely in test environment:',
           error,
         );
@@ -2268,7 +2271,7 @@ class SecurityMonitor {
       // ✅ CRITICAL FIX: Handle test environment where toDataURL() returns null
       // TODO: Review non-null assertion - consider null safety
       if (!dataUrl || dataUrl === 'data:,' || dataUrl === 'data:') {
-        console.warn(
+        logger.warn(
           '🔒 Security Canvas toDataURL() returned null/empty, likely in test environment',
         );
         return (
@@ -2278,7 +2281,7 @@ class SecurityMonitor {
 
       return dataUrl.slice(-50);
     } catch (error) {
-      console.warn(
+      logger.warn(
         '🔒 Security Canvas fingerprint generation failed, likely in test environment:',
         error,
       );
@@ -3446,7 +3449,7 @@ class CDNOptimizer {
       case 'hybrid':
         return this.selectByHybridAlgorithm();
       default:
-        console.log('🔧 CDNOptimizer: Using default edge selection');
+        logger.info('🔧 CDNOptimizer: Using default edge selection');
         return this.edgeLocations[0] || this.createDefaultEdge();
     }
   }

@@ -20,8 +20,10 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { useToast } from '@/shared/hooks/use-toast';
 import { authService } from '../../api/auth';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 export function ChangePasswordForm() {
+  const { correlationId, logger } = useCorrelation('ChangePasswordForm');
   const [isLoading, setIsLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -49,7 +51,7 @@ export function ChangePasswordForm() {
 
       form.reset();
     } catch (error) {
-      console.error('Password change error:', error);
+      logger.error('Password change error:', error);
       toast({
         title: 'Failed to change password',
         description:

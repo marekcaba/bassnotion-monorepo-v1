@@ -72,7 +72,7 @@ export class AudioVisualSync {
   public initialize(audioContext: AudioContext): void {
     this.audioContext = audioContext;
     this.lastSyncTime = performance.now();
-    console.log('🔄 AudioVisualSync initialized');
+    logger.info('🔄 AudioVisualSync initialized');
   }
 
   /**
@@ -85,7 +85,7 @@ export class AudioVisualSync {
     this.lastFrameTime = performance.now();
     this.lastSyncTime = performance.now(); // Initialize drift correction timing
     this.scheduleNextFrame();
-    console.log('▶️ AudioVisualSync started');
+    logger.info('▶️ AudioVisualSync started');
   }
 
   /**
@@ -99,7 +99,7 @@ export class AudioVisualSync {
       this.animationFrameId = null;
     }
 
-    console.log('⏹️ AudioVisualSync stopped');
+    logger.info('⏹️ AudioVisualSync stopped');
   }
 
   /**
@@ -111,6 +111,7 @@ export class AudioVisualSync {
     const compensatedTime = audioTime - latency - this.driftOffset;
 
     const syncPoint: SyncPoint = {
+  const { correlationId, logger } = useCorrelation('now');
       audioTime,
       visualTime,
       scheduledTime: compensatedTime,
@@ -191,7 +192,7 @@ export class AudioVisualSync {
       this.driftOffset += avgDrift * 0.1; // 10% correction factor
       this.lastSyncTime = now;
 
-      console.log(
+      logger.info(
         `🔄 Drift correction applied: ${avgDrift.toFixed(2)}ms, offset: ${this.driftOffset.toFixed(2)}ms`,
       );
     }
@@ -351,7 +352,7 @@ export class AudioVisualSync {
     this.syncPointHistory = [];
     this.frameDropCount = 0;
     this.lastSyncTime = performance.now();
-    console.log('🔄 AudioVisualSync reset');
+    logger.info('🔄 AudioVisualSync reset');
   }
 
   /**
@@ -362,6 +363,6 @@ export class AudioVisualSync {
     this.audioContext = null;
     this.onSyncUpdate = undefined;
     this.onLatencyAlert = undefined;
-    console.log('🗑️ AudioVisualSync disposed');
+    logger.info('🗑️ AudioVisualSync disposed');
   }
 }

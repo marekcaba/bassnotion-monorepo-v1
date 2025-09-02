@@ -3,8 +3,7 @@ import {
   SaveCustomBasslineRequestSchema,
   GetCustomBasslinesResponseSchema,
   type CustomBasslineInput,
-  type SaveCustomBasslineRequestInput,
-} from '@bassnotion/contracts';
+  type SaveCustomBasslineRequestInput } from '@bassnotion/contracts';
 
 // Custom Bassline DTOs
 export type CustomBasslineDto = CustomBasslineInput;

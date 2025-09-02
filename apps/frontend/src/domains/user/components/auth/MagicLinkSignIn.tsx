@@ -5,10 +5,11 @@ import { useToast } from '@/shared/hooks/use-toast';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { authService, AuthError } from '../../api/auth';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Import the same error handling function used by other auth methods
 function getAuthErrorMessage(error: AuthError): string {
-  console.error('[Auth Debug] Original error:', {
+  logger.error('[Auth Debug] Original error:', {
     message: error.message,
     status: error.status,
     name: error.name,
@@ -71,6 +72,7 @@ function getAuthErrorMessage(error: AuthError): string {
 }
 
 export function MagicLinkSignIn() {
+  const { correlationId, logger } = useCorrelation('MagicLinkSignIn');
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [noAccountFound, setNoAccountFound] = useState(false);

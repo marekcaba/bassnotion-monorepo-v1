@@ -1,10 +1,10 @@
 /**
  * Web Audio Modules (WAM) 2.0 Type Definitions
- * 
+ *
  * Provides TypeScript interfaces for WAM 2.0 plugin standard integration.
  * These types enable interoperability between BassNotion and the wider
  * web audio plugin ecosystem while maintaining our timing precision.
- * 
+ *
  * Part of Story 3.21 Task 7 - Web Audio Standards Compliance
  */
 
@@ -71,7 +71,13 @@ export type WamParameterDataMap = Record<string, number>;
 /**
  * WAM event types
  */
-export type WamEventType = 'wam-automation' | 'wam-transport' | 'wam-midi' | 'wam-sysex' | 'wam-mpe' | 'wam-osc';
+export type WamEventType =
+  | 'wam-automation'
+  | 'wam-transport'
+  | 'wam-midi'
+  | 'wam-sysex'
+  | 'wam-mpe'
+  | 'wam-osc';
 
 /**
  * Base WAM event
@@ -130,21 +136,21 @@ export interface WamState {
 export interface WamNode extends AudioNode {
   // Core properties
   readonly module: WebAudioModule;
-  
+
   // State management
   getState(): Promise<WamState>;
   setState(state: WamState): Promise<void>;
-  
+
   // Parameter handling
   getParameterInfo(): Promise<WamParameterInfoMap>;
   getParameterValues(): Promise<WamParameterDataMap>;
   setParameterValues(values: WamParameterDataMap): Promise<void>;
   getCompensationDelay(): Promise<number>;
-  
+
   // Event scheduling
   scheduleEvents(...events: WamEvent[]): void;
   clearEvents(): void;
-  
+
   // Lifecycle
   destroy(): Promise<void>;
 }
@@ -152,24 +158,22 @@ export interface WamNode extends AudioNode {
 /**
  * WAM processor interface (runs in AudioWorklet)
  */
-export interface WamProcessor extends AudioWorkletProcessor {
-  // Implemented by WAM SDK
-}
+export type WamProcessor = AudioWorkletProcessor;
 
 /**
  * WAM constructor interface
  */
 export interface WamConstructor {
   new (audioContext: BaseAudioContext, initialState?: any): WebAudioModule;
-  
+
   // Static properties
   readonly isWebAudioModuleConstructor: true;
   readonly descriptor: WamDescriptor;
-  
+
   // Factory method
   createInstance(
     audioContext: BaseAudioContext,
-    initialState?: any
+    initialState?: any,
   ): Promise<WebAudioModule>;
 }
 
@@ -184,15 +188,15 @@ export interface WebAudioModule {
   readonly descriptor: WamDescriptor;
   readonly instanceId: string;
   readonly moduleId: string;
-  
+
   // Lifecycle methods
   initialize(state?: any): Promise<WebAudioModule>;
   createAudioNode(options?: any): Promise<WamNode>;
-  
+
   // GUI management
   createGui(): Promise<Element>;
   destroyGui(gui: Element): void;
-  
+
   // State persistence
   getState(): Promise<any>;
   setState(state: any): Promise<void>;
@@ -212,11 +216,16 @@ export interface WamEnvConfig {
 export interface WamGroup {
   readonly groupId: string;
   readonly hostId: string;
-  
+
   addWam(wam: WebAudioModule): void;
   removeWam(instanceId: string): void;
   connectWams(from: string, to: string, output?: number, input?: number): void;
-  disconnectWams(from: string, to: string, output?: number, input?: number): void;
+  disconnectWams(
+    from: string,
+    to: string,
+    output?: number,
+    input?: number,
+  ): void;
 }
 
 /**
@@ -224,11 +233,11 @@ export interface WamGroup {
  */
 export interface WamEnv {
   readonly apiVersion: string;
-  
+
   // Group management
   createGroup(hostId: string, groupId: string): WamGroup;
   deleteGroup(groupId: string): void;
-  
+
   // Global utilities
   getModuleUrl(moduleId: string): string | undefined;
   registerModule(moduleId: string, url: string): void;
@@ -242,21 +251,21 @@ export interface WamHostCapabilities {
   supportsAudioWorklet: boolean;
   supportsSampleAccurateTiming: boolean;
   maxDriftTolerance: number; // ms
-  
+
   // Audio features
   supportsMultiChannel: boolean;
   maxChannelCount: number;
   supportsSidechain: boolean;
-  
+
   // Transport sync
   supportsTransportSync: boolean;
   supportsMusicalTime: boolean;
   supportsBarBeatSync: boolean;
-  
+
   // Automation
   supportsParameterAutomation: boolean;
   supportsPatternBasedAutomation: boolean;
-  
+
   // Performance
   maxPluginsPerTrack: number;
   supportsPluginLatencyCompensation: boolean;
@@ -290,14 +299,14 @@ export interface WamParameterMapping {
 export interface WamTimingConfig {
   // Use UnifiedTransport as master clock
   useMasterClock: boolean;
-  
+
   // Sync musical position to WAM
   syncMusicalPosition: boolean;
-  
+
   // Latency compensation
   compensateLatency: boolean;
   reportedLatency: number;
-  
+
   // Event scheduling
   scheduleAheadTime: number; // seconds
   eventQuantization?: MusicalPosition;
@@ -313,7 +322,7 @@ export enum WamErrorType {
   PARAMETER_ERROR = 'PARAMETER_ERROR',
   STATE_ERROR = 'STATE_ERROR',
   TIMING_ERROR = 'TIMING_ERROR',
-  COMPATIBILITY_ERROR = 'COMPATIBILITY_ERROR'
+  COMPATIBILITY_ERROR = 'COMPATIBILITY_ERROR',
 }
 
 /**

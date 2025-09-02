@@ -89,7 +89,17 @@ describe('UserBasslinesService', () => {
       isReady: vi.fn(() => true),
     };
 
-    userBasslinesService = new UserBasslinesService(mockSupabaseService);
+    const mockRequestContextService = {
+      getLogger: vi.fn().mockReturnValue({
+        info: vi.fn(),
+        error: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn(),
+      }),
+      getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
+    };
+
+    userBasslinesService = new UserBasslinesService(mockSupabaseService, mockRequestContextService as any);
   });
 
   describe('saveBassline', () => {

@@ -7,6 +7,7 @@ import { useToast } from '@/shared/hooks/use-toast';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 function AuthCallbackContent() {
   const _router = useRouter();
@@ -19,7 +20,7 @@ function AuthCallbackContent() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       // Debug: Log URL and search params
-      console.debug('[Auth Debug] Callback URL info:', {
+      logger.debug('[Auth Debug] Callback URL info:', {
         fullUrl: window.location.href,
         pathname: window.location.pathname,
         search: window.location.search,
@@ -33,7 +34,7 @@ function AuthCallbackContent() {
           error: sessionError,
         } = await supabase.auth.getSession();
 
-        console.debug('[Auth Debug] Current session check:', {
+        logger.debug('[Auth Debug] Current session check:', {
           // TODO: Review non-null assertion - consider null safety
           hasSession: !!session,
           error: sessionError,
@@ -55,7 +56,7 @@ function AuthCallbackContent() {
 
         // Handle OAuth errors
         if (error) {
-          console.error('[Auth Debug] OAuth error:', {
+          logger.error('[Auth Debug] OAuth error:', {
             error,
             description: errorDescription,
           });
@@ -70,7 +71,7 @@ function AuthCallbackContent() {
 
         // TODO: Review non-null assertion - consider null safety
         if (!code) {
-          console.error('[Auth Debug] No code found and no session available');
+          logger.error('[Auth Debug] No code found and no session available');
           toast({
             title: 'Error',
             description: 'Authentication failed. Please try again.',
@@ -80,12 +81,12 @@ function AuthCallbackContent() {
           return;
         }
 
-        console.debug('[Auth Debug] Exchanging code for session...');
+        logger.debug('[Auth Debug] Exchanging code for session...');
         const { data, error: exchangeError } =
           await supabase.auth.exchangeCodeForSession(code);
 
         if (exchangeError) {
-          console.error('[Auth Debug] Session exchange error:', exchangeError);
+          logger.error('[Auth Debug] Session exchange error:', exchangeError);
           throw exchangeError;
         }
 
@@ -99,7 +100,7 @@ function AuthCallbackContent() {
         // Redirect without success toast - user will see they're logged in
         redirectAfterAuth(data.user);
       } catch (error) {
-        console.error('[Auth Debug] Callback handling error:', error);
+        logger.error('[Auth Debug] Callback handling error:', error);
         toast({
           title: 'Error',
           description:

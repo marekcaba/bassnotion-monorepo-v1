@@ -1,39 +1,82 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { DatabaseService } from '../../infrastructure/database/database.service.js';
-import type {
-  UserProfile,
-  UserProfileData,
-  BassConfiguration,
-} from '@bassnotion/contracts';
-import { userProfileSchema } from '@bassnotion/contracts';
+import { UserProfile, UserProfileData, BassConfiguration, userProfileSchema, createStructuredLogger } from '@bassnotion/contracts';
+import type { IResultUserRepository } from './repositories/result-user.repository.js';
+import { UserId } from './value-objects/user-id.vo.js';
+import { Email } from './value-objects/email.vo.js';
+import { UserRole } from './value-objects/user-role.vo.js';
+import { User } from './entities/user.entity.js';
+import { RequestContextService } from '../../shared/services/request-context.service.js';
 
 @Injectable()
 export class UserService {
-  private readonly logger = new Logger(UserService.name);
+  private readonly staticLogger = createStructuredLogger(UserService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    @Inject('IResultUserRepository')
+    private readonly userRepository: IResultUserRepository,
+    @Inject(RequestContextService)
+    private readonly requestContext: RequestContextService,
+  ) {}
 
   async findProfileById(userId: string): Promise<UserProfile> {
-    this.logger.debug(`Finding profile for user: ${userId}`);
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug(`Finding profile for user: ${userId}`, { correlationId });
 
+    // Validate user ID format
+    if (!UserId.isValid(userId)) {
+      throw new BadRequestException('Invalid user ID format');
+    }
+
+    const userIdVO = UserId.create(userId);
+    const result = await this.userRepository.findById(userIdVO);
+
+    if (!result.ok) {
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error fetching user:', result.error, { correlationId });
+      throw new Error(`Failed to fetch user: ${result.error?.message}`);
+    }
+
+    if (!result.value) {
+      throw new NotFoundException(`User not found: ${userId}`);
+    }
+
+    const user = result.value;
+
+    // For now, still fetch profile data from profiles table
+    // TODO: Migrate profile data to user entity
     const { data: profile, error } = await this.db.supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();
 
-    if (error) {
-      this.logger.error('Error fetching profile:', error);
-      throw new Error(`Failed to fetch profile: ${error.message}`);
-    }
-
-    if (!profile) {
-      throw new NotFoundException(`Profile not found for user: ${userId}`);
+    if (error || !profile) {
+      // If no profile exists, create a minimal one from user data
+      return {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        bio: '',
+        avatarUrl: user.avatarUrl,
+        preferences: {
+          theme: 'light',
+          emailNotifications: true,
+          defaultMetronomeSettings: {
+            enabled: false,
+            tempo: 120,
+            beatsPerMeasure: 4,
+            subdivision: 1,
+            accentFirstBeat: true,
+            volume: 75 },
+          bassConfiguration: {
+            stringCount: 4,
+            maxFrets: 24 } },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString() };
     }
 
     return this.mapProfileToUserProfile(profile);
@@ -43,7 +86,9 @@ export class UserService {
     userId: string,
     profileData: UserProfileData,
   ): Promise<UserProfile> {
-    this.logger.debug(`Updating profile for user: ${userId}`);
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug(`Updating profile for user: ${userId}`, { correlationId });
 
     // Validate the profile data
     const validatedData = userProfileSchema.parse(profileData);
@@ -54,15 +99,10 @@ export class UserService {
         await this.db.supabase.auth.admin.updateUserById(userId, {
           user_metadata: {
             display_name: validatedData.displayName,
-            full_name: validatedData.displayName,
-          },
-        });
+            full_name: validatedData.displayName } });
 
       if (authUpdateError) {
-        this.logger.warn(
-          'Failed to update auth user metadata:',
-          authUpdateError,
-        );
+        logger.warn('Failed to update auth user metadata:', { error: authUpdateError, correlationId });
         // Don't fail the entire operation if auth metadata update fails
       }
     }
@@ -74,14 +114,15 @@ export class UserService {
         display_name: validatedData.displayName,
         bio: validatedData.bio,
         avatar_url: validatedData.avatarUrl,
-        updated_at: new Date().toISOString(),
-      })
+        updated_at: new Date().toISOString() })
       .eq('id', userId)
       .select()
       .single();
 
     if (error) {
-      this.logger.error('Error updating profile:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error updating profile:', error as Error, { correlationId });
       throw new Error(`Failed to update profile: ${error.message}`);
     }
 
@@ -96,7 +137,9 @@ export class UserService {
     userId: string,
     bassConfig: BassConfiguration,
   ): Promise<UserProfile> {
-    this.logger.debug(`Updating bass configuration for user: ${userId}`);
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug(`Updating bass configuration for user: ${userId}`, { correlationId });
 
     // Validate bass configuration
     if (bassConfig.stringCount < 4 || bassConfig.stringCount > 6) {
@@ -112,14 +155,15 @@ export class UserService {
       .update({
         bass_string_count: bassConfig.stringCount,
         bass_max_frets: bassConfig.maxFrets,
-        updated_at: new Date().toISOString(),
-      })
+        updated_at: new Date().toISOString() })
       .eq('id', userId)
       .select()
       .single();
 
     if (error) {
-      this.logger.error('Error updating bass configuration:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error updating bass configuration:', error as Error, { correlationId });
       throw new Error(`Failed to update bass configuration: ${error.message}`);
     }
 
@@ -131,7 +175,9 @@ export class UserService {
   }
 
   async getBassConfiguration(userId: string): Promise<BassConfiguration> {
-    this.logger.debug(`Getting bass configuration for user: ${userId}`);
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug(`Getting bass configuration for user: ${userId}`, { correlationId });
 
     const { data: profile, error } = await this.db.supabase
       .from('profiles')
@@ -140,7 +186,7 @@ export class UserService {
       .single();
 
     if (error) {
-      this.logger.error('Error fetching bass configuration:', error);
+      logger.error('Error fetching bass configuration:', error as Error, { correlationId });
       throw new Error(`Failed to fetch bass configuration: ${error.message}`);
     }
 
@@ -150,34 +196,46 @@ export class UserService {
 
     return {
       stringCount: profile.bass_string_count || 4,
-      maxFrets: profile.bass_max_frets || 24,
-    };
+      maxFrets: profile.bass_max_frets || 24 };
   }
 
   async deleteProfile(userId: string): Promise<void> {
-    this.logger.debug(`Deleting profile for user: ${userId}`);
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug(`Deleting profile for user: ${userId}`, { correlationId });
 
-    // First verify the profile exists
-    const { data: profile, error: fetchError } = await this.db.supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', userId)
-      .single();
-
-    if (fetchError || !profile) {
-      throw new NotFoundException(`Profile not found for user: ${userId}`);
+    // Validate user ID format
+    if (!UserId.isValid(userId)) {
+      throw new BadRequestException('Invalid user ID format');
     }
 
-    // Delete the user account (this will cascade delete the profile due to FK constraint)
+    const userIdVO = UserId.create(userId);
+
+    // Check if user exists using repository
+    const existsResult = await this.userRepository.exists(userIdVO);
+    if (!existsResult.ok || !existsResult.value) {
+      throw new NotFoundException(`User not found: ${userId}`);
+    }
+
+    // Delete the user using repository
+    const deleteResult = await this.userRepository.delete(userIdVO);
+    if (!deleteResult.ok) {
+      logger.error('Error deleting user:', deleteResult.error as Error, { correlationId });
+      throw new Error(`Failed to delete user: ${deleteResult.error?.message}`);
+    }
+
+    // Also delete from auth system
     const { error: deleteError } =
       await this.db.supabase.auth.admin.deleteUser(userId);
 
     if (deleteError) {
-      this.logger.error('Error deleting user account:', deleteError);
-      throw new Error(`Failed to delete account: ${deleteError.message}`);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error deleting user account:', deleteError, { correlationId });
+      // Don't throw here as the user entity is already deleted
     }
 
-    this.logger.log(`Profile deleted successfully for user: ${userId}`);
+    logger.info(`User deleted successfully: ${userId}`, { correlationId });
   }
 
   async findAllProfiles(
@@ -187,9 +245,9 @@ export class UserService {
     profiles: UserProfile[];
     total: number;
   }> {
-    this.logger.debug(
-      `Finding all profiles with limit: ${limit}, offset: ${offset}`,
-    );
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug(`Finding all profiles with limit: ${limit}, offset: ${offset}`, { correlationId });
 
     // Get total count
     const { count, error: countError } = await this.db.supabase
@@ -197,7 +255,7 @@ export class UserService {
       .select('*', { count: 'exact', head: true });
 
     if (countError) {
-      this.logger.error('Error counting profiles:', countError);
+      logger.error('Error counting profiles:', countError as Error, { correlationId });
       throw new Error(`Failed to count profiles: ${countError.message}`);
     }
 
@@ -209,19 +267,24 @@ export class UserService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      this.logger.error('Error fetching profiles:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error fetching profiles:', error as Error, { correlationId });
       throw new Error(`Failed to fetch profiles: ${error.message}`);
     }
 
     return {
       profiles:
-        profiles?.map((profile: any) => this.mapProfileToUserProfile(profile)) || [],
-      total: count || 0,
-    };
+        profiles?.map((profile: any) =>
+          this.mapProfileToUserProfile(profile),
+        ) || [],
+      total: count || 0 };
   }
 
   async searchProfiles(searchTerm: string, limit = 20): Promise<UserProfile[]> {
-    this.logger.debug(`Searching profiles with term: ${searchTerm}`);
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug(`Searching profiles with term: ${searchTerm}`, { correlationId });
 
     if (!searchTerm || searchTerm.trim().length < 2) {
       throw new BadRequestException(
@@ -239,46 +302,14 @@ export class UserService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      this.logger.error('Error searching profiles:', error);
+      logger.error('Error searching profiles:', error as Error, { correlationId });
       throw new Error(`Failed to search profiles: ${error.message}`);
     }
 
     return (
-      profiles?.map((profile: any) => this.mapProfileToUserProfile(profile)) || []
+      profiles?.map((profile: any) => this.mapProfileToUserProfile(profile)) ||
+      []
     );
-  }
-
-  async updateUserRole(userId: string, role: string): Promise<UserProfile> {
-    this.logger.debug(`Updating role for user: ${userId} to: ${role}`);
-
-    // Validate role
-    const validRoles = ['user', 'admin', 'creator'];
-    if (!validRoles.includes(role)) {
-      throw new BadRequestException(
-        `Invalid role: ${role}. Must be one of: ${validRoles.join(', ')}`,
-      );
-    }
-
-    const { data: updatedProfile, error } = await this.db.supabase
-      .from('profiles')
-      .update({
-        role: role,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', userId)
-      .select()
-      .single();
-
-    if (error) {
-      this.logger.error('Error updating user role:', error);
-      throw new Error(`Failed to update user role: ${error.message}`);
-    }
-
-    if (!updatedProfile) {
-      throw new NotFoundException(`Profile not found for user: ${userId}`);
-    }
-
-    return this.mapProfileToUserProfile(updatedProfile);
   }
 
   async getUserStats(userId: string): Promise<{
@@ -286,7 +317,9 @@ export class UserService {
     accountAge: number;
     lastActivity: string | null;
   }> {
-    this.logger.debug(`Getting stats for user: ${userId}`);
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug(`Getting stats for user: ${userId}`, { correlationId });
 
     const { data: profile, error } = await this.db.supabase
       .from('profiles')
@@ -295,7 +328,7 @@ export class UserService {
       .single();
 
     if (error) {
-      this.logger.error('Error fetching user stats:', error);
+      logger.error('Error fetching user stats:', error as Error, { correlationId });
       throw new Error(`Failed to fetch user stats: ${error.message}`);
     }
 
@@ -323,8 +356,117 @@ export class UserService {
     return {
       profileCompleteness,
       accountAge,
-      lastActivity: profile.updated_at,
-    };
+      lastActivity: profile.updated_at };
+  }
+
+  // Repository-based methods for user management
+  async findUserByEmail(email: string): Promise<User | null> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug(`Finding user by email: ${email}`, { correlationId });
+
+    const emailVO = Email.create(email);
+    const result = await this.userRepository.findByEmail(emailVO);
+
+    if (!result.ok) {
+      logger.error('Error finding user by email:', result.error as Error, { correlationId });
+      throw new Error(`Failed to find user: ${result.error?.message}`);
+    }
+
+    return result.value;
+  }
+
+  async createUser(
+    email: string,
+    displayName: string,
+    role: 'user' | 'admin' | 'moderator' = 'user',
+  ): Promise<User> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug(`Creating user: ${email}`, { correlationId });
+
+    // Check if user already exists
+    const emailVO = Email.create(email);
+    const existsResult = await this.userRepository.existsByEmail(emailVO);
+
+    if (!existsResult.ok) {
+      throw new Error(
+        `Failed to check user existence: ${existsResult.error?.message}`,
+      );
+    }
+
+    if (existsResult.value) {
+      throw new BadRequestException('User with this email already exists');
+    }
+
+    // Create new user
+    const userId = UserId.create(crypto.randomUUID());
+    const userRole = UserRole.create(role);
+    const user = User.create(userId, emailVO, displayName, userRole);
+
+    const saveResult = await this.userRepository.save(user);
+    if (!saveResult.ok) {
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error saving user:', saveResult.error, { correlationId });
+      throw new Error(`Failed to save user: ${saveResult.error?.message}`);
+    }
+
+    return user;
+  }
+
+  async updateUserRole(
+    userId: string,
+    newRole: 'user' | 'admin' | 'moderator',
+  ): Promise<void> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug(`Updating user role: ${userId} to ${newRole}`, { correlationId });
+
+    const userIdVO = UserId.create(userId);
+    const userResult = await this.userRepository.findById(userIdVO);
+
+    if (!userResult.ok || !userResult.value) {
+      throw new NotFoundException(`User not found: ${userId}`);
+    }
+
+    const user = userResult.value;
+
+    try {
+      const roleVO = UserRole.create(newRole);
+      user.updateRole(roleVO);
+    } catch {
+      throw new BadRequestException(`Invalid user role: ${newRole}`);
+    }
+
+    const updateResult = await this.userRepository.update(user);
+    if (!updateResult.ok) {
+      throw new Error(
+        `Failed to update user role: ${updateResult.error?.message}`,
+      );
+    }
+  }
+
+  async recordUserLogin(userId: string): Promise<void> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug(`Recording login for user: ${userId}`, { correlationId });
+
+    const userIdVO = UserId.create(userId);
+    const userResult = await this.userRepository.findById(userIdVO);
+
+    if (!userResult.ok || !userResult.value) {
+      throw new NotFoundException(`User not found: ${userId}`);
+    }
+
+    const user = userResult.value;
+    user.recordLogin();
+
+    const updateResult = await this.userRepository.update(user);
+    if (!updateResult.ok) {
+      logger.error('Failed to record login:', updateResult.error as Error, { correlationId });
+      // Don't throw here as this is not critical
+    }
   }
 
   private mapProfileToUserProfile(profile: any): UserProfile {
@@ -345,13 +487,9 @@ export class UserService {
           beatsPerMeasure: 4,
           subdivision: 1,
           accentFirstBeat: true,
-          volume: 75,
-        },
+          volume: 75 },
         bassConfiguration: {
           stringCount: profile.bass_string_count || 4,
-          maxFrets: profile.bass_max_frets || 24,
-        },
-      },
-    };
+          maxFrets: profile.bass_max_frets || 24 } } };
   }
 }

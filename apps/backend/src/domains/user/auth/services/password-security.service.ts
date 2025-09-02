@@ -1,5 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { pwnedPassword } from 'hibp';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { RequestContextService } from '../../../../shared/services/request-context.service.js';
 
 export interface PasswordSecurityCheck {
   isCompromised: boolean;
@@ -9,10 +11,15 @@ export interface PasswordSecurityCheck {
 
 @Injectable()
 export class PasswordSecurityService {
-  private readonly logger = new Logger(PasswordSecurityService.name);
+  private readonly staticLogger = createStructuredLogger(PasswordSecurityService.name);
 
-  constructor() {
-    console.log('🔧 [PasswordSecurityService] Constructor called');
+  constructor(
+    @Inject(RequestContextService)
+    private readonly requestContext: RequestContextService,
+  ) {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.info('🔧 [PasswordSecurityService] Constructor called', { correlationId });
   }
 
   /**
@@ -22,13 +29,16 @@ export class PasswordSecurityService {
   async checkPasswordSecurity(
     password: string,
   ): Promise<PasswordSecurityCheck> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     try {
       // HaveIBeenPwned uses k-anonymity - only sends first 5 chars of SHA-1 hash
       const breachCount = await pwnedPassword(password);
 
       if (breachCount > 0) {
-        this.logger.warn(
+        logger.warn(
           `Password found in ${breachCount} data breaches (hash prefix only logged for security)`,
+          { correlationId }
         );
 
         let recommendation: string;
@@ -46,21 +56,20 @@ export class PasswordSecurityService {
         return {
           isCompromised: true,
           breachCount,
-          recommendation,
-        };
+          recommendation };
       }
 
       return {
-        isCompromised: false,
-      };
+        isCompromised: false };
     } catch (error) {
-      this.logger.error('Error checking password security:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error checking password security:', error as Error, { correlationId });
 
       // Fail open for password checking to avoid blocking legitimate users
       // if the service is temporarily unavailable
       return {
-        isCompromised: false,
-      };
+        isCompromised: false };
     }
   }
 
@@ -85,8 +94,7 @@ export class PasswordSecurityService {
     ) {
       return {
         shouldForce: true,
-        reason: 'Password found in multiple data breaches',
-      };
+        reason: 'Password found in multiple data breaches' };
     }
 
     // Check password age (force change after 1 year)
@@ -97,14 +105,12 @@ export class PasswordSecurityService {
       if (lastPasswordChange < oneYearAgo) {
         return {
           shouldForce: true,
-          reason: 'Password is over one year old',
-        };
+          reason: 'Password is over one year old' };
       }
     }
 
     return {
-      shouldForce: false,
-    };
+      shouldForce: false };
   }
 
   /**

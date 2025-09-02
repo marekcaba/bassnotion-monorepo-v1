@@ -3,7 +3,7 @@
 
 export function clearExerciseCache() {
   // This will be injected into window object
-  console.log('🧹 Clearing exercise cache...');
+  logger.info('🧹 Clearing exercise cache...');
 
   // Clear any localStorage items related to exercises
   const keysToRemove: string[] = [];
@@ -16,7 +16,7 @@ export function clearExerciseCache() {
 
   keysToRemove.forEach((key) => {
     localStorage.removeItem(key);
-    console.log(`  Removed: ${key}`);
+    logger.info(`  Removed: ${key}`);
   });
 
   // Also try to clear module-level cache if available
@@ -24,7 +24,7 @@ export function clearExerciseCache() {
     (window as any).__clearExerciseCache?.();
   }
 
-  console.log(
+  logger.info(
     '✅ Exercise cache cleared. Refresh the page to load new exercises.',
   );
 }

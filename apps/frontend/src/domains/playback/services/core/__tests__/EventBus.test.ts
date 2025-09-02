@@ -76,7 +76,7 @@ describe('EventBus', () => {
           eventId: expect.stringMatching(/^evt-\d+-\d+$/),
           timestamp: expect.any(Number),
           source: undefined,
-        })
+        }),
       );
     });
 
@@ -90,7 +90,7 @@ describe('EventBus', () => {
         { value: 42 },
         expect.objectContaining({
           source: 'TestService',
-        })
+        }),
       );
     });
 
@@ -116,13 +116,15 @@ describe('EventBus', () => {
       eventBus.on('test-event', errorHandler);
       eventBus.on('test-event', goodHandler);
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+
       await eventBus.emit('test-event', {});
 
       expect(goodHandler).toHaveBeenCalled();
       expect(consoleSpy).toHaveBeenCalled();
-      
+
       consoleSpy.mockRestore();
     });
 
@@ -135,7 +137,9 @@ describe('EventBus', () => {
       eventBus.on('test-event', errorHandler);
       eventBus.on('eventbus:handler-error', errorEventHandler);
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       await eventBus.emit('test-event', {});
 
@@ -144,7 +148,7 @@ describe('EventBus', () => {
           event: 'test-event',
           error: 'Handler error',
         }),
-        expect.any(Object)
+        expect.any(Object),
       );
 
       consoleSpy.mockRestore();
@@ -206,7 +210,7 @@ describe('EventBus', () => {
   describe('event replay', () => {
     it('should replay filtered events', async () => {
       const handler = vi.fn();
-      
+
       await eventBus.emit('test-event', { value: 1 });
       await eventBus.emit('test-event', { value: 2 });
       await eventBus.emit('other-event', { value: 3 });
@@ -214,7 +218,7 @@ describe('EventBus', () => {
       eventBus.on('test-event', handler);
 
       const replayCount = await eventBus.replay(
-        (event) => event.event === 'test-event'
+        (event) => event.event === 'test-event',
       );
 
       expect(replayCount).toBe(2);
@@ -232,7 +236,7 @@ describe('EventBus', () => {
 
       await eventBus.replay(
         (event) => event.event === 'test-event',
-        replayHandler
+        replayHandler,
       );
 
       expect(replayHandler).toHaveBeenCalledOnce();
@@ -243,26 +247,23 @@ describe('EventBus', () => {
       const handler = vi.fn();
 
       await eventBus.emit('test-event', { value: 1 });
-      
-      await eventBus.replay(
-        (event) => event.event === 'test-event',
-        handler
-      );
+
+      await eventBus.replay((event) => event.event === 'test-event', handler);
 
       expect(handler).toHaveBeenCalledWith(
         { value: 1 },
         expect.objectContaining({
           correlationId: expect.stringMatching(/^replay-evt-\d+-\d+$/),
-        })
+        }),
       );
     });
 
     it('should throw error if replay is disabled', async () => {
       const noReplayBus = new EventBus({ enableReplay: false });
 
-      await expect(
-        noReplayBus.replay(() => true)
-      ).rejects.toThrow(EventBusError);
+      await expect(noReplayBus.replay(() => true)).rejects.toThrow(
+        EventBusError,
+      );
     });
   });
 
@@ -323,7 +324,7 @@ describe('EventBus', () => {
     it('should implement stop', async () => {
       eventBus.on('test-event', vi.fn());
       await eventBus.stop();
-      
+
       expect(eventBus.getRegisteredEvents()).toHaveLength(0);
     });
 
@@ -340,12 +341,16 @@ describe('EventBus', () => {
 
   describe('emitAndWait', () => {
     it('should emit and wait for all handlers', async () => {
-      const handler1 = vi.fn().mockImplementation(() => 
-        new Promise(resolve => setTimeout(resolve, 10))
-      );
-      const handler2 = vi.fn().mockImplementation(() => 
-        new Promise(resolve => setTimeout(resolve, 20))
-      );
+      const handler1 = vi
+        .fn()
+        .mockImplementation(
+          () => new Promise((resolve) => setTimeout(resolve, 10)),
+        );
+      const handler2 = vi
+        .fn()
+        .mockImplementation(
+          () => new Promise((resolve) => setTimeout(resolve, 20)),
+        );
 
       eventBus.on('test-event', handler1);
       eventBus.on('test-event', handler2);
@@ -389,16 +394,18 @@ describe('EventBus', () => {
       });
 
       eventBus.on('test-event', handler);
-      
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
+
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+
       await eventBus.emit('test-event', {});
-      
+
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Error in event handler'),
-        'string error'
+        'string error',
       );
-      
+
       consoleSpy.mockRestore();
     });
   });

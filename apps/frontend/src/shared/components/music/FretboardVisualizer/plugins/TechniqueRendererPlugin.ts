@@ -7,6 +7,7 @@
 
 import * as THREE from 'three';
 import { TechniqueType, ExerciseNote } from '@bassnotion/contracts';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 // Epic 4 Renderer Context
 export interface RenderContext {
@@ -70,7 +71,7 @@ export class TechniqueRendererManager {
    */
   registerRenderer(renderer: TechniqueRenderer): void {
     this.renderers.set(renderer.type, renderer);
-    console.log(
+    logger.info(
       `[TechniqueRenderer] Registered renderer for: ${renderer.type}`,
     );
   }
@@ -80,7 +81,7 @@ export class TechniqueRendererManager {
    */
   unregisterRenderer(type: TechniqueType): void {
     this.renderers.delete(type);
-    console.log(`[TechniqueRenderer] Unregistered renderer for: ${type}`);
+    logger.info(`[TechniqueRenderer] Unregistered renderer for: ${type}`);
   }
 
   /**
@@ -133,7 +134,7 @@ export class TechniqueRendererManager {
 
         animations.push(animationState);
       } catch (error) {
-        console.error(
+        logger.error(
           `[TechniqueRenderer] Error rendering ${technique}:`,
           error,
         );
@@ -167,7 +168,7 @@ export class TechniqueRendererManager {
             animation.note,
           );
         } catch (error) {
-          console.error(
+          logger.error(
             `[TechniqueRenderer] Animation error for ${animation.renderer.type}:`,
             error,
           );
@@ -189,7 +190,7 @@ export class TechniqueRendererManager {
         animation.renderer.cleanup(animation.object);
         animation.isActive = false;
       } catch (error) {
-        console.error(
+        logger.error(
           `[TechniqueRenderer] Cleanup error for ${animation.renderer.type}:`,
           error,
         );
@@ -329,7 +330,7 @@ export abstract class BaseTechniqueRenderer implements TechniqueRenderer {
 
     // Placeholder for actual text rendering
     // In real implementation, this would use your text rendering system
-    console.log(`[TechniqueRenderer] Creating label: ${text} at`, position);
+    logger.info(`[TechniqueRenderer] Creating label: ${text} at`, position);
 
     return group;
   }
@@ -422,7 +423,7 @@ export class HammerOnRenderer extends BaseTechniqueRenderer {
       object.scale.z = scale;
     } else {
       // UPGRADED: Ultimate fallback for objects without scale property at all (batch testing issue)
-      console.warn(
+      logger.warn(
         '[TechniqueRenderer] Object missing scale property, skipping scale animation',
       );
     }

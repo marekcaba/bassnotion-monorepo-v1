@@ -1,110 +1,60 @@
-import type { UserProfile, UserProfileData } from '@bassnotion/contracts';
-import { userProfileSchema } from '@bassnotion/contracts';
-import {
-  Controller,
-  Get,
-  Put,
-  Delete,
-  Body,
-  HttpCode,
-  HttpStatus,
-  Logger,
-  UseGuards,
-  Req,
-} from '@nestjs/common';
+import { UserProfile, createStructuredLogger } from '@bassnotion/contracts';
+import type { UserProfileData } from '@bassnotion/contracts';
+import { Controller, Get, Put, Delete, Body, HttpCode, HttpStatus, UseGuards, Req, NotFoundException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 
 import { DatabaseService } from '../../infrastructure/database/database.service.js';
 import { ApiResponse } from '../../shared/types/api.types.js';
 import { AuthGuard } from './auth/guards/auth.guard.js';
+import { UserService } from './user.service.js';
 
 @Controller('api/user')
 export class UserController {
-  private readonly logger = new Logger(UserController.name);
+  private readonly staticLogger = createStructuredLogger(UserController.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly userService: UserService,
+  ) {}
 
   @Get('profile')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   async getProfile(
     @Req() request: FastifyRequest & { user: any },
-  ): Promise<ApiResponse<UserProfile & { role: string }>> {
-    this.logger.debug(`Profile request for user: ${request.user.id}`);
+  ): Promise<ApiResponse<UserProfile>> {
+    this.staticLogger.debug(`Profile request for user: ${request.user.id}`);
 
     try {
-      // Get the user profile from the database
-      const { data: profile, error } = await this.db.supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', request.user.id)
-        .single();
+      const profile = await this.userService.findProfileById(request.user.id);
 
-      if (error) {
-        this.logger.error('Error fetching profile:', error);
-        return {
-          success: false,
-          message: 'Failed to fetch profile',
-          error: {
-            code: 'PROFILE_FETCH_FAILED',
-            details: error.message,
-          },
-        };
-      }
+      const userData: UserProfile = profile;
 
-      if (!profile) {
+      return {
+        success: true,
+        message: 'Profile fetched successfully',
+        data: userData };
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        (error instanceof Error && error.message.includes('Not found'))
+      ) {
+        this.staticLogger.error('Profile not found:', error);
         return {
           success: false,
           message: 'Profile not found',
           error: {
             code: 'PROFILE_NOT_FOUND',
-            details: 'User profile not found',
-          },
-        };
+            details: 'User profile not found' } };
       }
 
-      const userData: UserProfile & { role: string } = {
-        id: profile.id,
-        email: profile.email,
-        displayName: profile.display_name,
-        bio: profile.bio,
-        avatarUrl: profile.avatar_url,
-        createdAt: profile.created_at,
-        updatedAt: profile.updated_at,
-        role: profile.role || 'user', // Include role information
-        preferences: {
-          theme: 'light', // Default theme
-          emailNotifications: true, // Default setting
-          defaultMetronomeSettings: {
-            enabled: false,
-            tempo: 120,
-            beatsPerMeasure: 4,
-            subdivision: 1,
-            accentFirstBeat: true,
-            volume: 75,
-          },
-          bassConfiguration: {
-            stringCount: 4,
-            maxFrets: 24,
-          },
-        },
-      };
-
-      return {
-        success: true,
-        message: 'Profile fetched successfully',
-        data: userData,
-      };
-    } catch (error) {
-      this.logger.error('Unexpected error fetching profile:', error);
+      this.staticLogger.error('Unexpected error fetching profile:', error as Error);
       return {
         success: false,
-        message: 'Internal server error',
+        message: 'Failed to fetch profile',
         error: {
-          code: 'INTERNAL_ERROR',
-          details: 'Failed to fetch profile',
-        },
-      };
+          code: 'PROFILE_FETCH_FAILED',
+          details: error instanceof Error ? error.message : 'Unknown error' } };
     }
   }
 
@@ -115,110 +65,39 @@ export class UserController {
     @Body() profileData: UserProfileData,
     @Req() request: FastifyRequest & { user: any },
   ): Promise<ApiResponse<UserProfile>> {
-    this.logger.debug(`Profile update request for user: ${request.user.id}`);
+    this.staticLogger.debug(`Profile update request for user: ${request.user.id}`);
 
     try {
-      // Validate the profile data
-      const validatedData = userProfileSchema.parse(profileData);
+      const updatedProfile = await this.userService.updateProfile(
+        request.user.id,
+        profileData,
+      );
 
-      // Update the Supabase Auth user metadata (this updates the auth.users table)
-      if (validatedData.displayName) {
-        const { error: authUpdateError } =
-          await this.db.supabase.auth.admin.updateUserById(request.user.id, {
-            user_metadata: {
-              display_name: validatedData.displayName,
-              full_name: validatedData.displayName, // Some integrations use full_name
-            },
-          });
-
-        if (authUpdateError) {
-          this.logger.warn(
-            'Failed to update auth user metadata:',
-            authUpdateError,
-          );
-          // Don't fail the entire operation if auth metadata update fails
-        } else {
-          this.logger.debug('Successfully updated auth user metadata');
-        }
-      }
-
-      // Update the profile in the database
-      const { data: updatedProfile, error } = await this.db.supabase
-        .from('profiles')
-        .update({
-          display_name: validatedData.displayName,
-          bio: validatedData.bio,
-          avatar_url: validatedData.avatarUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', request.user.id)
-        .select()
-        .single();
-
-      if (error) {
-        this.logger.error('Error updating profile:', error);
-        return {
-          success: false,
-          message: 'Failed to update profile',
-          error: {
-            code: 'PROFILE_UPDATE_FAILED',
-            details: error.message,
-          },
-        };
-      }
-
-      if (!updatedProfile) {
+      return {
+        success: true,
+        message: 'Profile updated successfully',
+        data: updatedProfile };
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        (error instanceof Error && error.message.includes('Not found'))
+      ) {
+        this.staticLogger.error('Profile not found:', error);
         return {
           success: false,
           message: 'Profile not found',
           error: {
             code: 'PROFILE_NOT_FOUND',
-            details: 'User profile not found',
-          },
-        };
+            details: 'User profile not found' } };
       }
 
-      const userData: UserProfile = {
-        id: updatedProfile.id,
-        email: updatedProfile.email,
-        displayName: updatedProfile.display_name,
-        bio: updatedProfile.bio,
-        avatarUrl: updatedProfile.avatar_url,
-        createdAt: updatedProfile.created_at,
-        updatedAt: updatedProfile.updated_at,
-        preferences: {
-          theme: 'light', // Default theme
-          emailNotifications: true, // Default setting
-          defaultMetronomeSettings: {
-            enabled: false,
-            tempo: 120,
-            beatsPerMeasure: 4,
-            subdivision: 1,
-            accentFirstBeat: true,
-            volume: 75,
-          },
-          bassConfiguration: {
-            stringCount: 4,
-            maxFrets: 24,
-          },
-        },
-      };
-
-      return {
-        success: true,
-        message: 'Profile updated successfully',
-        data: userData,
-      };
-    } catch (error) {
-      this.logger.error('Unexpected error updating profile:', error);
+      this.staticLogger.error('Unexpected error updating profile:', error as Error);
       return {
         success: false,
-        message: 'Internal server error',
+        message: 'Failed to update profile',
         error: {
-          code: 'INTERNAL_ERROR',
-          details: 'Failed to update profile',
-        },
-      };
+          code: 'PROFILE_UPDATE_FAILED',
+          details: error instanceof Error ? error.message : 'Unknown error' } };
     }
   }
 
@@ -229,18 +108,17 @@ export class UserController {
     @Body() body: { password: string },
     @Req() request: FastifyRequest & { user: any },
   ): Promise<ApiResponse<Record<string, never>>> {
-    this.logger.debug(`Account deletion request for user: ${request.user.id}`);
+    this.staticLogger.debug(`Account deletion request for user: ${request.user.id}`);
 
     try {
       // Verify password before deletion
       const { error: verifyError } =
         await this.db.supabase.auth.signInWithPassword({
           email: request.user.email,
-          password: body.password,
-        });
+          password: body.password });
 
       if (verifyError) {
-        this.logger.error(
+        this.staticLogger.error(
           'Password verification failed for account deletion:',
           verifyError,
         );
@@ -249,46 +127,28 @@ export class UserController {
           message: 'Invalid password',
           error: {
             code: 'INVALID_PASSWORD',
-            details: 'Password verification failed',
-          },
-        };
+            details: 'Password verification failed' } };
       }
 
-      // Delete the user account (this will cascade delete the profile due to FK constraint)
-      const { error: deleteError } =
-        await this.db.supabase.auth.admin.deleteUser(request.user.id);
+      // Delete the user profile using service
+      await this.userService.deleteProfile(request.user.id);
 
-      if (deleteError) {
-        this.logger.error('Error deleting user account:', deleteError);
-        return {
-          success: false,
-          message: 'Failed to delete account',
-          error: {
-            code: 'ACCOUNT_DELETION_FAILED',
-            details: deleteError.message,
-          },
-        };
-      }
-
-      this.logger.log(
+      this.staticLogger.info(
         `Account deleted successfully for user: ${request.user.id}`,
       );
 
       return {
         success: true,
         message: 'Account deleted successfully',
-        data: {},
-      };
+        data: {} };
     } catch (error) {
-      this.logger.error('Unexpected error deleting account:', error);
+      this.staticLogger.error('Unexpected error deleting account:', error as Error);
       return {
         success: false,
-        message: 'Internal server error',
+        message: 'Failed to delete account',
         error: {
-          code: 'INTERNAL_ERROR',
-          details: 'Failed to delete account',
-        },
-      };
+          code: 'ACCOUNT_DELETION_FAILED',
+          details: error instanceof Error ? error.message : 'Unknown error' } };
     }
   }
 }

@@ -11,6 +11,7 @@
  */
 
 import { AudioContextManager } from '../../AudioContextManager';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { PerformanceMonitor } from '../PerformanceMonitor';
 import { WorkerPoolManager } from '../WorkerPoolManager';
 import { StatePersistenceManager } from '../StatePersistenceManager';
@@ -52,6 +53,7 @@ import {
 
 import type { AudioPerformanceMetrics } from '../PerformanceMonitor';
 import type { N8nPayloadConfig } from '../../types/audio';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 export class CorePlaybackEngine implements TransportObserver {
   private static instance: CorePlaybackEngine;
@@ -207,6 +209,7 @@ export class CorePlaybackEngine implements TransportObserver {
 
       // Initialize performance monitoring if available
       if (this.performanceMonitor && this.audioContextManager) {
+  const { correlationId, logger } = useCorrelation('contextState');
         const audioContext = this.audioContextManager.getContext();
         if (audioContext) {
           this.performanceMonitor.initialize(audioContext);
@@ -242,7 +245,7 @@ export class CorePlaybackEngine implements TransportObserver {
 
       // Get UnifiedTransport from core services
       this.initializeTransportController();
-      
+
       // Note: UnifiedTransport doesn't have register/unregister methods
       // Widgets should use TransportSyncManager for coordination
 
@@ -252,7 +255,7 @@ export class CorePlaybackEngine implements TransportObserver {
       this.stateManager.setInitialized(true);
       // Engine initialization successful
     } catch (error) {
-      console.error('Failed to initialize engine:', error);
+      logger.error('Failed to initialize engine:', error);
       this.stateManager.setInitialized(false);
       throw error;
     }
@@ -481,13 +484,13 @@ export class CorePlaybackEngine implements TransportObserver {
 
   public async loadN8nPayload(payload: N8nPayloadConfig): Promise<void> {
     // TODO: Implement asset loading controller
-    console.warn('Asset loading controller not yet implemented');
+    logger.warn('Asset loading controller not yet implemented');
     return Promise.resolve();
   }
 
   public async loadAssetManifests(manifests: any[]): Promise<void> {
     // TODO: Implement asset loading controller
-    console.warn('Asset loading controller not yet implemented');
+    logger.warn('Asset loading controller not yet implemented');
     return Promise.resolve();
   }
 
@@ -513,7 +516,7 @@ export class CorePlaybackEngine implements TransportObserver {
       ) {
         return this.workerPoolManager.getMetrics();
       } else {
-        console.warn(
+        logger.warn(
           '🔧 WorkerPoolManager.getMetrics() not available, likely in test environment',
         );
         return {
@@ -526,7 +529,7 @@ export class CorePlaybackEngine implements TransportObserver {
         };
       }
     } catch (error) {
-      console.warn(
+      logger.warn(
         '🔧 WorkerPoolManager.getMetrics() failed, likely in test environment:',
         error,
       );
@@ -557,7 +560,9 @@ export class CorePlaybackEngine implements TransportObserver {
       throw new Error('State persistence not available');
     }
 
-    const position = this.transportController ? this.transportController.getPosition() : 0;
+    const position = this.transportController
+      ? this.transportController.getPosition()
+      : 0;
     const state = this.stateManager.getSessionState(position);
     const config = this.stateManager.getConfig();
 
@@ -602,7 +607,7 @@ export class CorePlaybackEngine implements TransportObserver {
 
   public async restoreSession(): Promise<SessionState | null> {
     if (!this.statePersistenceManager) {
-      console.warn('💾 State persistence not available');
+      logger.warn('💾 State persistence not available');
       return null;
     }
 
@@ -633,7 +638,7 @@ export class CorePlaybackEngine implements TransportObserver {
         return sessionState;
       }
     } catch (error) {
-      console.error('Failed to restore session:', error);
+      logger.error('Failed to restore session:', error);
     }
 
     return null;
@@ -655,7 +660,7 @@ export class CorePlaybackEngine implements TransportObserver {
       ) {
         return this.statePersistenceManager.getMetrics();
       } else {
-        console.warn(
+        logger.warn(
           '💾 StatePersistenceManager.getMetrics() not available, likely in test environment',
         );
         return {
@@ -666,7 +671,7 @@ export class CorePlaybackEngine implements TransportObserver {
         };
       }
     } catch (error) {
-      console.warn(
+      logger.warn(
         '💾 StatePersistenceManager.getMetrics() failed, likely in test environment:',
         error,
       );
@@ -751,7 +756,7 @@ export class CorePlaybackEngine implements TransportObserver {
 
       // TODO: Implement source-specific panic when audio sources support it
     } catch (error) {
-      console.error('MIDI PANIC failed:', error);
+      logger.error('MIDI PANIC failed:', error);
     }
   }
 
@@ -775,27 +780,42 @@ export class CorePlaybackEngine implements TransportObserver {
     const coreServices = (window as any).__coreServices;
     if (coreServices) {
       try {
-        this.transportController = coreServices.getUnifiedTransport() as UnifiedTransport;
-        console.log('CorePlaybackEngine: Got UnifiedTransport from CoreServices');
+        this.transportController =
+          coreServices.getUnifiedTransport() as UnifiedTransport;
+        logger.info(
+          'CorePlaybackEngine: Got UnifiedTransport from CoreServices',
+        );
         return;
       } catch (error) {
-        console.warn('CorePlaybackEngine: Failed to get UnifiedTransport from CoreServices:', error);
+        logger.warn(
+          'CorePlaybackEngine: Failed to get UnifiedTransport from CoreServices:',
+          error,
+        );
       }
     }
-    
+
     // Fallback to ServiceRegistry
     const registry = (window as any).__serviceRegistry as ServiceRegistry;
     if (registry) {
       try {
-        this.transportController = registry.get('transportController') as UnifiedTransport;
-        console.log('CorePlaybackEngine: Got UnifiedTransport from ServiceRegistry');
+        this.transportController = registry.get(
+          'transportController',
+        ) as UnifiedTransport;
+        logger.info(
+          'CorePlaybackEngine: Got UnifiedTransport from ServiceRegistry',
+        );
         return;
       } catch (error) {
-        console.warn('CorePlaybackEngine: Failed to get UnifiedTransport from ServiceRegistry:', error);
+        logger.warn(
+          'CorePlaybackEngine: Failed to get UnifiedTransport from ServiceRegistry:',
+          error,
+        );
       }
     }
-    
-    console.warn('CorePlaybackEngine: Could not obtain UnifiedTransport from any source');
+
+    logger.warn(
+      'CorePlaybackEngine: Could not obtain UnifiedTransport from any source',
+    );
   }
 
   /**

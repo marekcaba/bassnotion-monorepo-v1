@@ -1,7 +1,7 @@
 /**
  * ErrorReporting - Error analytics and reporting
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Collects and reports error data for monitoring and analysis
  */
 
@@ -49,7 +49,7 @@ export class ErrorReporter {
   private reportQueue: ErrorReport[] = [];
   private flushTimer?: NodeJS.Timeout;
   private sessionId: string;
-  
+
   constructor(eventBus: EventBus, config: ReportingConfig = {}) {
     this.eventBus = eventBus;
     this.config = {
@@ -59,9 +59,9 @@ export class ErrorReporter {
       flushInterval: 30000, // 30 seconds
       enableLocalStorage: true,
       maxStoredReports: 100,
-      ...config
+      ...config,
     };
-    
+
     this.sessionId = this.generateSessionId();
     this.loadStoredReports();
     this.startFlushTimer();
@@ -73,18 +73,18 @@ export class ErrorReporter {
    */
   async report(error: Error, context: ErrorContext): Promise<void> {
     const report = this.createReport(error, context);
-    
+
     // Add to queue
     this.reportQueue.push(report);
-    
+
     // Emit event
     this.eventBus.emit('error:reported', { report });
-    
+
     // Check if we should flush
     if (this.reportQueue.length >= this.config.batchSize) {
       await this.flush();
     }
-    
+
     // Store locally if enabled
     if (this.config.enableLocalStorage) {
       this.storeReport(report);
@@ -103,11 +103,11 @@ export class ErrorReporter {
       stack: error.stack,
       context: {
         ...context,
-        sessionId: this.sessionId
+        sessionId: this.sessionId,
       },
       severity: this.determineSeverity(error),
       userAgent: navigator.userAgent,
-      url: window.location.href
+      url: window.location.href,
     };
 
     // Add error code if it's an AudioError
@@ -131,22 +131,25 @@ export class ErrorReporter {
         memory: {
           usedJSHeapSize: performance.memory.usedJSHeapSize,
           totalJSHeapSize: performance.memory.totalJSHeapSize,
-          jsHeapSizeLimit: performance.memory.jsHeapSizeLimit
-        }
+          jsHeapSizeLimit: performance.memory.jsHeapSizeLimit,
+        },
       };
     }
 
     // Add page load timing
     if (performance && performance.timing) {
-      const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
-      const domContentLoaded = performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart;
-      
+      const loadTime =
+        performance.timing.loadEventEnd - performance.timing.navigationStart;
+      const domContentLoaded =
+        performance.timing.domContentLoadedEventEnd -
+        performance.timing.navigationStart;
+
       report.performance = {
         ...report.performance,
         timing: {
           loadTime,
-          domContentLoaded
-        }
+          domContentLoaded,
+        },
       };
     }
 
@@ -156,26 +159,28 @@ export class ErrorReporter {
   /**
    * Determine error severity
    */
-  private determineSeverity(error: Error): 'low' | 'medium' | 'high' | 'critical' {
+  private determineSeverity(
+    error: Error,
+  ): 'low' | 'medium' | 'high' | 'critical' {
     if (error instanceof AudioError) {
       return error.getSeverity();
     }
 
     // Determine based on error message patterns
     const message = error.message.toLowerCase();
-    
+
     if (message.includes('fatal') || message.includes('crash')) {
       return 'critical';
     }
-    
+
     if (message.includes('failed') || message.includes('error')) {
       return 'high';
     }
-    
+
     if (message.includes('warning') || message.includes('retry')) {
       return 'medium';
     }
-    
+
     return 'low';
   }
 
@@ -190,23 +195,23 @@ export class ErrorReporter {
 
     try {
       await this.sendReports(reports);
-      
+
       // Clear stored reports on successful send
       if (this.config.enableLocalStorage) {
         this.clearStoredReports();
       }
-      
+
       this.eventBus.emit('error:reports-sent', {
         count: reports.length,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     } catch (error) {
       // Failed to send, add back to queue
       this.reportQueue.unshift(...reports);
-      
+
       this.eventBus.emit('error:report-failed', {
         error,
-        reportCount: reports.length
+        reportCount: reports.length,
       });
     }
   }
@@ -221,13 +226,13 @@ export class ErrorReporter {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(this.config.apiKey && { 'X-API-Key': this.config.apiKey })
+        ...(this.config.apiKey && { 'X-API-Key': this.config.apiKey }),
       },
       body: JSON.stringify({
         reports,
         sessionId: this.sessionId,
-        timestamp: Date.now()
-      })
+        timestamp: Date.now(),
+      }),
     });
 
     if (!response.ok) {
@@ -242,12 +247,12 @@ export class ErrorReporter {
     try {
       const stored = this.getStoredReports();
       stored.push(report);
-      
+
       // Limit stored reports
       if (stored.length > this.config.maxStoredReports) {
         stored.splice(0, stored.length - this.config.maxStoredReports);
       }
-      
+
       localStorage.setItem('audio-error-reports', JSON.stringify(stored));
     } catch {
       // Ignore storage errors
@@ -317,9 +322,9 @@ export class ErrorReporter {
           const data = JSON.stringify({
             reports: this.reportQueue,
             sessionId: this.sessionId,
-            timestamp: Date.now()
+            timestamp: Date.now(),
           });
-          
+
           navigator.sendBeacon(this.config.endpoint, data);
         }
       }
@@ -351,7 +356,7 @@ export class ErrorReporter {
     return {
       queuedReports: this.reportQueue.length,
       sessionId: this.sessionId,
-      totalReported: 0 // Would need to track this
+      totalReported: 0, // Would need to track this
     };
   }
 
@@ -362,12 +367,12 @@ export class ErrorReporter {
     if (this.flushTimer) {
       clearInterval(this.flushTimer);
     }
-    
+
     // Final flush
     this.flush().catch(() => {
       // Store any remaining reports
       if (this.config.enableLocalStorage && this.reportQueue.length > 0) {
-        this.reportQueue.forEach(report => this.storeReport(report));
+        this.reportQueue.forEach((report) => this.storeReport(report));
       }
     });
   }

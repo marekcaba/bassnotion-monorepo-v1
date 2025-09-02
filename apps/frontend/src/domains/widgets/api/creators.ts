@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 export interface CreatorStats {
   channelUrl: string;
@@ -22,6 +23,8 @@ export interface CreatorStatsResponse {
 /**
  * Get cached creator statistics from backend
  */
+const logger = createStructuredLogger('Creators');
+
 export async function getCreatorStats(
   channelUrl: string,
 ): Promise<CreatorStatsResponse> {
@@ -43,7 +46,7 @@ export async function getCreatorStats(
 
     return response;
   } catch (error) {
-    console.error('Error fetching creator stats:', error);
+    logger.error('Error fetching creator stats:', error);
     return {
       error: 'Failed to fetch creator stats',
       fallback: {
@@ -70,7 +73,7 @@ export async function triggerBatchUpdate(): Promise<{
     }>('/api/creators/batch-update');
     return response;
   } catch (error) {
-    console.error('Error triggering batch update:', error);
+    logger.error('Error triggering batch update:', error);
     return {
       success: false,
       error: 'Failed to trigger batch update',
@@ -106,7 +109,7 @@ export async function getCreatorHealthStatus(): Promise<{
     }>('/api/creators/health');
     return response;
   } catch (error) {
-    console.error('Error checking creator health:', error);
+    logger.error('Error checking creator health:', error);
     return {
       success: false,
       error: 'Failed to check creator health',

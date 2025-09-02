@@ -1,6 +1,7 @@
 // import * as Tone from 'tone'; // Removed - Story 3.18.3
 import { getTone } from '../../ServiceAdapter.js';
 import { getAudioArchitectureFlags } from '../../../config/featureFlags.js';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 /**
  * Hammond B3-style drawbar organ synthesis
@@ -23,7 +24,7 @@ export function createDrawbarOrgan(): any {
   // Add rotary speaker simulation
   const flags = getAudioArchitectureFlags();
   if (flags.ENABLE_MIGRATION_MONITORING) {
-    console.log('[organ-synthesis] Using Tone from dependency injection');
+    logger.info('[organ-synthesis] Using Tone from dependency injection');
   }
   const chorus = new Tone.Chorus(4, 2.5, 0.5).start();
   const tremolo = new Tone.Tremolo(6, 0.8).start();

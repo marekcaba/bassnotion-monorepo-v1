@@ -16,6 +16,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { useToast } from '@/shared/hooks/use-toast';
 import { UserBasslinesAPI } from '../../api/user-basslines';
 import type {
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
   ExerciseNote,
   BasslineMetadata,
   SaveBasslineRequest,
@@ -37,6 +38,7 @@ export function SaveBasslineDialog({
   defaultMetadata,
   onSave,
 }: SaveBasslineDialogProps) {
+  const { correlationId, logger } = useCorrelation('SaveBasslineDialog');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [tempo, setTempo] = useState(defaultMetadata?.tempo || 120);
@@ -119,7 +121,7 @@ export function SaveBasslineDialog({
       onSave?.(response.bassline.id);
       handleClose();
     } catch (error: any) {
-      console.error('Error saving bassline:', error);
+      logger.error('Error saving bassline:', error);
 
       let errorMessage = 'Failed to save bassline';
       if (error?.response?.data?.message) {

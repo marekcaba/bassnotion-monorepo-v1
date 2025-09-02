@@ -19,6 +19,8 @@ import {
   CircuitBreakerConfig,
 } from './CircuitBreaker';
 import {
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
   GracefulDegradation,
   DegradationContext,
   DegradationLevel,
@@ -111,7 +113,7 @@ export class ErrorRecovery {
       // TODO: Review non-null assertion - consider null safety
       return this._circuitBreakerManager!;
     } catch (error) {
-      console.error('Failed to get circuit breaker manager:', error);
+      logger.error('Failed to get circuit breaker manager:', error);
       // TODO: Review non-null assertion - consider null safety
       if (!this._circuitBreakerManager) {
         this._circuitBreakerManager = this.createMockCircuitBreakerManager();
@@ -143,7 +145,7 @@ export class ErrorRecovery {
       // TODO: Review non-null assertion - consider null safety
       return this._gracefulDegradation!;
     } catch (error) {
-      console.error('Failed to get graceful degradation:', error);
+      logger.error('Failed to get graceful degradation:', error);
       // TODO: Review non-null assertion - consider null safety
       if (!this._gracefulDegradation) {
         this._gracefulDegradation = this.createMockGracefulDegradation();
@@ -198,7 +200,7 @@ export class ErrorRecovery {
     try {
       return Date.now();
     } catch (error) {
-      console.warn('Date.now() failed, using fallback:', error);
+      logger.warn('Date.now() failed, using fallback:', error);
       return performance?.now?.() || new Date().getTime() || 0;
     }
   }
@@ -212,15 +214,16 @@ export class ErrorRecovery {
 
     this.metrics.totalAttempts++;
 
-    console.log(
+    logger.info(
       `Starting recovery for error: ${error.code} (${error.category})`,
+  const { correlationId, logger } = useCorrelation('startTime');
     );
 
     try {
       // Check if error is recoverable before attempting recovery
       // TODO: Review non-null assertion - consider null safety
       if (error.isRecoverable && !error.isRecoverable()) {
-        console.log('Error is not recoverable, skipping recovery');
+        logger.info('Error is not recoverable, skipping recovery');
         this.metrics.failedRecoveries++;
         return false;
       }
@@ -240,7 +243,7 @@ export class ErrorRecovery {
         );
         if (degradationSuccess) {
           this.metrics.degradationActivations++;
-          console.log('Graceful degradation applied successfully');
+          logger.info('Graceful degradation applied successfully');
         }
       }
 
@@ -252,12 +255,12 @@ export class ErrorRecovery {
       this.updateMetrics(recoverySuccess, recoveryTime);
       this.activeRecoveries.delete(recoveryId);
 
-      console.log(
+      logger.info(
         `Recovery ${recoverySuccess ? 'succeeded' : 'failed'} in ${recoveryTime}ms`,
       );
       return recoverySuccess;
     } catch (recoveryError) {
-      console.error('Recovery process failed:', recoveryError);
+      logger.error('Recovery process failed:', recoveryError);
       this.metrics.failedRecoveries++;
       this.activeRecoveries.delete(recoveryId);
       return false;
@@ -275,7 +278,7 @@ export class ErrorRecovery {
       const automaticActions = error.getAutomaticRecoveries();
 
       if (automaticActions.length === 0) {
-        console.log('No automatic recovery actions available');
+        logger.info('No automatic recovery actions available');
         return false;
       }
 
@@ -298,7 +301,7 @@ export class ErrorRecovery {
 
         return success;
       } catch (circuitError) {
-        console.error(
+        logger.error(
           'Circuit breaker blocked recovery or recovery failed:',
           circuitError,
         );
@@ -306,7 +309,7 @@ export class ErrorRecovery {
         return false;
       }
     } catch (error) {
-      console.error('Error in executeRecoveryActions:', error);
+      logger.error('Error in executeRecoveryActions:', error);
       return false;
     }
   }
@@ -324,12 +327,12 @@ export class ErrorRecovery {
       // Add null check for action
       // TODO: Review non-null assertion - consider null safety
       if (!action) {
-        console.warn(`Action at index ${i} is undefined, skipping`);
+        logger.warn(`Action at index ${i} is undefined, skipping`);
         continue;
       }
 
       try {
-        console.log(`Executing recovery action: ${action.description}`);
+        logger.info(`Executing recovery action: ${action.description}`);
 
         // Apply exponential backoff for retries
         if (
@@ -337,21 +340,21 @@ export class ErrorRecovery {
           this.config.exponentialBackoff.enabled
         ) {
           const delay = this.calculateBackoffDelay(context.attemptNumber);
-          console.log(`Applying backoff delay: ${delay}ms`);
+          logger.info(`Applying backoff delay: ${delay}ms`);
           await this.delay(delay);
         }
 
         const success = await this.executeAction(action);
 
         if (success) {
-          console.log(`Recovery action succeeded: ${action.description}`);
+          logger.info(`Recovery action succeeded: ${action.description}`);
           return true;
         } else {
-          console.warn(`Recovery action failed: ${action.description}`);
+          logger.warn(`Recovery action failed: ${action.description}`);
           // Continue to next action
         }
       } catch (actionError) {
-        console.error(
+        logger.error(
           `Error executing recovery action ${action.description}:`,
           actionError,
         );
@@ -392,7 +395,7 @@ export class ErrorRecovery {
         degradationContext,
       );
     } catch (error) {
-      console.error('Failed to apply graceful degradation:', error);
+      logger.error('Failed to apply graceful degradation:', error);
       return false;
     }
   }
@@ -417,7 +420,7 @@ export class ErrorRecovery {
         config,
       );
     } catch (circuitError) {
-      console.error('Failed to get circuit breaker:', circuitError);
+      logger.error('Failed to get circuit breaker:', circuitError);
       // Return a mock circuit breaker
       return this.createMockCircuitBreaker();
     }
@@ -437,7 +440,7 @@ export class ErrorRecovery {
 
       return result;
     } catch (error) {
-      console.error(`Recovery action failed: ${action.description}`, error);
+      logger.error(`Recovery action failed: ${action.description}`, error);
       return false;
     }
   }
@@ -460,7 +463,7 @@ export class ErrorRecovery {
       case 'reload':
         return await this.reloadComponents(action);
       default:
-        console.warn(`Unknown recovery action type: ${(action as any).type}`);
+        logger.warn(`Unknown recovery action type: ${(action as any).type}`);
         return false;
     }
   }
@@ -470,7 +473,7 @@ export class ErrorRecovery {
    */
   private async retryOperation(action: ErrorRecoveryAction): Promise<boolean> {
     // Simulate retry logic - in real implementation would retry the actual operation
-    console.log(`Retrying operation: ${action.description}`);
+    logger.info(`Retrying operation: ${action.description}`);
     return true;
   }
 
@@ -480,7 +483,7 @@ export class ErrorRecovery {
   private async switchToFallback(
     action: ErrorRecoveryAction,
   ): Promise<boolean> {
-    console.log(`Switching to fallback: ${action.description}`);
+    logger.info(`Switching to fallback: ${action.description}`);
     return true;
   }
 
@@ -491,7 +494,7 @@ export class ErrorRecovery {
     action: ErrorRecoveryAction,
   ): Promise<boolean> {
     try {
-      console.log(`Applying degradation: ${action.description}`);
+      logger.info(`Applying degradation: ${action.description}`);
       // Use the graceful degradation system to apply specific degradation
       const context: DegradationContext = {
         errorCategory: ErrorCategory.PERFORMANCE,
@@ -509,7 +512,7 @@ export class ErrorRecovery {
 
       return await this.gracefulDegradation.applyDegradation(context);
     } catch (error) {
-      console.error('Failed to apply degradation action:', error);
+      logger.error('Failed to apply degradation action:', error);
       return false;
     }
   }
@@ -518,7 +521,7 @@ export class ErrorRecovery {
    * Gracefully abort current operation
    */
   private async abortOperation(action: ErrorRecoveryAction): Promise<boolean> {
-    console.log(`Aborting operation: ${action.description}`);
+    logger.info(`Aborting operation: ${action.description}`);
     return true;
   }
 
@@ -528,7 +531,7 @@ export class ErrorRecovery {
   private async reloadComponents(
     action: ErrorRecoveryAction,
   ): Promise<boolean> {
-    console.log(`Reloading components: ${action.description}`);
+    logger.info(`Reloading components: ${action.description}`);
     return true;
   }
 
@@ -551,7 +554,7 @@ export class ErrorRecovery {
         deviceCapabilities: this.detectDeviceCapabilities(),
       };
     } catch (contextError) {
-      console.warn('Failed to create full recovery context:', contextError);
+      logger.warn('Failed to create full recovery context:', contextError);
       return {
         error,
         attemptNumber: 1,
@@ -582,7 +585,7 @@ export class ErrorRecovery {
         memoryPressure: 'normal' as 'normal' | 'moderate' | 'high' | 'critical',
       };
     } catch (error) {
-      console.warn('Failed to detect device capabilities:', error);
+      logger.warn('Failed to detect device capabilities:', error);
       return {
         isLowEnd: false,
         networkCondition: 'good' as const,
@@ -811,7 +814,7 @@ export class ErrorRecovery {
     try {
       return this.circuitBreakerManager.getAllMetrics();
     } catch (error) {
-      console.warn('Failed to get circuit breaker metrics:', error);
+      logger.warn('Failed to get circuit breaker metrics:', error);
       return {};
     }
   }
@@ -823,7 +826,7 @@ export class ErrorRecovery {
     try {
       return this.gracefulDegradation.getState();
     } catch (error) {
-      console.warn('Failed to get degradation state:', error);
+      logger.warn('Failed to get degradation state:', error);
       return {
         currentLevel: DegradationLevel.NONE,
         activeStrategies: [],
@@ -845,7 +848,7 @@ export class ErrorRecovery {
         this._circuitBreakerManager.resetAll();
       }
     } catch (error) {
-      console.warn('Failed to reset circuit breaker manager:', error);
+      logger.warn('Failed to reset circuit breaker manager:', error);
     }
 
     try {
@@ -854,7 +857,7 @@ export class ErrorRecovery {
         this._gracefulDegradation.reset();
       }
     } catch (error) {
-      console.warn('Failed to reset graceful degradation:', error);
+      logger.warn('Failed to reset graceful degradation:', error);
     }
 
     // Clear local state
@@ -872,6 +875,6 @@ export class ErrorRecovery {
     this._circuitBreakerManager = undefined;
     this._gracefulDegradation = undefined;
 
-    console.log('Error recovery system reset');
+    logger.info('Error recovery system reset');
   }
 }

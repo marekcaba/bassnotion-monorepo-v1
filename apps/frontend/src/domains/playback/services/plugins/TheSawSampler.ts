@@ -1,4 +1,5 @@
 import { loadGlobalTone } from './toneLoader';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Use global Tone instance to ensure same AudioContext
 let Tone: any = null;
@@ -67,7 +68,7 @@ export class TheSawSampler {
   private async ensureToneLoaded(): Promise<void> {
     if (!Tone) {
       Tone = await loadGlobalTone();
-      console.log('🎵 Using global Tone.js instance in TheSawSampler');
+      logger.info('🎵 Using global Tone.js instance in TheSawSampler');
     }
   }
 
@@ -77,7 +78,7 @@ export class TheSawSampler {
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
-    console.log('🎹 Initializing The Saw...');
+    logger.info('🎹 Initializing The Saw...');
 
     try {
       // Ensure Tone is loaded before initializing
@@ -103,10 +104,10 @@ export class TheSawSampler {
         release: this.envelope.release,
         curve: 'exponential',
         onload: () => {
-          console.log('✅ The Saw samples loaded successfully');
+          logger.info('✅ The Saw samples loaded successfully');
         },
         onerror: (error: any) => {
-          console.error('❌ Error loading The Saw samples:', error);
+          logger.error('❌ Error loading The Saw samples:', error);
         },
       });
 
@@ -122,9 +123,9 @@ export class TheSawSampler {
       }
 
       this.isInitialized = true;
-      console.log('✅ The Saw ready');
+      logger.info('✅ The Saw ready');
     } catch (error) {
-      console.error('Failed to initialize The Saw:', error);
+      logger.error('Failed to initialize The Saw:', error);
       throw error;
     }
   }
@@ -192,7 +193,7 @@ export class TheSawSampler {
     velocity = 0.7,
   ): Promise<void> {
     if (!this.sampler || !this.isInitialized) {
-      console.warn('The Saw not initialized');
+      logger.warn('The Saw not initialized');
       return;
     }
 
@@ -203,7 +204,7 @@ export class TheSawSampler {
       // Trigger the sampler
       this.sampler.triggerAttackRelease(notes, duration, noteTime, velocity);
     } catch (error) {
-      console.error('Error playing The Saw note:', error);
+      logger.error('Error playing The Saw note:', error);
     }
   }
 
@@ -216,7 +217,7 @@ export class TheSawSampler {
     velocity = 0.7,
   ): Promise<void> {
     if (!this.sampler || !this.isInitialized) {
-      console.warn('The Saw not initialized');
+      logger.warn('The Saw not initialized');
       return;
     }
 
@@ -224,7 +225,7 @@ export class TheSawSampler {
       const noteTime = time !== undefined ? time : Tone.now();
       this.sampler.triggerAttack(note, noteTime, velocity);
     } catch (error) {
-      console.error('Error triggering The Saw attack:', error);
+      logger.error('Error triggering The Saw attack:', error);
     }
   }
 
@@ -307,7 +308,7 @@ export class TheSawSampler {
           }
         }, 50);
       } catch (error) {
-        console.warn('Failed to release notes on The Saw sampler:', error);
+        logger.warn('Failed to release notes on The Saw sampler:', error);
       }
     }
   }
@@ -330,7 +331,7 @@ export class TheSawSampler {
     }
 
     this.isInitialized = false;
-    console.log('🗑️ Disposed The Saw sampler');
+    logger.info('🗑️ Disposed The Saw sampler');
   }
 
   /**

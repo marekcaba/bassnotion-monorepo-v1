@@ -1,7 +1,7 @@
 /**
  * ProductionDebugger - Production debugging capabilities
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Advanced debugging tools for production environments
  */
 
@@ -89,7 +89,7 @@ export class ProductionDebugger {
     logger: ProductionLogger,
     metrics: MetricsCollector,
     health: HealthMonitor,
-    config: DebugConfig = {}
+    config: DebugConfig = {},
   ) {
     this.eventBus = eventBus;
     this.logger = logger;
@@ -104,7 +104,7 @@ export class ProductionDebugger {
       allowedDebugKeys: ['debug123'], // Should be environment-specific
       autoSnapshot: false,
       snapshotInterval: 60000, // 1 minute
-      ...config
+      ...config,
     };
 
     this.setupDebugInterface();
@@ -124,7 +124,7 @@ export class ProductionDebugger {
       snapshot: () => this.captureSnapshot(),
       replay: (sessionId: string) => this.replaySession(sessionId),
       export: () => this.exportDebugData(),
-      status: () => this.getDebugStatus()
+      status: () => this.getDebugStatus(),
     };
 
     // Listen for debug key combination (Ctrl+Shift+D)
@@ -159,8 +159,8 @@ export class ProductionDebugger {
       metadata: {
         userAgent: navigator.userAgent,
         url: window.location.href,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     };
 
     this.sessions.set(sessionId, session);
@@ -195,10 +195,10 @@ export class ProductionDebugger {
     this.captures = [];
 
     const sessionId = this.activeSession.id;
-    this.logger.info('debug', 'Debug session stopped', { 
+    this.logger.info('debug', 'Debug session stopped', {
       sessionId,
       duration: this.activeSession.endTime - this.activeSession.startTime,
-      captures: this.activeSession.captures.length
+      captures: this.activeSession.captures.length,
     });
 
     this.eventBus.emit('debug:session-stopped', { sessionId });
@@ -221,27 +221,34 @@ export class ProductionDebugger {
         contextState: audioEngine?.getContext()?.state,
         sampleRate: audioEngine?.getContext()?.sampleRate,
         latency: audioEngine?.getContext()?.baseLatency,
-        activeNodes: this.countActiveAudioNodes()
+        activeNodes: this.countActiveAudioNodes(),
       },
       performance: {
-        memory: performance.memory?.usedJSHeapSize ? 
-          Math.round(performance.memory.usedJSHeapSize / (1024 * 1024)) : undefined,
-        audioDropouts: metricsSnapshot.counters['performance.audio.dropouts'] || 0
+        memory: performance.memory?.usedJSHeapSize
+          ? Math.round(performance.memory.usedJSHeapSize / (1024 * 1024))
+          : undefined,
+        audioDropouts:
+          metricsSnapshot.counters['performance.audio.dropouts'] || 0,
       },
       errors: this.getRecentErrors(),
       metrics: this.getKeyMetrics(metricsSnapshot),
-      events: this.captures.slice(-50) // Last 50 events
+      events: this.captures.slice(-50), // Last 50 events
     };
 
     // Calculate FPS if possible
     if (this.frameTimestamps.length > 1) {
-      const frameDelta = this.frameTimestamps[this.frameTimestamps.length - 1] - 
-                        this.frameTimestamps[0];
-      snapshot.performance.fps = Math.round((this.frameTimestamps.length - 1) / (frameDelta / 1000));
+      const frameDelta =
+        this.frameTimestamps[this.frameTimestamps.length - 1] -
+        this.frameTimestamps[0];
+      snapshot.performance.fps = Math.round(
+        (this.frameTimestamps.length - 1) / (frameDelta / 1000),
+      );
     }
 
-    this.logger.debug('debug', 'Snapshot captured', { timestamp: snapshot.timestamp });
-    
+    this.logger.debug('debug', 'Snapshot captured', {
+      timestamp: snapshot.timestamp,
+    });
+
     return snapshot;
   }
 
@@ -251,7 +258,7 @@ export class ProductionDebugger {
   private setupEventCapture(): void {
     // Capture all events when debugging
     const originalEmit = this.eventBus.emit.bind(this.eventBus);
-    
+
     this.eventBus.emit = (event: string, data?: any) => {
       if (this.config.enabled && this.shouldCapture('event', event)) {
         this.addCapture({
@@ -259,10 +266,10 @@ export class ProductionDebugger {
           type: 'event',
           category: event.split(':')[0] || 'unknown',
           data: { event, ...data },
-          stack: this.config.captureStackTraces ? new Error().stack : undefined
+          stack: this.config.captureStackTraces ? new Error().stack : undefined,
         });
       }
-      
+
       return originalEmit(event, data);
     };
 
@@ -273,7 +280,7 @@ export class ProductionDebugger {
           timestamp: Date.now(),
           type: 'metric',
           category: metric.category,
-          data: metric
+          data: metric,
         });
       }
     });
@@ -285,7 +292,7 @@ export class ProductionDebugger {
           timestamp: entry.timestamp,
           type: 'log',
           category: entry.category,
-          data: entry
+          data: entry,
         });
       }
     });
@@ -299,19 +306,21 @@ export class ProductionDebugger {
    */
   private shouldCapture(type: string, value: string): boolean {
     if (!this.activeSession) return false;
-    
+
     const filters = this.activeSession.filters;
     if (filters.length === 0) return true; // Capture all if no filters
-    
-    return filters.some(filter => {
+
+    return filters.some((filter) => {
       if (filter.type !== type) return false;
-      
+
       if (filter.pattern) {
-        const pattern = filter.pattern instanceof RegExp ? 
-          filter.pattern : new RegExp(filter.pattern);
+        const pattern =
+          filter.pattern instanceof RegExp
+            ? filter.pattern
+            : new RegExp(filter.pattern);
         return pattern.test(value);
       }
-      
+
       return true;
     });
   }
@@ -321,12 +330,12 @@ export class ProductionDebugger {
    */
   private addCapture(capture: DebugCapture): void {
     this.captures.push(capture);
-    
+
     // Maintain max captures
     if (this.captures.length > this.config.maxCaptures) {
       this.captures.shift();
     }
-    
+
     // Send to remote if enabled
     if (this.config.remoteDebugging && this.config.remoteEndpoint) {
       this.sendToRemote(capture);
@@ -338,21 +347,21 @@ export class ProductionDebugger {
    */
   private frameTimestamps: number[] = [];
   private frameId?: number;
-  
+
   private trackFrameRate(): void {
     const recordFrame = (timestamp: number) => {
       if (this.config.enabled) {
         this.frameTimestamps.push(timestamp);
-        
+
         // Keep last 60 frames
         if (this.frameTimestamps.length > 60) {
           this.frameTimestamps.shift();
         }
       }
-      
+
       this.frameId = requestAnimationFrame(recordFrame);
     };
-    
+
     this.frameId = requestAnimationFrame(recordFrame);
   }
 
@@ -366,32 +375,34 @@ export class ProductionDebugger {
     }
 
     this.logger.info('debug', 'Replaying debug session', { sessionId });
-    
+
     // Create replay session
     const replaySession: DebugSession = {
       ...session,
       id: `${sessionId}-replay`,
       mode: 'replay',
-      startTime: Date.now()
+      startTime: Date.now(),
     };
-    
+
     this.activeSession = replaySession;
-    
+
     // Replay captures with timing
     for (let i = 0; i < session.captures.length; i++) {
       const capture = session.captures[i];
       const nextCapture = session.captures[i + 1];
-      
+
       // Emit replay event
       this.eventBus.emit('debug:replay-event', capture);
-      
+
       // Wait for next event timing
       if (nextCapture) {
         const delay = nextCapture.timestamp - capture.timestamp;
-        await new Promise(resolve => setTimeout(resolve, Math.min(delay, 1000)));
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.min(delay, 1000)),
+        );
       }
     }
-    
+
     this.activeSession = null;
     this.logger.info('debug', 'Debug session replay completed', { sessionId });
   }
@@ -401,28 +412,28 @@ export class ProductionDebugger {
    */
   private getRecentErrors(): DebugSnapshot['errors'] {
     const errorMap = new Map<string, { timestamp: number; count: number }>();
-    
+
     // Aggregate errors from captures
     this.captures
-      .filter(c => c.type === 'log' && c.data.level === 'error')
-      .forEach(capture => {
+      .filter((c) => c.type === 'log' && c.data.level === 'error')
+      .forEach((capture) => {
         const message = capture.data.message;
         const existing = errorMap.get(message);
-        
+
         if (existing) {
           existing.count++;
         } else {
           errorMap.set(message, {
             timestamp: capture.timestamp,
-            count: 1
+            count: 1,
           });
         }
       });
-    
+
     return Array.from(errorMap.entries()).map(([message, data]) => ({
       timestamp: data.timestamp,
       message,
-      count: data.count
+      count: data.count,
     }));
   }
 
@@ -433,9 +444,11 @@ export class ProductionDebugger {
     return {
       'audio.errors': snapshot.counters['audio.errors'] || 0,
       'audio.dropouts': snapshot.counters['performance.audio.dropouts'] || 0,
-      'audio.initialization.attempts': snapshot.gauges['audio.initialization.attempts'] || 0,
-      'memory.usage': performance.memory?.usedJSHeapSize ? 
-        Math.round(performance.memory.usedJSHeapSize / (1024 * 1024)) : 0
+      'audio.initialization.attempts':
+        snapshot.gauges['audio.initialization.attempts'] || 0,
+      'memory.usage': performance.memory?.usedJSHeapSize
+        ? Math.round(performance.memory.usedJSHeapSize / (1024 * 1024))
+        : 0,
     };
   }
 
@@ -465,8 +478,8 @@ export class ProductionDebugger {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId: this.activeSession?.id,
-          capture
-        })
+          capture,
+        }),
       });
     } catch (error) {
       // Silently fail to avoid debug affecting production
@@ -478,14 +491,14 @@ export class ProductionDebugger {
    */
   private startAutoSnapshots(): void {
     if (this.snapshotTimer) return;
-    
+
     this.snapshotTimer = setInterval(() => {
       const snapshot = this.captureSnapshot();
       this.addCapture({
         timestamp: snapshot.timestamp,
         type: 'snapshot',
         category: 'debug',
-        data: snapshot
+        data: snapshot,
       });
     }, this.config.snapshotInterval);
   }
@@ -533,7 +546,7 @@ export class ProductionDebugger {
       enabled: this.config.enabled,
       activeSession: this.activeSession?.id,
       captures: this.captures.length,
-      sessions: Array.from(this.sessions.keys())
+      sessions: Array.from(this.sessions.keys()),
     };
   }
 
@@ -544,12 +557,12 @@ export class ProductionDebugger {
     const data = {
       sessions: Array.from(this.sessions.entries()).map(([id, session]) => ({
         id,
-        ...session
+        ...session,
       })),
       currentCaptures: this.captures,
-      snapshot: this.captureSnapshot()
+      snapshot: this.captureSnapshot(),
     };
-    
+
     return JSON.stringify(data, null, 2);
   }
 
@@ -566,11 +579,11 @@ export class ProductionDebugger {
   dispose(): void {
     this.stopDebugSession();
     this.stopAutoSnapshots();
-    
+
     if (this.frameId) {
       cancelAnimationFrame(this.frameId);
     }
-    
+
     this.sessions.clear();
     this.captures = [];
   }

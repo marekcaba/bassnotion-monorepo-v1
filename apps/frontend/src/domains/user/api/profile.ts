@@ -5,6 +5,9 @@ import type {
   UserProfileData,
   BassConfigurationData,
 } from '@bassnotion/contracts';
+import { getLogger } from '@/utils/logger.js';
+
+const logger = getLogger('user:api');
 
 export class ProfileService {
   private async getAuthHeaders() {
@@ -40,9 +43,9 @@ export class ProfileService {
       const headers = await this.getAuthHeaders();
       const url = `${this.backendUrl}/user/profile`;
 
-      console.log('[Profile] Calling backend URL:', url);
-      console.log('[Profile] Headers:', headers);
-      console.log('[Profile] Data:', profileData);
+      logger.debug('Calling backend URL:', url);
+      logger.debug('Headers:', headers);
+      logger.debug('Data:', profileData);
 
       const response = await fetch(url, {
         method: 'PUT',
@@ -50,14 +53,11 @@ export class ProfileService {
         body: JSON.stringify(profileData),
       });
 
-      console.log('[Profile] Response status:', response.status);
-      console.log(
-        '[Profile] Response headers:',
-        Object.fromEntries(response.headers),
-      );
+      logger.debug('Response status:', response.status);
+      logger.debug('Response headers:', Object.fromEntries(response.headers));
 
       const result = await response.json();
-      console.log('[Profile] Response data:', result);
+      logger.debug('Response data:', result);
 
       // TODO: Review non-null assertion - consider null safety
       if (!response.ok || !result.success) {
@@ -66,7 +66,7 @@ export class ProfileService {
 
       return result.data;
     } catch (error) {
-      console.error('[Profile] Update error:', error);
+      logger.error('Update error:', error);
       throw error;
     }
   }
@@ -93,7 +93,7 @@ export class ProfileService {
 
       return result.data;
     } catch (error) {
-      console.error('[Profile] Delete account error:', error);
+      logger.error('Delete account error:', error);
       throw error;
     }
   }
@@ -134,7 +134,7 @@ export class ProfileService {
         maxFrets: data.bass_max_frets,
       };
     } catch (error) {
-      console.error('[Profile] Update bass configuration error:', error);
+      logger.error('Update bass configuration error:', error);
       throw error;
     }
   }
@@ -168,7 +168,7 @@ export class ProfileService {
       // If no profile exists, create one
       // TODO: Review non-null assertion - consider null safety
       if (!profile) {
-        console.log('No profile found, creating one...');
+        logger.info('No profile found, creating one...');
 
         const displayName =
           user.user_metadata?.display_name ||
@@ -231,7 +231,7 @@ export class ProfileService {
         updatedAt: profile.updated_at,
       };
     } catch (error) {
-      console.error('[Profile] Get profile error:', error);
+      logger.error('Get profile error:', error);
       throw error;
     }
   }

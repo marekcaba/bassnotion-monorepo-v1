@@ -2,7 +2,7 @@
  * AudioEngine - Enhanced Core Audio Service with 99%+ Reliability
  * Story 3.18.2: Core Services Foundation
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Central audio abstraction layer with:
  * - 99%+ reliable initialization with retry logic
  * - Browser compatibility detection
@@ -20,8 +20,9 @@ import {
   AudioContextError,
   AudioNotSupportedError,
   AudioContextSuspendedError,
-  AudioValidationError
+  AudioValidationError,
 } from '../../errors/AudioErrors.js';
+import { getLogger } from '@/utils/logger.js';
 
 // Tone.js type definition
 interface ToneModule {
@@ -34,7 +35,12 @@ interface ToneModule {
 interface ToneSampler {
   triggerAttack(note: string, time?: number, velocity?: number): void;
   triggerRelease(note: string, time?: number): void;
-  triggerAttackRelease(note: string, duration: number, time?: number, velocity?: number): void;
+  triggerAttackRelease(
+    note: string,
+    duration: number,
+    time?: number,
+    velocity?: number,
+  ): void;
   connect(destination: AudioNode | ToneSampler): void;
   disconnect(): void;
   dispose(): void;
@@ -66,19 +72,14 @@ const setTone = (tone: ToneModule): void => {
 let Tone: ToneModule | null = null;
 
 // Browser compatibility checks
-const REQUIRED_APIS = [
-  'AudioContext',
-  'AudioWorkletNode',
-  'Promise',
-  'fetch'
-];
+const REQUIRED_APIS = ['AudioContext', 'AudioWorkletNode', 'Promise', 'fetch'];
 
 // Supported browsers with minimum versions
 const SUPPORTED_BROWSERS = {
-  chrome: 66,    // AudioWorklet support
-  firefox: 76,   // AudioWorklet support
-  safari: 14.1,  // AudioWorklet support
-  edge: 79       // Chromium-based Edge
+  chrome: 66, // AudioWorklet support
+  firefox: 76, // AudioWorklet support
+  safari: 14.1, // AudioWorklet support
+  edge: 79, // Chromium-based Edge
 };
 
 export interface AudioEngineConfig {
@@ -121,13 +122,21 @@ export interface AudioSampler {
 export class AudioEngine implements Service {
   private static readonly MAX_INIT_RETRIES = 3;
   private static readonly INIT_RETRY_DELAY = 1000;
-  
+  private static instance: AudioEngine | null = null;
+
+  // Logger instances
+  private logger = getLogger('audio');
+
   private context: AudioContext | null = null;
   private isInitialized = false;
   private initPromise: Promise<void> | null = null;
   private isPreInitialized = false; // New: Track if Tone.js is loaded but context not created
   private instanceId = Math.random().toString(36).substr(2, 9); // Debug: unique instance ID
   // Performance monitoring removed - now handled by monitoring services
+  
+  // Persistent context management
+  private keepAliveInterval: number | null = null;
+  private static globalContext: AudioContext | null = null; // Shared across all instances
   // private performanceMonitor: PerformanceMonitor;
   // private performanceOptimizer: PerformanceOptimizer;
   private circuitBreaker: CircuitBreaker;
@@ -149,6 +158,11 @@ export class AudioEngine implements Service {
       circuitBreakerConfig: config.circuitBreakerConfig || {},
       ...config,
     };
+    
+    // Store reference to AudioEngine class on window for context access
+    if (typeof window !== 'undefined') {
+      (window as any).__AudioEngine = AudioEngine;
+    }
 
     // Initialize preserved components
     // Performance monitoring now handled by monitoring services
@@ -167,12 +181,44 @@ export class AudioEngine implements Service {
   }
 
   /**
+   * Get singleton instance of AudioEngine
+   */
+  static getInstance(
+    eventBus?: EventBus,
+    config?: AudioEngineConfig,
+  ): AudioEngine {
+    if (!AudioEngine.instance) {
+      if (!eventBus) {
+        // Try to get EventBus from service registry
+        const serviceRegistry =
+          typeof window !== 'undefined' && (window as any).__serviceRegistry;
+        if (serviceRegistry && serviceRegistry.has('eventBus')) {
+          eventBus = serviceRegistry.get('eventBus');
+        } else {
+          // Create a new EventBus if none exists
+          eventBus = new EventBus();
+        }
+      }
+      AudioEngine.instance = new AudioEngine(eventBus, config);
+    }
+    return AudioEngine.instance;
+  }
+
+  static resetInstance(): void {
+    AudioEngine.instance = null;
+  }
+
+  /**
    * Pre-initialize by loading Tone.js but NOT creating AudioContext
    * This can be called during page load without user interaction
    */
   async preInitialize(): Promise<void> {
     if (this.isPreInitialized || this.isInitialized) {
-      console.log('AudioEngine: preInitialize called but already initialized', { isPreInitialized: this.isPreInitialized, isInitialized: this.isInitialized, hasTone: !!Tone });
+      this.logger.info('preInitialize called but already initialized', {
+        isPreInitialized: this.isPreInitialized,
+        isInitialized: this.isInitialized,
+        hasTone: !!Tone,
+      });
       return;
     }
 
@@ -180,7 +226,7 @@ export class AudioEngine implements Service {
     if (this.config.enableBrowserCheck && !this.isBrowserSupported()) {
       throw new AudioNotSupportedError(
         'Browser does not support required audio features',
-        { userAgent: navigator.userAgent }
+        { userAgent: navigator.userAgent },
       );
     }
 
@@ -191,26 +237,26 @@ export class AudioEngine implements Service {
         const toneModule = await import('tone');
         // Handle both default export and namespace export
         Tone = toneModule.default || toneModule;
-        
+
         // Verify Tone has required methods
         if (!Tone || typeof Tone.start !== 'function') {
           throw new Error('Invalid Tone.js module structure');
         }
-        
+
         // Store globally for other instances
         setTone(Tone);
-        
-        console.log('AudioEngine: Tone.js pre-loaded successfully');
+
+        this.logger.info('Tone.js pre-loaded successfully');
         this.eventBus.emit('audio:tone-loaded', { timestamp: Date.now() });
       } catch (error) {
-        console.error('AudioEngine: Failed to pre-load Tone.js', error);
+        this.logger.error('Failed to pre-load Tone.js', { error });
         throw new AudioInitializationError(
           'Failed to load Tone.js audio library',
-          error instanceof Error ? error : undefined
+          error instanceof Error ? error : undefined,
         );
       }
     } else {
-      console.log('AudioEngine: Tone.js already loaded from global storage');
+      this.logger.info('Tone.js already loaded from global storage');
     }
 
     this.isPreInitialized = true;
@@ -223,13 +269,17 @@ export class AudioEngine implements Service {
   async initialize(): Promise<void> {
     // Return existing promise if already initializing
     if (this.initPromise) {
+      this.logger.debug(`AudioEngine[${this.instanceId}]: Already initializing, returning existing promise`);
       return this.initPromise;
     }
 
     // Return immediately if already initialized
     if (this.isInitialized && Tone && this.context) {
+      this.logger.debug(`AudioEngine[${this.instanceId}]: Already initialized, skipping`);
       return;
     }
+    
+    this.logger.info(`AudioEngine[${this.instanceId}]: Starting initialization...`);
 
     // Pre-initialize if not done already
     if (!this.isPreInitialized) {
@@ -253,56 +303,57 @@ export class AudioEngine implements Service {
   private async initializeWithRetry(): Promise<void> {
     // Start performance optimization tracking
     // this.performanceOptimizer.startOptimization();
-    
+
     for (let attempt = 1; attempt <= this.config.maxInitRetries; attempt++) {
       try {
         this.initializationAttempts = attempt;
-        
+
         // Browser compatibility check
         if (this.config.enableBrowserCheck && !this.isBrowserSupported()) {
           throw new AudioNotSupportedError(
             'Browser does not support required audio features',
-            { userAgent: navigator.userAgent }
+            { userAgent: navigator.userAgent },
           );
         }
-        
+
         // Perform initialization with circuit breaker
         await this.circuitBreaker.execute(() => this.performInitialization());
-        
+
         // Validate audio system if enabled
         if (this.config.enableValidation) {
           await this.validateAudioSystem();
         }
-        
+
         // Complete initialization tracking
         // this.performanceOptimizer.completeInitialization();
-        
+
         // Success metrics
         this.eventBus.emit('audio:initialization-success', {
           attempts: attempt,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
-        
+
         return;
-        
       } catch (error) {
-        const audioError = error instanceof AudioError ? error : 
-          new AudioInitializationError(
-            `Initialization attempt ${attempt} failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            error instanceof Error ? error : undefined,
-            { attempt, maxAttempts: this.config.maxInitRetries }
-          );
-        
+        const audioError =
+          error instanceof AudioError
+            ? error
+            : new AudioInitializationError(
+                `Initialization attempt ${attempt} failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                error instanceof Error ? error : undefined,
+                { attempt, maxAttempts: this.config.maxInitRetries },
+              );
+
         this.eventBus.emit('audio:initialization-failed', {
           error: audioError,
           attempt,
-          maxAttempts: this.config.maxInitRetries
+          maxAttempts: this.config.maxInitRetries,
         });
-        
+
         if (attempt === this.config.maxInitRetries) {
           throw audioError;
         }
-        
+
         // Wait before retry with exponential backoff
         await this.delay(this.config.initRetryDelay * attempt);
       }
@@ -313,83 +364,145 @@ export class AudioEngine implements Service {
     try {
       // Get Tone.js from global storage
       Tone = getTone();
-      
+
       // Tone.js should already be loaded from preInitialize
       if (!Tone) {
-        console.error('AudioEngine: Tone is null or undefined in performInitialization', { 
-          localTone: Tone, 
-          globalTone: getTone(),
-          isPreInitialized: this.isPreInitialized 
-        });
-        throw new AudioInitializationError('Tone.js not loaded. Call preInitialize() first.');
+        this.logger.error(
+          'Tone is null or undefined in performInitialization',
+          {
+            localTone: Tone,
+            globalTone: getTone(),
+            isPreInitialized: this.isPreInitialized,
+          },
+        );
+        throw new AudioInitializationError(
+          'Tone.js not loaded. Call preInitialize() first.',
+        );
       }
 
-      // CRITICAL FIX: Use Tone's AudioContext instead of creating our own
-      // This ensures Tone.Transport and AudioEngine share the same context
-      console.log('AudioEngine: Starting Tone.js with user gesture...');
-      await Tone.start();
-      
-      // Get Tone's actual AudioContext - the raw Web Audio API context
-      // Tone.context is a ToneAudioContext wrapper, we need the underlying AudioContext
-      // According to Tone.js GitHub issue #1298, the correct way is:
-      const toneContext = Tone.getContext();
-      
-      // Get the actual native AudioContext instance
-      if ((toneContext as any).rawContext?._nativeAudioContext instanceof AudioContext) {
+      // CRITICAL: Use persistent global AudioContext to prevent mismatches
+      // Check if we already have a global context
+      if (AudioEngine.globalContext && AudioEngine.globalContext.state !== 'closed') {
+        this.logger.info('Using existing global AudioContext', {
+          state: AudioEngine.globalContext.state,
+          sampleRate: AudioEngine.globalContext.sampleRate,
+        });
+        
+        this.context = AudioEngine.globalContext;
+        
+        // Set Tone to use our persistent context
+        if (this.context.state === 'suspended') {
+          await this.context.resume();
+        }
+        Tone.setContext(this.context);
+        
+      } else {
+        // Create new persistent context
+        this.logger.info('Creating new persistent AudioContext');
+        
+        // Start Tone.js first to create its context
+        await Tone.start();
+        
+        // Get Tone's actual AudioContext
+        const toneContext = Tone.getContext();
+        
+        // Check if we're in a test environment with a mock context
+        const globalObj = typeof window !== 'undefined' ? window : global;
+        if ((globalObj as any).__mockAudioContext) {
+          this.context = (globalObj as any).__mockAudioContext;
+          this.logger.info('Using mock AudioContext for testing');
+      } else if (
+        (toneContext as any).rawContext?._nativeAudioContext instanceof
+        AudioContext
+      ) {
+        // Get the actual native AudioContext instance
         this.context = (toneContext as any).rawContext._nativeAudioContext;
       } else if ((toneContext as any).rawContext instanceof AudioContext) {
         // Fallback for older Tone.js versions
         this.context = (toneContext as any).rawContext;
+      } else if (
+        typeof AudioContext !== 'undefined' &&
+        (toneContext as any).rawContext
+      ) {
+        // Handle DummyContext or other test contexts
+        this.context = (toneContext as any).rawContext;
+        this.logger.warn(
+          'Using non-standard AudioContext (possibly DummyContext in tests)',
+        );
       } else {
         // Last resort fallback
         this.context = toneContext as any;
-        console.warn('AudioEngine: Could not find native AudioContext, using Tone wrapper');
+        this.logger.warn(
+          'Could not find native AudioContext, using Tone wrapper',
+        );
       }
-      
-      console.log('AudioEngine: Using Tone.js AudioContext, state:', this.context.state);
-      console.log('AudioEngine: AudioContext type check:', {
+
+        // Store as global persistent context
+        AudioEngine.globalContext = this.context;
+        
+        // Also store on window for absolute persistence
+        if (typeof window !== 'undefined') {
+          (window as any).__persistentAudioContext = this.context;
+        }
+      }
+
+      this.logger.info('Using AudioContext', {
+        state: this.context.state,
+        isPersistent: this.context === AudioEngine.globalContext,
+      });
+      this.logger.info('AudioContext type check', {
         constructor: this.context.constructor.name,
         isAudioContext: this.context instanceof AudioContext,
-        isBaseAudioContext: this.context instanceof BaseAudioContext
+        isBaseAudioContext: this.context instanceof BaseAudioContext,
       });
-      console.log('AudioEngine: Context comparison:', {
+      this.logger.info('Context comparison', {
         toneContext: Tone.context,
         toneInternalContext: (Tone.context as any)._context,
         ourContext: this.context,
-        areEqual: this.context === (Tone.context as any)._context
+        areEqual: this.context === (Tone.context as any)._context,
       });
+      
+      // Start keep-alive mechanism for persistent context
+      this.startKeepAlive();
 
       // Initialize performance monitor with context
       // this.performanceMonitor.initialize(this.context);
 
       // No need to setContext - we're using Tone's context already!
-      
+
       // Apply professional DAW timing configuration
-      const { applyTransportTimingConfig } = await import('@/domains/playback/config/transportTiming');
+      const { applyTransportTimingConfig } = await import(
+        '@/domains/playback/config/transportTiming'
+      );
       applyTransportTimingConfig(Tone);
-      console.log('AudioEngine: Applied professional transport timing configuration');
+      this.logger.info('Applied professional transport timing configuration');
 
       // Start monitoring performance
       // this.performanceMonitor.startMonitoring();
-      
+
       // Setup context state handling
       this.setupContextStateHandling();
 
       this.isInitialized = true;
-      console.log(`AudioEngine[${this.instanceId}]: Setting isInitialized = true, Tone available:`, !!Tone);
+      this.logger.info(
+        `AudioEngine[${this.instanceId}] Setting isInitialized = true`,
+        { toneAvailable: !!Tone },
+      );
       this.eventBus.emit('audio:initialized', {
         context: this.context,
         sampleRate: this.context.sampleRate,
         latency: this.context.baseLatency + this.context.outputLatency,
         browserInfo: this.browserInfo,
-        attempts: this.initializationAttempts
+        attempts: this.initializationAttempts,
       });
     } catch (error) {
-      const audioError = error instanceof AudioError ? error :
-        new AudioInitializationError(
-          `Failed to initialize AudioEngine: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          error instanceof Error ? error : undefined
-        );
+      const audioError =
+        error instanceof AudioError
+          ? error
+          : new AudioInitializationError(
+              `Failed to initialize AudioEngine: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              error instanceof Error ? error : undefined,
+            );
       this.eventBus.emit('audio:error', { error: audioError });
       throw audioError;
     }
@@ -403,7 +516,9 @@ export class AudioEngine implements Service {
     // The pre-warmed context was created outside of user gesture context
     // and browsers don't allow resuming such contexts
     if ((window as any).__warmAudioContext) {
-      console.log('AudioEngine: Ignoring pre-warmed AudioContext (suspended contexts cannot be resumed)');
+      this.logger.info(
+        'Ignoring pre-warmed AudioContext (suspended contexts cannot be resumed)',
+      );
       // Close the pre-warmed context to free resources
       const warmedContext = (window as any).__warmAudioContext;
       if (warmedContext && warmedContext.state !== 'closed') {
@@ -411,7 +526,7 @@ export class AudioEngine implements Service {
       }
       (window as any).__warmAudioContext = null;
     }
-    
+
     const contextOptions: AudioContextOptions = {
       sampleRate: this.config.sampleRate,
       latencyHint: this.config.latencyHint,
@@ -419,8 +534,9 @@ export class AudioEngine implements Service {
 
     try {
       // Handle Safari's webkitAudioContext
-      const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
-      
+      const AudioContextClass =
+        (window as any).AudioContext || (window as any).webkitAudioContext;
+
       if (!AudioContextClass) {
         throw new AudioNotSupportedError('AudioContext not available');
       }
@@ -438,7 +554,7 @@ export class AudioEngine implements Service {
       throw new AudioContextError(
         'Failed to create AudioContext',
         error instanceof Error ? error : undefined,
-        { contextOptions }
+        { contextOptions },
       );
     }
   }
@@ -453,10 +569,9 @@ export class AudioEngine implements Service {
       try {
         await this.context.resume();
       } catch (error) {
-        throw new AudioContextSuspendedError(
-          'Failed to resume AudioContext',
-          { state: this.context.state }
-        );
+        throw new AudioContextSuspendedError('Failed to resume AudioContext', {
+          state: this.context.state,
+        });
       }
     }
 
@@ -464,9 +579,12 @@ export class AudioEngine implements Service {
     const timeout = 5000;
     const startTime = Date.now();
 
-    while (this.context.state !== 'running' && Date.now() - startTime < timeout) {
+    while (
+      this.context.state !== 'running' &&
+      Date.now() - startTime < timeout
+    ) {
       await this.delay(100);
-      
+
       // Try to resume again if still suspended
       if (this.context.state === 'suspended') {
         try {
@@ -481,7 +599,7 @@ export class AudioEngine implements Service {
       throw new AudioContextError(
         `AudioContext failed to start. State: ${this.context.state}`,
         undefined,
-        { state: this.context.state, timeout }
+        { state: this.context.state, timeout },
       );
     }
   }
@@ -490,7 +608,8 @@ export class AudioEngine implements Service {
    * Validate audio system functionality
    */
   private async validateAudioSystem(): Promise<void> {
-    if (!this.context) throw new AudioValidationError('No AudioContext for validation');
+    if (!this.context)
+      throw new AudioValidationError('No AudioContext for validation');
 
     try {
       // Create a test oscillator to validate audio pipeline
@@ -509,13 +628,14 @@ export class AudioEngine implements Service {
       // Validate AudioWorklet support if available
       if ('audioWorklet' in this.context) {
         // Just check that audioWorklet exists
-        this.eventBus.emit('audio:worklet-available', { timestamp: Date.now() });
+        this.eventBus.emit('audio:worklet-available', {
+          timestamp: Date.now(),
+        });
       }
-
     } catch (error) {
       throw new AudioValidationError(
         `Audio system validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        { validationError: error }
+        { validationError: error },
       );
     }
   }
@@ -532,33 +652,37 @@ export class AudioEngine implements Service {
       throw new AudioInitializationError('AudioEngine not initialized');
     }
 
-    console.log('AudioEngine.start() called, context state:', this.context.state);
-    
+    this.logger.info('start() called', { contextState: this.context.state });
+
     // Start audio context with circuit breaker protection
     await this.circuitBreaker.execute(async () => {
       if (this.context!.state !== 'running') {
-        console.log('AudioEngine: Attempting to resume AudioContext...');
-        
+        this.logger.info('Attempting to resume AudioContext');
+
         try {
           // Since the context was created in a user gesture context (during initialize),
           // it should be resumable now
           await Tone.start();
-          console.log('AudioEngine: Tone.start() completed');
-          console.log('AudioEngine: Context state after start:', this.context!.state);
-          console.log('AudioEngine: Tone.context.state after start:', Tone.context.state);
-          
+          this.logger.info('Tone.start() completed');
+          this.logger.info('Context state after start', {
+            state: this.context!.state,
+          });
+          this.logger.info('Tone.context.state after start', {
+            state: Tone.context.state,
+          });
+
           // Verify the context is actually running
           if (this.context!.state !== 'running') {
             throw new AudioContextSuspendedError(
               'AudioContext failed to resume',
-              { state: this.context!.state }
+              { state: this.context!.state },
             );
           }
         } catch (error) {
-          console.error('AudioEngine: Failed to start audio context:', error);
+          this.logger.error('Failed to start audio context', { error });
           throw error;
         }
-        
+
         this.eventBus.emit('audio:started', {
           state: this.context!.state,
           timestamp: Date.now(),
@@ -576,7 +700,7 @@ export class AudioEngine implements Service {
     await this.circuitBreaker.execute(async () => {
       // Re-check context inside the circuit breaker
       if (!this.context) return;
-      
+
       if (this.context.state === 'running') {
         await this.context.suspend();
         this.eventBus.emit('audio:stopped', {
@@ -597,12 +721,16 @@ export class AudioEngine implements Service {
       Tone = globalTone; // Update local reference
       return globalTone;
     }
-    
+
     if (!this.isInitialized) {
-      throw new AudioInitializationError('AudioEngine not initialized. Call initialize() first.');
+      throw new AudioInitializationError(
+        'AudioEngine not initialized. Call initialize() first.',
+      );
     }
     if (!Tone) {
-      throw new AudioInitializationError('Tone.js module not loaded. Call preInitialize() first.');
+      throw new AudioInitializationError(
+        'Tone.js module not loaded. Call preInitialize() first.',
+      );
     }
     return Tone;
   }
@@ -612,7 +740,9 @@ export class AudioEngine implements Service {
    */
   getContext(): AudioContext {
     if (!this.context) {
-      throw new AudioContextError('AudioContext not available. Call initialize() first.');
+      throw new AudioContextError(
+        'AudioContext not available. Call initialize() first.',
+      );
     }
     return this.context;
   }
@@ -622,7 +752,9 @@ export class AudioEngine implements Service {
    */
   async createSampler(config: SamplerConfig): Promise<AudioSampler> {
     if (!this.isInitialized || !Tone) {
-      throw new AudioInitializationError('AudioEngine not initialized. Call initialize() first.');
+      throw new AudioInitializationError(
+        'AudioEngine not initialized. Call initialize() first.',
+      );
     }
 
     return this.circuitBreaker.execute(async () => {
@@ -675,7 +807,7 @@ export class AudioEngine implements Service {
         const audioError = new AudioError(
           `Failed to create sampler: ${error instanceof Error ? error.message : 'Unknown error'}`,
           'SAMPLE_CREATE_FAILED',
-          error instanceof Error ? error : undefined
+          error instanceof Error ? error : undefined,
         );
         this.eventBus.emit('audio:error', { error: audioError });
         throw audioError;
@@ -704,7 +836,7 @@ export class AudioEngine implements Service {
       dropouts: 0,
       bufferUnderruns: 0,
       cpuUsage: 0,
-      memoryUsage: 0
+      memoryUsage: 0,
     };
   }
 
@@ -727,25 +859,25 @@ export class AudioEngine implements Service {
         cpuUsage: 0,
         memoryUsage: 0,
         gcCount: 0,
-        bufferCount: 0
+        bufferCount: 0,
       },
       report: {
         optimizationsApplied: [],
         performanceGains: {},
-        recommendations: []
+        recommendations: [],
       },
       audioEngineStats: {
         samplerCount: this.samplerCount,
         contextState: this.context?.state,
-        initializationAttempts: this.initializationAttempts
-      }
+        initializationAttempts: this.initializationAttempts,
+      },
     };
   }
 
   /**
    * Get buffer from memory pool
    */
-  getPooledBuffer(size: number = 4096): Float32Array | null {
+  getPooledBuffer(size = 4096): Float32Array | null {
     // const buffer = this.performanceOptimizer.getFromPool<Float32Array>('audioBuffers');
     // if (buffer && buffer.length !== size) {
     //   // Return it and get a new one
@@ -773,9 +905,49 @@ export class AudioEngine implements Service {
   }
 
   /**
+   * Start keep-alive mechanism to prevent context suspension
+   */
+  private startKeepAlive(): void {
+    if (this.keepAliveInterval) {
+      clearInterval(this.keepAliveInterval);
+    }
+    
+    // Play silent buffer every 10 seconds to keep context active
+    this.keepAliveInterval = setInterval(() => {
+      if (this.context && this.context.state === 'running') {
+        try {
+          // Create a silent buffer
+          const buffer = this.context.createBuffer(1, 1, this.context.sampleRate);
+          const source = this.context.createBufferSource();
+          source.buffer = buffer;
+          source.connect(this.context.destination);
+          source.start();
+          
+          this.logger.debug('Keep-alive: played silent buffer');
+        } catch (error) {
+          this.logger.warn('Keep-alive failed:', error);
+        }
+      }
+    }, 10000) as any; // Cast to any to handle Node/Browser timer types
+  }
+  
+  /**
+   * Stop keep-alive mechanism
+   */
+  private stopKeepAlive(): void {
+    if (this.keepAliveInterval) {
+      clearInterval(this.keepAliveInterval);
+      this.keepAliveInterval = null;
+    }
+  }
+
+  /**
    * Dispose of audio engine resources
    */
   async dispose(): Promise<void> {
+    // Stop keep-alive mechanism
+    this.stopKeepAlive();
+    
     // Stop monitoring
     // this.performanceMonitor.stopMonitoring();
 
@@ -810,24 +982,32 @@ export class AudioEngine implements Service {
   private setupContextStateHandling(): void {
     if (!this.context) return;
 
-    this.context.addEventListener('statechange', () => {
-      const state = this.context!.state;
-      
-      this.eventBus.emit('audio:state-changed', {
-        state,
-        timestamp: Date.now(),
-      });
+    // Check if addEventListener exists (may not in test environments)
+    if (typeof this.context.addEventListener === 'function') {
+      this.context.addEventListener('statechange', () => {
+        const state = this.context!.state;
 
-      // Track state changes that might indicate issues
-      if (state === 'suspended') {
-        // this.performanceMonitor.recordDropout();
-        
-        // Attempt automatic recovery
-        this.attemptContextRecovery().catch(error => {
-          this.eventBus.emit('audio:recovery-failed', { error });
+        this.eventBus.emit('audio:state-changed', {
+          state,
+          timestamp: Date.now(),
         });
-      }
-    });
+
+        // Track state changes that might indicate issues
+        if (state === 'suspended') {
+          // this.performanceMonitor.recordDropout();
+
+          // Attempt automatic recovery
+          this.attemptContextRecovery().catch((error) => {
+            this.eventBus.emit('audio:recovery-failed', { error });
+          });
+        }
+      });
+    } else {
+      // In test environments, context might not support addEventListener
+      this.logger.warn(
+        'AudioContext does not support addEventListener - likely a test environment',
+      );
+    }
   }
 
   /**
@@ -839,12 +1019,12 @@ export class AudioEngine implements Service {
     try {
       await this.context.resume();
       this.eventBus.emit('audio:context-recovered', {
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     } catch (error) {
       throw new AudioContextSuspendedError(
         'Failed to recover suspended context',
-        { error }
+        { error },
       );
     }
   }
@@ -865,12 +1045,15 @@ export class AudioEngine implements Service {
     this.browserInfo = this.detectBrowser();
     if (!this.browserInfo) return true; // Unknown browser, allow attempt
 
-    const minVersion = SUPPORTED_BROWSERS[this.browserInfo.name as keyof typeof SUPPORTED_BROWSERS];
+    const minVersion =
+      SUPPORTED_BROWSERS[
+        this.browserInfo.name as keyof typeof SUPPORTED_BROWSERS
+      ];
     if (minVersion && this.browserInfo.version < minVersion) {
       this.eventBus.emit('audio:browser-outdated', {
         browser: this.browserInfo.name,
         version: this.browserInfo.version,
-        minVersion
+        minVersion,
       });
       return false;
     }
@@ -883,27 +1066,27 @@ export class AudioEngine implements Service {
    */
   private detectBrowser(): { name: string; version: number } | null {
     const ua = navigator.userAgent.toLowerCase();
-    
+
     if (ua.includes('chrome') && !ua.includes('edg')) {
       const match = ua.match(/chrome\/(\d+)/);
       return match ? { name: 'chrome', version: parseInt(match[1]) } : null;
     }
-    
+
     if (ua.includes('firefox')) {
       const match = ua.match(/firefox\/(\d+)/);
       return match ? { name: 'firefox', version: parseInt(match[1]) } : null;
     }
-    
+
     if (ua.includes('safari') && !ua.includes('chrome')) {
       const match = ua.match(/version\/(\d+)/);
       return match ? { name: 'safari', version: parseInt(match[1]) } : null;
     }
-    
+
     if (ua.includes('edg')) {
       const match = ua.match(/edg\/(\d+)/);
       return match ? { name: 'edge', version: parseInt(match[1]) } : null;
     }
-    
+
     return null;
   }
 
@@ -911,7 +1094,9 @@ export class AudioEngine implements Service {
    * Check if running on iOS
    */
   private isIOS(): boolean {
-    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    return (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+    );
   }
 
   /**
@@ -922,10 +1107,11 @@ export class AudioEngine implements Service {
     if (this.config.sampleRate) return this.config.sampleRate;
 
     // Use browser default for best compatibility
-    const context = new ((window as any).AudioContext || (window as any).webkitAudioContext)();
+    const context = new ((window as any).AudioContext ||
+      (window as any).webkitAudioContext)();
     const sampleRate = context.sampleRate;
     context.close();
-    
+
     return sampleRate;
   }
 
@@ -933,6 +1119,6 @@ export class AudioEngine implements Service {
    * Utility delay function
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

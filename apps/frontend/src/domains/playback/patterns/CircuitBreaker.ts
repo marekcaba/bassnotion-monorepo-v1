@@ -1,7 +1,7 @@
 /**
  * Enhanced CircuitBreaker - Advanced Circuit Breaker Pattern
  * Story 3.18.4: Service Architecture Implementation
- * 
+ *
  * Extends the base CircuitBreaker with additional features:
  * - Health check probing
  * - Adaptive failure thresholds
@@ -9,7 +9,12 @@
  * - Monitoring and alerting hooks
  */
 
-import { CircuitBreaker as BaseCircuitBreaker, CircuitBreakerConfig as BaseConfig, CircuitState, CircuitBreakerMetrics } from '../services/errors/CircuitBreaker.js';
+import {
+  CircuitBreaker as BaseCircuitBreaker,
+  CircuitBreakerConfig as BaseConfig,
+  CircuitState,
+  CircuitBreakerMetrics,
+} from '../services/errors/CircuitBreaker.js';
 import { EventBus } from '../services/core/EventBus.js';
 
 export interface EnhancedCircuitBreakerConfig extends Partial<BaseConfig> {
@@ -53,9 +58,9 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
   private currentFailureThreshold: number;
 
   constructor(
-    name: string, 
+    name: string,
     eventBus: EventBus,
-    config: EnhancedCircuitBreakerConfig = {}
+    config: EnhancedCircuitBreakerConfig = {},
   ) {
     super(name, config);
     this.eventBus = eventBus;
@@ -81,7 +86,7 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
    */
   async execute<T>(
     operation: () => Promise<T>,
-    operationId?: string
+    operationId?: string,
   ): Promise<T> {
     try {
       // Check chained breakers first
@@ -109,7 +114,10 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
       // Emit state change event if circuit opened
       const currentState = this.getState();
       if (currentState === CircuitState.OPEN) {
-        this.emitStateChange('opened', error instanceof Error ? error.message : 'Unknown error');
+        this.emitStateChange(
+          'opened',
+          error instanceof Error ? error.message : 'Unknown error',
+        );
       }
 
       // Try fallback operation if available and circuit is open
@@ -125,7 +133,10 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
           // Fallback also failed
           this.eventBus?.emit('circuitbreaker:fallback-failed', {
             name: this.name,
-            error: fallbackError instanceof Error ? fallbackError.message : 'Fallback failed',
+            error:
+              fallbackError instanceof Error
+                ? fallbackError.message
+                : 'Fallback failed',
             timestamp: Date.now(),
           });
         }
@@ -162,13 +173,17 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
           if (isHealthy) {
             // Force circuit to half-open for testing
             this.forceHalfOpen();
-            this.emitStateChange('health-check-passed', 'Service appears healthy');
+            this.emitStateChange(
+              'health-check-passed',
+              'Service appears healthy',
+            );
           }
         } catch (error) {
           // Health check failed, keep circuit open
           this.eventBus?.emit('circuitbreaker:health-check-failed', {
             name: this.name,
-            error: error instanceof Error ? error.message : 'Health check failed',
+            error:
+              error instanceof Error ? error.message : 'Health check failed',
             timestamp: Date.now(),
           });
         }
@@ -188,22 +203,26 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
       // Check alert thresholds
       const alerts: string[] = [];
 
-      const failureRate = metrics.totalRequests > 0 
-        ? (metrics.failureCount / metrics.totalRequests) * 100 
-        : 0;
+      const failureRate =
+        metrics.totalRequests > 0
+          ? (metrics.failureCount / metrics.totalRequests) * 100
+          : 0;
 
       if (failureRate > this.config.monitoring!.alertThresholds.failureRate) {
         alerts.push(`High failure rate: ${failureRate.toFixed(2)}%`);
       }
 
-      const rejectedRate = metrics.totalRequests > 0
-        ? (metrics.rejectedCount / metrics.totalRequests) * 100
-        : 0;
+      const rejectedRate =
+        metrics.totalRequests > 0
+          ? (metrics.rejectedCount / metrics.totalRequests) * 100
+          : 0;
       if (rejectedRate > this.config.monitoring!.alertThresholds.rejectedRate) {
         alerts.push(`High rejection rate: ${rejectedRate.toFixed(2)}%`);
       }
 
-      if (metrics.uptime < this.config.monitoring!.alertThresholds.uptimePercent) {
+      if (
+        metrics.uptime < this.config.monitoring!.alertThresholds.uptimePercent
+      ) {
         alerts.push(`Low uptime: ${metrics.uptime.toFixed(2)}%`);
       }
 
@@ -240,26 +259,31 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
     }
 
     // Calculate average failure rate
-    const avgFailureRate = this.recentFailureRates.reduce((a, b) => a + b, 0) / this.recentFailureRates.length;
+    const avgFailureRate =
+      this.recentFailureRates.reduce((a, b) => a + b, 0) /
+      this.recentFailureRates.length;
 
     // Adjust threshold based on failure rate
-    const { minThreshold, maxThreshold, adjustmentRate } = this.config.adaptiveThreshold;
+    const { minThreshold, maxThreshold, adjustmentRate } =
+      this.config.adaptiveThreshold;
     if (avgFailureRate > 0.5) {
       // High failure rate - decrease threshold (open circuit sooner)
       this.currentFailureThreshold = Math.max(
         minThreshold,
-        this.currentFailureThreshold - adjustmentRate
+        this.currentFailureThreshold - adjustmentRate,
       );
     } else if (avgFailureRate < 0.1) {
       // Low failure rate - increase threshold (give more chances)
       this.currentFailureThreshold = Math.min(
         maxThreshold,
-        this.currentFailureThreshold + adjustmentRate
+        this.currentFailureThreshold + adjustmentRate,
       );
     }
 
     // Update the base circuit breaker config
-    (this as any).config.failureThreshold = Math.round(this.currentFailureThreshold);
+    (this as any).config.failureThreshold = Math.round(
+      this.currentFailureThreshold,
+    );
   }
 
   /**
@@ -305,12 +329,16 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
     const baseMetrics = this.getMetrics();
     return {
       ...baseMetrics,
-      adaptiveThreshold: this.config.adaptiveThreshold?.enabled ? {
-        current: this.currentFailureThreshold,
-        recentFailureRate: this.recentFailureRates.length > 0
-          ? this.recentFailureRates.reduce((a, b) => a + b, 0) / this.recentFailureRates.length
-          : 0,
-      } : undefined,
+      adaptiveThreshold: this.config.adaptiveThreshold?.enabled
+        ? {
+            current: this.currentFailureThreshold,
+            recentFailureRate:
+              this.recentFailureRates.length > 0
+                ? this.recentFailureRates.reduce((a, b) => a + b, 0) /
+                  this.recentFailureRates.length
+                : 0,
+          }
+        : undefined,
       chainedBreakers: Array.from(this.chainedBreakers.keys()),
     };
   }
@@ -401,11 +429,10 @@ export class CircuitBreakerFactory {
   create(
     name: string,
     preset: 'high-throughput' | 'critical' | 'background' | 'custom',
-    customConfig?: EnhancedCircuitBreakerConfig
+    customConfig?: EnhancedCircuitBreakerConfig,
   ): EnhancedCircuitBreaker {
-    const baseConfig = preset === 'custom' 
-      ? {} 
-      : (this.defaultConfigs.get(preset) || {});
+    const baseConfig =
+      preset === 'custom' ? {} : this.defaultConfigs.get(preset) || {};
 
     const config = {
       ...baseConfig,
@@ -423,14 +450,14 @@ export class CircuitBreakerFactory {
       name: string;
       preset: 'high-throughput' | 'critical' | 'background' | 'custom';
       customConfig?: EnhancedCircuitBreakerConfig;
-    }>
+    }>,
   ): EnhancedCircuitBreaker {
     if (configs.length === 0) {
       throw new Error('At least one circuit breaker configuration required');
     }
 
-    const breakers = configs.map(config => 
-      this.create(config.name, config.preset, config.customConfig)
+    const breakers = configs.map((config) =>
+      this.create(config.name, config.preset, config.customConfig),
     );
 
     // Chain breakers together

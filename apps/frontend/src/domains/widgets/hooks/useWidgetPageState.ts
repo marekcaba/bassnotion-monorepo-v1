@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 
 // Global State Interface as specified in the story
 export interface WidgetPageState {
@@ -42,15 +42,24 @@ export interface WidgetPageState {
 
 // Import Exercise type from contracts
 import type { Exercise } from '@bassnotion/contracts';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 // Epic 3.18: ExerciseTimelineIntegrator removed
 // import { exerciseTimelineIntegrator } from '@/domains/playback/services/ExerciseTimelineIntegrator';
 
 // Stub for exerciseTimelineIntegrator
 const exerciseTimelineIntegrator = {
-  async clearExercise() {},
-  async loadExercise(exercise: any, options: any) {},
-  getCurrentSection() { return null; },
-  getProgress() { return 0; }
+  async clearExercise() {
+    // Stub implementation
+  },
+  async loadExercise(_exercise: any, _options: any) {
+    // Stub implementation
+  },
+  getCurrentSection() {
+    return null;
+  },
+  getProgress() {
+    return 0;
+  },
 };
 
 // Loop region interface
@@ -106,8 +115,49 @@ const initialState: WidgetPageState = {
   isLoopEnabled: false,
 };
 
+// Render counter for debugging infinite re-renders
+let renderCount = 0;
+let prevStateRef: WidgetPageState | null = null;
+
 export function useWidgetPageState() {
+  renderCount++;
+  // Only log every 10th render to reduce noise
+  if (renderCount % 10 === 0) {
+    logger.info(`🔄 useWidgetPageState RENDER #${renderCount}`, {
+      timestamp: Date.now(),
+      stack: new Error().stack?.split('\n').slice(1, 4).join(' <- '),
+    });
+  }
+
   const [state, setState] = useState<WidgetPageState>(initialState);
+
+  // Track what changed in state
+  if (renderCount % 10 === 0 && prevStateRef) {
+    const changes: string[] = [];
+    if (prevStateRef.isPlaying !== state.isPlaying)
+      changes.push(
+        `isPlaying: ${prevStateRef.isPlaying} -> ${state.isPlaying}`,
+      );
+    if (prevStateRef.currentTime !== state.currentTime)
+      changes.push(
+        `currentTime: ${prevStateRef.currentTime} -> ${state.currentTime}`,
+      );
+    if (prevStateRef.tempo !== state.tempo)
+      changes.push(`tempo: ${prevStateRef.tempo} -> ${state.tempo}`);
+    if (prevStateRef.selectedExercise?.id !== state.selectedExercise?.id)
+      changes.push(
+        `selectedExercise: ${prevStateRef.selectedExercise?.id} -> ${state.selectedExercise?.id}`,
+      );
+    if (JSON.stringify(prevStateRef.volume) !== JSON.stringify(state.volume))
+      changes.push('volume changed');
+    if (JSON.stringify(prevStateRef.widgets) !== JSON.stringify(state.widgets))
+      changes.push('widgets changed');
+
+    if (changes.length > 0) {
+      logger.info('🔄 State changes detected:', changes);
+    }
+  }
+  prevStateRef = state;
 
   // Master play/pause control
   const togglePlayback = useCallback(() => {
@@ -223,7 +273,7 @@ export function useWidgetPageState() {
           userTempo: exercise.bpm,
         });
       } catch (error) {
-        console.error('Failed to load exercise into timeline:', error);
+        logger.error('Failed to load exercise into timeline:', error);
       }
 
       setState((prev) => {
@@ -289,7 +339,7 @@ export function useWidgetPageState() {
           }
 
           // Debug log (disabled to reduce console noise)
-          // console.log(
+          // logger.info(
           //   '🎯 useWidgetPageState: Exercise selected, updating widgets:',
           //   {
           //     exerciseId: exercise.id,
@@ -378,39 +428,71 @@ export function useWidgetPageState() {
     setState(initialState);
   }, []);
 
-  // Memoize the return object to prevent unnecessary re-renders
-  return useMemo(
-    () => ({
-      // State
-      state,
+  // CRITICAL FIX: Create a stable return object that doesn't change unless necessary
+  // Use refs to maintain stability while still providing access to current values
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
-      // Actions
-      togglePlayback,
-      setCurrentTime,
-      setTempo,
-      setVolume,
-      setSelectedExercise,
-      toggleWidgetVisibility,
-      nextChord,
-      toggleSync,
-      toggleFretboardAnimation,
-      setLoopRegion,
-      toggleLoopEnabled,
-      resetState,
+  // Create getters that access current state through ref
+  const stableReturn = useMemo(
+    () => {
+      if (renderCount % 10 === 0) {
+        logger.info('🔄 useWidgetPageState: Creating new return object');
+      }
 
-      // Computed values
-      isPlaying: state.isPlaying,
-      currentTime: state.currentTime,
-      tempo: state.tempo,
-      selectedExercise: state.selectedExercise,
-      widgets: state.widgets,
-      syncEnabled: state.syncEnabled,
-      fretboardAnimation: state.fretboardAnimation,
-      loopRegion: state.loopRegion,
-      isLoopEnabled: state.isLoopEnabled,
-    }),
+      return {
+        // State - expose through getter to maintain reference stability
+        get state() {
+          return stateRef.current;
+        },
+
+        // Actions (these are already stable due to useCallback)
+        togglePlayback,
+        setCurrentTime,
+        setTempo,
+        setVolume,
+        setSelectedExercise,
+        toggleWidgetVisibility,
+        nextChord,
+        toggleSync,
+        toggleFretboardAnimation,
+        setLoopRegion,
+        toggleLoopEnabled,
+        resetState,
+
+        // Computed values - use getters to always return current values
+        get isPlaying() {
+          return stateRef.current.isPlaying;
+        },
+        get currentTime() {
+          return stateRef.current.currentTime;
+        },
+        get tempo() {
+          return stateRef.current.tempo;
+        },
+        get selectedExercise() {
+          return stateRef.current.selectedExercise;
+        },
+        get widgets() {
+          return stateRef.current.widgets;
+        },
+        get syncEnabled() {
+          return stateRef.current.syncEnabled;
+        },
+        get fretboardAnimation() {
+          return stateRef.current.fretboardAnimation;
+        },
+        get loopRegion() {
+          return stateRef.current.loopRegion;
+        },
+        get isLoopEnabled() {
+          return stateRef.current.isLoopEnabled;
+        },
+      };
+    },
+    // Only depend on the stable callback functions
+    // State changes won't trigger object recreation
     [
-      state,
       togglePlayback,
       setCurrentTime,
       setTempo,
@@ -425,6 +507,8 @@ export function useWidgetPageState() {
       resetState,
     ],
   );
+
+  return stableReturn;
 }
 
 export type UseWidgetPageStateReturn = ReturnType<typeof useWidgetPageState>;

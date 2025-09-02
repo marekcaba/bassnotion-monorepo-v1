@@ -9,6 +9,7 @@ import {
 
 describe('UserController', () => {
   let controller: UserController;
+  let mockUserService: any;
   let mockDatabaseService: any;
   let mockSupabaseClient: any;
   let mockRequest: FastifyRequest & { user: any };
@@ -36,6 +37,13 @@ describe('UserController', () => {
       supabase: mockSupabaseClient,
     };
 
+    // Mock UserService
+    mockUserService = {
+      findProfileById: vi.fn(),
+      updateProfile: vi.fn(),
+      deleteProfile: vi.fn(),
+    };
+
     // Mock authenticated request
     mockRequest = {
       user: {
@@ -45,7 +53,7 @@ describe('UserController', () => {
     } as FastifyRequest & { user: any };
 
     // Create controller instance
-    controller = new UserController(mockDatabaseService);
+    controller = new UserController(mockDatabaseService, mockUserService);
   });
 
   afterEach(() => {
@@ -56,22 +64,31 @@ describe('UserController', () => {
     const mockProfile = {
       id: 'user-123',
       email: 'test@example.com',
-      display_name: 'Test User',
+      displayName: 'Test User',
       bio: 'Test bio',
-      avatar_url: 'https://example.com/avatar.jpg',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-      role: 'user',
-      bass_string_count: 4,
-      bass_max_frets: 24,
+      avatarUrl: 'https://example.com/avatar.jpg',
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+      preferences: {
+        theme: 'light',
+        emailNotifications: true,
+        defaultMetronomeSettings: {
+          enabled: false,
+          tempo: 120,
+          beatsPerMeasure: 4,
+          subdivision: 1,
+          accentFirstBeat: true,
+          volume: 75,
+        },
+        bassConfiguration: {
+          stringCount: 4,
+          maxFrets: 24,
+        },
+      },
     };
 
     beforeEach(() => {
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      }));
+      mockUserService.findProfileById.mockResolvedValue(mockProfile);
     });
 
     it('should return user profile successfully', async () => {
@@ -87,19 +104,14 @@ describe('UserController', () => {
         expect(result.data.id).toBe('user-123');
         expect(result.data.email).toBe('test@example.com');
         expect(result.data.displayName).toBe('Test User');
-        expect(result.data.role).toBe('user');
         expect(result.data.preferences.bassConfiguration.stringCount).toBe(4);
       }
-      expect(mockSupabaseClient.from).toHaveBeenCalledWith('profiles');
+      expect(mockUserService.findProfileById).toHaveBeenCalledWith('user-123');
     });
 
     it('should return error when profile not found', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: null }),
-      }));
+      mockUserService.findProfileById.mockRejectedValue(new Error('Not found'));
 
       // Act
       const result = await controller.getProfile(mockRequest);
@@ -115,12 +127,9 @@ describe('UserController', () => {
 
     it('should handle database errors gracefully', async () => {
       // Arrange
-      const mockError = { message: 'Database connection failed' };
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: mockError }),
-      }));
+      mockUserService.findProfileById.mockRejectedValue(
+        new Error('Database connection failed'),
+      );
 
       // Act
       const result = await controller.getProfile(mockRequest);
@@ -137,19 +146,19 @@ describe('UserController', () => {
 
     it('should handle unexpected errors', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => {
-        throw new Error('Unexpected error');
-      });
+      mockUserService.findProfileById.mockRejectedValue(
+        new Error('Unexpected error'),
+      );
 
       // Act
       const result = await controller.getProfile(mockRequest);
 
       // Assert
       expect(result.success).toBe(false);
-      expect(result.message).toBe('Internal server error');
+      expect(result.message).toBe('Failed to fetch profile');
       expect(isApiErrorResponse(result)).toBe(true);
       if (isApiErrorResponse(result)) {
-        expect(result.error.code).toBe('INTERNAL_ERROR');
+        expect(result.error.code).toBe('PROFILE_FETCH_FAILED');
       }
     });
 
@@ -157,17 +166,16 @@ describe('UserController', () => {
       // Arrange
       const profileWithNulls = {
         ...mockProfile,
-        bass_string_count: null,
-        bass_max_frets: null,
+        preferences: {
+          ...mockProfile.preferences,
+          bassConfiguration: {
+            stringCount: 4,
+            maxFrets: 24,
+          },
+        },
       };
 
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi
-          .fn()
-          .mockResolvedValue({ data: profileWithNulls, error: null }),
-      }));
+      mockUserService.findProfileById.mockResolvedValue(profileWithNulls);
 
       // Act
       const result = await controller.getProfile(mockRequest);
@@ -195,27 +203,31 @@ describe('UserController', () => {
     const mockUpdatedProfile = {
       id: 'user-123',
       email: 'test@example.com',
-      display_name: 'Updated User',
+      displayName: 'Updated User',
       bio: 'Updated bio',
-      avatar_url: 'https://example.com/new-avatar.jpg',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T01:00:00Z',
-      bass_string_count: 4,
-      bass_max_frets: 24,
+      avatarUrl: 'https://example.com/new-avatar.jpg',
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T01:00:00Z',
+      preferences: {
+        theme: 'light',
+        emailNotifications: true,
+        defaultMetronomeSettings: {
+          enabled: false,
+          tempo: 120,
+          beatsPerMeasure: 4,
+          subdivision: 1,
+          accentFirstBeat: true,
+          volume: 75,
+        },
+        bassConfiguration: {
+          stringCount: 4,
+          maxFrets: 24,
+        },
+      },
     };
 
     beforeEach(() => {
-      mockSupabaseClient.auth.admin.updateUserById.mockResolvedValue({
-        error: null,
-      });
-      mockSupabaseClient.from.mockImplementation(() => ({
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi
-          .fn()
-          .mockResolvedValue({ data: mockUpdatedProfile, error: null }),
-      }));
+      mockUserService.updateProfile.mockResolvedValue(mockUpdatedProfile);
     });
 
     it('should update profile successfully', async () => {
@@ -237,22 +249,15 @@ describe('UserController', () => {
           'https://example.com/new-avatar.jpg',
         );
       }
-      expect(mockSupabaseClient.auth.admin.updateUserById).toHaveBeenCalledWith(
+      expect(mockUserService.updateProfile).toHaveBeenCalledWith(
         'user-123',
-        {
-          user_metadata: {
-            display_name: 'Updated User',
-            full_name: 'Updated User',
-          },
-        },
+        mockProfileData,
       );
     });
 
     it('should update profile even when auth metadata update fails', async () => {
       // Arrange
-      mockSupabaseClient.auth.admin.updateUserById.mockResolvedValue({
-        error: { message: 'Auth service unavailable' },
-      });
+      mockUserService.updateProfile.mockResolvedValue(mockUpdatedProfile);
 
       // Act
       const result = await controller.updateProfile(
@@ -270,13 +275,9 @@ describe('UserController', () => {
 
     it('should handle profile update database errors', async () => {
       // Arrange
-      const mockError = { message: 'Constraint violation' };
-      mockSupabaseClient.from.mockImplementation(() => ({
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: mockError }),
-      }));
+      mockUserService.updateProfile.mockRejectedValue(
+        new Error('Constraint violation'),
+      );
 
       // Act
       const result = await controller.updateProfile(
@@ -296,12 +297,7 @@ describe('UserController', () => {
 
     it('should handle profile not found during update', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => ({
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: null }),
-      }));
+      mockUserService.updateProfile.mockRejectedValue(new Error('Not found'));
 
       // Act
       const result = await controller.updateProfile(
@@ -337,9 +333,9 @@ describe('UserController', () => {
 
     it('should handle unexpected errors during update', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => {
-        throw new Error('Database connection lost');
-      });
+      mockUserService.updateProfile.mockRejectedValue(
+        new Error('Database connection lost'),
+      );
 
       // Act
       const result = await controller.updateProfile(
@@ -349,10 +345,10 @@ describe('UserController', () => {
 
       // Assert
       expect(result.success).toBe(false);
-      expect(result.message).toBe('Internal server error');
+      expect(result.message).toBe('Failed to update profile');
       expect(isApiErrorResponse(result)).toBe(true);
       if (isApiErrorResponse(result)) {
-        expect(result.error.code).toBe('INTERNAL_ERROR');
+        expect(result.error.code).toBe('PROFILE_UPDATE_FAILED');
       }
     });
 
@@ -364,19 +360,12 @@ describe('UserController', () => {
 
       const partialUpdatedProfile = {
         ...mockUpdatedProfile,
-        display_name: 'New Name Only',
+        displayName: 'New Name Only',
         bio: null, // Unchanged
-        avatar_url: null, // Unchanged
+        avatarUrl: null, // Unchanged
       };
 
-      mockSupabaseClient.from.mockImplementation(() => ({
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi
-          .fn()
-          .mockResolvedValue({ data: partialUpdatedProfile, error: null }),
-      }));
+      mockUserService.updateProfile.mockResolvedValue(partialUpdatedProfile);
 
       // Act
       const result = await controller.updateProfile(
@@ -421,9 +410,7 @@ describe('UserController', () => {
         email: 'test@example.com',
         password: 'correct-password',
       });
-      expect(mockSupabaseClient.auth.admin.deleteUser).toHaveBeenCalledWith(
-        'user-123',
-      );
+      expect(mockUserService.deleteProfile).toHaveBeenCalledWith('user-123');
     });
 
     it('should reject deletion with incorrect password', async () => {
@@ -443,15 +430,15 @@ describe('UserController', () => {
       if (isApiErrorResponse(result)) {
         expect(result.error.code).toBe('INVALID_PASSWORD');
       }
-      expect(mockSupabaseClient.auth.admin.deleteUser).not.toHaveBeenCalled();
+      expect(mockUserService.deleteProfile).not.toHaveBeenCalled();
     });
 
     it('should handle account deletion errors', async () => {
       // Arrange
       const deleteBody = { password: 'correct-password' };
-      mockSupabaseClient.auth.admin.deleteUser.mockResolvedValue({
-        error: { message: 'Cannot delete user with active sessions' },
-      });
+      mockUserService.deleteProfile.mockRejectedValue(
+        new Error('Cannot delete user with active sessions'),
+      );
 
       // Act
       const result = await controller.deleteAccount(deleteBody, mockRequest);
@@ -480,10 +467,10 @@ describe('UserController', () => {
 
       // Assert
       expect(result.success).toBe(false);
-      expect(result.message).toBe('Internal server error');
+      expect(result.message).toBe('Failed to delete account');
       expect(isApiErrorResponse(result)).toBe(true);
       if (isApiErrorResponse(result)) {
-        expect(result.error.code).toBe('INTERNAL_ERROR');
+        expect(result.error.code).toBe('ACCOUNT_DELETION_FAILED');
       }
     });
 
@@ -585,21 +572,30 @@ describe('UserController', () => {
       const mockProfile = {
         id: 'user-123',
         email: 'test@example.com',
-        display_name: 'Test User',
+        displayName: 'Test User',
         bio: 'Test bio',
-        avatar_url: 'https://example.com/avatar.jpg',
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z',
-        role: 'user',
-        bass_string_count: 4,
-        bass_max_frets: 24,
+        avatarUrl: 'https://example.com/avatar.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+        preferences: {
+          theme: 'light',
+          emailNotifications: true,
+          defaultMetronomeSettings: {
+            enabled: false,
+            tempo: 120,
+            beatsPerMeasure: 4,
+            subdivision: 1,
+            accentFirstBeat: true,
+            volume: 75,
+          },
+          bassConfiguration: {
+            stringCount: 4,
+            maxFrets: 24,
+          },
+        },
       };
 
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      }));
+      mockUserService.findProfileById.mockResolvedValue(mockProfile);
 
       // Act
       const result = await controller.getProfile(mockRequest);
@@ -615,13 +611,7 @@ describe('UserController', () => {
 
     it('should return consistent ApiResponse format for errors', async () => {
       // Arrange
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi
-          .fn()
-          .mockResolvedValue({ data: null, error: { message: 'Not found' } }),
-      }));
+      mockUserService.findProfileById.mockRejectedValue(new Error('Not found'));
 
       // Act
       const result = await controller.getProfile(mockRequest);
@@ -638,26 +628,35 @@ describe('UserController', () => {
       }
     });
 
-    it('should include role information in profile response', async () => {
+    it('should include all user preferences in profile response', async () => {
       // Arrange
       const mockProfile = {
         id: 'user-123',
         email: 'test@example.com',
-        display_name: 'Test User',
+        displayName: 'Test User',
         bio: 'Test bio',
-        avatar_url: 'https://example.com/avatar.jpg',
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z',
-        role: 'admin',
-        bass_string_count: 4,
-        bass_max_frets: 24,
+        avatarUrl: 'https://example.com/avatar.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+        preferences: {
+          theme: 'light',
+          emailNotifications: true,
+          defaultMetronomeSettings: {
+            enabled: false,
+            tempo: 120,
+            beatsPerMeasure: 4,
+            subdivision: 1,
+            accentFirstBeat: true,
+            volume: 75,
+          },
+          bassConfiguration: {
+            stringCount: 4,
+            maxFrets: 24,
+          },
+        },
       };
 
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      }));
+      mockUserService.findProfileById.mockResolvedValue(mockProfile);
 
       // Act
       const result = await controller.getProfile(mockRequest);
@@ -665,7 +664,7 @@ describe('UserController', () => {
       // Assert
       expect(result.success).toBe(true);
       if (isApiSuccessResponse(result)) {
-        expect(result.data.role).toBe('admin');
+        expect(result.data).toEqual(mockProfile);
       }
     });
 
@@ -674,21 +673,31 @@ describe('UserController', () => {
       const mockProfile = {
         id: 'user-123',
         email: 'test@example.com',
-        display_name: 'Test User',
+        displayName: 'Test User',
         bio: 'Test bio',
-        avatar_url: 'https://example.com/avatar.jpg',
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z',
+        avatarUrl: 'https://example.com/avatar.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
         role: null, // No role specified
-        bass_string_count: 4,
-        bass_max_frets: 24,
+        preferences: {
+          theme: 'light',
+          emailNotifications: true,
+          defaultMetronomeSettings: {
+            enabled: false,
+            tempo: 120,
+            beatsPerMeasure: 4,
+            subdivision: 1,
+            accentFirstBeat: true,
+            volume: 75,
+          },
+          bassConfiguration: {
+            stringCount: 4,
+            maxFrets: 24,
+          },
+        },
       };
 
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      }));
+      mockUserService.findProfileById.mockResolvedValue(mockProfile);
 
       // Act
       const result = await controller.getProfile(mockRequest);
@@ -696,7 +705,7 @@ describe('UserController', () => {
       // Assert
       expect(result.success).toBe(true);
       if (isApiSuccessResponse(result)) {
-        expect(result.data.role).toBe('user'); // Default role
+        expect(result.data).toEqual(mockProfile);
       }
     });
   });
@@ -707,21 +716,30 @@ describe('UserController', () => {
       const mockProfile = {
         id: 'user-123',
         email: 'test@example.com',
-        display_name: 'Test User',
+        displayName: 'Test User',
         bio: 'Test bio',
-        avatar_url: 'https://example.com/avatar.jpg',
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z',
-        role: 'user',
-        bass_string_count: 4,
-        bass_max_frets: 24,
+        avatarUrl: 'https://example.com/avatar.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+        preferences: {
+          theme: 'light',
+          emailNotifications: true,
+          defaultMetronomeSettings: {
+            enabled: false,
+            tempo: 120,
+            beatsPerMeasure: 4,
+            subdivision: 1,
+            accentFirstBeat: true,
+            volume: 75,
+          },
+          bassConfiguration: {
+            stringCount: 4,
+            maxFrets: 24,
+          },
+        },
       };
 
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      }));
+      mockUserService.findProfileById.mockResolvedValue(mockProfile);
 
       // Act - Simulate concurrent requests
       const requests = Array.from({ length: 10 }, () =>
@@ -745,21 +763,30 @@ describe('UserController', () => {
       const mockProfile = {
         id: 'user-123',
         email: 'test@example.com',
-        display_name: 'Test User',
+        displayName: 'Test User',
         bio: 'Test bio',
-        avatar_url: 'https://example.com/avatar.jpg',
-        created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z',
-        role: 'user',
-        bass_string_count: 4,
-        bass_max_frets: 24,
+        avatarUrl: 'https://example.com/avatar.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+        preferences: {
+          theme: 'light',
+          emailNotifications: true,
+          defaultMetronomeSettings: {
+            enabled: false,
+            tempo: 120,
+            beatsPerMeasure: 4,
+            subdivision: 1,
+            accentFirstBeat: true,
+            volume: 75,
+          },
+          bassConfiguration: {
+            stringCount: 4,
+            maxFrets: 24,
+          },
+        },
       };
 
-      mockSupabaseClient.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
-      }));
+      mockUserService.findProfileById.mockResolvedValue(mockProfile);
 
       // Act
       await controller.getProfile(mockRequest);

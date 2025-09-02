@@ -1,36 +1,69 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { createStructuredLogger } from '@bassnotion/contracts';
 import type { SyncedWidgetRenderProps } from '../../../base';
 import type { Fret } from '../types/fretboardTypes';
 import { useFretboardState } from './useFretboardState';
 import { useFretboardConnections } from './useFretboardConnections';
 import { useFretboardExercise } from './useFretboardExercise';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 /**
  * Main fretboard hook that combines all fretboard functionality
  * This is the primary hook that components should use
  */
+// Minimal sync props interface to avoid unnecessary re-renders
+interface MinimalSyncProps {
+  selectedExercise: any;
+  isPlaying: boolean;
+  currentTime: number;
+  tempo: number;
+  masterVolume: number;
+  sync: any;
+}
+
 export const useFretboard = (
-  syncProps: SyncedWidgetRenderProps,
+  syncProps: MinimalSyncProps,
   config?: {
     stringCount?: 4 | 5 | 6;
     maxFrets?: number;
     tiltAngle?: number;
   },
 ) => {
+  logger.info(`🔥 useFretboard: hook called`, {
+    syncPropsKeys: Object.keys(syncProps || {}),
+    selectedExerciseId: syncProps?.selectedExercise?.id,
+    isPlaying: syncProps?.isPlaying,
+    currentTime: syncProps?.currentTime,
+    configStringCount: config?.stringCount,
+    timestamp: Date.now(),
+  });
+
   // State management with config from user profile
+  logger.info(`🔥 useFretboard: calling useFretboardState`);
   const state = useFretboardState(config);
+  logger.info(`🔥 useFretboard: useFretboardState returned`, {
+    selectedDotsSize: state.selectedDots.size,
+    stringCount: state.stringCount,
+  });
 
   // Connection highlighting
+  logger.info(`🔥 useFretboard: calling useFretboardConnections`);
   const connections = useFretboardConnections(
     state.selectedDots,
     state.stringCount,
   );
 
   // Exercise integration with auto-population enabled
+  logger.info(`🔥 useFretboard: calling useFretboardExercise`);
   const exercise = useFretboardExercise(syncProps, {
     setSelectedDots: state.setSelectedDots,
     autoPopulateOnExerciseLoad: true, // Enable auto-population when exercises change
     stringCount: state.stringCount, // Pass string count to audio system
+  });
+  logger.info(`🔥 useFretboard: useFretboardExercise returned`, {
+    hasExercise: exercise.exerciseData.hasExercise,
+    exerciseNotesLength: exercise.exerciseData.exerciseNotes.length,
+    selectedExerciseId: exercise.exerciseData.selectedExercise?.id,
   });
 
   // Enhanced dot click handler that integrates audio and sync

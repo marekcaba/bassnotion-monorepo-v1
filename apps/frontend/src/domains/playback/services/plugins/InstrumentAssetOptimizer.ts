@@ -9,6 +9,7 @@
 
 import { AssetManager } from '../AssetManager';
 import type {
+import { createStructuredLogger } from '@bassnotion/contracts';
   AssetLoadResult,
   DeviceCapabilities,
   NetworkCapabilities,
@@ -179,7 +180,7 @@ export class InstrumentAssetOptimizer {
     instrument: 'bass' | 'drums' | 'chords' | 'metronome',
     config: InstrumentOptimizationConfig,
   ): void {
-    console.log(`🎯 Configuring optimization for ${instrument}:`, config);
+    logger.info(`🎯 Configuring optimization for ${instrument}:`, config);
 
     this.optimizationConfigs.set(instrument, config);
 
@@ -199,7 +200,7 @@ export class InstrumentAssetOptimizer {
    */
   public setDeviceCapabilities(capabilities: DeviceCapabilities): void {
     this.deviceCapabilities = capabilities;
-    console.log('📱 Device capabilities updated:', {
+    logger.info('📱 Device capabilities updated:', {
       deviceClass: capabilities.deviceClass,
       memoryGB: capabilities.memoryGB,
       maxPolyphony: capabilities.maxPolyphony,
@@ -216,7 +217,7 @@ export class InstrumentAssetOptimizer {
    */
   public setNetworkCapabilities(capabilities: NetworkCapabilities): void {
     this.networkCapabilities = capabilities;
-    console.log('🌐 Network capabilities updated:', {
+    logger.info('🌐 Network capabilities updated:', {
       connectionType: capabilities.connectionType,
       downlink: capabilities.downlink,
       rtt: capabilities.rtt,
@@ -395,7 +396,7 @@ export class InstrumentAssetOptimizer {
       config.cacheStrategy = 'memory';
     }
 
-    console.log(`🌐 Network optimization applied for ${instrument}:`, {
+    logger.info(`🌐 Network optimization applied for ${instrument}:`, {
       quality: config.quality,
       compression: config.compressionLevel,
       cacheStrategy: config.cacheStrategy,
@@ -416,7 +417,7 @@ export class InstrumentAssetOptimizer {
     }
 
     const strategy = this.getInstrumentStrategy(instrument);
-    console.log(`🎯 Optimizing asset loading for ${instrument}:`, {
+    logger.info(`🎯 Optimizing asset loading for ${instrument}:`, {
       assetCount: assets.length,
       strategy,
     });
@@ -437,7 +438,7 @@ export class InstrumentAssetOptimizer {
         // Cache the optimized asset after loading
         this.cacheOptimizedAsset(assetUrl, optimizedAsset, instrument);
       } catch (error) {
-        console.error(`Failed to optimize asset ${assetUrl}:`, error);
+        logger.error(`Failed to optimize asset ${assetUrl}:`, error);
         // Continue with other assets on failure
       }
     }
@@ -461,7 +462,7 @@ export class InstrumentAssetOptimizer {
 
     this.updatePerformanceMetrics(instrument, metrics);
 
-    console.log(`✅ Asset optimization complete for ${instrument}:`, {
+    logger.info(`✅ Asset optimization complete for ${instrument}:`, {
       loadedAssets: optimizedAssets.length,
       totalLoadTime: `${totalLoadTime.toFixed(2)}ms`,
       averageLoadTime: `${(totalLoadTime / optimizedAssets.length).toFixed(2)}ms`,
@@ -485,14 +486,14 @@ export class InstrumentAssetOptimizer {
       // Cache hit - update usage statistics
       cached.lastUsed = Date.now();
       cached.frequency++;
-      console.log(
+      logger.info(
         `🎯 Cache hit for ${assetUrl}, frequency now: ${cached.frequency}`,
       );
       return cached.asset;
     }
 
     // Cache miss - load asset with optimization parameters
-    console.log(`📥 Loading asset ${assetUrl} from source`);
+    logger.info(`📥 Loading asset ${assetUrl} from source`);
     const asset = await this.assetManager.loadAsset(assetUrl, 'audio');
 
     // Apply instrument-specific optimizations
@@ -890,7 +891,7 @@ export class InstrumentAssetOptimizer {
   public clearCache(): void {
     this.assetCache.clear();
     this.performanceMetrics.clear();
-    console.log('🧹 Asset optimization cache cleared');
+    logger.info('🧹 Asset optimization cache cleared');
   }
 
   /**

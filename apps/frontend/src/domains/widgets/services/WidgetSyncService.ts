@@ -10,6 +10,8 @@
  */
 
 import { EventEmitter } from 'events';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // ============================================================================
 // SYNC EVENT INTERFACES
@@ -113,6 +115,9 @@ export class WidgetSyncService {
   private positionUpdateInterval: NodeJS.Timeout | null = null;
   private readonly POSITION_UPDATE_INTERVAL_MS = 50; // 50ms for smooth updates
 
+  private isConnecting = false;
+  private isConnected = false;
+
   constructor() {
     this.eventBus = new EventEmitter();
     this.eventBus.setMaxListeners(100); // Allow many widget subscriptions - increased for complex pages
@@ -122,7 +127,7 @@ export class WidgetSyncService {
 
     // Initialize default throttle configurations
     this.initializeThrottleConfigs();
-    
+
     // Connect to EventBus from CoreServices (delay to ensure client-side only)
     if (typeof window !== 'undefined') {
       setTimeout(() => this.connectToEventBus(), 0);
@@ -168,7 +173,7 @@ export class WidgetSyncService {
 
     // Debug log for PLAY/PAUSE/STOP events (disabled for performance)
     // if (event.type === 'PLAY' || event.type === 'PAUSE' || event.type === 'STOP') {
-    //   console.log(`🔄 WidgetSyncService: Received ${event.type} event from ${event.source}`);
+    //   logger.info(`🔄 WidgetSyncService: Received ${event.type} event from ${event.source}`);
     // }
 
     // Update performance metrics
@@ -208,7 +213,7 @@ export class WidgetSyncService {
 
     // Debug warning for high listener counts
     if (listenerCount > 20) {
-      console.warn(
+      logger.warn(
         `⚠️ High listener count for ${eventType}: ${listenerCount} listeners. ` +
           'Check for missing cleanup in useEffect hooks.',
       );
@@ -237,15 +242,68 @@ export class WidgetSyncService {
   /**
    * Get current sync state (read-only)
    */
+  private getSyncStateCallCount = 0;
+  private cachedSyncState: SyncState | null = null;
+  private lastSyncStateJSON = '';
+
   getSyncState(): Readonly<SyncState> {
-    return { ...this.syncState };
+    this.getSyncStateCallCount++;
+
+    // Create a JSON representation to detect actual changes
+    const currentJSON = JSON.stringify(this.syncState);
+
+    // Only create new object if state actually changed
+    if (currentJSON !== this.lastSyncStateJSON || !this.cachedSyncState) {
+      // State changed, create new object
+      this.cachedSyncState = { ...this.syncState };
+      this.lastSyncStateJSON = currentJSON;
+
+      // Only log every 10th state change to reduce console noise
+      if (this.getSyncStateCallCount % 10 === 0) {
+        logger.info(
+          `🔄 [WidgetSyncService] getSyncState - STATE CHANGED, creating new object`,
+          {
+            callCount: this.getSyncStateCallCount,
+            timestamp: new Date().toISOString(),
+          },
+        );
+      }
+    } else if (this.getSyncStateCallCount % 50 === 0) {
+      // Log reuse of cached state every 50th call to reduce noise
+      logger.info(
+        `✅ [WidgetSyncService] getSyncState - returning CACHED state (no change)`,
+        {
+          callCount: this.getSyncStateCallCount,
+          timestamp: new Date().toISOString(),
+        },
+      );
+    }
+
+    return this.cachedSyncState;
   }
 
   /**
    * Get performance metrics
    */
+  private cachedPerformanceMetrics: SyncPerformanceMetrics | null = null;
+  private lastPerformanceMetricsJSON = '';
+
   getPerformanceMetrics(): Readonly<SyncPerformanceMetrics> {
-    return { ...this.performanceMetrics };
+    // Create a JSON representation to detect actual changes (excluding lastUpdateTime)
+    const { lastUpdateTime, ...metricsWithoutTime } = this.performanceMetrics;
+    const currentJSON = JSON.stringify(metricsWithoutTime);
+
+    // Only create new object if metrics actually changed (ignoring lastUpdateTime)
+    if (
+      currentJSON !== this.lastPerformanceMetricsJSON ||
+      !this.cachedPerformanceMetrics
+    ) {
+      // Metrics changed, create new object
+      this.cachedPerformanceMetrics = { ...this.performanceMetrics };
+      this.lastPerformanceMetricsJSON = currentJSON;
+    }
+
+    return this.cachedPerformanceMetrics;
   }
 
   // ============================================================================
@@ -292,14 +350,14 @@ export class WidgetSyncService {
       batchSize: 1,
       maxAge: 0,
     });
-    
+
     this.throttleConfigs.set('PAUSE', {
       eventType: 'PAUSE',
       throttleMs: 0, // No throttling
       batchSize: 1,
       maxAge: 0,
     });
-    
+
     this.throttleConfigs.set('STOP', {
       eventType: 'STOP',
       throttleMs: 0, // No throttling
@@ -314,7 +372,7 @@ export class WidgetSyncService {
       batchSize: 1,
       maxAge: 0,
     });
-    
+
     // Position updates can be throttled
     this.throttleConfigs.set('POSITION', {
       eventType: 'POSITION',
@@ -390,21 +448,37 @@ export class WidgetSyncService {
   // ============================================================================
 
   private updateSyncState(event: WidgetSyncEvent): void {
+    // Track if state actually changes
+    let stateChanged = false;
+
     switch (event.type) {
       case 'PLAYBACK_STATE':
-        if (event.payload.isPlaying !== undefined) {
+        if (
+          event.payload.isPlaying !== undefined &&
+          this.syncState.playback.isPlaying !== event.payload.isPlaying
+        ) {
           this.syncState.playback.isPlaying = event.payload.isPlaying;
+          stateChanged = true;
         }
-        if (event.payload.currentTime !== undefined) {
+        if (
+          event.payload.currentTime !== undefined &&
+          this.syncState.playback.currentTime !== event.payload.currentTime
+        ) {
           this.syncState.playback.currentTime = event.payload.currentTime;
+          stateChanged = true;
         }
         break;
 
       // Handle PlaybackOrchestrator events
       case 'PLAY':
         // Processing PLAY event
-        console.log('🔄 WidgetSyncService: Processing PLAY event, setting isPlaying to true');
-        this.syncState.playback.isPlaying = true;
+        logger.info(
+          '🔄 WidgetSyncService: Processing PLAY event, setting isPlaying to true',
+        );
+        if (this.syncState.playback.isPlaying !== true) {
+          this.syncState.playback.isPlaying = true;
+          stateChanged = true;
+        }
         this.startHeartbeat();
         this.startPositionUpdates();
         break;
@@ -412,49 +486,90 @@ export class WidgetSyncService {
       case 'PAUSE':
       case 'STOP':
         // Processing PAUSE/STOP event
-        console.log(`🔄 WidgetSyncService: Processing ${event.type} event, setting isPlaying to false`);
-        this.syncState.playback.isPlaying = false;
+        logger.info(
+          `🔄 WidgetSyncService: Processing ${event.type} event, setting isPlaying to false`,
+        );
+        if (this.syncState.playback.isPlaying !== false) {
+          this.syncState.playback.isPlaying = false;
+          stateChanged = true;
+        }
         this.stopHeartbeat();
         this.stopPositionUpdates();
         break;
 
       case 'TIMELINE_UPDATE':
-        if (event.payload.currentTime !== undefined) {
+        if (
+          event.payload.currentTime !== undefined &&
+          this.syncState.playback.currentTime !== event.payload.currentTime
+        ) {
           this.syncState.playback.currentTime = event.payload.currentTime;
+          stateChanged = true;
         }
         break;
 
       case 'TEMPO_CHANGE':
-        if (event.payload.tempo !== undefined) {
+        if (
+          event.payload.tempo !== undefined &&
+          this.syncState.playback.tempo !== event.payload.tempo
+        ) {
           this.syncState.playback.tempo = event.payload.tempo;
+          stateChanged = true;
         }
         break;
 
       case 'VOLUME_CHANGE':
-        if (event.payload.masterVolume !== undefined) {
+        if (
+          event.payload.masterVolume !== undefined &&
+          this.syncState.ui.masterVolume !== event.payload.masterVolume
+        ) {
           this.syncState.ui.masterVolume = event.payload.masterVolume;
+          stateChanged = true;
         }
-        if (event.payload.volume !== undefined) {
+        if (
+          event.payload.volume !== undefined &&
+          this.syncState.playback.volume !== event.payload.volume
+        ) {
           this.syncState.playback.volume = event.payload.volume;
+          stateChanged = true;
         }
         break;
 
       case 'EXERCISE_CHANGE':
-        if (event.payload.exercise !== undefined) {
+        if (
+          event.payload.exercise !== undefined &&
+          this.syncState.exercise.selectedExercise !== event.payload.exercise
+        ) {
           this.syncState.exercise.selectedExercise = event.payload.exercise;
+          stateChanged = true;
         }
         break;
 
       case 'CUSTOM_BASSLINE':
-        if (event.payload.bassline !== undefined) {
+        if (
+          event.payload.bassline !== undefined &&
+          this.syncState.exercise.customBassline !== event.payload.bassline
+        ) {
           this.syncState.exercise.customBassline = event.payload.bassline;
+          stateChanged = true;
         }
         break;
 
       case 'CLEAR_CUSTOM_BASSLINE':
         // Clear the custom bassline to show default exercise notes
-        this.syncState.exercise.customBassline = undefined;
+        if (this.syncState.exercise.customBassline !== undefined) {
+          this.syncState.exercise.customBassline = undefined;
+          stateChanged = true;
+        }
         break;
+    }
+
+    // If state changed, clear the cached sync state to force recreation next time
+    if (stateChanged) {
+      this.cachedSyncState = null;
+      this.lastSyncStateJSON = '';
+      logger.info(
+        `🔄 [WidgetSyncService] State updated by ${event.type} event, clearing cache`,
+      );
     }
   }
 
@@ -479,10 +594,14 @@ export class WidgetSyncService {
       latency,
     );
 
+    // Clear cached performance metrics since we updated them
+    this.cachedPerformanceMetrics = null;
+    this.lastPerformanceMetricsJSON = '';
+
     // Check for performance warnings
     if (latency > 5.0) {
       // 5ms threshold from AC 3.6.4
-      console.warn(`Widget sync latency exceeded 5ms: ${latency.toFixed(2)}ms`);
+      logger.warn(`Widget sync latency exceeded 5ms: ${latency.toFixed(2)}ms`);
     }
   }
 
@@ -506,6 +625,10 @@ export class WidgetSyncService {
       lastUpdateTime: Date.now(),
     };
     this.latencySamples = [];
+
+    // Clear performance metrics cache
+    this.cachedPerformanceMetrics = null;
+    this.lastPerformanceMetricsJSON = '';
   }
 
   /**
@@ -513,12 +636,12 @@ export class WidgetSyncService {
    */
   private startHeartbeat(): void {
     if (this.heartbeatInterval) return; // Already running
-    
-    console.log('💓 WidgetSyncService: Starting heartbeat');
-    
+
+    logger.info('💓 WidgetSyncService: Starting heartbeat');
+
     // Send initial heartbeat
     this.sendHeartbeat();
-    
+
     // Set up interval
     this.heartbeatInterval = setInterval(() => {
       this.sendHeartbeat();
@@ -530,7 +653,7 @@ export class WidgetSyncService {
    */
   private stopHeartbeat(): void {
     if (this.heartbeatInterval) {
-      console.log('💔 WidgetSyncService: Stopping heartbeat');
+      logger.info('💔 WidgetSyncService: Stopping heartbeat');
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = null;
     }
@@ -539,7 +662,18 @@ export class WidgetSyncService {
   /**
    * Send heartbeat event
    */
+  private heartbeatCount = 0;
   private sendHeartbeat(): void {
+    this.heartbeatCount++;
+
+    // Only log every 10th heartbeat to reduce noise (every 50 seconds)
+    if (this.heartbeatCount % 10 === 0) {
+      logger.info('💓 [WidgetSyncService] Sending HEARTBEAT event', {
+        count: this.heartbeatCount,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     const heartbeatEvent: WidgetSyncEvent = {
       type: 'HEARTBEAT',
       payload: {
@@ -552,7 +686,7 @@ export class WidgetSyncService {
       source: 'widget-sync-service',
       priority: 'normal',
     };
-    
+
     // Emit without going through throttling
     this.eventBus.emit('HEARTBEAT', heartbeatEvent);
     this.eventBus.emit('*', heartbeatEvent);
@@ -563,21 +697,21 @@ export class WidgetSyncService {
    */
   private startPositionUpdates(): void {
     if (this.positionUpdateInterval) return; // Already running
-    
-    console.log('📍 WidgetSyncService: Starting position updates');
-    
+
+    logger.info('📍 WidgetSyncService: Starting position updates');
+
     this.positionUpdateInterval = setInterval(() => {
       if (this.syncState.playback.isPlaying) {
         // Get current position from Tone.Transport if available
         let currentPosition = this.syncState.playback.currentTime;
-        
+
         if (typeof window !== 'undefined' && (window as any).Tone?.Transport) {
           const transport = (window as any).Tone.Transport;
           if (transport.state === 'started') {
             currentPosition = transport.seconds;
           }
         }
-        
+
         const positionEvent: WidgetSyncEvent = {
           type: 'POSITION',
           payload: {
@@ -589,7 +723,7 @@ export class WidgetSyncService {
           source: 'widget-sync-service',
           priority: 'low',
         };
-        
+
         // This will be throttled appropriately
         this.emit(positionEvent);
       }
@@ -601,7 +735,7 @@ export class WidgetSyncService {
    */
   private stopPositionUpdates(): void {
     if (this.positionUpdateInterval) {
-      console.log('📍 WidgetSyncService: Stopping position updates');
+      logger.info('📍 WidgetSyncService: Stopping position updates');
       clearInterval(this.positionUpdateInterval);
       this.positionUpdateInterval = null;
     }
@@ -615,79 +749,122 @@ export class WidgetSyncService {
     if (typeof window === 'undefined') {
       return;
     }
-    
+
+    // Prevent multiple concurrent connection attempts
+    if (this.isConnecting || this.isConnected) {
+      logger.info(
+        'WidgetSyncService: Already connecting or connected, skipping...',
+      );
+      return;
+    }
+
+    this.isConnecting = true;
+
     // Try to connect to EventBus when services are ready
+    let connectionAttempts = 0;
+    const maxConnectionAttempts = 50; // Max 5 seconds of trying
+
     const connectToEventBusWhenReady = () => {
-      const coreServices = (window as any).__coreServices;
-      if (!coreServices || typeof coreServices.getEventBus !== 'function') {
-        console.log('WidgetSyncService: Waiting for CoreServices...');
-        // Try again in 100ms
-        setTimeout(connectToEventBusWhenReady, 100);
+      // Skip if already connected
+      if (this.isConnected) {
         return;
       }
       
+      connectionAttempts++;
+
+      // Check for both old and new global service locations
+      const coreServices =
+        (window as any).__coreServices || (window as any).__globalCoreServices;
+
+      if (!coreServices || typeof coreServices.getEventBus !== 'function') {
+        if (connectionAttempts < maxConnectionAttempts) {
+          logger.info(
+            `WidgetSyncService: Waiting for CoreServices... (attempt ${connectionAttempts}/${maxConnectionAttempts})`,
+          );
+          // Try again in 100ms
+          setTimeout(connectToEventBusWhenReady, 100);
+        } else {
+          logger.warn(
+            'WidgetSyncService: Could not connect to CoreServices after 5 seconds. Widget sync disabled.',
+          );
+          this.isConnecting = false;
+        }
+        return;
+      }
+
       const eventBus = coreServices.getEventBus();
       if (!eventBus) {
-        console.warn('WidgetSyncService: EventBus not available');
+        logger.warn('WidgetSyncService: EventBus not available');
+        this.isConnecting = false;
         return;
       }
-      
-      console.log('🔌 WidgetSyncService: Connecting to EventBus from CoreServices');
-      
+
+      logger.info(
+        '🔌 WidgetSyncService: Connecting to EventBus from CoreServices',
+      );
+
       // Subscribe to transport events from UnifiedTransport
       eventBus.on('PLAY', (event: any) => {
-        console.log('🔄 WidgetSyncService: Received PLAY from EventBus', event);
+        logger.info('🔄 WidgetSyncService: Received PLAY from EventBus', event);
         this.emit({
           type: 'PLAY',
           payload: event,
           timestamp: Date.now(),
           source: event.source || 'UnifiedTransport',
-          priority: 'high'
+          priority: 'high',
         });
       });
-      
+
       eventBus.on('STOP', (event: any) => {
-        console.log('🔄 WidgetSyncService: Received STOP from EventBus', event);
+        logger.info('🔄 WidgetSyncService: Received STOP from EventBus', event);
         this.emit({
           type: 'STOP',
           payload: event,
           timestamp: Date.now(),
           source: event.source || 'UnifiedTransport',
-          priority: 'high'
+          priority: 'high',
         });
       });
-      
+
       eventBus.on('PAUSE', (event: any) => {
-        console.log('🔄 WidgetSyncService: Received PAUSE from EventBus', event);
+        logger.info(
+          '🔄 WidgetSyncService: Received PAUSE from EventBus',
+          event,
+        );
         this.emit({
           type: 'PAUSE',
           payload: event,
           timestamp: Date.now(),
           source: event.source || 'UnifiedTransport',
-          priority: 'high'
+          priority: 'high',
         });
       });
-      
+
       eventBus.on('transport:tempo-changed', (event: any) => {
-        console.log('🔄 WidgetSyncService: Received tempo change from EventBus', event);
+        logger.info(
+          '🔄 WidgetSyncService: Received tempo change from EventBus',
+          event,
+        );
         this.emit({
           type: 'TEMPO_CHANGE',
           payload: { tempo: event.tempo },
           timestamp: Date.now(),
           source: 'UnifiedTransport',
-          priority: 'high'
+          priority: 'high',
         });
       });
-      
-      console.log('✅ WidgetSyncService: Successfully connected to EventBus');
+
+      logger.info('✅ WidgetSyncService: Successfully connected to EventBus');
+      this.isConnecting = false;
+      this.isConnected = true;
     };
-    
+
     // Also listen for the audioServicesReady event
     window.addEventListener('audioServicesReady', () => {
-      console.log('🎉 WidgetSyncService: Audio services ready event received');
+      logger.info('🎉 WidgetSyncService: Audio services ready event received');
       connectToEventBusWhenReady();
     });
-    
+
     // Start trying to connect immediately in case services are already ready
     connectToEventBusWhenReady();
   }
@@ -699,7 +876,7 @@ export class WidgetSyncService {
     // Stop heartbeat and position updates
     this.stopHeartbeat();
     this.stopPositionUpdates();
-    
+
     // Clear all throttled event timers
     this.throttledEvents.forEach((throttleData) => {
       if (throttleData.timer) {

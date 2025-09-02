@@ -8,7 +8,7 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { BassProcessor } from '../plugins/BassProcessor';
+import { BassProcessor } from '../../modules/instruments/implementations/bass/BassProcessor.js';
 import {
   PluginState,
   PluginAudioContext,

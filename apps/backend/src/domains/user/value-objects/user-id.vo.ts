@@ -21,4 +21,14 @@ export class UserId {
   static create(value: string): UserId {
     return new UserId(value);
   }
+
+  static isValid(value: string): boolean {
+    if (!value || value.trim().length === 0) {
+      return false;
+    }
+    // Check if it's a valid UUID format
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(value);
+  }
 }

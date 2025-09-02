@@ -12,21 +12,26 @@
  */
 
 import { loadGlobalTone } from './toneLoader';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import type { Exercise } from '@bassnotion/contracts';
-import { extractExerciseNotes, getVelocityLayersForExercise } from '@/domains/playback/utils/extractExerciseNotes';
+import {
+  extractExerciseNotes,
+  getVelocityLayersForExercise,
+} from '@/domains/playback/utils/extractExerciseNotes';
 
 // Use global Tone instance to ensure same AudioContext
 let Tone: any = null;
 
 import Soundfont from 'soundfont-player';
-import { SalamanderVelocitySampler } from './SalamanderVelocitySampler';
-import { WurlitzerVelocitySampler } from './WurlitzerVelocitySampler';
+import { SalamanderVelocitySampler } from '../../modules/instruments/implementations/harmony/SalamanderVelocitySampler.js';
+import { WurlitzerVelocitySampler } from '../../modules/instruments/implementations/harmony/WurlitzerVelocitySampler.js';
 import { LongPadSampler } from './LongPadSampler';
-import { RhodesVelocitySampler } from './RhodesVelocitySampler';
+import { RhodesVelocitySampler } from '../../modules/instruments/implementations/harmony/RhodesVelocitySampler.js';
 import { TheSawSampler } from './TheSawSampler';
 
 // Import shared types
 import {
+import { createStructuredLogger } from '@bassnotion/contracts';
   ChordPreset,
   ChordQuality,
   ChordSymbol,
@@ -162,6 +167,7 @@ export class ChordVoicingEngine {
     let voicing = this.applyVoicingStyle(baseNotes, options.style);
 
     if (options.voiceLeading && context?.previousChord) {
+  const { correlationId, logger } = useCorrelation('baseNotes');
       voicing = this.optimizeVoiceLeading(
         voicing,
         context.previousChord.voicing,
@@ -291,7 +297,7 @@ export class ChordVoicingEngine {
     const rootIndex = this.noteNames.indexOf(rootNoteName);
 
     if (rootIndex === -1) {
-      console.warn(`Unknown root note: ${root}, falling back to C4`);
+      logger.warn(`Unknown root note: ${root}, falling back to C4`);
       return 'C4';
     }
 
@@ -698,7 +704,7 @@ export class ChordInstrumentProcessor {
   private harmonicAnalyzer: HarmonicAnalyzer;
   private currentPreset: ChordPreset;
   private config: ChordInstrumentConfig;
-  private volumeBeforePanic: number = 1; // Store volume before panic for restoration
+  private volumeBeforePanic = 1; // Store volume before panic for restoration
   // TODO: Review non-null assertion - consider null safety
   private effects!: {
     reverb: Tone.Reverb;
@@ -755,12 +761,12 @@ export class ChordInstrumentProcessor {
         if (this.preActivatedContext.state === 'suspended') {
           await this.preActivatedContext.resume();
         }
-        console.log(
+        logger.info(
           '🎼 Pre-activated AudioContext for soundfonts (user gesture preserved)',
         );
       }
     } catch (error) {
-      console.warn('🎼 Failed to pre-activate AudioContext:', error);
+      logger.warn('🎼 Failed to pre-activate AudioContext:', error);
     }
   }
 
@@ -805,11 +811,11 @@ export class ChordInstrumentProcessor {
   }
 
   public stopChord(chordId?: string): void {
-    console.log(
+    logger.info(
       '🎹 ChordInstrumentProcessor.stopChord called with chordId:',
       chordId,
     );
-    
+
     // CRITICAL: When no chordId provided, this is a STOP ALL (DAW panic button)
     if (!chordId) {
       // Cancel all scheduled Transport events to prevent future notes
@@ -819,24 +825,28 @@ export class ChordInstrumentProcessor {
           const now = Tone.Transport.seconds;
           const cancelFrom = Math.max(0, now - 0.1); // Go back 100ms to catch in-flight events
           Tone.Transport.cancel(cancelFrom);
-          // console.log(`🎹 Cancelled all Transport events from ${cancelFrom} (now: ${now})`);
-          
+          // logger.info(`🎹 Cancelled all Transport events from ${cancelFrom} (now: ${now})`);
+
           // Also clear the Transport timeline completely
           if ((Tone.Transport as any).timeline) {
             const timeline = (Tone.Transport as any).timeline;
-            console.log(`🎹 Clearing ${timeline._timeline.length} events from Transport timeline`);
+            logger.info(
+              `🎹 Clearing ${timeline._timeline.length} events from Transport timeline`,
+            );
             timeline.cancel(0); // Cancel everything from the beginning
           }
         } catch (error) {
-          console.warn('Failed to cancel Transport events:', error);
+          logger.warn('Failed to cancel Transport events:', error);
         }
       }
-      
+
       // Cancel all scheduled release timeouts
-      console.log(`🎹 Cancelling ${this.releaseTimeouts.size} scheduled releases`);
+      logger.info(
+        `🎹 Cancelling ${this.releaseTimeouts.size} scheduled releases`,
+      );
       this.releaseTimeouts.forEach((timeout, id) => {
         clearTimeout(timeout);
-        console.log(`🎹 Cancelled release timeout for chord ${id}`);
+        logger.info(`🎹 Cancelled release timeout for chord ${id}`);
       });
       this.releaseTimeouts.clear();
     } else {
@@ -845,29 +855,29 @@ export class ChordInstrumentProcessor {
       if (timeout) {
         clearTimeout(timeout);
         this.releaseTimeouts.delete(chordId);
-        console.log(`🎹 Cancelled release timeout for chord ${chordId}`);
+        logger.info(`🎹 Cancelled release timeout for chord ${chordId}`);
       }
     }
 
     if (this.useVelocitySampler && this.velocitySampler) {
-      // console.log('🚨 EMERGENCY STOP: ChordInstrumentProcessor velocity sampler - PROFESSIONAL DAW BEHAVIOR');
+      // logger.info('🚨 EMERGENCY STOP: ChordInstrumentProcessor velocity sampler - PROFESSIONAL DAW BEHAVIOR');
       // When no chordId, this is STOP ALL - use immediate gain cutting
       if (!chordId) {
-        // console.log('🚨 Calling velocity sampler panic methods for immediate silence...');
-        
+        // logger.info('🚨 Calling velocity sampler panic methods for immediate silence...');
+
         // Call allSoundOff first for immediate gain cutting
         if (typeof (this.velocitySampler as any).allSoundOff === 'function') {
-          // console.log('🚨 Calling velocitySampler.allSoundOff() - immediate gain cutting');
+          // logger.info('🚨 Calling velocitySampler.allSoundOff() - immediate gain cutting');
           (this.velocitySampler as any).allSoundOff();
         }
-        
+
         // Then call stopAll for comprehensive stop
         if (typeof (this.velocitySampler as any).stopAll === 'function') {
-          // console.log('🚨 Calling velocitySampler.stopAll() - comprehensive stop');
+          // logger.info('🚨 Calling velocitySampler.stopAll() - comprehensive stop');
           (this.velocitySampler as any).stopAll();
         }
       } else {
-        console.log(
+        logger.info(
           '🎹 Single chord stop - chordId:',
           chordId,
           'hasStopAll:',
@@ -958,7 +968,7 @@ export class ChordInstrumentProcessor {
     }
 
     if (this.useSampler && this.sampler) {
-      console.log('🎹 Using regular sampler for stop');
+      logger.info('🎹 Using regular sampler for stop');
       // Stop all notes immediately for global stop
       if (!chordId && typeof this.sampler.releaseAll === 'function') {
         // Store original envelope
@@ -988,7 +998,7 @@ export class ChordInstrumentProcessor {
           }
         }, 50);
 
-        console.log('🎹 Regular sampler stopped with envelope manipulation');
+        logger.info('🎹 Regular sampler stopped with envelope manipulation');
       }
 
       // Clear tracking
@@ -1014,8 +1024,10 @@ export class ChordInstrumentProcessor {
     // For synthesis, handle note release manually
     if (!chordId) {
       // GLOBAL STOP - Release all active notes immediately
-      console.log(`🎹 Stopping all ${this.activeChords.size} active chords in polySynth`);
-      
+      logger.info(
+        `🎹 Stopping all ${this.activeChords.size} active chords in polySynth`,
+      );
+
       try {
         if (typeof this.polySynth.releaseAll === 'function') {
           // Store original envelope
@@ -1046,8 +1058,8 @@ export class ChordInstrumentProcessor {
               'envelope.release': originalEnvelope.release,
             });
           }, 50);
-          
-          console.log('🎹 PolySynth stopped with immediate envelope');
+
+          logger.info('🎹 PolySynth stopped with immediate envelope');
         } else {
           // Fallback: release all tracked notes
           this.activeChords.forEach((chord) => {
@@ -1055,15 +1067,15 @@ export class ChordInstrumentProcessor {
               try {
                 this.polySynth.triggerRelease(note, Tone.immediate());
               } catch (error) {
-                console.warn(`Failed to release note ${note}:`, error);
+                logger.warn(`Failed to release note ${note}:`, error);
               }
             });
           });
         }
       } catch (error) {
-        console.warn('🎸 PolySynth global stop failed:', error);
+        logger.warn('🎸 PolySynth global stop failed:', error);
       }
-      
+
       this.activeChords.clear();
     } else if (chordId && this.activeChords.has(chordId)) {
       // Release specific chord notes
@@ -1076,7 +1088,7 @@ export class ChordInstrumentProcessor {
             });
           }
         } catch (error) {
-          console.warn('🎸 Failed to release specific chord notes:', error);
+          logger.warn('🎸 Failed to release specific chord notes:', error);
         }
       }
       this.activeChords.delete(chordId);
@@ -1090,7 +1102,7 @@ export class ChordInstrumentProcessor {
               try {
                 this.polySynth.triggerRelease(note);
               } catch (error) {
-                console.warn('🔴 Failed to release note:', note, error);
+                logger.warn('🔴 Failed to release note:', note, error);
               }
             });
           });
@@ -1116,12 +1128,12 @@ export class ChordInstrumentProcessor {
             this.polySynth.releaseAll();
           }
         } else {
-          console.warn(
+          logger.warn(
             '🎸 PolySynth.releaseAll() not available, likely in test environment',
           );
         }
       } catch (error) {
-        console.warn(
+        logger.warn(
           '🎸 PolySynth note release failed, likely in test environment:',
           error,
         );
@@ -1136,10 +1148,10 @@ export class ChordInstrumentProcessor {
    */
   public setExerciseContext(exercise: Exercise | null): void {
     this.exerciseContext = exercise;
-    console.log('🎹 ChordInstrumentProcessor: Exercise context set', {
+    logger.info('🎹 ChordInstrumentProcessor: Exercise context set', {
       hasExercise: !!exercise,
       chordProgression: exercise?.chord_progression,
-      difficulty: exercise?.difficulty
+      difficulty: exercise?.difficulty,
     });
   }
 
@@ -1156,7 +1168,7 @@ export class ChordInstrumentProcessor {
 
     // Ensure effects are initialized before setting up preset
     if (!this.effects || !this.effects.reverb) {
-      console.warn('Effects not initialized, initializing now...');
+      logger.warn('Effects not initialized, initializing now...');
       await this.setupEffects();
     }
 
@@ -1168,44 +1180,47 @@ export class ChordInstrumentProcessor {
    * Called from HarmonyWidget to force immediate sample loading on page mount
    */
   public async ensureSamplesLoaded(): Promise<void> {
-    console.log('🎹 ChordInstrumentProcessor: Ensuring samples are loaded for preset:', this.currentPreset);
-    
+    logger.info(
+      '🎹 ChordInstrumentProcessor: Ensuring samples are loaded for preset:',
+      this.currentPreset,
+    );
+
     // For piano preset, ensure Salamander sampler is loaded and ready
     if (this.currentPreset === ChordPreset.PIANO) {
       if (!this.velocitySampler) {
-        console.log('🎹 Velocity sampler not loaded, loading now...');
+        logger.info('🎹 Velocity sampler not loaded, loading now...');
         const loaded = await this.loadVelocitySampler();
         if (!loaded) {
           throw new Error('Failed to load Salamander piano samples');
         }
       } else {
         // Ensure existing sampler is ready
-        console.log('🎹 Ensuring existing Salamander sampler is ready...');
+        logger.info('🎹 Ensuring existing Salamander sampler is ready...');
         await this.velocitySampler.ensureReady();
       }
-      
+
       // Ensure it's connected to effects
       if (this.effects?.reverb && this.velocitySampler) {
         try {
           this.velocitySampler.connect(this.effects.reverb);
-          console.log('✅ Salamander sampler connected to effects');
+          logger.info('✅ Salamander sampler connected to effects');
         } catch (error) {
-          console.warn('Failed to connect Salamander to effects:', error);
+          logger.warn('Failed to connect Salamander to effects:', error);
         }
       }
     }
-    
-    console.log('✅ ChordInstrumentProcessor: Samples loaded and ready!');
+
+    logger.info('✅ ChordInstrumentProcessor: Samples loaded and ready!');
   }
 
   private async loadSoundfontInstrument(instrumentName: string): Promise<void> {
     try {
-      console.log(
+      logger.info(
         `🎼 Starting to load professional samples: ${instrumentName}`,
       );
 
       if (Tone && Tone.context && Tone.context.state !== 'running') {
-        console.log(
+        logger.info(
           '🎼 AudioContext not running, will start on first user interaction',
         );
         // Don't start the context here - it will be started when user interacts with the widget
@@ -1219,7 +1234,7 @@ export class ChordInstrumentProcessor {
           this.useVelocitySampler = true;
           this.useSampler = false;
           this.useSoundfont = false;
-          console.log(
+          logger.info(
             `✅ Successfully loaded Salamander Grand Piano with 16 velocity layers!`,
           );
           return;
@@ -1231,13 +1246,13 @@ export class ChordInstrumentProcessor {
           this.useSampler = true;
           this.useVelocitySampler = false;
           this.useSoundfont = false;
-          console.log(
+          logger.info(
             `✅ Successfully loaded Salamander Grand Piano using Tone.Sampler with local samples!`,
           );
           return;
         } else {
           // Fallback to piano synthesis
-          console.log('⚠️ Sampler failed, using piano synthesis fallback');
+          logger.info('⚠️ Sampler failed, using piano synthesis fallback');
           await this.loadPianoSynthesis();
           this.useSampler = false;
           this.useVelocitySampler = false;
@@ -1249,7 +1264,7 @@ export class ChordInstrumentProcessor {
         await this.loadOrganSynthesis();
         this.useSampler = false;
         this.useSoundfont = false;
-        console.log(`✅ Successfully loaded drawbar organ synthesis!`);
+        logger.info(`✅ Successfully loaded drawbar organ synthesis!`);
         return;
       } else if (
         instrumentName === 'pad_2_warm' ||
@@ -1259,14 +1274,14 @@ export class ChordInstrumentProcessor {
         await this.loadWarmPadSynthesis();
         this.useSampler = false;
         this.useSoundfont = false;
-        console.log(`✅ Successfully loaded warm pad synthesis!`);
+        logger.info(`✅ Successfully loaded warm pad synthesis!`);
         return;
       } else if (instrumentName === 'electric_piano_1') {
         // For Rhodes, use synthesis for now (until real samples are ready)
         await this.loadRhodesSynthesis();
         this.useSampler = false;
         this.useSoundfont = false;
-        console.log(
+        logger.info(
           `✅ Successfully loaded Rhodes synthesis (samples coming soon)!`,
         );
         return;
@@ -1276,7 +1291,7 @@ export class ChordInstrumentProcessor {
         instrumentName === 'lead_1_square'
       ) {
         // For other instruments, fall back to basic synthesis
-        console.log(
+        logger.info(
           `⚠️ ${instrumentName} not implemented, using default synthesis`,
         );
         this.useSampler = false;
@@ -1290,10 +1305,10 @@ export class ChordInstrumentProcessor {
       if (professionalSamples && Object.keys(professionalSamples).length > 0) {
         this.currentSoundfont = professionalSamples;
         this.isLoadedSoundfont = true;
-        console.log(
+        logger.info(
           `✅ Successfully loaded professional ${instrumentName} samples from Supabase!`,
         );
-        console.log(`🎼 Professional instrument details:`, {
+        logger.info(`🎼 Professional instrument details:`, {
           name: instrumentName,
           isLoaded: true,
           usingSoundfont: true,
@@ -1305,12 +1320,12 @@ export class ChordInstrumentProcessor {
       }
 
       // Fallback to local soundfont files if professional samples not available
-      console.log(
+      logger.info(
         '🎼 Professional samples not available, falling back to local soundfont...',
       );
 
       const soundfontUrl = `/soundfonts/${instrumentName}-mp3.js`;
-      console.log(`🎼 Attempting to fetch soundfont directly: ${soundfontUrl}`);
+      logger.info(`🎼 Attempting to fetch soundfont directly: ${soundfontUrl}`);
 
       try {
         const response = await fetch(soundfontUrl);
@@ -1319,7 +1334,7 @@ export class ChordInstrumentProcessor {
         }
 
         const soundfontText = await response.text();
-        console.log(
+        logger.info(
           `🎼 Fetched soundfont file, ${soundfontText.length} characters`,
         );
 
@@ -1343,7 +1358,7 @@ export class ChordInstrumentProcessor {
         const jsonPart = soundfontText.slice(assignmentIndex, endIndex) + '}';
         const soundfontData = JSON.parse(jsonPart);
 
-        console.log(
+        logger.info(
           `🎼 Parsed soundfont with ${Object.keys(soundfontData).length} notes`,
         );
 
@@ -1352,10 +1367,10 @@ export class ChordInstrumentProcessor {
           this.createCustomSoundfontPlayer(soundfontData);
         this.useSoundfont = true;
 
-        console.log(
+        logger.info(
           `✅ Successfully loaded real ${instrumentName} samples using direct fetch!`,
         );
-        console.log('🎼 Soundfont instrument details:', {
+        logger.info('🎼 Soundfont instrument details:', {
           name: instrumentName,
           isLoaded: !!this.soundfontInstrument,
           usingSoundfont: this.useSoundfont,
@@ -1364,7 +1379,7 @@ export class ChordInstrumentProcessor {
           url: soundfontUrl,
         });
       } catch (fetchError) {
-        console.warn(
+        logger.warn(
           `🎼 Direct fetch failed: ${fetchError.message}, falling back to soundfont-player`,
         );
 
@@ -1377,7 +1392,7 @@ export class ChordInstrumentProcessor {
             nameToUrl: (name: string, soundfont?: string, format?: string) => {
               const actualFormat = format === 'ogg' ? 'ogg' : 'mp3';
               const localUrl = `/soundfonts/${name}-${actualFormat}.js`;
-              console.log(
+              logger.info(
                 `🎼 Loading soundfont from local path (fallback): ${localUrl}`,
               );
               return localUrl;
@@ -1386,13 +1401,13 @@ export class ChordInstrumentProcessor {
         );
         this.useSoundfont = true;
 
-        console.log(
+        logger.info(
           `✅ Successfully loaded real ${instrumentName} samples using soundfont-player fallback!`,
         );
       }
     } catch (error) {
-      console.error(`❌ Failed to load ${instrumentName} soundfont:`, error);
-      console.log('🎼 Falling back to synthesis');
+      logger.error(`❌ Failed to load ${instrumentName} soundfont:`, error);
+      logger.info('🎼 Falling back to synthesis');
       this.useSoundfont = false;
       this.soundfontInstrument = null;
 
@@ -1409,7 +1424,7 @@ export class ChordInstrumentProcessor {
       ) {
         await this.loadWarmPadSynthesis();
       } else {
-        console.log(
+        logger.info(
           `⚠️ No synthesis fallback for ${instrumentName}, using default pad`,
         );
         await this.loadWarmPadSynthesis();
@@ -1429,7 +1444,7 @@ export class ChordInstrumentProcessor {
         try {
           // Ensure AudioContext is running
           if (Tone.context.state !== 'running') {
-            console.log('🎼 Starting AudioContext for soundfont playback...');
+            logger.info('🎼 Starting AudioContext for soundfont playback...');
             await Tone.start();
           }
 
@@ -1439,14 +1454,14 @@ export class ChordInstrumentProcessor {
           const noteKey = this.findSoundfontNoteKey(noteName, soundfontData);
 
           if (!noteKey || !soundfontData[noteKey]) {
-            console.warn(`🎼 Note ${noteName} not found in soundfont data`);
+            logger.warn(`🎼 Note ${noteName} not found in soundfont data`);
             return;
           }
 
           // Get the Base64 audio data
           const base64Data = soundfontData[noteKey];
           if (!base64Data || !base64Data.startsWith('data:audio/')) {
-            console.warn(`🎼 Invalid audio data for note ${noteName}`);
+            logger.warn(`🎼 Invalid audio data for note ${noteName}`);
             return;
           }
 
@@ -1457,7 +1472,7 @@ export class ChordInstrumentProcessor {
             options?.duration || 2000,
           );
         } catch (error) {
-          console.warn(`🎼 Error playing note ${note}:`, error);
+          logger.warn(`🎼 Error playing note ${note}:`, error);
         }
       },
     };
@@ -1505,12 +1520,12 @@ export class ChordInstrumentProcessor {
 
     // If still not found, log available keys around this note for debugging
     if (!soundfontData[noteName]) {
-      console.warn(`🎼 Note ${noteName} not found. Trying nearby notes...`);
+      logger.warn(`🎼 Note ${noteName} not found. Trying nearby notes...`);
       const allKeys = Object.keys(soundfontData);
       const nearbyKeys = allKeys.filter(
         (key) => key.includes('4') || key.includes('A') || key.includes('B'),
       );
-      console.warn(
+      logger.warn(
         `🎼 Available keys containing 'A', 'B', or '4': ${nearbyKeys.slice(0, 10).join(', ')}`,
       );
     }
@@ -1526,7 +1541,7 @@ export class ChordInstrumentProcessor {
     try {
       // Ensure Tone.js is started
       if (Tone.context.state !== 'running') {
-        console.log('🎼 Starting Tone.js AudioContext...');
+        logger.info('🎼 Starting Tone.js AudioContext...');
         await Tone.start();
       }
 
@@ -1544,7 +1559,7 @@ export class ChordInstrumentProcessor {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      console.log(`🎼 Decoding audio data, size: ${bytes.length} bytes`);
+      logger.info(`🎼 Decoding audio data, size: ${bytes.length} bytes`);
 
       // CRITICAL FIX: Use pre-activated AudioContext to maintain user gesture
       let audioContext: AudioContext;
@@ -1555,7 +1570,7 @@ export class ChordInstrumentProcessor {
       ) {
         // Use pre-activated context (maintains user activation)
         audioContext = this.preActivatedContext;
-        console.log(
+        logger.info(
           '🎼 Using pre-activated AudioContext (user gesture preserved)',
         );
       } else if (
@@ -1565,12 +1580,12 @@ export class ChordInstrumentProcessor {
       ) {
         // Use globally pre-activated context from user gesture
         audioContext = window.preActivatedHarmonyContext;
-        console.log(
+        logger.info(
           '🎼 Using globally pre-activated AudioContext (user gesture preserved)',
         );
       } else {
         // Fallback: create fresh context (may be silent if no user gesture)
-        console.warn(
+        logger.warn(
           '🎼 No pre-activated context available, creating fresh one (may be silent)',
         );
         if (typeof window !== 'undefined') {
@@ -1586,7 +1601,7 @@ export class ChordInstrumentProcessor {
       }
 
       const audioBuffer = await audioContext.decodeAudioData(bytes.buffer);
-      console.log(
+      logger.info(
         `🎼 Audio decoded successfully: ${audioBuffer.duration.toFixed(2)}s, ${audioBuffer.numberOfChannels} channels, ${audioBuffer.sampleRate}Hz`,
       );
 
@@ -1596,7 +1611,7 @@ export class ChordInstrumentProcessor {
       for (let i = 0; i < Math.min(1000, channelData.length); i++) {
         maxAmplitude = Math.max(maxAmplitude, Math.abs(channelData[i]));
       }
-      console.log(
+      logger.info(
         `🎼 Audio buffer sample data check - max amplitude: ${maxAmplitude.toFixed(6)}, first 10 samples:`,
         Array.from(channelData.slice(0, 10).map((x) => x.toFixed(4))),
       );
@@ -1609,10 +1624,10 @@ export class ChordInstrumentProcessor {
       // Boost gain significantly for quiet soundfont samples
       const boostedGain = gain * 100; // 100x amplification for extremely quiet samples
       gainNode.gain.value = Math.min(boostedGain, 10.0); // Allow higher gain for quiet samples
-      console.log(
+      logger.info(
         `🎼 Boosted gain from ${gain} to ${gainNode.gain.value} (${Math.round(boostedGain / gain)}x amplification)`,
       );
-      console.log(
+      logger.info(
         `🎼 Final gain calculation: ${gain} * 100 = ${boostedGain}, capped to ${gainNode.gain.value}`,
       );
 
@@ -1620,10 +1635,10 @@ export class ChordInstrumentProcessor {
       source.connect(gainNode);
       gainNode.connect(audioContext.destination);
 
-      console.log(
+      logger.info(
         `🎼 Audio routing: BufferSource -> GainNode(${gainNode.gain.value}) -> Destination`,
       );
-      console.log(`🎼 Connection verification:`, {
+      logger.info(`🎼 Connection verification:`, {
         sourceConnected: !!source.buffer,
         gainNodeConnected: !!gainNode.gain,
         destinationReady: !!audioContext.destination,
@@ -1632,17 +1647,17 @@ export class ChordInstrumentProcessor {
           gainNode.context === audioContext,
       });
 
-      console.log(`🎼 Starting native Web Audio playback with gain: ${gain}`);
-      console.log(
+      logger.info(`🎼 Starting native Web Audio playback with gain: ${gain}`);
+      logger.info(
         `🎼 AudioContext state: ${audioContext.state}, sampleRate: ${audioContext.sampleRate}`,
       );
-      console.log(
+      logger.info(
         `🎼 Audio buffer: ${audioBuffer.length} samples, ${audioBuffer.duration}s, channels: ${audioBuffer.numberOfChannels}`,
       );
-      console.log(
+      logger.info(
         `🎼 Output destination: ${audioContext.destination.channelCount} channels, maxChannelCount: ${audioContext.destination.maxChannelCount}`,
       );
-      console.log(
+      logger.info(
         `🎼 AudioContext instance:`,
         audioContext.constructor.name,
         audioContext,
@@ -1654,7 +1669,7 @@ export class ChordInstrumentProcessor {
 
       // Monitor playback
       source.addEventListener('ended', () => {
-        console.log('🎼 Native soundfont sample playback ended');
+        logger.info('🎼 Native soundfont sample playback ended');
       });
 
       // Clean up after duration
@@ -1664,17 +1679,17 @@ export class ChordInstrumentProcessor {
             source.stop();
             source.disconnect();
             gainNode.disconnect();
-            console.log('🎼 Cleaned up native audio nodes');
+            logger.info('🎼 Cleaned up native audio nodes');
           } catch (error) {
-            console.warn('🎼 Error during cleanup:', error);
+            logger.warn('🎼 Error during cleanup:', error);
           }
         },
         Math.min(duration, audioBuffer.duration * 1000),
       );
     } catch (error) {
-      console.error('🎼 Failed to play base64 audio:', error);
+      logger.error('🎼 Failed to play base64 audio:', error);
       // Fallback to synthesis if soundfont fails
-      console.warn('🎼 Falling back to synthesis');
+      logger.warn('🎼 Falling back to synthesis');
     }
   }
 
@@ -1694,20 +1709,20 @@ export class ChordInstrumentProcessor {
     switch (preset) {
       case ChordPreset.PIANO:
         // Use Salamander Grand Piano
-        console.log('🎹 Loading Salamander Grand Piano for PIANO preset...');
+        logger.info('🎹 Loading Salamander Grand Piano for PIANO preset...');
         const velocityLoaded = await this.loadVelocitySampler();
         if (velocityLoaded) {
           this.useVelocitySampler = true;
           // CRITICAL: Ensure samples are fully loaded and ready
-          console.log('🎹 Ensuring Salamander is fully ready after loading...');
+          logger.info('🎹 Ensuring Salamander is fully ready after loading...');
           if (this.velocitySampler) {
             await this.velocitySampler.ensureReady();
           }
-          console.log('✅ Salamander Grand Piano fully loaded and ready!');
+          logger.info('✅ Salamander Grand Piano fully loaded and ready!');
           return;
         }
         // Fallback to soundfont
-        console.warn('⚠️ Salamander failed to load, falling back to soundfont');
+        logger.warn('⚠️ Salamander failed to load, falling back to soundfont');
         await this.loadSoundfontInstrument('acoustic_grand_piano');
         break;
 
@@ -1794,7 +1809,7 @@ export class ChordInstrumentProcessor {
         this.sampler.volume.value = dbVolume;
       }
     } catch (error) {
-      console.warn('Failed to set volume:', error);
+      logger.warn('Failed to set volume:', error);
     }
   }
 
@@ -1840,14 +1855,14 @@ export class ChordInstrumentProcessor {
    */
   private async loadVelocitySampler(): Promise<boolean> {
     try {
-      console.log('🎹 Loading 16-velocity Salamander Grand Piano...');
+      logger.info('🎹 Loading 16-velocity Salamander Grand Piano...');
 
       // Ensure Tone is loaded first
       await this.ensureToneLoaded();
 
       // Check if Tone context is available
       if (!Tone || !Tone.context) {
-        console.error('❌ Tone.js not available for velocity sampler');
+        logger.error('❌ Tone.js not available for velocity sampler');
         return false;
       }
 
@@ -1863,21 +1878,23 @@ export class ChordInstrumentProcessor {
       // Initialize with smart loading if exercise context is available
       if (this.exerciseContext) {
         const requiredNotes = extractExerciseNotes(this.exerciseContext);
-        const velocityLayers = getVelocityLayersForExercise(this.exerciseContext);
-        console.log('🎹 Smart loading Salamander with exercise context', {
+        const velocityLayers = getVelocityLayersForExercise(
+          this.exerciseContext,
+        );
+        logger.info('🎹 Smart loading Salamander with exercise context', {
           notesCount: requiredNotes.length,
-          layers: velocityLayers
+          layers: velocityLayers,
         });
         await this.velocitySampler.initialize(requiredNotes, velocityLayers);
       } else {
         // Fallback to loading common velocity layers
-        console.log('🎹 No exercise context, loading default velocity layers');
+        logger.info('🎹 No exercise context, loading default velocity layers');
         await this.velocitySampler.initialize();
       }
 
       // Connect to effects chain if available
       try {
-        console.log('Checking effects for Salamander connection:', {
+        logger.info('Checking effects for Salamander connection:', {
           hasEffects: !!this.effects,
           hasReverb: !!this.effects?.reverb,
           reverbType: this.effects?.reverb?.constructor?.name,
@@ -1891,17 +1908,17 @@ export class ChordInstrumentProcessor {
           this.effects.reverb &&
           this.effects.reverb instanceof Tone.Reverb
         ) {
-          console.log('Connecting Salamander to reverb effect');
+          logger.info('Connecting Salamander to reverb effect');
           this.velocitySampler.connect(this.effects.reverb);
         } else {
           // Connect directly to destination if effects not ready
-          console.log('Connecting Salamander directly to destination');
+          logger.info('Connecting Salamander directly to destination');
           if (Tone && Tone.Destination) {
             this.velocitySampler.connect(Tone.Destination);
           }
         }
       } catch (connectError) {
-        console.warn(
+        logger.warn(
           'Could not connect Salamander to effects, connecting to destination directly:',
           connectError,
         );
@@ -1910,16 +1927,16 @@ export class ChordInstrumentProcessor {
             this.velocitySampler.connect(Tone.Destination);
           }
         } catch (destError) {
-          console.warn(
+          logger.warn(
             'Could not connect to destination, will connect on play',
           );
         }
       }
 
-      console.log('✅ 16-velocity Salamander Grand Piano ready!');
+      logger.info('✅ 16-velocity Salamander Grand Piano ready!');
       return true;
     } catch (error) {
-      console.error('❌ Failed to load velocity sampler:', error);
+      logger.error('❌ Failed to load velocity sampler:', error);
       if (this.velocitySampler) {
         this.velocitySampler.dispose();
         this.velocitySampler = null;
@@ -1933,7 +1950,7 @@ export class ChordInstrumentProcessor {
    */
   private async loadWurlitzerSampler(): Promise<boolean> {
     try {
-      console.log('🎹 Loading Wurlitzer Electric Piano...');
+      logger.info('🎹 Loading Wurlitzer Electric Piano...');
 
       // Dispose existing sampler if any
       if (this.wurlitzerSampler) {
@@ -1954,20 +1971,20 @@ export class ChordInstrumentProcessor {
           this.wurlitzerSampler.connect(Tone.Destination);
         }
       } catch (connectError) {
-        console.warn(
+        logger.warn(
           'Could not connect Wurlitzer to effects, trying direct destination',
         );
         try {
           this.wurlitzerSampler.connect(Tone.Destination);
         } catch (e) {
-          console.warn('Wurlitzer connection failed, will connect on play');
+          logger.warn('Wurlitzer connection failed, will connect on play');
         }
       }
 
-      console.log('✅ Wurlitzer Electric Piano ready!');
+      logger.info('✅ Wurlitzer Electric Piano ready!');
       return true;
     } catch (error) {
-      console.error('❌ Failed to load Wurlitzer sampler:', error);
+      logger.error('❌ Failed to load Wurlitzer sampler:', error);
       if (this.wurlitzerSampler) {
         this.wurlitzerSampler.dispose();
         this.wurlitzerSampler = null;
@@ -1981,7 +1998,7 @@ export class ChordInstrumentProcessor {
    */
   private async loadLongPadSampler(): Promise<boolean> {
     try {
-      console.log('🎹 Loading Long Pad...');
+      logger.info('🎹 Loading Long Pad...');
 
       // Dispose existing sampler if any
       if (this.longPadSampler) {
@@ -2002,20 +2019,20 @@ export class ChordInstrumentProcessor {
           this.longPadSampler.connect(Tone.Destination);
         }
       } catch (connectError) {
-        console.warn(
+        logger.warn(
           'Could not connect Long Pad to effects, trying direct destination',
         );
         try {
           this.longPadSampler.connect(Tone.Destination);
         } catch (e) {
-          console.warn('Long Pad connection failed, will connect on play');
+          logger.warn('Long Pad connection failed, will connect on play');
         }
       }
 
-      console.log('✅ Long Pad ready!');
+      logger.info('✅ Long Pad ready!');
       return true;
     } catch (error) {
-      console.error('❌ Failed to load Long Pad sampler:', error);
+      logger.error('❌ Failed to load Long Pad sampler:', error);
       if (this.longPadSampler) {
         this.longPadSampler.dispose();
         this.longPadSampler = null;
@@ -2029,7 +2046,7 @@ export class ChordInstrumentProcessor {
    */
   private async loadRhodesSampler(): Promise<boolean> {
     try {
-      console.log('🎹 Loading Rhodes Electric Piano...');
+      logger.info('🎹 Loading Rhodes Electric Piano...');
 
       // Dispose existing sampler if any
       if (this.rhodesSampler) {
@@ -2055,20 +2072,20 @@ export class ChordInstrumentProcessor {
           this.rhodesSampler.connect(Tone.Destination);
         }
       } catch (connectError) {
-        console.warn(
+        logger.warn(
           'Could not connect Rhodes to effects, trying direct destination',
         );
         try {
           this.rhodesSampler.connect(Tone.Destination);
         } catch (e) {
-          console.warn('Rhodes connection failed, will connect on play');
+          logger.warn('Rhodes connection failed, will connect on play');
         }
       }
 
-      console.log('✅ Rhodes Electric Piano ready!');
+      logger.info('✅ Rhodes Electric Piano ready!');
       return true;
     } catch (error) {
-      console.error('❌ Failed to load Rhodes sampler:', error);
+      logger.error('❌ Failed to load Rhodes sampler:', error);
       if (this.rhodesSampler) {
         this.rhodesSampler.dispose();
         this.rhodesSampler = null;
@@ -2082,7 +2099,7 @@ export class ChordInstrumentProcessor {
    */
   private async loadTheSawSampler(): Promise<boolean> {
     try {
-      console.log('🎹 Loading The Saw...');
+      logger.info('🎹 Loading The Saw...');
 
       // Dispose existing sampler if any
       if (this.theSawSampler) {
@@ -2103,20 +2120,20 @@ export class ChordInstrumentProcessor {
           this.theSawSampler.connect(Tone.Destination);
         }
       } catch (connectError) {
-        console.warn(
+        logger.warn(
           'Could not connect The Saw to effects, trying direct destination',
         );
         try {
           this.theSawSampler.connect(Tone.Destination);
         } catch (e) {
-          console.warn('The Saw connection failed, will connect on play');
+          logger.warn('The Saw connection failed, will connect on play');
         }
       }
 
-      console.log('✅ The Saw ready!');
+      logger.info('✅ The Saw ready!');
       return true;
     } catch (error) {
-      console.error('❌ Failed to load The Saw sampler:', error);
+      logger.error('❌ Failed to load The Saw sampler:', error);
       if (this.theSawSampler) {
         this.theSawSampler.dispose();
         this.theSawSampler = null;
@@ -2130,7 +2147,7 @@ export class ChordInstrumentProcessor {
    */
   private async loadToneSampler(instrumentType: string): Promise<boolean> {
     try {
-      console.log(`🎹 Loading Tone.Sampler for ${instrumentType}...`);
+      logger.info(`🎹 Loading Tone.Sampler for ${instrumentType}...`);
 
       // Dispose existing sampler if any
       if (this.sampler) {
@@ -2179,7 +2196,7 @@ export class ChordInstrumentProcessor {
         // Use local samples from public folder
         baseUrl = '/samples/salamander-piano/';
       } else {
-        console.warn(
+        logger.warn(
           `Unknown instrument type for Tone.Sampler: ${instrumentType}`,
         );
         return false;
@@ -2191,7 +2208,7 @@ export class ChordInstrumentProcessor {
           urls,
           baseUrl,
           onload: () => {
-            console.log(
+            logger.info(
               `✅ Tone.Sampler loaded successfully for ${instrumentType}`,
             );
             // Connect to effects chain if available
@@ -2205,7 +2222,7 @@ export class ChordInstrumentProcessor {
             }
           },
           onerror: (error) => {
-            console.error(`❌ Failed to load Tone.Sampler:`, error);
+            logger.error(`❌ Failed to load Tone.Sampler:`, error);
             throw error;
           },
         });
@@ -2221,12 +2238,12 @@ export class ChordInstrumentProcessor {
           ),
         ]);
 
-        console.log(
+        logger.info(
           `🎹 Tone.Sampler ready with ${Object.keys(urls).length} samples`,
         );
         return true;
       } catch (error) {
-        console.error(
+        logger.error(
           '❌ Sampler loading failed, falling back to synthesis:',
           error,
         );
@@ -2238,7 +2255,7 @@ export class ChordInstrumentProcessor {
         return false;
       }
     } catch (error) {
-      console.error('❌ Failed to load Tone.Sampler:', error);
+      logger.error('❌ Failed to load Tone.Sampler:', error);
       return false;
     }
   }
@@ -2247,7 +2264,7 @@ export class ChordInstrumentProcessor {
    * Create piano synthesis fallback
    */
   private async loadPianoSynthesis(): Promise<void> {
-    console.log('🎹 Creating piano synthesis fallback...');
+    logger.info('🎹 Creating piano synthesis fallback...');
 
     // Dispose existing polySynth if needed
     if (this.polySynth) {
@@ -2291,14 +2308,14 @@ export class ChordInstrumentProcessor {
     // Connect through effects chain
     this.polySynth.connect(chorus).connect(this.effects.reverb);
 
-    console.log('🎹 Piano synthesis ready (fallback for Salamander)');
+    logger.info('🎹 Piano synthesis ready (fallback for Salamander)');
   }
 
   /**
    * Create Rhodes electric piano synthesis
    */
   private async loadRhodesSynthesis(): Promise<void> {
-    console.log('🎹 Creating Rhodes electric piano synthesis...');
+    logger.info('🎹 Creating Rhodes electric piano synthesis...');
 
     // Dispose existing polySynth if needed
     if (this.polySynth) {
@@ -2346,14 +2363,14 @@ export class ChordInstrumentProcessor {
       .connect(phaser)
       .connect(this.effects.reverb);
 
-    console.log('🎹 Rhodes electric piano synthesis ready');
+    logger.info('🎹 Rhodes electric piano synthesis ready');
   }
 
   /**
    * Create drawbar organ synthesis
    */
   private async loadOrganSynthesis(): Promise<void> {
-    console.log('🎹 Creating drawbar organ synthesis...');
+    logger.info('🎹 Creating drawbar organ synthesis...');
 
     // Dispose existing polySynth if needed
     if (this.polySynth) {
@@ -2387,14 +2404,14 @@ export class ChordInstrumentProcessor {
       .connect(tremolo)
       .connect(this.effects.reverb);
 
-    console.log('🎹 Drawbar organ synthesis ready');
+    logger.info('🎹 Drawbar organ synthesis ready');
   }
 
   /**
    * Create warm pad synthesis
    */
   private async loadWarmPadSynthesis(): Promise<void> {
-    console.log('🎹 Creating warm pad synthesis...');
+    logger.info('🎹 Creating warm pad synthesis...');
 
     // Dispose existing polySynth if needed
     if (this.polySynth) {
@@ -2443,7 +2460,7 @@ export class ChordInstrumentProcessor {
     // Connect through effects chain (reverb is already connected to destination)
     this.polySynth.connect(chorus).connect(reverb).connect(this.effects.reverb);
 
-    console.log('🎹 Warm pad synthesis ready');
+    logger.info('🎹 Warm pad synthesis ready');
   }
 
   /**
@@ -2469,13 +2486,13 @@ export class ChordInstrumentProcessor {
       const professionalInstrument =
         instrumentMapping[instrumentName.toLowerCase()];
       if (!professionalInstrument) {
-        console.log(
+        logger.info(
           `🎼 No professional mapping for instrument: ${instrumentName}`,
         );
         return null;
       }
 
-      console.log(
+      logger.info(
         `🎼 Loading professional samples for: ${professionalInstrument}`,
       );
 
@@ -2496,7 +2513,7 @@ export class ChordInstrumentProcessor {
         );
 
         if (!instrumentData || !instrumentData.samples) {
-          console.log(`🎼 No sample data found for: ${professionalInstrument}`);
+          logger.info(`🎼 No sample data found for: ${professionalInstrument}`);
           return null;
         }
 
@@ -2529,26 +2546,26 @@ export class ChordInstrumentProcessor {
                 String.fromCharCode(...new Uint8Array(audioBuffer)),
               );
               soundfontData[note] = `data:audio/mp3;base64,${base64Audio}`;
-              console.log(`🎼 Loaded professional sample: ${note}`);
+              logger.info(`🎼 Loaded professional sample: ${note}`);
             }
           } catch (error) {
-            console.warn(`🎼 Failed to load sample ${note}:`, error);
+            logger.warn(`🎼 Failed to load sample ${note}:`, error);
           }
         }
 
         if (Object.keys(soundfontData).length > 0) {
-          console.log(
+          logger.info(
             `🎼 Successfully loaded ${Object.keys(soundfontData).length} professional samples for ${professionalInstrument}`,
           );
           return soundfontData;
         }
       } catch (error) {
-        console.warn(`🎼 Failed to load professional samples metadata:`, error);
+        logger.warn(`🎼 Failed to load professional samples metadata:`, error);
       }
 
       return null;
     } catch (error) {
-      console.warn(`🎼 Error loading professional keyboard samples:`, error);
+      logger.warn(`🎼 Error loading professional keyboard samples:`, error);
       return null;
     }
   }
@@ -2562,7 +2579,7 @@ export class ChordInstrumentProcessor {
         this.velocitySampler.dispose();
         this.velocitySampler = null;
       } catch (error) {
-        console.warn('🎸 Velocity sampler disposal failed:', error);
+        logger.warn('🎸 Velocity sampler disposal failed:', error);
       }
     }
 
@@ -2572,7 +2589,7 @@ export class ChordInstrumentProcessor {
         this.wurlitzerSampler.dispose();
         this.wurlitzerSampler = null;
       } catch (error) {
-        console.warn('🎸 Wurlitzer sampler disposal failed:', error);
+        logger.warn('🎸 Wurlitzer sampler disposal failed:', error);
       }
     }
 
@@ -2582,7 +2599,7 @@ export class ChordInstrumentProcessor {
         this.longPadSampler.dispose();
         this.longPadSampler = null;
       } catch (error) {
-        console.warn('🎸 Long Pad sampler disposal failed:', error);
+        logger.warn('🎸 Long Pad sampler disposal failed:', error);
       }
     }
 
@@ -2592,7 +2609,7 @@ export class ChordInstrumentProcessor {
         this.rhodesSampler.dispose();
         this.rhodesSampler = null;
       } catch (error) {
-        console.warn('🎸 Rhodes sampler disposal failed:', error);
+        logger.warn('🎸 Rhodes sampler disposal failed:', error);
       }
     }
 
@@ -2602,7 +2619,7 @@ export class ChordInstrumentProcessor {
         this.theSawSampler.dispose();
         this.theSawSampler = null;
       } catch (error) {
-        console.warn('🎸 The Saw sampler disposal failed:', error);
+        logger.warn('🎸 The Saw sampler disposal failed:', error);
       }
     }
 
@@ -2614,7 +2631,7 @@ export class ChordInstrumentProcessor {
         }
         this.sampler = null;
       } catch (error) {
-        console.warn('🎸 Sampler disposal failed:', error);
+        logger.warn('🎸 Sampler disposal failed:', error);
       }
     }
 
@@ -2623,12 +2640,12 @@ export class ChordInstrumentProcessor {
       if (typeof this.polySynth.dispose === 'function') {
         this.polySynth.dispose();
       } else {
-        console.warn(
+        logger.warn(
           '🎸 PolySynth.dispose() not available, likely in test environment',
         );
       }
     } catch (error) {
-      console.warn(
+      logger.warn(
         '🎸 PolySynth disposal failed, likely in test environment:',
         error,
       );
@@ -2640,12 +2657,12 @@ export class ChordInstrumentProcessor {
         if (typeof effect.dispose === 'function') {
           effect.dispose();
         } else {
-          console.warn(
+          logger.warn(
             '🎸 Effect.dispose() not available, likely in test environment',
           );
         }
       } catch (error) {
-        console.warn(
+        logger.warn(
           '🎸 Effect disposal failed, likely in test environment:',
           error,
         );
@@ -2661,14 +2678,17 @@ export class ChordInstrumentProcessor {
     try {
       if (!Tone || !Tone.context) {
         Tone = await loadGlobalTone();
-        console.log('🎵 Using global Tone.js instance in ChordInstrumentProcessor', {
-          context: Tone?.context,
-          contextState: Tone?.context?.state,
-          contextTime: Tone?.context?.currentTime,
-        });
+        logger.info(
+          '🎵 Using global Tone.js instance in ChordInstrumentProcessor',
+          {
+            context: Tone?.context,
+            contextState: Tone?.context?.state,
+            contextTime: Tone?.context?.currentTime,
+          },
+        );
       }
     } catch (error) {
-      console.error('❌ Failed to load Tone.js:', error);
+      logger.error('❌ Failed to load Tone.js:', error);
       throw new Error('Failed to load audio library');
     }
   }
@@ -2687,8 +2707,8 @@ export class ChordInstrumentProcessor {
 
   private async setupEffects(): Promise<void> {
     await this.ensureToneLoaded();
-    
-    console.log('🎵 ChordInstrumentProcessor setupEffects - Tone instance:', {
+
+    logger.info('🎵 ChordInstrumentProcessor setupEffects - Tone instance:', {
       tone: Tone,
       context: Tone?.context,
       contextState: Tone?.context?.state,
@@ -2711,8 +2731,8 @@ export class ChordInstrumentProcessor {
         ),
         eq: new Tone.EQ3({ low: 0, mid: 0, high: 0 }),
       };
-      
-      // console.log('🎵 Effects created with context:', {
+
+      // logger.info('🎵 Effects created with context:', {
       //   reverbContext: this.effects.reverb?.context,
       //   reverbContextTime: this.effects.reverb?.context?.currentTime,
       // });
@@ -2721,7 +2741,7 @@ export class ChordInstrumentProcessor {
       // This ensures any synth connected to reverb will reach the speakers
       this.effects.reverb.toDestination();
     } catch (error) {
-      console.warn(
+      logger.warn(
         'Failed to initialize effects, using empty effects chain:',
         error,
       );
@@ -2747,13 +2767,13 @@ export class ChordInstrumentProcessor {
         chainResult.toDestination();
       } else {
         // Fallback for test environments
-        console.warn(
+        logger.warn(
           'ChordInstrumentProcessor: toDestination not available, likely in test environment',
         );
       }
     } catch (error) {
       // Graceful degradation for test environments
-      console.warn(
+      logger.warn(
         'ChordInstrumentProcessor: Effect chain setup failed, likely in test environment:',
         error,
       );
@@ -2773,7 +2793,7 @@ export class ChordInstrumentProcessor {
 
     // Ensure polySynth is available before setting preset
     if (!this.polySynth || typeof this.polySynth.set !== 'function') {
-      console.warn(
+      logger.warn(
         'ChordInstrumentProcessor: polySynth.set not available, likely in test environment',
       );
       return;
@@ -2987,6 +3007,55 @@ export class ChordInstrumentProcessor {
     }
   }
 
+  // Public method for DAW integration
+  public async triggerChordFromDAW(params: {
+    chord: string;
+    velocity: number;
+    time: number;
+    duration?: string;
+  }): void {
+    try {
+      // Parse the chord symbol
+      const chordSymbol = this.parseChordSymbol(params.chord);
+
+      // Generate voicing
+      const voicing = this.generateVoicing(
+        chordSymbol,
+        this.voicingOptions,
+        this.lastVoicing,
+      );
+
+      // Convert duration string to seconds if provided
+      const durationInSeconds = params.duration
+        ? this.parseDuration(params.duration)
+        : 2.0; // Default 2 seconds
+
+      // Trigger the chord
+      await this.triggerChord(
+        voicing,
+        params.velocity,
+        durationInSeconds,
+        params.time,
+      );
+
+      // Update last voicing for voice leading
+      this.lastVoicing = voicing;
+
+      this.logger.info('🎹 ChordInstrumentProcessor: DAW chord triggered', {
+        chord: params.chord,
+        voicing,
+        velocity: params.velocity,
+        time: params.time,
+        duration: durationInSeconds,
+      });
+    } catch (error) {
+      this.logger.error(
+        '🎹 ChordInstrumentProcessor: Error triggering DAW chord',
+        error,
+      );
+    }
+  }
+
   private async triggerChord(
     voicing: string[],
     velocity: number,
@@ -2998,7 +3067,7 @@ export class ChordInstrumentProcessor {
 
     // Restore volume if it was muted by panic
     if (this.currentVolume === 0 && this.volumeBeforePanic > 0) {
-      console.log('🎹 Restoring volume after panic:', this.volumeBeforePanic);
+      logger.info('🎹 Restoring volume after panic:', this.volumeBeforePanic);
       this.currentVolume = this.volumeBeforePanic;
       this.setVolume(this.volumeBeforePanic);
       // Reset the stored volume
@@ -3008,34 +3077,34 @@ export class ChordInstrumentProcessor {
     // Use the provided time for proper Transport synchronization
     // When time is undefined, Tone.js will use the current time
     const playbackTime = time;
-    
-    console.log('🎹 ChordInstrumentProcessor.triggerChord timing:', {
+
+    logger.info('🎹 ChordInstrumentProcessor.triggerChord timing:', {
       time,
       currentTransportTime: Tone?.Transport?.seconds || 0,
       transportState: Tone?.Transport?.state || 'unknown',
       voicingNotes: voicing.length,
-      notes: voicing
+      notes: voicing,
     });
 
     // Ensure AudioContext is started before playing
     if (Tone && Tone.context) {
       if (Tone.context.state !== 'running') {
         try {
-          console.log('🎼 Starting AudioContext due to user interaction...');
+          logger.info('🎼 Starting AudioContext due to user interaction...');
           await Tone.start();
         } catch (error) {
-          console.warn('🎼 Failed to start AudioContext:', error);
+          logger.warn('🎼 Failed to start AudioContext:', error);
           return;
         }
       }
     } else {
-      console.warn('🎼 Tone.js not properly initialized, cannot play chord');
+      logger.warn('🎼 Tone.js not properly initialized, cannot play chord');
       return;
     }
 
     const chordId = `chord_${Date.now()}`;
 
-    console.log('🎵 Triggering chord:', {
+    logger.info('🎵 Triggering chord:', {
       voicing,
       useVelocitySampler: this.useVelocitySampler,
       useSampler: this.useSampler,
@@ -3048,35 +3117,42 @@ export class ChordInstrumentProcessor {
     });
 
     if (this.useVelocitySampler && this.velocitySampler) {
-      console.log(
+      logger.info(
         '🎹 Using 16-velocity Salamander Grand Piano for chord playback',
       );
-      
+
       // Check if sampler is loaded
       const samplerStatus = (this.velocitySampler as any).getStatus?.();
       if (!samplerStatus?.initialized) {
-        console.warn('🎹 Salamander sampler not yet initialized, waiting...');
+        logger.warn('🎹 Salamander sampler not yet initialized, waiting...');
         // Try to initialize if not done
         try {
           await (this.velocitySampler as any).initialize?.();
         } catch (error) {
-          console.error('🎹 Failed to initialize Salamander sampler:', error);
+          logger.error('🎹 Failed to initialize Salamander sampler:', error);
           // Fallback to synthesis
-          console.log('🎹 Falling back to synthesis mode');
-          return this.playbackActualNotes(voicing, velocity, duration, playbackTime);
+          logger.info('🎹 Falling back to synthesis mode');
+          return this.playbackActualNotes(
+            voicing,
+            velocity,
+            duration,
+            playbackTime,
+          );
         }
       }
-      
+
       // Ensure the sampler is ready before playing
       if ((this.velocitySampler as any).ensureReady) {
         try {
-          console.log('🎹 Ensuring Salamander sampler is ready before playing chord...');
+          logger.info(
+            '🎹 Ensuring Salamander sampler is ready before playing chord...',
+          );
           await (this.velocitySampler as any).ensureReady();
         } catch (error) {
-          console.error('🎹 Failed to ensure sampler ready:', error);
+          logger.error('🎹 Failed to ensure sampler ready:', error);
         }
       }
-      
+
       // Convert velocity from 0-1 to MIDI 0-127
       const midiVelocity = Math.round(velocity * 127);
 
@@ -3090,19 +3166,26 @@ export class ChordInstrumentProcessor {
             midiVelocity,
           );
         } catch (error) {
-          console.error(
+          logger.error(
             `🎹 Failed to play note ${note} with velocity sampler:`,
             error,
           );
           // If first note fails, try fallback for all notes
           if (voicing.indexOf(note) === 0) {
-            console.log('🎹 First note failed, falling back to synthesis for entire chord');
-            return this.playbackActualNotes(voicing, velocity, duration, playbackTime);
+            logger.info(
+              '🎹 First note failed, falling back to synthesis for entire chord',
+            );
+            return this.playbackActualNotes(
+              voicing,
+              velocity,
+              duration,
+              playbackTime,
+            );
           }
         }
       }
     } else if (this.useWurlitzer && this.wurlitzerSampler) {
-      console.log('🎹 Using Wurlitzer Electric Piano for chord playback');
+      logger.info('🎹 Using Wurlitzer Electric Piano for chord playback');
       const midiVelocity = Math.round(velocity * 127);
 
       for (const note of voicing) {
@@ -3114,14 +3197,14 @@ export class ChordInstrumentProcessor {
             midiVelocity,
           );
         } catch (error) {
-          console.error(
+          logger.error(
             `🎹 Failed to play note ${note} with Wurlitzer:`,
             error,
           );
         }
       }
     } else if (this.useLongPad && this.longPadSampler) {
-      console.log('🎹 Using Long Pad for chord playback');
+      logger.info('🎹 Using Long Pad for chord playback');
 
       for (const note of voicing) {
         try {
@@ -3132,11 +3215,11 @@ export class ChordInstrumentProcessor {
             velocity,
           );
         } catch (error) {
-          console.error(`🎹 Failed to play note ${note} with Long Pad:`, error);
+          logger.error(`🎹 Failed to play note ${note} with Long Pad:`, error);
         }
       }
     } else if (this.useRhodes && this.rhodesSampler) {
-      console.log('🎹 Using Rhodes Electric Piano for chord playback');
+      logger.info('🎹 Using Rhodes Electric Piano for chord playback');
       const midiVelocity = Math.round(velocity * 127);
 
       for (const note of voicing) {
@@ -3148,11 +3231,11 @@ export class ChordInstrumentProcessor {
             midiVelocity,
           );
         } catch (error) {
-          console.error(`🎹 Failed to play note ${note} with Rhodes:`, error);
+          logger.error(`🎹 Failed to play note ${note} with Rhodes:`, error);
         }
       }
     } else if (this.useTheSaw && this.theSawSampler) {
-      console.log('🎹 Using The Saw for chord playback');
+      logger.info('🎹 Using The Saw for chord playback');
 
       for (const note of voicing) {
         try {
@@ -3163,11 +3246,11 @@ export class ChordInstrumentProcessor {
             velocity,
           );
         } catch (error) {
-          console.error(`🎹 Failed to play note ${note} with The Saw:`, error);
+          logger.error(`🎹 Failed to play note ${note} with The Saw:`, error);
         }
       }
     } else if (this.useSampler && this.sampler) {
-      console.log('🎹 Using Tone.Sampler for chord playback');
+      logger.info('🎹 Using Tone.Sampler for chord playback');
       // Use Tone.Sampler for professional samples
       voicing.forEach((note) => {
         try {
@@ -3178,34 +3261,34 @@ export class ChordInstrumentProcessor {
             velocity,
           );
         } catch (error) {
-          console.error(`🎹 Failed to play note ${note} with Sampler:`, error);
+          logger.error(`🎹 Failed to play note ${note} with Sampler:`, error);
         }
       });
     } else if (this.useSoundfont && this.soundfontInstrument) {
-      console.log('🎼 Using soundfont samples for chord playback');
+      logger.info('🎼 Using soundfont samples for chord playback');
       // Use real instrument samples
       const playPromises = voicing.map(async (note) => {
         try {
           // Convert Tone.js note format (C4) to MIDI note number for soundfont
           const midiNote = this.noteToMidi(note);
-          console.log(`🎼 Playing soundfont note: ${note} (MIDI: ${midiNote})`);
+          logger.info(`🎼 Playing soundfont note: ${note} (MIDI: ${midiNote})`);
           await this.soundfontInstrument.play(midiNote, undefined, {
             gain: velocity,
             duration: duration / 1000, // Convert ms to seconds
           });
         } catch (error) {
-          console.warn('🎸 Soundfont chord trigger failed:', error);
+          logger.warn('🎸 Soundfont chord trigger failed:', error);
         }
       });
 
       // Wait for all notes to start playing
       await Promise.all(playPromises);
     } else {
-      console.log('🎸 Using synthesis fallback for chord playback');
+      logger.info('🎸 Using synthesis fallback for chord playback');
 
       // Ensure Tone.js is started
       if (Tone.context.state !== 'running') {
-        // console.log('🎸 Starting Tone.js context...');
+        // logger.info('🎸 Starting Tone.js context...');
         await Tone.start();
       }
 
@@ -3213,17 +3296,17 @@ export class ChordInstrumentProcessor {
       voicing.forEach((note) => {
         try {
           if (typeof this.polySynth.triggerAttack === 'function') {
-            console.log(
+            logger.info(
               `🎸 Triggering note: ${note} with velocity: ${velocity}`,
             );
             this.polySynth.triggerAttack(note, playbackTime, velocity);
           } else {
-            console.warn(
+            logger.warn(
               '🎸 PolySynth.triggerAttack() not available, likely in test environment',
             );
           }
         } catch (error) {
-          console.warn(
+          logger.warn(
             '🎸 Chord trigger failed, likely in test environment:',
             error,
           );
@@ -3245,7 +3328,7 @@ export class ChordInstrumentProcessor {
         clearTimeout(existingTimeout);
         this.releaseTimeouts.delete(chordId);
       }
-      
+
       // Create new timeout and track it
       const timeout = setTimeout(() => {
         if (this.activeChords.has(chordId)) {
@@ -3257,13 +3340,13 @@ export class ChordInstrumentProcessor {
               });
             }
           } catch (error) {
-            console.warn('🎸 Manual chord release failed:', error);
+            logger.warn('🎸 Manual chord release failed:', error);
           }
           this.activeChords.delete(chordId);
         }
         this.releaseTimeouts.delete(chordId);
       }, duration);
-      
+
       this.releaseTimeouts.set(chordId, timeout);
     }
   }
@@ -3395,12 +3478,12 @@ export class ChordInstrumentProcessor {
           wet: this.config.effects.reverb.wet,
         });
       } else {
-        console.warn(
+        logger.warn(
           '🎸 Effects.reverb.set() not available, likely in test environment',
         );
       }
     } catch (error) {
-      console.warn(
+      logger.warn(
         '🎸 Reverb effect settings failed, likely in test environment:',
         error,
       );
@@ -3414,12 +3497,12 @@ export class ChordInstrumentProcessor {
           wet: this.config.effects.chorus.wet,
         });
       } else {
-        console.warn(
+        logger.warn(
           '🎸 Effects.chorus.set() not available, likely in test environment',
         );
       }
     } catch (error) {
-      console.warn(
+      logger.warn(
         '🎸 Chorus effect settings failed, likely in test environment:',
         error,
       );
@@ -3434,12 +3517,12 @@ export class ChordInstrumentProcessor {
         this.effects.stereoWidener.width.value =
           this.config.effects.stereoImaging.width;
       } else {
-        console.warn(
+        logger.warn(
           '🎸 StereoWidener.width not available, likely in test environment',
         );
       }
     } catch (error) {
-      console.warn(
+      logger.warn(
         '🎸 Stereo widener settings failed, likely in test environment:',
         error,
       );
@@ -3456,12 +3539,12 @@ export class ChordInstrumentProcessor {
           high: brightness * 3 - 1.5,
         });
       } else {
-        console.warn(
+        logger.warn(
           '🎸 Effects.eq.set() not available, likely in test environment',
         );
       }
     } catch (error) {
-      console.warn(
+      logger.warn(
         '🎸 EQ effect settings failed, likely in test environment:',
         error,
       );
@@ -3498,93 +3581,132 @@ export class ChordInstrumentProcessor {
    * Implements CC#123 (All Notes Off)
    */
   public allNotesOff(): void {
-    // console.log('🚨 ChordInstrumentProcessor.allNotesOff() - MIDI CC#123');
-    
+    // logger.info('🚨 ChordInstrumentProcessor.allNotesOff() - MIDI CC#123');
+
     // Stop all active chords first
     this.stopChord();
-    
+
     // Call allNotesOff on all samplers if available
-    if (this.velocitySampler && typeof (this.velocitySampler as any).allNotesOff === 'function') {
+    if (
+      this.velocitySampler &&
+      typeof (this.velocitySampler as any).allNotesOff === 'function'
+    ) {
       (this.velocitySampler as any).allNotesOff();
     }
-    if (this.wurlitzerSampler && typeof (this.wurlitzerSampler as any).allNotesOff === 'function') {
+    if (
+      this.wurlitzerSampler &&
+      typeof (this.wurlitzerSampler as any).allNotesOff === 'function'
+    ) {
       (this.wurlitzerSampler as any).allNotesOff();
     }
-    if (this.longPadSampler && typeof (this.longPadSampler as any).allNotesOff === 'function') {
+    if (
+      this.longPadSampler &&
+      typeof (this.longPadSampler as any).allNotesOff === 'function'
+    ) {
       (this.longPadSampler as any).allNotesOff();
     }
-    if (this.rhodesSampler && typeof (this.rhodesSampler as any).allNotesOff === 'function') {
+    if (
+      this.rhodesSampler &&
+      typeof (this.rhodesSampler as any).allNotesOff === 'function'
+    ) {
       (this.rhodesSampler as any).allNotesOff();
     }
-    if (this.theSawSampler && typeof (this.theSawSampler as any).allNotesOff === 'function') {
+    if (
+      this.theSawSampler &&
+      typeof (this.theSawSampler as any).allNotesOff === 'function'
+    ) {
       (this.theSawSampler as any).allNotesOff();
     }
   }
 
   /**
-   * MIDI Panic - All Sound Off (Professional DAW implementation)  
+   * MIDI Panic - All Sound Off (Professional DAW implementation)
    * Implements CC#120 (All Sound Off) - immediate silence
    */
   public allSoundOff(): void {
-    // console.log('🚨 ChordInstrumentProcessor.allSoundOff() - MIDI CC#120 - IMMEDIATE GAIN CUTTING');
-    
+    // logger.info('🚨 ChordInstrumentProcessor.allSoundOff() - MIDI CC#120 - IMMEDIATE GAIN CUTTING');
+
     // CRITICAL: Store current volume before muting
     const originalVolume = this.currentVolume;
-    
+
     // IMMEDIATE: Set master volume to 0 to cut all sound instantly
     this.currentVolume = 0;
     this.setVolume(0);
-    
+
     // CRITICAL: Stop scheduled chord releases first
     this.stopChord(); // This will call stopAll on samplers
-    
+
     // Immediate stop of all synthesizers with gain cutting
     if (this.polySynth) {
       try {
         // IMMEDIATE GAIN CUTTING on polySynth
-        if (this.polySynth.volume && this.polySynth.volume.value !== undefined) {
+        if (
+          this.polySynth.volume &&
+          this.polySynth.volume.value !== undefined
+        ) {
           this.polySynth.volume.value = -Infinity;
-          // console.log('🚨 Set polySynth.volume.value = -Infinity');
+          // logger.info('🚨 Set polySynth.volume.value = -Infinity');
         } else if (this.polySynth.volume && this.polySynth.volume.gain) {
           this.polySynth.volume.gain.value = 0;
-          // console.log('🚨 Set polySynth.volume.gain.value = 0');
+          // logger.info('🚨 Set polySynth.volume.gain.value = 0');
         }
-        
+
         this.polySynth.releaseAll(0); // Immediate release
-        // console.log('🚨 Called polySynth.releaseAll(0)');
+        // logger.info('🚨 Called polySynth.releaseAll(0)');
       } catch (error) {
-        console.warn('Failed to release polySynth voices:', error);
+        logger.warn('Failed to release polySynth voices:', error);
       }
     }
-    
+
     // Call allSoundOff on all samplers if available
-    if (this.velocitySampler && typeof (this.velocitySampler as any).allSoundOff === 'function') {
-      // console.log('🚨 Calling velocitySampler.allSoundOff()');
+    if (
+      this.velocitySampler &&
+      typeof (this.velocitySampler as any).allSoundOff === 'function'
+    ) {
+      // logger.info('🚨 Calling velocitySampler.allSoundOff()');
       (this.velocitySampler as any).allSoundOff();
     }
-    if (this.wurlitzerSampler && typeof (this.wurlitzerSampler as any).allSoundOff === 'function') {
-      console.log('🚨 Calling wurlitzerSampler.allSoundOff()');
+    if (
+      this.wurlitzerSampler &&
+      typeof (this.wurlitzerSampler as any).allSoundOff === 'function'
+    ) {
+      logger.info('🚨 Calling wurlitzerSampler.allSoundOff()');
       (this.wurlitzerSampler as any).allSoundOff();
     }
-    if (this.longPadSampler && typeof (this.longPadSampler as any).allSoundOff === 'function') {
-      console.log('🚨 Calling longPadSampler.allSoundOff()');
+    if (
+      this.longPadSampler &&
+      typeof (this.longPadSampler as any).allSoundOff === 'function'
+    ) {
+      logger.info('🚨 Calling longPadSampler.allSoundOff()');
       (this.longPadSampler as any).allSoundOff();
     }
-    if (this.rhodesSampler && typeof (this.rhodesSampler as any).allSoundOff === 'function') {
-      console.log('🚨 Calling rhodesSampler.allSoundOff()');
+    if (
+      this.rhodesSampler &&
+      typeof (this.rhodesSampler as any).allSoundOff === 'function'
+    ) {
+      logger.info('🚨 Calling rhodesSampler.allSoundOff()');
       (this.rhodesSampler as any).allSoundOff();
     }
-    if (this.theSawSampler && typeof (this.theSawSampler as any).allSoundOff === 'function') {
-      console.log('🚨 Calling theSawSampler.allSoundOff()');
+    if (
+      this.theSawSampler &&
+      typeof (this.theSawSampler as any).allSoundOff === 'function'
+    ) {
+      logger.info('🚨 Calling theSawSampler.allSoundOff()');
       (this.theSawSampler as any).allSoundOff();
     }
-    
-    console.log('🚨 ChordInstrumentProcessor.allSoundOff() - emergency stop completed');
-    
+
+    logger.info(
+      '🚨 ChordInstrumentProcessor.allSoundOff() - emergency stop completed',
+    );
+
     // Store the original volume for later restoration but DO NOT restore it automatically
     // Volume will be restored when playChord is called again
     this.volumeBeforePanic = originalVolume;
-    console.log('🎹 Stored volume', originalVolume, 'for restoration on next play');
+    logger.info(
+      '🎹 Stored volume',
+      originalVolume,
+      'for restoration on next play',
+    );
   }
 
   /**
@@ -3592,7 +3714,9 @@ export class ChordInstrumentProcessor {
    * Combines CC#120 (All Sound Off) and CC#123 (All Notes Off)
    */
   public panic(): void {
-    console.log('🚨 ChordInstrumentProcessor.panic() - Professional MIDI Panic');
+    logger.info(
+      '🚨 ChordInstrumentProcessor.panic() - Professional MIDI Panic',
+    );
     this.allSoundOff();
     this.allNotesOff();
   }
@@ -3601,24 +3725,27 @@ export class ChordInstrumentProcessor {
    * Preview a chord - plays sound even when in STOP/panic state
    * This allows auditioning chord sounds while transport is stopped
    */
-  public previewChord(chord: ChordParameters, duration: string = "2n"): void {
-    console.log(`🎹 ChordInstrumentProcessor.previewChord(${chord.symbol}) - PREVIEW MODE`);
-    
+  public previewChord(chord: ChordParameters, duration = '2n'): void {
+    logger.info(
+      `🎹 ChordInstrumentProcessor.previewChord(${chord.symbol}) - PREVIEW MODE`,
+    );
+
     if (!this.isInitialized) {
-      console.warn('🎹 Cannot preview chord - processor not initialized');
+      logger.warn('🎹 Cannot preview chord - processor not initialized');
       return;
     }
 
     // Check if we're currently in a STOP/panic state (volume muted)
-    const wasInPanicState = this.volumeBeforePanic !== null || this.currentVolume === 0;
+    const wasInPanicState =
+      this.volumeBeforePanic !== null || this.currentVolume === 0;
 
     if (wasInPanicState) {
-      console.log('🎹 Preview: Temporarily restoring volume for chord preview');
-      
+      logger.info('🎹 Preview: Temporarily restoring volume for chord preview');
+
       // Temporarily restore volume for preview
       const previewVolume = this.volumeBeforePanic || 0.7; // Use stored volume or reasonable default
       this.setVolume(previewVolume * 0.8); // Slightly lower for preview
-      
+
       // Also restore volume on individual samplers if they were muted
       if (this.velocitySampler) {
         try {
@@ -3629,14 +3756,20 @@ export class ChordInstrumentProcessor {
               if (layerSampler && layerSampler.volume) {
                 if (layerSampler.volume.value === -Infinity) {
                   layerSampler.volume.value = -6; // -6dB for preview
-                } else if (layerSampler.volume.gain && layerSampler.volume.gain.value === 0) {
+                } else if (
+                  layerSampler.volume.gain &&
+                  layerSampler.volume.gain.value === 0
+                ) {
                   layerSampler.volume.gain.value = this.Tone.dbToGain(-6);
                 }
               }
             });
           }
         } catch (error) {
-          console.warn('🎹 Failed to restore sampler volume for preview:', error);
+          logger.warn(
+            '🎹 Failed to restore sampler volume for preview:',
+            error,
+          );
         }
       }
     }
@@ -3644,21 +3777,21 @@ export class ChordInstrumentProcessor {
     // Play the preview chord
     try {
       const chordId = `preview-${Date.now()}`;
-      this.playChord(chord, "+0.01", duration, chordId);
-      console.log(`🎹 Preview chord played: ${chord.symbol}`);
+      this.playChord(chord, '+0.01', duration, chordId);
+      logger.info(`🎹 Preview chord played: ${chord.symbol}`);
     } catch (error) {
-      console.warn('🎹 Failed to play preview chord:', error);
+      logger.warn('🎹 Failed to play preview chord:', error);
     }
 
     // If we were in panic state, restore the muted state after preview
     if (wasInPanicState) {
       setTimeout(() => {
-        console.log('🎹 Preview: Restoring STOP muting after chord preview');
-        
+        logger.info('🎹 Preview: Restoring STOP muting after chord preview');
+
         // Restore the STOP muting
         this.currentVolume = 0;
         this.setVolume(0);
-        
+
         // Also re-mute samplers
         if (this.velocitySampler) {
           try {
@@ -3675,11 +3808,11 @@ export class ChordInstrumentProcessor {
               });
             }
           } catch (error) {
-            console.warn('🎹 Failed to restore STOP muting on sampler:', error);
+            logger.warn('🎹 Failed to restore STOP muting on sampler:', error);
           }
         }
-        
-        console.log('🎹 STOP muting restored after chord preview');
+
+        logger.info('🎹 STOP muting restored after chord preview');
       }, 1500); // Allow enough time for chord to be heard
     }
   }
@@ -3689,34 +3822,48 @@ export class ChordInstrumentProcessor {
    * Nuclear option when normal panic doesn't work
    */
   public midiPanic(): void {
-    // console.log('🚨 ChordInstrumentProcessor.midiPanic() - Emergency MIDI Panic');
-    
+    // logger.info('🚨 ChordInstrumentProcessor.midiPanic() - Emergency MIDI Panic');
+
     try {
       // 1. Immediate stop all
       this.allSoundOff();
-      
+
       // 2. Call midiPanic on all samplers if available
-      if (this.velocitySampler && typeof (this.velocitySampler as any).midiPanic === 'function') {
+      if (
+        this.velocitySampler &&
+        typeof (this.velocitySampler as any).midiPanic === 'function'
+      ) {
         (this.velocitySampler as any).midiPanic();
       }
-      if (this.wurlitzerSampler && typeof (this.wurlitzerSampler as any).midiPanic === 'function') {
+      if (
+        this.wurlitzerSampler &&
+        typeof (this.wurlitzerSampler as any).midiPanic === 'function'
+      ) {
         (this.wurlitzerSampler as any).midiPanic();
       }
-      if (this.longPadSampler && typeof (this.longPadSampler as any).midiPanic === 'function') {
+      if (
+        this.longPadSampler &&
+        typeof (this.longPadSampler as any).midiPanic === 'function'
+      ) {
         (this.longPadSampler as any).midiPanic();
       }
-      if (this.rhodesSampler && typeof (this.rhodesSampler as any).midiPanic === 'function') {
+      if (
+        this.rhodesSampler &&
+        typeof (this.rhodesSampler as any).midiPanic === 'function'
+      ) {
         (this.rhodesSampler as any).midiPanic();
       }
-      if (this.theSawSampler && typeof (this.theSawSampler as any).midiPanic === 'function') {
+      if (
+        this.theSawSampler &&
+        typeof (this.theSawSampler as any).midiPanic === 'function'
+      ) {
         (this.theSawSampler as any).midiPanic();
       }
-      
+
       // 3. Clear active chords
       this.activeChords.clear();
-      
     } catch (error) {
-      console.error('🚨 ChordInstrumentProcessor.midiPanic() failed:', error);
+      logger.error('🚨 ChordInstrumentProcessor.midiPanic() failed:', error);
     }
   }
 }

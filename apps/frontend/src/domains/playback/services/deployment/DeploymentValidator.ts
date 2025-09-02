@@ -1,7 +1,7 @@
 /**
  * DeploymentValidator - Production deployment validation
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Validates deployment readiness and health
  */
 
@@ -56,20 +56,17 @@ export class DeploymentValidator {
   private audioEngine?: AudioEngine;
   private healthMonitor?: HealthMonitor;
 
-  constructor(
-    eventBus: EventBus,
-    config: DeploymentConfig = {}
-  ) {
+  constructor(eventBus: EventBus, config: DeploymentConfig = {}) {
     this.eventBus = eventBus;
     this.config = {
-      environment: process.env.NODE_ENV as any || 'development',
+      environment: (process.env.NODE_ENV as any) || 'development',
       version: process.env.REACT_APP_VERSION || '0.0.0',
       runBenchmarks: true,
       benchmarkIterations: 10,
       strictMode: config.environment === 'production',
       customChecks: [],
       webhookUrl: '/api/deployment/validate',
-      ...config
+      ...config,
     };
 
     this.registerDefaultChecks();
@@ -79,7 +76,10 @@ export class DeploymentValidator {
   /**
    * Set dependencies
    */
-  setDependencies(audioEngine: AudioEngine, healthMonitor: HealthMonitor): void {
+  setDependencies(
+    audioEngine: AudioEngine,
+    healthMonitor: HealthMonitor,
+  ): void {
     this.audioEngine = audioEngine;
     this.healthMonitor = healthMonitor;
   }
@@ -98,18 +98,18 @@ export class DeploymentValidator {
           if (!this.audioEngine) {
             return {
               passed: false,
-              message: 'Audio engine not available'
+              message: 'Audio engine not available',
             };
           }
 
           // Initialize if needed
           await this.audioEngine.initialize();
-          
+
           // Check if ready
           if (!this.audioEngine.isReady()) {
             return {
               passed: false,
-              message: 'Audio engine not ready after initialization'
+              message: 'Audio engine not ready after initialization',
             };
           }
 
@@ -121,13 +121,13 @@ export class DeploymentValidator {
 
           // Create test sampler
           const testSampler = await this.audioEngine.createSampler({
-            urls: { 'C4': '/samples/test/sine.mp3' },
-            release: 0.1
+            urls: { C4: '/samples/test/sine.mp3' },
+            release: 0.1,
           });
 
           // Test note triggering
           testSampler.triggerAttackRelease('C4', 0.1);
-          
+
           // Cleanup
           testSampler.dispose();
 
@@ -137,17 +137,17 @@ export class DeploymentValidator {
             details: {
               contextState: context.state,
               sampleRate: context.sampleRate,
-              latency: context.baseLatency
-            }
+              latency: context.baseLatency,
+            },
           };
         } catch (error) {
           return {
             passed: false,
             message: `Audio system check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            error: error instanceof Error ? error : new Error(String(error))
+            error: error instanceof Error ? error : new Error(String(error)),
           };
         }
-      }
+      },
     });
 
     // Browser Compatibility Check
@@ -161,11 +161,11 @@ export class DeploymentValidator {
           'AudioWorklet',
           'Promise',
           'fetch',
-          'performance'
+          'performance',
         ];
 
         const missing: string[] = [];
-        
+
         for (const api of required) {
           if (!(api in window)) {
             missing.push(api);
@@ -185,7 +185,7 @@ export class DeploymentValidator {
           return {
             passed: false,
             message: `Missing required browser features: ${missing.join(', ')}`,
-            details: { missing }
+            details: { missing },
           };
         }
 
@@ -193,10 +193,10 @@ export class DeploymentValidator {
           passed: true,
           message: 'All required browser features are available',
           details: {
-            userAgent: navigator.userAgent
-          }
+            userAgent: navigator.userAgent,
+          },
         };
-      }
+      },
     });
 
     // TypeScript Strict Mode Check
@@ -210,26 +210,26 @@ export class DeploymentValidator {
         try {
           // Check if type definitions exist
           const hasTypes = typeof AudioEngine !== 'undefined';
-          
+
           return {
             passed: hasTypes,
-            message: hasTypes ? 
-              'TypeScript strict mode enabled and passing' : 
-              'TypeScript types not found',
+            message: hasTypes
+              ? 'TypeScript strict mode enabled and passing'
+              : 'TypeScript types not found',
             details: {
               strictMode: true,
               noImplicitAny: true,
-              strictNullChecks: true
-            }
+              strictNullChecks: true,
+            },
           };
         } catch (error) {
           return {
             passed: false,
             message: 'TypeScript validation failed',
-            error: error instanceof Error ? error : new Error(String(error))
+            error: error instanceof Error ? error : new Error(String(error)),
           };
         }
-      }
+      },
     });
 
     // Performance Benchmarks
@@ -241,7 +241,7 @@ export class DeploymentValidator {
         if (!this.config.runBenchmarks || !this.audioEngine) {
           return {
             passed: true,
-            message: 'Performance benchmarks skipped'
+            message: 'Performance benchmarks skipped',
           };
         }
 
@@ -249,42 +249,45 @@ export class DeploymentValidator {
           const benchmark = new PerformanceBenchmark(
             this.eventBus,
             this.audioEngine,
-            { iterations: this.config.benchmarkIterations }
+            { iterations: this.config.benchmarkIterations },
           );
 
           const suite = await benchmark.runFullSuite();
-          
+
           // Check if initialization meets < 2s target
-          const initResult = suite.results.find(r => r.name === 'Audio Initialization');
+          const initResult = suite.results.find(
+            (r) => r.name === 'Audio Initialization',
+          );
           const initPassed = initResult ? initResult.averageTime < 2000 : false;
 
           // Check memory usage
-          const memoryOK = !suite.results.some(r => 
-            r.memoryUsage && r.memoryUsage.delta > 100 // 100MB threshold
+          const memoryOK = !suite.results.some(
+            (r) => r.memoryUsage && r.memoryUsage.delta > 100, // 100MB threshold
           );
 
-          const passed = initPassed && memoryOK && suite.summary.failedTargets === 0;
+          const passed =
+            initPassed && memoryOK && suite.summary.failedTargets === 0;
 
           return {
             passed,
-            message: passed ? 
-              'Performance benchmarks passed' : 
-              'Performance benchmarks failed to meet targets',
+            message: passed
+              ? 'Performance benchmarks passed'
+              : 'Performance benchmarks failed to meet targets',
             details: {
               initTime: initResult?.averageTime,
               passedTargets: suite.summary.passedTargets,
               failedTargets: suite.summary.failedTargets,
-              recommendations: suite.summary.recommendations
-            }
+              recommendations: suite.summary.recommendations,
+            },
           };
         } catch (error) {
           return {
             passed: false,
             message: 'Performance benchmark execution failed',
-            error: error instanceof Error ? error : new Error(String(error))
+            error: error instanceof Error ? error : new Error(String(error)),
           };
         }
-      }
+      },
     });
 
     // Error Rate Check
@@ -303,10 +306,10 @@ export class DeploymentValidator {
           message: `Error rate: ${errorRate.toFixed(2)}% (threshold: ${threshold}%)`,
           details: {
             errorRate,
-            threshold
-          }
+            threshold,
+          },
         };
-      }
+      },
     });
 
     // Health Check
@@ -318,13 +321,14 @@ export class DeploymentValidator {
         if (!this.healthMonitor) {
           return {
             passed: false,
-            message: 'Health monitor not available'
+            message: 'Health monitor not available',
           };
         }
 
         const report = await this.healthMonitor.runAllChecks();
-        const passed = report.overallStatus === 'healthy' || 
-                      report.overallStatus === 'degraded';
+        const passed =
+          report.overallStatus === 'healthy' ||
+          report.overallStatus === 'degraded';
 
         return {
           passed,
@@ -332,11 +336,18 @@ export class DeploymentValidator {
           details: {
             status: report.overallStatus,
             failedChecks: Object.entries(report.checks)
-              .filter(([_, result]) => result.status === 'critical' || result.status === 'unhealthy')
-              .map(([name, result]) => ({ name, status: result.status, message: result.message }))
-          }
+              .filter(
+                ([_, result]) =>
+                  result.status === 'critical' || result.status === 'unhealthy',
+              )
+              .map(([name, result]) => ({
+                name,
+                status: result.status,
+                message: result.message,
+              })),
+          },
         };
-      }
+      },
     });
 
     // Memory Usage Check
@@ -348,7 +359,7 @@ export class DeploymentValidator {
         if (!performance.memory) {
           return {
             passed: true,
-            message: 'Memory monitoring not available in this browser'
+            message: 'Memory monitoring not available in this browser',
           };
         }
 
@@ -364,10 +375,10 @@ export class DeploymentValidator {
             usedMB: used,
             limitMB: limit,
             percentage,
-            threshold
-          }
+            threshold,
+          },
         };
-      }
+      },
     });
 
     // API Connectivity
@@ -376,11 +387,7 @@ export class DeploymentValidator {
       category: 'critical',
       description: 'Validates API endpoints are reachable',
       validate: async () => {
-        const endpoints = [
-          '/api/health',
-          '/api/logs',
-          '/api/metrics'
-        ];
+        const endpoints = ['/api/health', '/api/logs', '/api/metrics'];
 
         const results: Record<string, boolean> = {};
         let allPassed = true;
@@ -389,7 +396,7 @@ export class DeploymentValidator {
           try {
             const response = await fetch(endpoint, {
               method: 'GET',
-              signal: AbortSignal.timeout(5000)
+              signal: AbortSignal.timeout(5000),
             });
             results[endpoint] = response.ok;
             if (!response.ok) allPassed = false;
@@ -401,12 +408,12 @@ export class DeploymentValidator {
 
         return {
           passed: allPassed,
-          message: allPassed ? 
-            'All API endpoints are reachable' : 
-            'Some API endpoints are not reachable',
-          details: { endpoints: results }
+          message: allPassed
+            ? 'All API endpoints are reachable'
+            : 'Some API endpoints are not reachable',
+          details: { endpoints: results },
         };
-      }
+      },
     });
 
     // Security Headers Check
@@ -418,16 +425,16 @@ export class DeploymentValidator {
         try {
           const response = await fetch(window.location.origin);
           const headers = response.headers;
-          
+
           const requiredHeaders = [
             'X-Content-Type-Options',
             'X-Frame-Options',
             'X-XSS-Protection',
-            'Strict-Transport-Security'
+            'Strict-Transport-Security',
           ];
 
           const missing: string[] = [];
-          
+
           for (const header of requiredHeaders) {
             if (!headers.get(header)) {
               missing.push(header);
@@ -436,22 +443,23 @@ export class DeploymentValidator {
 
           return {
             passed: missing.length === 0,
-            message: missing.length === 0 ? 
-              'All security headers present' : 
-              `Missing security headers: ${missing.join(', ')}`,
+            message:
+              missing.length === 0
+                ? 'All security headers present'
+                : `Missing security headers: ${missing.join(', ')}`,
             details: {
               missing,
-              present: requiredHeaders.filter(h => headers.get(h))
-            }
+              present: requiredHeaders.filter((h) => headers.get(h)),
+            },
           };
         } catch (error) {
           return {
             passed: false,
             message: 'Could not check security headers',
-            error: error instanceof Error ? error : new Error(String(error))
+            error: error instanceof Error ? error : new Error(String(error)),
           };
         }
-      }
+      },
     });
   }
 
@@ -470,12 +478,12 @@ export class DeploymentValidator {
   async validate(): Promise<DeploymentReport> {
     this.eventBus.emit('deployment:validation-started', {
       environment: this.config.environment,
-      version: this.config.version
+      version: this.config.version,
     });
 
     const results: Record<string, ValidationResult> = {};
     const recommendations: string[] = [];
-    
+
     let totalChecks = 0;
     let passed = 0;
     let failed = 0;
@@ -495,17 +503,15 @@ export class DeploymentValidator {
           if (check.category === 'critical') {
             criticalFailures++;
           }
-          
+
           // Add recommendation
-          recommendations.push(
-            `${check.name}: ${result.message}`
-          );
+          recommendations.push(`${check.name}: ${result.message}`);
         }
       } catch (error) {
         results[name] = {
           passed: false,
           message: `Check failed with error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          error: error instanceof Error ? error : new Error(String(error))
+          error: error instanceof Error ? error : new Error(String(error)),
         };
         failed++;
         if (check.category === 'critical') {
@@ -515,9 +521,9 @@ export class DeploymentValidator {
     }
 
     // Determine if ready for deployment
-    const readyForDeployment = this.config.strictMode ? 
-      criticalFailures === 0 && failed === 0 : 
-      criticalFailures === 0;
+    const readyForDeployment = this.config.strictMode
+      ? criticalFailures === 0 && failed === 0
+      : criticalFailures === 0;
 
     const report: DeploymentReport = {
       timestamp: Date.now(),
@@ -529,9 +535,9 @@ export class DeploymentValidator {
         passed,
         failed,
         criticalFailures,
-        readyForDeployment
+        readyForDeployment,
       },
-      recommendations
+      recommendations,
     };
 
     this.eventBus.emit('deployment:validation-completed', report);
@@ -552,7 +558,7 @@ export class DeploymentValidator {
       await fetch(this.config.webhookUrl!, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(report)
+        body: JSON.stringify(report),
       });
     } catch (error) {
       this.eventBus.emit('deployment:webhook-failed', { error });
@@ -564,7 +570,9 @@ export class DeploymentValidator {
    */
   generateHTMLReport(report: DeploymentReport): string {
     const statusColor = report.summary.readyForDeployment ? 'green' : 'red';
-    const statusText = report.summary.readyForDeployment ? 'READY FOR DEPLOYMENT' : 'NOT READY FOR DEPLOYMENT';
+    const statusText = report.summary.readyForDeployment
+      ? 'READY FOR DEPLOYMENT'
+      : 'NOT READY FOR DEPLOYMENT';
 
     return `
 <!DOCTYPE html>
@@ -610,12 +618,13 @@ export class DeploymentValidator {
       <th>Message</th>
       <th>Details</th>
     </tr>
-    ${Object.entries(report.checks).map(([name, result]) => {
-      const check = this.checks.get(name);
-      const categoryClass = check?.category || 'optional';
-      const statusClass = result.passed ? 'pass' : 'fail';
-      
-      return `
+    ${Object.entries(report.checks)
+      .map(([name, result]) => {
+        const check = this.checks.get(name);
+        const categoryClass = check?.category || 'optional';
+        const statusClass = result.passed ? 'pass' : 'fail';
+
+        return `
       <tr class="${categoryClass}">
         <td>${name}</td>
         <td>${check?.category || 'unknown'}</td>
@@ -624,17 +633,22 @@ export class DeploymentValidator {
         <td>${result.details ? JSON.stringify(result.details, null, 2) : 'N/A'}</td>
       </tr>
       `;
-    }).join('')}
+      })
+      .join('')}
   </table>
   
-  ${report.recommendations.length > 0 ? `
+  ${
+    report.recommendations.length > 0
+      ? `
   <div class="recommendations">
     <h2>Recommendations</h2>
     <ul>
-      ${report.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+      ${report.recommendations.map((rec) => `<li>${rec}</li>`).join('')}
     </ul>
   </div>
-  ` : ''}
+  `
+      : ''
+  }
 </body>
 </html>
     `;
@@ -645,18 +659,22 @@ export class DeploymentValidator {
    */
   generateCIReport(report: DeploymentReport): string {
     const lines: string[] = [];
-    
+
     lines.push('=== Deployment Validation Report ===');
     lines.push(`Environment: ${report.environment}`);
     lines.push(`Version: ${report.version}`);
     lines.push(`Timestamp: ${new Date(report.timestamp).toISOString()}`);
     lines.push('');
-    
-    lines.push(`Status: ${report.summary.readyForDeployment ? '✅ READY' : '❌ NOT READY'}`);
-    lines.push(`Passed: ${report.summary.passed}/${report.summary.totalChecks}`);
+
+    lines.push(
+      `Status: ${report.summary.readyForDeployment ? '✅ READY' : '❌ NOT READY'}`,
+    );
+    lines.push(
+      `Passed: ${report.summary.passed}/${report.summary.totalChecks}`,
+    );
     lines.push(`Critical Failures: ${report.summary.criticalFailures}`);
     lines.push('');
-    
+
     if (report.summary.failed > 0) {
       lines.push('Failed Checks:');
       Object.entries(report.checks)
@@ -666,7 +684,7 @@ export class DeploymentValidator {
           lines.push(`  - [${check?.category}] ${name}: ${result.message}`);
         });
     }
-    
+
     return lines.join('\n');
   }
 }

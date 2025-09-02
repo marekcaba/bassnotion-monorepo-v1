@@ -1,7 +1,7 @@
 /**
  * AudioErrors - Custom audio error classes
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Professional error handling for all audio operations
  */
 
@@ -24,14 +24,14 @@ export class AudioError extends Error {
     message: string,
     public readonly code: string,
     public readonly originalError?: Error,
-    metadata?: Partial<ErrorMetadata>
+    metadata?: Partial<ErrorMetadata>,
   ) {
     super(message);
     this.name = 'AudioError';
     this.timestamp = Date.now();
     this.metadata = {
       timestamp: this.timestamp,
-      ...metadata
+      ...metadata,
     };
 
     // Preserve stack trace
@@ -99,7 +99,7 @@ export class AudioError extends Error {
       'SAMPLE_LOAD_FAILED',
       'PLUGIN_LOAD_FAILED',
       'TRANSPORT_ERROR',
-      'NETWORK_ERROR'
+      'NETWORK_ERROR',
     ].includes(this.code);
   }
 }
@@ -108,7 +108,11 @@ export class AudioError extends Error {
  * Audio initialization error
  */
 export class AudioInitializationError extends AudioError {
-  constructor(message: string, originalError?: Error, metadata?: Partial<ErrorMetadata>) {
+  constructor(
+    message: string,
+    originalError?: Error,
+    metadata?: Partial<ErrorMetadata>,
+  ) {
     super(message, 'AUDIO_INITIALIZATION_FAILED', originalError, metadata);
     this.name = 'AudioInitializationError';
   }
@@ -118,7 +122,11 @@ export class AudioInitializationError extends AudioError {
  * AudioContext specific error
  */
 export class AudioContextError extends AudioError {
-  constructor(message: string, originalError?: Error, metadata?: Partial<ErrorMetadata>) {
+  constructor(
+    message: string,
+    originalError?: Error,
+    metadata?: Partial<ErrorMetadata>,
+  ) {
     super(message, 'AUDIO_CONTEXT_FAILED', originalError, metadata);
     this.name = 'AudioContextError';
   }
@@ -158,7 +166,11 @@ export class AudioContextSuspendedError extends AudioError {
  * Sample loading error
  */
 export class SampleLoadError extends AudioError {
-  constructor(message: string, originalError?: Error, metadata?: Partial<ErrorMetadata>) {
+  constructor(
+    message: string,
+    originalError?: Error,
+    metadata?: Partial<ErrorMetadata>,
+  ) {
     super(message, 'SAMPLE_LOAD_FAILED', originalError, metadata);
     this.name = 'SampleLoadError';
   }
@@ -168,7 +180,11 @@ export class SampleLoadError extends AudioError {
  * Plugin loading error
  */
 export class PluginLoadError extends AudioError {
-  constructor(message: string, originalError?: Error, metadata?: Partial<ErrorMetadata>) {
+  constructor(
+    message: string,
+    originalError?: Error,
+    metadata?: Partial<ErrorMetadata>,
+  ) {
     super(message, 'PLUGIN_LOAD_FAILED', originalError, metadata);
     this.name = 'PluginLoadError';
   }
@@ -178,7 +194,11 @@ export class PluginLoadError extends AudioError {
  * Transport operation error
  */
 export class TransportError extends AudioError {
-  constructor(message: string, originalError?: Error, metadata?: Partial<ErrorMetadata>) {
+  constructor(
+    message: string,
+    originalError?: Error,
+    metadata?: Partial<ErrorMetadata>,
+  ) {
     super(message, 'TRANSPORT_ERROR', originalError, metadata);
     this.name = 'TransportError';
   }
@@ -198,7 +218,11 @@ export class MemoryLimitError extends AudioError {
  * Network error
  */
 export class NetworkError extends AudioError {
-  constructor(message: string, originalError?: Error, metadata?: Partial<ErrorMetadata>) {
+  constructor(
+    message: string,
+    originalError?: Error,
+    metadata?: Partial<ErrorMetadata>,
+  ) {
     super(message, 'NETWORK_ERROR', originalError, metadata);
     this.name = 'NetworkError';
   }

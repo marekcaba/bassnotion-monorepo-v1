@@ -51,6 +51,7 @@ export const useUserUIStore = create<UserUIState>()(
 /*
 import { useUser, useUpdateUserProfile } from '@/lib/hooks/use-api';
 import { useUserUIStore } from '@/shared/stores/user-store';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 function UserProfileComponent({ userId }: { userId: string }) {
   // Server state from React Query
@@ -83,7 +84,7 @@ function UserProfileComponent({ userId }: { userId: string }) {
       closeProfileModal();
     } catch (error) {
       // Handle error (React Query will handle retries automatically)
-      console.error('Failed to update profile:', error);
+      logger.error('Failed to update profile:', error);
     }
   };
   

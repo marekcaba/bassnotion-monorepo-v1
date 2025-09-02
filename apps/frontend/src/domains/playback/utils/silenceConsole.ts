@@ -28,11 +28,11 @@ let isSilenced = false;
 export function silenceConsole() {
   if (isSilenced) return;
   isSilenced = true;
-  
+
   // Override console methods
   console.log = (...args: any[]) => {
     const message = args.join(' ');
-    if (allowedMessages.some(allowed => message.includes(allowed))) {
+    if (allowedMessages.some((allowed) => message.includes(allowed))) {
       originalConsole.log(...args);
     }
   };
@@ -45,11 +45,11 @@ export function silenceConsole() {
 export function restoreConsole() {
   if (!isSilenced) return;
   isSilenced = false;
-  
+
   console.log = originalConsole.log;
   console.warn = originalConsole.warn;
   console.info = originalConsole.info;
   console.debug = originalConsole.debug;
-  
-  console.log('🔊 Console output restored for testing');
+
+  logger.info('🔊 Console output restored for testing');
 }

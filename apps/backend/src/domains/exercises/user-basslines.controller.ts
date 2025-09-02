@@ -10,8 +10,7 @@ import {
   UseGuards,
   Request,
   HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
+  HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '../user/auth/guards/auth.guard.js';
 import { UserBasslinesService } from './user-basslines.service.js';
 

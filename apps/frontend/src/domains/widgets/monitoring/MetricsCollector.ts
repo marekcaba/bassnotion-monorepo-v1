@@ -4,11 +4,13 @@
  */
 
 import { PerformanceBaseline } from '../utils/performance/PerformanceBaseline';
+import { createStructuredLogger } from '@bassnotion/contracts';
 import { RenderOptimizer } from '../../../shared/components/music/FretboardVisualizer/optimization/RenderOptimizer';
 import { MemoryManager } from '../utils/memory/MemoryManager';
 import { AudioBufferManager } from '../optimization/AudioBufferManager';
 import { LatencyOptimizer } from '../optimization/LatencyOptimizer';
 import { BundleOptimizer } from '../optimization/BundleOptimizer';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Central metrics interface
 export interface CentralPerformanceMetrics {
@@ -100,7 +102,7 @@ export class MetricsCollector {
     this.latencyOptimizer = LatencyOptimizer.getInstance();
     this.bundleOptimizer = BundleOptimizer.getInstance();
 
-    console.debug(
+    logger.debug(
       '[MetricsCollector] Initialized with integrated performance systems',
     );
   }
@@ -132,7 +134,7 @@ export class MetricsCollector {
    */
   public startCollection(): void {
     if (this.isCollecting) {
-      console.warn('[MetricsCollector] Collection already in progress');
+      logger.warn('[MetricsCollector] Collection already in progress');
       return;
     }
 
@@ -141,7 +143,7 @@ export class MetricsCollector {
       await this.collectMetrics();
     }, this.config.collectionInterval);
 
-    console.debug('[MetricsCollector] Started metrics collection');
+    logger.debug('[MetricsCollector] Started metrics collection');
   }
 
   /**
@@ -154,7 +156,7 @@ export class MetricsCollector {
     }
     this.isCollecting = false;
 
-    console.debug('[MetricsCollector] Stopped metrics collection');
+    logger.debug('[MetricsCollector] Stopped metrics collection');
   }
 
   /**
@@ -170,7 +172,7 @@ export class MetricsCollector {
       memoryMetrics = this.memoryManager.getCurrentMemoryUsage();
       memoryAlerts = this.memoryManager.checkForMemoryLeaks();
     } catch (error) {
-      console.warn('[MetricsCollector] Memory system unavailable:', error);
+      logger.warn('[MetricsCollector] Memory system unavailable:', error);
       // Provide fallback memory metrics
       memoryMetrics = {
         heapUsed: 50 * 1024 * 1024, // 50MB fallback
@@ -190,7 +192,7 @@ export class MetricsCollector {
       audioMetrics = this.audioBufferManager.getCurrentMetrics();
       latencyStats = this.latencyOptimizer.getLatencyStatistics();
     } catch (error) {
-      console.warn('[MetricsCollector] Audio system unavailable:', error);
+      logger.warn('[MetricsCollector] Audio system unavailable:', error);
       // Provide fallback audio metrics
       audioMetrics = {
         latency: 25,
@@ -208,7 +210,7 @@ export class MetricsCollector {
     try {
       bundleMetrics = this.bundleOptimizer.getCurrentMetrics();
     } catch (error) {
-      console.warn('[MetricsCollector] Bundle system unavailable:', error);
+      logger.warn('[MetricsCollector] Bundle system unavailable:', error);
       // Provide fallback bundle metrics
       bundleMetrics = {
         totalSize: 2.5 * 1024 * 1024,
@@ -237,7 +239,7 @@ export class MetricsCollector {
         memoryUsage: baseline.memory.heapUsed,
       };
     } catch (error) {
-      console.warn(
+      logger.warn(
         '[MetricsCollector] Failed to collect baseline metrics:',
         error,
       );
@@ -254,7 +256,7 @@ export class MetricsCollector {
         activeAssetsCount = Object.keys(audioAssetsMap).length;
       }
     } catch (error) {
-      console.warn('[MetricsCollector] Failed to count audio assets:', error);
+      logger.warn('[MetricsCollector] Failed to count audio assets:', error);
       activeAssetsCount = 0;
     }
 
@@ -515,9 +517,9 @@ export class MetricsCollector {
     // Log critical alerts
     alerts.forEach((alert) => {
       if (alert.severity === 'critical') {
-        console.error(`[MetricsCollector] ${alert.message}`);
+        logger.error(`[MetricsCollector] ${alert.message}`);
       } else if (alert.severity === 'high') {
-        console.warn(`[MetricsCollector] ${alert.message}`);
+        logger.warn(`[MetricsCollector] ${alert.message}`);
       }
     });
   }
@@ -550,7 +552,7 @@ export class MetricsCollector {
    */
   public updateConfig(newConfig: Partial<MetricsConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    console.debug('[MetricsCollector] Configuration updated:', this.config);
+    logger.debug('[MetricsCollector] Configuration updated:', this.config);
   }
 
   /**
@@ -574,7 +576,7 @@ export class MetricsCollector {
     // Trigger bundle optimizations
     this.bundleOptimizer.optimizeBundleLoading();
 
-    console.debug('[MetricsCollector] Optimization triggers executed');
+    logger.debug('[MetricsCollector] Optimization triggers executed');
   }
 
   /**
@@ -586,7 +588,7 @@ export class MetricsCollector {
     this.alerts.length = 0;
     MetricsCollector.instance = null;
 
-    console.debug('[MetricsCollector] Destroyed');
+    logger.debug('[MetricsCollector] Destroyed');
   }
 }
 

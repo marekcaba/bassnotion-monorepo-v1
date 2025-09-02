@@ -17,6 +17,7 @@ import { AudioSampleManager } from '../storage/AudioSampleManager.js';
 import { getTone } from '../ServiceAdapter.js';
 import { getAudioArchitectureFlags } from '../../config/featureFlags.js';
 import { AudioEngineFactory } from '../AudioEngine.js'; // Story 3.18.3
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 export interface AdminMetronomeSample {
   id: string;
@@ -47,7 +48,7 @@ export class EnhancedMetronomeProcessor extends MetronomeInstrumentProcessor {
     super(config);
     this.audioSampleManager = audioSampleManager;
   }
-  
+
   /**
    * Get Tone instance through dependency injection
    */
@@ -57,11 +58,18 @@ export class EnhancedMetronomeProcessor extends MetronomeInstrumentProcessor {
       try {
         this.Tone = getTone();
         if (flags.ENABLE_MIGRATION_MONITORING) {
-          console.log('[EnhancedMetronomeProcessor] Using Tone from dependency injection');
+          logger.info(
+            '[EnhancedMetronomeProcessor] Using Tone from dependency injection',
+          );
         }
       } catch (error) {
-        console.error('[EnhancedMetronomeProcessor] Failed to get Tone from DI:', error);
-        throw new Error('Tone.js not available. Ensure AudioEngine is initialized.');
+        logger.error(
+          '[EnhancedMetronomeProcessor] Failed to get Tone from DI:',
+          error,
+        );
+        throw new Error(
+          'Tone.js not available. Ensure AudioEngine is initialized.',
+        );
       }
     }
     return this.Tone;
@@ -78,7 +86,7 @@ export class EnhancedMetronomeProcessor extends MetronomeInstrumentProcessor {
       );
 
       if (!indexResult.success || !(indexResult.data instanceof ArrayBuffer)) {
-        console.warn('No admin metronome samples index found, using defaults');
+        logger.warn('No admin metronome samples index found, using defaults');
         return;
       }
 
@@ -93,9 +101,9 @@ export class EnhancedMetronomeProcessor extends MetronomeInstrumentProcessor {
         this.adminSamples.set(sample.id, sample);
       });
 
-      console.log(`Loaded ${this.adminSamples.size} admin metronome samples`);
+      logger.info(`Loaded ${this.adminSamples.size} admin metronome samples`);
     } catch (error) {
-      console.error('Failed to load admin metronome samples:', error);
+      logger.error('Failed to load admin metronome samples:', error);
     }
   }
 
@@ -105,7 +113,7 @@ export class EnhancedMetronomeProcessor extends MetronomeInstrumentProcessor {
   public async setAdminSample(sampleId: string): Promise<void> {
     const sample = this.adminSamples.get(sampleId);
     if (!sample) {
-      console.warn(`Admin sample not found: ${sampleId}`);
+      logger.warn(`Admin sample not found: ${sampleId}`);
       return;
     }
 
@@ -128,12 +136,16 @@ export class EnhancedMetronomeProcessor extends MetronomeInstrumentProcessor {
         // Story 3.18.3: Get AudioContext from AudioEngine instead of creating new one
         const audioEngine = AudioEngineFactory.getInstance();
         if (!audioEngine) {
-          throw new Error('[EnhancedMetronomeProcessor] AudioEngine not initialized');
+          throw new Error(
+            '[EnhancedMetronomeProcessor] AudioEngine not initialized',
+          );
         }
 
         const audioContext = audioEngine.getContext();
         if (!audioContext) {
-          throw new Error('[EnhancedMetronomeProcessor] AudioContext not available from AudioEngine');
+          throw new Error(
+            '[EnhancedMetronomeProcessor] AudioContext not available from AudioEngine',
+          );
         }
 
         const audioBuffer = await audioContext.decodeAudioData(
@@ -147,7 +159,7 @@ export class EnhancedMetronomeProcessor extends MetronomeInstrumentProcessor {
             C4: audioBuffer,
           },
           onload: () => {
-            console.log(`Admin metronome sample loaded: ${sample.name}`);
+            logger.info(`Admin metronome sample loaded: ${sample.name}`);
           },
         }).toDestination();
 
@@ -180,9 +192,9 @@ export class EnhancedMetronomeProcessor extends MetronomeInstrumentProcessor {
       config.clickSounds.regular.type = ClickSoundType.CUSTOM_SAMPLE;
       config.clickSounds.subdivision.type = ClickSoundType.CUSTOM_SAMPLE;
 
-      console.log(`Switched to admin metronome sample: ${sample.name}`);
+      logger.info(`Switched to admin metronome sample: ${sample.name}`);
     } catch (error) {
-      console.error(`Failed to set admin sample ${sampleId}:`, error);
+      logger.error(`Failed to set admin sample ${sampleId}:`, error);
     }
   }
 
@@ -207,7 +219,7 @@ export class EnhancedMetronomeProcessor extends MetronomeInstrumentProcessor {
   public async previewAdminSample(sampleId: string): Promise<void> {
     const sample = this.adminSamples.get(sampleId);
     if (!sample) {
-      console.warn(`Admin sample not found for preview: ${sampleId}`);
+      logger.warn(`Admin sample not found for preview: ${sampleId}`);
       return;
     }
 
@@ -223,7 +235,7 @@ export class EnhancedMetronomeProcessor extends MetronomeInstrumentProcessor {
         sampler.triggerAttackRelease('C4', '8n', undefined, 0.8);
       }
     } catch (error) {
-      console.error(`Failed to preview admin sample ${sampleId}:`, error);
+      logger.error(`Failed to preview admin sample ${sampleId}:`, error);
     }
   }
 
@@ -302,7 +314,7 @@ export class EnhancedMetronomeProcessor extends MetronomeInstrumentProcessor {
       try {
         sampler.dispose();
       } catch (error) {
-        console.warn('Failed to dispose admin sampler:', error);
+        logger.warn('Failed to dispose admin sampler:', error);
       }
     });
     this.adminSamplers.clear();
@@ -317,6 +329,8 @@ export class EnhancedMetronomeProcessor extends MetronomeInstrumentProcessor {
 /**
  * Factory function to create enhanced metronome processor
  */
+const logger = createStructuredLogger('EnhancedMetronomeProcessor');
+
 export async function createEnhancedMetronome(
   audioSampleManager: AudioSampleManager,
   config?: any,

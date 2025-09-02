@@ -21,6 +21,7 @@ import {
 
 import { SupabaseAssetClient } from './SupabaseAssetClient';
 import { AudioCompressionEngine } from '../AudioCompressionEngine';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 // Streaming-specific interfaces
 export interface StreamingSession {
@@ -813,7 +814,7 @@ export class AdaptiveAudioStreamer {
         compressionSavings: 0,
       };
     } catch (error) {
-      console.warn('Format optimization failed, using original:', error);
+      logger.warn('Format optimization failed, using original:', error);
       return {
         data,
         format: session.metadata.format,
@@ -860,7 +861,7 @@ export class AdaptiveAudioStreamer {
       // Calculate connection stability (simplified)
       this.updateConnectionStability();
     } catch (error) {
-      console.warn('Network condition detection failed:', error);
+      logger.warn('Network condition detection failed:', error);
     }
   }
 

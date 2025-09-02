@@ -11,6 +11,7 @@ import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { Button } from '@/shared/components/ui/button';
 import { useToast } from '@/shared/hooks/use-toast';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 function RegisterPageContent() {
   const [isLoading, setIsLoading] = useState(false);
@@ -42,9 +43,9 @@ function RegisterPageContent() {
     try {
       if (useBackendAuth) {
         // Use backend API for E2E testing
-        console.log('[Register Debug] Using backend registration');
+        logger.info('[Register Debug] Using backend registration');
         const result = await authService.signUpWithBackend(data);
-        console.log('[Register Debug] Backend result:', result);
+        logger.info('[Register Debug] Backend result:', result);
 
         if (result.success) {
           // Redirect to dashboard for testing - no need for success toast
@@ -79,7 +80,7 @@ function RegisterPageContent() {
         }
       }
     } catch (error) {
-      console.error('Registration error:', error);
+      logger.error('Registration error:', error);
 
       let errorMessage = 'Failed to create account. Please try again.';
 

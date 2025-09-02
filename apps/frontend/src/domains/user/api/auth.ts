@@ -1,7 +1,9 @@
 import { supabase } from '@/infrastructure/supabase/client';
-import { RegistrationData, LoginData } from '@bassnotion/contracts';
+import { RegistrationData, LoginData, createStructuredLogger } from '@bassnotion/contracts';
 import type { User, Session } from '@supabase/supabase-js';
 import { AuthError } from '@supabase/supabase-js';
+
+const logger = createStructuredLogger('AuthService');
 
 export interface AuthSuccessResponse {
   user: User;
@@ -91,10 +93,9 @@ export class AuthService {
     data: RegistrationData,
   ): Promise<BackendAuthResponse> {
     try {
-      console.log(
-        '[Auth Debug] Calling backend signup API:',
-        `${this.backendUrl}/auth/signup`,
-      );
+      logger.debug('Calling backend signup API', {
+        url: `${this.backendUrl}/auth/signup`,
+      });
 
       const response = await fetch(`${this.backendUrl}/auth/signup`, {
         method: 'POST',
@@ -105,12 +106,12 @@ export class AuthService {
       });
 
       const result = await response.json();
-      console.log('[Auth Debug] Backend signup response:', {
+      logger.debug('Backend signup response', {
         status: response.status,
         ok: response.ok,
         result,
       });
-      console.log('[Auth Debug] Signup result details:', {
+      logger.debug('Signup result details', {
         success: result.success,
         message: result.message,
         user: result.user,
@@ -129,25 +130,23 @@ export class AuthService {
           errorMessage = result.message;
         }
 
-        console.log(
-          '[Auth Debug] Backend signup raw error message:',
+        logger.debug('Backend signup raw error message', {
           errorMessage,
-        );
+        });
 
         // Convert raw error to user-friendly message using the same function as Supabase auth
         const mockAuthError = new AuthError(errorMessage, response.status);
         const userFriendlyMessage = getAuthErrorMessage(mockAuthError);
 
-        console.log(
-          '[Auth Debug] Backend signup user-friendly error message:',
+        logger.debug('Backend signup user-friendly error message', {
           userFriendlyMessage,
-        );
+        });
         throw new Error(userFriendlyMessage);
       }
 
       return result;
     } catch (error) {
-      console.error('[Auth Debug] Backend registration error:', error);
+      logger.error('Backend registration error', error as Error);
 
       // If it's a network error or other issue, provide a more specific message
       if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -165,10 +164,9 @@ export class AuthService {
    */
   async signInWithBackend(data: LoginData): Promise<BackendAuthResponse> {
     try {
-      console.log(
-        '[Auth Debug] Calling backend signin API:',
-        `${this.backendUrl}/auth/signin`,
-      );
+      logger.debug('Calling backend signin API', {
+        url: `${this.backendUrl}/auth/signin`,
+      });
 
       const response = await fetch(`${this.backendUrl}/auth/signin`, {
         method: 'POST',
@@ -179,12 +177,12 @@ export class AuthService {
       });
 
       const result = await response.json();
-      console.log('[Auth Debug] Backend response:', {
+      logger.debug('Backend response:', {
         status: response.status,
         ok: response.ok,
         result,
       });
-      console.log('[Auth Debug] Result details:', {
+      logger.debug('Result details:', {
         success: result.success,
         message: result.message,
         user: result.user,
@@ -204,22 +202,21 @@ export class AuthService {
           errorMessage = result.message;
         }
 
-        console.log('[Auth Debug] Backend raw error message:', errorMessage);
+        logger.debug('Backend raw error message', { errorMessage });
 
         // Convert raw error to user-friendly message using the same function as Supabase auth
         const mockAuthError = new AuthError(errorMessage, response.status);
         const userFriendlyMessage = getAuthErrorMessage(mockAuthError);
 
-        console.log(
-          '[Auth Debug] Backend user-friendly error message:',
+        logger.debug('Backend user-friendly error message', {
           userFriendlyMessage,
-        );
+        });
         throw new Error(userFriendlyMessage);
       }
 
       return result;
     } catch (error) {
-      console.error('[Auth Debug] Backend login error:', error);
+      logger.error('Backend login error:', error as Error);
 
       // If it's a network error or other issue, provide a more specific message
       if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -276,7 +273,7 @@ export class AuthService {
   async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut();
     if (error) {
-      console.error('Sign out error:', error);
+      logger.error('Sign out error:', error as Error);
       throw error;
     }
   }
@@ -327,7 +324,7 @@ export class AuthService {
     try {
       const redirectUrl = `${window.location.origin}/auth/callback`;
 
-      console.debug('[Auth Debug] Initiating Google sign-in...', {
+      logger.debug('Initiating Google sign-in...', {
         redirectUrl,
         currentUrl: window.location.href,
         origin: window.location.origin,
@@ -346,7 +343,7 @@ export class AuthService {
       });
 
       if (error) {
-        console.error('[Auth Debug] Google sign-in error:', {
+        logger.error('Google sign-in error:', new Error('See details'), {
           code: error.status,
           message: error.message,
           name: error.name,
@@ -355,7 +352,7 @@ export class AuthService {
         throw error;
       }
 
-      console.debug('[Auth Debug] Google sign-in response:', {
+      logger.debug('Google sign-in response', {
         // TODO: Review non-null assertion - consider null safety
         hasProvider: !!data.provider,
         // TODO: Review non-null assertion - consider null safety
@@ -366,7 +363,7 @@ export class AuthService {
 
       return data;
     } catch (error: any) {
-      console.error('[Auth Debug] Unexpected error during Google sign-in:', {
+      logger.error('Unexpected error during Google sign-in:', new Error('See details'), {
         message: error?.message,
         name: error?.name,
         stack: error?.stack,
@@ -396,7 +393,7 @@ export class AuthService {
       // TODO: Review non-null assertion - consider null safety
       return { exists: !!data, error: null };
     } catch (error) {
-      console.error('[Auth Debug] Check user exists error:', error);
+      logger.error('Check user exists error:', error as Error);
       return { exists: false, error };
     }
   }
@@ -434,7 +431,7 @@ export class AuthService {
 
       return data;
     } catch (error) {
-      console.error('[Auth Debug] Password update error:', error);
+      logger.error('Password update error:', error as Error);
       throw error;
     }
   }

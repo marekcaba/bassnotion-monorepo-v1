@@ -10,12 +10,14 @@ import { IdleWarningDialog } from './IdleWarningDialog';
 import { useToast } from '@/shared/hooks/use-toast';
 import { supabase } from '@/infrastructure/supabase/client';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface AuthProviderProps {
   children: React.ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
+  const { correlationId, logger } = useCorrelation('AuthProvider');
   const {
     setUser,
     setSession,
@@ -54,7 +56,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       resetIdleTimer();
     } catch (error) {
-      console.error('Failed to refresh session:', error);
+      logger.error('Failed to refresh session:', error);
       handleIdleLogout();
     }
   };
@@ -90,7 +92,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // For E2E testing, use immediate fallback to prevent crashes
       if (isE2ETesting) {
-        console.log('E2E testing detected: Using immediate fallback');
+        logger.info('E2E testing detected: Using immediate fallback');
         // Add small delay to prevent race conditions
         await new Promise((resolve) => setTimeout(resolve, 100));
         setLoading(false);
@@ -133,7 +135,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           reset();
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        logger.error('Error initializing auth:', error);
 
         // Clear timeout on error
         if (initTimeoutId) {
@@ -153,7 +155,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             errorMessage.includes('fetch')
           ) {
             // Don't show error toast for timeouts - just continue with app
-            console.log('Auth timeout detected - continuing without session');
+            logger.info('Auth timeout detected - continuing without session');
           }
         }
       } finally {
@@ -180,12 +182,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
             // TODO: Review non-null assertion - consider null safety
             if (!mounted) return;
 
-            if (process.env.NODE_ENV === 'development') {
-              console.debug('[Auth] State change:', {
-                event,
-                user: session?.user?.email,
-              });
-            }
+            logger.debug('Auth state change:', {
+              event,
+              user: session?.user?.email,
+            });
 
             if (event === 'INITIAL_SESSION') {
               return; // Skip initial session as it's handled by initializeAuth
@@ -200,17 +200,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 setShowIdleWarning(false);
               }
             } catch (error) {
-              console.error('Error in auth state change handler:', error);
+              logger.error('Error in auth state change handler', error as Error, { correlationId });
             }
           },
         );
 
         subscription = authSubscription;
       } catch (error) {
-        console.error('Error setting up auth state listener:', error);
+        logger.error('Error setting up auth state listener', error as Error, { correlationId });
       }
     } else {
-      console.warn('E2E testing detected: Skipping auth state listener setup');
+      logger.warn('E2E testing detected: Skipping auth state listener setup', { correlationId });
     }
 
     return () => {
@@ -222,7 +222,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
           subscription.unsubscribe();
         } catch (error) {
-          console.error('Error unsubscribing from auth changes:', error);
+          logger.error('Error unsubscribing from auth changes', error as Error, { correlationId });
         }
       }
     };

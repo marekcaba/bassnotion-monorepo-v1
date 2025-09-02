@@ -9,9 +9,18 @@
     "**/vitest.config.ts",
     "**/vitest.config.e2e.ts",
     "scripts/migrate-exercises-to-musical-timing.ts",
-    "src/test/setup.ts"
+    "src/test/setup.ts",
+    "**/.next/*",
+    "**/build/*",
+    "logs/*",
+    "temp/*",
+    "temp-downloads/*",
+    "test-results/*",
+    "apps/frontend/src/app/library/[tutorialId]/v*/*",
+    "apps/frontend/src/app/test-*/*",
+    "docs/CLAUDE CODE TRASH BIN/*"
   ],
-  "plugins": ["@nx", "@typescript-eslint", "prettier"],
+  "plugins": ["@nx", "@typescript-eslint", "prettier", "react-hooks"],
   "overrides": [
     {
       "files": [
@@ -87,25 +96,49 @@
         "prettier"
       ],
       "parserOptions": {
-        "project": [
-          "./tsconfig.json",
-          "./apps/*/tsconfig.json",
-          "./libs/*/tsconfig.json"
-        ]
+        "ecmaVersion": 2022,
+        "sourceType": "module"
       },
       "rules": {
         "prettier/prettier": "error",
         "@typescript-eslint/interface-name-prefix": "off",
         "@typescript-eslint/explicit-function-return-type": "off",
         "@typescript-eslint/explicit-module-boundary-types": "off",
-        "@typescript-eslint/no-explicit-any": "off"
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unused-vars": [
+          "error",
+          {
+            "argsIgnorePattern": "^_",
+            "varsIgnorePattern": "^_"
+          }
+        ],
+        "react-hooks/rules-of-hooks": "error",
+        "react-hooks/exhaustive-deps": ["warn", {
+          "additionalHooks": "(useCallback|useMemo|useEffect|useLayoutEffect)"
+        }],
+        "no-console": "error",
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.object.name='console'][callee.property.name=/^(log|error|warn|debug|info)$/]",
+            "message": "Use structured logging instead of console methods. For React components, use: const { logger } = useCorrelation('ComponentName'); For services, use: const logger = createStructuredLogger('ServiceName');"
+          }
+        ]
       }
     },
     {
       "files": ["*.js", "*.jsx"],
       "extends": ["eslint:recommended", "plugin:@nx/javascript", "prettier"],
       "rules": {
-        "prettier/prettier": "error"
+        "prettier/prettier": "error",
+        "no-console": "error",
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.object.name='console'][callee.property.name=/^(log|error|warn|debug|info)$/]",
+            "message": "Use structured logging instead of console methods. Use: const logger = createStructuredLogger('ServiceName');"
+          }
+        ]
       }
     },
     {

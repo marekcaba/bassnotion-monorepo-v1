@@ -114,7 +114,7 @@ export class AudioMixer {
     // Start audio analysis
     this.startAudioAnalysis();
 
-    console.log('🎛️ AudioMixer initialized');
+    logger.info('🎛️ AudioMixer initialized');
   }
 
   /**
@@ -150,7 +150,7 @@ export class AudioMixer {
     };
 
     this.sources.set(id, source);
-    console.log(`🎵 Audio source added: ${id} (${type})`);
+    logger.info(`🎵 Audio source added: ${id} (${type})`);
 
     return source;
   }
@@ -177,7 +177,7 @@ export class AudioMixer {
     this.sources.delete(id);
     this.duckingState.delete(id);
 
-    console.log(`🎵 Audio source removed: ${id}`);
+    logger.info(`🎵 Audio source removed: ${id}`);
   }
 
   /**
@@ -203,7 +203,7 @@ export class AudioMixer {
       this.onVolumeChange(id, volume);
     }
 
-    console.log(`🔊 Source volume changed: ${id} = ${volume.toFixed(2)}`);
+    logger.info(`🔊 Source volume changed: ${id} = ${volume.toFixed(2)}`);
   }
 
   /**
@@ -217,7 +217,7 @@ export class AudioMixer {
     this.masterGainNode.gain.cancelScheduledValues(currentTime);
     this.masterGainNode.gain.setTargetAtTime(volume, currentTime, 0.05);
 
-    console.log(`🔊 Master volume changed: ${volume.toFixed(2)}`);
+    logger.info(`🔊 Master volume changed: ${volume.toFixed(2)}`);
   }
 
   /**
@@ -235,7 +235,7 @@ export class AudioMixer {
     source.gainNode.gain.cancelScheduledValues(currentTime);
     source.gainNode.gain.setTargetAtTime(targetVolume, currentTime, 0.05);
 
-    console.log(`🔇 Source ${muted ? 'muted' : 'unmuted'}: ${id}`);
+    logger.info(`🔇 Source ${muted ? 'muted' : 'unmuted'}: ${id}`);
   }
 
   /**
@@ -255,7 +255,7 @@ export class AudioMixer {
       this.restoreOtherSources(id);
     }
 
-    console.log(
+    logger.info(
       `🦆 Ducking ${config.enabled ? 'enabled' : 'disabled'} for: ${id}`,
     );
   }
@@ -345,7 +345,7 @@ export class AudioMixer {
     const toSource = this.sources.get(config.toSource);
 
     if (!fromSource || !toSource) {
-      console.warn('❌ Cross-fade failed: source not found');
+      logger.warn('❌ Cross-fade failed: source not found');
       return;
     }
 
@@ -395,7 +395,7 @@ export class AudioMixer {
         break;
     }
 
-    console.log(
+    logger.info(
       `🔄 Cross-fade: ${config.fromSource} → ${config.toSource} (${config.duration}ms)`,
     );
   }
@@ -543,6 +543,6 @@ export class AudioMixer {
     this.onClipping = undefined;
     this.onDucking = undefined;
 
-    console.log('🗑️ AudioMixer disposed');
+    logger.info('🗑️ AudioMixer disposed');
   }
 }

@@ -16,8 +16,10 @@ import React, {
   useState,
   useMemo,
   useCallback,
+  useRef,
 } from 'react';
 import { widgetSyncService } from '../../services/WidgetSyncService';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import type {
   SyncState,
   SyncPerformanceMetrics,
@@ -80,6 +82,9 @@ const SyncContext = createContext<SyncContextValue | null>(null);
 // SYNC PROVIDER COMPONENT
 // ============================================================================
 
+// Render counter for debugging
+let syncProviderRenderCount = 0;
+
 export const SyncProvider: React.FC<SyncProviderProps> = ({
   children,
   enableGlobalMonitoring = true,
@@ -88,9 +93,34 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
   onPerformanceWarning,
   debugMode = false,
 }) => {
+  syncProviderRenderCount++;
+  // Only log every 10th render to reduce noise
+  if (syncProviderRenderCount % 10 === 0 || debugMode) {
+    logger.info(`🔄 SyncProvider RENDER #${syncProviderRenderCount}`, {
+      enableGlobalMonitoring,
+      monitoringInterval,
+      debugMode,
+      timestamp: Date.now(),
+    });
+  }
   // State management
-  const [syncState, setSyncState] = useState<SyncState>(() =>
+  const [syncState, setSyncStateRaw] = useState<SyncState>(() =>
     widgetSyncService.getSyncState(),
+  );
+
+  // Wrap setSyncState to log updates
+  const setSyncState = useCallback(
+    (newState: SyncState | ((prev: SyncState) => SyncState)) => {
+      if (syncProviderRenderCount % 10 === 0 || debugMode) {
+        logger.info(`🔄 [SyncProvider] setSyncState called`, {
+          renderCount: syncProviderRenderCount,
+          timestamp: new Date().toISOString(),
+          stack: new Error().stack?.split('\n').slice(2, 5).join(' <- '),
+        });
+      }
+      setSyncStateRaw(newState);
+    },
+    [debugMode],
   );
 
   const [performanceMetrics, setPerformanceMetrics] =
@@ -101,7 +131,11 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
   const [isConnected, setIsConnected] = useState(true);
 
   // Derive lastUpdateTime from performanceMetrics to avoid separate state updates
-  const lastUpdateTime = performanceMetrics.lastUpdateTime;
+  // CRITICAL FIX: Use a stable value that only updates when connection status might change
+  const lastUpdateTime = useMemo(() => {
+    // Round to nearest second to prevent constant updates
+    return Math.floor(performanceMetrics.lastUpdateTime / 1000) * 1000;
+  }, [Math.floor(performanceMetrics.lastUpdateTime / 1000)]);
 
   // Memoized actions to prevent re-renders
   const refreshState = useCallback(() => {
@@ -114,7 +148,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
       setIsConnected(true);
 
       if (debugMode) {
-        console.log('[SyncProvider] State refreshed', {
+        logger.info('[SyncProvider] State refreshed', {
           currentState,
           currentMetrics,
         });
@@ -128,7 +162,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
             : new Error('Failed to refresh sync state'),
         );
       }
-      console.error('[SyncProvider] Failed to refresh state:', error);
+      logger.error('[SyncProvider] Failed to refresh state:', error);
     }
   }, [debugMode, onGlobalError]);
 
@@ -138,7 +172,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
       setPerformanceMetrics(widgetSyncService.getPerformanceMetrics());
 
       if (debugMode) {
-        console.log('[SyncProvider] Metrics reset');
+        logger.info('[SyncProvider] Metrics reset');
       }
     } catch (error) {
       if (onGlobalError) {
@@ -146,7 +180,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
           error instanceof Error ? error : new Error('Failed to reset metrics'),
         );
       }
-      console.error('[SyncProvider] Failed to reset metrics:', error);
+      logger.error('[SyncProvider] Failed to reset metrics:', error);
     }
   }, [debugMode, onGlobalError]);
 
@@ -154,7 +188,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
   useEffect(() => {
     const handleStateChange = (event: any) => {
       if (debugMode) {
-        console.log('[SyncProvider] Received state change event:', event);
+        logger.info('[SyncProvider] Received state change event:', event);
       }
 
       // Skip refreshing state for certain event types that don't change global state
@@ -165,10 +199,36 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
         'PERFORMANCE_UPDATE',
         'AUDIO_SOURCE_REGISTERED',
         'AUDIO_SOURCE_UNREGISTERED',
+        'POSITION', // CRITICAL FIX: Skip 50ms position updates to prevent 20 re-renders per second
+        'HEARTBEAT', // CRITICAL FIX: Skip heartbeat events (1 second interval from TransportSyncManager)
+        'heartbeat', // Also skip lowercase variant
+        'TIMELINE_UPDATE', // CRITICAL FIX: Skip timeline updates
+        'MUSICAL_TIME_UPDATE', // CRITICAL FIX: Skip musical time updates
+        'SEEK', // Skip seek events that don't change state
+        'MUTE_CHANGE', // Skip mute changes
+        'SOLO_CHANGE', // Skip solo changes
+        'TIME_SIGNATURE_CHANGE', // Skip time signature changes
+        'WIDGET_RECONNECT', // Skip widget reconnect events
+        'SYNC_RESTART', // Skip sync restart events
+        'PERFORMANCE_TEST', // Skip performance test events
+        'track-regions-updated', // CRITICAL FIX: Skip track regions updates that might come from metronome
       ];
+
+      // Add debug logging to track ALL events
+      if (debugMode || event.type !== 'POSITION') {
+        // Always log non-POSITION events
+        logger.info(`🔍 [SyncProvider] Received event: ${event.type}`, {
+          type: event.type,
+          timestamp: Date.now(),
+          shouldSkip: skipEvents.includes(event.type),
+          source: event.source,
+          payload: event.payload,
+        });
+      }
+
       if (skipEvents.includes(event.type)) {
         if (debugMode) {
-          console.log(
+          logger.info(
             `[SyncProvider] Skipping state refresh for ${event.type} event`,
           );
         }
@@ -209,7 +269,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
         });
 
         if (debugMode) {
-          console.log('[SyncProvider] Emitted global event', {
+          logger.info('[SyncProvider] Emitted global event', {
             eventType,
             payload,
           });
@@ -222,7 +282,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
               : new Error('Failed to emit global event'),
           );
         }
-        console.error('[SyncProvider] Failed to emit global event:', error);
+        logger.error('[SyncProvider] Failed to emit global event:', error);
       }
     },
     [debugMode, onGlobalError],
@@ -277,7 +337,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
           // Only update if there's a significant change to avoid constant flipping
           if (prevConnected !== shouldBeConnected) {
             if (debugMode) {
-              console.log(
+              logger.info(
                 `[SyncProvider] Connection status changing from ${prevConnected} to ${shouldBeConnected} (${timeSinceLastUpdate}ms since last update)`,
               );
             }
@@ -288,7 +348,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
       } catch (error) {
         setIsConnected(false);
         if (debugMode) {
-          console.error('[SyncProvider] Performance monitoring error:', error);
+          logger.error('[SyncProvider] Performance monitoring error:', error);
         }
       }
     };
@@ -298,7 +358,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
     const interval = setInterval(monitorPerformance, actualInterval);
 
     if (debugMode) {
-      console.log(
+      logger.info(
         `[SyncProvider] Starting performance monitoring with ${actualInterval}ms interval`,
       );
     }
@@ -306,7 +366,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
     return () => {
       clearInterval(interval);
       if (debugMode) {
-        console.log('[SyncProvider] Stopped performance monitoring');
+        logger.info('[SyncProvider] Stopped performance monitoring');
       }
     };
   }, [
@@ -318,15 +378,67 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
 
   // Listen for sync state changes
   useEffect(() => {
-    const handleSyncEvent = () => {
+    const handleSyncEvent = (event?: any) => {
+      // CRITICAL FIX: Filter out events that shouldn't trigger state updates
+      const skipEvents = [
+        'CUSTOM_BASSLINE',
+        'WIDGET_HEARTBEAT',
+        'PERFORMANCE_UPDATE',
+        'AUDIO_SOURCE_REGISTERED',
+        'AUDIO_SOURCE_UNREGISTERED',
+        'POSITION',
+        'HEARTBEAT', // Skip uppercase heartbeat from TransportSyncManager (1s interval)
+        'heartbeat', // Also skip lowercase variant
+        'TIMELINE_UPDATE',
+        'MUSICAL_TIME_UPDATE',
+        'SEEK',
+        'MUTE_CHANGE',
+        'SOLO_CHANGE',
+        'TIME_SIGNATURE_CHANGE',
+        'WIDGET_RECONNECT',
+        'SYNC_RESTART',
+        'PERFORMANCE_TEST',
+        'track-regions-updated', // CRITICAL FIX: Skip track regions updates
+      ];
+
+      // Log the event for debugging
+      if (event && event.type) {
+        if (debugMode || event.type !== 'POSITION') {
+          // Always log non-POSITION events unless in debug mode
+          logger.info(
+            `🔍 [SyncProvider subscribeToAll] Received event: ${event.type}`,
+            {
+              type: event.type,
+              timestamp: Date.now(),
+              shouldSkip: skipEvents.includes(event.type),
+            },
+          );
+        }
+
+        if (skipEvents.includes(event.type)) {
+          return; // Skip processing this event
+        }
+      }
+
       try {
+        // Log what event is causing us to get new state
+        if (!skipEvents.includes(event?.type || '')) {
+          logger.info(
+            `🔄 [SyncProvider] Getting new sync state due to event: ${event?.type}`,
+            {
+              timestamp: new Date().toISOString(),
+              eventPayload: event?.payload,
+            },
+          );
+        }
+
         const newState = widgetSyncService.getSyncState();
         setSyncState(newState);
         setIsConnected(true); // Mark as connected when we receive events
       } catch (error) {
         setIsConnected(false);
         if (debugMode) {
-          console.error('[SyncProvider] Sync event handling error:', error);
+          logger.error('[SyncProvider] Sync event handling error:', error);
         }
       }
     };
@@ -338,43 +450,117 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
     refreshState();
 
     if (debugMode) {
-      console.log('[SyncProvider] Initialized and subscribed to sync events');
+      logger.info('[SyncProvider] Initialized and subscribed to sync events');
     }
 
     return () => {
       widgetSyncService.unsubscribe('*', handleSyncEvent);
       if (debugMode) {
-        console.log('[SyncProvider] Unsubscribed from sync events');
+        logger.info('[SyncProvider] Unsubscribed from sync events');
       }
     };
-  }, [debugMode]);
+  }, [debugMode, refreshState]);
+
+  // CRITICAL FIX: Create stable performance metrics that don't change on every update
+  const stablePerformanceMetrics = useMemo(() => {
+    // Only include metrics that actually matter for UI, exclude lastUpdateTime
+    return {
+      totalEvents: performanceMetrics.totalEvents,
+      throttledEvents: performanceMetrics.throttledEvents,
+      batchedEvents: performanceMetrics.batchedEvents,
+      averageLatency: performanceMetrics.averageLatency,
+      maxLatency: performanceMetrics.maxLatency,
+      eventQueue: performanceMetrics.eventQueue,
+      droppedEvents: performanceMetrics.droppedEvents,
+      subscriberCount: performanceMetrics.subscriberCount,
+      // CRITICAL: Don't include lastUpdateTime - it changes constantly
+      lastUpdateTime: 0, // Set to 0 to prevent re-renders
+    };
+  }, [
+    performanceMetrics.totalEvents,
+    performanceMetrics.throttledEvents,
+    performanceMetrics.batchedEvents,
+    performanceMetrics.averageLatency,
+    performanceMetrics.maxLatency,
+    performanceMetrics.eventQueue,
+    performanceMetrics.droppedEvents,
+    performanceMetrics.subscriberCount,
+    // Don't include lastUpdateTime in dependencies
+  ]);
+
+  // Track what's changing to cause context recreations
+  const prevDepsRef = useRef<any>({});
 
   // Stable context value with better memoization
   const contextValue: SyncContextValue = useMemo(() => {
-    // Only log context recreation in debug mode and when actually changing
-    if (debugMode) {
-      console.log(`🔄 SyncProvider CONTEXT VALUE RECREATED:`, {
-        isConnected,
-        lastUpdateTime,
-        syncStateKeys: Object.keys(syncState),
-        timestamp: new Date().toISOString(),
-      });
+    // Track dependency changes
+    const depChanges: string[] = [];
+    if (prevDepsRef.current.syncState !== syncState) {
+      depChanges.push('syncState');
+      // Log what's changing in syncState
+      if (syncProviderRenderCount % 10 === 0) {
+        logger.info(`🔍 [SyncProvider] syncState reference changed:`, {
+          renderCount: syncProviderRenderCount,
+          timestamp: new Date().toISOString(),
+          syncStateObject: syncState,
+          prevSyncStateObject: prevDepsRef.current.syncState,
+          sameReference: prevDepsRef.current.syncState === syncState,
+        });
+      }
     }
+    if (
+      prevDepsRef.current.stablePerformanceMetrics !== stablePerformanceMetrics
+    )
+      depChanges.push('stablePerformanceMetrics');
+    if (prevDepsRef.current.isConnected !== isConnected)
+      depChanges.push('isConnected');
+    if (prevDepsRef.current.lastUpdateTime !== lastUpdateTime)
+      depChanges.push('lastUpdateTime');
+    if (prevDepsRef.current.refreshState !== refreshState)
+      depChanges.push('refreshState');
+    if (prevDepsRef.current.resetMetrics !== resetMetrics)
+      depChanges.push('resetMetrics');
+    if (prevDepsRef.current.emitGlobalEvent !== emitGlobalEvent)
+      depChanges.push('emitGlobalEvent');
 
-    return {
+    prevDepsRef.current = {
       syncState,
-      performanceMetrics,
+      stablePerformanceMetrics,
       isConnected,
       lastUpdateTime,
       refreshState,
       resetMetrics,
       emitGlobalEvent,
     };
+
+    // Only log context recreation in debug mode and when actually changing
+    if (syncProviderRenderCount % 10 === 0 && depChanges.length > 0) {
+      logger.info(
+        `🔄 SyncProvider CONTEXT VALUE RECREATED #${syncProviderRenderCount}:`,
+        {
+          depChanges,
+          isConnected,
+          lastUpdateTime: performanceMetrics.lastUpdateTime,
+          syncStateKeys: Object.keys(syncState),
+          timestamp: new Date().toISOString(),
+        },
+      );
+    }
+
+    return {
+      syncState,
+      performanceMetrics: stablePerformanceMetrics, // Use stable metrics
+      isConnected,
+      lastUpdateTime, // Use the derived lastUpdateTime (line 114)
+      refreshState,
+      resetMetrics,
+      emitGlobalEvent,
+    };
   }, [
     syncState,
-    // performanceMetrics removed - performance data changes shouldn't trigger context recreation
+    stablePerformanceMetrics, // Use stable metrics in dependencies
     isConnected,
-    // lastUpdateTime removed from dependencies to prevent constant context recreation
+    lastUpdateTime, // Add back as dependency since it's derived from performanceMetrics
     refreshState,
     resetMetrics,
     emitGlobalEvent,
@@ -409,11 +595,26 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({
 // CONTEXT HOOK
 // ============================================================================
 
+// Track useSyncContext calls
+let useSyncContextCallCount = 0;
+
 export const useSyncContext = (): SyncContextValue => {
+  useSyncContextCallCount++;
   const context = useContext(SyncContext);
 
   if (!context) {
     throw new Error('useSyncContext must be used within a SyncProvider');
+  }
+
+  // Only log every 10th call to reduce noise
+  if (useSyncContextCallCount % 10 === 0) {
+    logger.info(`🔄 useSyncContext call #${useSyncContextCallCount}:`, {
+      exerciseId: context.syncState?.exercise?.selectedExercise?.id,
+      isPlaying: context.syncState?.playback?.isPlaying,
+      tempo: context.syncState?.playback?.tempo,
+      isConnected: context.isConnected,
+      contextObjectIdentity: context,
+    });
   }
 
   return context;

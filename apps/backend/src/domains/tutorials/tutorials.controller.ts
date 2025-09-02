@@ -3,8 +3,7 @@ import { TutorialsService } from './tutorials.service.js';
 import type {
   TutorialsResponse,
   TutorialResponse,
-  TutorialExercisesResponse,
-} from '@bassnotion/contracts';
+  TutorialExercisesResponse } from '@bassnotion/contracts';
 
 @Controller('tutorials')
 export class TutorialsController {

@@ -1,7 +1,7 @@
 /**
  * TransportCommands - Transport-specific Command Implementations
  * Story 3.18.4: Service Architecture Implementation
- * 
+ *
  * All transport-related commands following the Command pattern.
  * Enables undo/redo for transport operations.
  */
@@ -31,7 +31,7 @@ abstract class TransportCommand<T = any> extends Command<T> {
     name: string,
     transportController: UnifiedTransport,
     eventBus: EventBus,
-    context?: Record<string, any>
+    context?: Record<string, any>,
   ) {
     super(name, context);
     this.transportController = transportController;
@@ -58,7 +58,7 @@ abstract class TransportCommand<T = any> extends Command<T> {
   protected async restoreState(state: TransportState): Promise<void> {
     await this.transportController.setPosition(state.position);
     await this.transportController.setBPM(state.bpm);
-    
+
     if (state.loopEnabled) {
       await this.transportController.setLoop(state.loopStart, state.loopEnd);
     } else {
@@ -92,7 +92,7 @@ export class StartCommand extends TransportCommand<void> {
 
     try {
       this.previousState = this.captureState();
-      
+
       if (!this.previousState.isPlaying) {
         await this.transportController.start();
         this.eventBus.emit('command:executed', {
@@ -110,7 +110,10 @@ export class StartCommand extends TransportCommand<void> {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error : new Error('Failed to start transport'),
+        error:
+          error instanceof Error
+            ? error
+            : new Error('Failed to start transport'),
         timestamp: Date.now(),
       };
     }
@@ -143,7 +146,8 @@ export class StartCommand extends TransportCommand<void> {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error : new Error('Failed to undo start'),
+        error:
+          error instanceof Error ? error : new Error('Failed to undo start'),
         timestamp: Date.now(),
       };
     }
@@ -173,7 +177,7 @@ export class StopCommand extends TransportCommand<void> {
 
     try {
       this.previousState = this.captureState();
-      
+
       if (this.previousState.isPlaying) {
         await this.transportController.stop();
         this.eventBus.emit('command:executed', {
@@ -191,7 +195,10 @@ export class StopCommand extends TransportCommand<void> {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error : new Error('Failed to stop transport'),
+        error:
+          error instanceof Error
+            ? error
+            : new Error('Failed to stop transport'),
         timestamp: Date.now(),
       };
     }
@@ -224,7 +231,8 @@ export class StopCommand extends TransportCommand<void> {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error : new Error('Failed to undo stop'),
+        error:
+          error instanceof Error ? error : new Error('Failed to undo stop'),
         timestamp: Date.now(),
       };
     }
@@ -254,7 +262,7 @@ export class PauseCommand extends TransportCommand<void> {
 
     try {
       this.previousState = this.captureState();
-      
+
       if (this.previousState.isPlaying) {
         await this.transportController.pause();
         this.eventBus.emit('command:executed', {
@@ -272,7 +280,10 @@ export class PauseCommand extends TransportCommand<void> {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error : new Error('Failed to pause transport'),
+        error:
+          error instanceof Error
+            ? error
+            : new Error('Failed to pause transport'),
         timestamp: Date.now(),
       };
     }
@@ -305,7 +316,8 @@ export class PauseCommand extends TransportCommand<void> {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error : new Error('Failed to undo pause'),
+        error:
+          error instanceof Error ? error : new Error('Failed to undo pause'),
         timestamp: Date.now(),
       };
     }
@@ -325,7 +337,7 @@ export class SetTempoCommand extends TransportCommand<number> {
   constructor(
     transportController: UnifiedTransport,
     eventBus: EventBus,
-    bpm: number
+    bpm: number,
   ) {
     super('transport:set-tempo', transportController, eventBus, { bpm });
     this.newBPM = bpm;
@@ -355,7 +367,7 @@ export class SetTempoCommand extends TransportCommand<number> {
     try {
       this.previousState = this.captureState();
       await this.transportController.setBPM(this.newBPM);
-      
+
       this.eventBus.emit('command:executed', {
         command: this.metadata.name,
         timestamp: this.metadata.timestamp,
@@ -372,7 +384,8 @@ export class SetTempoCommand extends TransportCommand<number> {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error : new Error('Failed to set tempo'),
+        error:
+          error instanceof Error ? error : new Error('Failed to set tempo'),
         timestamp: Date.now(),
       };
     }
@@ -407,14 +420,21 @@ export class SetTempoCommand extends TransportCommand<number> {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error : new Error('Failed to undo tempo change'),
+        error:
+          error instanceof Error
+            ? error
+            : new Error('Failed to undo tempo change'),
         timestamp: Date.now(),
       };
     }
   }
 
   clone(): SetTempoCommand {
-    return new SetTempoCommand(this.transportController, this.eventBus, this.newBPM);
+    return new SetTempoCommand(
+      this.transportController,
+      this.eventBus,
+      this.newBPM,
+    );
   }
 }
 
@@ -427,9 +447,11 @@ export class SetPositionCommand extends TransportCommand<number> {
   constructor(
     transportController: UnifiedTransport,
     eventBus: EventBus,
-    position: number
+    position: number,
   ) {
-    super('transport:set-position', transportController, eventBus, { position });
+    super('transport:set-position', transportController, eventBus, {
+      position,
+    });
     this.newPosition = position;
   }
 
@@ -457,11 +479,14 @@ export class SetPositionCommand extends TransportCommand<number> {
     try {
       this.previousState = this.captureState();
       await this.transportController.setPosition(this.newPosition);
-      
+
       this.eventBus.emit('command:executed', {
         command: this.metadata.name,
         timestamp: this.metadata.timestamp,
-        data: { oldPosition: this.previousState.position, newPosition: this.newPosition },
+        data: {
+          oldPosition: this.previousState.position,
+          newPosition: this.newPosition,
+        },
       });
 
       const result = {
@@ -474,7 +499,8 @@ export class SetPositionCommand extends TransportCommand<number> {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error : new Error('Failed to set position'),
+        error:
+          error instanceof Error ? error : new Error('Failed to set position'),
         timestamp: Date.now(),
       };
     }
@@ -509,21 +535,31 @@ export class SetPositionCommand extends TransportCommand<number> {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error : new Error('Failed to undo position change'),
+        error:
+          error instanceof Error
+            ? error
+            : new Error('Failed to undo position change'),
         timestamp: Date.now(),
       };
     }
   }
 
   clone(): SetPositionCommand {
-    return new SetPositionCommand(this.transportController, this.eventBus, this.newPosition);
+    return new SetPositionCommand(
+      this.transportController,
+      this.eventBus,
+      this.newPosition,
+    );
   }
 }
 
 /**
  * Set loop command
  */
-export class SetLoopCommand extends TransportCommand<{ start: number; end: number }> {
+export class SetLoopCommand extends TransportCommand<{
+  start: number;
+  end: number;
+}> {
   private loopStart: number;
   private loopEnd: number;
 
@@ -531,7 +567,7 @@ export class SetLoopCommand extends TransportCommand<{ start: number; end: numbe
     transportController: UnifiedTransport,
     eventBus: EventBus,
     start: number,
-    end: number
+    end: number,
   ) {
     super('transport:set-loop', transportController, eventBus, { start, end });
     this.loopStart = start;
@@ -554,7 +590,9 @@ export class SetLoopCommand extends TransportCommand<{ start: number; end: numbe
     if (!(await this.validate())) {
       return {
         success: false,
-        error: new Error(`Invalid loop range: ${this.loopStart} - ${this.loopEnd}`),
+        error: new Error(
+          `Invalid loop range: ${this.loopStart} - ${this.loopEnd}`,
+        ),
         timestamp: Date.now(),
       };
     }
@@ -562,21 +600,21 @@ export class SetLoopCommand extends TransportCommand<{ start: number; end: numbe
     try {
       this.previousState = this.captureState();
       await this.transportController.setLoop(this.loopStart, this.loopEnd);
-      
+
       this.eventBus.emit('command:executed', {
         command: this.metadata.name,
         timestamp: this.metadata.timestamp,
-        data: { 
-          oldLoop: { 
-            start: this.previousState.loopStart, 
+        data: {
+          oldLoop: {
+            start: this.previousState.loopStart,
             end: this.previousState.loopEnd,
-            enabled: this.previousState.loopEnabled
+            enabled: this.previousState.loopEnabled,
           },
-          newLoop: { 
-            start: this.loopStart, 
+          newLoop: {
+            start: this.loopStart,
             end: this.loopEnd,
-            enabled: true
-          }
+            enabled: true,
+          },
         },
       });
 
@@ -610,28 +648,28 @@ export class SetLoopCommand extends TransportCommand<{ start: number; end: numbe
         if (this.previousState.loopEnabled) {
           await this.transportController.setLoop(
             this.previousState.loopStart,
-            this.previousState.loopEnd
+            this.previousState.loopEnd,
           );
         } else {
           await this.transportController.disableLoop();
         }
-        
+
         this.eventBus.emit('command:undone', {
           command: this.metadata.name,
           timestamp: Date.now(),
-          data: { 
-            start: this.previousState.loopStart, 
+          data: {
+            start: this.previousState.loopStart,
             end: this.previousState.loopEnd,
-            enabled: this.previousState.loopEnabled
+            enabled: this.previousState.loopEnabled,
           },
         });
       }
 
       const result = {
         success: true,
-        data: { 
-          start: this.previousState?.loopStart || 0, 
-          end: this.previousState?.loopEnd || 0 
+        data: {
+          start: this.previousState?.loopStart || 0,
+          end: this.previousState?.loopEnd || 0,
         },
         timestamp: Date.now(),
       };
@@ -640,7 +678,10 @@ export class SetLoopCommand extends TransportCommand<{ start: number; end: numbe
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error : new Error('Failed to undo loop change'),
+        error:
+          error instanceof Error
+            ? error
+            : new Error('Failed to undo loop change'),
         timestamp: Date.now(),
       };
     }
@@ -648,10 +689,10 @@ export class SetLoopCommand extends TransportCommand<{ start: number; end: numbe
 
   clone(): SetLoopCommand {
     return new SetLoopCommand(
-      this.transportController, 
-      this.eventBus, 
-      this.loopStart, 
-      this.loopEnd
+      this.transportController,
+      this.eventBus,
+      this.loopStart,
+      this.loopEnd,
     );
   }
 }

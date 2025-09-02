@@ -11,6 +11,7 @@
 import React, { ErrorInfo, ReactNode, useEffect } from 'react';
 import { useWidgetSync } from '../../hooks/useWidgetSync';
 import type { UseWidgetSyncOptions } from '../../hooks/useWidgetSync';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // ============================================================================
 // INTERFACES
@@ -37,6 +38,9 @@ export interface SyncedWidgetProps {
 
   // Debug mode
   debugMode?: boolean;
+
+  // ADDED: Exercise from parent (single source of truth)
+  selectedExercise?: any;
 }
 
 export interface SyncedWidgetRenderProps {
@@ -105,7 +109,7 @@ class SyncedWidgetErrorBoundary extends React.Component<
     });
 
     // Log error
-    console.error(`[${this.props.widgetId}] Widget error:`, error, errorInfo);
+    logger.error(`[${this.props.widgetId}] Widget error:`, error, errorInfo);
 
     // Call error handler
     if (this.props.onError) {
@@ -114,7 +118,7 @@ class SyncedWidgetErrorBoundary extends React.Component<
 
     // Debug logging
     if (this.props.debugMode) {
-      console.log(`[${this.props.widgetId}] Error details:`, {
+      logger.info(`[${this.props.widgetId}] Error details:`, {
         error: error.message,
         stack: error.stack,
         componentStack: errorInfo.componentStack,
@@ -172,11 +176,12 @@ export const SyncedWidget: React.FC<SyncedWidgetProps> = ({
   enablePerformanceMonitoring = true,
   onPerformanceWarning,
   debugMode = false,
+  selectedExercise, // ADDED: Exercise from parent
 }) => {
   // Debug: Log every render
   if (debugMode) {
     // Debug logs (temporarily disabled to reduce console noise)
-    // console.log(`🔄 SyncedWidget RENDER [${widgetId}]:`, {
+    // logger.info(`🔄 SyncedWidget RENDER [${widgetId}]:`, {
     //   widgetName,
     //   syncOptions,
     //   debugMode,
@@ -188,12 +193,12 @@ export const SyncedWidget: React.FC<SyncedWidgetProps> = ({
   useEffect(() => {
     if (debugMode) {
       // Debug logs (temporarily disabled to reduce console noise)
-      // console.log(`🟢 SyncedWidget MOUNTED [${widgetId}]`);
+      // logger.info(`🟢 SyncedWidget MOUNTED [${widgetId}]`);
     }
     return () => {
       if (debugMode) {
         // Debug logs (temporarily disabled to reduce console noise)
-        // console.log(`🔴 SyncedWidget UNMOUNTED [${widgetId}]`);
+        // logger.info(`🔴 SyncedWidget UNMOUNTED [${widgetId}]`);
       }
     };
   }, [widgetId, debugMode]);
@@ -222,6 +227,14 @@ export const SyncedWidget: React.FC<SyncedWidgetProps> = ({
 
   // Performance monitoring
   React.useEffect(() => {
+    // CRITICAL FIX: Disable performance monitoring to stop infinite re-render loop
+    // The setInterval(checkPerformance, 1000) was causing re-renders every second
+    // when accessing sync.performanceMetrics in dependency array
+    logger.info(
+      `🚫 SyncedWidget [${widgetId}]: Performance monitoring disabled to fix infinite re-render loop`,
+    );
+    return; // Early return to disable monitoring
+
     if (!enablePerformanceMonitoring) return;
 
     const checkPerformance = () => {
@@ -230,7 +243,7 @@ export const SyncedWidget: React.FC<SyncedWidgetProps> = ({
       // Check latency threshold (5ms from AC 3.6.4)
       if (averageLatency > 5.0) {
         const warning = `High sync latency: ${averageLatency.toFixed(2)}ms`;
-        console.warn(`[${widgetId}] ${warning}`);
+        logger.warn(`[${widgetId}] ${warning}`);
         if (onPerformanceWarning) {
           onPerformanceWarning('latency', averageLatency);
         }
@@ -239,7 +252,7 @@ export const SyncedWidget: React.FC<SyncedWidgetProps> = ({
       // Check dropped updates
       if (droppedUpdates > 10) {
         const warning = `High dropped updates: ${droppedUpdates}`;
-        console.warn(`[${widgetId}] ${warning}`);
+        logger.warn(`[${widgetId}] ${warning}`);
         if (onPerformanceWarning) {
           onPerformanceWarning('droppedUpdates', droppedUpdates);
         }
@@ -252,13 +265,13 @@ export const SyncedWidget: React.FC<SyncedWidgetProps> = ({
     widgetId,
     enablePerformanceMonitoring,
     onPerformanceWarning,
-    sync.performanceMetrics,
+    // REMOVED sync.performanceMetrics - causes re-renders when metrics update
   ]);
 
   // Debug logging
   React.useEffect(() => {
     if (debugMode) {
-      console.log(
+      logger.info(
         `[${widgetId}] ${widgetName} mounted with sync options:`,
         mergedSyncOptions,
       );
@@ -273,16 +286,18 @@ export const SyncedWidget: React.FC<SyncedWidgetProps> = ({
     currentTime: sync.currentTime,
     tempo: sync.tempo,
     masterVolume: sync.masterVolume,
-    selectedExercise: sync.selectedExercise,
+    selectedExercise: selectedExercise, // USE PROP instead of sync.selectedExercise
     isConnected: sync.state.isConnected,
     hasError: sync.state.hasError,
     performanceMetrics: sync.performanceMetrics,
   };
-  
+
   // Debug log for play state changes
   React.useEffect(() => {
     if (debugMode) {
-      console.log(`🔄 SyncedWidget[${widgetId}]: isPlaying changed to ${sync.isPlaying}`);
+      logger.info(
+        `🔄 SyncedWidget[${widgetId}]: isPlaying changed to ${sync.isPlaying}`,
+      );
     }
   }, [sync.isPlaying, widgetId, debugMode]);
 

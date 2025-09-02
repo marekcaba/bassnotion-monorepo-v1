@@ -1,5 +1,7 @@
-import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, forwardRef, Inject } from '@nestjs/common';
 import { DatabaseService } from '../../../../infrastructure/database/database.service.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { RequestContextService } from '../../../../shared/services/request-context.service.js';
 
 export interface LoginAttempt {
   id: string;
@@ -26,7 +28,7 @@ export interface RateLimitInfo {
 
 @Injectable()
 export class AuthSecurityService {
-  private readonly logger = new Logger(AuthSecurityService.name);
+  private readonly staticLogger = createStructuredLogger(AuthSecurityService.name);
 
   // Rate limiting configuration
   private readonly RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
@@ -44,12 +46,18 @@ export class AuthSecurityService {
   constructor(
     @Inject(forwardRef(() => DatabaseService))
     private readonly db: DatabaseService,
+    @Inject(RequestContextService)
+    private readonly requestContext: RequestContextService,
   ) {
-    console.log('🔧 [AuthSecurityService] Constructor called');
-    console.log('🔧 [AuthSecurityService] DatabaseService:', {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    logger.info('🔧 [AuthSecurityService] Constructor called', { correlationId });
+    logger.info('🔧 [AuthSecurityService] DatabaseService:', {
       exists: !!this.db,
       type: this.db?.constructor?.name,
       hasSupabase: !!this.db?.supabase,
+      correlationId
     });
     // DatabaseService is properly injected - removed faulty defensive check
   }
@@ -61,27 +69,25 @@ export class AuthSecurityService {
     email: string,
     ipAddress: string,
   ): Promise<RateLimitInfo> {
+  const logger = this.requestContext?.getLogger() || this.staticLogger;
+  const correlationId = this.requestContext?.getCorrelationId();
     try {
       // Validate input parameters
       if (!email || typeof email !== 'string') {
-        this.logger.warn(
-          'Invalid email provided to checkRateLimit, failing open',
-        );
+        logger.warn('Invalid email provided to checkRateLimit, failing open', { correlationId });
         return {
           isRateLimited: false,
-          attemptsRemaining: this.MAX_ATTEMPTS_PER_EMAIL,
-        };
+          attemptsRemaining: this.MAX_ATTEMPTS_PER_EMAIL };
       }
 
       // Defensive check for DatabaseService
       if (!this.db || !this.db.supabase) {
-        this.logger.warn(
-          'DatabaseService unavailable - failing open for rate limiting',
-        );
+        const logger = this.requestContext?.getLogger() || this.staticLogger;
+        const correlationId = this.requestContext?.getCorrelationId();
+        logger.warn('DatabaseService unavailable - failing open for rate limiting', { correlationId });
         return {
           isRateLimited: false,
-          attemptsRemaining: this.MAX_ATTEMPTS_PER_EMAIL,
-        };
+          attemptsRemaining: this.MAX_ATTEMPTS_PER_EMAIL };
       }
 
       const now = new Date();
@@ -134,8 +140,7 @@ export class AuthSecurityService {
         return {
           isRateLimited: true,
           remainingTime,
-          attemptsRemaining: 0,
-        };
+          attemptsRemaining: 0 };
       }
 
       return {
@@ -143,15 +148,15 @@ export class AuthSecurityService {
         attemptsRemaining: Math.min(
           this.MAX_ATTEMPTS_PER_IP - (ipAttempts || 0),
           this.MAX_ATTEMPTS_PER_EMAIL - (emailAttempts || 0),
-        ),
-      };
+        ) };
     } catch (error) {
-      this.logger.error('Error checking rate limit:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error checking rate limit:', error as Error, { correlationId });
       // Fail open for rate limiting to avoid blocking legitimate users
       return {
         isRateLimited: false,
-        attemptsRemaining: this.MAX_ATTEMPTS_PER_EMAIL,
-      };
+        attemptsRemaining: this.MAX_ATTEMPTS_PER_EMAIL };
     }
   }
 
@@ -159,27 +164,23 @@ export class AuthSecurityService {
    * Check if account is locked out
    */
   async checkAccountLockout(email: string): Promise<AccountLockoutInfo> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     try {
       // Validate input parameters
       if (!email || typeof email !== 'string') {
-        this.logger.warn(
-          'Invalid email provided to checkAccountLockout, failing open',
-        );
+        logger.warn('Invalid email provided to checkAccountLockout, failing open', { correlationId });
         return {
           isLocked: false,
-          failedAttempts: 0,
-        };
+          failedAttempts: 0 };
       }
 
       // Defensive check for DatabaseService
       if (!this.db || !this.db.supabase) {
-        this.logger.warn(
-          'DatabaseService unavailable - failing open for account lockout',
-        );
+        logger.warn('DatabaseService unavailable - failing open for account lockout', { correlationId });
         return {
           isLocked: false,
-          failedAttempts: 0,
-        };
+          failedAttempts: 0 };
       }
 
       const now = new Date();
@@ -196,8 +197,7 @@ export class AuthSecurityService {
       if (error || !attempts || attempts.length === 0) {
         return {
           isLocked: false,
-          failedAttempts: 0,
-        };
+          failedAttempts: 0 };
       }
 
       // Count consecutive failed attempts (stop at first success)
@@ -222,8 +222,7 @@ export class AuthSecurityService {
       if (!applicableThreshold) {
         return {
           isLocked: false,
-          failedAttempts: consecutiveFailures,
-        };
+          failedAttempts: consecutiveFailures };
       }
 
       // Check if lockout period has expired
@@ -241,21 +240,20 @@ export class AuthSecurityService {
           isLocked: true,
           lockoutUntil,
           failedAttempts: consecutiveFailures,
-          remainingTime,
-        };
+          remainingTime };
       }
 
       return {
         isLocked: false,
-        failedAttempts: consecutiveFailures,
-      };
+        failedAttempts: consecutiveFailures };
     } catch (error) {
-      this.logger.error('Error checking account lockout:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error checking account lockout:', error as Error, { correlationId });
       // Fail open for lockout to avoid permanently blocking users
       return {
         isLocked: false,
-        failedAttempts: 0,
-      };
+        failedAttempts: 0 };
     }
   }
 
@@ -268,20 +266,18 @@ export class AuthSecurityService {
     success: boolean,
     userAgent?: string,
   ): Promise<void> {
+  const logger = this.requestContext?.getLogger() || this.staticLogger;
+  const correlationId = this.requestContext?.getCorrelationId();
     try {
       // Validate input parameters
       if (!email || typeof email !== 'string') {
-        this.logger.warn(
-          'Invalid email provided to recordLoginAttempt, skipping record',
-        );
+        logger.warn('Invalid email provided to recordLoginAttempt, skipping record', { correlationId });
         return;
       }
 
       // Defensive check for DatabaseService
       if (!this.db || !this.db.supabase) {
-        this.logger.warn(
-          'DatabaseService unavailable - cannot record login attempt',
-        );
+        logger.warn('DatabaseService unavailable - cannot record login attempt', { correlationId });
         return;
       }
 
@@ -290,11 +286,12 @@ export class AuthSecurityService {
         ip_address: ipAddress,
         user_agent: userAgent,
         success,
-        attempted_at: new Date().toISOString(),
-      });
+        attempted_at: new Date().toISOString() });
 
       if (error) {
-        this.logger.error('Error recording login attempt:', error);
+        const logger = this.requestContext?.getLogger() || this.staticLogger;
+        const correlationId = this.requestContext?.getCorrelationId();
+        logger.error('Error recording login attempt:', error as Error, { correlationId });
       }
 
       // Clean up old attempts (older than 7 days) periodically
@@ -303,7 +300,9 @@ export class AuthSecurityService {
         await this.cleanupOldAttempts();
       }
     } catch (error) {
-      this.logger.error('Error recording login attempt:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error recording login attempt:', error as Error, { correlationId });
     }
   }
 
@@ -367,12 +366,18 @@ export class AuthSecurityService {
         .lt('attempted_at', sevenDaysAgo.toISOString());
 
       if (error) {
-        this.logger.error('Error cleaning up old login attempts:', error);
+        const logger = this.requestContext?.getLogger() || this.staticLogger;
+        const correlationId = this.requestContext?.getCorrelationId();
+        logger.error('Error cleaning up old login attempts:', error as Error, { correlationId });
       } else {
-        this.logger.debug('Cleaned up old login attempts');
+        const logger = this.requestContext?.getLogger() || this.staticLogger;
+        const correlationId = this.requestContext?.getCorrelationId();
+        logger.debug('Cleaned up old login attempts', { correlationId });
       }
     } catch (error) {
-      this.logger.error('Error in cleanup job:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error in cleanup job:', error as Error, { correlationId });
     }
   }
 }

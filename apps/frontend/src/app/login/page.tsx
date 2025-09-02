@@ -13,6 +13,7 @@ import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { Button } from '@/shared/components/ui/button';
 import { useToast } from '@/shared/hooks/use-toast';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 function LoginPageContent() {
   const _router = useRouter();
@@ -50,15 +51,15 @@ function LoginPageContent() {
         throw new Error('Email and password are required');
       }
 
-      console.log('[Login Debug] Using backend auth:', useBackendAuth);
-      console.log(
+      logger.info('[Login Debug] Using backend auth:', useBackendAuth);
+      logger.info(
         '[Login Debug] Environment variable:',
         process.env.NEXT_PUBLIC_USE_BACKEND_AUTH,
       );
 
       if (useBackendAuth) {
         // Use backend API for E2E testing
-        console.log('[Login Debug] Using backend authentication');
+        logger.info('[Login Debug] Using backend authentication');
         const result = await authService.signInWithBackend(data);
 
         if (result.success) {
@@ -71,7 +72,7 @@ function LoginPageContent() {
         }
       } else {
         // Use Supabase for production
-        console.log('[Login Debug] Using Supabase authentication');
+        logger.info('[Login Debug] Using Supabase authentication');
         const authData = await authService.signIn(data);
 
         if (authData.user && authData.session) {

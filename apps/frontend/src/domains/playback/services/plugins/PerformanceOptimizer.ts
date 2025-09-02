@@ -21,6 +21,8 @@
  */
 
 import { EventEmitter } from 'events';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 // Core interfaces for performance optimization
 export interface DeviceCapabilities {
@@ -166,7 +168,7 @@ export class PerformanceOptimizer extends EventEmitter {
 
   private constructor() {
     super();
-    console.log('⚡ Initializing Performance Optimizer...');
+    logger.info('⚡ Initializing Performance Optimizer...');
   }
 
   /**
@@ -185,7 +187,7 @@ export class PerformanceOptimizer extends EventEmitter {
    */
   public async initialize(): Promise<void> {
     if (this.initialized) {
-      console.log('⚠️ Performance Optimizer already initialized');
+      logger.info('⚠️ Performance Optimizer already initialized');
       return;
     }
 
@@ -211,13 +213,13 @@ export class PerformanceOptimizer extends EventEmitter {
       this.performanceMetrics = await this.initializeMetrics();
 
       this.initialized = true;
-      console.log('✅ Performance Optimizer initialized successfully');
+      logger.info('✅ Performance Optimizer initialized successfully');
       this.emit('initialized', {
         capabilities: this.deviceCapabilities,
         qualitySettings: this.currentQualitySettings,
       });
     } catch (error) {
-      console.error('❌ Failed to initialize Performance Optimizer:', error);
+      logger.error('❌ Failed to initialize Performance Optimizer:', error);
       throw error;
     }
   }
@@ -226,7 +228,7 @@ export class PerformanceOptimizer extends EventEmitter {
    * Subtask 10.1: Implement adaptive quality scaling
    */
   public async adaptQualityToDevice(): Promise<OptimizationResult> {
-    console.log('🎯 Adapting quality to device capabilities...');
+    logger.info('🎯 Adapting quality to device capabilities...');
 
     try {
       const startTime = performance.now();
@@ -245,6 +247,7 @@ export class PerformanceOptimizer extends EventEmitter {
       const optimizationTime = performance.now() - startTime;
 
       const result: OptimizationResult = {
+  const { correlationId, logger } = useCorrelation('startTime');
         success: true,
         optimizationTime,
         performanceGain,
@@ -264,14 +267,14 @@ export class PerformanceOptimizer extends EventEmitter {
       this.currentQualitySettings = newSettings;
       this.optimizationHistory.push(result);
 
-      console.log(
+      logger.info(
         `✅ Quality adaptation completed in ${optimizationTime.toFixed(2)}ms`,
       );
       this.emit('qualityAdapted', result);
 
       return result;
     } catch (error) {
-      console.error('❌ Quality adaptation failed:', error);
+      logger.error('❌ Quality adaptation failed:', error);
       throw error;
     }
   }
@@ -280,7 +283,7 @@ export class PerformanceOptimizer extends EventEmitter {
    * Subtask 10.2: Create mobile-specific optimizations
    */
   public async optimizeForMobile(): Promise<OptimizationResult> {
-    console.log('📱 Optimizing for mobile device...');
+    logger.info('📱 Optimizing for mobile device...');
 
     try {
       const startTime = performance.now();
@@ -290,12 +293,12 @@ export class PerformanceOptimizer extends EventEmitter {
       this.deviceCapabilities = await this.detectDeviceCapabilities();
       const newPlatform = this.deviceCapabilities.platform;
 
-      console.log(`🔍 Platform detection: ${oldPlatform} -> ${newPlatform}`);
-      console.log(`🔍 Navigator userAgent: ${navigator.userAgent}`);
-      console.log(`🔍 Mock platform: ${(navigator as any).mockPlatform}`);
+      logger.info(`🔍 Platform detection: ${oldPlatform} -> ${newPlatform}`);
+      logger.info(`🔍 Navigator userAgent: ${navigator.userAgent}`);
+      logger.info(`🔍 Mock platform: ${(navigator as any).mockPlatform}`);
 
       if (this.deviceCapabilities.platform !== 'mobile') {
-        console.log('⚠️ Device is not mobile, skipping mobile optimizations');
+        logger.info('⚠️ Device is not mobile, skipping mobile optimizations');
         return {
           success: false,
           optimizationTime: 0,
@@ -325,14 +328,14 @@ export class PerformanceOptimizer extends EventEmitter {
 
       this.optimizationHistory.push(result);
 
-      console.log(
+      logger.info(
         `✅ Mobile optimization completed in ${optimizationTime.toFixed(2)}ms`,
       );
       this.emit('mobileOptimized', result);
 
       return result;
     } catch (error) {
-      console.error('❌ Mobile optimization failed:', error);
+      logger.error('❌ Mobile optimization failed:', error);
       throw error;
     }
   }
@@ -341,7 +344,7 @@ export class PerformanceOptimizer extends EventEmitter {
    * Subtask 10.3: Add comprehensive performance benchmarking
    */
   public async runBenchmarks(): Promise<BenchmarkResult[]> {
-    console.log('🏁 Running comprehensive performance benchmarks...');
+    logger.info('🏁 Running comprehensive performance benchmarks...');
 
     try {
       const results = await this.benchmarkSuite.runAllBenchmarks(
@@ -349,12 +352,12 @@ export class PerformanceOptimizer extends EventEmitter {
         this.currentQualitySettings,
       );
 
-      console.log(`✅ Completed ${results.length} benchmarks`);
+      logger.info(`✅ Completed ${results.length} benchmarks`);
       this.emit('benchmarksCompleted', results);
 
       return results;
     } catch (error) {
-      console.error('❌ Benchmarking failed:', error);
+      logger.error('❌ Benchmarking failed:', error);
       throw error;
     }
   }
@@ -364,11 +367,11 @@ export class PerformanceOptimizer extends EventEmitter {
    */
   public startRealTimeMonitoring(): void {
     if (this.monitoringActive) {
-      console.log('⚠️ Real-time monitoring already active');
+      logger.info('⚠️ Real-time monitoring already active');
       return;
     }
 
-    console.log('📊 Starting real-time quality monitoring...');
+    logger.info('📊 Starting real-time quality monitoring...');
 
     this.monitoringActive = true;
     this.qualityMonitor.start(
@@ -379,23 +382,23 @@ export class PerformanceOptimizer extends EventEmitter {
     // Set up monitoring intervals
     this.setupMonitoringIntervals();
 
-    console.log('✅ Real-time monitoring started');
+    logger.info('✅ Real-time monitoring started');
     this.emit('monitoringStarted');
   }
 
   public stopRealTimeMonitoring(): void {
     // TODO: Review non-null assertion - consider null safety
     if (!this.monitoringActive) {
-      console.log('⚠️ Real-time monitoring not active');
+      logger.info('⚠️ Real-time monitoring not active');
       return;
     }
 
-    console.log('📊 Stopping real-time monitoring...');
+    logger.info('📊 Stopping real-time monitoring...');
 
     this.monitoringActive = false;
     this.qualityMonitor.stop();
 
-    console.log('✅ Real-time monitoring stopped');
+    logger.info('✅ Real-time monitoring stopped');
     this.emit('monitoringStopped');
   }
 
@@ -403,7 +406,7 @@ export class PerformanceOptimizer extends EventEmitter {
    * Subtask 10.5: Create production deployment validation
    */
   public async validateProductionReadiness(): Promise<ValidationResult[]> {
-    console.log('🔍 Validating production readiness...');
+    logger.info('🔍 Validating production readiness...');
 
     try {
       const results = await this.validationEngine.validateAllComponents(
@@ -415,14 +418,14 @@ export class PerformanceOptimizer extends EventEmitter {
       const overallScore =
         results.reduce((sum, r) => sum + r.score, 0) / results.length;
 
-      console.log(
+      logger.info(
         `✅ Production validation completed - Overall Score: ${overallScore.toFixed(1)}/100`,
       );
       this.emit('validationCompleted', { results, overallScore });
 
       return results;
     } catch (error) {
-      console.error('❌ Production validation failed:', error);
+      logger.error('❌ Production validation failed:', error);
       throw error;
     }
   }
@@ -431,7 +434,7 @@ export class PerformanceOptimizer extends EventEmitter {
    * Run regression tests
    */
   public async runRegressionTests(): Promise<BenchmarkResult[]> {
-    console.log('🧪 Running regression tests...');
+    logger.info('🧪 Running regression tests...');
 
     try {
       const results = await this.regressionTester.runTests(
@@ -439,14 +442,14 @@ export class PerformanceOptimizer extends EventEmitter {
         this.currentQualitySettings,
       );
 
-      console.log(
+      logger.info(
         `✅ Regression tests completed - ${results.filter((r) => r.passed).length}/${results.length} passed`,
       );
       this.emit('regressionTestsCompleted', results);
 
       return results;
     } catch (error) {
-      console.error('❌ Regression tests failed:', error);
+      logger.error('❌ Regression tests failed:', error);
       throw error;
     }
   }
@@ -580,7 +583,7 @@ export class PerformanceOptimizer extends EventEmitter {
       if ((global.navigator as any).connection) {
         const mockConnection = (global.navigator as any).connection;
         if (mockConnection.type) {
-          console.log(`🌐 Using mocked network type: ${mockConnection.type}`);
+          logger.info(`🌐 Using mocked network type: ${mockConnection.type}`);
           return mockConnection.type;
         }
       }
@@ -651,7 +654,7 @@ export class PerformanceOptimizer extends EventEmitter {
       if ((global.navigator as any).getBattery) {
         const mockBattery = await (global.navigator as any).getBattery();
         if (mockBattery && typeof mockBattery.level === 'number') {
-          console.log(
+          logger.info(
             `🔋 Using mocked battery level: ${mockBattery.level * 100}%`,
           );
           return mockBattery.level * 100;
@@ -687,7 +690,7 @@ export class PerformanceOptimizer extends EventEmitter {
   private detectPlatform(): 'desktop' | 'mobile' | 'tablet' | 'embedded' {
     // First check if we're in a test environment with mocked platform
     if (typeof (navigator as any).mockPlatform === 'string') {
-      console.log(
+      logger.info(
         `📱 Using mocked platform: ${(navigator as any).mockPlatform}`,
       );
       return (navigator as any).mockPlatform;
@@ -698,7 +701,7 @@ export class PerformanceOptimizer extends EventEmitter {
 
     // Test environment detection - if we see test-specific patterns, use them
     if (userAgent.includes('iphone') || userAgent.includes('mobile')) {
-      console.log('📱 Detected mobile platform from user agent');
+      logger.info('📱 Detected mobile platform from user agent');
       return 'mobile';
     }
 
@@ -797,7 +800,7 @@ export class PerformanceOptimizer extends EventEmitter {
    * Dispose of the Performance Optimizer
    */
   public async dispose(): Promise<void> {
-    console.log('🧹 Disposing Performance Optimizer...');
+    logger.info('🧹 Disposing Performance Optimizer...');
 
     try {
       // Stop monitoring
@@ -819,10 +822,10 @@ export class PerformanceOptimizer extends EventEmitter {
       // Clear singleton instance
       PerformanceOptimizer.instance = null;
 
-      console.log('✅ Performance Optimizer disposed successfully');
+      logger.info('✅ Performance Optimizer disposed successfully');
       this.emit('disposed');
     } catch (error) {
-      console.error('❌ Error disposing Performance Optimizer:', error);
+      logger.error('❌ Error disposing Performance Optimizer:', error);
       throw error;
     }
   }
@@ -837,12 +840,12 @@ class QualityMonitor {
     _settings: QualitySettings,
   ): void {
     this.monitoring = true;
-    console.log('📊 Quality monitoring started');
+    logger.info('📊 Quality monitoring started');
   }
 
   public stop(): void {
     this.monitoring = false;
-    console.log('📊 Quality monitoring stopped');
+    logger.info('📊 Quality monitoring stopped');
   }
 
   public async dispose(): Promise<void> {

@@ -1,5 +1,7 @@
 import { useRouter } from 'next/navigation';
+import { createStructuredLogger } from '@bassnotion/contracts';
 import { useCallback, useEffect } from 'react';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Enhanced CSS management inspired by Framer Commerce
 const STYLE_ID = 'bassnotion-view-transition-styles';
@@ -242,7 +244,7 @@ function handleTransitionInterrupt() {
       currentTransition.skipTransition();
     } catch (_error) {
       // skipTransition might not be available or transition might be finished
-      console.debug('Transition skip failed:', _error);
+      logger.debug('Transition skip failed:', _error);
     }
   }
 }
@@ -301,18 +303,18 @@ if (typeof window !== 'undefined') {
       (m) => m.name === 'bassnotion-preheat',
     );
 
-    console.log('Pre-heating Status:', isPreHeated ? 'Complete' : 'Pending');
+    logger.info('Pre-heating Status:', isPreHeated ? 'Complete' : 'Pending');
     if (_preheatMeasure) {
-      console.log('Pre-heat Time:', `${_preheatMeasure.duration.toFixed(2)}ms`);
+      logger.info('Pre-heat Time:', `${_preheatMeasure.duration.toFixed(2)}ms`);
     }
     console.table(transitionStats);
     const avg =
       transitionStats.reduce((acc, s) => acc + s.totalDuration, 0) /
       transitionStats.length;
-    console.log(`Average transition time: ${avg.toFixed(2)}ms`);
+    logger.info(`Average transition time: ${avg.toFixed(2)}ms`);
 
     const preHeatedCount = transitionStats.filter((s) => s.preHeated).length;
-    console.log(
+    logger.info(
       `Pre-heated transitions: ${preHeatedCount}/${transitionStats.length}`,
     );
   };
@@ -368,7 +370,7 @@ async function preHeatTransitions(): Promise<void> {
 
         isPreHeated = true;
       } catch (_error) {
-        console.warn(
+        logger.warn(
           'Pre-heating failed, transitions will still work:',
           _error,
         );
@@ -471,7 +473,7 @@ export function useViewTransitionRouter() {
 
         await currentTransition.finished;
       } catch (error) {
-        console.error('View transition failed:', error);
+        logger.error('View transition failed:', error);
         isTransitioning = false;
         currentTransition = null;
         cleanupTransitionStyles();

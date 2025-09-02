@@ -1,10 +1,19 @@
 import '@/shared/styles/globals.css';
+import '@/utils/forceBrowserConsole'; // Force browser console logging
+import '@/utils/initializeLogger'; // Initialize logger configuration
 import { ReactNode } from 'react';
 import { ReactQueryProvider } from '@/lib/react-query';
 import { AuthProvider } from '@/domains/user/components/auth';
 import { Toaster } from '@/shared/components/ui/toaster';
 import { AudioProvider } from '@/domains/playback/providers/AudioProvider';
-import { PreloadInitializer } from '@/domains/playback/components/PreloadInitializer';
+// Phase 1: Remove automatic preloading for better SEO and initial page load
+// import { PreloadInitializer } from '@/domains/playback/components/PreloadInitializer';
+import { getLogger } from '@/utils/logger.js';
+import { AudioDebugPanel } from '@/shared/debug/AudioDebugger';
+import { HealthStatus } from '@/shared/components/HealthStatus';
+import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
+
+const logger = getLogger('app');
 
 // Story 3.18.3: Replaced initializeAudio import with AudioProvider component
 // The AudioProvider handles all audio initialization with clean dependency injection
@@ -20,13 +29,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body className={inter.className}>
-        <AudioProvider>
-          <PreloadInitializer />
-          <AuthProviderWrapper>
-            <ReactQueryProvider>{children}</ReactQueryProvider>
-          </AuthProviderWrapper>
-        </AudioProvider>
-        <Toaster />
+        <ErrorBoundary>
+          <AudioProvider>
+            {/* Phase 1: PreloadInitializer removed - samples will load on user interaction */}
+            <AuthProviderWrapper>
+              <ReactQueryProvider>{children}</ReactQueryProvider>
+            </AuthProviderWrapper>
+          </AudioProvider>
+          <Toaster />
+          <AudioDebugPanel />
+          <HealthStatus />
+        </ErrorBoundary>
       </body>
     </html>
   );
@@ -51,7 +64,7 @@ function AuthProviderWrapper({ children }: { children: React.ReactNode }) {
 
     // For webkit E2E testing, bypass AuthProvider to prevent crashes
     if (isWebkit && isE2ETesting) {
-      console.log('Webkit E2E detected: Bypassing AuthProvider');
+      logger.info('Webkit E2E detected: Bypassing AuthProvider');
       return <>{children}</>;
     }
   }

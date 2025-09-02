@@ -1,7 +1,7 @@
 /**
  * PluginManager - Simplified Plugin Management
  * Story 3.18.2: Core Services Foundation
- * 
+ *
  * Manages all audio plugins while preserving BaseAudioPlugin compatibility.
  * Integrates with new AudioEngine for Tone.js access and simplifies
  * plugin lifecycle management.
@@ -10,13 +10,16 @@
 import { Service } from './ServiceRegistry.js';
 import { EventBus } from './EventBus.js';
 import { AudioEngine } from './AudioEngine.js';
-import type { 
-  AudioPlugin, 
-  PluginState, 
+import { createStructuredLogger } from '@bassnotion/contracts';
+import type {
+  AudioPlugin,
+  PluginState,
   PluginMetadata,
   PluginAudioContext,
-  PluginConfig
+  PluginConfig,
 } from '../../types/plugin.js';
+
+const logger = createStructuredLogger('PluginManager');
 
 // BaseAudioPlugin stub - replaced by plugin types
 abstract class BaseAudioPlugin implements AudioPlugin {
@@ -32,21 +35,29 @@ abstract class BaseAudioPlugin implements AudioPlugin {
       name: id,
       version: '1.0.0',
       author: 'BassNotion',
-      description: 'Audio plugin'
+      description: 'Audio plugin',
     };
   }
 
   abstract initialize(context: PluginAudioContext): Promise<void>;
   abstract process(input: Float32Array, output: Float32Array): void;
   abstract dispose(): void;
-  
+
   start(): void {}
   stop(): void {}
-  getParameters(): Record<string, any> { return {}; }
+  getParameters(): Record<string, any> {
+    return {};
+  }
   setParameter(name: string, value: any): void {}
-  getState(): PluginState { return this.state; }
-  setState(state: PluginState): void { this.state = state; }
-  getMetadata(): PluginMetadata { return this.metadata; }
+  getState(): PluginState {
+    return this.state;
+  }
+  setState(state: PluginState): void {
+    this.state = state;
+  }
+  getMetadata(): PluginMetadata {
+    return this.metadata;
+  }
 }
 
 export interface PluginRegistration {
@@ -56,7 +67,10 @@ export interface PluginRegistration {
 }
 
 export class PluginError extends Error {
-  constructor(message: string, public pluginId?: string) {
+  constructor(
+    message: string,
+    public pluginId?: string,
+  ) {
     super(message);
     this.name = 'PluginError';
   }
@@ -99,7 +113,7 @@ export class PluginManager implements Service {
       this.eventBus.emit('plugin-manager:initialized', {});
     } catch (error) {
       throw new PluginError(
-        `Failed to initialize PluginManager: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to initialize PluginManager: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
@@ -109,9 +123,12 @@ export class PluginManager implements Service {
    */
   async register(plugin: AudioPlugin, dependencies?: string[]): Promise<void> {
     const metadata = plugin.metadata;
-    
+
     if (this.plugins.has(metadata.id)) {
-      throw new PluginError(`Plugin ${metadata.id} is already registered`, metadata.id);
+      throw new PluginError(
+        `Plugin ${metadata.id} is already registered`,
+        metadata.id,
+      );
     }
 
     // Validate dependencies exist
@@ -120,7 +137,7 @@ export class PluginManager implements Service {
         if (!this.plugins.has(dep)) {
           throw new PluginError(
             `Plugin ${metadata.id} depends on ${dep} which is not registered`,
-            metadata.id
+            metadata.id,
           );
         }
       }
@@ -195,7 +212,10 @@ export class PluginManager implements Service {
     const { plugin } = registration;
 
     // Ensure plugin is loaded and initialized
-    if (plugin.state === PluginState.UNLOADED || plugin.state === PluginState.LOADED) {
+    if (
+      plugin.state === PluginState.UNLOADED ||
+      plugin.state === PluginState.LOADED
+    ) {
       await this.loadPlugin(pluginId);
     }
 
@@ -263,15 +283,17 @@ export class PluginManager implements Service {
    */
   getPluginsByCapability(capability: string): AudioPlugin[] {
     const result: AudioPlugin[] = [];
-    
+
     for (const registration of this.plugins.values()) {
-      if (registration.plugin.capabilities &&
-          'features' in registration.plugin.capabilities &&
-          registration.plugin.capabilities.features?.includes(capability)) {
+      if (
+        registration.plugin.capabilities &&
+        'features' in registration.plugin.capabilities &&
+        registration.plugin.capabilities.features?.includes(capability)
+      ) {
         result.push(registration.plugin);
       }
     }
-    
+
     return result;
   }
 
@@ -442,14 +464,17 @@ export class PluginManager implements Service {
         const registration = this.plugins.get(pluginId);
         if (registration) {
           // Emit event to plugin if it has a handler
-          const handler = (registration.plugin as any)[`on${event.charAt(0).toUpperCase() + event.slice(1)}`];
+          const handler = (registration.plugin as any)[
+            `on${event.charAt(0).toUpperCase() + event.slice(1)}`
+          ];
           if (typeof handler === 'function') {
             try {
               handler.call(registration.plugin, data);
             } catch (error) {
               this.eventBus.emit('plugin-manager:plugin-error', {
                 pluginId,
-                error: error instanceof Error ? error : new Error('Unknown error'),
+                error:
+                  error instanceof Error ? error : new Error('Unknown error'),
                 context: { event, data },
               });
             }
@@ -492,16 +517,15 @@ export class PluginManager implements Service {
  * Factory function to register all existing plugins
  */
 export async function registerExistingPlugins(
-  pluginManager: PluginManager
+  pluginManager: PluginManager,
 ): Promise<void> {
   // Dynamically import all existing plugins
   const pluginModules = [
-    import('../plugins/BassProcessor.js'),
-    import('../plugins/DrumProcessor.js'),
+    import('../../modules/instruments/implementations/bass/BassProcessor.js'),
+    import('../../modules/instruments/implementations/drums/DrumProcessor.js'),
     import('../plugins/MetronomeInstrumentProcessor.js'),
-    import('../plugins/ChordInstrumentProcessor.js'),
-    import('../plugins/BassInstrumentProcessor.js'),
-    import('../plugins/DrumInstrumentProcessor.js'),
+    // ChordInstrumentProcessor removed - use WamHarmonyProcessor instead
+    import('../../modules/instruments/implementations/drums/DrumInstrumentProcessor.js'),
     import('../plugins/SyncProcessor.js'),
     // Commented out plugins that depend on removed AssetManager:
     // import('../plugins/InstrumentAssetOptimizer.js'),
@@ -527,7 +551,7 @@ export async function registerExistingPlugins(
           await pluginManager.register(plugin);
         }
       } catch (error) {
-        console.warn('Failed to register plugin:', error);
+        logger.warn('Failed to register plugin:', { error, correlationId: 'system' });
       }
     }
   }

@@ -7,6 +7,8 @@
  */
 
 import {
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
   CacheSynchronizationConfig,
   CacheConflictResolution,
   CacheLayerConfig,
@@ -34,6 +36,7 @@ type SyncEventListener = (event: SynchronizationEvent) => void;
  * Extended resolver interface for conflict resolution
  */
 interface ExtendedResolutionStrategy {
+  const { correlationId, logger } = useCorrelation('type');
   type: ConflictType;
   resolve: (
     conflict: ConflictInfo,
@@ -88,41 +91,41 @@ export class CacheSynchronizationEngine {
     if (this.isInitialized) return;
 
     try {
-      console.log('🔄 CacheSynchronizationEngine: Starting initialization...');
-      console.log('🔄 Initial sync state:', this.syncState);
+      logger.info('🔄 CacheSynchronizationEngine: Starting initialization...');
+      logger.info('🔄 Initial sync state:', this.syncState);
 
       // Initialize conflict resolution strategies
       await this.initializeConflictResolvers();
-      console.log('🔄 Conflict resolvers initialized');
+      logger.info('🔄 Conflict resolvers initialized');
 
       // Initialize merge strategies
       await this.initializeMergeStrategies();
-      console.log('🔄 Merge strategies initialized');
+      logger.info('🔄 Merge strategies initialized');
 
       // Setup cache layer monitoring
       await this.setupCacheLayerMonitoring();
-      console.log('🔄 Cache layer monitoring setup');
+      logger.info('🔄 Cache layer monitoring setup');
 
       // Start synchronization monitoring
       this.startSynchronizationMonitoring();
-      console.log('🔄 Synchronization monitoring started');
+      logger.info('🔄 Synchronization monitoring started');
 
       // Initialize cross-layer synchronization
       if (this.config.enableCrossLayerSync) {
         await this.initializeCrossLayerSync();
-        console.log('🔄 Cross-layer sync initialized');
+        logger.info('🔄 Cross-layer sync initialized');
       }
 
       // Mark as active and initialized
       this.syncState.isActive = true;
       this.isInitialized = true;
 
-      console.log('🔄 Final sync state:', this.syncState);
-      console.log('✅ CacheSynchronizationEngine: Initialization successful');
+      logger.info('🔄 Final sync state:', this.syncState);
+      logger.info('✅ CacheSynchronizationEngine: Initialization successful');
 
       this.emitSyncEvent('engine_initialized', { timestamp: Date.now() });
     } catch (error) {
-      console.error(
+      logger.error(
         '❌ Failed to initialize CacheSynchronizationEngine:',
         error,
       );
@@ -184,10 +187,10 @@ export class CacheSynchronizationEngine {
     const timeout = options.timeout || 3000; // Default 3 second timeout
 
     try {
-      console.log(
+      logger.info(
         `🔄 Starting synchronizeEntry for key: ${key}, source: ${sourceLayerId}`,
       );
-      console.log(
+      logger.info(
         `🔄 Available cache layers:`,
         Array.from(this.cacheLayers.keys()),
       );
@@ -196,11 +199,11 @@ export class CacheSynchronizationEngine {
       const sourceLayer = this.cacheLayers.get(sourceLayerId);
       // TODO: Review non-null assertion - consider null safety
       if (!sourceLayer) {
-        console.error(`❌ Source layer not found: ${sourceLayerId}`);
+        logger.error(`❌ Source layer not found: ${sourceLayerId}`);
         throw new Error(`Source layer not found: ${sourceLayerId}`);
       }
 
-      console.log(`🔄 Getting source entry from layer: ${sourceLayerId}`);
+      logger.info(`🔄 Getting source entry from layer: ${sourceLayerId}`);
       const sourceEntry = await this.withTimeout(
         this.getCacheEntry(sourceLayer, key),
         timeout,
@@ -208,12 +211,12 @@ export class CacheSynchronizationEngine {
       );
       // TODO: Review non-null assertion - consider null safety
       if (!sourceEntry) {
-        console.error(
+        logger.error(
           `❌ Cache entry not found: ${key} in layer: ${sourceLayerId}`,
         );
         throw new Error(`Cache entry not found: ${key}`);
       }
-      console.log(`✅ Found source entry:`, sourceEntry);
+      logger.info(`✅ Found source entry:`, sourceEntry);
 
       // Determine target layers
       const targets =
@@ -221,10 +224,10 @@ export class CacheSynchronizationEngine {
         Array.from(this.cacheLayers.keys()).filter(
           (id) => id !== sourceLayerId,
         );
-      console.log(`🔄 Target layers:`, targets);
+      logger.info(`🔄 Target layers:`, targets);
 
       // Perform synchronization to each target layer
-      console.log(
+      logger.info(
         `🔄 Starting synchronization to ${targets.length} target layers`,
       );
       const syncResults = await this.withTimeout(
@@ -244,7 +247,7 @@ export class CacheSynchronizationEngine {
         `Synchronization timeout for key: ${key}`,
       );
 
-      console.log(
+      logger.info(
         `🔄 Sync results:`,
         syncResults.map((result, index) => ({
           target: targets[index],
@@ -270,7 +273,7 @@ export class CacheSynchronizationEngine {
         .map((result) => result.value.conflictInfo)
         .filter((conflict): conflict is ConflictInfo => Boolean(conflict));
 
-      console.log(
+      logger.info(
         `🔄 Analysis: ${successfulSyncs} successful, ${failedSyncs} failed, ${conflicts.length} conflicts`,
       );
 
@@ -299,10 +302,10 @@ export class CacheSynchronizationEngine {
         },
       };
 
-      console.log(`🔄 Final synchronizeEntry result:`, result);
+      logger.info(`🔄 Final synchronizeEntry result:`, result);
       return result;
     } catch (error) {
-      console.error(`❌ synchronizeEntry error:`, error);
+      logger.error(`❌ synchronizeEntry error:`, error);
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       await this.recordSyncOperation(
@@ -435,9 +438,9 @@ export class CacheSynchronizationEngine {
     const startTime = performance.now();
 
     try {
-      console.log(`🔄 Starting resolveConflict for conflict:`, conflictInfo);
-      console.log(`🔄 Using resolution strategy:`, resolutionStrategy);
-      console.log(
+      logger.info(`🔄 Starting resolveConflict for conflict:`, conflictInfo);
+      logger.info(`🔄 Using resolution strategy:`, resolutionStrategy);
+      logger.info(
         `🔄 Available conflict resolvers:`,
         Array.from(this.conflictResolvers.keys()),
       );
@@ -446,30 +449,30 @@ export class CacheSynchronizationEngine {
       const resolver = this.conflictResolvers.get(conflictInfo.type);
       // TODO: Review non-null assertion - consider null safety
       if (!resolver) {
-        console.error(
+        logger.error(
           `❌ No resolver found for conflict type: ${conflictInfo.type}`,
         );
         throw new Error(
           `No resolver found for conflict type: ${conflictInfo.type}`,
         );
       }
-      console.log(`✅ Found resolver for conflict type: ${conflictInfo.type}`);
+      logger.info(`✅ Found resolver for conflict type: ${conflictInfo.type}`);
 
       // Resolve the conflict
-      console.log(`🔄 Resolving conflict using resolver...`);
+      logger.info(`🔄 Resolving conflict using resolver...`);
       const resolution = await resolver.resolve(
         conflictInfo,
         resolutionStrategy,
       );
-      console.log(`✅ Conflict resolved:`, resolution);
+      logger.info(`✅ Conflict resolved:`, resolution);
 
       // Apply resolution
-      console.log(`🔄 Applying conflict resolution...`);
+      logger.info(`🔄 Applying conflict resolution...`);
       const applicationResult = await this.applyConflictResolution(
         conflictInfo,
         resolution,
       );
-      console.log(`🔄 Application result:`, applicationResult);
+      logger.info(`🔄 Application result:`, applicationResult);
 
       // Record resolution
       await this.recordConflictResolution(
@@ -493,10 +496,10 @@ export class CacheSynchronizationEngine {
         },
       };
 
-      console.log(`🔄 Final resolveConflict result:`, result);
+      logger.info(`🔄 Final resolveConflict result:`, result);
       return result;
     } catch (error) {
-      console.error(`❌ resolveConflict error:`, error);
+      logger.error(`❌ resolveConflict error:`, error);
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       return {
@@ -812,7 +815,7 @@ export class CacheSynchronizationEngine {
           layerState.lastSync = Date.now();
         }
       } catch (error) {
-        console.error(
+        logger.error(
           `Failed to setup monitoring for layer ${layerId}:`,
           error,
         );
@@ -913,7 +916,7 @@ export class CacheSynchronizationEngine {
           const entries = await this.getAllCacheEntries(layer);
           layerEntries.set(layerId, entries);
         } catch (error) {
-          console.error(`Failed to get entries from layer ${layerId}:`, error);
+          logger.error(`Failed to get entries from layer ${layerId}:`, error);
           layerEntries.set(layerId, new Map());
         }
       },
@@ -1040,7 +1043,7 @@ export class CacheSynchronizationEngine {
             layerState.status = 'idle';
           }
         } catch (error) {
-          console.error(
+          logger.error(
             `Failed to apply synchronized state to layer ${layerId}:`,
             error,
           );
@@ -1278,7 +1281,7 @@ export class CacheSynchronizationEngine {
       // Perform lightweight sync check
       await this.performLightweightSync();
     } catch (error) {
-      console.error('Periodic sync failed:', error);
+      logger.error('Periodic sync failed:', error);
     } finally {
       this.syncState.isActive = false;
     }
@@ -1342,7 +1345,7 @@ export class CacheSynchronizationEngine {
         try {
           listener(event);
         } catch (error) {
-          console.error('Sync event listener error:', error);
+          logger.error('Sync event listener error:', error);
         }
       });
     }
@@ -1444,14 +1447,14 @@ export class CacheSynchronizationEngine {
     try {
       // Check if layer is an object with get method (mock layer)
       if (typeof layer === 'object' && layer !== null && 'get' in layer) {
-        console.log(`🔄 Using mock layer get method for key: ${key}`);
+        logger.info(`🔄 Using mock layer get method for key: ${key}`);
         const result = await (layer as any).get(key);
-        console.log(`🔄 Mock layer get result:`, result);
+        logger.info(`🔄 Mock layer get result:`, result);
         return result;
       }
 
       // Otherwise, use simulation based on layer type string
-      console.log(`🔄 Using simulation for layer type: ${layer}`);
+      logger.info(`🔄 Using simulation for layer type: ${layer}`);
       switch (layer) {
         case 'memory':
           // Simulate memory cache lookup
@@ -1466,7 +1469,7 @@ export class CacheSynchronizationEngine {
           return null;
       }
     } catch (error) {
-      console.error(`Failed to get cache entry from ${layer}:`, error);
+      logger.error(`Failed to get cache entry from ${layer}:`, error);
       return null;
     }
   }
@@ -1479,7 +1482,7 @@ export class CacheSynchronizationEngine {
     try {
       // Check if layer is an object with set method (mock layer)
       if (typeof layer === 'object' && layer !== null && 'set' in layer) {
-        console.log(`🔄 Using mock layer set method for key: ${key}`);
+        logger.info(`🔄 Using mock layer set method for key: ${key}`);
         await (layer as any).set(key, entry);
         return;
       }
@@ -1497,7 +1500,7 @@ export class CacheSynchronizationEngine {
           break;
       }
     } catch (error) {
-      console.error(`Failed to set cache entry in ${layer}:`, error);
+      logger.error(`Failed to set cache entry in ${layer}:`, error);
       throw error;
     }
   }
@@ -1518,7 +1521,7 @@ export class CacheSynchronizationEngine {
           return new Map();
       }
     } catch (error) {
-      console.error(`Failed to get all cache entries from ${layer}:`, error);
+      logger.error(`Failed to get all cache entries from ${layer}:`, error);
       return new Map();
     }
   }
@@ -1560,7 +1563,7 @@ export class CacheSynchronizationEngine {
   ): Promise<void> {
     // Simulate successful memory cache storage
     await new Promise((resolve) => setTimeout(resolve, 1)); // Minimal async delay
-    console.debug(`Memory cache: Set entry ${key}`, entry);
+    logger.debug(`Memory cache: Set entry ${key}`, entry);
   }
 
   private simulateMemoryCacheGetAll(): Map<string, CacheEntry> {
@@ -1608,7 +1611,7 @@ export class CacheSynchronizationEngine {
   ): Promise<void> {
     // Simulate IndexedDB storage with slight delay
     await new Promise((resolve) => setTimeout(resolve, 5));
-    console.debug(`IndexedDB: Set entry ${key}`, entry);
+    logger.debug(`IndexedDB: Set entry ${key}`, entry);
   }
 
   private simulateIndexedDBGetAll(): Map<string, CacheEntry> {
@@ -1656,7 +1659,7 @@ export class CacheSynchronizationEngine {
   ): Promise<void> {
     // Simulate Service Worker cache storage
     await new Promise((resolve) => setTimeout(resolve, 2));
-    console.debug(`Service Worker: Set entry ${key}`, entry);
+    logger.debug(`Service Worker: Set entry ${key}`, entry);
   }
 
   private simulateServiceWorkerGetAll(): Map<string, CacheEntry> {

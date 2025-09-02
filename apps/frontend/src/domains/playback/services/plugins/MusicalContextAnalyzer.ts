@@ -8,6 +8,7 @@
  */
 
 import { type ParsedMidiData, type ParsedTrack } from './MidiParserProcessor';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 export interface MusicalPattern {
   id: string;
@@ -95,7 +96,7 @@ export class MusicalContextAnalyzer {
    * Analyze MIDI data and update musical context
    */
   public analyzeMusicalContext(midiData: ParsedMidiData): MusicalContextState {
-    console.log('🎼 Analyzing musical context from MIDI data...');
+    logger.info('🎼 Analyzing musical context from MIDI data...');
 
     // Reset context for fresh analysis
     this.currentContext = this.initializeDefaultContext();
@@ -115,7 +116,7 @@ export class MusicalContextAnalyzer {
     // Analyze genre characteristics
     this.analyzeGenre(midiData);
 
-    console.log('🎼 Musical context analysis complete:', {
+    logger.info('🎼 Musical context analysis complete:', {
       key: this.currentContext.currentKey,
       tempo: this.currentContext.currentTempo,
       complexity: this.currentContext.complexityLevel,
@@ -661,7 +662,7 @@ export class MusicalContextAnalyzer {
     midiData: ParsedMidiData,
     userBehavior?: UserBehaviorPattern,
   ): ContextPrediction[] {
-    console.log('🔮 Generating intelligent asset predictions...');
+    logger.info('🔮 Generating intelligent asset predictions...');
 
     this.analyzeMusicalContext(midiData);
     if (userBehavior) {
@@ -687,7 +688,7 @@ export class MusicalContextAnalyzer {
       );
     }
 
-    console.log('🔮 Asset predictions generated:', {
+    logger.info('🔮 Asset predictions generated:', {
       totalPredictions: predictions.length,
       averageConfidence:
         predictions.reduce((sum, p) => sum + p.confidence, 0) /
@@ -1001,7 +1002,7 @@ export class MusicalContextAnalyzer {
    */
   public updateUserBehavior(behavior: UserBehaviorPattern): void {
     this.userBehavior = behavior;
-    console.log('👤 User behavior patterns updated');
+    logger.info('👤 User behavior patterns updated');
   }
 
   /**
@@ -1042,6 +1043,6 @@ export class MusicalContextAnalyzer {
   public clearHistory(): void {
     this.predictionHistory = [];
     this.patterns.clear();
-    console.log('🧹 Musical context history cleared');
+    logger.info('🧹 Musical context history cleared');
   }
 }

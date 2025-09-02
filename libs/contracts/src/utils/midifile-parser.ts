@@ -25,12 +25,15 @@ import {
   DEFAULT_MIDI_FILE_CONFIG,
   DEFAULT_BASS_CONVERSION_CONFIG,
 } from '../types/midifile.js';
+import { createStructuredLogger } from './structured-logger.js';
 import type {
   Exercise,
   ExerciseNote,
   NoteDuration,
   TechniqueType,
 } from '../types/exercise.js';
+
+const logger = createStructuredLogger('MidiFileParser');
 
 /**
  * MIDI File Parser Class
@@ -77,9 +80,9 @@ export class MIDIFileParser {
       let parsedMidi: any;
       try {
         // Debug logging to understand the import structure
-        console.log('Midi:', Midi);
-        console.log('typeof Midi:', typeof Midi);
-        console.log('Midi.constructor:', Midi.constructor);
+        logger.info('Midi:', { Midi, correlationId: 'system' });
+        logger.info('typeof Midi:', { type: typeof Midi, correlationId: 'system' });
+        logger.info('Midi.constructor:', { constructor: Midi.constructor, correlationId: 'system' });
 
         parsedMidi = new Midi(fileBuffer);
       } catch (parseError) {
@@ -281,12 +284,12 @@ export class MIDIFileParser {
             tracks.push(trackData);
           }
         } catch (trackError) {
-          console.warn(`Error processing track ${index}:`, trackError);
+          logger.warn(`Error processing track ${index}:`, { error: trackError, correlationId: 'system' });
           // Continue processing other tracks
         }
       });
     } catch (error) {
-      console.error('Error in processTracks forEach:', error);
+      logger.error('Error in processTracks forEach:', error as Error, { correlationId: 'system' });
       throw new Error(
         `Error processing MIDI tracks: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -390,7 +393,7 @@ export class MIDIFileParser {
     // Process events with error handling
     try {
       if (!track.events || !Array.isArray(track.events)) {
-        console.warn(`Track ${trackIndex} has invalid events structure`);
+        logger.warn(`Track ${trackIndex} has invalid events structure`, { correlationId: 'system' });
         return null;
       }
 

@@ -99,7 +99,7 @@ export async function fetchYouTubeChannelData(
     // Production implementation would look like this:
     const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
     if (!apiKey) {
-      console.warn('YouTube API key not configured');
+      logger.warn('YouTube API key not configured');
       return null;
     }
 
@@ -125,7 +125,7 @@ export async function fetchYouTubeChannelData(
     };
     */
   } catch (error) {
-    console.error('Error fetching YouTube channel data:', error);
+    logger.error('Error fetching YouTube channel data:', error);
     return null;
   }
 }

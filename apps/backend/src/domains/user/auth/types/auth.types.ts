@@ -2,8 +2,7 @@ import type { User } from '@bassnotion/contracts';
 
 import {
   ApiSuccessResponse,
-  ApiErrorResponse,
-} from '../../../../shared/types/api.types.js';
+  ApiErrorResponse } from '../../../../shared/types/api.types.js';
 
 /**
  * Basic session information

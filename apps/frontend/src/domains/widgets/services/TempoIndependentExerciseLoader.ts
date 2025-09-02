@@ -9,9 +9,11 @@
  */
 
 import { MusicalTimeConverter } from '@bassnotion/contracts/services/MusicalTimeConverter';
+import { createStructuredLogger } from '@bassnotion/contracts';
 import { playbackOrchestrator } from './PlaybackOrchestrator';
 import { musicalTimeEngine } from '@/domains/playback/services/MusicalTimeEngine';
 import type {
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
   MusicalPosition,
   TimeSignature,
   BassNote,
@@ -92,7 +94,7 @@ export class TempoIndependentExerciseLoader {
       return cached;
     }
 
-    console.log(
+    logger.info(
       `[TempoIndependentExerciseLoader] Loading exercise: ${exerciseData.title}`,
     );
 
@@ -158,7 +160,7 @@ export class TempoIndependentExerciseLoader {
     playbackOrchestrator.setGlobalTempo(targetTempo);
     playbackOrchestrator.setGlobalTimeSignature(exerciseData.time_signature);
 
-    console.log(
+    logger.info(
       `[TempoIndependentExerciseLoader] Exercise loaded successfully:`,
       {
         title: exerciseData.title,
@@ -185,7 +187,7 @@ export class TempoIndependentExerciseLoader {
     newTempo: number,
   ): Promise<LoadedExercise | null> {
     if (!this.currentExercise) {
-      console.warn('[TempoIndependentExerciseLoader] No exercise loaded');
+      logger.warn('[TempoIndependentExerciseLoader] No exercise loaded');
       return null;
     }
 
@@ -216,7 +218,7 @@ export class TempoIndependentExerciseLoader {
    */
   public registerWidget(widgetId: string, widgetType: string): void {
     this.registeredWidgets.set(widgetId, widgetType);
-    console.log(
+    logger.info(
       `[TempoIndependentExerciseLoader] Widget registered: ${widgetId} (${widgetType})`,
     );
   }
@@ -226,7 +228,7 @@ export class TempoIndependentExerciseLoader {
    */
   public unregisterWidget(widgetId: string): void {
     this.registeredWidgets.delete(widgetId);
-    console.log(
+    logger.info(
       `[TempoIndependentExerciseLoader] Widget unregistered: ${widgetId}`,
     );
   }
@@ -236,7 +238,7 @@ export class TempoIndependentExerciseLoader {
    */
   public clearCache(): void {
     this.exerciseCache.clear();
-    console.log('[TempoIndependentExerciseLoader] Cache cleared');
+    logger.info('[TempoIndependentExerciseLoader] Cache cleared');
   }
 
   /**

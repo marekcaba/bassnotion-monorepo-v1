@@ -86,7 +86,7 @@ export const SAMPLE_MANIFEST: Record<string, InstrumentManifest> = {
       },
     ],
   },
-  
+
   drums: {
     name: 'drums',
     displayName: 'Drum Kit',
@@ -102,15 +102,12 @@ export const SAMPLE_MANIFEST: Record<string, InstrumentManifest> = {
         quality: 'standard',
         description: 'Boss DR-110 samples',
         samples: [
-          { url: 'dr110kik.mp3', size: 30000 },
-          { url: 'dr110clp.mp3', size: 25000 },
-          { url: 'dr110cht.mp3', size: 15000 },
-          { url: 'dr110oht.mp3', size: 18000 },
-          { url: 'dr110sn1.mp3', size: 22000 },
-          { url: 'dr110sn2.mp3', size: 22000 },
+          { url: 'dr110kik.mp3', size: 30000 }, // kick
+          { url: 'dr110clp.mp3', size: 25000 }, // snare/clap
+          { url: 'dr110cht.mp3', size: 15000 }, // closed hihat
         ],
-        estimatedSize: 132000, // 132KB
-        loadTime: 1056, // 1 second at 1Mbps
+        estimatedSize: 70000, // 70KB (30+25+15)
+        loadTime: 560, // 0.56 seconds at 1Mbps
       },
       {
         quality: 'premium',
@@ -124,7 +121,7 @@ export const SAMPLE_MANIFEST: Record<string, InstrumentManifest> = {
       },
     ],
   },
-  
+
   bass: {
     name: 'bass',
     displayName: 'Bass Guitar',
@@ -161,7 +158,7 @@ export const SAMPLE_MANIFEST: Record<string, InstrumentManifest> = {
       },
     ],
   },
-  
+
   metronome: {
     name: 'metronome',
     displayName: 'Metronome',
@@ -177,8 +174,8 @@ export const SAMPLE_MANIFEST: Record<string, InstrumentManifest> = {
         quality: 'standard',
         description: 'Woodblock and click samples',
         samples: [
-          { url: 'click_hi.mp3', size: 5000 },
-          { url: 'click_lo.mp3', size: 5000 },
+          { url: 'Clicks_03.mp3', size: 5000 }, // High pitched
+          { url: 'Clicks_01.mp3', size: 5000 }, // Low pitched
           { url: 'woodblock_hi.mp3', size: 8000 },
           { url: 'woodblock_lo.mp3', size: 8000 },
         ],
@@ -221,16 +218,18 @@ export function getLoadingPriority(): string[] {
 /**
  * Calculate total size for a given quality tier across all instruments
  */
-export function calculateTotalSize(quality: 'essential' | 'standard' | 'premium'): number {
+export function calculateTotalSize(
+  quality: 'essential' | 'standard' | 'premium',
+): number {
   let totalSize = 0;
-  
-  Object.values(SAMPLE_MANIFEST).forEach(instrument => {
-    const tier = instrument.tiers.find(t => t.quality === quality);
+
+  Object.values(SAMPLE_MANIFEST).forEach((instrument) => {
+    const tier = instrument.tiers.find((t) => t.quality === quality);
     if (tier) {
       totalSize += tier.estimatedSize;
     }
   });
-  
+
   return totalSize;
 }
 
@@ -239,18 +238,18 @@ export function calculateTotalSize(quality: 'essential' | 'standard' | 'premium'
  */
 export function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
-  
+
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 /**
  * Estimate loading time based on connection speed
  */
-export function estimateLoadTime(bytes: number, mbps: number = 1): number {
+export function estimateLoadTime(bytes: number, mbps = 1): number {
   const bytesPerSecond = (mbps * 1000000) / 8; // Convert Mbps to bytes/second
   return Math.round((bytes / bytesPerSecond) * 1000); // Return milliseconds
 }
@@ -258,12 +257,14 @@ export function estimateLoadTime(bytes: number, mbps: number = 1): number {
 /**
  * Get recommended quality tier based on connection speed
  */
-export function getRecommendedQuality(connectionType?: string): 'essential' | 'standard' | 'premium' {
+export function getRecommendedQuality(
+  connectionType?: string,
+): 'essential' | 'standard' | 'premium' {
   // Use Network Information API if available
   if ('connection' in navigator) {
     const connection = (navigator as any).connection;
     const effectiveType = connection?.effectiveType;
-    
+
     switch (effectiveType) {
       case 'slow-2g':
       case '2g':
@@ -275,7 +276,7 @@ export function getRecommendedQuality(connectionType?: string): 'essential' | 's
         return 'premium';
     }
   }
-  
+
   // Default to standard if we can't detect
   return 'standard';
 }

@@ -197,7 +197,7 @@ export interface PluginAudioContext {
   sampleRate: number;
   bufferSize: number;
   currentTime: number;
-  
+
   // Latency info
   baseLatency?: number;
   outputLatency?: number;

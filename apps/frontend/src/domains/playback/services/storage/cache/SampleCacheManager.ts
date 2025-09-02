@@ -33,6 +33,7 @@ import MemoryManager, {
 } from './MemoryManager';
 
 import EvictionPolicyEngine, {
+import { createStructuredLogger } from '@bassnotion/contracts';
   EvictionPolicyConfig,
   EvictionStatistics,
 } from './EvictionPolicyEngine';
@@ -658,7 +659,7 @@ export class SampleCacheManager {
   private scheduleOptimization(): void {
     setTimeout(() => {
       this.optimize().catch((error) => {
-        console.warn('Background cache optimization failed:', error);
+        logger.warn('Background cache optimization failed:', error);
       });
     }, 1000);
   }

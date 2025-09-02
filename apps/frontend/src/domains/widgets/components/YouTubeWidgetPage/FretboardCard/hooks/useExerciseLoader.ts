@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect } from 'react';
 import type { SyncedWidgetRenderProps } from '../../../base';
 import type { SelectedDotsMap } from '../types/fretboardTypes';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface UseExerciseLoaderProps {
   syncProps: SyncedWidgetRenderProps;
@@ -92,7 +93,7 @@ export function useExerciseLoader({
         lastProcessedExerciseId.current = exercise.id;
         lastForceReloadTime.current = Date.now();
       } catch (error) {
-        console.error('❌ Error loading exercise:', error);
+        logger.error('❌ Error loading exercise:', error);
       }
     },
     [manualSelectionTracking, fretboardExercise, onExerciseLoad],

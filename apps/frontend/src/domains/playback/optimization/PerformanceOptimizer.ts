@@ -1,7 +1,7 @@
 /**
  * PerformanceOptimizer - Production performance optimization
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Optimizes audio performance for production use
  */
 
@@ -55,7 +55,7 @@ export class PerformanceOptimizer {
   private memoryPools = new Map<string, MemoryPool<any>>();
   private metrics: PerformanceMetrics;
   private gcTimer?: NodeJS.Timeout;
-  private initStartTime: number = 0;
+  private initStartTime = 0;
   private isOptimizing = false;
 
   constructor(eventBus: EventBus, config: OptimizationConfig = {}) {
@@ -66,7 +66,7 @@ export class PerformanceOptimizer {
       maxMemoryPoolSize: 100,
       gcOptimizationInterval: 30000, // 30 seconds
       performanceMonitoring: true,
-      ...config
+      ...config,
     };
 
     this.metrics = this.initializeMetrics();
@@ -90,7 +90,7 @@ export class PerformanceOptimizer {
 
     this.eventBus.emit('optimization:started', {
       timestamp: Date.now(),
-      config: this.config
+      config: this.config,
     });
   }
 
@@ -105,7 +105,7 @@ export class PerformanceOptimizer {
 
     this.eventBus.emit('optimization:initialization-complete', {
       duration: this.metrics.initializationTime,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     // Check if we met the < 2 second target
@@ -114,7 +114,7 @@ export class PerformanceOptimizer {
         message: `Initialization took ${Math.round(this.metrics.initializationTime)}ms, exceeding 2s target`,
         metric: 'initializationTime',
         value: this.metrics.initializationTime,
-        target: 2000
+        target: 2000,
       });
     }
   }
@@ -127,7 +127,7 @@ export class PerformanceOptimizer {
     this.createPool('audioBuffers', {
       factory: () => new Float32Array(4096),
       reset: (buffer) => buffer.fill(0),
-      maxSize: 20
+      maxSize: 20,
     });
 
     // Event object pool
@@ -138,7 +138,7 @@ export class PerformanceOptimizer {
         obj.data = null;
         obj.timestamp = 0;
       },
-      maxSize: 50
+      maxSize: 50,
     });
 
     // Command object pool
@@ -149,32 +149,35 @@ export class PerformanceOptimizer {
         obj.type = '';
         obj.params = {};
       },
-      maxSize: 30
+      maxSize: 30,
     });
 
     // Analysis data pool
     this.createPool('analysisData', {
       factory: () => new Float32Array(2048),
       reset: (buffer) => buffer.fill(0),
-      maxSize: 10
+      maxSize: 10,
     });
   }
 
   /**
    * Create a memory pool
    */
-  private createPool<T>(name: string, options: {
-    factory: () => T;
-    reset: (item: T) => void;
-    maxSize: number;
-  }): void {
+  private createPool<T>(
+    name: string,
+    options: {
+      factory: () => T;
+      reset: (item: T) => void;
+      maxSize: number;
+    },
+  ): void {
     const pool: MemoryPool<T> = {
       name,
       factory: options.factory,
       reset: options.reset,
       maxSize: options.maxSize,
       items: [],
-      inUse: new Set()
+      inUse: new Set(),
     };
 
     // Pre-allocate some items
@@ -202,7 +205,7 @@ export class PerformanceOptimizer {
       // Pool exhausted
       this.eventBus.emit('optimization:pool-exhausted', {
         pool: poolName,
-        size: pool.maxSize
+        size: pool.maxSize,
       });
       return null;
     }
@@ -266,7 +269,7 @@ export class PerformanceOptimizer {
 
     this.eventBus.emit('optimization:gc-complete', {
       duration: gcTime,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -290,7 +293,7 @@ export class PerformanceOptimizer {
         pool.items.splice(0, excessItems);
         this.eventBus.emit('optimization:pool-trimmed', {
           pool: name,
-          removed: excessItems
+          removed: excessItems,
         });
       }
     }
@@ -325,9 +328,9 @@ export class PerformanceOptimizer {
         current: performance.memory.usedJSHeapSize / (1024 * 1024),
         peak: Math.max(
           this.metrics.memoryUsage.peak,
-          performance.memory.usedJSHeapSize / (1024 * 1024)
+          performance.memory.usedJSHeapSize / (1024 * 1024),
         ),
-        allocated: performance.memory.totalJSHeapSize / (1024 * 1024)
+        allocated: performance.memory.totalJSHeapSize / (1024 * 1024),
       };
     }
 
@@ -336,7 +339,7 @@ export class PerformanceOptimizer {
     this.metrics.cpuUsage = {
       current: cpuUsage,
       average: (this.metrics.cpuUsage.average + cpuUsage) / 2,
-      peak: Math.max(this.metrics.cpuUsage.peak, cpuUsage)
+      peak: Math.max(this.metrics.cpuUsage.peak, cpuUsage),
     };
 
     // Check performance targets
@@ -359,7 +362,7 @@ export class PerformanceOptimizer {
 
     // Baseline is ~50000 iterations in 5ms on typical CPU
     const baseline = 50000;
-    const usage = Math.max(0, 100 - (iterations / baseline * 100));
+    const usage = Math.max(0, 100 - (iterations / baseline) * 100);
 
     return Math.min(100, usage);
   }
@@ -374,7 +377,7 @@ export class PerformanceOptimizer {
       this.eventBus.emit('optimization:target-exceeded', {
         metric: 'memory',
         current: this.metrics.memoryUsage.current,
-        target: memoryTarget
+        target: memoryTarget,
       });
     }
 
@@ -384,7 +387,7 @@ export class PerformanceOptimizer {
       this.eventBus.emit('optimization:target-exceeded', {
         metric: 'cpu',
         current: this.metrics.cpuUsage.average,
-        target: cpuTarget
+        target: cpuTarget,
       });
     }
   }
@@ -398,23 +401,23 @@ export class PerformanceOptimizer {
       memoryUsage: {
         current: 0,
         peak: 0,
-        allocated: 0
+        allocated: 0,
       },
       cpuUsage: {
         current: 0,
         average: 0,
-        peak: 0
+        peak: 0,
       },
       audioMetrics: {
         latency: 0,
         dropouts: 0,
-        bufferUnderruns: 0
+        bufferUnderruns: 0,
       },
       gcMetrics: {
         collections: 0,
         pauseTime: 0,
-        lastCollection: 0
-      }
+        lastCollection: 0,
+      },
     };
   }
 
@@ -449,19 +452,21 @@ export class PerformanceOptimizer {
     }>;
     recommendations: string[];
   } {
-    const pools = Array.from(this.memoryPools.entries()).map(([name, pool]) => ({
-      name,
-      size: pool.maxSize,
-      inUse: pool.inUse.size,
-      available: pool.items.length
-    }));
+    const pools = Array.from(this.memoryPools.entries()).map(
+      ([name, pool]) => ({
+        name,
+        size: pool.maxSize,
+        inUse: pool.inUse.size,
+        available: pool.items.length,
+      }),
+    );
 
     const recommendations = this.generateRecommendations();
 
     return {
       metrics: { ...this.metrics },
       pools,
-      recommendations
+      recommendations,
     };
   }
 
@@ -472,23 +477,33 @@ export class PerformanceOptimizer {
     const recommendations: string[] = [];
 
     if (this.metrics.initializationTime > 2000) {
-      recommendations.push('Consider lazy loading non-essential components to reduce initialization time');
+      recommendations.push(
+        'Consider lazy loading non-essential components to reduce initialization time',
+      );
     }
 
     if (this.metrics.memoryUsage.current > 200) {
-      recommendations.push('Memory usage exceeds target. Review sample loading and caching strategies');
+      recommendations.push(
+        'Memory usage exceeds target. Review sample loading and caching strategies',
+      );
     }
 
     if (this.metrics.cpuUsage.average > 30) {
-      recommendations.push('CPU usage is high. Consider optimizing audio processing algorithms');
+      recommendations.push(
+        'CPU usage is high. Consider optimizing audio processing algorithms',
+      );
     }
 
     if (this.metrics.audioMetrics.dropouts > 0) {
-      recommendations.push('Audio dropouts detected. Increase buffer sizes or reduce processing load');
+      recommendations.push(
+        'Audio dropouts detected. Increase buffer sizes or reduce processing load',
+      );
     }
 
     if (this.metrics.gcMetrics.pauseTime > 100) {
-      recommendations.push('GC pause time is high. Review object allocation patterns');
+      recommendations.push(
+        'GC pause time is high. Review object allocation patterns',
+      );
     }
 
     return recommendations;
@@ -507,7 +522,7 @@ export class PerformanceOptimizer {
     this.memoryPools.clear();
 
     this.eventBus.emit('optimization:disposed', {
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 }

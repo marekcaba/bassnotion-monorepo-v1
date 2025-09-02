@@ -14,6 +14,7 @@
  */
 
 import {
+import { createStructuredLogger } from '@bassnotion/contracts';
   PredictiveLoadingEngineConfig,
   LearningEvent,
   AssetPrediction,
@@ -78,7 +79,7 @@ export class PredictiveLoadingEngine {
       return;
     }
 
-    console.log('🤖 Initializing Predictive Loading Engine...');
+    logger.info('🤖 Initializing Predictive Loading Engine...');
 
     try {
       // Initialize machine learning components
@@ -112,9 +113,9 @@ export class PredictiveLoadingEngine {
       }
 
       this.isInitialized = true;
-      console.log('✅ Predictive Loading Engine initialized successfully');
+      logger.info('✅ Predictive Loading Engine initialized successfully');
     } catch (error) {
-      console.error(
+      logger.error(
         '❌ Failed to initialize Predictive Loading Engine:',
         error,
       );
@@ -134,7 +135,7 @@ export class PredictiveLoadingEngine {
     // Validate event structure
     // TODO: Review non-null assertion - consider null safety
     if (!event || !event.context || !event.context.sessionId) {
-      console.warn('⚠️ Invalid learning event structure, skipping...');
+      logger.warn('⚠️ Invalid learning event structure, skipping...');
       return;
     }
 
@@ -365,7 +366,7 @@ export class PredictiveLoadingEngine {
   private checkPerformanceThresholds(): void {
     // Simplified threshold checking
     if (this.performanceMetrics.accuracy < 0.7) {
-      console.log(
+      logger.info(
         '🔄 Performance below threshold, triggering adaptive learning...',
       );
       this.triggerModelRetraining();
@@ -377,7 +378,7 @@ export class PredictiveLoadingEngine {
    */
   private triggerModelRetraining(): void {
     // Simplified retraining trigger
-    console.log(
+    logger.info(
       '🔄 Triggering model retraining with recent learning events...',
     );
 
@@ -446,7 +447,7 @@ export class PredictiveLoadingEngine {
   }
 
   private async initializeMachineLearning(): Promise<void> {
-    console.log('🧠 Initializing machine learning components...');
+    logger.info('🧠 Initializing machine learning components...');
 
     // Initialize feature engineering
     if (this.config.learningConfig.featureEngineering.enabled) {
@@ -458,37 +459,37 @@ export class PredictiveLoadingEngine {
   }
 
   private initializeFeatureEngineering(): void {
-    console.log('🔧 Initializing feature engineering...');
+    logger.info('🔧 Initializing feature engineering...');
     // Feature engineering initialization would go here
   }
 
   private async initializeModelTraining(): Promise<void> {
-    console.log('📚 Initializing model training...');
+    logger.info('📚 Initializing model training...');
     // Model training initialization would go here
   }
 
   private async initializeBehaviorAnalysis(): Promise<void> {
-    console.log('🎯 Initializing behavior analysis...');
+    logger.info('🎯 Initializing behavior analysis...');
     // Behavior analysis initialization would go here
   }
 
   private async initializePredictiveModels(): Promise<void> {
-    console.log('🔮 Initializing predictive models...');
+    logger.info('🔮 Initializing predictive models...');
     // Predictive models initialization would go here
   }
 
   private async initializeAdaptiveLearning(): Promise<void> {
-    console.log('🔄 Initializing adaptive learning...');
+    logger.info('🔄 Initializing adaptive learning...');
     // Adaptive learning initialization would go here
   }
 
   private async initializeAnalyticsIntegration(): Promise<void> {
-    console.log('📊 Initializing analytics integration with Story 2.3...');
+    logger.info('📊 Initializing analytics integration with Story 2.3...');
     // Story 2.3 AnalyticsEngine integration would go here
   }
 
   private startBackgroundPrefetching(): void {
-    console.log('🔄 Starting background prefetching...');
+    logger.info('🔄 Starting background prefetching...');
 
     // Start background prefetching loop
     setInterval(async () => {
@@ -967,7 +968,7 @@ export class PredictiveLoadingEngine {
 
   private async triggerAdaptiveLearning(event: LearningEvent): Promise<void> {
     // Simplified adaptive learning trigger
-    console.log('🔄 Triggering adaptive learning based on learning event...');
+    logger.info('🔄 Triggering adaptive learning based on learning event...');
 
     // Update adaptive metrics
     this.adaptiveLearningMetrics.feedbackIncorporation += 0.01;

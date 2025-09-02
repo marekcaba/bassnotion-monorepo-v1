@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface ChordSlotSelectorProps {
   value: string;
@@ -58,6 +59,7 @@ export function ChordSlotSelector({
   isActive = false,
   onFocus,
 }: ChordSlotSelectorProps) {
+  const { correlationId, logger } = useCorrelation('ChordSlotSelector');
   const [selectedRoot, setSelectedRoot] = useState('');
   const currentRootRef = useRef('');
   const currentQualityRef = useRef('');
@@ -76,7 +78,7 @@ export function ChordSlotSelector({
 
   // Parse current value - default state shows the complete chord
   useEffect(() => {
-    console.log('🎵 ChordSlotSelector: value prop changed to:', value);
+    logger.info('🎵 ChordSlotSelector: value prop changed to:', value);
     if (!value) {
       setSelectedRoot('');
       setSelectedQuality('');
@@ -104,7 +106,7 @@ export function ChordSlotSelector({
     // Normalize sharps and flats
     root = root.replace('#', '♯').replace('b', '♭');
 
-    console.log(
+    logger.info(
       '🎵 ChordSlotSelector: parsed root:',
       root,
       'quality:',
@@ -173,7 +175,7 @@ export function ChordSlotSelector({
 
   // Handle root selection
   const handleRootSelect = (root: string) => {
-    console.log('🎵 ChordSlotSelector: Root selected:', root);
+    logger.info('🎵 ChordSlotSelector: Root selected:', root);
     setSelectedRoot(root);
     currentRootRef.current = root; // Store in ref for immediate access
     setSelectionState('selecting-quality');
@@ -191,7 +193,7 @@ export function ChordSlotSelector({
         }
         const middleSetIndex = chordQualities.length + qualityIndex; // Use middle set
         qualityReelRef.current.scrollTop = middleSetIndex * 24;
-        console.log(
+        logger.info(
           '🎵 ChordSlotSelector: Scrolled to quality:',
           currentQuality || 'default',
           'at index',
@@ -223,7 +225,7 @@ export function ChordSlotSelector({
     }
 
     const newChord = currentRoot + quality;
-    console.log(
+    logger.info(
       '🎵 ChordSlotSelector: Complete chord constructed:',
       newChord,
       'from root:',
@@ -239,7 +241,7 @@ export function ChordSlotSelector({
   const handleQualitySelectWithRoot = (quality: string, root: string) => {
     setSelectedQuality(quality);
     const newChord = root + quality;
-    console.log(
+    logger.info(
       '🎵 ChordSlotSelector: Complete chord constructed with explicit root:',
       newChord,
       'from root:',
@@ -261,7 +263,7 @@ export function ChordSlotSelector({
       const index = nearestIndex % rootNotes.length;
       const adjustedIndex = index < 0 ? rootNotes.length + index : index;
       const newRoot = rootNotes[adjustedIndex];
-      console.log('🎵 ChordSlotSelector: Snapping to root:', newRoot);
+      logger.info('🎵 ChordSlotSelector: Snapping to root:', newRoot);
       handleRootSelect(newRoot);
       if (rootReelRef.current) {
         rootReelRef.current.scrollTop = snappedPosition;
@@ -271,7 +273,7 @@ export function ChordSlotSelector({
       const adjustedIndex = index < 0 ? chordQualities.length + index : index;
       const newQuality = chordQualities[adjustedIndex].value;
       const currentRoot = currentRootRef.current; // Use ref for immediate access
-      console.log(
+      logger.info(
         '🎵 ChordSlotSelector: Snapping to quality:',
         newQuality,
         'with root:',

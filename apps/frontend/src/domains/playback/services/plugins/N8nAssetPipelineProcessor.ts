@@ -8,9 +8,11 @@
  */
 
 import { AssetManager } from '../AssetManager';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { MusicalContextAnalyzer } from './MusicalContextAnalyzer';
 import { InstrumentAssetOptimizer } from './InstrumentAssetOptimizer';
 import type {
+import { createStructuredLogger } from '@bassnotion/contracts';
   N8nPayloadConfig,
   AssetLoadResult,
   AssetManifest,
@@ -168,7 +170,7 @@ export class N8nAssetPipelineProcessor {
   public async processN8nPayload(
     payload: N8nPayloadConfig,
   ): Promise<N8nProcessingResult> {
-    console.log('🔄 Processing Epic 2 n8n payload with enhanced pipeline:', {
+    logger.info('🔄 Processing Epic 2 n8n payload with enhanced pipeline:', {
       assetCount: payload.assetManifest?.totalCount || 0,
       midiFiles: payload.tutorialSpecificMidi ? 'present' : 'missing',
       audioSamples: payload.audioSamples ? 'present' : 'missing',
@@ -183,6 +185,7 @@ export class N8nAssetPipelineProcessor {
     let cacheHits = 0;
 
     try {
+  const { correlationId, logger } = useCorrelation('startTime');
       // Step 1: Enhance asset manifest with CDN optimization
       const enhancedManifest = await this.enhanceAssetManifest(
         payload.assetManifest,
@@ -229,7 +232,7 @@ export class N8nAssetPipelineProcessor {
 
       const totalProcessingTime = performance.now() - startTime;
 
-      console.log('✅ N8n payload processing complete:', {
+      logger.info('✅ N8n payload processing complete:', {
         processedAssets: processedAssets.length,
         failedAssets: failedAssets.length,
         processingTime: `${totalProcessingTime.toFixed(2)}ms`,
@@ -248,7 +251,7 @@ export class N8nAssetPipelineProcessor {
         routingDecisions,
       };
     } catch (error) {
-      console.error('❌ N8n payload processing failed:', error);
+      logger.error('❌ N8n payload processing failed:', error);
       throw new Error(
         `N8n processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -266,7 +269,7 @@ export class N8nAssetPipelineProcessor {
       return null;
     }
 
-    console.log('🔧 Enhancing asset manifest with CDN optimization...');
+    logger.info('🔧 Enhancing asset manifest with CDN optimization...');
 
     const enhancedAssets = await Promise.all(
       manifest.assets.map(async (asset) => {
@@ -512,7 +515,7 @@ export class N8nAssetPipelineProcessor {
    * Analyze musical context from n8n payload
    */
   private async analyzeMusicalContext(payload: N8nPayloadConfig): Promise<any> {
-    console.log('🎼 Analyzing musical context from n8n payload...');
+    logger.info('🎼 Analyzing musical context from n8n payload...');
 
     // Enhanced intelligence: Only generate insights when there's actual musical content
     const hasMidiContent =
@@ -529,7 +532,7 @@ export class N8nAssetPipelineProcessor {
     // Return null if no meaningful musical content to analyze
     // TODO: Review non-null assertion - consider null safety
     if (!hasMidiContent && !hasAudioContent) {
-      console.log('🎼 No musical content found - skipping analysis');
+      logger.info('🎼 No musical content found - skipping analysis');
       return null;
     }
 
@@ -611,7 +614,7 @@ export class N8nAssetPipelineProcessor {
     qualityAdaptations: number;
     cacheHits: number;
   }> {
-    console.log('🎵 Processing audio samples with optimization...');
+    logger.info('🎵 Processing audio samples with optimization...');
 
     const successful: AssetLoadResult[] = [];
     const failed: string[] = [];
@@ -644,7 +647,7 @@ export class N8nAssetPipelineProcessor {
 
           if (asset.source === 'cache') cacheHits++;
         } catch (error) {
-          console.error(`Failed to load bass note ${bassNote}:`, error);
+          logger.error(`Failed to load bass note ${bassNote}:`, error);
           failed.push(bassNote);
         }
       }
@@ -670,7 +673,7 @@ export class N8nAssetPipelineProcessor {
 
           if (asset.source === 'cache') cacheHits++;
         } catch (error) {
-          console.error(`Failed to load drum hit ${drumHit}:`, error);
+          logger.error(`Failed to load drum hit ${drumHit}:`, error);
           failed.push(drumHit);
         }
       }
@@ -700,7 +703,7 @@ export class N8nAssetPipelineProcessor {
 
         if (asset.source === 'cache') cacheHits++;
       } catch (error) {
-        console.error(`Failed to load ambience track:`, error);
+        logger.error(`Failed to load ambience track:`, error);
         failed.push(audioSamples.ambienceTrack);
       }
     }
@@ -723,7 +726,7 @@ export class N8nAssetPipelineProcessor {
     failed: string[];
     routingDecisions: N8nRoutingDecision[];
   }> {
-    console.log('🎼 Processing tutorial-specific MIDI files...');
+    logger.info('🎼 Processing tutorial-specific MIDI files...');
 
     const successful: AssetLoadResult[] = [];
     const failed: string[] = [];
@@ -749,7 +752,7 @@ export class N8nAssetPipelineProcessor {
         successful.push(asset);
         routingDecisions.push(routingDecision);
       } catch (error) {
-        console.error(`Failed to load MIDI file ${midiUrl}:`, error);
+        logger.error(`Failed to load MIDI file ${midiUrl}:`, error);
         failed.push(midiUrl);
       }
     }
@@ -764,7 +767,7 @@ export class N8nAssetPipelineProcessor {
     successful: AssetLoadResult[];
     failed: string[];
   }> {
-    console.log('📚 Processing library assets...');
+    logger.info('📚 Processing library assets...');
 
     const successful: AssetLoadResult[] = [];
     const failed: string[] = [];
@@ -772,12 +775,12 @@ export class N8nAssetPipelineProcessor {
     // Note: Library assets are typically referenced by ID, not URL
     // This would integrate with a library asset resolver
     if (libraryMidi.drumPatternId) {
-      console.log(`Processing drum pattern: ${libraryMidi.drumPatternId}`);
+      logger.info(`Processing drum pattern: ${libraryMidi.drumPatternId}`);
       // Would load from library
     }
 
     if (libraryMidi.metronomeStyleId) {
-      console.log(
+      logger.info(
         `Processing metronome style: ${libraryMidi.metronomeStyleId}`,
       );
       // Would load from library
@@ -883,7 +886,7 @@ export class N8nAssetPipelineProcessor {
       route.healthStatus = 'healthy';
     }
 
-    console.log(`Route ${routeId} health updated:`, {
+    logger.info(`Route ${routeId} health updated:`, {
       latency: route.latency,
       successRate: route.successRate,
       healthStatus: route.healthStatus,
@@ -928,7 +931,7 @@ export class N8nAssetPipelineProcessor {
     this.failedAssets = [];
     this.cacheHits = 0;
     this.cdnOptimizationSavings = 0;
-    console.log('🧹 N8n routing history cleared');
+    logger.info('🧹 N8n routing history cleared');
   }
 
   /**
@@ -973,7 +976,7 @@ export class N8nAssetPipelineProcessor {
       const startTime = Date.now();
 
       try {
-        console.log(
+        logger.info(
           `🔄 Asset loading attempt ${attempt + 1}/${maxRetries + 1}: ${url}`,
         );
         const result = await this.assetManager.loadAsset(url, options);
@@ -996,7 +999,7 @@ export class N8nAssetPipelineProcessor {
           const jitter = Math.random() * 100; // Add randomness
           const delay = baseDelay + jitter;
 
-          console.log(`⏳ Retrying asset load in ${delay.toFixed(0)}ms...`);
+          logger.info(`⏳ Retrying asset load in ${delay.toFixed(0)}ms...`);
           await new Promise((resolve) => setTimeout(resolve, delay));
 
           // Try alternative route if available
@@ -1005,7 +1008,7 @@ export class N8nAssetPipelineProcessor {
             if (alternativeRoute) {
               url = this.optimizeUrlForRoute(url, alternativeRoute.id);
               routeId = alternativeRoute.id;
-              console.log(`🔀 Switching to alternative route: ${routeId}`);
+              logger.info(`🔀 Switching to alternative route: ${routeId}`);
             }
           }
         }
@@ -1013,7 +1016,7 @@ export class N8nAssetPipelineProcessor {
     }
 
     // All retries exhausted
-    console.error(
+    logger.error(
       `❌ Asset load failed after ${maxRetries + 1} attempts: ${url}`,
     );
     throw lastError || new Error('Asset load failed with unknown error');
@@ -1069,7 +1072,7 @@ export class N8nAssetPipelineProcessor {
       });
 
     if (availableRoutes.length === 0) {
-      console.warn('⚠️ No healthy routes available, using degraded routes');
+      logger.warn('⚠️ No healthy routes available, using degraded routes');
       const degradedRoutes = Array.from(this.assetRoutes.values())
         .filter((route) => route.healthStatus === 'degraded')
         .sort((a, b) => a.latency - b.latency);
@@ -1154,7 +1157,7 @@ export class N8nAssetPipelineProcessor {
 
       if (Date.now() - lastFailure > circuitBreakerTimeout) {
         route.healthStatus = 'degraded'; // Allow testing
-        console.log(`🔄 Circuit breaker reset for route ${routeId}`);
+        logger.info(`🔄 Circuit breaker reset for route ${routeId}`);
         return true;
       }
       return false;

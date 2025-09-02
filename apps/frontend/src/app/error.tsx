@@ -3,6 +3,7 @@
 import { TransitionLink } from '@/shared/components/ui/transition-link';
 import { AlertCircle } from 'lucide-react';
 import { useEffect } from 'react';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 export default function Error({
   error,
@@ -13,7 +14,7 @@ export default function Error({
 }) {
   useEffect(() => {
     // Log the error to an error reporting service
-    console.error(error);
+    logger.error(error);
   }, [error]);
 
   return (

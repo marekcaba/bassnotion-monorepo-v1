@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import {
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
   MetricsCollector,
   CentralPerformanceMetrics,
   MetricsAlert,
@@ -50,7 +51,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
             setAlerts(recentAlerts);
           }
         } catch (error) {
-          console.error(
+          logger.error(
             '[PerformanceDashboard] Failed to collect metrics:',
             error,
           );

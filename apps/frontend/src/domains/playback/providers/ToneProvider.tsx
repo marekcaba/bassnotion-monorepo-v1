@@ -1,23 +1,30 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Export functions to get global Tone info for backward compatibility
 export function getGlobalTone() {
   // Deprecated - use AudioProvider and useAudioEngine hook instead
-  console.warn('[ToneProvider] getGlobalTone is deprecated. Use AudioProvider.');
+  logger.warn(
+    '[ToneProvider] getGlobalTone is deprecated. Use AudioProvider.',
+  );
   return null;
 }
 
 export function getGlobalToneId() {
   // Deprecated - no longer using global instance IDs
-  console.warn('[ToneProvider] getGlobalToneId is deprecated. Use AudioProvider.');
+  logger.warn(
+    '[ToneProvider] getGlobalToneId is deprecated. Use AudioProvider.',
+  );
   return 'deprecated';
 }
 
 export function getGlobalContextId() {
   // Deprecated - no longer using global state
-  console.warn('[ToneProvider] getGlobalContextId is deprecated. Global state has been eliminated.');
+  logger.warn(
+    '[ToneProvider] getGlobalContextId is deprecated. Global state has been eliminated.',
+  );
   return null;
 }
 
@@ -39,19 +46,24 @@ interface ToneProviderProps {
 }
 
 export function ToneProvider({ children }: ToneProviderProps) {
+  const { correlationId, logger } = useCorrelation('ToneProvider');
   const [tone, setTone] = useState<any>(null);
   const [transport, setTransport] = useState<any>(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    console.warn('[ToneProvider] This provider is deprecated. Please use AudioProvider instead.');
+    logger.warn(
+      '[ToneProvider] This provider is deprecated. Please use AudioProvider instead.',
+    );
     // Mark as ready immediately since this is just a stub
     setIsReady(true);
   }, []);
 
   // Method to start audio context (needs user gesture)
   const startContext = async () => {
-    console.warn('[ToneProvider] startContext is deprecated. Use AudioProvider.');
+    logger.warn(
+      '[ToneProvider] startContext is deprecated. Use AudioProvider.',
+    );
   };
 
   const contextValue: ToneContextValue = {
@@ -62,9 +74,7 @@ export function ToneProvider({ children }: ToneProviderProps) {
   };
 
   return (
-    <ToneContext.Provider value={contextValue}>
-      {children}
-    </ToneContext.Provider>
+    <ToneContext.Provider value={contextValue}>{children}</ToneContext.Provider>
   );
 }
 

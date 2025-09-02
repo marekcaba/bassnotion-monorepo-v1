@@ -201,49 +201,49 @@ export const MOCK_EXERCISES: Exercise[] = [
       pattern: [
         // Pattern: Hi-hats on all eighths, kick on 1 and 5, snare on 3 and 7
         // Bar 1
-        { timestamp: 0, type: 'kick', velocity: 0.8 },      // Beat 1
-        { timestamp: 0, type: 'hihat', velocity: 0.6 },     // Beat 1
-        { timestamp: 250, type: 'hihat', velocity: 0.5 },   // Beat 1.5
-        { timestamp: 500, type: 'hihat', velocity: 0.6 },   // Beat 2
-        { timestamp: 750, type: 'hihat', velocity: 0.5 },   // Beat 2.5
-        { timestamp: 1000, type: 'snare', velocity: 0.7 },  // Beat 3
-        { timestamp: 1000, type: 'hihat', velocity: 0.6 },  // Beat 3
-        { timestamp: 1250, type: 'hihat', velocity: 0.5 },  // Beat 3.5
-        { timestamp: 1500, type: 'hihat', velocity: 0.6 },  // Beat 4
-        { timestamp: 1750, type: 'hihat', velocity: 0.5 },  // Beat 4.5
+        { timestamp: 0, type: 'kick', velocity: 0.8 }, // Beat 1
+        { timestamp: 0, type: 'hihat', velocity: 0.6 }, // Beat 1
+        { timestamp: 250, type: 'hihat', velocity: 0.5 }, // Beat 1.5
+        { timestamp: 500, type: 'hihat', velocity: 0.6 }, // Beat 2
+        { timestamp: 750, type: 'hihat', velocity: 0.5 }, // Beat 2.5
+        { timestamp: 1000, type: 'snare', velocity: 0.7 }, // Beat 3
+        { timestamp: 1000, type: 'hihat', velocity: 0.6 }, // Beat 3
+        { timestamp: 1250, type: 'hihat', velocity: 0.5 }, // Beat 3.5
+        { timestamp: 1500, type: 'hihat', velocity: 0.6 }, // Beat 4
+        { timestamp: 1750, type: 'hihat', velocity: 0.5 }, // Beat 4.5
         // Bar 2
-        { timestamp: 2000, type: 'kick', velocity: 0.8 },   // Beat 5 (1st of bar 2)
-        { timestamp: 2000, type: 'hihat', velocity: 0.6 },  // Beat 5
-        { timestamp: 2250, type: 'hihat', velocity: 0.5 },  // Beat 5.5
-        { timestamp: 2500, type: 'hihat', velocity: 0.6 },  // Beat 6
-        { timestamp: 2750, type: 'hihat', velocity: 0.5 },  // Beat 6.5
-        { timestamp: 3000, type: 'snare', velocity: 0.7 },  // Beat 7 (3rd of bar 2)
-        { timestamp: 3000, type: 'hihat', velocity: 0.6 },  // Beat 7
-        { timestamp: 3250, type: 'hihat', velocity: 0.5 },  // Beat 7.5
-        { timestamp: 3500, type: 'hihat', velocity: 0.6 },  // Beat 8
-        { timestamp: 3750, type: 'hihat', velocity: 0.5 },  // Beat 8.5
+        { timestamp: 2000, type: 'kick', velocity: 0.8 }, // Beat 5 (1st of bar 2)
+        { timestamp: 2000, type: 'hihat', velocity: 0.6 }, // Beat 5
+        { timestamp: 2250, type: 'hihat', velocity: 0.5 }, // Beat 5.5
+        { timestamp: 2500, type: 'hihat', velocity: 0.6 }, // Beat 6
+        { timestamp: 2750, type: 'hihat', velocity: 0.5 }, // Beat 6.5
+        { timestamp: 3000, type: 'snare', velocity: 0.7 }, // Beat 7 (3rd of bar 2)
+        { timestamp: 3000, type: 'hihat', velocity: 0.6 }, // Beat 7
+        { timestamp: 3250, type: 'hihat', velocity: 0.5 }, // Beat 7.5
+        { timestamp: 3500, type: 'hihat', velocity: 0.6 }, // Beat 8
+        { timestamp: 3750, type: 'hihat', velocity: 0.5 }, // Beat 8.5
         // Bar 3
-        { timestamp: 4000, type: 'kick', velocity: 0.8 },   // Beat 9 (1st of bar 3)
-        { timestamp: 4000, type: 'hihat', velocity: 0.6 },  // Beat 9
-        { timestamp: 4250, type: 'hihat', velocity: 0.5 },  // Beat 9.5
-        { timestamp: 4500, type: 'hihat', velocity: 0.6 },  // Beat 10
-        { timestamp: 4750, type: 'hihat', velocity: 0.5 },  // Beat 10.5
-        { timestamp: 5000, type: 'snare', velocity: 0.7 },  // Beat 11 (3rd of bar 3)
-        { timestamp: 5000, type: 'hihat', velocity: 0.6 },  // Beat 11
-        { timestamp: 5250, type: 'hihat', velocity: 0.5 },  // Beat 11.5
-        { timestamp: 5500, type: 'hihat', velocity: 0.6 },  // Beat 12
-        { timestamp: 5750, type: 'hihat', velocity: 0.5 },  // Beat 12.5
+        { timestamp: 4000, type: 'kick', velocity: 0.8 }, // Beat 9 (1st of bar 3)
+        { timestamp: 4000, type: 'hihat', velocity: 0.6 }, // Beat 9
+        { timestamp: 4250, type: 'hihat', velocity: 0.5 }, // Beat 9.5
+        { timestamp: 4500, type: 'hihat', velocity: 0.6 }, // Beat 10
+        { timestamp: 4750, type: 'hihat', velocity: 0.5 }, // Beat 10.5
+        { timestamp: 5000, type: 'snare', velocity: 0.7 }, // Beat 11 (3rd of bar 3)
+        { timestamp: 5000, type: 'hihat', velocity: 0.6 }, // Beat 11
+        { timestamp: 5250, type: 'hihat', velocity: 0.5 }, // Beat 11.5
+        { timestamp: 5500, type: 'hihat', velocity: 0.6 }, // Beat 12
+        { timestamp: 5750, type: 'hihat', velocity: 0.5 }, // Beat 12.5
         // Bar 4
-        { timestamp: 6000, type: 'kick', velocity: 0.8 },   // Beat 13 (1st of bar 4)
-        { timestamp: 6000, type: 'hihat', velocity: 0.6 },  // Beat 13
-        { timestamp: 6250, type: 'hihat', velocity: 0.5 },  // Beat 13.5
-        { timestamp: 6500, type: 'hihat', velocity: 0.6 },  // Beat 14
-        { timestamp: 6750, type: 'hihat', velocity: 0.5 },  // Beat 14.5
-        { timestamp: 7000, type: 'snare', velocity: 0.7 },  // Beat 15 (3rd of bar 4)
-        { timestamp: 7000, type: 'hihat', velocity: 0.6 },  // Beat 15
-        { timestamp: 7250, type: 'hihat', velocity: 0.5 },  // Beat 15.5
-        { timestamp: 7500, type: 'crash', velocity: 0.8 },  // Beat 16 (end)
-        { timestamp: 7500, type: 'hihat', velocity: 0.6 },  // Beat 16
+        { timestamp: 6000, type: 'kick', velocity: 0.8 }, // Beat 13 (1st of bar 4)
+        { timestamp: 6000, type: 'hihat', velocity: 0.6 }, // Beat 13
+        { timestamp: 6250, type: 'hihat', velocity: 0.5 }, // Beat 13.5
+        { timestamp: 6500, type: 'hihat', velocity: 0.6 }, // Beat 14
+        { timestamp: 6750, type: 'hihat', velocity: 0.5 }, // Beat 14.5
+        { timestamp: 7000, type: 'snare', velocity: 0.7 }, // Beat 15 (3rd of bar 4)
+        { timestamp: 7000, type: 'hihat', velocity: 0.6 }, // Beat 15
+        { timestamp: 7250, type: 'hihat', velocity: 0.5 }, // Beat 15.5
+        { timestamp: 7500, type: 'crash', velocity: 0.8 }, // Beat 16 (end)
+        { timestamp: 7500, type: 'hihat', velocity: 0.6 }, // Beat 16
       ],
     },
     is_active: true,

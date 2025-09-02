@@ -1,13 +1,20 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { RequestContextService } from '../../shared/services/request-context.service.js';
 
 @Injectable()
 export class SupabaseService implements OnModuleInit {
-  private readonly logger = new Logger(SupabaseService.name);
+  private readonly staticLogger = createStructuredLogger(SupabaseService.name);
   private supabaseClient!: SupabaseClient;
 
-  constructor() {
-    this.logger.debug('🚀 SupabaseService constructor called');
+  constructor(
+    @Inject(RequestContextService)
+    private readonly requestContext: RequestContextService,
+  ) {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug('🚀 SupabaseService constructor called', { correlationId });
   }
 
   onModuleInit() {
@@ -17,9 +24,9 @@ export class SupabaseService implements OnModuleInit {
       const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
       if (!supabaseUrl || !supabaseServiceRoleKey) {
-        this.logger.warn(
-          '🔧 Supabase environment variables not found - creating mock client for tests',
-        );
+        const logger = this.requestContext?.getLogger() || this.staticLogger;
+        const correlationId = this.requestContext?.getCorrelationId();
+        logger.warn('🔧 Supabase environment variables not found - creating mock client for tests', { correlationId });
         // Create a mock client for test environments
         this.supabaseClient = {} as SupabaseClient;
         return;
@@ -28,13 +35,15 @@ export class SupabaseService implements OnModuleInit {
       this.supabaseClient = createClient(supabaseUrl, supabaseServiceRoleKey, {
         auth: {
           autoRefreshToken: false,
-          persistSession: false,
-        },
-      });
+          persistSession: false } });
 
-      this.logger.log('✅ SupabaseService initialized successfully');
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.info('✅ SupabaseService initialized successfully', { correlationId });
     } catch (error) {
-      this.logger.error('❌ Error in SupabaseService initialization:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('❌ Error in SupabaseService initialization:', error as Error, { correlationId });
       // Create a mock client to prevent crashes
       this.supabaseClient = {} as SupabaseClient;
     }
@@ -42,9 +51,9 @@ export class SupabaseService implements OnModuleInit {
 
   getClient(): SupabaseClient {
     if (!this.supabaseClient) {
-      this.logger.warn(
-        '⚠️ Supabase client not initialized - returning mock client',
-      );
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.warn('⚠️ Supabase client not initialized - returning mock client', { correlationId });
       return {} as SupabaseClient;
     }
     return this.supabaseClient;

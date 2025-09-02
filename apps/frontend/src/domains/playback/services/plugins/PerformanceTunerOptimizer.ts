@@ -6,10 +6,12 @@
  */
 
 import { AssetManager } from '../AssetManager';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { N8nAssetPipelineProcessor } from './N8nAssetPipelineProcessor';
 import { InstrumentAssetOptimizer } from './InstrumentAssetOptimizer';
 import { MusicalContextAnalyzer } from './MusicalContextAnalyzer';
 import { DeviceInfoService } from '../DeviceInfoService';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 interface PerformanceProfile {
   deviceType: 'mobile' | 'tablet' | 'desktop' | 'lowend';
@@ -151,7 +153,7 @@ export class PerformanceTunerOptimizer {
     this.activeStrategy = this.selectOptimalStrategy();
     this.performanceMetrics = this.initializeMetrics();
 
-    console.log('🚀 Performance Tuner & Mobile Optimizer initialized:', {
+    logger.info('🚀 Performance Tuner & Mobile Optimizer initialized:', {
       profile: this.currentProfile,
       strategy: this.activeStrategy.name,
     });
@@ -182,6 +184,7 @@ export class PerformanceTunerOptimizer {
       networkSpeed === 'unknown' ? 'medium' : networkSpeed;
 
     return {
+  const { correlationId, logger } = useCorrelation('networkSpeed');
       deviceType,
       networkSpeed: validNetworkSpeed,
       batteryLevel: 1.0, // Will be updated if battery API is available
@@ -301,7 +304,7 @@ export class PerformanceTunerOptimizer {
     }
 
     if (issues.length > 0) {
-      console.warn('⚠️ Performance degradation detected:', issues);
+      logger.warn('⚠️ Performance degradation detected:', issues);
       this.adaptToPerformanceIssues(issues);
     }
   }
@@ -325,7 +328,7 @@ export class PerformanceTunerOptimizer {
         aggressiveStrategy &&
         this.activeStrategy.id !== 'mobile-aggressive'
       ) {
-        console.log(
+        logger.info(
           '🔧 Switching to aggressive optimization due to performance issues',
         );
         this.applyOptimizationStrategy(aggressiveStrategy);
@@ -340,7 +343,7 @@ export class PerformanceTunerOptimizer {
     const targetStrategy = strategy || this.activeStrategy;
     this.activeStrategy = targetStrategy;
 
-    console.log(`🎯 Applying optimization strategy: ${targetStrategy.name}`);
+    logger.info(`🎯 Applying optimization strategy: ${targetStrategy.name}`);
 
     // Configure asset pipeline
     const pipelineConfig = {
@@ -395,7 +398,7 @@ export class PerformanceTunerOptimizer {
         (this.musicalAnalyzer as any).updateConfiguration(instrumentConfig);
       }
     } catch (error) {
-      console.warn(
+      logger.warn(
         '⚠️ Some components may not support updateConfiguration:',
         error,
       );
@@ -410,7 +413,7 @@ export class PerformanceTunerOptimizer {
       profile: { ...this.currentProfile },
     });
 
-    console.log('✅ Optimization strategy applied:', {
+    logger.info('✅ Optimization strategy applied:', {
       pipeline: pipelineConfig,
       optimizer: optimizerConfig,
       instruments: instrumentConfig,
@@ -431,7 +434,7 @@ export class PerformanceTunerOptimizer {
    * Optimize for mobile-specific constraints
    */
   public optimizeForMobile(): void {
-    console.log('📱 Applying mobile-specific optimizations...');
+    logger.info('📱 Applying mobile-specific optimizations...');
 
     // Touch-optimized asset loading
     const mobileOptimizations = {
@@ -453,7 +456,7 @@ export class PerformanceTunerOptimizer {
       this.applyOptimizationStrategy(mobileStrategy);
     }
 
-    console.log('✅ Mobile optimizations applied:', mobileOptimizations);
+    logger.info('✅ Mobile optimizations applied:', mobileOptimizations);
   }
 
   /**
@@ -568,7 +571,7 @@ export class PerformanceTunerOptimizer {
    * Force performance optimization based on current conditions
    */
   public forceOptimization(preserveManualProfile = false): void {
-    console.log('🔧 Forcing performance optimization...');
+    logger.info('🔧 Forcing performance optimization...');
 
     // Update performance profile (unless preserving manual settings for tests)
     const previousProfile = { ...this.currentProfile };
@@ -594,7 +597,7 @@ export class PerformanceTunerOptimizer {
       this.applyOptimizationStrategy(newStrategy);
     }
 
-    console.log('✅ Performance optimization complete');
+    logger.info('✅ Performance optimization complete');
   }
 
   /**

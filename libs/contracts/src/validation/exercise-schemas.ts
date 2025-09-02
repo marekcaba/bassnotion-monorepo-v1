@@ -174,10 +174,7 @@ export const CreateExerciseRequestSchema = z.object({
     .optional(),
 });
 
-export const UpdateExerciseRequestSchema =
-  CreateExerciseRequestSchema.partial().extend({
-    id: z.string().min(1, 'Exercise ID is required'),
-  });
+export const UpdateExerciseRequestSchema = CreateExerciseRequestSchema.partial();
 
 // Epic 3 Widget-Specific Schemas
 export const SaveCustomBasslineRequestSchema = z.object({

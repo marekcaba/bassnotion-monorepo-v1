@@ -8,6 +8,5 @@ import { AuthModule } from '../user/auth/auth.module.js';
   imports: [SupabaseModule, AuthModule],
   controllers: [AudioSamplesController],
   providers: [AudioSamplesService],
-  exports: [AudioSamplesService],
-})
+  exports: [AudioSamplesService] })
 export class AudioSamplesModule {}

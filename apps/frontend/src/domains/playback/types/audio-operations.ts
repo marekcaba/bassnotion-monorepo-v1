@@ -6,7 +6,14 @@
 import { AudioError } from '../errors/AudioErrors.js';
 
 // Core audio types
-export type AudioState = 'uninitialized' | 'initializing' | 'ready' | 'running' | 'suspended' | 'closed' | 'error';
+export type AudioState =
+  | 'uninitialized'
+  | 'initializing'
+  | 'ready'
+  | 'running'
+  | 'suspended'
+  | 'closed'
+  | 'error';
 export type TransportState = 'stopped' | 'started' | 'paused' | 'scheduled';
 export type PlaybackPosition = 'bars:beats:sixteenths' | 'seconds';
 
@@ -20,7 +27,7 @@ export interface AudioOperation<T = unknown> {
   validate?(): boolean;
 }
 
-export type AudioOperationType = 
+export type AudioOperationType =
   | 'initialize'
   | 'start'
   | 'stop'
@@ -84,7 +91,7 @@ export interface EffectOperation extends AudioOperation {
   bypass?: boolean;
 }
 
-export type AudioEffectType = 
+export type AudioEffectType =
   | 'reverb'
   | 'delay'
   | 'distortion'
@@ -239,11 +246,17 @@ export interface ResourceOperation extends AudioOperation {
 }
 
 // Type guards
-export function isTransportOperation(op: AudioOperation): op is TransportOperation {
-  return ['start', 'stop', 'pause', 'resume', 'seek', 'setTempo'].includes(op.type);
+export function isTransportOperation(
+  op: AudioOperation,
+): op is TransportOperation {
+  return ['start', 'stop', 'pause', 'resume', 'seek', 'setTempo'].includes(
+    op.type,
+  );
 }
 
-export function isSampleOperation(op: AudioOperation): op is SampleLoadOperation {
+export function isSampleOperation(
+  op: AudioOperation,
+): op is SampleLoadOperation {
   return op.type === 'loadSample';
 }
 
@@ -251,7 +264,9 @@ export function isEffectOperation(op: AudioOperation): op is EffectOperation {
   return 'effectType' in op;
 }
 
-export function isScheduledOperation(op: AudioOperation): op is ScheduledOperation {
+export function isScheduledOperation(
+  op: AudioOperation,
+): op is ScheduledOperation {
   return 'time' in op;
 }
 

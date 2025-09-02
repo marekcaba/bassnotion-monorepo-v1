@@ -4,6 +4,7 @@
  */
 
 import {
+import { createStructuredLogger } from '@bassnotion/contracts';
   CacheAnalyticsConfig,
   AdvancedCacheAnalytics,
   CacheOptimizationSuggestion,
@@ -151,7 +152,7 @@ export class CacheAnalyticsEngine {
       this.startRealTimeMonitoring();
     }
 
-    console.log('Cache Analytics Engine started');
+    logger.info('Cache Analytics Engine started');
   }
 
   /**
@@ -168,7 +169,7 @@ export class CacheAnalyticsEngine {
       this.monitoringInterval = undefined;
     }
 
-    console.log('Cache Analytics Engine stopped');
+    logger.info('Cache Analytics Engine stopped');
   }
 
   /**
@@ -184,7 +185,7 @@ export class CacheAnalyticsEngine {
   ): void {
     const timestamp = Date.now();
 
-    console.log(
+    logger.info(
       `[CacheAnalytics] Recording operation: ${operation} on ${sampleId} (layer: ${layer}, duration: ${duration}ms, success: ${success})`,
     );
 
@@ -203,12 +204,12 @@ export class CacheAnalyticsEngine {
     if (operation === 'get') {
       if (success) {
         this.hitCounts.set(layer, (this.hitCounts.get(layer) || 0) + 1);
-        console.log(
+        logger.info(
           `[CacheAnalytics] Hit recorded for ${layer}: ${this.hitCounts.get(layer)}`,
         );
       } else {
         this.missCounts.set(layer, (this.missCounts.get(layer) || 0) + 1);
-        console.log(
+        logger.info(
           `[CacheAnalytics] Miss recorded for ${layer}: ${this.missCounts.get(layer)}`,
         );
       }
@@ -220,7 +221,7 @@ export class CacheAnalyticsEngine {
         original: metadata.compression.originalSize || 1024,
         compressed: metadata.compression.compressedSize || 512,
       });
-      console.log(
+      logger.info(
         `[CacheAnalytics] Compression data recorded for ${sampleId}: ${metadata.compression.originalSize} -> ${metadata.compression.compressedSize}`,
       );
     } else if (metadata?.size && operation === 'set') {
@@ -271,7 +272,7 @@ export class CacheAnalyticsEngine {
     // Update patterns before returning
     this.updateUsagePatterns();
     const patterns = Array.from(this.usagePatterns.values());
-    console.log(
+    logger.info(
       `[CacheAnalytics] getUsagePatterns returning ${patterns.length} patterns:`,
       patterns.map((p) => p.patternId),
     );
@@ -377,7 +378,7 @@ export class CacheAnalyticsEngine {
     const cutoff = timestamp - 3600000;
     const recentCount = accesses.filter((time) => time > cutoff).length;
 
-    console.log(
+    logger.info(
       `[CacheAnalytics] Access recorded for ${sampleId}: ${recentCount} recent accesses (total: ${accesses.length})`,
     );
 
@@ -414,7 +415,7 @@ export class CacheAnalyticsEngine {
   ): void {
     // Get ALL accesses for pattern analysis (not just recent ones)
     const allAccesses = this.accessTracker.get(sampleId) || [];
-    console.log(
+    logger.info(
       `[CacheAnalytics] Analyzing pattern for ${sampleId}: ${allAccesses.length} accesses`,
     );
 
@@ -428,7 +429,7 @@ export class CacheAnalyticsEngine {
         }
       }
 
-      console.log(`[CacheAnalytics] Intervals for ${sampleId}:`, intervals);
+      logger.info(`[CacheAnalytics] Intervals for ${sampleId}:`, intervals);
 
       // Check for regular patterns
       const avgInterval =
@@ -440,7 +441,7 @@ export class CacheAnalyticsEngine {
           0,
         ) / intervals.length;
 
-      console.log(
+      logger.info(
         `[CacheAnalytics] Pattern analysis for ${sampleId}: avgInterval=${avgInterval}, variance=${variance}, threshold=${avgInterval * 0.1}`,
       );
 
@@ -469,7 +470,7 @@ export class CacheAnalyticsEngine {
           examples: [sampleId],
         };
         this.usagePatterns.set(patternId, pattern);
-        console.log(
+        logger.info(
           `[CacheAnalytics] Pattern detected for ${sampleId}:`,
           pattern,
         );
@@ -481,18 +482,18 @@ export class CacheAnalyticsEngine {
           const oldestPatternId = this.usagePatterns.keys().next().value;
           if (oldestPatternId) {
             this.usagePatterns.delete(oldestPatternId);
-            console.log(
+            logger.info(
               `[CacheAnalytics] Removed oldest pattern ${oldestPatternId} to enforce maxPatterns limit`,
             );
           }
         }
       } else {
-        console.log(
+        logger.info(
           `[CacheAnalytics] No regular pattern detected for ${sampleId} (variance too high)`,
         );
       }
     } else {
-      console.log(
+      logger.info(
         `[CacheAnalytics] Not enough accesses for pattern analysis: ${allAccesses.length} < 3`,
       );
     }
@@ -514,7 +515,7 @@ export class CacheAnalyticsEngine {
   }
 
   private identifyOptimizationOpportunities(): void {
-    console.log('[CacheAnalytics] Identifying optimization opportunities...');
+    logger.info('[CacheAnalytics] Identifying optimization opportunities...');
     this.optimizationOpportunities = [];
 
     // Analyze routing optimization opportunities
@@ -529,7 +530,7 @@ export class CacheAnalyticsEngine {
     // Analyze layer balancing opportunities
     this.checkLayerBalancing();
 
-    console.log(
+    logger.info(
       `[CacheAnalytics] Found ${this.optimizationOpportunities.length} optimization opportunities:`,
       this.optimizationOpportunities.map((op) => op.type),
     );
@@ -572,7 +573,7 @@ export class CacheAnalyticsEngine {
 
   private checkCompressionOptimization(): void {
     const compressionRatio = this.calculateCompressionEfficiency();
-    console.log(
+    logger.info(
       `[CacheAnalytics] Checking compression optimization: ratio=${compressionRatio}, data size=${this.compressionData.size}`,
     );
 
@@ -601,12 +602,12 @@ export class CacheAnalyticsEngine {
         detectedAt: Date.now(),
       };
       this.optimizationOpportunities.push(opportunity);
-      console.log(
+      logger.info(
         '[CacheAnalytics] Added compression optimization opportunity:',
         opportunity,
       );
     } else {
-      console.log('[CacheAnalytics] No compression optimization needed');
+      logger.info('[CacheAnalytics] No compression optimization needed');
     }
   }
 
@@ -697,7 +698,7 @@ export class CacheAnalyticsEngine {
         this.config.performanceThresholds?.minHitRate?.[layerName];
 
       if (threshold && hitRate < threshold) {
-        console.error(
+        logger.error(
           `Cache performance alert: ${layer} hit rate (${(hitRate * 100).toFixed(1)}%) below threshold (${(threshold * 100).toFixed(1)}%)`,
         );
       }
@@ -918,7 +919,7 @@ export class CacheAnalyticsEngine {
 
     // Check latency bottlenecks
     const layerPerformance = this.analyzeLayerPerformance();
-    console.log(
+    logger.info(
       '[CacheAnalytics] Analyzing bottlenecks, layer performance:',
       layerPerformance,
     );
@@ -928,7 +929,7 @@ export class CacheAnalyticsEngine {
       const threshold =
         this.config.performanceThresholds?.maxLatency?.[layerName] || 100;
 
-      console.log(
+      logger.info(
         `[CacheAnalytics] Checking ${layer}: latency=${data.averageLatency}ms, threshold=${threshold}ms`,
       );
 
@@ -943,14 +944,14 @@ export class CacheAnalyticsEngine {
           detectedAt: Date.now(),
         };
         bottlenecks.push(bottleneck);
-        console.log(
+        logger.info(
           `[CacheAnalytics] Bottleneck detected for ${layer}:`,
           bottleneck,
         );
       }
     });
 
-    console.log(
+    logger.info(
       `[CacheAnalytics] Total bottlenecks found: ${bottlenecks.length}`,
     );
     return bottlenecks;

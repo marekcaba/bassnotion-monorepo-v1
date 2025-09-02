@@ -8,14 +8,23 @@
  */
 
 // Core synchronization components
-// NOTE: SyncedWidget depends on deleted useWidgetSync hook - needs migration to new track system
-// export { SyncedWidget, SimpleSyncedWidget } from './SyncedWidget';
-// export type {
-//   SyncedWidgetProps,
-//   SyncedWidgetRenderProps,
-//   SyncedWidgetState,
-//   SimpleSyncedWidgetProps,
-// } from './SyncedWidget';
+// NOTE: SyncedWidget now uses compatibility shim - widgets should migrate to useTrack hook
+export { SyncedWidget, SimpleSyncedWidget } from './SyncedWidget';
+export type {
+  SyncedWidgetProps,
+  SyncedWidgetRenderProps,
+  SyncedWidgetState,
+  SimpleSyncedWidgetProps,
+} from './SyncedWidget';
+
+// Cache-enabled widget components
+export { CachedSyncedWidget, useCachedInstrument } from './CachedSyncedWidget';
+export type { 
+  CachedSyncedWidgetProps, 
+  CachedSyncedWidgetRenderProps,
+  CachedInstrumentStatus,
+  UseCachedInstrumentOptions 
+} from './CachedSyncedWidget';
 
 // Container components
 // NOTE: WidgetContainer depends on SyncedWidget which uses deleted useWidgetSync hook

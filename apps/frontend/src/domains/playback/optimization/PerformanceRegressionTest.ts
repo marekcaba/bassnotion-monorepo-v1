@@ -1,12 +1,15 @@
 /**
  * PerformanceRegressionTest - Performance regression testing
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Automated performance regression detection
  */
 
 import { EventBus } from '../services/core/EventBus.js';
-import { PerformanceBenchmark, BenchmarkSuite } from './PerformanceBenchmark.js';
+import {
+  PerformanceBenchmark,
+  BenchmarkSuite,
+} from './PerformanceBenchmark.js';
 
 export interface RegressionThresholds {
   initialization?: number; // % increase allowed
@@ -46,10 +49,7 @@ export class PerformanceRegressionTest {
   private thresholds: Required<RegressionThresholds>;
   private baselineData: Map<string, BenchmarkSuite> = new Map();
 
-  constructor(
-    eventBus: EventBus,
-    thresholds: RegressionThresholds = {}
-  ) {
+  constructor(eventBus: EventBus, thresholds: RegressionThresholds = {}) {
     this.eventBus = eventBus;
     this.thresholds = {
       initialization: 10, // Allow 10% increase
@@ -58,7 +58,7 @@ export class PerformanceRegressionTest {
       memoryUsage: 20,
       cpuUsage: 10,
       overall: 10,
-      ...thresholds
+      ...thresholds,
     };
   }
 
@@ -69,7 +69,7 @@ export class PerformanceRegressionTest {
     this.baselineData.set(version, suite);
     this.eventBus.emit('regression:baseline-set', {
       version,
-      timestamp: suite.timestamp
+      timestamp: suite.timestamp,
     });
   }
 
@@ -93,7 +93,10 @@ export class PerformanceRegressionTest {
    */
   async saveBaseline(version: string, suite: BenchmarkSuite): Promise<void> {
     try {
-      localStorage.setItem(`benchmark-baseline-${version}`, JSON.stringify(suite));
+      localStorage.setItem(
+        `benchmark-baseline-${version}`,
+        JSON.stringify(suite),
+      );
       this.setBaseline(version, suite);
     } catch (error) {
       this.eventBus.emit('regression:baseline-save-failed', { error });
@@ -106,7 +109,7 @@ export class PerformanceRegressionTest {
   async runRegressionTest(
     baselineVersion: string,
     currentVersion: string,
-    currentSuite: BenchmarkSuite
+    currentSuite: BenchmarkSuite,
   ): Promise<RegressionReport> {
     const baseline = this.baselineData.get(baselineVersion);
     if (!baseline) {
@@ -116,22 +119,24 @@ export class PerformanceRegressionTest {
     this.eventBus.emit('regression:test-started', {
       baselineVersion,
       currentVersion,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     const results: RegressionResult[] = [];
 
     // Compare each benchmark
     for (const currentResult of currentSuite.results) {
-      const baselineResult = baseline.results.find(r => r.name === currentResult.name);
-      
+      const baselineResult = baseline.results.find(
+        (r) => r.name === currentResult.name,
+      );
+
       if (baselineResult) {
         const regression = this.compareBenchmarks(
           currentResult.name,
           baselineResult.averageTime,
-          currentResult.averageTime
+          currentResult.averageTime,
         );
-        
+
         results.push(regression);
 
         // Check memory if available
@@ -140,7 +145,7 @@ export class PerformanceRegressionTest {
             `${currentResult.name} - Memory`,
             baselineResult.memoryUsage.delta,
             currentResult.memoryUsage.delta,
-            this.thresholds.memoryUsage
+            this.thresholds.memoryUsage,
           );
           results.push(memRegression);
         }
@@ -148,22 +153,22 @@ export class PerformanceRegressionTest {
     }
 
     const summary = this.generateSummary(results);
-    
+
     const report: RegressionReport = {
       timestamp: Date.now(),
       baselineVersion,
       currentVersion,
       results,
-      summary
+      summary,
     };
 
     this.eventBus.emit('regression:test-completed', report);
-    
+
     // Fail if overall regression detected
     if (summary.overallRegression) {
       this.eventBus.emit('regression:detected', {
         regressions: summary.regressions,
-        report
+        report,
       });
     }
 
@@ -177,14 +182,14 @@ export class PerformanceRegressionTest {
     name: string,
     baseline: number,
     current: number,
-    threshold?: number
+    threshold?: number,
   ): RegressionResult {
     const difference = current - baseline;
     const percentChange = (difference / baseline) * 100;
-    
+
     // Determine threshold based on benchmark type
     let actualThreshold = threshold || this.thresholds.overall || 10;
-    
+
     if (name.includes('Initialization')) {
       actualThreshold = this.thresholds.initialization || actualThreshold;
     } else if (name.includes('Sample Loading')) {
@@ -202,14 +207,16 @@ export class PerformanceRegressionTest {
       difference,
       percentChange,
       regression,
-      threshold: actualThreshold
+      threshold: actualThreshold,
     };
   }
 
   /**
    * Generate regression summary
    */
-  private generateSummary(results: RegressionResult[]): RegressionReport['summary'] {
+  private generateSummary(
+    results: RegressionResult[],
+  ): RegressionReport['summary'] {
     let regressions = 0;
     let improvements = 0;
     let stable = 0;
@@ -217,7 +224,8 @@ export class PerformanceRegressionTest {
     for (const result of results) {
       if (result.regression) {
         regressions++;
-      } else if (result.percentChange < -5) { // 5% improvement
+      } else if (result.percentChange < -5) {
+        // 5% improvement
         improvements++;
       } else {
         stable++;
@@ -226,19 +234,22 @@ export class PerformanceRegressionTest {
 
     // Overall regression if more than 20% of benchmarks regressed
     // or any critical benchmark (initialization, note triggering) regressed significantly
-    const criticalRegression = results.some(r => 
-      (r.benchmark.includes('Initialization') || r.benchmark.includes('Note Triggering')) 
-      && r.regression
+    const criticalRegression = results.some(
+      (r) =>
+        (r.benchmark.includes('Initialization') ||
+          r.benchmark.includes('Note Triggering')) &&
+        r.regression,
     );
-    
-    const overallRegression = criticalRegression || (regressions / results.length) > 0.2;
+
+    const overallRegression =
+      criticalRegression || regressions / results.length > 0.2;
 
     return {
       totalBenchmarks: results.length,
       regressions,
       improvements,
       stable,
-      overallRegression
+      overallRegression,
     };
   }
 
@@ -292,7 +303,9 @@ export class PerformanceRegressionTest {
       <th>Threshold (%)</th>
       <th>Status</th>
     </tr>
-    ${report.results.map(result => `
+    ${report.results
+      .map(
+        (result) => `
     <tr class="${result.regression ? 'regression' : result.percentChange < -5 ? 'improvement' : 'stable'}">
       <td>${result.benchmark}</td>
       <td>${result.baseline.toFixed(2)}</td>
@@ -302,14 +315,19 @@ export class PerformanceRegressionTest {
       <td>±${result.threshold}%</td>
       <td>${result.regression ? '❌ Regression' : result.percentChange < -5 ? '✅ Improved' : '➖ Stable'}</td>
     </tr>
-    `).join('')}
+    `,
+      )
+      .join('')}
   </table>
   
   <h2>Action Items</h2>
   <ul>
     ${report.results
-      .filter(r => r.regression)
-      .map(r => `<li>Investigate ${r.benchmark} - ${r.percentChange.toFixed(1)}% regression detected</li>`)
+      .filter((r) => r.regression)
+      .map(
+        (r) =>
+          `<li>Investigate ${r.benchmark} - ${r.percentChange.toFixed(1)}% regression detected</li>`,
+      )
       .join('')}
   </ul>
 </body>
@@ -322,32 +340,36 @@ export class PerformanceRegressionTest {
    */
   generateCIReport(report: RegressionReport): string {
     const lines: string[] = [];
-    
+
     lines.push('=== Performance Regression Test Results ===');
-    lines.push(`Baseline: ${report.baselineVersion} vs Current: ${report.currentVersion}`);
+    lines.push(
+      `Baseline: ${report.baselineVersion} vs Current: ${report.currentVersion}`,
+    );
     lines.push('');
-    
+
     if (report.summary.overallRegression) {
       lines.push('❌ REGRESSION DETECTED');
     } else {
       lines.push('✅ No regressions detected');
     }
-    
+
     lines.push('');
     lines.push(`Regressions: ${report.summary.regressions}`);
     lines.push(`Improvements: ${report.summary.improvements}`);
     lines.push(`Stable: ${report.summary.stable}`);
     lines.push('');
-    
+
     if (report.summary.regressions > 0) {
       lines.push('Failed benchmarks:');
       report.results
-        .filter(r => r.regression)
-        .forEach(r => {
-          lines.push(`  - ${r.benchmark}: ${r.percentChange.toFixed(1)}% regression (threshold: ${r.threshold}%)`);
+        .filter((r) => r.regression)
+        .forEach((r) => {
+          lines.push(
+            `  - ${r.benchmark}: ${r.percentChange.toFixed(1)}% regression (threshold: ${r.threshold}%)`,
+          );
         });
     }
-    
+
     return lines.join('\n');
   }
 
@@ -361,19 +383,21 @@ export class PerformanceRegressionTest {
   } {
     const metrics: Record<string, number> = {};
     const failures: string[] = [];
-    
-    report.results.forEach(result => {
+
+    report.results.forEach((result) => {
       metrics[result.benchmark] = result.current;
-      
+
       if (result.regression) {
-        failures.push(`${result.benchmark}: ${result.percentChange.toFixed(1)}% regression`);
+        failures.push(
+          `${result.benchmark}: ${result.percentChange.toFixed(1)}% regression`,
+        );
       }
     });
-    
+
     return {
       passed: !report.summary.overallRegression,
       metrics,
-      failures
+      failures,
     };
   }
 }

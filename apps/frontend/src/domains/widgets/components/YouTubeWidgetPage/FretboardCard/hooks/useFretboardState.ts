@@ -38,8 +38,14 @@ export const useFretboardState = (initialConfig?: {
   );
 
   // Selected dots state - stores position keys with order numbers
-  const [selectedDots, setSelectedDots] = useState<SelectedDotsMap>(new Map());
-  const [selectionOrder, setSelectionOrder] = useState<number>(0);
+  // PERFORMANCE FIX: Combine selectedDots and selectionOrder into single state to avoid double renders
+  const [dotsState, setDotsState] = useState<{
+    selectedDots: SelectedDotsMap;
+    selectionOrder: number;
+  }>({
+    selectedDots: new Map(),
+    selectionOrder: 0,
+  });
 
   // Drag and drop state
   const [draggedDot, setDraggedDot] = useState<DraggedDot | null>(null);
@@ -92,8 +98,8 @@ export const useFretboardState = (initialConfig?: {
       stringCount,
       tiltAngle,
       maxFrets,
-      selectedDots,
-      selectionOrder,
+      selectedDots: dotsState.selectedDots,
+      selectionOrder: dotsState.selectionOrder,
       draggedDot,
       dragOverTarget,
     }),
@@ -101,8 +107,7 @@ export const useFretboardState = (initialConfig?: {
       stringCount,
       tiltAngle,
       maxFrets,
-      selectedDots,
-      selectionOrder,
+      dotsState, // Single dependency for both selectedDots and selectionOrder
       draggedDot,
       dragOverTarget,
     ],
@@ -150,7 +155,13 @@ export const useFretboardState = (initialConfig?: {
   const handleStringCountChange = useCallback(
     (newStringCount: StringCount) => {
       // Check if there are dots on strings that would be hidden
-      if (hasDotsOnHiddenStrings(stringCount, newStringCount, selectedDots)) {
+      if (
+        hasDotsOnHiddenStrings(
+          stringCount,
+          newStringCount,
+          dotsState.selectedDots,
+        )
+      ) {
         // Don't allow the change - the UI should handle showing an error message
         return false;
       }
@@ -160,7 +171,7 @@ export const useFretboardState = (initialConfig?: {
       setStringCount(newStringCount);
       return true;
     },
-    [stringCount, selectedDots, hasDotsOnHiddenStrings],
+    [stringCount, dotsState.selectedDots, hasDotsOnHiddenStrings],
   );
 
   // Tilt angle handlers
@@ -176,7 +187,11 @@ export const useFretboardState = (initialConfig?: {
   // Selected dots handlers
   const handleDotClick = useCallback(
     (stringIndex: number, fret: Fret) => {
-      setSelectedDots((prev) => {
+      // PERFORMANCE FIX: Single state update for both selectedDots and selectionOrder
+      setDotsState((prevState) => {
+        const prev = prevState.selectedDots;
+        const currentSelectionOrder = prevState.selectionOrder;
+
         const isCurrentlySelected = isDotSelected(stringIndex, fret, prev);
 
         if (isCurrentlySelected) {
@@ -208,28 +223,44 @@ export const useFretboardState = (initialConfig?: {
             newMap.set(key, updatedOrders);
           }
 
-          // Update the selection order counter to the next available number
-          setSelectionOrder(allRemainingOrders.length);
-
-          return newMap;
+          // Return both updates in single state change
+          return {
+            selectedDots: newMap,
+            selectionOrder: allRemainingOrders.length,
+          };
         } else {
           // Select the dot with next sequential order number
-          const newOrder = selectionOrder + 1;
-          setSelectionOrder(newOrder);
-          return addSelectedDot(stringIndex, fret, newOrder, prev);
+          const newOrder = currentSelectionOrder + 1;
+          const newMap = addSelectedDot(stringIndex, fret, newOrder, prev);
+
+          // Return both updates in single state change
+          return {
+            selectedDots: newMap,
+            selectionOrder: newOrder,
+          };
         }
       });
     },
-    [selectionOrder],
+    [], // No dependencies needed - we're using functional state update
   );
 
   const handleRemoveDot = useCallback((stringIndex: number, fret: Fret) => {
-    setSelectedDots((prev) => removeSelectedDot(stringIndex, fret, prev));
+    setDotsState((prevState) => ({
+      ...prevState,
+      selectedDots: removeSelectedDot(
+        stringIndex,
+        fret,
+        prevState.selectedDots,
+      ),
+    }));
   }, []);
 
   const handleClearSelectedDots = useCallback(() => {
-    setSelectedDots(clearSelectedDots());
-    setSelectionOrder(0);
+    // PERFORMANCE FIX: Single state update
+    setDotsState({
+      selectedDots: clearSelectedDots(),
+      selectionOrder: 0,
+    });
   }, []);
 
   // Drag and drop handlers
@@ -270,8 +301,8 @@ export const useFretboardState = (initialConfig?: {
       }
 
       // Update the position while maintaining the order number
-      setSelectedDots((prev) => {
-        const newDots = new Map(prev);
+      setDotsState((prevState) => {
+        const newDots = new Map(prevState.selectedDots);
 
         // Get the order number from the source position
         const sourceKey = createPositionKey(sourceString, sourceFret);
@@ -293,7 +324,10 @@ export const useFretboardState = (initialConfig?: {
           );
         }
 
-        return newDots;
+        return {
+          ...prevState,
+          selectedDots: newDots,
+        };
       });
 
       // Clear drag state
@@ -306,28 +340,50 @@ export const useFretboardState = (initialConfig?: {
   // Utility functions for checking dot state
   const checkIsDotSelected = useCallback(
     (stringIndex: number, fret: Fret): boolean => {
-      return isDotSelected(stringIndex, fret, selectedDots);
+      return isDotSelected(stringIndex, fret, dotsState.selectedDots);
     },
-    [selectedDots],
+    [dotsState.selectedDots],
   );
 
   const checkGetDotOrder = useCallback(
     (stringIndex: number, fret: Fret): number[] => {
-      return getDotOrder(stringIndex, fret, selectedDots);
+      return getDotOrder(stringIndex, fret, dotsState.selectedDots);
     },
-    [selectedDots],
+    [dotsState.selectedDots],
   );
 
   const checkHasSelectedDots = useCallback((): boolean => {
-    return hasSelectedDots(selectedDots);
-  }, [selectedDots]);
+    return hasSelectedDots(dotsState.selectedDots);
+  }, [dotsState.selectedDots]);
 
   // Reset all state
   const handleResetFretboard = useCallback(() => {
-    setSelectedDots(clearSelectedDots());
-    setSelectionOrder(0);
+    // PERFORMANCE FIX: Single state update
+    setDotsState({
+      selectedDots: clearSelectedDots(),
+      selectionOrder: 0,
+    });
     setDraggedDot(null);
     setDragOverTarget(null);
+  }, []);
+
+  // Create setters for compatibility
+  const setSelectedDots = useCallback(
+    (dots: SelectedDotsMap | ((prev: SelectedDotsMap) => SelectedDotsMap)) => {
+      setDotsState((prevState) => ({
+        ...prevState,
+        selectedDots:
+          typeof dots === 'function' ? dots(prevState.selectedDots) : dots,
+      }));
+    },
+    [],
+  );
+
+  const setSelectionOrder = useCallback((order: number) => {
+    setDotsState((prevState) => ({
+      ...prevState,
+      selectionOrder: order,
+    }));
   }, []);
 
   return {
@@ -335,8 +391,8 @@ export const useFretboardState = (initialConfig?: {
     stringCount,
     tiltAngle,
     maxFrets,
-    selectedDots,
-    selectionOrder,
+    selectedDots: dotsState.selectedDots,
+    selectionOrder: dotsState.selectionOrder,
     draggedDot,
     dragOverTarget,
     frets,

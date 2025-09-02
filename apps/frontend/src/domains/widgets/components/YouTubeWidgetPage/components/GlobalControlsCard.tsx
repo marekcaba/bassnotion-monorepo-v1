@@ -3,10 +3,11 @@
 import React from 'react';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { GlobalControls } from './GlobalControls';
-import { SyncedWidget } from '../../base';
-import type { SyncedWidgetRenderProps } from '../../base';
 
 interface GlobalControlsCardProps {
+  // Exercise data
+  selectedExercise?: any;
+  exercises?: any[];
   // Fretboard action props
   is3DMode?: boolean;
   tiltAngle?: number;
@@ -15,7 +16,6 @@ interface GlobalControlsCardProps {
   onToggle3DMode?: () => void;
   onTiltAngleChange?: (angle: number) => void;
   onCameraModeChange?: (mode: 'overview' | 'action') => void;
-  onResetFretboard?: () => void;
   // Loop settings
   loopRegion?: {
     startMeasure: number;
@@ -27,6 +27,8 @@ interface GlobalControlsCardProps {
 }
 
 export function GlobalControlsCard({
+  selectedExercise,
+  exercises,
   is3DMode,
   tiltAngle,
   hasSelectedDots,
@@ -34,73 +36,9 @@ export function GlobalControlsCard({
   onToggle3DMode,
   onTiltAngleChange,
   onCameraModeChange,
-  onResetFretboard,
   loopRegion,
   isLoopEnabled,
 }: GlobalControlsCardProps) {
-  return (
-    <SyncedWidget
-      widgetId="global-controls-card"
-      widgetName="Global Playback Controls Card"
-      syncOptions={{
-        subscribeTo: [
-          'PLAYBACK_STATE',
-          'TIMELINE_UPDATE',
-          'EXERCISE_CHANGE',
-          'TEMPO_CHANGE',
-        ],
-        debugMode: false,
-      }}
-    >
-      {(syncProps: SyncedWidgetRenderProps) => (
-        <GlobalControlsCardContent
-          syncProps={syncProps}
-          is3DMode={is3DMode}
-          tiltAngle={tiltAngle}
-          hasSelectedDots={hasSelectedDots}
-          cameraMode={cameraMode}
-          onToggle3DMode={onToggle3DMode}
-          onTiltAngleChange={onTiltAngleChange}
-          onCameraModeChange={onCameraModeChange}
-          onResetFretboard={onResetFretboard}
-          loopRegion={loopRegion}
-          isLoopEnabled={isLoopEnabled}
-        />
-      )}
-    </SyncedWidget>
-  );
-}
-
-function GlobalControlsCardContent({
-  syncProps,
-  is3DMode,
-  tiltAngle,
-  hasSelectedDots,
-  cameraMode,
-  onToggle3DMode,
-  onTiltAngleChange,
-  onCameraModeChange,
-  onResetFretboard,
-  loopRegion,
-  isLoopEnabled,
-}: {
-  syncProps: SyncedWidgetRenderProps;
-  is3DMode?: boolean;
-  tiltAngle?: number;
-  hasSelectedDots?: boolean;
-  cameraMode?: 'overview' | 'action';
-  onToggle3DMode?: () => void;
-  onTiltAngleChange?: (angle: number) => void;
-  onCameraModeChange?: (mode: 'overview' | 'action') => void;
-  onResetFretboard?: () => void;
-  loopRegion?: {
-    startMeasure: number;
-    endMeasure: number;
-    startBeat?: number;
-    endBeat?: number;
-  } | null;
-  isLoopEnabled?: boolean;
-}) {
   // Calculate duration from exercise data
   const calculateDuration = (exercise: any): number => {
     if (
@@ -139,13 +77,13 @@ function GlobalControlsCardContent({
     return isFinite(result) ? result : 0;
   };
 
-  const duration = calculateDuration(syncProps.selectedExercise);
+  const duration = calculateDuration(selectedExercise);
 
   return (
     <Card className="bg-transparent border-transparent shadow-none overflow-visible">
       <CardContent className="p-0 overflow-visible">
         <GlobalControls
-          selectedExercise={syncProps.selectedExercise || undefined}
+          selectedExercise={selectedExercise}
           duration={duration}
           is3DMode={is3DMode}
           tiltAngle={tiltAngle}
@@ -154,7 +92,6 @@ function GlobalControlsCardContent({
           onToggle3DMode={onToggle3DMode}
           onTiltAngleChange={onTiltAngleChange}
           onCameraModeChange={onCameraModeChange}
-          onResetFretboard={onResetFretboard}
           loopRegion={loopRegion}
           isLoopEnabled={isLoopEnabled}
         />

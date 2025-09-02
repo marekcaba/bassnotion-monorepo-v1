@@ -1,23 +1,7 @@
-import {
-  Controller,
-  Post,
-  Body,
-  HttpCode,
-  HttpStatus,
-  Logger,
-  Get,
-  UseGuards,
-  Req,
-  Res,
-  Query,
-  forwardRef,
-  Inject,
-  HttpException,
-  UsePipes,
-} from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards, Req, Res, Query, forwardRef, Inject, HttpException, UsePipes } from '@nestjs/common';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 
-import type { User } from '@bassnotion/contracts';
+import { User } from '@bassnotion/contracts';
 import { AuthService } from './auth.service.js';
 import { SignInDto } from './dto/sign-in.dto.js';
 import { SignUpDto } from './dto/sign-up.dto.js';
@@ -28,11 +12,11 @@ import { ApiResponse } from '../../../shared/types/api.types.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { PasswordSecurityService } from './services/password-security.service.js';
 import { ZodValidationPipe } from '../../../shared/pipes/zod-validation.pipe.js';
-import { signUpSchema, signInSchema } from '@bassnotion/contracts';
+import { signUpSchema, signInSchema , createStructuredLogger } from '@bassnotion/contracts';
 
 @Controller('auth')
 export class AuthController {
-  private readonly logger = new Logger(AuthController.name);
+  private readonly staticLogger = createStructuredLogger(AuthController.name);
 
   constructor(
     @Inject(forwardRef(() => AuthService))
@@ -42,11 +26,11 @@ export class AuthController {
     @Inject(forwardRef(() => PasswordSecurityService))
     private readonly passwordSecurity: PasswordSecurityService,
   ) {
-    this.logger.debug('AuthController constructor called');
+    this.staticLogger.debug('AuthController constructor called');
 
     // Defensive check for dependency injection issues
     if (!this.authService) {
-      this.logger.error('AuthService is undefined - DI failure detected');
+      this.staticLogger.error('AuthService is undefined - DI failure detected');
     }
   }
 
@@ -54,7 +38,7 @@ export class AuthController {
 
   private checkServiceAvailability(): boolean {
     if (!this.authService) {
-      this.logger.error('AuthService is undefined - DI failure detected');
+      this.staticLogger.error('AuthService is undefined - DI failure detected');
       return false;
     }
     return true;
@@ -67,20 +51,18 @@ export class AuthController {
       error: {
         code: 'SERVICE_UNAVAILABLE',
         details:
-          'Authentication service is currently unavailable due to system maintenance',
-      },
-    };
+          'Authentication service is currently unavailable due to system maintenance' } };
   }
 
   @Post('signup')
   @UsePipes(new ZodValidationPipe(signUpSchema))
   @HttpCode(HttpStatus.CREATED)
   async signup(@Body() signUpDto: SignUpDto): Promise<AuthResponse> {
-    this.logger.debug(`Signup request received for email: ${signUpDto.email}`);
+    this.staticLogger.debug(`Signup request received for email: ${signUpDto.email}`);
 
     // Defensive programming: handle DI failure gracefully
     if (!this.checkServiceAvailability()) {
-      this.logger.warn(
+      this.staticLogger.warn(
         'Returning mock response due to AuthService unavailability',
       );
       const mockResponse = this.getMockAuthResponse();
@@ -119,11 +101,11 @@ export class AuthController {
     @Body() signInDto: SignInDto,
     @Req() request: FastifyRequest,
   ): Promise<AuthResponse> {
-    this.logger.debug(`Signin request received for email: ${signInDto.email}`);
+    this.staticLogger.debug(`Signin request received for email: ${signInDto.email}`);
 
     // Temporarily disable defensive programming to see actual error
     // if (!this.checkServiceAvailability()) {
-    //   this.logger.warn(
+    //   this.staticLogger.warn(
     //     'Returning mock response due to AuthService unavailability',
     //   );
     //   return this.getMockAuthResponse();
@@ -135,7 +117,7 @@ export class AuthController {
     // Extract user agent
     const userAgent = request.headers['user-agent'];
 
-    this.logger.debug(
+    this.staticLogger.debug(
       `Login attempt from IP: ${clientIp}, User-Agent: ${userAgent}`,
     );
 
@@ -184,7 +166,7 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   async getCurrentUser(): Promise<User> {
-    this.logger.debug('Get current user request received');
+    this.staticLogger.debug('Get current user request received');
     return this.authService.getCurrentUser();
   }
 
@@ -194,30 +176,27 @@ export class AuthController {
   async getProfile(
     @Req() request: FastifyRequest & { user: any },
   ): Promise<User> {
-    this.logger.debug('Get profile request received');
+    this.staticLogger.debug('Get profile request received');
     // Return the user from the request (set by AuthGuard)
     return request.user;
   }
 
   @Get('google')
   async googleAuth(@Res() res: FastifyReply): Promise<void> {
-    this.logger.debug('Google OAuth initiation - redirecting to Supabase');
+    this.staticLogger.debug('Google OAuth initiation - redirecting to Supabase');
 
     try {
       const { data, error } = await this.db.supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/auth/callback`,
-        },
-      });
+          redirectTo: `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/auth/callback` } });
 
       if (error) {
-        this.logger.error('Error initiating Google OAuth:', error);
+        this.staticLogger.error('Error initiating Google OAuth:', error as Error);
         res.code(500).send({
           success: false,
           message: 'Failed to initiate Google OAuth',
-          error: error.message,
-        });
+          error: error.message });
         return;
       }
 
@@ -227,15 +206,13 @@ export class AuthController {
       } else {
         res.code(500).send({
           success: false,
-          message: 'No OAuth URL generated',
-        });
+          message: 'No OAuth URL generated' });
       }
     } catch (error) {
-      this.logger.error('Unexpected error in Google OAuth:', error);
+      this.staticLogger.error('Unexpected error in Google OAuth:', error as Error);
       res.code(500).send({
         success: false,
-        message: 'Internal server error',
-      });
+        message: 'Internal server error' });
     }
   }
 
@@ -245,7 +222,7 @@ export class AuthController {
     @Query('state') state: string,
     @Res() res: FastifyReply,
   ): Promise<void> {
-    this.logger.debug('Google OAuth callback received');
+    this.staticLogger.debug('Google OAuth callback received');
 
     try {
       // Exchange the code for a session
@@ -253,7 +230,7 @@ export class AuthController {
         await this.db.supabase.auth.exchangeCodeForSession(code);
 
       if (error || !data.session) {
-        this.logger.error('Error exchanging code for session:', error);
+        this.staticLogger.error('Error exchanging code for session:', error as Error);
         res.redirect(
           `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/login?error=oauth_failed`,
         );
@@ -268,7 +245,7 @@ export class AuthController {
         `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/dashboard?oauth=success`,
       );
     } catch (error) {
-      this.logger.error('Unexpected error in Google OAuth callback:', error);
+      this.staticLogger.error('Unexpected error in Google OAuth callback:', error as Error);
       res.redirect(
         `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/login?error=oauth_error`,
       );
@@ -280,43 +257,36 @@ export class AuthController {
   async sendMagicLink(
     @Body() body: { email: string },
   ): Promise<ApiResponse<Record<string, never>>> {
-    this.logger.debug(`Magic link request for email: ${body.email}`);
+    this.staticLogger.debug(`Magic link request for email: ${body.email}`);
 
     try {
       const { error } = await this.db.supabase.auth.signInWithOtp({
         email: body.email,
         options: {
-          emailRedirectTo: `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/auth/callback`,
-        },
-      });
+          emailRedirectTo: `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/auth/callback` } });
 
       if (error) {
-        this.logger.error('Error sending magic link:', error);
+        this.staticLogger.error('Error sending magic link:', error as Error);
         return {
           success: false,
           message: 'Failed to send magic link',
           error: {
             code: 'MAGIC_LINK_FAILED',
-            details: error.message,
-          },
-        };
+            details: error.message } };
       }
 
       return {
         success: true,
         message: 'Magic link sent successfully',
-        data: {},
-      };
+        data: {} };
     } catch (error) {
-      this.logger.error('Unexpected error sending magic link:', error);
+      this.staticLogger.error('Unexpected error sending magic link:', error as Error);
       return {
         success: false,
         message: 'Internal server error',
         error: {
           code: 'INTERNAL_ERROR',
-          details: 'Failed to send magic link',
-        },
-      };
+          details: 'Failed to send magic link' } };
     }
   }
 
@@ -325,43 +295,37 @@ export class AuthController {
   async resetPassword(
     @Body() body: { email: string },
   ): Promise<ApiResponse<Record<string, never>>> {
-    this.logger.debug(`Password reset request for email: ${body.email}`);
+    this.staticLogger.debug(`Password reset request for email: ${body.email}`);
 
     try {
       const { error } = await this.db.supabase.auth.resetPasswordForEmail(
         body.email,
         {
-          redirectTo: `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/reset-password`,
-        },
+          redirectTo: `${process.env.FRONTEND_URL || 'https://bassnotion-frontend.vercel.app'}/reset-password` },
       );
 
       if (error) {
-        this.logger.error('Error sending password reset email:', error);
+        this.staticLogger.error('Error sending password reset email:', error as Error);
         return {
           success: false,
           message: 'Failed to send password reset email',
           error: {
             code: 'PASSWORD_RESET_FAILED',
-            details: error.message,
-          },
-        };
+            details: error.message } };
       }
 
       return {
         success: true,
         message: 'Password reset email sent successfully',
-        data: {},
-      };
+        data: {} };
     } catch (error) {
-      this.logger.error('Unexpected error in password reset:', error);
+      this.staticLogger.error('Unexpected error in password reset:', error as Error);
       return {
         success: false,
         message: 'Internal server error',
         error: {
           code: 'INTERNAL_ERROR',
-          details: 'Failed to send password reset email',
-        },
-      };
+          details: 'Failed to send password reset email' } };
     }
   }
 
@@ -372,60 +336,51 @@ export class AuthController {
     @Body() changePasswordDto: ChangePasswordDto,
     @Req() request: FastifyRequest & { user: any },
   ): Promise<ApiResponse<Record<string, never>>> {
-    this.logger.debug('Password change request received');
+    this.staticLogger.debug('Password change request received');
 
     try {
       // First verify current password by attempting to sign in
       const { error: verifyError } =
         await this.db.supabase.auth.signInWithPassword({
           email: request.user.email,
-          password: changePasswordDto.currentPassword,
-        });
+          password: changePasswordDto.currentPassword });
 
       if (verifyError) {
-        this.logger.error('Current password verification failed:', verifyError);
+        this.staticLogger.error('Current password verification failed:', verifyError);
         return {
           success: false,
           message: 'Current password is incorrect',
           error: {
             code: 'INVALID_CURRENT_PASSWORD',
-            details: 'Current password verification failed',
-          },
-        };
+            details: 'Current password verification failed' } };
       }
 
       // Update password
       const { error: updateError } = await this.db.supabase.auth.updateUser({
-        password: changePasswordDto.newPassword,
-      });
+        password: changePasswordDto.newPassword });
 
       if (updateError) {
-        this.logger.error('Error updating password:', updateError);
+        this.staticLogger.error('Error updating password:', updateError);
         return {
           success: false,
           message: 'Failed to update password',
           error: {
             code: 'PASSWORD_UPDATE_FAILED',
-            details: updateError.message,
-          },
-        };
+            details: updateError.message } };
       }
 
       return {
         success: true,
         message: 'Password updated successfully',
-        data: {},
-      };
+        data: {} };
     } catch (error) {
-      this.logger.error('Unexpected error changing password:', error);
+      this.staticLogger.error('Unexpected error changing password:', error as Error);
       return {
         success: false,
         message: 'Internal server error',
         error: {
           code: 'INTERNAL_ERROR',
-          details: 'Failed to change password',
-        },
-      };
+          details: 'Failed to change password' } };
     }
   }
 
@@ -444,7 +399,7 @@ export class AuthController {
       strengthRecommendations: string[];
     }>
   > {
-    this.logger.debug('Password security check request received');
+    this.staticLogger.debug('Password security check request received');
 
     try {
       const passwordCheck = await this.passwordSecurity.checkPasswordSecurity(
@@ -462,19 +417,15 @@ export class AuthController {
           isCompromised: passwordCheck.isCompromised,
           breachCount: passwordCheck.breachCount,
           recommendation: passwordCheck.recommendation,
-          strengthRecommendations,
-        },
-      };
+          strengthRecommendations } };
     } catch (error) {
-      this.logger.error('Error checking password security:', error);
+      this.staticLogger.error('Error checking password security:', error as Error);
       return {
         success: false,
         message: 'Failed to check password security',
         error: {
           code: 'PASSWORD_CHECK_FAILED',
-          details: 'Unable to verify password security',
-        },
-      };
+          details: 'Unable to verify password security' } };
     }
   }
 
@@ -501,17 +452,16 @@ export class AuthController {
             id: user.id,
             email: user.email,
             display_name: displayName,
-            provider: 'google',
-          });
+            provider: 'google' });
 
         if (profileError) {
-          this.logger.error('Error creating OAuth user profile:', profileError);
+          this.staticLogger.error('Error creating OAuth user profile:', profileError);
         } else {
-          this.logger.debug(`Created profile for OAuth user: ${user.email}`);
+          this.staticLogger.debug(`Created profile for OAuth user: ${user.email}`);
         }
       }
     } catch (error) {
-      this.logger.error('Error ensuring user profile:', error);
+      this.staticLogger.error('Error ensuring user profile:', error as Error);
     }
   }
 

@@ -1,7 +1,7 @@
 /**
  * BrowserCompatibility - Cross-browser testing and compatibility checks
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Ensures audio functionality across all supported browsers
  */
 
@@ -126,15 +126,19 @@ export class BrowserCompatibility {
 
     // Performance API
     this.checkCapability('Performance API', () => {
-      return typeof performance !== 'undefined' && 
-             typeof performance.now === 'function';
+      return (
+        typeof performance !== 'undefined' &&
+        typeof performance.now === 'function'
+      );
     });
 
     // High resolution time
     this.checkCapability('High Resolution Time', () => {
-      return typeof performance !== 'undefined' && 
-             typeof performance.now === 'function' &&
-             performance.now() !== Math.floor(performance.now());
+      return (
+        typeof performance !== 'undefined' &&
+        typeof performance.now === 'function' &&
+        performance.now() !== Math.floor(performance.now())
+      );
     });
 
     // Web Workers
@@ -168,7 +172,11 @@ export class BrowserCompatibility {
   /**
    * Check a specific capability
    */
-  private checkCapability(name: string, test: () => boolean, notes?: string): void {
+  private checkCapability(
+    name: string,
+    test: () => boolean,
+    notes?: string,
+  ): void {
     try {
       const supported = test();
       this.capabilities.push({ name, supported, notes });
@@ -176,7 +184,7 @@ export class BrowserCompatibility {
       this.capabilities.push({
         name,
         supported: false,
-        notes: error instanceof Error ? error.message : 'Test failed'
+        notes: error instanceof Error ? error.message : 'Test failed',
       });
     }
   }
@@ -190,7 +198,7 @@ export class BrowserCompatibility {
       { name: 'MP3', mimeType: 'audio/mpeg' },
       { name: 'OGG', mimeType: 'audio/ogg' },
       { name: 'WebM', mimeType: 'audio/webm' },
-      { name: 'FLAC', mimeType: 'audio/flac' }
+      { name: 'FLAC', mimeType: 'audio/flac' },
     ];
 
     for (const format of formats) {
@@ -206,23 +214,35 @@ export class BrowserCompatibility {
    */
   private async checkMobileCapabilities(): Promise<void> {
     // Check for user gesture requirement
-    this.checkCapability('Audio without user gesture', () => {
-      // Most mobile browsers require user gesture
-      return false;
-    }, 'Mobile browsers typically require user interaction to start audio');
+    this.checkCapability(
+      'Audio without user gesture',
+      () => {
+        // Most mobile browsers require user gesture
+        return false;
+      },
+      'Mobile browsers typically require user interaction to start audio',
+    );
 
     // Check for background audio
-    this.checkCapability('Background audio', () => {
-      // Limited support on mobile
-      return this.isIOS() ? false : true;
-    }, 'iOS suspends audio when app is backgrounded');
+    this.checkCapability(
+      'Background audio',
+      () => {
+        // Limited support on mobile
+        return this.isIOS() ? false : true;
+      },
+      'iOS suspends audio when app is backgrounded',
+    );
 
     // Check for audio session
     if (this.isIOS()) {
-      this.checkCapability('Audio session category', () => {
-        // iOS specific audio session handling
-        return 'webkitAudioContext' in window;
-      }, 'iOS requires specific audio session configuration');
+      this.checkCapability(
+        'Audio session category',
+        () => {
+          // iOS specific audio session handling
+          return 'webkitAudioContext' in window;
+        },
+        'iOS requires specific audio session configuration',
+      );
     }
   }
 
@@ -231,27 +251,27 @@ export class BrowserCompatibility {
    */
   private detectBrowser(): void {
     const ua = navigator.userAgent.toLowerCase();
-    
+
     if (ua.includes('chrome') && !ua.includes('edg')) {
       const match = ua.match(/chrome\/(\d+\.\d+)/);
-      this.browserInfo = match ? 
-        { name: 'Chrome', version: match[1] } : 
-        { name: 'Chrome', version: 'unknown' };
+      this.browserInfo = match
+        ? { name: 'Chrome', version: match[1] }
+        : { name: 'Chrome', version: 'unknown' };
     } else if (ua.includes('firefox')) {
       const match = ua.match(/firefox\/(\d+\.\d+)/);
-      this.browserInfo = match ? 
-        { name: 'Firefox', version: match[1] } : 
-        { name: 'Firefox', version: 'unknown' };
+      this.browserInfo = match
+        ? { name: 'Firefox', version: match[1] }
+        : { name: 'Firefox', version: 'unknown' };
     } else if (ua.includes('safari') && !ua.includes('chrome')) {
       const match = ua.match(/version\/(\d+\.\d+)/);
-      this.browserInfo = match ? 
-        { name: 'Safari', version: match[1] } : 
-        { name: 'Safari', version: 'unknown' };
+      this.browserInfo = match
+        ? { name: 'Safari', version: match[1] }
+        : { name: 'Safari', version: 'unknown' };
     } else if (ua.includes('edg')) {
       const match = ua.match(/edg\/(\d+\.\d+)/);
-      this.browserInfo = match ? 
-        { name: 'Edge', version: match[1] } : 
-        { name: 'Edge', version: 'unknown' };
+      this.browserInfo = match
+        ? { name: 'Edge', version: match[1] }
+        : { name: 'Edge', version: 'unknown' };
     } else {
       this.browserInfo = { name: 'Unknown', version: 'unknown' };
     }
@@ -261,7 +281,7 @@ export class BrowserCompatibility {
    * Generate compatibility report
    */
   private generateReport(): BrowserCompatibilityReport {
-    const supportedCount = this.capabilities.filter(c => c.supported).length;
+    const supportedCount = this.capabilities.filter((c) => c.supported).length;
     const totalCount = this.capabilities.length;
     const supportPercentage = (supportedCount / totalCount) * 100;
 
@@ -281,12 +301,12 @@ export class BrowserCompatibility {
         name: this.browserInfo?.name || 'Unknown',
         version: this.browserInfo?.version || 'unknown',
         userAgent: navigator.userAgent,
-        platform: navigator.platform
+        platform: navigator.platform,
       },
       capabilities: this.capabilities,
       overallSupport,
       recommendations,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
@@ -295,46 +315,70 @@ export class BrowserCompatibility {
    */
   private generateRecommendations(): string[] {
     const recommendations: string[] = [];
-    const unsupported = this.capabilities.filter(c => !c.supported);
+    const unsupported = this.capabilities.filter((c) => !c.supported);
 
     for (const capability of unsupported) {
       switch (capability.name) {
         case 'AudioContext':
-          recommendations.push('Browser does not support Web Audio API. Please upgrade to a modern browser.');
+          recommendations.push(
+            'Browser does not support Web Audio API. Please upgrade to a modern browser.',
+          );
           break;
         case 'AudioWorklet':
-          recommendations.push('AudioWorklet not supported. Some advanced audio features may be unavailable.');
+          recommendations.push(
+            'AudioWorklet not supported. Some advanced audio features may be unavailable.',
+          );
           break;
         case 'Promise':
         case 'Fetch API':
         case 'ES6 Classes':
         case 'Async/Await':
-          recommendations.push('Browser lacks modern JavaScript features. Please upgrade your browser.');
+          recommendations.push(
+            'Browser lacks modern JavaScript features. Please upgrade your browser.',
+          );
           break;
         case 'Web Workers':
-          recommendations.push('Web Workers not supported. Audio processing performance may be limited.');
+          recommendations.push(
+            'Web Workers not supported. Audio processing performance may be limited.',
+          );
           break;
         case 'Audio without user gesture':
-          recommendations.push('Audio requires user interaction to start. Add a play button or similar control.');
+          recommendations.push(
+            'Audio requires user interaction to start. Add a play button or similar control.',
+          );
           break;
       }
     }
 
     // Browser-specific recommendations
     if (this.browserInfo) {
-      if (this.browserInfo.name === 'Safari' && !this.hasCapability('AudioWorklet')) {
-        recommendations.push('Update Safari to version 14.1 or later for full audio support.');
+      if (
+        this.browserInfo.name === 'Safari' &&
+        !this.hasCapability('AudioWorklet')
+      ) {
+        recommendations.push(
+          'Update Safari to version 14.1 or later for full audio support.',
+        );
       }
-      if (this.browserInfo.name === 'Firefox' && !this.hasCapability('AudioWorklet')) {
-        recommendations.push('Update Firefox to version 76 or later for AudioWorklet support.');
+      if (
+        this.browserInfo.name === 'Firefox' &&
+        !this.hasCapability('AudioWorklet')
+      ) {
+        recommendations.push(
+          'Update Firefox to version 76 or later for AudioWorklet support.',
+        );
       }
     }
 
     // Mobile recommendations
     if (this.isMobile()) {
-      recommendations.push('Mobile device detected. Ensure user interaction before starting audio.');
+      recommendations.push(
+        'Mobile device detected. Ensure user interaction before starting audio.',
+      );
       if (this.isIOS()) {
-        recommendations.push('iOS detected. Audio may pause when app is backgrounded.');
+        recommendations.push(
+          'iOS detected. Audio may pause when app is backgrounded.',
+        );
       }
     }
 
@@ -345,7 +389,7 @@ export class BrowserCompatibility {
    * Check if capability is supported
    */
   private hasCapability(name: string): boolean {
-    return this.capabilities.find(c => c.name === name)?.supported || false;
+    return this.capabilities.find((c) => c.name === name)?.supported || false;
   }
 
   /**
@@ -353,7 +397,8 @@ export class BrowserCompatibility {
    */
   private getAudioContext(): AudioContext | null {
     try {
-      const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass =
+        (window as any).AudioContext || (window as any).webkitAudioContext;
       return AudioContextClass ? new AudioContextClass() : null;
     } catch {
       return null;
@@ -364,14 +409,18 @@ export class BrowserCompatibility {
    * Check if mobile device
    */
   private isMobile(): boolean {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    );
   }
 
   /**
    * Check if iOS device
    */
   private isIOS(): boolean {
-    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    return (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+    );
   }
 
   /**
@@ -383,14 +432,22 @@ export class BrowserCompatibility {
     switch (browserName.toLowerCase()) {
       case 'chrome':
         recommendations.push('Chrome 66+ recommended for AudioWorklet support');
-        recommendations.push('Enable "Experimental Web Platform features" for latest audio features');
+        recommendations.push(
+          'Enable "Experimental Web Platform features" for latest audio features',
+        );
         break;
       case 'firefox':
-        recommendations.push('Firefox 76+ recommended for AudioWorklet support');
-        recommendations.push('Ensure media.autoplay.enabled is set appropriately');
+        recommendations.push(
+          'Firefox 76+ recommended for AudioWorklet support',
+        );
+        recommendations.push(
+          'Ensure media.autoplay.enabled is set appropriately',
+        );
         break;
       case 'safari':
-        recommendations.push('Safari 14.1+ recommended for AudioWorklet support');
+        recommendations.push(
+          'Safari 14.1+ recommended for AudioWorklet support',
+        );
         recommendations.push('User gesture required to start audio playback');
         break;
       case 'edge':

@@ -22,7 +22,9 @@ vi.mock('../MusicalTimeEngine.js', () => ({
         subdivision: 0,
       })),
       getCurrentTick: vi.fn(() => 0),
-      positionToMilliseconds: vi.fn((pos) => pos.measure * 2000 + pos.beat * 500),
+      positionToMilliseconds: vi.fn(
+        (pos) => pos.measure * 2000 + pos.beat * 500,
+      ),
     })),
   },
 }));
@@ -67,11 +69,11 @@ describe('UnifiedTransport', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Set up mocks
     mockContext = new MockAudioContext();
     eventBus = new EventBus();
-    
+
     // Mock AudioEngine
     audioEngine = {
       getTone: vi.fn(() => ({ Transport: mockTransport })),
@@ -108,7 +110,10 @@ describe('UnifiedTransport', () => {
       await customTransport.initialize();
 
       expect(customTransport.getTempo()).toBe(140);
-      expect(customTransport.getTimeSignature()).toEqual({ numerator: 3, denominator: 4 });
+      expect(customTransport.getTimeSignature()).toEqual({
+        numerator: 3,
+        denominator: 4,
+      });
     });
 
     it('should not initialize twice', async () => {
@@ -117,7 +122,10 @@ describe('UnifiedTransport', () => {
 
       await transportController.initialize();
 
-      expect(emitSpy).not.toHaveBeenCalledWith('transport:initialized', expect.any(Object));
+      expect(emitSpy).not.toHaveBeenCalledWith(
+        'transport:initialized',
+        expect.any(Object),
+      );
     });
 
     it('should handle initialization errors', async () => {
@@ -126,7 +134,9 @@ describe('UnifiedTransport', () => {
         throw error;
       });
 
-      await expect(transportController.initialize()).rejects.toThrow(TransportError);
+      await expect(transportController.initialize()).rejects.toThrow(
+        TransportError,
+      );
     });
   });
 
@@ -142,10 +152,13 @@ describe('UnifiedTransport', () => {
 
       expect(mockTransport.start).toHaveBeenCalledWith(1.0); // Next sync point
       expect(transportController.getState()).toBe('playing');
-      expect(emitSpy).toHaveBeenCalledWith('transport:started', expect.objectContaining({
-        time: 1.0,
-        position: expect.any(Object),
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'transport:started',
+        expect.objectContaining({
+          time: 1.0,
+          position: expect.any(Object),
+        }),
+      );
     });
 
     it('should not start if already playing', async () => {
@@ -165,9 +178,12 @@ describe('UnifiedTransport', () => {
 
       expect(mockTransport.stop).toHaveBeenCalled();
       expect(transportController.getState()).toBe('stopped');
-      expect(emitSpy).toHaveBeenCalledWith('transport:stopped', expect.objectContaining({
-        position: expect.any(Object),
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'transport:stopped',
+        expect.objectContaining({
+          position: expect.any(Object),
+        }),
+      );
     });
 
     it('should not stop if already stopped', async () => {
@@ -176,7 +192,10 @@ describe('UnifiedTransport', () => {
       await transportController.stop();
 
       expect(mockTransport.stop).not.toHaveBeenCalled();
-      expect(emitSpy).not.toHaveBeenCalledWith('transport:stopped', expect.any(Object));
+      expect(emitSpy).not.toHaveBeenCalledWith(
+        'transport:stopped',
+        expect.any(Object),
+      );
     });
 
     it('should pause transport', async () => {
@@ -187,9 +206,12 @@ describe('UnifiedTransport', () => {
 
       expect(mockTransport.pause).toHaveBeenCalled();
       expect(transportController.getState()).toBe('paused');
-      expect(emitSpy).toHaveBeenCalledWith('transport:paused', expect.objectContaining({
-        position: expect.any(Object),
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'transport:paused',
+        expect.objectContaining({
+          position: expect.any(Object),
+        }),
+      );
     });
 
     it('should not pause if not playing', async () => {
@@ -198,7 +220,10 @@ describe('UnifiedTransport', () => {
       await transportController.pause();
 
       expect(mockTransport.pause).not.toHaveBeenCalled();
-      expect(emitSpy).not.toHaveBeenCalledWith('transport:paused', expect.any(Object));
+      expect(emitSpy).not.toHaveBeenCalledWith(
+        'transport:paused',
+        expect.any(Object),
+      );
     });
   });
 
@@ -214,9 +239,12 @@ describe('UnifiedTransport', () => {
 
       expect(mockTransport.bpm.value).toBe(140);
       expect(transportController.getTempo()).toBe(140);
-      expect(emitSpy).toHaveBeenCalledWith('transport:tempo-changed', expect.objectContaining({
-        tempo: 140,
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'transport:tempo-changed',
+        expect.objectContaining({
+          tempo: 140,
+        }),
+      );
     });
 
     it('should clamp tempo to valid range', () => {
@@ -235,9 +263,12 @@ describe('UnifiedTransport', () => {
 
       expect(mockTransport.timeSignature).toEqual([3, 4]);
       expect(transportController.getTimeSignature()).toEqual(timeSignature);
-      expect(emitSpy).toHaveBeenCalledWith('transport:time-signature-changed', expect.objectContaining({
-        timeSignature,
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'transport:time-signature-changed',
+        expect.objectContaining({
+          timeSignature,
+        }),
+      );
     });
   });
 
@@ -252,9 +283,12 @@ describe('UnifiedTransport', () => {
       transportController.seekTo(5.5);
 
       expect(mockTransport.seconds).toBe(5.5);
-      expect(emitSpy).toHaveBeenCalledWith('transport:seeked', expect.objectContaining({
-        position: expect.any(Object),
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'transport:seeked',
+        expect.objectContaining({
+          position: expect.any(Object),
+        }),
+      );
     });
 
     it('should seek to musical position', () => {
@@ -265,9 +299,12 @@ describe('UnifiedTransport', () => {
 
       // 2 * 2000 + 3 * 500 = 5500ms = 5.5s
       expect(mockTransport.seconds).toBe(5.5);
-      expect(emitSpy).toHaveBeenCalledWith('transport:seeked', expect.objectContaining({
-        position: expect.any(Object),
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'transport:seeked',
+        expect.objectContaining({
+          position: expect.any(Object),
+        }),
+      );
     });
   });
 
@@ -351,11 +388,14 @@ describe('UnifiedTransport', () => {
       // Advance timer to trigger scheduling
       vi.advanceTimersByTime(25);
 
-      expect(emitSpy).toHaveBeenCalledWith('transport:schedule-ahead', expect.objectContaining({
-        currentTime: 0,
-        scheduleTime: 0.1,
-        lookAheadTime: 0.1,
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'transport:schedule-ahead',
+        expect.objectContaining({
+          currentTime: 0,
+          scheduleTime: 0.1,
+          lookAheadTime: 0.1,
+        }),
+      );
     });
 
     it('should stop scheduling loop when stopping', async () => {
@@ -367,7 +407,10 @@ describe('UnifiedTransport', () => {
       // Advance timer - should not trigger scheduling
       vi.advanceTimersByTime(50);
 
-      expect(eventBus.emit).not.toHaveBeenCalledWith('transport:schedule-ahead', expect.any(Object));
+      expect(eventBus.emit).not.toHaveBeenCalledWith(
+        'transport:schedule-ahead',
+        expect.any(Object),
+      );
     });
   });
 
@@ -394,7 +437,9 @@ describe('UnifiedTransport', () => {
       expect(() => transportController.start()).rejects.toThrow(TransportError);
       expect(() => transportController.setTempo(120)).toThrow(TransportError);
       expect(() => transportController.seekTo(0)).toThrow(TransportError);
-      expect(() => transportController.schedule(vi.fn(), 1)).toThrow(TransportError);
+      expect(() => transportController.schedule(vi.fn(), 1)).toThrow(
+        TransportError,
+      );
     });
   });
 
@@ -415,13 +460,16 @@ describe('UnifiedTransport', () => {
           state: 'playing',
           timestamp: expect.any(Number),
         }),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
     it('should forward musical time events', async () => {
-      const musicalTimeEngine = (await import('../MusicalTimeEngine.js')).MusicalTimeEngine.getInstance();
-      const subscribeCall = (musicalTimeEngine.subscribeWidget as any).mock.calls[0];
+      const musicalTimeEngine = (
+        await import('../MusicalTimeEngine.js')
+      ).MusicalTimeEngine.getInstance();
+      const subscribeCall = (musicalTimeEngine.subscribeWidget as any).mock
+        .calls[0];
       const handler = subscribeCall[2];
 
       const emitSpy = vi.spyOn(eventBus, 'emit');
@@ -433,7 +481,10 @@ describe('UnifiedTransport', () => {
         timestamp: Date.now(),
       });
 
-      expect(emitSpy).toHaveBeenCalledWith('transport:bar-change', expect.any(Object));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'transport:bar-change',
+        expect.any(Object),
+      );
     });
   });
 });

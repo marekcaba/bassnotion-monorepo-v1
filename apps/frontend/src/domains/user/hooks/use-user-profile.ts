@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './use-auth';
 import { supabase } from '@/infrastructure/supabase/client';
 import type { UserProfile } from '@bassnotion/contracts';
+import { getLogger } from '@/utils/logger.js';
+
+const logger = getLogger('user:profile');
 
 interface UserProfileWithRole extends UserProfile {
   role: string;
@@ -70,7 +73,7 @@ export function useUserProfile(): UseUserProfileReturn {
         throw new Error(result.message || 'Failed to fetch profile');
       }
     } catch (err) {
-      console.error('Error fetching user profile:', err);
+      logger.error('Error fetching user profile:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
       setProfile(null);
     } finally {

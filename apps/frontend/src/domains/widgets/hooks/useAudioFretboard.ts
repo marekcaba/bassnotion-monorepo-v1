@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState, useEffect } from 'react';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import {
   NoteDuration,
   MusicalPosition,
@@ -369,10 +370,10 @@ export function useAudioFretboard(
   // const playbackIntegration = usePlaybackIntegration({
   //   exercise,
   //   onNoteEvent: useCallback((note) => {
-  //     console.log('🎵 Note event from engine:', note);
+  //     logger.info('🎵 Note event from engine:', note);
   //   }, []),
   //   onBeatEvent: useCallback((beat) => {
-  //     console.log('🥁 Beat event from engine:', beat);
+  //     logger.info('🥁 Beat event from engine:', beat);
   //   }, []),
   // });
   const playbackIntegration = null; // Temporary placeholder
@@ -540,7 +541,7 @@ export function useAudioFretboard(
 
       // Validate inputs
       if (!notes[fretNum as keyof typeof notes] || !octaves[stringIndex]) {
-        console.warn(
+        logger.warn(
           `⚠️ Invalid fretboard position: string ${stringIndex}, fret ${fret}`,
         );
         return null;
@@ -605,7 +606,7 @@ export function useAudioFretboard(
           // Trigger audio with BassInstrumentProcessor
           (playbackIntegration as any).engine.processNoteEvent?.(noteEvent);
         } catch (error) {
-          console.warn('⚠️ Audio trigger failed:', error);
+          logger.warn('⚠️ Audio trigger failed:', error);
         }
       } else {
         // Fallback: Note would be triggered

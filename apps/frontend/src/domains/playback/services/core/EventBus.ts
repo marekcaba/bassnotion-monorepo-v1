@@ -1,7 +1,7 @@
 /**
  * EventBus - Resilient Inter-Service Communication
  * Story 3.18.2: Core Services Foundation
- * 
+ *
  * Central event system with circuit breaker protection for:
  * - Service-to-service communication
  * - Event replay for debugging
@@ -9,7 +9,9 @@
  */
 
 import { Service } from './ServiceRegistry.js';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { CircuitBreaker } from '../errors/CircuitBreaker.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 export interface EventData {
   [key: string]: unknown;
@@ -58,7 +60,10 @@ interface StoredEvent {
 }
 
 export class EventBusError extends Error {
-  constructor(message: string, public event?: string) {
+  constructor(
+    message: string,
+    public event?: string,
+  ) {
     super(message);
     this.name = 'EventBusError';
   }
@@ -73,8 +78,13 @@ export class EventBus implements Service {
   private eventBatch: StoredEvent[] = [];
   private batchTimer: NodeJS.Timeout | null = null;
   private eventSchemas = new Map<string, EventSchema>();
-  private eventMetrics = new Map<string, { count: number; lastEmitted: number; totalTime: number }>();
+  private eventMetrics = new Map<
+    string,
+    { count: number; lastEmitted: number; totalTime: number }
+  >();
   private _instanceId = Math.random().toString(36).substring(7); // Debug instance tracking
+  private static _instanceCount = 0;
+  private static _globalInstance: EventBus | null = null;
 
   constructor(config: EventBusConfig = {}) {
     this.config = {
@@ -90,6 +100,40 @@ export class EventBus implements Service {
       },
       ...config,
     };
+
+    // Track instance creation
+    EventBus._instanceCount++;
+    logger.info(
+      `🎵 EventBus CREATED: Instance #${EventBus._instanceCount}, ID: ${this._instanceId}`,
+    );
+    console.trace('EventBus creation stack trace');
+  }
+
+  /**
+   * Get global singleton instance of EventBus
+   * This ensures only one EventBus exists across the entire application
+   */
+  static getGlobalInstance(config?: EventBusConfig): EventBus {
+    if (!EventBus._globalInstance) {
+      logger.info('🎵 EventBus: Creating global singleton instance');
+      EventBus._globalInstance = new EventBus(config);
+      // Store it globally for easy access
+      if (typeof window !== 'undefined') {
+        (window as any).__globalEventBus = EventBus._globalInstance;
+      }
+    } else {
+      logger.info(
+        `🎵 EventBus: Returning existing global instance (ID: ${EventBus._globalInstance._instanceId})`,
+      );
+    }
+    return EventBus._globalInstance;
+  }
+
+  /**
+   * Get instance ID for debugging
+   */
+  getInstanceId(): string {
+    return this._instanceId;
   }
 
   /**
@@ -105,6 +149,7 @@ export class EventBus implements Service {
 
     // Return unsubscribe function
     return () => {
+  const { correlationId, logger } = useCorrelation('handlers');
       handlers.delete(handler as EventHandler);
       if (handlers.size === 0) {
         this.handlers.delete(event);
@@ -115,21 +160,31 @@ export class EventBus implements Service {
   /**
    * Subscribe to an event (alias for on)
    */
-  subscribe<T = EventData>(event: string, handler: EventHandler<T>): () => void {
+  subscribe<T = EventData>(
+    event: string,
+    handler: EventHandler<T>,
+  ): () => void {
     return this.on(event, handler);
   }
 
   /**
    * Emit an event
    */
-  async emit(event: string, data: EventData = {}, source?: string): Promise<void> {
+  async emit(
+    event: string,
+    data: EventData = {},
+    source?: string,
+  ): Promise<void> {
     const startTime = performance.now();
-    
+
     // Validate schema if enabled
     if (this.config.enableSchemaValidation) {
       const schema = this.eventSchemas.get(event);
       if (schema && !this.validateEventData(event, data, schema)) {
-        throw new EventBusError(`Event data validation failed for '${event}'`, event);
+        throw new EventBusError(
+          `Event data validation failed for '${event}'`,
+          event,
+        );
       }
     }
 
@@ -154,7 +209,7 @@ export class EventBus implements Service {
 
     // Execute immediately if not batching
     await this.executeEvent(storedEvent);
-    
+
     // Update metrics
     this.updateEventMetrics(event, performance.now() - startTime);
   }
@@ -162,7 +217,11 @@ export class EventBus implements Service {
   /**
    * Emit an event and wait for all handlers
    */
-  async emitAndWait(event: string, data: EventData = {}, source?: string): Promise<void> {
+  async emitAndWait(
+    event: string,
+    data: EventData = {},
+    source?: string,
+  ): Promise<void> {
     await this.emit(event, data, source);
   }
 
@@ -173,7 +232,7 @@ export class EventBus implements Service {
     event: string,
     handler: EventHandler,
     data: EventData,
-    metadata: EventMetadata
+    metadata: EventMetadata,
   ): Promise<void> {
     // Get or create circuit breaker for this event
     const circuitBreaker = this.getCircuitBreaker(event);
@@ -185,7 +244,7 @@ export class EventBus implements Service {
           await handler(data, metadata);
         } catch (error) {
           // Log error but don't propagate to other handlers
-          console.error(`Error in event handler for '${event}':`, error);
+          logger.error(`Error in event handler for '${event}':`, error);
           throw error; // Re-throw for circuit breaker tracking
         }
       });
@@ -211,7 +270,7 @@ export class EventBus implements Service {
           failureThreshold: 3,
           recoveryTimeout: 30000,
           ...this.config.circuitBreakerConfig,
-        })
+        }),
       );
     }
     return this.circuitBreakers.get(event)!;
@@ -222,7 +281,7 @@ export class EventBus implements Service {
    */
   async replay(
     filter: (event: StoredEvent) => boolean,
-    targetHandler?: EventHandler
+    targetHandler?: EventHandler,
   ): Promise<number> {
     if (!this.config.enableReplay) {
       throw new EventBusError('Event replay is disabled');
@@ -241,14 +300,14 @@ export class EventBus implements Service {
           {
             ...storedEvent.metadata,
             correlationId: `replay-${storedEvent.metadata.eventId}`,
-          }
+          },
         );
       } else {
         // Replay to all current handlers
         await this.emit(
           storedEvent.event,
           storedEvent.data,
-          `replay-${storedEvent.metadata.source || 'unknown'}`
+          `replay-${storedEvent.metadata.source || 'unknown'}`,
         );
       }
       replayedCount++;
@@ -320,13 +379,17 @@ export class EventBus implements Service {
   /**
    * Validate event data against schema
    */
-  private validateEventData(event: string, data: EventData, schema: EventSchema): boolean {
+  private validateEventData(
+    event: string,
+    data: EventData,
+    schema: EventSchema,
+  ): boolean {
     // Simple validation - in production, use Zod or similar
     try {
       // This is a placeholder - implement actual schema validation
       return true;
     } catch (error) {
-      console.error(`Schema validation failed for event '${event}':`, error);
+      logger.error(`Schema validation failed for event '${event}':`, error);
       return false;
     }
   }
@@ -368,7 +431,7 @@ export class EventBus implements Service {
     this.eventBatch = [];
 
     // Execute all events in batch
-    const promises = batch.map(event => this.executeEvent(event));
+    const promises = batch.map((event) => this.executeEvent(event));
     await Promise.allSettled(promises);
 
     // Emit batch processed event
@@ -388,7 +451,7 @@ export class EventBus implements Service {
    */
   private async executeEvent(storedEvent: StoredEvent): Promise<void> {
     const { event, data, metadata } = storedEvent;
-    
+
     // Get handlers for this event
     const handlers = this.handlers.get(event);
     if (!handlers || handlers.size === 0) {
@@ -397,7 +460,7 @@ export class EventBus implements Service {
 
     // Execute handlers with error boundaries
     const handlerPromises = Array.from(handlers).map((handler) =>
-      this.executeHandler(event, handler, data, metadata)
+      this.executeHandler(event, handler, data, metadata),
     );
 
     // Wait for all handlers to complete
@@ -408,7 +471,11 @@ export class EventBus implements Service {
    * Update event metrics
    */
   private updateEventMetrics(event: string, executionTime: number): void {
-    const metrics = this.eventMetrics.get(event) || { count: 0, lastEmitted: 0, totalTime: 0 };
+    const metrics = this.eventMetrics.get(event) || {
+      count: 0,
+      lastEmitted: 0,
+      totalTime: 0,
+    };
     metrics.count++;
     metrics.lastEmitted = Date.now();
     metrics.totalTime += executionTime;
@@ -420,7 +487,7 @@ export class EventBus implements Service {
    */
   getEventAnalytics(): Record<string, any> {
     const analytics: Record<string, any> = {};
-    
+
     this.eventMetrics.forEach((metrics, event) => {
       analytics[event] = {
         ...metrics,
@@ -465,7 +532,7 @@ export class EventBus implements Service {
     if (this.config.enableBatching) {
       await this.flushBatch();
     }
-    
+
     // Clear all handlers but keep history
     this.handlers.clear();
     this.circuitBreakers.clear();
@@ -477,7 +544,7 @@ export class EventBus implements Service {
   async dispose(): Promise<void> {
     // Stop first
     await this.stop();
-    
+
     // Clear all state
     this.handlers.clear();
     this.circuitBreakers.clear();
@@ -486,7 +553,7 @@ export class EventBus implements Service {
     this.eventBatch = [];
     this.eventSchemas.clear();
     this.eventMetrics.clear();
-    
+
     if (this.batchTimer) {
       clearTimeout(this.batchTimer);
       this.batchTimer = null;
@@ -496,7 +563,11 @@ export class EventBus implements Service {
   /**
    * Store event in history
    */
-  private storeEvent(event: string, data: EventData, metadata: EventMetadata): void {
+  private storeEvent(
+    event: string,
+    data: EventData,
+    metadata: EventMetadata,
+  ): void {
     this.eventHistory.push({ event, data, metadata });
 
     // Trim history if it exceeds max size

@@ -11,7 +11,12 @@ import { useEffect, useCallback, useRef, useMemo } from 'react';
 import { usePlaybackStore, playbackSelectors } from '../store/playbackStore';
 // Epic 3.18: CorePlaybackEngine removed - use new core services
 // import { CorePlaybackEngine } from '../services/CorePlaybackEngine/CorePlaybackEngine';
-import { ServiceRegistry, AudioEngine, UnifiedTransport, EventBus } from '../services/core/index.js';
+import {
+  ServiceRegistry,
+  AudioEngine,
+  UnifiedTransport,
+  EventBus,
+} from '../services/core/index.js';
 
 // Adapter class to maintain API compatibility with CorePlaybackEngine
 class CorePlaybackEngine {
@@ -20,183 +25,205 @@ class CorePlaybackEngine {
   private transportController: UnifiedTransport | null = null;
   private eventBus: EventBus | null = null;
   private listeners = new Map<string, Set<Function>>();
-  
+
   static getInstance(): CorePlaybackEngine {
     if (!this.instance) {
       this.instance = new CorePlaybackEngine();
     }
     return this.instance;
   }
-  
+
   async initialize(): Promise<void> {
     // Check if services are already available - try CoreServices first
     const coreServices = (window as any).__globalCoreServices;
     if (coreServices) {
       try {
-        console.log('CoreServices already available! Getting services...');
-        
+        // CoreServices already available - get services quietly
         this.audioEngine = coreServices.getAudioEngine();
         this.transportController = coreServices.getUnifiedTransport();
         this.eventBus = coreServices.getEventBus();
-        
-        console.log('Successfully retrieved core services from CoreServices', {
-          hasAudioEngine: !!this.audioEngine,
-          hasTransportController: !!this.transportController,
-          hasEventBus: !!this.eventBus
-        });
         return; // Success, exit early
       } catch (error) {
-        console.warn('Error getting services from CoreServices:', error);
+        logger.warn('Error getting services from CoreServices:', error);
       }
     }
-    
+
     // Fallback to registry approach
     const registry = (window as any).__serviceRegistry as ServiceRegistry;
     if (registry) {
       try {
-        console.log('Trying ServiceRegistry fallback...', {
-          availableServices: registry.getServiceNames ? registry.getServiceNames() : 'getServiceNames not available',
+        logger.info('Trying ServiceRegistry fallback...', {
+          availableServices: registry.getServiceNames
+            ? registry.getServiceNames()
+            : 'getServiceNames not available',
           registryType: typeof registry,
           registryKeys: Object.keys(registry || {}),
-          hasMethod: typeof registry.get === 'function'
+          hasMethod: typeof registry.get === 'function',
         });
-        
+
         // Check if registry has the services
-        const serviceNames = registry.getServiceNames ? registry.getServiceNames() : [];
-        console.log('Available service names:', serviceNames);
-        
+        const serviceNames = registry.getServiceNames
+          ? registry.getServiceNames()
+          : [];
+        logger.info('Available service names:', serviceNames);
+
         try {
           this.audioEngine = registry.get('audioEngine') as AudioEngine;
-          console.log('Got audioEngine:', !!this.audioEngine);
+          logger.info('Got audioEngine:', !!this.audioEngine);
         } catch (e) {
-          console.error('Failed to get audioEngine:', e);
+          logger.error('Failed to get audioEngine:', e);
         }
-        
+
         try {
-          this.transportController = registry.get('unifiedTransport') as UnifiedTransport;
-          console.log('Got transportController:', !!this.transportController);
+          this.transportController = registry.get(
+            'unifiedTransport',
+          ) as UnifiedTransport;
+          logger.info('Got transportController:', !!this.transportController);
         } catch (e) {
-          console.error('Failed to get transportController:', e);
+          logger.error('Failed to get transportController:', e);
         }
-        
+
         try {
           this.eventBus = registry.get('eventBus') as EventBus;
-          console.log('Got eventBus:', !!this.eventBus);
+          logger.info('Got eventBus:', !!this.eventBus);
         } catch (e) {
-          console.error('Failed to get eventBus:', e);
+          logger.error('Failed to get eventBus:', e);
         }
-        
-        console.log('Successfully retrieved core services from registry');
+
+        logger.info('Successfully retrieved core services from registry');
       } catch (error) {
-        console.warn('Error getting core services:', error);
+        logger.warn('Error getting core services:', error);
         return;
       }
     } else {
       // Wait for audioServicesReady event
-      console.log('Waiting for audioServicesReady event...');
+      logger.info('Waiting for audioServicesReady event...');
       await new Promise<void>((resolve) => {
         const timeout = setTimeout(() => {
-          console.log('Timeout waiting for audioServicesReady, using stub implementations');
+          logger.info(
+            'Timeout waiting for audioServicesReady, using stub implementations',
+          );
           resolve();
         }, 5000);
-        
+
         const handleReady = () => {
           clearTimeout(timeout);
           try {
             // Try CoreServices first
             const coreServices = (window as any).__globalCoreServices;
             if (coreServices) {
-              console.log('CoreServices ready! Getting services...');
+              logger.info('CoreServices ready! Getting services...');
               this.audioEngine = coreServices.getAudioEngine();
               this.transportController = coreServices.getUnifiedTransport();
               this.eventBus = coreServices.getEventBus();
-              console.log('Successfully retrieved core services from CoreServices after ready event');
+              logger.info(
+                'Successfully retrieved core services from CoreServices after ready event',
+              );
             } else {
               // Fallback to registry
-              const registry = (window as any).__serviceRegistry as ServiceRegistry;
+              const registry = (window as any)
+                .__serviceRegistry as ServiceRegistry;
               if (registry) {
-                console.log('ServiceRegistry ready! Getting services...', {
-                  availableServices: registry.getServiceNames ? registry.getServiceNames() : 'getServiceNames not available',
+                logger.info('ServiceRegistry ready! Getting services...', {
+                  availableServices: registry.getServiceNames
+                    ? registry.getServiceNames()
+                    : 'getServiceNames not available',
                   registryType: typeof registry,
-                  hasMethod: typeof registry.get === 'function'
+                  hasMethod: typeof registry.get === 'function',
                 });
-                
+
                 // Check if registry has the services
-                const serviceNames = registry.getServiceNames ? registry.getServiceNames() : [];
-                console.log('Available service names after ready event:', serviceNames);
-                
+                const serviceNames = registry.getServiceNames
+                  ? registry.getServiceNames()
+                  : [];
+                logger.info(
+                  'Available service names after ready event:',
+                  serviceNames,
+                );
+
                 this.audioEngine = registry.get('audioEngine') as AudioEngine;
-                this.transportController = registry.get('unifiedTransport') as UnifiedTransport;
+                this.transportController = registry.get(
+                  'unifiedTransport',
+                ) as UnifiedTransport;
                 this.eventBus = registry.get('eventBus') as EventBus;
-                console.log('Successfully retrieved core services from registry');
+                logger.info(
+                  'Successfully retrieved core services from registry',
+                );
               } else {
-                console.warn('Neither CoreServices nor ServiceRegistry found on window after ready event');
+                logger.warn(
+                  'Neither CoreServices nor ServiceRegistry found on window after ready event',
+                );
               }
             }
           } catch (error) {
-            console.warn('Error getting core services:', error);
+            logger.warn('Error getting core services:', error);
           }
           resolve();
         };
-        
-        window.addEventListener('audioServicesReady', handleReady, { once: true });
+
+        window.addEventListener('audioServicesReady', handleReady, {
+          once: true,
+        });
       });
     }
-    
+
     if (!this.audioEngine || !this.transportController || !this.eventBus) {
-      console.log('Core services not yet initialized, will retry on event bus access', {
-        hasAudioEngine: !!this.audioEngine,
-        hasTransportController: !!this.transportController,
-        hasEventBus: !!this.eventBus,
-        registry: (window as any).__serviceRegistry
-      });
+      logger.info(
+        'Core services not yet initialized, will retry on event bus access',
+        {
+          hasAudioEngine: !!this.audioEngine,
+          hasTransportController: !!this.transportController,
+          hasEventBus: !!this.eventBus,
+          registry: (window as any).__serviceRegistry,
+        },
+      );
       // Don't throw error, just return - services might not be available yet
       // The adapter methods will handle the retry logic
       return;
     }
-    
+
     // Forward events from new system to old API
     this.eventBus.on('transport:state-changed', ({ state }) => {
       this.emit('stateChange', state);
     });
-    
+
     this.eventBus.on('audio:context-state-changed', ({ state }) => {
       this.emit('audioContextChange', state);
     });
-    
+
     this.eventBus.on('transport:tempo-changed', ({ bpm }) => {
       this.emit('tempoChange', bpm);
     });
-    
+
     this.eventBus.on('audio:volume-changed', ({ volume }) => {
       this.emit('masterVolumeChange', volume);
     });
   }
-  
+
   async dispose(): Promise<void> {
     this.listeners.clear();
   }
-  
+
   on(event: string, handler: Function): () => void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
     this.listeners.get(event)!.add(handler);
-    
+
     return () => {
       this.listeners.get(event)?.delete(handler);
     };
   }
-  
+
   private emit(event: string, ...args: any[]): void {
-    this.listeners.get(event)?.forEach(handler => handler(...args));
+    this.listeners.get(event)?.forEach((handler) => handler(...args));
   }
-  
+
   private ensureServices(): boolean {
     if (this.audioEngine && this.transportController && this.eventBus) {
       return true;
     }
-    
+
     // Try to get services again
     const coreServices = (window as any).__coreServices;
     if (coreServices) {
@@ -205,78 +232,86 @@ class CorePlaybackEngine {
       this.eventBus = coreServices.getEventBus();
       return !!(this.audioEngine && this.transportController && this.eventBus);
     }
-    
+
     return false;
   }
-  
+
   async play(): Promise<void> {
     if (!this.ensureServices()) {
-      console.warn('Services not available for play operation');
+      logger.warn('Services not available for play operation');
       return;
     }
     await this.transportController?.play();
   }
-  
+
   async pause(): Promise<void> {
     if (!this.ensureServices()) {
-      console.warn('Services not available for pause operation');
+      logger.warn('Services not available for pause operation');
       return;
     }
     await this.transportController?.pause();
   }
-  
+
   async stop(): Promise<void> {
     if (!this.ensureServices()) {
-      console.warn('Services not available for stop operation');
+      logger.warn('Services not available for stop operation');
       return;
     }
     await this.transportController?.stop();
   }
-  
+
+  async seek(position: number): Promise<void> {
+    if (!this.ensureServices()) {
+      logger.warn('Services not available for seek operation');
+      return;
+    }
+    await this.transportController?.seek(position);
+  }
+
   setMasterVolume(volume: number): void {
     if (!this.ensureServices()) {
-      console.warn('Services not available for setMasterVolume operation');
+      logger.warn('Services not available for setMasterVolume operation');
       return;
     }
     this.audioEngine?.setMasterVolume(volume);
   }
-  
+
   setTempo(bpm: number): void {
     if (!this.ensureServices()) {
-      console.warn('Services not available for setTempo operation');
+      logger.warn('Services not available for setTempo operation');
       return;
     }
     this.transportController?.setTempo(bpm);
   }
-  
+
   setPitch(semitones: number): void {
     // Not implemented in new system yet
   }
-  
+
   setSwingFactor(factor: number): void {
     // Not implemented in new system yet
   }
-  
+
   async registerAudioSource(config: AudioSourceConfig): Promise<void> {
     // Not directly supported - would need plugin registration
   }
-  
+
   unregisterAudioSource(sourceId: string): void {
     // Not directly supported
   }
-  
+
   setSourceVolume(sourceId: string, volume: number): void {
     // Not directly supported
   }
-  
+
   setSourceMute(sourceId: string, muted: boolean): void {
-    // Not directly supported  
+    // Not directly supported
   }
-  
+
   setSourceSolo(sourceId: string, solo: boolean): void {
     // Not directly supported
   }
-  
+
   getPerformanceMetrics(): AudioPerformanceMetrics | null {
     if (!this.ensureServices()) {
       return null;
@@ -284,6 +319,7 @@ class CorePlaybackEngine {
     return this.audioEngine?.getPerformanceMetrics() || null;
   }
 }
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import type {
   PlaybackState,
   AudioContextState,
@@ -306,6 +342,7 @@ export interface PlaybackControls {
   play: () => Promise<void>;
   pause: () => Promise<void>;
   stop: () => Promise<void>;
+  seek: (position: number) => Promise<void>;
 
   // Configuration methods
   setMasterVolume: (volume: number) => void;
@@ -393,9 +430,25 @@ const selectCriticalAlertsLength = (state: any) =>
   state.performanceAlerts.filter((alert: any) => alert.severity === 'critical')
     .length;
 
+// Track render count for debugging
+let useCorePlaybackEngineRenderCount = 0;
+
 export function useCorePlaybackEngine(
   options: UseCorePlaybackEngineOptions = {},
 ): UseCorePlaybackEngineReturn {
+  useCorePlaybackEngineRenderCount++;
+
+  // Log every 10th render to reduce noise
+  if (useCorePlaybackEngineRenderCount % 10 === 0) {
+    logger.info(
+      `🔄 useCorePlaybackEngine RENDER #${useCorePlaybackEngineRenderCount}`,
+      {
+        timestamp: Date.now(),
+        caller: new Error().stack?.split('\n')[2], // Get caller from stack
+      },
+    );
+  }
+
   const {
     autoInitialize = true,
     enablePerformanceMonitoring = true,
@@ -439,6 +492,7 @@ export function useCorePlaybackEngine(
   const engineRef = useRef<CorePlaybackEngine | null>(null);
   const unsubscribeRefs = useRef<Array<() => void>>([]);
   const isUpdatingRef = useRef(false);
+  const prevControlsRef = useRef<PlaybackControls | null>(null);
 
   // Initialize engine
   const initialize = useCallback(async () => {
@@ -601,7 +655,7 @@ export function useCorePlaybackEngine(
       setAudioContextState('suspended');
       setError(null);
     } catch (error) {
-      console.error('Error disposing audio engine:', error);
+      logger.error('Error disposing audio engine:', error);
     }
   }, [
     isInitialized,
@@ -611,133 +665,231 @@ export function useCorePlaybackEngine(
     setError,
   ]);
 
-  // Playback controls
-  const controls: PlaybackControls = {
-    play: useCallback(async () => {
+  // Track controls object creation
+  if (useCorePlaybackEngineRenderCount % 10 === 0) {
+    logger.info(
+      `🎮 Creating controls object for render #${useCorePlaybackEngineRenderCount}`,
+      {
+        timestamp: Date.now(),
+      },
+    );
+  }
+
+  // Create refs for state values and store methods to avoid recreating callbacks
+  const stateRef = useRef({ canPlay, isInitialized });
+  const methodsRef = useRef({ 
+    updateConfig,
+    addAudioSource,
+    removeAudioSource,
+    updateAudioSource
+  });
+  
+  useEffect(() => {
+    stateRef.current = { canPlay, isInitialized };
+  }, [canPlay, isInitialized]);
+  
+  useEffect(() => {
+    methodsRef.current = { 
+      updateConfig,
+      addAudioSource,
+      removeAudioSource,
+      updateAudioSource
+    };
+  }, [updateConfig, addAudioSource, removeAudioSource, updateAudioSource]);
+
+  // Memoize individual control methods with stable references
+  const play = useCallback(async () => {
+    // TODO: Review non-null assertion - consider null safety
+    if (!engineRef.current || !stateRef.current.canPlay) return;
+    await engineRef.current.play();
+  }, []); // No dependencies - uses ref
+
+  const pause = useCallback(async () => {
+    // TODO: Review non-null assertion - consider null safety
+    if (!engineRef.current || !stateRef.current.isInitialized) return;
+    await engineRef.current.pause();
+  }, []); // No dependencies - uses ref
+
+  const stop = useCallback(async () => {
+    // TODO: Review non-null assertion - consider null safety
+    if (!engineRef.current || !stateRef.current.isInitialized) return;
+    await engineRef.current.stop();
+  }, []); // No dependencies - uses ref
+
+  const seek = useCallback(
+    async (position: number) => {
       // TODO: Review non-null assertion - consider null safety
-      if (!engineRef.current || !canPlay) return;
-      await engineRef.current.play();
-    }, [canPlay]),
+      if (!engineRef.current || !stateRef.current.isInitialized) return;
+      await engineRef.current.seek(position);
+    },
+    [], // No dependencies - uses ref
+  );
 
-    pause: useCallback(async () => {
+  const setMasterVolume = useCallback(
+    (volume: number) => {
       // TODO: Review non-null assertion - consider null safety
-      if (!engineRef.current || !isInitialized) return;
-      await engineRef.current.pause();
-    }, [isInitialized]),
+      if (!engineRef.current || !stateRef.current.isInitialized) return;
 
-    stop: useCallback(async () => {
+      // Set flag to prevent recursive updates from engine events
+      isUpdatingRef.current = true;
+      engineRef.current.setMasterVolume(volume);
+
+      // Reset flag after a brief delay
+      setTimeout(() => {
+        isUpdatingRef.current = false;
+      }, 50);
+    },
+    [], // No dependencies - uses ref
+  );
+
+  const setTempo = useCallback(
+    (bpm: number) => {
       // TODO: Review non-null assertion - consider null safety
-      if (!engineRef.current || !isInitialized) return;
-      await engineRef.current.stop();
-    }, [isInitialized]),
+      if (!engineRef.current || !stateRef.current.isInitialized) return;
 
-    setMasterVolume: useCallback(
-      (volume: number) => {
-        // TODO: Review non-null assertion - consider null safety
-        if (!engineRef.current || !isInitialized) return;
+      // Set flag to prevent recursive updates from engine events
+      isUpdatingRef.current = true;
+      engineRef.current.setTempo(bpm);
 
-        // Set flag to prevent recursive updates from engine events
-        isUpdatingRef.current = true;
-        engineRef.current.setMasterVolume(volume);
+      // Reset flag after a brief delay
+      setTimeout(() => {
+        isUpdatingRef.current = false;
+      }, 50);
+    },
+    [], // No dependencies - uses ref
+  );
 
-        // Reset flag after a brief delay
-        setTimeout(() => {
-          isUpdatingRef.current = false;
-        }, 50);
+  const setPitch = useCallback(
+    (semitones: number) => {
+      // TODO: Review non-null assertion - consider null safety
+      if (!engineRef.current || !stateRef.current.isInitialized) return;
+      engineRef.current.setPitch(semitones);
+    },
+    [], // No dependencies - uses ref
+  );
+
+  const setSwingFactor = useCallback(
+    (factor: number) => {
+      // TODO: Review non-null assertion - consider null safety
+      if (!engineRef.current || !stateRef.current.isInitialized) return;
+      methodsRef.current.updateConfig({ swingFactor: factor });
+    },
+    [], // No dependencies - uses ref
+  );
+
+  const registerAudioSource = useCallback(
+    async (sourceConfig: AudioSourceConfig) => {
+      // TODO: Review non-null assertion - consider null safety
+      if (!engineRef.current || !stateRef.current.isInitialized) return;
+
+      engineRef.current.registerAudioSource(sourceConfig);
+      methodsRef.current.addAudioSource(sourceConfig);
+    },
+    [], // No dependencies - uses ref
+  );
+
+  const unregisterAudioSource = useCallback(
+    (sourceId: string) => {
+      // TODO: Review non-null assertion - consider null safety
+      if (!engineRef.current || !stateRef.current.isInitialized) return;
+
+      engineRef.current.unregisterAudioSource(sourceId);
+      methodsRef.current.removeAudioSource(sourceId);
+    },
+    [], // No dependencies - uses ref
+  );
+
+  const setSourceVolume = useCallback(
+    (sourceId: string, volume: number) => {
+      // TODO: Review non-null assertion - consider null safety
+      if (!engineRef.current || !stateRef.current.isInitialized) return;
+
+      engineRef.current.setSourceVolume(sourceId, volume);
+      methodsRef.current.updateAudioSource(sourceId, { volume });
+    },
+    [], // No dependencies - uses ref
+  );
+
+  const setSourceMute = useCallback(
+    (sourceId: string, muted: boolean) => {
+      // TODO: Review non-null assertion - consider null safety
+      if (!engineRef.current || !stateRef.current.isInitialized) return;
+
+      engineRef.current.setSourceMute(sourceId, muted);
+      methodsRef.current.updateAudioSource(sourceId, { muted });
+    },
+    [], // No dependencies - uses ref
+  );
+
+  const setSourceSolo = useCallback(
+    (sourceId: string, solo: boolean) => {
+      // TODO: Review non-null assertion - consider null safety
+      if (!engineRef.current || !stateRef.current.isInitialized) return;
+
+      engineRef.current.setSourceSolo(sourceId, solo);
+      methodsRef.current.updateAudioSource(sourceId, { solo });
+    },
+    [], // No dependencies - uses ref
+  );
+
+  // Memoize the controls object to prevent re-renders
+  const controls: PlaybackControls = useMemo(() => {
+    // Track controls object creation
+    if (useCorePlaybackEngineRenderCount % 10 === 0) {
+      logger.info(
+        `🎮 Creating MEMOIZED controls object for render #${useCorePlaybackEngineRenderCount}`,
+        {
+          timestamp: Date.now(),
+        },
+      );
+    }
+
+    return {
+      play,
+      pause,
+      stop,
+      seek,
+      setMasterVolume,
+      setTempo,
+      setPitch,
+      setSwingFactor,
+      registerAudioSource,
+      unregisterAudioSource,
+      setSourceVolume,
+      setSourceMute,
+      setSourceSolo,
+    };
+  }, [
+    play,
+    pause,
+    stop,
+    seek,
+    setMasterVolume,
+    setTempo,
+    setPitch,
+    setSwingFactor,
+    registerAudioSource,
+    unregisterAudioSource,
+    setSourceVolume,
+    setSourceMute,
+    setSourceSolo,
+  ]);
+
+  // Check if controls object reference changed
+  if (
+    useCorePlaybackEngineRenderCount % 10 === 0 ||
+    prevControlsRef.current !== controls
+  ) {
+    logger.info(
+      `🎮 Controls object reference check #${useCorePlaybackEngineRenderCount}:`,
+      {
+        sameReference: prevControlsRef.current === controls,
+        hadPreviousControls: !!prevControlsRef.current,
+        timestamp: Date.now(),
       },
-      [isInitialized],
-    ),
-
-    setTempo: useCallback(
-      (bpm: number) => {
-        // TODO: Review non-null assertion - consider null safety
-        if (!engineRef.current || !isInitialized) return;
-
-        // Set flag to prevent recursive updates from engine events
-        isUpdatingRef.current = true;
-        engineRef.current.setTempo(bpm);
-
-        // Reset flag after a brief delay
-        setTimeout(() => {
-          isUpdatingRef.current = false;
-        }, 50);
-      },
-      [isInitialized],
-    ),
-
-    setPitch: useCallback(
-      (semitones: number) => {
-        // TODO: Review non-null assertion - consider null safety
-        if (!engineRef.current || !isInitialized) return;
-        engineRef.current.setPitch(semitones);
-      },
-      [isInitialized],
-    ),
-
-    setSwingFactor: useCallback(
-      (factor: number) => {
-        // TODO: Review non-null assertion - consider null safety
-        if (!engineRef.current || !isInitialized) return;
-        updateConfig({ swingFactor: factor });
-      },
-      [isInitialized, updateConfig],
-    ),
-
-    registerAudioSource: useCallback(
-      async (sourceConfig: AudioSourceConfig) => {
-        // TODO: Review non-null assertion - consider null safety
-        if (!engineRef.current || !isInitialized) return;
-
-        engineRef.current.registerAudioSource(sourceConfig);
-        addAudioSource(sourceConfig);
-      },
-      [isInitialized, addAudioSource],
-    ),
-
-    unregisterAudioSource: useCallback(
-      (sourceId: string) => {
-        // TODO: Review non-null assertion - consider null safety
-        if (!engineRef.current || !isInitialized) return;
-
-        engineRef.current.unregisterAudioSource(sourceId);
-        removeAudioSource(sourceId);
-      },
-      [isInitialized, removeAudioSource],
-    ),
-
-    setSourceVolume: useCallback(
-      (sourceId: string, volume: number) => {
-        // TODO: Review non-null assertion - consider null safety
-        if (!engineRef.current || !isInitialized) return;
-
-        engineRef.current.setSourceVolume(sourceId, volume);
-        updateAudioSource(sourceId, { volume });
-      },
-      [isInitialized, updateAudioSource],
-    ),
-
-    setSourceMute: useCallback(
-      (sourceId: string, muted: boolean) => {
-        // TODO: Review non-null assertion - consider null safety
-        if (!engineRef.current || !isInitialized) return;
-
-        engineRef.current.setSourceMute(sourceId, muted);
-        updateAudioSource(sourceId, { muted });
-      },
-      [isInitialized, updateAudioSource],
-    ),
-
-    setSourceSolo: useCallback(
-      (sourceId: string, solo: boolean) => {
-        // TODO: Review non-null assertion - consider null safety
-        if (!engineRef.current || !isInitialized) return;
-
-        engineRef.current.setSourceSolo(sourceId, solo);
-        updateAudioSource(sourceId, { solo });
-      },
-      [isInitialized, updateAudioSource],
-    ),
-  };
+    );
+    prevControlsRef.current = controls;
+  }
 
   // Auto-initialize on mount if enabled
   useEffect(() => {
@@ -786,11 +938,27 @@ export function useCorePlaybackEngine(
     hasCriticalAlerts: criticalAlertsLength > 0,
   };
 
-  return {
+  const returnValue = {
     state,
     controls,
     engine: engineRef.current,
     initialize,
     dispose,
   };
+
+  // Log return value details every 10th render
+  if (useCorePlaybackEngineRenderCount % 10 === 0) {
+    logger.info(
+      `🔄 useCorePlaybackEngine RETURN #${useCorePlaybackEngineRenderCount}:`,
+      {
+        stateKeys: Object.keys(state),
+        controlsKeys: Object.keys(controls),
+        controlsReference: controls,
+        hasEngine: !!engineRef.current,
+        timestamp: Date.now(),
+      },
+    );
+  }
+
+  return returnValue;
 }

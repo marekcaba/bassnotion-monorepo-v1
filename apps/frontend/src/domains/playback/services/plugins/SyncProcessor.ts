@@ -32,26 +32,40 @@ abstract class BaseAudioPlugin implements AudioPlugin {
       author: 'BassNotion',
       description: 'Audio plugin',
       category: 'effect' as PluginCategory,
-      thumbnailUrl: ''
+      thumbnailUrl: '',
     };
   }
 
   abstract initialize(context: PluginAudioContext): Promise<void>;
   abstract process(input: Float32Array, output: Float32Array): void;
   abstract dispose(): void;
-  
-  async load(): Promise<void> { this.state = 'loaded'; }
-  async activate(): Promise<void> { this.state = 'active'; }
-  async deactivate(): Promise<void> { this.state = 'inactive'; }
+
+  async load(): Promise<void> {
+    this.state = 'loaded';
+  }
+  async activate(): Promise<void> {
+    this.state = 'active';
+  }
+  async deactivate(): Promise<void> {
+    this.state = 'inactive';
+  }
   on(event: string, handler: Function): void {}
   off(event: string, handler: Function): void {}
   emit(event: string, ...args: any[]): void {}
-  getParameters(): Record<string, any> { return {}; }
+  getParameters(): Record<string, any> {
+    return {};
+  }
   protected addParameter(param: any): void {}
   setParameter(name: string, value: any): void {}
-  getState(): PluginState { return this.state; }
-  setState(state: PluginState): void { this.state = state; }
-  getMetadata(): PluginMetadata { return this.metadata; }
+  getState(): PluginState {
+    return this.state;
+  }
+  setState(state: PluginState): void {
+    this.state = state;
+  }
+  getMetadata(): PluginMetadata {
+    return this.metadata;
+  }
 }
 import {
   PluginMetadata,
@@ -64,6 +78,7 @@ import {
   ProcessingResultStatus,
 } from '../../types/plugin.js';
 import { getAudioArchitectureFlags } from '../../config/featureFlags.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 /**
  * Synchronization parameters
@@ -137,7 +152,7 @@ interface SyncState {
 export class SyncProcessor extends BaseAudioPlugin {
   // Store Tone reference from dependency injection
   private Tone: any;
-  
+
   // Plugin metadata
   public readonly metadata: PluginMetadata = {
     id: 'bassnotion.sync-processor',
@@ -262,27 +277,29 @@ export class SyncProcessor extends BaseAudioPlugin {
   }
 
   protected async onLoad(): Promise<void> {
-    console.log(`Loading SyncProcessor plugin v${this.metadata.version}`);
+    logger.info(`Loading SyncProcessor plugin v${this.metadata.version}`);
   }
 
   protected async onInitialize(context: PluginAudioContext): Promise<void> {
     try {
       // Get Tone from context
       if (!context.getTone) {
-        throw new Error('[SyncProcessor] AudioContext missing getTone() method - ensure using new architecture');
+        throw new Error(
+          '[SyncProcessor] AudioContext missing getTone() method - ensure using new architecture',
+        );
       }
-      
+
       this.Tone = context.getTone();
-      
+
       // Log migration status
       const flags = getAudioArchitectureFlags();
       if (flags.ENABLE_MIGRATION_MONITORING) {
-        console.log('[SyncProcessor] Using Tone from dependency injection', {
+        logger.info('[SyncProcessor] Using Tone from dependency injection', {
           hasGetTone: !!context.getTone,
-          architecture: 'new'
+          architecture: 'new',
         });
       }
-      
+
       // Create audio processing chain
       await this.createProcessingChain(context);
 
@@ -295,9 +312,9 @@ export class SyncProcessor extends BaseAudioPlugin {
       // Initialize parameter values
       this.resetParametersToDefaults();
 
-      console.log('SyncProcessor initialized successfully');
+      logger.info('SyncProcessor initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize SyncProcessor:', error);
+      logger.error('Failed to initialize SyncProcessor:', error);
       throw error;
     }
   }
@@ -309,7 +326,7 @@ export class SyncProcessor extends BaseAudioPlugin {
     // Start sync monitoring
     this.startSyncMonitoring();
 
-    console.log('SyncProcessor activated');
+    logger.info('SyncProcessor activated');
   }
 
   protected async onDeactivate(): Promise<void> {
@@ -319,7 +336,7 @@ export class SyncProcessor extends BaseAudioPlugin {
     // Stop sync monitoring
     this.stopSyncMonitoring();
 
-    console.log('SyncProcessor deactivated');
+    logger.info('SyncProcessor deactivated');
   }
 
   protected async onDispose(): Promise<void> {
@@ -334,7 +351,7 @@ export class SyncProcessor extends BaseAudioPlugin {
         try {
           component.dispose();
         } catch (error) {
-          console.warn('Error disposing component:', error);
+          logger.warn('Error disposing component:', error);
         }
       }
     });
@@ -345,7 +362,7 @@ export class SyncProcessor extends BaseAudioPlugin {
     this.alignmentBuffer = null;
     this.alignmentHistory = [];
 
-    console.log('SyncProcessor disposed');
+    logger.info('SyncProcessor disposed');
   }
 
   protected async onParameterChanged(
@@ -385,10 +402,10 @@ export class SyncProcessor extends BaseAudioPlugin {
           break;
 
         default:
-          console.warn(`Unknown parameter: ${parameterId}`);
+          logger.warn(`Unknown parameter: ${parameterId}`);
       }
     } catch (error) {
-      console.error(`Error setting parameter ${parameterId}:`, error);
+      logger.error(`Error setting parameter ${parameterId}:`, error);
     }
   }
 
@@ -518,7 +535,7 @@ export class SyncProcessor extends BaseAudioPlugin {
         }
       }
     } catch (error) {
-      console.error('Error processing n8n payload:', error);
+      logger.error('Error processing n8n payload:', error);
     }
   }
 
@@ -530,10 +547,10 @@ export class SyncProcessor extends BaseAudioPlugin {
       if (asset instanceof AudioBuffer) {
         // Store as reference for alignment
         this.storeReferenceAudio(assetId, asset);
-        console.log(`Loaded sync reference asset: ${assetId}`);
+        logger.info(`Loaded sync reference asset: ${assetId}`);
       }
     } catch (error) {
-      console.error(`Error loading asset ${assetId}:`, error);
+      logger.error(`Error loading asset ${assetId}:`, error);
     }
   }
 
@@ -940,12 +957,12 @@ export class SyncProcessor extends BaseAudioPlugin {
   }
 
   private updateSyncMode(mode: string): void {
-    console.log(`Sync mode updated to: ${mode}`);
+    logger.info(`Sync mode updated to: ${mode}`);
     // Implementation would adjust sync behavior based on mode
   }
 
   private updateAlignmentMethod(method: string): void {
-    console.log(`Alignment method updated to: ${method}`);
+    logger.info(`Alignment method updated to: ${method}`);
     // Implementation would switch correlation algorithm
   }
 
@@ -953,7 +970,7 @@ export class SyncProcessor extends BaseAudioPlugin {
     tempoMap: Array<{ time: number; bpm: number }>,
   ): void {
     // Process tempo map for sync reference
-    console.log('Processing tempo map:', tempoMap);
+    logger.info('Processing tempo map:', tempoMap);
   }
 
   private storeReferenceAudio(assetId: string, buffer: AudioBuffer): void {
@@ -968,17 +985,17 @@ export class SyncProcessor extends BaseAudioPlugin {
       this.referenceBuffer[i] = channelData[i] ?? 0;
     }
 
-    console.log(`Stored reference audio: ${assetId}`);
+    logger.info(`Stored reference audio: ${assetId}`);
   }
 
   private startSyncMonitoring(): void {
     // Start sync monitoring loop
-    console.log('Started sync monitoring');
+    logger.info('Started sync monitoring');
   }
 
   private stopSyncMonitoring(): void {
     // Stop sync monitoring
-    console.log('Stopped sync monitoring');
+    logger.info('Stopped sync monitoring');
   }
 
   protected initializeParameters(): void {

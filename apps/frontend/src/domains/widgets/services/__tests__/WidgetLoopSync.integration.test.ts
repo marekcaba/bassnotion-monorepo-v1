@@ -57,16 +57,16 @@ describe('Widget Loop Synchronization Integration Tests', () => {
     // Initialize services
     audioEngine = AudioEngine.getInstance();
     await audioEngine.initialize();
-    
+
     transportController = new TransportController(audioEngine);
     syncService = WidgetSyncService.getInstance();
-    
+
     // Create mock widgets
     mockWidgets = new Map();
     mockWidgets.set('drummer', new MockWidget('drummer'));
     mockWidgets.set('harmony', new MockWidget('harmony'));
     mockWidgets.set('metronome', new MockWidget('metronome'));
-    
+
     // Reset transport
     Tone.Transport.stop();
     Tone.Transport.position = 0;
@@ -74,7 +74,7 @@ describe('Widget Loop Synchronization Integration Tests', () => {
 
   afterEach(() => {
     // Clean up
-    mockWidgets.forEach(widget => widget.dispose());
+    mockWidgets.forEach((widget) => widget.dispose());
     mockWidgets.clear();
     Tone.Transport.stop();
     Tone.Transport.cancel();
@@ -106,35 +106,35 @@ describe('Widget Loop Synchronization Integration Tests', () => {
 
       // Subscribe widgets to sync service
       syncService.on('PLAY', () => {
-        mockWidgets.forEach(widget => widget.start(0));
+        mockWidgets.forEach((widget) => widget.start(0));
       });
 
       // Start transport
       await transportController.start();
 
       // Verify all widgets started
-      mockWidgets.forEach(widget => {
+      mockWidgets.forEach((widget) => {
         expect(widget.isPlaying).toBe(true);
       });
     });
 
     it('should stop all widget loops when transport stops', async () => {
       // Setup and start widgets
-      mockWidgets.forEach(widget => {
+      mockWidgets.forEach((widget) => {
         widget.createLoop('4n', () => {});
         widget.start();
       });
 
       // Subscribe to stop event
       syncService.on('STOP', () => {
-        mockWidgets.forEach(widget => widget.stop());
+        mockWidgets.forEach((widget) => widget.stop());
       });
 
       // Stop transport
       await transportController.stop();
 
       // Verify all widgets stopped
-      mockWidgets.forEach(widget => {
+      mockWidgets.forEach((widget) => {
         expect(widget.isPlaying).toBe(false);
       });
     });
@@ -143,7 +143,7 @@ describe('Widget Loop Synchronization Integration Tests', () => {
   describe('Loop Timing and Synchronization', () => {
     it('should maintain sync between widget loops', async () => {
       const executionTimes: Map<string, number[]> = new Map();
-      
+
       // Create loops that track execution times
       mockWidgets.forEach((widget, id) => {
         executionTimes.set(id, []);
@@ -154,13 +154,13 @@ describe('Widget Loop Synchronization Integration Tests', () => {
 
       // Start all widgets at the same time
       const startTime = 0;
-      mockWidgets.forEach(widget => widget.start(startTime));
+      mockWidgets.forEach((widget) => widget.start(startTime));
 
       // Start transport
       await transportController.start();
 
       // Let it run for a bit
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Stop transport
       await transportController.stop();
@@ -173,14 +173,14 @@ describe('Widget Loop Synchronization Integration Tests', () => {
 
       // Check that first execution of all widgets happened at similar times
       const firstExecutions = Array.from(executionTimes.values())
-        .map(times => times[0])
-        .filter(time => time !== undefined);
+        .map((times) => times[0])
+        .filter((time) => time !== undefined);
 
       if (firstExecutions.length > 1) {
         const minTime = Math.min(...firstExecutions);
         const maxTime = Math.max(...firstExecutions);
         const drift = maxTime - minTime;
-        
+
         // Should be synchronized within 50ms
         expect(drift).toBeLessThan(0.05);
       }
@@ -188,7 +188,7 @@ describe('Widget Loop Synchronization Integration Tests', () => {
 
     it('should handle tempo changes while maintaining sync', async () => {
       // Create synchronized loops
-      mockWidgets.forEach(widget => {
+      mockWidgets.forEach((widget) => {
         widget.createLoop('4n', () => {});
         widget.start(0);
       });
@@ -204,7 +204,7 @@ describe('Widget Loop Synchronization Integration Tests', () => {
       expect(Tone.Transport.bpm.value).toBe(newTempo);
 
       // Verify loops are still running
-      mockWidgets.forEach(widget => {
+      mockWidgets.forEach((widget) => {
         expect(widget.isPlaying).toBe(true);
       });
 
@@ -234,7 +234,7 @@ describe('Widget Loop Synchronization Integration Tests', () => {
 
     it('should propagate position updates to widgets', async () => {
       const positionUpdates: number[] = [];
-      
+
       // Subscribe to position updates
       syncService.on('POSITION', (data: any) => {
         positionUpdates.push(data.seconds);
@@ -244,11 +244,11 @@ describe('Widget Loop Synchronization Integration Tests', () => {
 
       // Manually trigger some position updates
       for (let i = 0; i < 3; i++) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
         const position = Tone.Transport.seconds;
-        syncService.emit('POSITION', { 
+        syncService.emit('POSITION', {
           seconds: position,
-          position: Tone.Transport.position
+          position: Tone.Transport.position,
         });
       }
 
@@ -256,7 +256,7 @@ describe('Widget Loop Synchronization Integration Tests', () => {
 
       // Should have received position updates
       expect(positionUpdates.length).toBeGreaterThan(0);
-      
+
       // Positions should be increasing
       for (let i = 1; i < positionUpdates.length; i++) {
         expect(positionUpdates[i]).toBeGreaterThan(positionUpdates[i - 1]);
@@ -277,15 +277,15 @@ describe('Widget Loop Synchronization Integration Tests', () => {
       await transportController.start();
       drummer.start('@1m');
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       await transportController.stop();
 
       // First execution should be at a measure boundary
       if (startTimes.length > 0) {
         const firstTime = startTimes[0];
-        const measureLength = 60 / Tone.Transport.bpm.value * 4; // 4/4 time
+        const measureLength = (60 / Tone.Transport.bpm.value) * 4; // 4/4 time
         const measurePosition = firstTime % measureLength;
-        
+
         // Should start near measure boundary (within 50ms)
         expect(measurePosition).toBeLessThan(0.05);
       }
@@ -293,18 +293,18 @@ describe('Widget Loop Synchronization Integration Tests', () => {
 
     it('should maintain phase relationships between widgets', async () => {
       const phaseData: Map<string, number[]> = new Map();
-      
+
       // Create loops with different subdivisions
       const drummer = mockWidgets.get('drummer')!;
       const metronome = mockWidgets.get('metronome')!;
-      
+
       phaseData.set('drummer', []);
       phaseData.set('metronome', []);
-      
+
       drummer.createLoop('8n', (time: number) => {
         phaseData.get('drummer')!.push(time);
       });
-      
+
       metronome.createLoop('4n', (time: number) => {
         phaseData.get('metronome')!.push(time);
       });
@@ -314,13 +314,13 @@ describe('Widget Loop Synchronization Integration Tests', () => {
       drummer.start(0);
       metronome.start(0);
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       await transportController.stop();
 
       // Drummer should execute twice as often as metronome
       const drummerCount = phaseData.get('drummer')!.length;
       const metronomeCount = phaseData.get('metronome')!.length;
-      
+
       if (drummerCount > 0 && metronomeCount > 0) {
         const ratio = drummerCount / metronomeCount;
         // Should be approximately 2:1
@@ -345,18 +345,18 @@ describe('Widget Loop Synchronization Integration Tests', () => {
       errorWidget.start();
       await transportController.start();
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Should continue running despite error
       expect(errorCount).toBeGreaterThan(2);
-      
+
       await transportController.stop();
     });
 
     it('should handle widget disconnection gracefully', async () => {
       const widget = mockWidgets.get('drummer')!;
       widget.createLoop('4n', () => {});
-      
+
       // Start widget
       widget.start();
       await transportController.start();
@@ -388,7 +388,7 @@ describe('Widget Loop Synchronization Integration Tests', () => {
       widget.start();
       await transportController.start();
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       await transportController.stop();
 
       // Analyze timing accuracy
@@ -398,7 +398,8 @@ describe('Widget Loop Synchronization Integration Tests', () => {
           intervals.push(timingData[i] - timingData[i - 1]);
         }
 
-        const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
+        const avgInterval =
+          intervals.reduce((a, b) => a + b) / intervals.length;
         const deviation = Math.abs(avgInterval - expectedInterval);
 
         // Should be within 10ms of expected interval

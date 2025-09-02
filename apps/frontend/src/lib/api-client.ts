@@ -3,6 +3,8 @@
  * Designed to work seamlessly with React Query
  */
 
+import { CORRELATION_HEADER, generateCorrelationId } from '@bassnotion/contracts';
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -17,6 +19,10 @@ export class ApiError extends Error {
 interface ApiClientOptions {
   baseURL?: string;
   headers?: Record<string, string>;
+}
+
+interface RequestOptions extends RequestInit {
+  correlationId?: string;
 }
 
 class ApiClient {
@@ -36,15 +42,22 @@ class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {},
+    options: RequestOptions = {},
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    
+    // Extract correlationId from options
+    const { correlationId, ...requestOptions } = options;
+    
+    // Generate or use provided correlation ID
+    const requestCorrelationId = correlationId || generateCorrelationId();
 
     const config: RequestInit = {
-      ...options,
+      ...requestOptions,
       headers: {
         ...this.defaultHeaders,
-        ...options.headers,
+        [CORRELATION_HEADER]: requestCorrelationId,
+        ...requestOptions.headers,
       },
     };
 
@@ -82,14 +95,14 @@ class ApiClient {
     }
   }
 
-  async get<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  async get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'GET' });
   }
 
   async post<T>(
     endpoint: string,
     data?: any,
-    options?: RequestInit,
+    options?: RequestOptions,
   ): Promise<T> {
     return this.request<T>(endpoint, {
       ...options,
@@ -101,7 +114,7 @@ class ApiClient {
   async put<T>(
     endpoint: string,
     data?: any,
-    options?: RequestInit,
+    options?: RequestOptions,
   ): Promise<T> {
     return this.request<T>(endpoint, {
       ...options,
@@ -113,7 +126,7 @@ class ApiClient {
   async patch<T>(
     endpoint: string,
     data?: any,
-    options?: RequestInit,
+    options?: RequestOptions,
   ): Promise<T> {
     return this.request<T>(endpoint, {
       ...options,
@@ -122,7 +135,7 @@ class ApiClient {
     });
   }
 
-  async delete<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  async delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' });
   }
 

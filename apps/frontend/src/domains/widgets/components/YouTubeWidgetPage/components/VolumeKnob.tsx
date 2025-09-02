@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface VolumeKnobProps {
   value: number; // 0-100
@@ -19,6 +20,7 @@ export function VolumeKnob({
   isMuted = false,
   onMuteToggle,
 }: VolumeKnobProps) {
+  const { correlationId, logger } = useCorrelation('VolumeKnob');
   const [isDragging, setIsDragging] = useState(false);
   const [currentValue, setCurrentValue] = useState(value);
   const knobRef = useRef<HTMLDivElement>(null);
@@ -62,7 +64,7 @@ export function VolumeKnob({
   };
 
   const handleStart = (clientX: number, clientY: number) => {
-    console.log('VolumeKnob: Starting drag at', clientX, clientY);
+    logger.info('VolumeKnob: Starting drag at', clientX, clientY);
     setIsDragging(true);
     startAngleRef.current = clientX; // Store starting X position for horizontal drag
     startValueRef.current = value;
@@ -82,7 +84,7 @@ export function VolumeKnob({
       Math.min(100, startValueRef.current + valueChange),
     );
     const roundedValue = Math.round(newValue);
-    console.log('VolumeKnob: Moving to', roundedValue, 'deltaX:', deltaX);
+    logger.info('VolumeKnob: Moving to', roundedValue, 'deltaX:', deltaX);
 
     // Update local state immediately for visual feedback
     setCurrentValue(roundedValue);

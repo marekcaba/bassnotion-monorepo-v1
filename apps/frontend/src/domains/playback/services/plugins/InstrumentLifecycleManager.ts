@@ -16,11 +16,12 @@
  * Integration: Works with all professional instruments (Tasks 2-6) and AssetManager (Task 7)
  */
 
-import { BassInstrumentProcessor } from './BassInstrumentProcessor';
-import { DrumInstrumentProcessor } from './DrumInstrumentProcessor';
+import { BassInstrumentProcessor } from '../../modules/instruments/implementations/bass/BassInstrumentProcessor.js';
+import { DrumInstrumentProcessor } from '../../modules/instruments/implementations/drums/DrumInstrumentProcessor.js';
 import { ChordInstrumentProcessor } from './ChordInstrumentProcessor';
 import { MetronomeInstrumentProcessor } from './MetronomeInstrumentProcessor';
 import { AssetManager } from '../AssetManager';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 // Core interfaces for lifecycle management
 export interface InstrumentInstance {
@@ -429,11 +430,11 @@ export class InstrumentLifecycleManager {
     config?: Partial<MemoryOptimizationConfig>,
   ): Promise<void> {
     if (this.isInitialized) {
-      console.warn('🔄 InstrumentLifecycleManager already initialized');
+      logger.warn('🔄 InstrumentLifecycleManager already initialized');
       return;
     }
 
-    console.log('🚀 Initializing Enterprise Instrument Lifecycle Manager...');
+    logger.info('🚀 Initializing Enterprise Instrument Lifecycle Manager...');
 
     // Apply configuration
     this.config = { ...this.config, ...config };
@@ -453,7 +454,7 @@ export class InstrumentLifecycleManager {
     this.cleanupScheduler.start();
 
     this.isInitialized = true;
-    console.log('✅ Enterprise Instrument Lifecycle Manager initialized');
+    logger.info('✅ Enterprise Instrument Lifecycle Manager initialized');
   }
 
   /**
@@ -466,7 +467,7 @@ export class InstrumentLifecycleManager {
   ): Promise<string> {
     const instrumentId = this.generateInstrumentId(type);
 
-    console.log(`🎵 Creating ${type} instrument: ${instrumentId}`);
+    logger.info(`🎵 Creating ${type} instrument: ${instrumentId}`);
 
     try {
       // Check memory availability before creation
@@ -513,10 +514,10 @@ export class InstrumentLifecycleManager {
       // Mark as ready
       instrument.state = 'ready';
 
-      console.log(`✅ ${type} instrument created: ${instrumentId}`);
+      logger.info(`✅ ${type} instrument created: ${instrumentId}`);
       return instrumentId;
     } catch (error) {
-      console.error(`❌ Failed to create ${type} instrument:`, error);
+      logger.error(`❌ Failed to create ${type} instrument:`, error);
       throw new Error(
         `Failed to create ${type} instrument: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -544,11 +545,11 @@ export class InstrumentLifecycleManager {
     const instrument = this.instruments.get(instrumentId);
     // TODO: Review non-null assertion - consider null safety
     if (!instrument) {
-      console.warn(`⚠️ Instrument not found for disposal: ${instrumentId}`);
+      logger.warn(`⚠️ Instrument not found for disposal: ${instrumentId}`);
       return;
     }
 
-    console.log(
+    logger.info(
       `🧹 Disposing instrument: ${instrumentId} (${instrument.type})`,
     );
 
@@ -577,9 +578,9 @@ export class InstrumentLifecycleManager {
       // Update memory tracking
       this.updateMemoryTracking();
 
-      console.log(`✅ Instrument disposed: ${instrumentId}`);
+      logger.info(`✅ Instrument disposed: ${instrumentId}`);
     } catch (error) {
-      console.error(`❌ Error disposing instrument ${instrumentId}:`, error);
+      logger.error(`❌ Error disposing instrument ${instrumentId}:`, error);
       throw error;
     }
   }
@@ -588,7 +589,7 @@ export class InstrumentLifecycleManager {
    * Optimize memory usage across all instruments
    */
   public async optimizeMemory(): Promise<MemoryOptimizationResult> {
-    console.log('🔧 Starting memory optimization...');
+    logger.info('🔧 Starting memory optimization...');
 
     const startTime = performance.now();
     const initialMemory = this.totalMemoryUsage;
@@ -631,7 +632,7 @@ export class InstrumentLifecycleManager {
         success: true,
       };
 
-      console.log('✅ Memory optimization completed:', {
+      logger.info('✅ Memory optimization completed:', {
         memoryFreed: `${(totalMemoryFreed / 1024 / 1024).toFixed(2)}MB`,
         optimizationTime: `${optimizationTime.toFixed(2)}ms`,
         efficiencyGain: `${(result.efficiencyGain * 100).toFixed(1)}%`,
@@ -640,7 +641,7 @@ export class InstrumentLifecycleManager {
       return result;
     } catch (error) {
       const optimizationTime = Math.max(1, performance.now() - startTime); // Ensure minimum 1ms
-      console.error('❌ Memory optimization failed:', error);
+      logger.error('❌ Memory optimization failed:', error);
       return {
         memoryFreed: 0,
         optimizationTime,
@@ -749,7 +750,7 @@ export class InstrumentLifecycleManager {
    * Dispose all instruments and cleanup resources
    */
   public async dispose(): Promise<void> {
-    console.log('🧹 Disposing InstrumentLifecycleManager...');
+    logger.info('🧹 Disposing InstrumentLifecycleManager...');
 
     try {
       // Stop optimization and monitoring
@@ -767,7 +768,7 @@ export class InstrumentLifecycleManager {
           try {
             await this.disposeInstrument(id);
           } catch (error) {
-            console.warn(`⚠️ Failed to dispose instrument ${id}:`, error);
+            logger.warn(`⚠️ Failed to dispose instrument ${id}:`, error);
             // Continue with other disposals even if one fails
           }
         },
@@ -782,9 +783,9 @@ export class InstrumentLifecycleManager {
       this.resourcePool.samples.clear();
 
       this.isInitialized = false;
-      console.log('✅ InstrumentLifecycleManager disposed successfully');
+      logger.info('✅ InstrumentLifecycleManager disposed successfully');
     } catch (error) {
-      console.error(
+      logger.error(
         '❌ Error during InstrumentLifecycleManager disposal:',
         error,
       );
@@ -867,7 +868,7 @@ export class InstrumentLifecycleManager {
     const availableMemory = this.estimateAvailableMemory();
     this.maxMemoryLimit = Math.min(availableMemory * 0.3, 500 * 1024 * 1024); // 30% of available or 500MB max
 
-    console.log(`📊 Memory management initialized:`, {
+    logger.info(`📊 Memory management initialized:`, {
       maxMemoryLimit: `${(this.maxMemoryLimit / 1024 / 1024).toFixed(2)}MB`,
       threshold: `${(this.config.memoryThreshold / 1024 / 1024).toFixed(2)}MB`,
     });
@@ -891,7 +892,7 @@ export class InstrumentLifecycleManager {
     const estimatedMemory = this.estimateInstrumentMemory(type);
 
     if (this.totalMemoryUsage + estimatedMemory > this.maxMemoryLimit) {
-      console.log('⚠️ Memory limit approaching, optimizing...');
+      logger.info('⚠️ Memory limit approaching, optimizing...');
       await this.optimizeMemory();
 
       // If still not enough memory, throw error
@@ -964,7 +965,7 @@ export class InstrumentLifecycleManager {
     instrument: InstrumentInstance,
     _fadeTime = 100, // Reduced from 500ms to 100ms for faster tests
   ): Promise<void> {
-    console.log(`🎵 Performing graceful fade-out for ${instrument.type}...`);
+    logger.info(`🎵 Performing graceful fade-out for ${instrument.type}...`);
 
     try {
       // Set instrument state to fading
@@ -974,9 +975,9 @@ export class InstrumentLifecycleManager {
       // In production, this would implement actual fade-out logic
       instrument.state = 'stopped';
 
-      console.log(`✅ Fade-out complete for ${instrument.type}`);
+      logger.info(`✅ Fade-out complete for ${instrument.type}`);
     } catch (error) {
-      console.error(`❌ Fade-out failed for ${instrument.type}:`, error);
+      logger.error(`❌ Fade-out failed for ${instrument.type}:`, error);
       throw error;
     }
   }
@@ -985,7 +986,7 @@ export class InstrumentLifecycleManager {
     instrument: InstrumentInstance,
   ): Promise<void> {
     // Recycle audio buffers, contexts, and samples to the resource pool
-    console.log(`♻️ Recycling resources for ${instrument.id}`);
+    logger.info(`♻️ Recycling resources for ${instrument.id}`);
 
     // This would implement actual resource recycling logic
     this.resourcePool.recycledCount++;
@@ -1193,7 +1194,7 @@ class PerformanceMonitor {
       this.collectMetrics();
     }, 1000); // Collect metrics every second
 
-    console.log('📊 Performance monitoring started');
+    logger.info('📊 Performance monitoring started');
   }
 
   async stop(): Promise<void> {
@@ -1206,7 +1207,7 @@ class PerformanceMonitor {
       this.monitoringInterval = null;
     }
 
-    console.log('📊 Performance monitoring stopped');
+    logger.info('📊 Performance monitoring stopped');
   }
 
   private collectMetrics(): void {
@@ -1223,7 +1224,7 @@ class CleanupScheduler {
 
   start(): void {
     if (this.isRunning) {
-      console.warn('⚠️ Cleanup scheduler already running');
+      logger.warn('⚠️ Cleanup scheduler already running');
       return;
     }
 
@@ -1234,7 +1235,7 @@ class CleanupScheduler {
       this.performScheduledCleanup();
     }, this.interval);
 
-    console.log('🧹 Cleanup scheduler started');
+    logger.info('🧹 Cleanup scheduler started');
   }
 
   stop(): void {
@@ -1244,11 +1245,11 @@ class CleanupScheduler {
     }
 
     this.isRunning = false;
-    console.log('🧹 Cleanup scheduler stopped');
+    logger.info('🧹 Cleanup scheduler stopped');
   }
 
   private performScheduledCleanup(): void {
-    console.log('🧹 Performing scheduled cleanup...');
+    logger.info('🧹 Performing scheduled cleanup...');
     // Actual cleanup logic would go here
     // For now, just log that cleanup is happening
   }

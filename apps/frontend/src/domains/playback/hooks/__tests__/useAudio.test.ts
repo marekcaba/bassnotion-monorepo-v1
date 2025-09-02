@@ -16,7 +16,7 @@ class MockAudioEngine {
   private _context: AudioContext | null = null;
 
   async initialize() {
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
     this.isInitialized = true;
     this._context = new AudioContext();
   }
@@ -55,7 +55,7 @@ describe('useAudio Hook', () => {
     mockAudioEngine = new MockAudioEngine();
     mockServiceRegistry = new ServiceRegistry();
     mockServiceRegistry.register('audioEngine', mockAudioEngine as any);
-    
+
     // Set global service registry
     (window as any).__serviceRegistry = mockServiceRegistry;
   });
@@ -76,11 +76,13 @@ describe('useAudio Hook', () => {
 
   it('should handle missing ServiceRegistry', () => {
     delete (window as any).__serviceRegistry;
-    
+
     const { result } = renderHook(() => useAudio());
 
     expect(result.current.error).toBeInstanceOf(Error);
-    expect(result.current.error?.message).toContain('ServiceRegistry not found');
+    expect(result.current.error?.message).toContain(
+      'ServiceRegistry not found',
+    );
   });
 
   it('should initialize audio engine successfully', async () => {
@@ -111,9 +113,11 @@ describe('useAudio Hook', () => {
 
   it('should handle initialization errors', async () => {
     // Override initialize to throw error
-    mockAudioEngine.initialize = vi.fn().mockRejectedValue(
-      new AudioInitializationError('Test initialization error')
-    );
+    mockAudioEngine.initialize = vi
+      .fn()
+      .mockRejectedValue(
+        new AudioInitializationError('Test initialization error'),
+      );
 
     const { result } = renderHook(() => useAudio());
 
@@ -127,7 +131,9 @@ describe('useAudio Hook', () => {
 
     expect(result.current.isReady).toBe(false);
     expect(result.current.error).toBeInstanceOf(Error);
-    expect(result.current.error?.message).toContain('Test initialization error');
+    expect(result.current.error?.message).toContain(
+      'Test initialization error',
+    );
   });
 
   it('should create sampler when audio is ready', async () => {
@@ -160,9 +166,9 @@ describe('useAudio Hook', () => {
       baseUrl: '/samples/',
     };
 
-    await expect(
-      result.current.createSampler(samplerConfig)
-    ).rejects.toThrow('Audio not ready');
+    await expect(result.current.createSampler(samplerConfig)).rejects.toThrow(
+      'Audio not ready',
+    );
   });
 
   it('should get Tone instance when ready', async () => {

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ExerciseNote } from '../../playback/components/FretboardVisualizer/types/fretboard';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 export interface NoteEditEvent {
   type:
@@ -203,7 +204,7 @@ export class NoteEditSync {
       try {
         handler(event);
       } catch (error) {
-        console.error('Error in note edit event handler:', error);
+        logger.error('Error in note edit event handler:', error);
       }
     });
   }

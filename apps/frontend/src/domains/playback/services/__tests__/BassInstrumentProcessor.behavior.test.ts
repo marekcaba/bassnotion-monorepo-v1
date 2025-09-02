@@ -57,7 +57,7 @@ import {
   BassInstrumentConfig,
   BassPlaybackEvent,
   BassExpressionState,
-} from '../plugins/BassInstrumentProcessor';
+} from '../../modules/instruments/implementations/bass/BassInstrumentProcessor.js';
 import { ArticulationType } from '../plugins/MidiParserProcessor';
 
 describe('BassInstrumentProcessor', () => {

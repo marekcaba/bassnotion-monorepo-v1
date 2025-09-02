@@ -1,19 +1,19 @@
 /**
  * CoreServices - Central Service Integration
  * Story 3.18.2: Core Services Foundation
- * 
+ *
  * Wires all 5 core services together through ServiceRegistry.
  * Provides a single entry point for initializing the entire
  * playback domain architecture.
  */
 
-import { ServiceRegistry, setGlobalServiceRegistry } from './ServiceRegistry.js';
+import { ServiceRegistry } from './ServiceRegistry.js';
 import { EventBus } from './EventBus.js';
 import { AudioEngine } from './AudioEngine.js';
 import { UnifiedTransport } from './UnifiedTransport.js';
 import { TransportSyncManager } from './TransportSyncManager.js';
 import { PluginManager, registerExistingPlugins } from './PluginManager.js';
-import { PatternScheduler } from './PatternScheduler.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 export interface CoreServicesConfig {
   enableHighPrecisionTiming?: boolean;
@@ -37,7 +37,6 @@ export class CoreServices {
   private unifiedTransport: UnifiedTransport;
   private transportSyncManager: TransportSyncManager;
   private pluginManager: PluginManager;
-  private patternScheduler: PatternScheduler;
   private isInitialized = false;
   private isPreInitialized = false;
   private config: Required<CoreServicesConfig>;
@@ -62,26 +61,14 @@ export class CoreServices {
       latencyHint: this.config.audioLatencyHint,
       enablePerformanceMonitoring: this.config.enablePerformanceMonitoring,
     });
-    console.log('CoreServices: Creating UnifiedTransport with:', {
-      hasEventBus: !!this.eventBus,
-      hasAudioEngine: !!this.audioEngine,
-      audioEngineType: this.audioEngine?.constructor?.name
-    });
-    
     this.unifiedTransport = UnifiedTransport.getInstance(this.eventBus, this.audioEngine, {
       enableWebWorker: this.config.enableHighPrecisionTiming,
       enableAudioWorklet: this.config.enableHighPrecisionTiming,
       driftCompensation: 'adaptive',
       bufferStrategy: 'adaptive'
     });
-    
-    console.log('CoreServices: UnifiedTransport created:', {
-      hasUnifiedTransport: !!this.unifiedTransport,
-      transportHasAudioEngine: !!(this.unifiedTransport as any).audioEngine
-    });
     this.transportSyncManager = TransportSyncManager.getInstance();
     this.pluginManager = new PluginManager(this.audioEngine, this.eventBus);
-    this.patternScheduler = new PatternScheduler();
 
     // Register services with dependencies
     this.registerServices();
@@ -97,21 +84,21 @@ export class CoreServices {
     }
 
     try {
-      console.log('CoreServices: Starting pre-initialization...');
-      
+      logger.info('CoreServices: Starting pre-initialization...');
+
       // Pre-initialize AudioEngine (loads Tone.js, no AudioContext)
-      console.log('CoreServices: Pre-initializing AudioEngine...');
+      logger.info('CoreServices: Pre-initializing AudioEngine...');
       await this.audioEngine.preInitialize();
-      console.log('CoreServices: AudioEngine pre-initialized (Tone.js loaded)');
-      
+      logger.info('CoreServices: AudioEngine pre-initialized (Tone.js loaded)');
+
       this.isPreInitialized = true;
-      console.log('CoreServices: Pre-initialization complete!');
-      
+      logger.info('CoreServices: Pre-initialization complete!');
+
       this.eventBus.emit('core-services:pre-initialized', {
         services: ['eventBus', 'audioEngine'],
       });
     } catch (error) {
-      console.error('CoreServices: Pre-initialization failed:', error);
+      logger.error('CoreServices: Pre-initialization failed:', error);
       throw new CoreServicesError(
         `Failed to pre-initialize CoreServices: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -128,49 +115,43 @@ export class CoreServices {
     }
 
     try {
-      console.log('CoreServices: Starting full initialization...');
-      
+      logger.info('CoreServices: Starting full initialization...');
+
       // Pre-initialize if not done already
       if (!this.isPreInitialized) {
         await this.preInitialize();
       }
-      
+
       // Ensure AudioEngine is fully initialized first (must be called from user gesture)
-      console.log('CoreServices: Fully initializing AudioEngine...');
+      logger.info('CoreServices: Fully initializing AudioEngine...');
       await this.audioEngine.initialize();
-      console.log('CoreServices: AudioEngine fully initialized');
-      
+      logger.info('CoreServices: AudioEngine fully initialized');
+
       // Initialize service registry (handles dependency order)
-      console.log('CoreServices: Initializing service registry...');
-      console.log('CoreServices: Before registry.initialize, checking UnifiedTransport:', {
-        hasUnifiedTransport: !!this.unifiedTransport,
-        transportHasAudioEngine: !!(this.unifiedTransport as any).audioEngine,
-        registryHasUnifiedTransport: this.registry.has('unifiedTransport')
-      });
-      
+      logger.info('CoreServices: Initializing service registry...');
       await this.registry.initialize();
-      console.log('CoreServices: Service registry initialized');
-      
+      logger.info('CoreServices: Service registry initialized');
+
       // Initialize TransportSyncManager after registry (it's not a registered service)
-      console.log('CoreServices: Initializing TransportSyncManager...');
+      logger.info('CoreServices: Initializing TransportSyncManager...');
       this.transportSyncManager.initialize(this.unifiedTransport, this.eventBus);
-      console.log('CoreServices: TransportSyncManager initialized');
+      logger.info('CoreServices: TransportSyncManager initialized');
 
       // Register existing plugins if auto-load is enabled
       if (this.config.autoLoadPlugins) {
-        console.log('CoreServices: Registering existing plugins...');
+        logger.info('CoreServices: Registering existing plugins...');
         await registerExistingPlugins(this.pluginManager);
-        console.log('CoreServices: Plugins registered');
+        logger.info('CoreServices: Plugins registered');
       }
 
       this.isInitialized = true;
-      console.log('CoreServices: Full initialization complete!');
-      
+      logger.info('CoreServices: Full initialization complete!');
+
       this.eventBus.emit('core-services:initialized', {
-        services: ['eventBus', 'audioEngine', 'unifiedTransport', 'transportSyncManager', 'pluginManager', 'patternScheduler'],
+        services: ['eventBus', 'audioEngine', 'unifiedTransport', 'transportSyncManager', 'pluginManager'],
       });
     } catch (error) {
-      console.error('CoreServices: Full initialization failed:', error);
+      logger.error('CoreServices: Full initialization failed:', error);
       throw new CoreServicesError(
         `Failed to initialize CoreServices: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -246,10 +227,6 @@ export class CoreServices {
   getPluginManager(): PluginManager {
     return this.pluginManager;
   }
-  
-  getPatternScheduler(): PatternScheduler {
-    return this.patternScheduler;
-  }
 
   getServiceRegistry(): ServiceRegistry {
     return this.registry;
@@ -298,9 +275,6 @@ export class CoreServices {
    * Register services with proper dependencies
    */
   private registerServices(): void {
-    // Set this registry as the global instance
-    setGlobalServiceRegistry(this.registry);
-    
     // EventBus has no dependencies
     this.registry.register('eventBus', this.eventBus, []);
 
@@ -315,9 +289,6 @@ export class CoreServices {
 
     // PluginManager depends on AudioEngine and EventBus
     this.registry.register('pluginManager', this.pluginManager, ['audioEngine', 'eventBus']);
-    
-    // PatternScheduler depends on EventBus and UnifiedTransport
-    this.registry.register('patternScheduler', this.patternScheduler, ['eventBus', 'unifiedTransport']);
   }
 }
 
@@ -345,26 +316,26 @@ class GlobalAudioSystem {
 
     // Return existing instance if available
     if (GlobalAudioSystem.instance) {
-      console.log('GlobalAudioSystem: Returning existing pre-initialized instance');
+      logger.info('GlobalAudioSystem: Returning existing pre-initialized instance');
       return GlobalAudioSystem.instance;
     }
 
     // Return existing initialization promise if in progress
     if (GlobalAudioSystem.initializationPromise) {
-      console.log('GlobalAudioSystem: Waiting for existing initialization to complete');
+      logger.info('GlobalAudioSystem: Waiting for existing initialization to complete');
       return GlobalAudioSystem.initializationPromise;
     }
 
     // Create new instance
-    console.log('GlobalAudioSystem: Creating new pre-initialized instance');
+    logger.info('GlobalAudioSystem: Creating new pre-initialized instance');
     GlobalAudioSystem.initializationPromise = (async () => {
       const services = new CoreServices(config);
       await services.preInitialize();
-      
+
       // Store globally for cross-component access
       GlobalAudioSystem.instance = services;
       (window as any).__globalCoreServices = services;
-      
+
       return services;
     })();
 
@@ -401,14 +372,14 @@ class GlobalAudioSystem {
       return;
     }
 
-    console.log('GlobalAudioSystem: Disposing global audio system');
+    logger.info('GlobalAudioSystem: Disposing global audio system');
     GlobalAudioSystem.isDisposing = true;
 
     try {
       await GlobalAudioSystem.instance.dispose();
       GlobalAudioSystem.instance = null;
       delete (window as any).__globalCoreServices;
-      console.log('GlobalAudioSystem: Global audio system disposed successfully');
+      logger.info('GlobalAudioSystem: Global audio system disposed successfully');
     } finally {
       GlobalAudioSystem.isDisposing = false;
     }
@@ -431,6 +402,8 @@ class GlobalAudioSystem {
  * Always returns the same global instance - safe for React re-mounts
  * This only loads Tone.js, doesn't create AudioContext
  */
+const logger = createStructuredLogger('CoreServices');
+
 export async function createCoreServicesWithPreInit(
   config?: CoreServicesConfig
 ): Promise<CoreServices> {

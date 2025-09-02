@@ -19,6 +19,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 // Core interfaces for musical expression
 export interface MidiNoteEvent {
@@ -156,7 +157,7 @@ export class MusicalExpressionEngine extends EventEmitter {
 
   private constructor() {
     super();
-    console.log('🎵 Initializing Musical Expression Engine...');
+    logger.info('🎵 Initializing Musical Expression Engine...');
   }
 
   /**
@@ -175,7 +176,7 @@ export class MusicalExpressionEngine extends EventEmitter {
    */
   public async initialize(): Promise<void> {
     if (this.isInitialized) {
-      console.log('⚠️ Musical Expression Engine already initialized');
+      logger.info('⚠️ Musical Expression Engine already initialized');
       return;
     }
 
@@ -193,10 +194,10 @@ export class MusicalExpressionEngine extends EventEmitter {
       await this.loadDefaultGrooveTemplates();
 
       this.isInitialized = true;
-      console.log('✅ Musical Expression Engine initialized successfully');
+      logger.info('✅ Musical Expression Engine initialized successfully');
       this.emit('initialized');
     } catch (error) {
-      console.error(
+      logger.error(
         '❌ Failed to initialize Musical Expression Engine:',
         error,
       );
@@ -275,10 +276,10 @@ export class MusicalExpressionEngine extends EventEmitter {
         contextAnalysis,
       );
 
-      console.log(`🎵 Applied expression to ${processedNotes.length} notes`);
+      logger.info(`🎵 Applied expression to ${processedNotes.length} notes`);
       return processedNotes;
     } catch (error) {
-      console.error('❌ Error applying musical expression:', error);
+      logger.error('❌ Error applying musical expression:', error);
       throw error;
     }
   }
@@ -293,7 +294,7 @@ export class MusicalExpressionEngine extends EventEmitter {
     const template = this.grooveTemplates.get(grooveName);
     // TODO: Review non-null assertion - consider null safety
     if (!template) {
-      console.warn(`⚠️ Groove template '${grooveName}' not found`);
+      logger.warn(`⚠️ Groove template '${grooveName}' not found`);
       return notes;
     }
 
@@ -503,7 +504,7 @@ export class MusicalExpressionEngine extends EventEmitter {
       this.grooveTemplates.set(template.name, template);
     });
 
-    console.log(`✅ Loaded ${templates.length} groove templates`);
+    logger.info(`✅ Loaded ${templates.length} groove templates`);
   }
 
   /**
@@ -533,14 +534,14 @@ export class MusicalExpressionEngine extends EventEmitter {
    */
   public addGrooveTemplate(template: GrooveTemplate): void {
     this.grooveTemplates.set(template.name, template);
-    console.log(`✅ Added groove template: ${template.name}`);
+    logger.info(`✅ Added groove template: ${template.name}`);
   }
 
   /**
    * Dispose of the Musical Expression Engine
    */
   public async dispose(): Promise<void> {
-    console.log('🧹 Disposing Musical Expression Engine...');
+    logger.info('🧹 Disposing Musical Expression Engine...');
 
     try {
       // Clear templates
@@ -562,10 +563,10 @@ export class MusicalExpressionEngine extends EventEmitter {
       // Clear singleton instance
       MusicalExpressionEngine.instance = null;
 
-      console.log('✅ Musical Expression Engine disposed successfully');
+      logger.info('✅ Musical Expression Engine disposed successfully');
       this.emit('disposed');
     } catch (error) {
-      console.error('❌ Error disposing Musical Expression Engine:', error);
+      logger.error('❌ Error disposing Musical Expression Engine:', error);
       throw error;
     }
   }

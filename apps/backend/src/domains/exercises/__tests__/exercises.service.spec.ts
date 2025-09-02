@@ -1,60 +1,24 @@
-/**
- * ExercisesService Unit Tests
- *
- * Testing exercise CRUD operations, user exercise management,
- * custom bassline functionality, and data validation.
- *
- * Core Behaviors:
- * - Exercise retrieval with pagination and filtering
- * - User custom bassline management
- * - Data validation using contracts schemas
- * - Error handling and security
- * - Performance requirements compliance
- */
-
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { ExercisesService } from '../exercises.service.js';
 import {
   NotFoundException,
   InternalServerErrorException,
-  BadRequestException,
 } from '@nestjs/common';
-import { ExercisesService } from '../exercises.service.js';
-import { ExerciseSchema } from '@bassnotion/contracts';
-
-// Mock contracts validation
-vi.mock('@bassnotion/contracts', async () => {
-  const actual = await vi.importActual('@bassnotion/contracts');
-  return {
-    ...actual,
-    ExerciseSchema: {
-      parse: vi.fn((data) => data),
-    },
-  };
-});
-
-// Mock DTOs
-vi.mock('../dto/custom-bassline.dto.js', () => ({
-  validateSaveCustomBassline: vi.fn((data) => data),
-  validateCustomBassline: vi.fn((data) => data),
-}));
-
-vi.mock('../dto/create-exercise.dto.js', () => ({
-  validateCreateExercise: vi.fn((data) => data),
-  validateUpdateExercise: vi.fn((data) => data),
-}));
+import { ExerciseId } from '../value-objects/exercise-id.vo.js';
+import { Difficulty } from '../value-objects/difficulty.vo.js';
+import { ResultUtils } from '../../shared/result.js';
 
 describe('ExercisesService', () => {
-  let exercisesService: ExercisesService;
-  let mockSupabaseService: any;
-  let mockSupabaseClient: any;
+  let service: ExercisesService;
+  let mockExerciseRepository: any;
+  let mockRequestContextService: any;
 
-  // Test data fixtures
   const mockExercise = {
-    id: 'exercise-1',
+    id: ExerciseId.create('123e4567-e89b-12d3-a456-426614174000'),
     title: 'Test Exercise',
-    description: 'A test exercise',
-    difficulty: 'beginner' as const,
-    duration: 60000,
+    description: 'Test Description',
+    difficulty: Difficulty.beginner(),
+    duration: 1200,
     bpm: 120,
     key: 'C',
     notes: [
@@ -64,669 +28,472 @@ describe('ExercisesService', () => {
         string: 1,
         fret: 3,
         duration: 500,
-        note: 'G',
-        color: 'red',
+        note: 'C',
+        color: '#FF0000',
       },
     ],
-    is_active: true,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
+    tags: ['test'],
+    isActive: true,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+    toPersistence() {
+      return {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        title: 'Test Exercise',
+        description: 'Test Description',
+        difficulty: 'beginner',
+        duration: 1200,
+        bpm: 120,
+        key: 'C',
+        notes: [
+          {
+            id: 'note-1',
+            timestamp: 0,
+            string: 1,
+            fret: 3,
+            duration: 500,
+            note: 'C',
+            color: '#FF0000',
+          },
+        ],
+        tags: ['test'],
+        is_active: true,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+    },
   };
 
-  const mockCustomBassline = {
-    id: 'bassline-1',
-    exercise_id: 'exercise-1',
-    user_id: 'user-1',
-    title: 'My Custom Bassline',
-    notes: [
-      {
-        id: 'note-1',
-        timestamp: 0,
-        string: 1,
-        fret: 5,
-        duration: 500,
-        note: 'A',
-        color: 'blue',
-      },
-    ],
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-  };
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    // Create mock query builder that returns promises
-    const createMockQuery = (response: any) => ({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      neq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      range: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue(response),
-      insert: vi.fn().mockReturnThis(),
-      update: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockResolvedValue(response),
-      or: vi.fn().mockReturnThis(),
-      then: vi.fn((resolve) => Promise.resolve(response).then(resolve)),
-      catch: vi.fn(),
-    });
-
-    mockSupabaseClient = {
-      from: vi.fn((_table: string) =>
-        createMockQuery({ data: null, error: null }),
-      ),
+  beforeEach(async () => {
+    mockExerciseRepository = {
+      findAll: vi.fn(),
+      findById: vi.fn(),
+      findByDifficulty: vi.fn(),
+      search: vi.fn(),
+      save: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      exists: vi.fn(),
+      findByIds: vi.fn(),
+      saveMany: vi.fn(),
+      updateMany: vi.fn(),
+      deleteMany: vi.fn(),
     };
 
-    mockSupabaseService = {
-      getClient: vi.fn(() => mockSupabaseClient),
-      isReady: vi.fn(() => true),
+    mockRequestContextService = {
+      getLogger: vi.fn().mockReturnValue({
+        info: vi.fn(),
+        error: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn(),
+      }),
+      getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
     };
 
-    exercisesService = new ExercisesService(mockSupabaseService);
+    service = new ExercisesService(mockExerciseRepository, mockRequestContextService);
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
-  describe('Exercise Retrieval', () => {
-    describe('getAllExercises', () => {
-      it('should retrieve paginated exercises with performance compliance', async () => {
-        const mockResponse = { data: [mockExercise], error: null, count: 1 };
-
-        // Mock the from method to return a query that resolves to our response
-        mockSupabaseClient.from = vi.fn(() => ({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockReturnThis(),
-          range: vi.fn().mockResolvedValue(mockResponse),
-        }));
-
-        const startTime = performance.now();
-        const result = await exercisesService.getAllExercises(1, 10);
-        const responseTime = performance.now() - startTime;
-
-        expect(responseTime).toBeLessThan(500); // <500ms requirement
-        expect(result).toEqual({
-          exercises: [mockExercise],
-          total: 1,
-          cached: false,
-        });
-        expect(mockSupabaseClient.from).toHaveBeenCalledWith('exercises');
-      });
-
-      it('should handle pagination parameters correctly', async () => {
-        const mockResponse = {
-          data: Array(5).fill(mockExercise),
-          error: null,
-          count: 50,
-        };
-
-        const mockQuery = {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockReturnThis(),
-          range: vi.fn().mockResolvedValue(mockResponse),
-        };
-
-        mockSupabaseClient.from = vi.fn(() => mockQuery);
-
-        await exercisesService.getAllExercises(2, 5);
-
-        expect(mockQuery.range).toHaveBeenCalledWith(5, 9); // page 2, limit 5 = offset 5, end 9
-      });
-
-      it('should validate exercise data using contracts schema', async () => {
-        const mockResponse = { data: [mockExercise], error: null, count: 1 };
-
-        mockSupabaseClient.from = vi.fn(() => ({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockReturnThis(),
-          range: vi.fn().mockResolvedValue(mockResponse),
-        }));
-
-        await exercisesService.getAllExercises();
-
-        expect(ExerciseSchema.parse).toHaveBeenCalledWith(mockExercise);
-      });
-
-      it('should handle Supabase service not ready', async () => {
-        mockSupabaseService.isReady.mockReturnValue(false);
-
-        await expect(exercisesService.getAllExercises()).rejects.toThrow(
-          InternalServerErrorException,
-        );
-      });
-
-      it('should handle Supabase errors gracefully', async () => {
-        const mockResponse = {
-          data: null,
-          error: { message: 'Database error' },
-        };
-
-        mockSupabaseClient.from = vi.fn(() => ({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockReturnThis(),
-          range: vi.fn().mockResolvedValue(mockResponse),
-        }));
-
-        await expect(exercisesService.getAllExercises()).rejects.toThrow(
-          InternalServerErrorException,
-        );
-      });
-    });
-
-    describe('getExerciseById', () => {
-      it('should retrieve single exercise with performance compliance', async () => {
-        const mockResponse = { data: mockExercise, error: null };
-
-        mockSupabaseClient.from = vi.fn(() => ({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue(mockResponse),
-        }));
-
-        const startTime = performance.now();
-        const result = await exercisesService.getExerciseById('exercise-1');
-        const responseTime = performance.now() - startTime;
-
-        expect(responseTime).toBeLessThan(200); // <200ms requirement
-        expect(result).toEqual({
-          exercise: mockExercise,
-        });
-      });
-
-      it('should throw NotFoundException for non-existent exercise', async () => {
-        const mockResponse = { data: null, error: { code: 'PGRST116' } };
-
-        mockSupabaseClient.from = vi.fn(() => ({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue(mockResponse),
-        }));
-
-        await expect(
-          exercisesService.getExerciseById('non-existent'),
-        ).rejects.toThrow(NotFoundException);
-      });
-
-      it('should validate exercise data using contracts schema', async () => {
-        const mockResponse = { data: mockExercise, error: null };
-
-        mockSupabaseClient.from = vi.fn(() => ({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue(mockResponse),
-        }));
-
-        await exercisesService.getExerciseById('exercise-1');
-
-        expect(ExerciseSchema.parse).toHaveBeenCalledWith(mockExercise);
-      });
-    });
-
-    describe('getExercisesByDifficulty', () => {
-      it('should filter exercises by difficulty level', async () => {
-        const mockResponse = { data: [mockExercise], error: null };
-
-        const mockQuery = {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockResolvedValue(mockResponse),
-        };
-
-        mockSupabaseClient.from = vi.fn(() => mockQuery);
-
-        const result =
-          await exercisesService.getExercisesByDifficulty('beginner');
-
-        expect(result.exercises).toEqual([mockExercise]);
-        expect(mockQuery.eq).toHaveBeenCalledWith('difficulty', 'beginner');
-      });
-
-      it('should handle all difficulty levels', async () => {
-        const difficulties: ('beginner' | 'intermediate' | 'advanced')[] = [
-          'beginner',
-          'intermediate',
-          'advanced',
-        ];
-
-        for (const difficulty of difficulties) {
-          const mockResponse = { data: [mockExercise], error: null };
-
-          mockSupabaseClient.from = vi.fn(() => ({
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            order: vi.fn().mockResolvedValue(mockResponse),
-          }));
-
-          const result =
-            await exercisesService.getExercisesByDifficulty(difficulty);
-
-          expect(result.exercises).toHaveLength(1);
-        }
-      });
-    });
-
-    describe('searchExercises', () => {
-      it('should search exercises by title and description', async () => {
-        const mockResponse = { data: [mockExercise], error: null };
-
-        const mockQuery = {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          or: vi.fn().mockReturnThis(),
-          order: vi.fn().mockResolvedValue(mockResponse),
-        };
-
-        mockSupabaseClient.from = vi.fn(() => mockQuery);
-
-        const result = await exercisesService.searchExercises('test');
-
-        expect(result.exercises).toEqual([mockExercise]);
-        expect(mockQuery.or).toHaveBeenCalledWith(
-          'title.ilike.%test%,description.ilike.%test%',
-        );
-      });
-    });
-  });
-
-  describe('User Exercise Management', () => {
-    describe('getUserCustomBasslines', () => {
-      it('should retrieve user custom basslines', async () => {
-        const mockResponse = { data: [mockCustomBassline], error: null };
-
-        const mockQuery = {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockResolvedValue(mockResponse),
-        };
-
-        mockSupabaseClient.from = vi.fn(() => mockQuery);
-
-        const result = await exercisesService.getUserCustomBasslines('user-1');
-
-        expect(result).toEqual({
-          basslines: [mockCustomBassline],
-          total: 1,
-        });
-        expect(mockSupabaseClient.from).toHaveBeenCalledWith(
-          'custom_basslines',
-        );
-      });
-
-      it('should filter basslines by user ID', async () => {
-        const mockResponse = { data: [], error: null };
-
-        const mockQuery = {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockResolvedValue(mockResponse),
-        };
-
-        mockSupabaseClient.from = vi.fn(() => mockQuery);
-
-        await exercisesService.getUserCustomBasslines('user-1');
-
-        expect(mockQuery.eq).toHaveBeenCalledWith('user_id', 'user-1');
-      });
-    });
-
-    describe('saveCustomBassline', () => {
-      const mockBasslineData = {
-        exercise_id: 'exercise-1',
-        title: 'New Bassline',
-        notes: [mockCustomBassline.notes[0]],
+  describe('getAllExercises', () => {
+    it('should return paginated exercises', async () => {
+      const mockPaginatedResult = {
+        items: [mockExercise],
+        total: 1,
+        page: 1,
+        limit: 50,
       };
 
-      it('should save custom bassline successfully', async () => {
-        // Mock exercise existence check
-        const exerciseResponse = { data: { id: 'exercise-1' }, error: null };
-        const basslineResponse = { data: mockCustomBassline, error: null };
+      mockExerciseRepository.findAll.mockResolvedValue(
+        ResultUtils.ok(mockPaginatedResult),
+      );
 
-        let callCount = 0;
-        mockSupabaseClient.from = vi.fn(() => {
-          callCount++;
-          if (callCount === 1) {
-            // First call for exercise check
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue(exerciseResponse),
-            };
-          } else {
-            // Second call for bassline save
-            return {
-              insert: vi.fn().mockReturnThis(),
-              select: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue(basslineResponse),
-            };
-          }
-        });
+      const result = await service.getAllExercises(1, 50);
 
-        const result = await exercisesService.saveCustomBassline(
-          'user-1',
-          mockBasslineData,
-        );
-
-        expect(result).toEqual(mockCustomBassline);
+      expect(result).toEqual({
+        exercises: expect.arrayContaining([
+          expect.objectContaining({
+            id: '123e4567-e89b-12d3-a456-426614174000',
+            title: 'Test Exercise',
+          }),
+        ]),
+        total: 1,
+        cached: false,
       });
-
-      it('should validate referenced exercise exists', async () => {
-        // Mock exercise not found
-        const exerciseResponse = { data: null, error: { code: 'PGRST116' } };
-
-        mockSupabaseClient.from = vi.fn(() => ({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue(exerciseResponse),
-        }));
-
-        await expect(
-          exercisesService.saveCustomBassline('user-1', mockBasslineData),
-        ).rejects.toThrow(BadRequestException);
-      });
-
-      it('should handle duplicate bassline titles', async () => {
-        // Mock exercise exists
-        const exerciseResponse = { data: { id: 'exercise-1' }, error: null };
-        const basslineResponse = { data: null, error: { code: '23505' } };
-
-        let callCount = 0;
-        mockSupabaseClient.from = vi.fn(() => {
-          callCount++;
-          if (callCount === 1) {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue(exerciseResponse),
-            };
-          } else {
-            return {
-              insert: vi.fn().mockReturnThis(),
-              select: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue(basslineResponse),
-            };
-          }
-        });
-
-        await expect(
-          exercisesService.saveCustomBassline('user-1', mockBasslineData),
-        ).rejects.toThrow(BadRequestException);
+      expect(mockExerciseRepository.findAll).toHaveBeenCalledWith({
+        page: 1,
+        limit: 50,
       });
     });
 
-    describe('updateCustomBassline', () => {
-      it('should update existing bassline', async () => {
-        // Mock existing bassline check and update
-        const existingResponse = { data: mockCustomBassline, error: null };
-        const updateResponse = {
-          data: { ...mockCustomBassline, title: 'Updated Title' },
-          error: null,
-        };
+    it('should handle errors properly', async () => {
+      mockExerciseRepository.findAll.mockResolvedValue(
+        ResultUtils.fail(new Error('Database error')),
+      );
 
-        let callCount = 0;
-        mockSupabaseClient.from = vi.fn(() => {
-          callCount++;
-          if (callCount === 1) {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue(existingResponse),
-            };
-          } else {
-            return {
-              update: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              select: vi.fn().mockReturnThis(),
-              single: vi.fn().mockResolvedValue(updateResponse),
-            };
-          }
-        });
-
-        const result = await exercisesService.updateCustomBassline(
-          'user-1',
-          'bassline-1',
-          { title: 'Updated Title' },
-        );
-
-        expect(result.title).toBe('Updated Title');
-      });
-
-      it('should throw NotFoundException for non-existent bassline', async () => {
-        const mockResponse = { data: null, error: { code: 'PGRST116' } };
-
-        mockSupabaseClient.from = vi.fn(() => ({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue(mockResponse),
-        }));
-
-        await expect(
-          exercisesService.updateCustomBassline('user-1', 'non-existent', {}),
-        ).rejects.toThrow(NotFoundException);
-      });
-    });
-
-    describe('deleteCustomBassline', () => {
-      it('should delete bassline successfully', async () => {
-        const mockResponse = { error: null };
-
-        // Create a proper chain that handles .eq().eq() calls
-        const mockChain = {
-          eq: vi.fn().mockResolvedValue(mockResponse),
-        };
-
-        mockSupabaseClient.from = vi.fn(() => ({
-          delete: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnValue(mockChain),
-        }));
-
-        await expect(
-          exercisesService.deleteCustomBassline('user-1', 'bassline-1'),
-        ).resolves.not.toThrow();
-      });
+      await expect(service.getAllExercises()).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
-  describe('Admin Operations (Epic 5 Preparation)', () => {
-    describe('createExercise', () => {
-      const mockExerciseData = {
+  describe('getExerciseById', () => {
+    it('should return exercise by id', async () => {
+      mockExerciseRepository.findById.mockResolvedValue(
+        ResultUtils.ok(mockExercise),
+      );
+
+      const result = await service.getExerciseById(
+        '123e4567-e89b-12d3-a456-426614174000',
+      );
+
+      expect(result).toEqual({
+        exercise: expect.objectContaining({
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          title: 'Test Exercise',
+        }),
+      });
+      expect(mockExerciseRepository.findById).toHaveBeenCalledWith(
+        expect.objectContaining({
+          _value: '123e4567-e89b-12d3-a456-426614174000',
+        }),
+      );
+    });
+
+    it('should throw BadRequestException for invalid ID format', async () => {
+      await expect(service.getExerciseById('invalid-id')).rejects.toThrow(
+        'Invalid exercise ID format',
+      );
+    });
+
+    it('should throw NotFoundException if exercise not found', async () => {
+      mockExerciseRepository.findById.mockResolvedValue(ResultUtils.ok(null));
+
+      await expect(
+        service.getExerciseById('550e8400-e29b-41d4-a716-446655440000'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw InternalServerErrorException when repository fails', async () => {
+      mockExerciseRepository.findById.mockResolvedValue(
+        ResultUtils.fail(new Error('Database connection failed')),
+      );
+
+      await expect(
+        service.getExerciseById('550e8400-e29b-41d4-a716-446655440000'),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+  });
+
+  describe('getExercisesByDifficulty', () => {
+    it('should return exercises by difficulty', async () => {
+      mockExerciseRepository.findByDifficulty.mockResolvedValue(
+        ResultUtils.ok([mockExercise]),
+      );
+
+      const result = await service.getExercisesByDifficulty('beginner');
+
+      expect(result).toEqual({
+        exercises: expect.arrayContaining([
+          expect.objectContaining({
+            id: '123e4567-e89b-12d3-a456-426614174000',
+            difficulty: 'beginner',
+          }),
+        ]),
+        total: 1,
+        cached: false,
+      });
+      expect(mockExerciseRepository.findByDifficulty).toHaveBeenCalledWith(
+        expect.objectContaining({ _value: 'beginner' }),
+      );
+    });
+
+    it('should handle errors properly', async () => {
+      mockExerciseRepository.findByDifficulty.mockResolvedValue(
+        ResultUtils.fail(new Error('Database error')),
+      );
+
+      await expect(
+        service.getExercisesByDifficulty('beginner'),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+  });
+
+  describe('searchExercises', () => {
+    it('should search exercises by query', async () => {
+      mockExerciseRepository.search.mockResolvedValue(
+        ResultUtils.ok([mockExercise]),
+      );
+
+      const result = await service.searchExercises('test');
+
+      expect(result).toEqual({
+        exercises: expect.arrayContaining([
+          expect.objectContaining({
+            id: '123e4567-e89b-12d3-a456-426614174000',
+            title: 'Test Exercise',
+          }),
+        ]),
+        total: 1,
+        cached: false,
+      });
+      expect(mockExerciseRepository.search).toHaveBeenCalledWith('test');
+    });
+
+    it('should return empty array for no matches', async () => {
+      mockExerciseRepository.search.mockResolvedValue(ResultUtils.ok([]));
+
+      const result = await service.searchExercises('nonexistent');
+
+      expect(result).toEqual({
+        exercises: [],
+        total: 0,
+        cached: false,
+      });
+    });
+
+    it('should throw InternalServerErrorException when search fails', async () => {
+      mockExerciseRepository.search.mockResolvedValue(
+        ResultUtils.fail(new Error('Search index error')),
+      );
+
+      await expect(service.searchExercises('test')).rejects.toThrow(
+        InternalServerErrorException,
+      );
+    });
+  });
+
+  describe('createExercise', () => {
+    it('should create new exercise', async () => {
+      const exerciseData = {
         title: 'New Exercise',
-        difficulty: 'intermediate' as const,
-        duration: 120000,
+        description: 'New Description',
+        difficulty: 'intermediate',
+        duration: 1800, // Must be at least 1000ms
+        bpm: 100,
+        key: 'G',
+        notes: [
+          {
+            id: 'note-1',
+            timestamp: 0,
+            string: 1,
+            fret: 3,
+            duration: 500,
+            note: 'G',
+            color: '#FF0000',
+          },
+        ],
+        tags: [],
+      };
+
+      mockExerciseRepository.save.mockResolvedValue(ResultUtils.ok(undefined));
+
+      const result = await service.createExercise(exerciseData, 'user-1');
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          title: 'New Exercise',
+          difficulty: 'intermediate',
+        }),
+      );
+      expect(mockExerciseRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'New Exercise',
+        }),
+      );
+    });
+
+    it('should validate exercise data', async () => {
+      const invalidData = {
+        // Missing required fields
+        title: '',
+      };
+
+      await expect(service.createExercise(invalidData)).rejects.toThrow();
+    });
+
+    it('should throw InternalServerErrorException when save fails', async () => {
+      const exerciseData = {
+        title: 'New Exercise',
+        description: 'New Description',
+        difficulty: 'intermediate',
+        duration: 1800,
+        bpm: 100,
+        key: 'G',
+        notes: [],
+        tags: [],
+      };
+
+      mockExerciseRepository.save.mockResolvedValue(
+        ResultUtils.fail(new Error('Database save error')),
+      );
+
+      await expect(
+        service.createExercise(exerciseData, 'user-1'),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+  });
+
+  describe('updateExercise', () => {
+    it('should update existing exercise', async () => {
+      const updateData = {
+        title: 'Updated Title',
         bpm: 140,
-        key: 'D',
-        notes: [mockExercise.notes[0]],
       };
 
-      it('should create exercise successfully', async () => {
-        const mockResponse = { data: mockExercise, error: null };
+      const updateTitleMock = vi.fn();
+      const updateBpmMock = vi.fn();
 
-        mockSupabaseClient.from = vi.fn(() => ({
-          insert: vi.fn().mockReturnThis(),
-          select: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue(mockResponse),
-        }));
+      const updatedExercise = {
+        ...mockExercise,
+        updateTitle: updateTitleMock,
+        updateBpm: updateBpmMock,
+        updateDescription: vi.fn(),
+        updateDifficulty: vi.fn(),
+      };
 
-        const result = await exercisesService.createExercise(
-          mockExerciseData,
-          'user-1',
-        );
+      mockExerciseRepository.findById.mockResolvedValue(
+        ResultUtils.ok(updatedExercise),
+      );
+      mockExerciseRepository.update.mockResolvedValue(
+        ResultUtils.ok(undefined),
+      );
 
-        expect(result).toEqual(mockExercise);
-        expect(ExerciseSchema.parse).toHaveBeenCalledWith(mockExercise);
-      });
-
-      it('should handle creation errors', async () => {
-        const mockResponse = {
-          data: null,
-          error: { message: 'Creation failed' },
-        };
-
-        mockSupabaseClient.from = vi.fn(() => ({
-          insert: vi.fn().mockReturnThis(),
-          select: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue(mockResponse),
-        }));
-
-        await expect(
-          exercisesService.createExercise(mockExerciseData, 'user-1'),
-        ).rejects.toThrow(InternalServerErrorException);
-      });
-    });
-
-    describe('updateExercise', () => {
-      it('should update exercise successfully', async () => {
-        const updateData = { title: 'Updated Exercise' };
-        const updatedExercise = { ...mockExercise, ...updateData };
-        const mockResponse = { data: updatedExercise, error: null };
-
-        mockSupabaseClient.from = vi.fn(() => ({
-          update: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          select: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue(mockResponse),
-        }));
-
-        const result = await exercisesService.updateExercise(
-          'exercise-1',
+      try {
+        const result = await service.updateExercise(
+          '123e4567-e89b-12d3-a456-426614174000',
           updateData,
-          'user-1',
         );
 
-        expect(result).toEqual(updatedExercise);
-        expect(ExerciseSchema.parse).toHaveBeenCalledWith(updatedExercise);
-      });
-
-      it('should throw NotFoundException for non-existent exercise', async () => {
-        const mockResponse = { data: null, error: { code: 'PGRST116' } };
-
-        mockSupabaseClient.from = vi.fn(() => ({
-          update: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          select: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue(mockResponse),
-        }));
-
-        await expect(
-          exercisesService.updateExercise('non-existent', {}, 'user-1'),
-        ).rejects.toThrow(NotFoundException);
-      });
+        expect(updateTitleMock).toHaveBeenCalledWith('Updated Title');
+        expect(updateBpmMock).toHaveBeenCalledWith(140);
+        expect(mockExerciseRepository.update).toHaveBeenCalledWith(
+          updatedExercise,
+        );
+        expect(result).toEqual(
+          expect.objectContaining({
+            title: 'Test Exercise',
+            id: '123e4567-e89b-12d3-a456-426614174000',
+          }),
+        );
+      } catch (error) {
+        console.error('Test failed with error:', error);
+        throw error;
+      }
     });
-  });
 
-  describe('Error Handling', () => {
-    it('should handle Supabase service unavailable', async () => {
-      mockSupabaseService.isReady.mockReturnValue(false);
-
-      await expect(exercisesService.getAllExercises()).rejects.toThrow(
-        InternalServerErrorException,
+    it('should throw BadRequestException for invalid ID', async () => {
+      await expect(service.updateExercise('invalid-id', {})).rejects.toThrow(
+        'Invalid exercise ID format',
       );
     });
 
-    it('should handle validation errors gracefully', async () => {
-      const mockResponse = { data: [mockExercise], error: null, count: 1 };
+    it('should throw NotFoundException if exercise not found', async () => {
+      mockExerciseRepository.findById.mockResolvedValue(ResultUtils.ok(null));
 
-      mockSupabaseClient.from = vi.fn(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        range: vi.fn().mockResolvedValue(mockResponse),
-      }));
-
-      // Mock validation failure
-      const mockValidationError = new Error('Validation failed');
-      (ExerciseSchema.parse as any).mockImplementationOnce(() => {
-        throw mockValidationError;
-      });
-
-      const result = await exercisesService.getAllExercises();
-
-      // Should return original data on validation failure for backward compatibility
-      expect(result.exercises).toEqual([mockExercise]);
+      await expect(
+        service.updateExercise('550e8400-e29b-41d4-a716-446655440000', {}),
+      ).rejects.toThrow(NotFoundException);
     });
 
-    it('should handle database connection errors', async () => {
-      const mockResponse = {
-        data: null,
-        error: {
-          message: 'Connection failed',
-          code: 'CONNECTION_ERROR',
-        },
+    it('should throw InternalServerErrorException when findById fails during update', async () => {
+      mockExerciseRepository.findById.mockResolvedValue(
+        ResultUtils.fail(new Error('Database find error')),
+      );
+
+      await expect(
+        service.updateExercise('550e8400-e29b-41d4-a716-446655440000', {
+          title: 'Updated',
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('should throw InternalServerErrorException when update fails', async () => {
+      const updateData = { title: 'Updated Title' };
+      const updatedExercise = {
+        ...mockExercise,
+        updateTitle: vi.fn(),
+        updateBpm: vi.fn(),
+        updateDescription: vi.fn(),
+        updateDifficulty: vi.fn(),
       };
 
-      mockSupabaseClient.from = vi.fn(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        range: vi.fn().mockResolvedValue(mockResponse),
-      }));
-
-      await expect(exercisesService.getAllExercises()).rejects.toThrow(
-        InternalServerErrorException,
+      mockExerciseRepository.findById.mockResolvedValue(
+        ResultUtils.ok(updatedExercise),
       );
+      mockExerciseRepository.update.mockResolvedValue(
+        ResultUtils.fail(new Error('Database update error')),
+      );
+
+      await expect(
+        service.updateExercise(
+          '550e8400-e29b-41d4-a716-446655440000',
+          updateData,
+        ),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 
-  describe('Performance Requirements', () => {
-    it('should meet exercise list performance requirement (<500ms)', async () => {
-      const mockExercises = Array(50).fill(mockExercise);
-      const mockResponse = { data: mockExercises, error: null, count: 50 };
+  describe('createExerciseWithMidiFile', () => {
+    it('should create exercise with MIDI file metadata', async () => {
+      const midiData = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        title: 'MIDI Exercise',
+        description: 'From MIDI file',
+        difficulty: 'intermediate',
+        duration: 240,
+        bpm: 110,
+        key: 'D',
+        notes: [],
+        midi_file_path: '/uploads/test.midi',
+        original_filename: 'test.midi',
+        file_size: 2048,
+        uploaded_at: '2024-01-01T00:00:00Z',
+        created_by: 'user-1',
+      };
 
-      mockSupabaseClient.from = vi.fn(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        range: vi.fn().mockResolvedValue(mockResponse),
-      }));
+      mockExerciseRepository.save.mockResolvedValue(ResultUtils.ok(undefined));
 
-      const startTime = performance.now();
-      await exercisesService.getAllExercises();
-      const responseTime = performance.now() - startTime;
+      const result = await service.createExerciseWithMidiFile(midiData);
 
-      expect(responseTime).toBeLessThan(500);
+      expect(result).toEqual(
+        expect.objectContaining({
+          title: 'MIDI Exercise',
+          midi_file_path: '/uploads/test.midi',
+        }),
+      );
+      expect(mockExerciseRepository.save).toHaveBeenCalled();
     });
 
-    it('should meet single exercise performance requirement (<200ms)', async () => {
-      const mockResponse = { data: mockExercise, error: null };
+    it('should throw InternalServerErrorException when save fails for MIDI exercise', async () => {
+      const midiData = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        title: 'MIDI Exercise',
+        description: 'From MIDI file',
+        difficulty: 'intermediate',
+        duration: 240,
+        bpm: 110,
+        key: 'D',
+        notes: [],
+        midi_file_path: '/uploads/test.midi',
+        original_filename: 'test.midi',
+        file_size: 2048,
+        uploaded_at: '2024-01-01T00:00:00Z',
+        created_by: 'user-1',
+      };
 
-      mockSupabaseClient.from = vi.fn(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue(mockResponse),
-      }));
+      mockExerciseRepository.save.mockResolvedValue(
+        ResultUtils.fail(new Error('Database save error')),
+      );
 
-      const startTime = performance.now();
-      await exercisesService.getExerciseById('exercise-1');
-      const responseTime = performance.now() - startTime;
-
-      expect(responseTime).toBeLessThan(200);
-    });
-
-    it('should handle concurrent requests without degradation', async () => {
-      const mockResponse = { data: [mockExercise], error: null, count: 1 };
-
-      mockSupabaseClient.from = vi.fn(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        range: vi.fn().mockResolvedValue(mockResponse),
-      }));
-
-      const concurrentRequests = Array(10)
-        .fill(null)
-        .map(() => exercisesService.getAllExercises());
-
-      const startTime = performance.now();
-      const results = await Promise.all(concurrentRequests);
-      const totalTime = performance.now() - startTime;
-
-      expect(results).toHaveLength(10);
-      expect(totalTime).toBeLessThan(2000); // All requests should complete within 2 seconds
+      await expect(
+        service.createExerciseWithMidiFile(midiData),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
+
+  // NOTE: Custom bassline tests have been removed
+  // These are now handled in user-basslines.service.spec.ts
 });

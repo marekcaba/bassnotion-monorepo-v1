@@ -438,7 +438,7 @@ export class MemoryManager {
 
     // This would trigger cache eviction in the actual cache manager
     // For now, we just record the event
-    console.warn(
+    logger.warn(
       'Memory Manager: Emergency optimization triggered due to memory pressure',
     );
   }
@@ -451,7 +451,7 @@ export class MemoryManager {
     );
 
     // This would trigger gradual cache optimization
-    console.info('Memory Manager: Adaptive optimization triggered');
+    logger.info('Memory Manager: Adaptive optimization triggered');
   }
 }
 

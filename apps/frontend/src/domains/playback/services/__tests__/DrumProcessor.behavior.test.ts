@@ -96,7 +96,7 @@ vi.mock('tone', () => {
 });
 
 // Now import DrumProcessor - it will get the mocked Tone.js
-import { DrumProcessor } from '../plugins/DrumProcessor';
+import { DrumProcessor } from '../../modules/instruments/implementations/drums/DrumProcessor.js';
 
 // Get the mocked Tone module for test assertions
 const mockTone = vi.mocked(Tone);

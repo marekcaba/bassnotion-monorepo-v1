@@ -29,6 +29,7 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { useToast } from '@/shared/hooks/use-toast';
 import { useAuth } from '../hooks/use-auth';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Custom schema that properly handles only displayName and bio
 const profileEditSchema = z.object({
@@ -55,6 +56,7 @@ export function ProfileEditDialog({
   initialData,
   onSubmit,
 }: ProfileEditDialogProps) {
+  const { correlationId, logger } = useCorrelation('ProfileEditDialog');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user: _user } = useAuth();
@@ -74,7 +76,7 @@ export function ProfileEditDialog({
   // Update form values when initialData changes or dialog opens
   useEffect(() => {
     if (isOpen) {
-      console.log(
+      logger.info(
         '[ProfileEditDialog] Dialog opened with initialData:',
         initialData,
       );
@@ -82,7 +84,7 @@ export function ProfileEditDialog({
         displayName: initialData.displayName || '',
         bio: initialData.bio || '',
       });
-      console.log('[ProfileEditDialog] Form reset with values:', {
+      logger.info('[ProfileEditDialog] Form reset with values:', {
         displayName: initialData.displayName || '',
         bio: initialData.bio || '',
       });
@@ -104,7 +106,7 @@ export function ProfileEditDialog({
       form.reset(data); // Reset form with new data
       onClose();
     } catch (error) {
-      console.error('Profile update error:', error);
+      logger.error('Profile update error:', error);
       toast({
         title: 'Failed to update profile',
         description:

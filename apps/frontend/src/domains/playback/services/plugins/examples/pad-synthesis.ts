@@ -1,6 +1,7 @@
 // import * as Tone from 'tone'; // Removed - Story 3.18.3
 import { getTone } from '../../ServiceAdapter.js';
 import { getAudioArchitectureFlags } from '../../../config/featureFlags.js';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 /**
  * Warm analog-style pad synthesizer
@@ -24,7 +25,7 @@ export function createWarmPadSynth(): any {
   // Create filter
   const flags = getAudioArchitectureFlags();
   if (flags.ENABLE_MIGRATION_MONITORING) {
-    console.log('[pad-synthesis] Using Tone from dependency injection');
+    logger.info('[pad-synthesis] Using Tone from dependency injection');
   }
   const filter = new Tone.Filter({
     type: 'lowpass',

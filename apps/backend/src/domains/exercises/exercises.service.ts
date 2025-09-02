@@ -1,95 +1,67 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  InternalServerErrorException,
-  BadRequestException,
-} from '@nestjs/common';
-import { SupabaseService } from '../../infrastructure/supabase/supabase.service.js';
+import { Injectable, NotFoundException, InternalServerErrorException, BadRequestException, Inject } from '@nestjs/common';
+import type { IResultExerciseRepository } from './repositories/result-exercise.repository.js';
+import { Exercise } from './entities/exercise.entity.js';
+import { ExerciseId } from './value-objects/exercise-id.vo.js';
+import { Difficulty } from './value-objects/difficulty.vo.js';
 import {
   ExerciseDto,
   ExercisesResponseDto,
-  ExerciseResponseDto,
-} from './dto/exercise-response.dto.js';
-import {
-  CustomBasslineDto,
-  SaveCustomBasslineDto,
-  CustomBasslinesResponseDto,
-  validateSaveCustomBassline,
-  validateCustomBassline,
-} from './dto/custom-bassline.dto.js';
+  ExerciseResponseDto } from './dto/exercise-response.dto.js';
 import {
   validateCreateExercise,
-  validateUpdateExercise,
-} from './dto/create-exercise.dto.js';
-import { ExerciseSchema } from '@bassnotion/contracts';
+  validateUpdateExercise } from './dto/create-exercise.dto.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { RequestContextService } from '../../shared/services/request-context.service.js';
 
 @Injectable()
 export class ExercisesService {
-  private readonly logger = new Logger(ExercisesService.name);
+  private readonly staticLogger = createStructuredLogger(ExercisesService.name);
 
-  constructor(private readonly supabaseService: SupabaseService) {
-    this.logger.debug('🔧 ExercisesService constructor called');
+  constructor(
+    @Inject('IResultExerciseRepository')
+    private readonly exerciseRepository: IResultExerciseRepository,
+    @Inject(RequestContextService)
+    private readonly requestContext: RequestContextService,
+  ) {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug('🔧 ExercisesService constructor called', { correlationId });
   }
 
   /**
    * Get all active exercises with pagination support
    */
   async getAllExercises(page = 1, limit = 50): Promise<ExercisesResponseDto> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
     try {
-      this.logger.debug(`Fetching exercises - page: ${page}, limit: ${limit}`);
+      logger.debug(`Fetching exercises - page: ${page}, limit: ${limit}`, { correlationId });
 
-      const supabase = this.supabaseService.getClient();
+      const result = await this.exerciseRepository.findAll({ page, limit });
 
-      if (!this.supabaseService.isReady()) {
-        this.logger.error('Supabase service is not ready');
-        throw new InternalServerErrorException('Database service unavailable');
+      if (!result.ok) {
+        logger.error('Error fetching exercises:', result.error, { correlationId });
+        throw new InternalServerErrorException('Failed to fetch exercises');
       }
 
-      // Calculate offset for pagination
-      const offset = (page - 1) * limit;
-
-      const { data, error, count } = await supabase
-        .from('exercises')
-        .select('*', { count: 'exact' })
-        .eq('is_active', true)
-        .order('title', { ascending: true })
-        .range(offset, offset + limit - 1);
-
-      if (error) {
-        this.logger.error('Supabase error fetching exercises:', error);
-        throw new InternalServerErrorException(
-          `Failed to fetch exercises: ${error.message}`,
-        );
-      }
-
-      this.logger.debug(
-        `Found ${data?.length || 0} exercises (total: ${count})`,
+      logger.debug(
+        `Found ${result.value.items.length} exercises (total: ${result.value.total})`,
+        { correlationId }
       );
 
-      // Validate response data using contracts schema
-      const exercises: ExerciseDto[] = (data || []).map((exercise) => {
-        try {
-          return ExerciseSchema.parse(exercise);
-        } catch (validationError) {
-          this.logger.warn(
-            `Exercise ${exercise.id} failed validation:`,
-            validationError,
-          );
-          return exercise; // Return as-is if validation fails for backward compatibility
-        }
-      });
+      // Convert entities to DTOs
+      const exercises: ExerciseDto[] = result.value.items.map((exercise) =>
+        this.mapEntityToDto(exercise),
+      );
 
       return {
         exercises,
-        total: count || 0,
+        total: result.value.total,
         cached: false, // TODO: Implement caching in Phase 4
       };
     } catch (error) {
-      this.logger.error('Error in getAllExercises:', error);
-      if (error instanceof InternalServerErrorException) {
-        throw error;
-      }
+      logger.error('Error in getAllExercises:', error as Error, { correlationId });
       throw new InternalServerErrorException('Failed to fetch exercises');
     }
   }
@@ -98,58 +70,39 @@ export class ExercisesService {
    * Get a specific exercise by ID with full validation
    */
   async getExerciseById(id: string): Promise<ExerciseResponseDto> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    
     try {
-      this.logger.debug(`Fetching exercise with ID: ${id}`);
+      logger.debug(`Fetching exercise with ID: ${id}`, { correlationId });
 
-      const supabase = this.supabaseService.getClient();
-
-      if (!this.supabaseService.isReady()) {
-        this.logger.error('Supabase service is not ready');
-        throw new InternalServerErrorException('Database service unavailable');
+      // Validate ID format
+      if (!ExerciseId.isValid(id)) {
+        throw new BadRequestException('Invalid exercise ID format');
       }
 
-      const { data, error } = await supabase
-        .from('exercises')
-        .select('*')
-        .eq('id', id)
-        .eq('is_active', true)
-        .single();
+      const exerciseId = ExerciseId.create(id);
+      const result = await this.exerciseRepository.findById(exerciseId);
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No rows returned
-          this.logger.warn(`Exercise not found: ${id}`);
-          throw new NotFoundException(`Exercise with ID ${id} not found`);
-        }
-        this.logger.error('Supabase error fetching exercise:', error);
-        throw new InternalServerErrorException(
-          `Failed to fetch exercise: ${error.message}`,
-        );
+      if (!result.ok) {
+        logger.error('Error fetching exercise:', result.error, { correlationId });
+        throw new InternalServerErrorException('Failed to fetch exercise');
       }
 
-      if (!data) {
+      if (!result.value) {
+        logger.warn(`Exercise not found: ${id}`, { correlationId });
         throw new NotFoundException(`Exercise with ID ${id} not found`);
       }
 
-      this.logger.debug(`Found exercise: ${data.title}`);
-
-      // Validate exercise data using contracts schema
-      let validatedExercise: ExerciseDto;
-      try {
-        validatedExercise = ExerciseSchema.parse(data);
-      } catch (validationError) {
-        this.logger.warn(`Exercise ${id} failed validation:`, validationError);
-        validatedExercise = data as ExerciseDto; // Fallback for backward compatibility
-      }
+      logger.debug(`Found exercise: ${result.value.title}`, { correlationId });
 
       return {
-        exercise: validatedExercise,
-      };
+        exercise: this.mapEntityToDto(result.value) };
     } catch (error) {
-      this.logger.error(`Error in getExerciseById(${id}):`, error);
+      logger.error(`Error in getExerciseById(${id}):`, error as Error, { correlationId });
       if (
         error instanceof NotFoundException ||
-        error instanceof InternalServerErrorException
+        error instanceof BadRequestException
       ) {
         throw error;
       }
@@ -163,62 +116,39 @@ export class ExercisesService {
   async getExercisesByDifficulty(
     difficulty: 'beginner' | 'intermediate' | 'advanced',
   ): Promise<ExercisesResponseDto> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     try {
-      this.logger.debug(`Fetching exercises with difficulty: ${difficulty}`);
+      logger.debug(`Fetching exercises with difficulty: ${difficulty}`, { correlationId });
 
-      const supabase = this.supabaseService.getClient();
+      const difficultyVO = Difficulty.create(difficulty);
+      const result =
+        await this.exerciseRepository.findByDifficulty(difficultyVO);
 
-      if (!this.supabaseService.isReady()) {
-        this.logger.error('Supabase service is not ready');
-        throw new InternalServerErrorException('Database service unavailable');
-      }
-
-      const { data, error } = await supabase
-        .from('exercises')
-        .select('*')
-        .eq('is_active', true)
-        .eq('difficulty', difficulty)
-        .order('title', { ascending: true });
-
-      if (error) {
-        this.logger.error(
-          'Supabase error fetching exercises by difficulty:',
-          error,
-        );
+      if (!result.ok) {
+        logger.error('Error fetching exercises by difficulty:', result.error, { correlationId });
         throw new InternalServerErrorException(
-          `Failed to fetch exercises: ${error.message}`,
+          'Failed to fetch exercises by difficulty',
         );
       }
 
-      this.logger.debug(
-        `Found ${data?.length || 0} exercises with difficulty ${difficulty}`,
+      logger.debug(
+        `Found ${result.value.length} exercises with difficulty ${difficulty}`,
+        { correlationId }
       );
-
-      const exercises: ExerciseDto[] = (data || []).map((exercise) => {
-        try {
-          return ExerciseSchema.parse(exercise);
-        } catch (validationError) {
-          this.logger.warn(
-            `Exercise ${exercise.id} failed validation:`,
-            validationError,
-          );
-          return exercise; // Return as-is if validation fails
-        }
-      });
 
       return {
-        exercises,
-        total: exercises.length,
-        cached: false,
-      };
+        exercises: result.value.map((exercise) =>
+          this.mapEntityToDto(exercise),
+        ),
+        total: result.value.length,
+        cached: false };
     } catch (error) {
-      this.logger.error(
+      logger.error(
         `Error in getExercisesByDifficulty(${difficulty}):`,
-        error,
+        error as Error,
+        { correlationId }
       );
-      if (error instanceof InternalServerErrorException) {
-        throw error;
-      }
       throw new InternalServerErrorException(
         'Failed to fetch exercises by difficulty',
       );
@@ -229,351 +159,34 @@ export class ExercisesService {
    * Search exercises by title or description
    */
   async searchExercises(query: string): Promise<ExercisesResponseDto> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     try {
-      this.logger.debug(`Searching exercises with query: ${query}`);
+      logger.debug(`Searching exercises with query: ${query}`, { correlationId });
 
-      const supabase = this.supabaseService.getClient();
+      const result = await this.exerciseRepository.search(query);
 
-      if (!this.supabaseService.isReady()) {
-        this.logger.error('Supabase service is not ready');
-        throw new InternalServerErrorException('Database service unavailable');
+      if (!result.ok) {
+        logger.error('Error searching exercises:', result.error, { correlationId });
+        throw new InternalServerErrorException('Failed to search exercises');
       }
 
-      const { data, error } = await supabase
-        .from('exercises')
-        .select('*')
-        .eq('is_active', true)
-        .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
-        .order('title', { ascending: true });
-
-      if (error) {
-        this.logger.error('Supabase error searching exercises:', error);
-        throw new InternalServerErrorException(
-          `Failed to search exercises: ${error.message}`,
-        );
-      }
-
-      this.logger.debug(
-        `Found ${data?.length || 0} exercises matching query: ${query}`,
+      logger.debug(
+        `Found ${result.value.length} exercises matching query: ${query}`,
+        { correlationId }
       );
 
-      const exercises: ExerciseDto[] = (data || []).map((exercise) => {
-        try {
-          return ExerciseSchema.parse(exercise);
-        } catch (validationError) {
-          this.logger.warn(
-            `Exercise ${exercise.id} failed validation:`,
-            validationError,
-          );
-          return exercise; // Return as-is if validation fails
-        }
-      });
-
       return {
-        exercises,
-        total: exercises.length,
-        cached: false,
-      };
+        exercises: result.value.map((exercise) =>
+          this.mapEntityToDto(exercise),
+        ),
+        total: result.value.length,
+        cached: false };
     } catch (error) {
-      this.logger.error(`Error in searchExercises(${query}):`, error);
-      if (error instanceof InternalServerErrorException) {
-        throw error;
-      }
+      logger.error(`Error in searchExercises(${query}):`, error as Error, { correlationId });
       throw new InternalServerErrorException('Failed to search exercises');
     }
   }
-
-  // ==================== USER EXERCISE MANAGEMENT ====================
-
-  /**
-   * Get user's custom basslines
-   */
-  async getUserCustomBasslines(
-    userId: string,
-  ): Promise<CustomBasslinesResponseDto> {
-    try {
-      this.logger.debug(`Fetching custom basslines for user: ${userId}`);
-
-      const supabase = this.supabaseService.getClient();
-
-      if (!this.supabaseService.isReady()) {
-        this.logger.error('Supabase service is not ready');
-        throw new InternalServerErrorException('Database service unavailable');
-      }
-
-      const { data, error } = await supabase
-        .from('custom_basslines')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        this.logger.error('Supabase error fetching custom basslines:', error);
-        throw new InternalServerErrorException(
-          `Failed to fetch custom basslines: ${error.message}`,
-        );
-      }
-
-      this.logger.debug(
-        `Found ${data?.length || 0} custom basslines for user ${userId}`,
-      );
-
-      // Validate custom basslines using contracts schema
-      const basslines: CustomBasslineDto[] = (data || []).map((bassline) => {
-        try {
-          return validateCustomBassline(bassline);
-        } catch (validationError) {
-          this.logger.warn(
-            `Custom bassline ${bassline.id} failed validation:`,
-            validationError,
-          );
-          return bassline; // Return as-is if validation fails
-        }
-      });
-
-      return {
-        basslines,
-        total: basslines.length,
-      };
-    } catch (error) {
-      this.logger.error(`Error in getUserCustomBasslines(${userId}):`, error);
-      if (error instanceof InternalServerErrorException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Failed to fetch custom basslines',
-      );
-    }
-  }
-
-  /**
-   * Save a custom bassline for a user
-   */
-  async saveCustomBassline(
-    userId: string,
-    basslineData: unknown,
-  ): Promise<CustomBasslineDto> {
-    try {
-      this.logger.debug(`Saving custom bassline for user: ${userId}`);
-
-      // Validate input data using contracts schema
-      const validatedData = validateSaveCustomBassline(basslineData);
-
-      const supabase = this.supabaseService.getClient();
-
-      if (!this.supabaseService.isReady()) {
-        this.logger.error('Supabase service is not ready');
-        throw new InternalServerErrorException('Database service unavailable');
-      }
-
-      // Check if the referenced exercise exists
-      const { data: exerciseExists, error: exerciseError } = await supabase
-        .from('exercises')
-        .select('id')
-        .eq('id', validatedData.exercise_id)
-        .eq('is_active', true)
-        .single();
-
-      if (exerciseError || !exerciseExists) {
-        this.logger.warn(
-          `Referenced exercise not found: ${validatedData.exercise_id}`,
-        );
-        throw new BadRequestException(
-          `Exercise with ID ${validatedData.exercise_id} not found`,
-        );
-      }
-
-      // Insert the custom bassline
-      const { data, error } = await supabase
-        .from('custom_basslines')
-        .insert({
-          user_id: userId,
-          exercise_id: validatedData.exercise_id,
-          title: validatedData.title,
-          notes: validatedData.notes,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        if (error.code === '23505') {
-          // Unique constraint violation
-          this.logger.warn(
-            `Duplicate bassline title for user ${userId}:`,
-            error,
-          );
-          throw new BadRequestException(
-            'A bassline with this title already exists for this exercise',
-          );
-        }
-        this.logger.error('Supabase error saving custom bassline:', error);
-        throw new InternalServerErrorException(
-          `Failed to save custom bassline: ${error.message}`,
-        );
-      }
-
-      if (!data) {
-        throw new InternalServerErrorException(
-          'Failed to save custom bassline - no data returned',
-        );
-      }
-
-      this.logger.debug(`Successfully saved custom bassline: ${data.id}`);
-
-      // Validate and return the saved bassline
-      return validateCustomBassline(data);
-    } catch (error) {
-      this.logger.error(`Error in saveCustomBassline(${userId}):`, error);
-      if (
-        error instanceof BadRequestException ||
-        error instanceof InternalServerErrorException
-      ) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to save custom bassline');
-    }
-  }
-
-  /**
-   * Update a user's custom bassline
-   */
-  async updateCustomBassline(
-    userId: string,
-    basslineId: string,
-    updateData: Partial<SaveCustomBasslineDto>,
-  ): Promise<CustomBasslineDto> {
-    try {
-      this.logger.debug(
-        `Updating custom bassline ${basslineId} for user: ${userId}`,
-      );
-
-      const supabase = this.supabaseService.getClient();
-
-      if (!this.supabaseService.isReady()) {
-        this.logger.error('Supabase service is not ready');
-        throw new InternalServerErrorException('Database service unavailable');
-      }
-
-      // Verify the bassline belongs to the user
-      const { data: existingBassline, error: fetchError } = await supabase
-        .from('custom_basslines')
-        .select('*')
-        .eq('id', basslineId)
-        .eq('user_id', userId)
-        .single();
-
-      if (fetchError || !existingBassline) {
-        this.logger.warn(
-          `Custom bassline not found or not owned by user: ${basslineId}`,
-        );
-        throw new NotFoundException(
-          `Custom bassline with ID ${basslineId} not found`,
-        );
-      }
-
-      // Update the bassline
-      const { data, error } = await supabase
-        .from('custom_basslines')
-        .update(updateData)
-        .eq('id', basslineId)
-        .eq('user_id', userId)
-        .select()
-        .single();
-
-      if (error) {
-        if (error.code === '23505') {
-          // Unique constraint violation
-          this.logger.warn(
-            `Duplicate bassline title for user ${userId}:`,
-            error,
-          );
-          throw new BadRequestException(
-            'A bassline with this title already exists for this exercise',
-          );
-        }
-        this.logger.error('Supabase error updating custom bassline:', error);
-        throw new InternalServerErrorException(
-          `Failed to update custom bassline: ${error.message}`,
-        );
-      }
-
-      if (!data) {
-        throw new InternalServerErrorException(
-          'Failed to update custom bassline - no data returned',
-        );
-      }
-
-      this.logger.debug(`Successfully updated custom bassline: ${data.id}`);
-
-      // Validate and return the updated bassline
-      return validateCustomBassline(data);
-    } catch (error) {
-      this.logger.error(
-        `Error in updateCustomBassline(${userId}, ${basslineId}):`,
-        error,
-      );
-      if (
-        error instanceof NotFoundException ||
-        error instanceof BadRequestException ||
-        error instanceof InternalServerErrorException
-      ) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Failed to update custom bassline',
-      );
-    }
-  }
-
-  /**
-   * Delete a user's custom bassline
-   */
-  async deleteCustomBassline(
-    userId: string,
-    basslineId: string,
-  ): Promise<void> {
-    try {
-      this.logger.debug(
-        `Deleting custom bassline ${basslineId} for user: ${userId}`,
-      );
-
-      const supabase = this.supabaseService.getClient();
-
-      if (!this.supabaseService.isReady()) {
-        this.logger.error('Supabase service is not ready');
-        throw new InternalServerErrorException('Database service unavailable');
-      }
-
-      // Delete the bassline (RLS policies ensure user can only delete their own)
-      const { error } = await supabase
-        .from('custom_basslines')
-        .delete()
-        .eq('id', basslineId)
-        .eq('user_id', userId);
-
-      if (error) {
-        this.logger.error('Supabase error deleting custom bassline:', error);
-        throw new InternalServerErrorException(
-          `Failed to delete custom bassline: ${error.message}`,
-        );
-      }
-
-      this.logger.debug(`Successfully deleted custom bassline: ${basslineId}`);
-    } catch (error) {
-      this.logger.error(
-        `Error in deleteCustomBassline(${userId}, ${basslineId}):`,
-        error,
-      );
-      if (error instanceof InternalServerErrorException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Failed to delete custom bassline',
-      );
-    }
-  }
-
-  // ==================== EPIC 5 ADMIN OPERATIONS ====================
 
   /**
    * Create a new exercise (Epic 5 preparation)
@@ -582,52 +195,41 @@ export class ExercisesService {
     exerciseData: unknown,
     createdBy?: string,
   ): Promise<ExerciseDto> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     try {
-      this.logger.debug('Creating new exercise');
+      logger.debug('Creating new exercise', { correlationId });
 
       // Validate input data using contracts schema
       const validatedData = validateCreateExercise(exerciseData);
 
-      const supabase = this.supabaseService.getClient();
+      // Create domain entity
+      const exercise = Exercise.create({
+        id: ExerciseId.create(),
+        title: validatedData.title,
+        description: validatedData.description || '',
+        difficulty: Difficulty.create(validatedData.difficulty),
+        duration: validatedData.duration,
+        bpm: validatedData.bpm,
+        key: validatedData.key,
+        notes: validatedData.notes || [],
+        tags: [], // tags are not in the CreateExerciseRequestSchema
+        isActive: true,
+        createdBy });
 
-      if (!this.supabaseService.isReady()) {
-        this.logger.error('Supabase service is not ready');
-        throw new InternalServerErrorException('Database service unavailable');
+      // Save through repository
+      const saveResult = await this.exerciseRepository.save(exercise);
+
+      if (!saveResult.ok) {
+        logger.error('Error saving exercise:', saveResult.error, { correlationId });
+        throw new InternalServerErrorException('Failed to create exercise');
       }
 
-      // Insert the exercise
-      const { data, error } = await supabase
-        .from('exercises')
-        .insert({
-          ...validatedData,
-          created_by: createdBy,
-          is_active: true,
-        })
-        .select()
-        .single();
+      logger.debug(`Successfully created exercise: ${exercise.id.value}`, { correlationId });
 
-      if (error) {
-        this.logger.error('Supabase error creating exercise:', error);
-        throw new InternalServerErrorException(
-          `Failed to create exercise: ${error.message}`,
-        );
-      }
-
-      if (!data) {
-        throw new InternalServerErrorException(
-          'Failed to create exercise - no data returned',
-        );
-      }
-
-      this.logger.debug(`Successfully created exercise: ${data.id}`);
-
-      // Validate and return the created exercise
-      return ExerciseSchema.parse(data);
+      return this.mapEntityToDto(exercise);
     } catch (error) {
-      this.logger.error('Error in createExercise:', error);
-      if (error instanceof InternalServerErrorException) {
-        throw error;
-      }
+      logger.error('Error in createExercise:', error as Error, { correlationId });
       throw new InternalServerErrorException('Failed to create exercise');
     }
   }
@@ -650,62 +252,51 @@ export class ExercisesService {
     uploaded_at: string;
     created_by: string;
   }): Promise<ExerciseDto> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     try {
-      this.logger.debug(
+      logger.debug(
         `Creating exercise with MIDI file: ${exerciseData.title}`,
+        { correlationId }
       );
 
-      const supabase = this.supabaseService.getClient();
+      // Create domain entity
+      const exercise = Exercise.create({
+        id: ExerciseId.create(exerciseData.id),
+        title: exerciseData.title,
+        description: exerciseData.description || '',
+        difficulty: Difficulty.create(exerciseData.difficulty),
+        duration: exerciseData.duration,
+        bpm: exerciseData.bpm,
+        key: exerciseData.key,
+        notes: exerciseData.notes,
+        tags: [],
+        isActive: true,
+        midiFilePath: exerciseData.midi_file_path,
+        originalFilename: exerciseData.original_filename,
+        fileSize: exerciseData.file_size,
+        uploadedAt: new Date(exerciseData.uploaded_at),
+        createdBy: exerciseData.created_by });
 
-      if (!this.supabaseService.isReady()) {
-        this.logger.error('Supabase service is not ready');
-        throw new InternalServerErrorException('Database service unavailable');
-      }
+      // Save through repository
+      const saveResult = await this.exerciseRepository.save(exercise);
 
-      // Insert the exercise with MIDI file metadata
-      const { data, error } = await supabase
-        .from('exercises')
-        .insert({
-          id: exerciseData.id,
-          title: exerciseData.title,
-          description: exerciseData.description || '',
-          difficulty: exerciseData.difficulty,
-          duration: exerciseData.duration,
-          bpm: exerciseData.bpm,
-          key: exerciseData.key,
-          notes: exerciseData.notes,
-          midi_file_path: exerciseData.midi_file_path,
-          original_filename: exerciseData.original_filename,
-          file_size: exerciseData.file_size,
-          uploaded_at: exerciseData.uploaded_at,
-          created_by: exerciseData.created_by,
-          is_active: true,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        this.logger.error('Supabase error creating exercise with MIDI:', error);
+      if (!saveResult.ok) {
+        logger.error('Error saving exercise with MIDI file:',
+          saveResult.error, { correlationId });
         throw new InternalServerErrorException(
-          `Failed to create exercise with MIDI file: ${error.message}`,
+          'Failed to create exercise with MIDI file',
         );
       }
 
-      if (!data) {
-        throw new InternalServerErrorException(
-          'Failed to create exercise with MIDI file - no data returned',
-        );
-      }
+      logger.debug(
+        `Successfully created exercise with MIDI: ${exercise.id.value}`,
+        { correlationId }
+      );
 
-      this.logger.debug(`Successfully created exercise with MIDI: ${data.id}`);
-
-      // Validate and return the created exercise
-      return ExerciseSchema.parse(data);
+      return this.mapEntityToDto(exercise);
     } catch (error) {
-      this.logger.error('Error in createExerciseWithMidiFile:', error);
-      if (error instanceof InternalServerErrorException) {
-        throw error;
-      }
+      logger.error('Error in createExerciseWithMidiFile:', error as Error, { correlationId });
       throw new InternalServerErrorException(
         'Failed to create exercise with MIDI file',
       );
@@ -718,66 +309,99 @@ export class ExercisesService {
   async updateExercise(
     exerciseId: string,
     updateData: unknown,
-    userId?: string,
+    _userId?: string,
   ): Promise<ExerciseDto> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     try {
-      this.logger.debug(`Updating exercise: ${exerciseId}`);
+      logger.debug(`Updating exercise: ${exerciseId}`, { correlationId });
 
-      // Validate input data using contracts schema
+      // Validate input data
       const validatedData = validateUpdateExercise(updateData);
 
-      const supabase = this.supabaseService.getClient();
-
-      if (!this.supabaseService.isReady()) {
-        this.logger.error('Supabase service is not ready');
-        throw new InternalServerErrorException('Database service unavailable');
+      // Validate ID format
+      if (!ExerciseId.isValid(exerciseId)) {
+        throw new BadRequestException('Invalid exercise ID format');
       }
 
-      // Build update query
-      let query = supabase
-        .from('exercises')
-        .update(validatedData)
-        .eq('id', exerciseId);
+      const id = ExerciseId.create(exerciseId);
+      const findResult = await this.exerciseRepository.findById(id);
 
-      // If userId is provided, ensure user owns the exercise
-      if (userId) {
-        query = query.eq('created_by', userId);
-      }
-
-      const { data, error } = await query.select().single();
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          this.logger.warn(
-            `Exercise not found or not owned by user: ${exerciseId}`,
-          );
-          throw new NotFoundException(
-            `Exercise with ID ${exerciseId} not found`,
-          );
-        }
-        this.logger.error('Supabase error updating exercise:', error);
+      if (!findResult.ok) {
+        logger.error('Error fetching exercise for update:',
+          findResult.error, { correlationId });
         throw new InternalServerErrorException(
-          `Failed to update exercise: ${error.message}`,
+          'Failed to fetch exercise for update',
         );
       }
 
-      if (!data) {
+      if (!findResult.value) {
         throw new NotFoundException(`Exercise with ID ${exerciseId} not found`);
       }
 
-      this.logger.debug(`Successfully updated exercise: ${data.id}`);
+      const exercise = findResult.value;
 
-      // Validate and return the updated exercise
-      return ExerciseSchema.parse(data);
+      // Apply updates to entity
+      if (validatedData.title !== undefined) {
+        exercise.updateTitle(validatedData.title);
+      }
+      if (validatedData.description !== undefined) {
+        exercise.updateDescription(validatedData.description);
+      }
+      if (validatedData.difficulty !== undefined) {
+        exercise.updateDifficulty(Difficulty.create(validatedData.difficulty));
+      }
+      if (validatedData.bpm !== undefined) {
+        exercise.updateBpm(validatedData.bpm);
+      }
+
+      // Update through repository
+      const updateResult = await this.exerciseRepository.update(exercise);
+
+      if (!updateResult.ok) {
+        logger.error('Error updating exercise:', updateResult.error, { correlationId });
+        throw new InternalServerErrorException('Failed to update exercise');
+      }
+
+      logger.debug(`Successfully updated exercise: ${exercise.id.value}`, { correlationId });
+
+      return this.mapEntityToDto(exercise);
     } catch (error) {
-      this.logger.error(`Error in updateExercise(${exerciseId}):`, error);
+      logger.error(`Error in updateExercise(${exerciseId}):`, error as Error, { correlationId });
       if (
         error instanceof NotFoundException ||
-        error instanceof InternalServerErrorException
+        error instanceof BadRequestException
       ) {
         throw error;
       }
       throw new InternalServerErrorException('Failed to update exercise');
     }
+  }
+
+  /**
+   * Map domain entity to DTO
+   */
+  private mapEntityToDto(exercise: Exercise): ExerciseDto {
+    const persistenceData = exercise.toPersistence();
+
+    // Map back to DTO format expected by frontend
+    return {
+      id: persistenceData.id,
+      title: persistenceData.title,
+      description: persistenceData.description,
+      difficulty: persistenceData.difficulty,
+      duration: persistenceData.duration,
+      bpm: persistenceData.bpm,
+      key: persistenceData.key,
+      notes: persistenceData.notes,
+      tags: persistenceData.tags,
+      is_active: persistenceData.is_active,
+      midi_file_path: persistenceData.midi_file_path,
+      original_filename: persistenceData.original_filename,
+      file_size: persistenceData.file_size,
+      uploaded_at: persistenceData.uploaded_at,
+      created_by: persistenceData.created_by,
+      created_at: persistenceData.created_at,
+      updated_at: persistenceData.updated_at } as ExerciseDto;
   }
 }

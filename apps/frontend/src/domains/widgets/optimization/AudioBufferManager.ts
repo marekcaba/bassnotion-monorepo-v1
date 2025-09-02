@@ -96,7 +96,8 @@ export class AudioBufferManager {
       (typeof AudioContext !== 'undefined' && AudioContext);
 
     if (!AudioContextConstructor) {
-      console.warn('[AudioBufferManager] Web Audio API not available');
+  const { correlationId, logger } = useCorrelation('AudioContextConstructor');
+      logger.warn('[AudioBufferManager] Web Audio API not available');
       return;
     }
 
@@ -113,14 +114,14 @@ export class AudioBufferManager {
         await this.audioContext.resume();
       }
 
-      console.debug('[AudioBufferManager] Audio context initialized:', {
+      logger.debug('[AudioBufferManager] Audio context initialized:', {
         sampleRate: this.audioContext.sampleRate,
         state: this.audioContext.state,
         baseLatency: this.audioContext.baseLatency,
         outputLatency: this.audioContext.outputLatency,
       });
     } catch (error) {
-      console.error(
+      logger.error(
         '[AudioBufferManager] Failed to initialize audio context:',
         error,
       );
@@ -142,7 +143,7 @@ export class AudioBufferManager {
       latencyCapability: isLowEnd ? 'high' : 'low',
     };
 
-    console.debug('[AudioBufferManager] Device profile:', this.deviceProfile);
+    logger.debug('[AudioBufferManager] Device profile:', this.deviceProfile);
   }
 
   /**
@@ -210,7 +211,7 @@ export class AudioBufferManager {
       this.preloadAsset(name);
     }
 
-    console.debug(
+    logger.debug(
       `[AudioBufferManager] Registered asset: ${name} (priority: ${priority}, preload: ${preload})`,
     );
   }
@@ -221,7 +222,7 @@ export class AudioBufferManager {
   public async preloadAsset(name: string): Promise<AudioBuffer | null> {
     const asset = this.audioAssets.get(name);
     if (!asset) {
-      console.warn(`[AudioBufferManager] Asset not found: ${name}`);
+      logger.warn(`[AudioBufferManager] Asset not found: ${name}`);
       return null;
     }
 
@@ -230,7 +231,7 @@ export class AudioBufferManager {
     }
 
     if (!this.audioContext) {
-      console.warn('[AudioBufferManager] Audio context not available');
+      logger.warn('[AudioBufferManager] Audio context not available');
       return null;
     }
 
@@ -247,13 +248,13 @@ export class AudioBufferManager {
       asset.loadTime = loadTime;
       asset.lastAccessed = Date.now();
 
-      console.debug(
+      logger.debug(
         `[AudioBufferManager] Preloaded asset: ${name} (${loadTime.toFixed(1)}ms)`,
       );
 
       return audioBuffer;
     } catch (error) {
-      console.error(
+      logger.error(
         `[AudioBufferManager] Failed to preload asset: ${name}`,
         error,
       );
@@ -267,7 +268,7 @@ export class AudioBufferManager {
   public async getAudioBuffer(name: string): Promise<AudioBuffer | null> {
     const asset = this.audioAssets.get(name);
     if (!asset) {
-      console.warn(`[AudioBufferManager] Asset not found: ${name}`);
+      logger.warn(`[AudioBufferManager] Asset not found: ${name}`);
       return null;
     }
 
@@ -322,11 +323,11 @@ export class AudioBufferManager {
 
     try {
       await Promise.allSettled(preloadPromises);
-      console.debug(
+      logger.debug(
         `[AudioBufferManager] Preloaded ${assetNames.length} assets`,
       );
     } catch (error) {
-      console.error('[AudioBufferManager] Error during batch preload:', error);
+      logger.error('[AudioBufferManager] Error during batch preload:', error);
     }
   }
 
@@ -405,17 +406,17 @@ export class AudioBufferManager {
 
     if (currentMetrics.latency > 50) {
       // Above 50ms target
-      console.warn(
+      logger.warn(
         `[AudioBufferManager] High latency detected: ${currentMetrics.latency}ms`,
       );
 
       // Suggest optimizations
       if (this.deviceProfile?.isLowEnd) {
-        console.debug(
+        logger.debug(
           '[AudioBufferManager] Recommending larger buffer size for stability',
         );
       } else {
-        console.debug(
+        logger.debug(
           '[AudioBufferManager] Recommending smaller buffer size for lower latency',
         );
       }
@@ -423,7 +424,7 @@ export class AudioBufferManager {
 
     if (currentMetrics.memoryUsage > 50) {
       // Above 50MB
-      console.warn(
+      logger.warn(
         `[AudioBufferManager] High memory usage: ${currentMetrics.memoryUsage}MB`,
       );
       this.cleanupUnusedAssets();
@@ -479,11 +480,11 @@ export class AudioBufferManager {
 
     assetsToRemove.forEach((name) => {
       this.audioAssets.delete(name);
-      console.debug(`[AudioBufferManager] Cleaned up unused asset: ${name}`);
+      logger.debug(`[AudioBufferManager] Cleaned up unused asset: ${name}`);
     });
 
     if (assetsToRemove.length > 0) {
-      console.debug(
+      logger.debug(
         `[AudioBufferManager] Cleaned up ${assetsToRemove.length} unused assets`,
       );
     }
@@ -505,7 +506,7 @@ export class AudioBufferManager {
     });
 
     if (totalCleaned > 0) {
-      console.debug(
+      logger.debug(
         `[AudioBufferManager] Cleaned up ${totalCleaned} pooled buffers`,
       );
     }
@@ -595,7 +596,7 @@ ${avgLatency <= 30 ? '✅ Excellent average latency' : avgLatency <= 50 ? '✅ G
         await this.audioContext.close();
       } catch (error) {
         // Handle cases where close() might not be available (e.g., in test environments)
-        console.debug(
+        logger.debug(
           '[AudioBufferManager] Audio context close() not available or failed:',
           error,
         );
@@ -609,7 +610,7 @@ ${avgLatency <= 30 ? '✅ Excellent average latency' : avgLatency <= 50 ? '✅ G
 
     AudioBufferManager.instance = null;
 
-    console.debug('[AudioBufferManager] Destroyed');
+    logger.debug('[AudioBufferManager] Destroyed');
   }
 }
 

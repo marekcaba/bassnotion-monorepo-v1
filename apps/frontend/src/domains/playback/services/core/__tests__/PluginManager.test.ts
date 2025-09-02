@@ -3,7 +3,12 @@ import { PluginManager, PluginError } from '../PluginManager.js';
 import { AudioEngine } from '../AudioEngine.js';
 import { EventBus } from '../EventBus.js';
 import { BaseAudioPlugin } from '../../BaseAudioPlugin.js';
-import { PluginState, PluginMetadata, PluginConfig, PluginCapabilities } from '../../../types/plugin.js';
+import {
+  PluginState,
+  PluginMetadata,
+  PluginConfig,
+  PluginCapabilities,
+} from '../../../types/plugin.js';
 
 // Mock AudioPlugin implementation
 class MockPlugin extends BaseAudioPlugin {
@@ -52,12 +57,12 @@ describe('PluginManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Set up mocks
     mockContext = new MockAudioContext();
     mockTone = { Transport: {}, Sampler: vi.fn() };
     eventBus = new EventBus();
-    
+
     // Mock AudioEngine
     audioEngine = {
       getContext: vi.fn(() => mockContext),
@@ -87,7 +92,10 @@ describe('PluginManager', () => {
 
       await pluginManager.initialize();
 
-      expect(emitSpy).not.toHaveBeenCalledWith('plugin-manager:initialized', {});
+      expect(emitSpy).not.toHaveBeenCalledWith(
+        'plugin-manager:initialized',
+        {},
+      );
     });
 
     it('should handle initialization errors', async () => {
@@ -122,7 +130,9 @@ describe('PluginManager', () => {
       const plugin2 = new MockPlugin();
 
       await pluginManager.register(plugin1);
-      await expect(pluginManager.register(plugin2)).rejects.toThrow(PluginError);
+      await expect(pluginManager.register(plugin2)).rejects.toThrow(
+        PluginError,
+      );
     });
 
     it('should validate plugin dependencies', async () => {
@@ -130,14 +140,14 @@ describe('PluginManager', () => {
       plugin.metadata.id = 'dependent-plugin';
 
       await expect(
-        pluginManager.register(plugin, ['non-existent-plugin'])
+        pluginManager.register(plugin, ['non-existent-plugin']),
       ).rejects.toThrow(PluginError);
     });
 
     it('should register plugin with valid dependencies', async () => {
       const dependency = new MockPlugin();
       dependency.metadata.id = 'dependency-plugin';
-      
+
       const dependent = new MockPlugin();
       dependent.metadata.id = 'dependent-plugin';
 
@@ -180,7 +190,7 @@ describe('PluginManager', () => {
       dependency.metadata.id = 'dependency-plugin';
       vi.spyOn(dependency, 'load');
       vi.spyOn(dependency, 'initialize');
-      
+
       const dependent = new MockPlugin();
       dependent.metadata.id = 'dependent-plugin';
       vi.spyOn(dependent, 'load');
@@ -218,10 +228,13 @@ describe('PluginManager', () => {
       await pluginManager.deactivatePlugin('mock-plugin');
 
       expect(plugin.deactivate).toHaveBeenCalled();
-      expect(emitSpy).toHaveBeenCalledWith('plugin-manager:plugin-deactivated', {
-        pluginId: 'mock-plugin',
-        state: expect.any(String),
-      });
+      expect(emitSpy).toHaveBeenCalledWith(
+        'plugin-manager:plugin-deactivated',
+        {
+          pluginId: 'mock-plugin',
+          state: expect.any(String),
+        },
+      );
     });
   });
 
@@ -238,7 +251,9 @@ describe('PluginManager', () => {
     });
 
     it('should throw error for non-existent plugin', () => {
-      expect(() => pluginManager.getPlugin('non-existent')).toThrow(PluginError);
+      expect(() => pluginManager.getPlugin('non-existent')).toThrow(
+        PluginError,
+      );
     });
 
     it('should get all plugins', async () => {
@@ -260,11 +275,11 @@ describe('PluginManager', () => {
       const plugin1 = new MockPlugin();
       plugin1.metadata.id = 'plugin1';
       plugin1.capabilities = { features: ['audio-processing'] };
-      
+
       const plugin2 = new MockPlugin();
       plugin2.metadata.id = 'plugin2';
       plugin2.capabilities = { features: ['midi-support'] };
-      
+
       const plugin3 = new MockPlugin();
       plugin3.metadata.id = 'plugin3';
       plugin3.capabilities = { features: ['audio-processing', 'midi-support'] };
@@ -273,7 +288,8 @@ describe('PluginManager', () => {
       await pluginManager.register(plugin2);
       await pluginManager.register(plugin3);
 
-      const audioPlugins = pluginManager.getPluginsByCapability('audio-processing');
+      const audioPlugins =
+        pluginManager.getPluginsByCapability('audio-processing');
       expect(audioPlugins).toHaveLength(2);
       expect(audioPlugins).toContain(plugin1);
       expect(audioPlugins).toContain(plugin3);
@@ -283,10 +299,14 @@ describe('PluginManager', () => {
       const plugin = new MockPlugin();
       await pluginManager.register(plugin);
 
-      expect(pluginManager.getPluginState('mock-plugin')).toBe(PluginState.UNLOADED);
+      expect(pluginManager.getPluginState('mock-plugin')).toBe(
+        PluginState.UNLOADED,
+      );
 
       await pluginManager.loadPlugin('mock-plugin');
-      expect(pluginManager.getPluginState('mock-plugin')).toBe(PluginState.INACTIVE);
+      expect(pluginManager.getPluginState('mock-plugin')).toBe(
+        PluginState.INACTIVE,
+      );
     });
   });
 
@@ -299,11 +319,11 @@ describe('PluginManager', () => {
       const plugin1 = new MockPlugin();
       plugin1.metadata.id = 'plugin1';
       vi.spyOn(plugin1, 'load');
-      
+
       const plugin2 = new MockPlugin();
       plugin2.metadata.id = 'plugin2';
       vi.spyOn(plugin2, 'load');
-      
+
       const plugin3 = new MockPlugin();
       plugin3.metadata.id = 'plugin3';
       vi.spyOn(plugin3, 'load');
@@ -323,7 +343,7 @@ describe('PluginManager', () => {
       const plugin1 = new MockPlugin();
       plugin1.metadata.id = 'plugin1';
       plugin1.load = vi.fn().mockRejectedValue(new Error('Load failed'));
-      
+
       const plugin2 = new MockPlugin();
       plugin2.metadata.id = 'plugin2';
       vi.spyOn(plugin2, 'load');
@@ -335,10 +355,13 @@ describe('PluginManager', () => {
 
       await pluginManager.loadAllPlugins();
 
-      expect(emitSpy).toHaveBeenCalledWith('plugin-manager:error', expect.objectContaining({
-        pluginId: 'plugin1',
-        operation: 'load',
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'plugin-manager:error',
+        expect.objectContaining({
+          pluginId: 'plugin1',
+          operation: 'load',
+        }),
+      );
       expect(plugin2.load).toHaveBeenCalled();
     });
   });
@@ -369,7 +392,7 @@ describe('PluginManager', () => {
     it('should stop service and deactivate plugins', async () => {
       const plugin = new MockPlugin();
       vi.spyOn(plugin, 'deactivate');
-      
+
       await pluginManager.register(plugin);
       await pluginManager.loadPlugin('mock-plugin');
       await pluginManager.activatePlugin('mock-plugin');
@@ -386,7 +409,7 @@ describe('PluginManager', () => {
       const plugin1 = new MockPlugin();
       plugin1.metadata.id = 'plugin1';
       vi.spyOn(plugin1, 'dispose');
-      
+
       const plugin2 = new MockPlugin();
       plugin2.metadata.id = 'plugin2';
       vi.spyOn(plugin2, 'dispose');
@@ -413,7 +436,7 @@ describe('PluginManager', () => {
     it('should notify active plugins of transport events', async () => {
       const plugin = new MockPlugin();
       plugin.onTransportStarted = vi.fn();
-      
+
       await pluginManager.register(plugin);
       await pluginManager.loadPlugin('mock-plugin');
       await pluginManager.activatePlugin('mock-plugin');
@@ -435,10 +458,13 @@ describe('PluginManager', () => {
       const handlers = (plugin as any)._eventHandlers.get('error');
       handlers.forEach((handler: any) => handler(error, {}));
 
-      expect(emitSpy).toHaveBeenCalledWith('plugin-manager:plugin-error', expect.objectContaining({
-        pluginId: 'mock-plugin',
-        error,
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'plugin-manager:plugin-error',
+        expect.objectContaining({
+          pluginId: 'mock-plugin',
+          error,
+        }),
+      );
     });
 
     it('should track plugin state changes', async () => {
@@ -450,7 +476,9 @@ describe('PluginManager', () => {
       const handlers = (plugin as any)._eventHandlers.get('activated');
       handlers.forEach((handler: any) => handler());
 
-      expect(pluginManager.getPluginState('mock-plugin')).toBe(PluginState.ACTIVE);
+      expect(pluginManager.getPluginState('mock-plugin')).toBe(
+        PluginState.ACTIVE,
+      );
     });
   });
 
@@ -461,12 +489,12 @@ describe('PluginManager', () => {
 
     it('should handle plugin notification errors', async () => {
       await pluginManager.initialize();
-      
+
       const plugin = new MockPlugin();
       plugin.onTransportStarted = vi.fn(() => {
         throw new Error('Handler error');
       });
-      
+
       await pluginManager.register(plugin);
       await pluginManager.loadPlugin('mock-plugin');
       await pluginManager.activatePlugin('mock-plugin');
@@ -475,10 +503,13 @@ describe('PluginManager', () => {
 
       eventBus.emit('transport:started');
 
-      expect(emitSpy).toHaveBeenCalledWith('plugin-manager:plugin-error', expect.objectContaining({
-        pluginId: 'mock-plugin',
-        context: expect.objectContaining({ event: 'transport-started' }),
-      }));
+      expect(emitSpy).toHaveBeenCalledWith(
+        'plugin-manager:plugin-error',
+        expect.objectContaining({
+          pluginId: 'mock-plugin',
+          context: expect.objectContaining({ event: 'transport-started' }),
+        }),
+      );
     });
   });
 });

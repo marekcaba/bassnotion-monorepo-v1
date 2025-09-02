@@ -1,6 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 
 import { DatabaseService } from '../../../infrastructure/database/database.service.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { RequestContextService } from '../../../shared/services/request-context.service.js';
 
 interface TokenStatus {
   status: 'available' | 'consumed';
@@ -14,28 +16,31 @@ export interface TokenBalance {
 
 @Injectable()
 export class TokenService {
-  private readonly logger = new Logger(TokenService.name);
+  private readonly staticLogger = createStructuredLogger(TokenService.name);
 
-  constructor(private readonly db: DatabaseService) {
+  constructor(
+    private readonly db: DatabaseService,
+    @Inject(RequestContextService)
+    private readonly requestContext: RequestContextService,
+  ) {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     // Defensive check for DatabaseService
     if (!this.db) {
-      this.logger.error(
-        'DatabaseService is undefined in TokenService constructor!',
-      );
+      logger.error('DatabaseService is undefined in TokenService constructor!', new Error('DatabaseService is undefined'), { correlationId });
     }
   }
 
   async getTokenBalance(userId: string): Promise<TokenBalance> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     // Defensive check for DatabaseService
     if (!this.db || !this.db.supabase) {
-      this.logger.warn(
-        'DatabaseService unavailable - returning zero token balance',
-      );
+      logger.warn('DatabaseService unavailable - returning zero token balance', { correlationId });
       return {
         available: 0,
         consumed: 0,
-        total: 0,
-      };
+        total: 0 };
     }
 
     const { data: tokens, error } = await this.db.supabase
@@ -57,14 +62,15 @@ export class TokenService {
     return {
       available,
       consumed,
-      total: available + consumed,
-    };
+      total: available + consumed };
   }
 
   async consumeAllTokens(userId: string): Promise<void> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     // Defensive check for DatabaseService
     if (!this.db || !this.db.supabase) {
-      this.logger.warn('DatabaseService unavailable - cannot consume tokens');
+      logger.warn('DatabaseService unavailable - cannot consume tokens', { correlationId });
       return;
     }
 

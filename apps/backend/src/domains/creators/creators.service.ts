@@ -1,5 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { SupabaseService } from '../../infrastructure/supabase/supabase.service.js';
+import { Injectable, Inject } from '@nestjs/common';
+import type { IResultCreatorRepository } from './repositories/result-creator.repository.js';
+import { Creator } from './entities/creator.entity.js';
+import { ChannelUrl } from './value-objects/channel-url.vo.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { RequestContextService } from '../../shared/services/request-context.service.js';
 
 export interface CreatorStats {
   channelUrl: string;
@@ -29,80 +33,34 @@ interface YouTubeChannelResponse {
 
 @Injectable()
 export class CreatorsService {
-  private readonly logger = new Logger(CreatorsService.name);
+  private readonly staticLogger = createStructuredLogger(CreatorsService.name);
 
-  constructor(private readonly supabase: SupabaseService) {}
-
-  /**
-   * Extract YouTube channel ID from various URL formats
-   */
-  private extractChannelId(channelUrl: string): string | null {
-    if (!channelUrl) return null;
-
-    const patterns = [
-      /(?:https?:\/\/)?(?:www\.)?youtube\.com\/channel\/([a-zA-Z0-9_-]+)/,
-      /(?:https?:\/\/)?(?:www\.)?youtube\.com\/c\/([a-zA-Z0-9_-]+)/,
-      /(?:https?:\/\/)?(?:www\.)?youtube\.com\/@([a-zA-Z0-9_-]+)/,
-      /(?:https?:\/\/)?(?:www\.)?youtube\.com\/user\/([a-zA-Z0-9_-]+)/,
-    ];
-
-    for (const pattern of patterns) {
-      const match = channelUrl.match(pattern);
-      if (match && match[1]) return match[1];
-    }
-
-    return null;
-  }
-
-  /**
-   * Format subscriber count for display (e.g., 1.2M, 234K)
-   */
-  private formatSubscriberCount(count: number): string {
-    if (count >= 1000000) {
-      const millions = (count / 1000000).toFixed(1);
-      return `${millions}M subscribers`;
-    } else if (count >= 1000) {
-      const thousands = (count / 1000).toFixed(1);
-      return `${thousands}K subscribers`;
-    } else {
-      return `${count} subscribers`;
-    }
-  }
+  constructor(
+    @Inject('IResultCreatorRepository')
+    private readonly creatorRepository: IResultCreatorRepository,
+    @Inject(RequestContextService)
+    private readonly requestContext: RequestContextService,
+  ) {}
 
   /**
    * Get all unique creator channel URLs from tutorials
    */
   async getAllCreatorChannels(): Promise<Array<{ url: string; name: string }>> {
     try {
-      const { data, error } = await this.supabase
-        .getClient()
-        .from('tutorials')
-        .select('creator_channel_url, creator_name')
-        .not('creator_channel_url', 'is', null)
-        .not('creator_name', 'is', null);
+      const result = await this.creatorRepository.getAllUniqueChannelUrls();
 
-      if (error) {
-        this.logger.error('Error fetching creator channels:', error);
+      if (!result.ok) {
+        const logger = this.requestContext?.getLogger() || this.staticLogger;
+        const correlationId = this.requestContext?.getCorrelationId();
+        logger.error('Error fetching creator channels:', result.error, { correlationId });
         return [];
       }
 
-      // Remove duplicates and return unique channels
-      const uniqueChannels = new Map<string, string>();
-      data?.forEach((tutorial: any) => {
-        if (tutorial.creator_channel_url && tutorial.creator_name) {
-          uniqueChannels.set(
-            tutorial.creator_channel_url,
-            tutorial.creator_name,
-          );
-        }
-      });
-
-      return Array.from(uniqueChannels.entries()).map(([url, name]) => ({
-        url,
-        name,
-      }));
+      return result.value;
     } catch (error) {
-      this.logger.error('Error in getAllCreatorChannels:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error in getAllCreatorChannels:', error as Error, { correlationId });
       return [];
     }
   }
@@ -113,6 +71,11 @@ export class CreatorsService {
   async fetchYouTubeChannelStats(
     channelIds: string[],
   ): Promise<YouTubeChannelResponse> {
+    // Handle empty channel IDs
+    if (!channelIds || channelIds.length === 0) {
+      return { items: [] };
+    }
+
     // Try YouTube API key first, then fall back to Google OAuth credentials
     const apiKey =
       process.env.YOUTUBE_API_KEY ||
@@ -120,9 +83,9 @@ export class CreatorsService {
       process.env.GOOGLE_CLIENT_ID; // As last resort for development
 
     if (!apiKey) {
-      this.logger.warn(
-        'YouTube API key not configured. Please set YOUTUBE_API_KEY, GOOGLE_API_KEY, or ensure Google OAuth is configured.',
-      );
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.warn('YouTube API key not configured. Please set YOUTUBE_API_KEY, GOOGLE_API_KEY, or ensure Google OAuth is configured.', { correlationId });
       return { items: [] };
     }
 
@@ -156,7 +119,9 @@ export class CreatorsService {
 
       return { items: allItems };
     } catch (error) {
-      this.logger.error('Error fetching YouTube channel stats:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error fetching YouTube channel stats:', error as Error, { correlationId });
       return { items: [] };
     }
   }
@@ -165,95 +130,136 @@ export class CreatorsService {
    * Daily batch job to update all creator statistics
    */
   async updateAllCreatorStats(): Promise<void> {
-    this.logger.log('Starting daily creator stats update batch job');
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.info('Starting daily creator stats update batch job', { correlationId });
 
     try {
       // 1. Get all creator channels from tutorials
       const creatorChannels = await this.getAllCreatorChannels();
-      this.logger.log(
+      logger.info(
         `Found ${creatorChannels.length} unique creator channels`,
+        { correlationId }
       );
 
       if (creatorChannels.length === 0) {
-        this.logger.warn('No creator channels found to update');
+        const logger = this.requestContext?.getLogger() || this.staticLogger;
+        const correlationId = this.requestContext?.getCorrelationId();
+        logger.warn('No creator channels found to update', { correlationId });
         return;
       }
 
-      // 2. Extract channel IDs
-      const channelData = creatorChannels
-        .map((channel) => ({
-          url: channel.url,
-          name: channel.name,
-          channelId: this.extractChannelId(channel.url),
-        }))
-        .filter((item) => item.channelId);
+      // 2. Extract channel IDs and create/update creators
+      const creatorsToUpdate: Creator[] = [];
 
-      const channelIds = channelData
-        .map((item) => item.channelId)
-        .filter((id): id is string => Boolean(id));
-      this.logger.log(`Extracted ${channelIds.length} valid channel IDs`);
+      for (const channel of creatorChannels) {
+        try {
+          const channelUrl = ChannelUrl.create(channel.url);
+          const channelId = channelUrl.extractChannelId();
 
-      // 3. Fetch YouTube data in batches
-      const youtubeData = await this.fetchYouTubeChannelStats(channelIds);
-      this.logger.log(
-        `Fetched data for ${youtubeData.items?.length || 0} channels`,
-      );
+          if (!channelId) {
+            const logger = this.requestContext?.getLogger() || this.staticLogger;
+            const correlationId = this.requestContext?.getCorrelationId();
+            logger.warn(
+              `Could not extract channel ID from ${channel.url}`,
+              { correlationId }
+            );
+            continue;
+          }
 
-      // 4. Prepare data for database update
-      const creatorStats: CreatorStats[] = channelData.map((channel) => {
-        const youtubeChannel = youtubeData.items?.find(
-          (item) => item.id === channel.channelId,
-        );
+          // Check if creator exists
+          const existingResult =
+            await this.creatorRepository.findByChannelUrl(channelUrl);
 
-        const subscriberCount = youtubeChannel
-          ? parseInt(youtubeChannel.statistics.subscriberCount, 10)
-          : undefined;
+          let creator: Creator;
+          if (existingResult.ok && existingResult.value) {
+            creator = existingResult.value;
+          } else {
+            // Create new creator
+            creator = Creator.create({
+              channelUrl,
+              channelId,
+              creatorName: channel.name });
+          }
 
-        return {
-          channelUrl: channel.url,
-          channelId: channel.channelId,
-          creatorName: youtubeChannel?.snippet.title || channel.name,
-          subscriberCount,
-          subscriberCountFormatted: subscriberCount
-            ? this.formatSubscriberCount(subscriberCount)
-            : undefined,
-          thumbnailUrl:
-            youtubeChannel?.snippet.thumbnails.medium?.url ||
-            youtubeChannel?.snippet.thumbnails.default?.url,
-        };
-      });
-
-      // 5. Update database with upsert (insert or update)
-      for (const stats of creatorStats) {
-        const { error } = await this.supabase
-          .getClient()
-          .from('creator_stats')
-          .upsert(
-            {
-              channel_url: stats.channelUrl,
-              channel_id: stats.channelId,
-              creator_name: stats.creatorName,
-              subscriber_count: stats.subscriberCount,
-              subscriber_count_formatted: stats.subscriberCountFormatted,
-              thumbnail_url: stats.thumbnailUrl,
-              last_fetched_at: new Date().toISOString(),
-            },
-            { onConflict: 'channel_url' },
-          );
-
-        if (error) {
-          this.logger.error(
-            `Error updating stats for ${stats.channelUrl}:`,
-            error,
-          );
+          creatorsToUpdate.push(creator);
+        } catch (error) {
+          const logger = this.requestContext?.getLogger() || this.staticLogger;
+          const correlationId = this.requestContext?.getCorrelationId();
+          logger.error(`Error processing channel ${channel.url}:`, error as Error, { correlationId });
         }
       }
 
-      this.logger.log(
-        `Successfully updated creator stats for ${creatorStats.length} channels`,
+      // 3. Get channel IDs for YouTube API
+      const channelIds = creatorsToUpdate
+        .map((c) => c.channelId)
+        .filter((id): id is string => Boolean(id));
+
+      logger.info(`Processing ${channelIds.length} valid channel IDs`, { correlationId });
+
+      // 4. Fetch YouTube data in batches
+      const youtubeData = await this.fetchYouTubeChannelStats(channelIds);
+      logger.info(
+        `Fetched data for ${youtubeData.items?.length || 0} channels`,
+        { correlationId }
+      );
+
+      // 5. Update creators with YouTube data
+      const updatedCreators: Creator[] = [];
+
+      for (const creator of creatorsToUpdate) {
+        const youtubeChannel = youtubeData.items?.find(
+          (item) => item.id === creator.channelId,
+        );
+
+        if (youtubeChannel) {
+          const subscriberCount = parseInt(
+            youtubeChannel.statistics.subscriberCount,
+            10,
+          );
+
+          creator.updateStats({
+            subscriberCount,
+            creatorName: youtubeChannel.snippet.title,
+            thumbnailUrl:
+              youtubeChannel.snippet.thumbnails.medium?.url ||
+              youtubeChannel.snippet.thumbnails.default?.url });
+        } else {
+          // Mark as fetched even if no data found
+          creator.markAsFetched();
+        }
+
+        updatedCreators.push(creator);
+      }
+
+      // 6. Save/update all creators
+      const saveResults = await Promise.allSettled(
+        updatedCreators.map(async (creator) => {
+          // Check if it's a new creator or existing
+          const exists = await this.creatorRepository.exists(creator.id);
+          if (exists.ok && exists.value) {
+            return this.creatorRepository.update(creator);
+          } else {
+            return this.creatorRepository.save(creator);
+          }
+        }),
+      );
+
+      const successCount = saveResults.filter(
+        (r) => r.status === 'fulfilled',
+      ).length;
+      const failureCount = saveResults.filter(
+        (r) => r.status === 'rejected',
+      ).length;
+
+      logger.info(
+        `Successfully updated ${successCount} creator stats, ${failureCount} failures`,
+        { correlationId }
       );
     } catch (error) {
-      this.logger.error('Error in updateAllCreatorStats batch job:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error in updateAllCreatorStats batch job:', error as Error, { correlationId });
       throw error;
     }
   }
@@ -263,27 +269,26 @@ export class CreatorsService {
    */
   async getCreatorStats(channelUrl: string): Promise<CreatorStats | null> {
     try {
-      const { data, error } = await this.supabase
-        .getClient()
-        .from('creator_stats')
-        .select('*')
-        .eq('channel_url', channelUrl)
-        .single();
+      const url = ChannelUrl.create(channelUrl);
+      const result = await this.creatorRepository.findByChannelUrl(url);
 
-      if (error || !data) {
+      if (!result.ok || !result.value) {
         return null;
       }
 
+      const creator = result.value;
       return {
-        channelUrl: data.channel_url,
-        channelId: data.channel_id,
-        creatorName: data.creator_name,
-        subscriberCount: data.subscriber_count,
-        subscriberCountFormatted: data.subscriber_count_formatted,
-        thumbnailUrl: data.thumbnail_url,
-      };
+        channelUrl: creator.channelUrl.value,
+        channelId: creator.channelId,
+        creatorName: creator.creatorName,
+        subscriberCount: creator.subscriberCount,
+        subscriberCountFormatted:
+          creator.subscriberCountFormatted || 'No subscriber data',
+        thumbnailUrl: creator.thumbnailUrl };
     } catch (error) {
-      this.logger.error('Error fetching creator stats:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error fetching creator stats:', error as Error, { correlationId });
       return null;
     }
   }
@@ -293,23 +298,20 @@ export class CreatorsService {
    */
   async getStaleCreatorChannels(): Promise<string[]> {
     try {
-      const { data, error } = await this.supabase
-        .getClient()
-        .from('creator_stats')
-        .select('channel_url')
-        .lt(
-          'last_fetched_at',
-          new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        );
+      const result = await this.creatorRepository.findStaleCreators(24);
 
-      if (error) {
-        this.logger.error('Error checking stale creator stats:', error);
+      if (!result.ok) {
+        const logger = this.requestContext?.getLogger() || this.staticLogger;
+        const correlationId = this.requestContext?.getCorrelationId();
+        logger.error('Error checking stale creator stats:', result.error as Error, { correlationId });
         return [];
       }
 
-      return data?.map((item: any) => item.channel_url) || [];
+      return result.value.map((creator) => creator.channelUrl.value);
     } catch (error) {
-      this.logger.error('Error in getStaleCreatorChannels:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      logger.error('Error in getStaleCreatorChannels:', error as Error, { correlationId });
       return [];
     }
   }

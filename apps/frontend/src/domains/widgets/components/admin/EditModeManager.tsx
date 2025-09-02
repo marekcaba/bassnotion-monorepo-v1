@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { Eye, Edit, Settings, Lock, Unlock } from 'lucide-react';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Epic 5 EditMode Framework - Formal implementation
 export enum EditMode {
@@ -123,7 +124,7 @@ export function EditModeProvider({
   const setMode = useCallback(
     (newMode: EditMode) => {
       if (!canChangeMode(newMode)) {
-        console.warn(
+        logger.warn(
           `Cannot change to mode ${newMode} - insufficient permissions or locked`,
         );
         return;

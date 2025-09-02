@@ -1,8 +1,47 @@
 'use client';
 
 import React from 'react';
-import { AudioEnabledTutorial } from '@/domains/widgets/components/YouTubeWidgetPage/AudioEnabledTutorial';
+import { YouTubeWidgetPage } from '@/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
+import { ScrollTriggerLoader } from '@/domains/playback/components/ScrollTriggerLoader';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
+
+// Error boundary component
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    logger.error('🚨 TutorialPage Error:', error);
+    logger.error('Error info:', errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-red-900 text-white p-8">
+          <h1 className="text-2xl mb-4">Error Loading Tutorial</h1>
+          <pre className="bg-black p-4 rounded overflow-auto">
+            {this.state.error?.toString()}
+            {'\n\n'}
+            {this.state.error?.stack}
+          </pre>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 interface TutorialPageProps {
   params: Promise<{
@@ -10,20 +49,38 @@ interface TutorialPageProps {
   }>;
 }
 
+// Add render counter
+let tutorialPageRenderCount = 0;
+
 export default function TutorialPage({ params }: TutorialPageProps) {
+  tutorialPageRenderCount++;
+
+  if (tutorialPageRenderCount % 10 === 0) {
+    logger.info(`🔄 TutorialPage (ROOT) RENDER #${tutorialPageRenderCount}`);
+  }
+
+  // Add error logging
+  React.useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      logger.error('🚨 Global error in tutorial page:', event.error);
+    };
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
   const resolvedParams = React.use(params);
   const tutorialSlug = resolvedParams.tutorialId;
-
-  // Debug: Log mount/unmount (simplified)
-  React.useEffect(() => {
-    return () => {
-      // Cleanup if needed
-    };
-  }, []);
 
   // Load real tutorial data from API
   const { tutorial, exercises, isLoading, error } =
     useTutorialExercises(tutorialSlug);
+
+  // Memoize the tutorial and exercises to prevent unnecessary re-renders
+  const memoizedTutorial = React.useMemo(() => tutorial, [tutorial?.id]);
+  const memoizedExercises = React.useMemo(
+    () => exercises,
+    [exercises?.length, exercises?.[0]?.id],
+  );
 
   // Handle loading state
   if (isLoading) {
@@ -51,11 +108,16 @@ export default function TutorialPage({ params }: TutorialPageProps) {
     );
   }
 
+  // Render WITHOUT AudioEnabledTutorial wrapper
   return (
-    <AudioEnabledTutorial
-      tutorialData={tutorial}
-      tutorialSlug={tutorialSlug}
-      exercises={exercises}
-    />
+    <ErrorBoundary>
+      {/* Phase 2: Progressive sample loading on first user interaction */}
+      <ScrollTriggerLoader />
+      <YouTubeWidgetPage
+        tutorialData={memoizedTutorial}
+        tutorialSlug={tutorialSlug}
+        exercises={memoizedExercises}
+      />
+    </ErrorBoundary>
   );
 }

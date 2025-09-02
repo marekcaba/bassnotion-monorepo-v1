@@ -1,7 +1,7 @@
 /**
  * HealthChecks - System health monitoring
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Monitors audio system health for production readiness
  */
 
@@ -46,7 +46,7 @@ export class HealthChecks {
     this.eventBus = eventBus;
     this.serviceRegistry = serviceRegistry;
     this.startTime = Date.now();
-    
+
     this.initializeChecks();
     this.setupEventListeners();
   }
@@ -59,68 +59,68 @@ export class HealthChecks {
     this.checks.push({
       name: 'audio-context',
       description: 'AudioContext health and state',
-      check: () => this.checkAudioContext()
+      check: () => this.checkAudioContext(),
     });
 
     // Service registry health
     this.checks.push({
       name: 'service-registry',
       description: 'Service registry and dependencies',
-      check: () => this.checkServiceRegistry()
+      check: () => this.checkServiceRegistry(),
     });
 
     // Memory health
     this.checks.push({
       name: 'memory',
       description: 'Memory usage and limits',
-      check: () => this.checkMemory()
+      check: () => this.checkMemory(),
     });
 
     // Event bus health
     this.checks.push({
       name: 'event-bus',
       description: 'Event bus functionality',
-      check: () => this.checkEventBus()
+      check: () => this.checkEventBus(),
     });
 
     // Performance health
     this.checks.push({
       name: 'performance',
       description: 'Performance metrics and thresholds',
-      check: () => this.checkPerformance()
+      check: () => this.checkPerformance(),
     });
 
     // Error rate health
     this.checks.push({
       name: 'error-rate',
       description: 'Error rate and recovery',
-      check: () => this.checkErrorRate()
+      check: () => this.checkErrorRate(),
     });
 
     // Network health
     this.checks.push({
       name: 'network',
       description: 'Network connectivity for assets',
-      check: () => this.checkNetwork()
+      check: () => this.checkNetwork(),
     });
 
     // Resource availability
     this.checks.push({
       name: 'resources',
       description: 'Resource availability and limits',
-      check: () => this.checkResources()
+      check: () => this.checkResources(),
     });
   }
 
   /**
    * Start periodic health checks
    */
-  startHealthChecks(intervalMs: number = 30000): void {
+  startHealthChecks(intervalMs = 30000): void {
     this.stopHealthChecks();
-    
+
     // Run initial check
     this.runHealthChecks();
-    
+
     // Schedule periodic checks
     this.checkInterval = setInterval(() => {
       this.runHealthChecks();
@@ -128,7 +128,7 @@ export class HealthChecks {
 
     this.eventBus.emit('health:monitoring-started', {
       interval: intervalMs,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -142,7 +142,7 @@ export class HealthChecks {
     }
 
     this.eventBus.emit('health:monitoring-stopped', {
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -157,18 +157,18 @@ export class HealthChecks {
         const result = await check.check();
         results.push(result);
         this.lastResults.set(check.name, result);
-        
+
         // Emit individual check result
         this.eventBus.emit('health:check-completed', {
           check: check.name,
-          result
+          result,
         });
       } catch (error) {
         const errorResult: HealthCheckResult = {
           name: check.name,
           status: 'unhealthy',
           message: `Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
         results.push(errorResult);
         this.lastResults.set(check.name, errorResult);
@@ -176,7 +176,7 @@ export class HealthChecks {
     }
 
     const report = this.generateReport(results);
-    
+
     // Emit overall health report
     this.eventBus.emit('health:report', report);
 
@@ -194,7 +194,7 @@ export class HealthChecks {
           name: 'audio-context',
           status: 'unhealthy',
           message: 'AudioEngine service not found',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
 
@@ -203,7 +203,7 @@ export class HealthChecks {
           name: 'audio-context',
           status: 'unhealthy',
           message: 'AudioEngine not initialized',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
 
@@ -218,9 +218,9 @@ export class HealthChecks {
           details: {
             state,
             sampleRate: context.sampleRate,
-            latency: context.baseLatency + context.outputLatency
+            latency: context.baseLatency + context.outputLatency,
           },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else if (state === 'suspended') {
         return {
@@ -228,7 +228,7 @@ export class HealthChecks {
           status: 'degraded',
           message: 'AudioContext is suspended',
           details: { state },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else {
         return {
@@ -236,7 +236,7 @@ export class HealthChecks {
           status: 'unhealthy',
           message: `AudioContext in unexpected state: ${state}`,
           details: { state },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
     } catch (error) {
@@ -244,7 +244,7 @@ export class HealthChecks {
         name: 'audio-context',
         status: 'unhealthy',
         message: `Error checking AudioContext: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -264,9 +264,9 @@ export class HealthChecks {
           message: `All ${serviceCount} services are healthy`,
           details: {
             serviceCount,
-            services: Object.keys(healthReport.services)
+            services: Object.keys(healthReport.services),
           },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else if (healthReport.overall === 'degraded') {
         return {
@@ -274,7 +274,7 @@ export class HealthChecks {
           status: 'degraded',
           message: 'Some services are degraded',
           details: healthReport,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else {
         return {
@@ -282,7 +282,7 @@ export class HealthChecks {
           status: 'unhealthy',
           message: 'Service registry has unhealthy services',
           details: healthReport,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
     } catch (error) {
@@ -290,7 +290,7 @@ export class HealthChecks {
         name: 'service-registry',
         status: 'unhealthy',
         message: `Error checking service registry: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -305,20 +305,20 @@ export class HealthChecks {
           name: 'memory',
           status: 'healthy',
           message: 'Memory monitoring not available',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
 
       const used = performance.memory.usedJSHeapSize;
       const total = performance.memory.totalJSHeapSize;
       const limit = performance.memory.jsHeapSizeLimit;
-      
+
       const usagePercent = (used / limit) * 100;
       const details = {
         usedMB: Math.round(used / (1024 * 1024)),
         totalMB: Math.round(total / (1024 * 1024)),
         limitMB: Math.round(limit / (1024 * 1024)),
-        usagePercent: Math.round(usagePercent)
+        usagePercent: Math.round(usagePercent),
       };
 
       if (usagePercent < 70) {
@@ -327,7 +327,7 @@ export class HealthChecks {
           status: 'healthy',
           message: `Memory usage at ${details.usagePercent}%`,
           details,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else if (usagePercent < 90) {
         return {
@@ -335,7 +335,7 @@ export class HealthChecks {
           status: 'degraded',
           message: `Memory usage high at ${details.usagePercent}%`,
           details,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else {
         return {
@@ -343,7 +343,7 @@ export class HealthChecks {
           status: 'unhealthy',
           message: `Memory usage critical at ${details.usagePercent}%`,
           details,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
     } catch (error) {
@@ -351,7 +351,7 @@ export class HealthChecks {
         name: 'memory',
         status: 'unhealthy',
         message: `Error checking memory: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -363,8 +363,10 @@ export class HealthChecks {
     try {
       // Test event emission and reception
       let received = false;
-      const testHandler = () => { received = true; };
-      
+      const testHandler = () => {
+        received = true;
+      };
+
       this.eventBus.on('health:test-event', testHandler);
       this.eventBus.emit('health:test-event', { test: true });
       this.eventBus.off('health:test-event', testHandler);
@@ -374,14 +376,14 @@ export class HealthChecks {
           name: 'event-bus',
           status: 'healthy',
           message: 'Event bus is functioning correctly',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else {
         return {
           name: 'event-bus',
           status: 'unhealthy',
           message: 'Event bus not processing events',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
     } catch (error) {
@@ -389,7 +391,7 @@ export class HealthChecks {
         name: 'event-bus',
         status: 'unhealthy',
         message: `Error checking event bus: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -410,7 +412,7 @@ export class HealthChecks {
           status: 'healthy',
           message: 'Performance is optimal',
           details: { testDuration: duration },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else if (duration < 50) {
         return {
@@ -418,7 +420,7 @@ export class HealthChecks {
           status: 'degraded',
           message: 'Performance is degraded',
           details: { testDuration: duration },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else {
         return {
@@ -426,7 +428,7 @@ export class HealthChecks {
           status: 'unhealthy',
           message: 'Performance is poor',
           details: { testDuration: duration },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
     } catch (error) {
@@ -434,7 +436,7 @@ export class HealthChecks {
         name: 'performance',
         status: 'unhealthy',
         message: `Error checking performance: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -450,26 +452,28 @@ export class HealthChecks {
         name: 'error-rate',
         status: 'healthy',
         message: 'No recent errors',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
 
     const errorAge = Date.now() - this.lastError.timestamp;
-    if (errorAge > 300000) { // 5 minutes
+    if (errorAge > 300000) {
+      // 5 minutes
       return {
         name: 'error-rate',
         status: 'healthy',
         message: 'No recent errors',
         details: { lastError: this.lastError },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
-    } else if (errorAge > 60000) { // 1 minute
+    } else if (errorAge > 60000) {
+      // 1 minute
       return {
         name: 'error-rate',
         status: 'degraded',
         message: 'Recent errors detected',
         details: { lastError: this.lastError },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     } else {
       return {
@@ -477,7 +481,7 @@ export class HealthChecks {
         status: 'unhealthy',
         message: 'Active errors occurring',
         details: { lastError: this.lastError },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -489,20 +493,20 @@ export class HealthChecks {
     try {
       // Simple connectivity check
       const online = navigator.onLine;
-      
+
       if (online) {
         return {
           name: 'network',
           status: 'healthy',
           message: 'Network connection available',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else {
         return {
           name: 'network',
           status: 'unhealthy',
           message: 'No network connection',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
     } catch (error) {
@@ -510,7 +514,7 @@ export class HealthChecks {
         name: 'network',
         status: 'unhealthy',
         message: `Error checking network: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -523,20 +527,20 @@ export class HealthChecks {
       // Check available resources
       const audioEngine = this.serviceRegistry.get('AudioEngine');
       const metrics = audioEngine?.getPerformanceMetrics();
-      
+
       return {
         name: 'resources',
         status: 'healthy',
         message: 'Resources are available',
         details: { metrics },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     } catch (error) {
       return {
         name: 'resources',
         status: 'unhealthy',
         message: `Error checking resources: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
@@ -545,9 +549,11 @@ export class HealthChecks {
    * Generate health report
    */
   private generateReport(results: HealthCheckResult[]): SystemHealthReport {
-    const unhealthyCount = results.filter(r => r.status === 'unhealthy').length;
-    const degradedCount = results.filter(r => r.status === 'degraded').length;
-    
+    const unhealthyCount = results.filter(
+      (r) => r.status === 'unhealthy',
+    ).length;
+    const degradedCount = results.filter((r) => r.status === 'degraded').length;
+
     let overall: 'healthy' | 'degraded' | 'unhealthy';
     if (unhealthyCount > 0) {
       overall = 'unhealthy';
@@ -562,7 +568,7 @@ export class HealthChecks {
       overall,
       checks: results,
       uptime: Date.now() - this.startTime,
-      lastError: this.lastError
+      lastError: this.lastError,
     };
   }
 
@@ -573,7 +579,7 @@ export class HealthChecks {
     this.eventBus.on('error:occurred', ({ error }) => {
       this.lastError = {
         message: error.message,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     });
   }

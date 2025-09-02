@@ -1,7 +1,7 @@
 /**
  * ReliabilityTesting - Audio reliability test suite
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Validates 99%+ audio reliability across various scenarios
  */
 
@@ -48,12 +48,12 @@ export class ReliabilityTesting {
   constructor(
     eventBus: EventBus,
     audioEngine: AudioEngine,
-    serviceRegistry: ServiceRegistry
+    serviceRegistry: ServiceRegistry,
   ) {
     this.eventBus = eventBus;
     this.audioEngine = audioEngine;
     this.serviceRegistry = serviceRegistry;
-    
+
     this.initializeTests();
   }
 
@@ -65,56 +65,56 @@ export class ReliabilityTesting {
     this.tests.push({
       name: 'audio-initialization',
       description: 'Test AudioEngine initialization reliability',
-      run: () => this.testAudioInitialization()
+      run: () => this.testAudioInitialization(),
     });
 
     // Context recovery test
     this.tests.push({
       name: 'context-recovery',
       description: 'Test AudioContext recovery from suspended state',
-      run: () => this.testContextRecovery()
+      run: () => this.testContextRecovery(),
     });
 
     // Rapid start/stop test
     this.tests.push({
       name: 'rapid-start-stop',
       description: 'Test rapid start/stop cycles',
-      run: () => this.testRapidStartStop()
+      run: () => this.testRapidStartStop(),
     });
 
     // Sample loading reliability
     this.tests.push({
       name: 'sample-loading',
       description: 'Test sample loading reliability',
-      run: () => this.testSampleLoading()
+      run: () => this.testSampleLoading(),
     });
 
     // Memory pressure test
     this.tests.push({
       name: 'memory-pressure',
       description: 'Test performance under memory pressure',
-      run: () => this.testMemoryPressure()
+      run: () => this.testMemoryPressure(),
     });
 
     // Concurrent operations test
     this.tests.push({
       name: 'concurrent-operations',
       description: 'Test concurrent audio operations',
-      run: () => this.testConcurrentOperations()
+      run: () => this.testConcurrentOperations(),
     });
 
     // Network interruption test
     this.tests.push({
       name: 'network-interruption',
       description: 'Test handling of network interruptions',
-      run: () => this.testNetworkInterruption()
+      run: () => this.testNetworkInterruption(),
     });
 
     // Long running stability test
     this.tests.push({
       name: 'long-running-stability',
       description: 'Test long-running stability',
-      run: () => this.testLongRunningStability()
+      run: () => this.testLongRunningStability(),
     });
   }
 
@@ -127,33 +127,33 @@ export class ReliabilityTesting {
 
     this.eventBus.emit('reliability:tests-started', {
       totalTests: this.tests.length,
-      timestamp: startTime
+      timestamp: startTime,
     });
 
     for (const test of this.tests) {
       try {
         const result = await test.run();
         this.testResults.push(result);
-        
+
         this.eventBus.emit('reliability:test-completed', {
           test: test.name,
-          result
+          result,
         });
       } catch (error) {
         this.testResults.push({
           test: test.name,
           passed: false,
           duration: 0,
-          error: error instanceof Error ? error : new Error(String(error))
+          error: error instanceof Error ? error : new Error(String(error)),
         });
       }
     }
 
     const report = this.generateReport();
-    
+
     this.eventBus.emit('reliability:tests-completed', {
       report,
-      duration: Date.now() - startTime
+      duration: Date.now() - startTime,
     });
 
     return report;
@@ -172,18 +172,18 @@ export class ReliabilityTesting {
       try {
         // Create fresh instance
         const testEngine = new AudioEngine(this.eventBus);
-        
+
         const initStart = performance.now();
         await testEngine.initialize();
         const initDuration = performance.now() - initStart;
-        
+
         if (testEngine.isReady()) {
           successful++;
           attempts.push(initDuration);
         }
-        
+
         await testEngine.dispose();
-        
+
         // Small delay between iterations
         await this.delay(100);
       } catch (error) {
@@ -192,9 +192,10 @@ export class ReliabilityTesting {
     }
 
     const reliabilityRate = successful / iterations;
-    const avgInitTime = attempts.length > 0 
-      ? attempts.reduce((a, b) => a + b, 0) / attempts.length 
-      : 0;
+    const avgInitTime =
+      attempts.length > 0
+        ? attempts.reduce((a, b) => a + b, 0) / attempts.length
+        : 0;
 
     return {
       test: 'audio-initialization',
@@ -205,8 +206,8 @@ export class ReliabilityTesting {
         successful,
         reliabilityRate,
         avgInitTime,
-        attempts
-      }
+        attempts,
+      },
     };
   }
 
@@ -220,16 +221,15 @@ export class ReliabilityTesting {
     try {
       await this.audioEngine.initialize();
       const context = this.audioEngine.getContext();
-      
+
       // Simulate suspended state
       if (context.state === 'running') {
         await context.suspend();
       }
-      
+
       // Test recovery
       await this.audioEngine.start();
       recovered = context.state === 'running';
-      
     } catch (error) {
       recovered = false;
     }
@@ -240,9 +240,10 @@ export class ReliabilityTesting {
       duration: performance.now() - startTime,
       details: {
         recovered,
-        finalState: this.audioEngine.isReady() ? 
-          this.audioEngine.getContext().state : 'not-initialized'
-      }
+        finalState: this.audioEngine.isReady()
+          ? this.audioEngine.getContext().state
+          : 'not-initialized',
+      },
     };
   }
 
@@ -275,8 +276,8 @@ export class ReliabilityTesting {
       details: {
         cycles,
         successful,
-        successRate: successful / cycles
-      }
+        successRate: successful / cycles,
+      },
     };
   }
 
@@ -294,10 +295,10 @@ export class ReliabilityTesting {
       for (let i = 0; i < sampleTests; i++) {
         const sampler = await this.audioEngine.createSampler({
           urls: {
-            'C4': 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAAAAA=='
-          }
+            C4: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAAAAA==',
+          },
         });
-        
+
         if (sampler) {
           samplesLoaded++;
           sampler.dispose();
@@ -314,8 +315,8 @@ export class ReliabilityTesting {
       details: {
         sampleTests,
         samplesLoaded,
-        successRate: samplesLoaded / sampleTests
-      }
+        successRate: samplesLoaded / sampleTests,
+      },
     };
   }
 
@@ -329,31 +330,30 @@ export class ReliabilityTesting {
 
     try {
       await this.audioEngine.initialize();
-      
+
       // Create multiple samplers
       for (let i = 0; i < 20; i++) {
         const sampler = await this.audioEngine.createSampler({
           urls: {
-            'C4': 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAAAAA=='
-          }
+            C4: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAAAAA==',
+          },
         });
         samplers.push(sampler);
       }
-      
+
       // Check if still operational
       const testSampler = await this.audioEngine.createSampler({
         urls: {
-          'C4': 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAAAAA=='
-        }
+          C4: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAAAAA==',
+        },
       });
-      
+
       if (testSampler) {
         testSampler.dispose();
       }
-      
+
       // Cleanup
-      samplers.forEach(s => s.dispose());
-      
+      samplers.forEach((s) => s.dispose());
     } catch (error) {
       memoryStable = false;
     }
@@ -364,8 +364,8 @@ export class ReliabilityTesting {
       duration: performance.now() - startTime,
       details: {
         samplersCreated: samplers.length,
-        memoryStable
-      }
+        memoryStable,
+      },
     };
   }
 
@@ -378,28 +378,31 @@ export class ReliabilityTesting {
 
     try {
       await this.audioEngine.initialize();
-      
+
       // Run multiple operations concurrently
       const operations = [
         this.audioEngine.start(),
         this.audioEngine.createSampler({
-          urls: { 'C4': 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAAAAA==' }
+          urls: {
+            C4: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAAAAA==',
+          },
         }),
         this.audioEngine.createSampler({
-          urls: { 'D4': 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAAAAA==' }
-        })
+          urls: {
+            D4: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAAAAA==',
+          },
+        }),
       ];
-      
+
       const results = await Promise.allSettled(operations);
-      allSuccessful = results.every(r => r.status === 'fulfilled');
-      
+      allSuccessful = results.every((r) => r.status === 'fulfilled');
+
       // Cleanup samplers
       results.forEach((result, index) => {
         if (index > 0 && result.status === 'fulfilled' && result.value) {
           (result.value as any).dispose();
         }
       });
-      
     } catch (error) {
       allSuccessful = false;
     }
@@ -408,7 +411,7 @@ export class ReliabilityTesting {
       test: 'concurrent-operations',
       passed: allSuccessful,
       duration: performance.now() - startTime,
-      details: { allSuccessful }
+      details: { allSuccessful },
     };
   }
 
@@ -421,19 +424,18 @@ export class ReliabilityTesting {
 
     try {
       await this.audioEngine.initialize();
-      
+
       // Simulate network issue by trying to load non-existent resource
       try {
         await this.audioEngine.createSampler({
           baseUrl: 'https://invalid-domain-that-does-not-exist.com/',
-          urls: { 'C4': 'sample.wav' }
+          urls: { C4: 'sample.wav' },
         });
         handled = false; // Should have thrown
       } catch (error) {
         // Error should be properly handled
         handled = true;
       }
-      
     } catch (error) {
       handled = false;
     }
@@ -442,7 +444,7 @@ export class ReliabilityTesting {
       test: 'network-interruption',
       passed: handled,
       duration: performance.now() - startTime,
-      details: { errorHandled: handled }
+      details: { errorHandled: handled },
     };
   }
 
@@ -458,20 +460,22 @@ export class ReliabilityTesting {
     try {
       await this.audioEngine.initialize();
       const endTime = Date.now() + testDuration;
-      
+
       while (Date.now() < endTime && stable) {
         try {
           // Perform various operations
           await this.audioEngine.start();
           operations++;
-          
+
           if (operations % 10 === 0) {
             const sampler = await this.audioEngine.createSampler({
-              urls: { 'C4': 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAAAAA==' }
+              urls: {
+                C4: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAAAAA==',
+              },
             });
             sampler.dispose();
           }
-          
+
           await this.delay(100);
         } catch (error) {
           stable = false;
@@ -488,8 +492,8 @@ export class ReliabilityTesting {
       details: {
         stable,
         operations,
-        testDuration
-      }
+        testDuration,
+      },
     };
   }
 
@@ -497,9 +501,10 @@ export class ReliabilityTesting {
    * Generate reliability report
    */
   private generateReport(): ReliabilityReport {
-    const passedTests = this.testResults.filter(r => r.passed).length;
+    const passedTests = this.testResults.filter((r) => r.passed).length;
     const totalTests = this.testResults.length;
-    const reliabilityScore = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
+    const reliabilityScore =
+      totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
 
     return {
       timestamp: Date.now(),
@@ -511,8 +516,8 @@ export class ReliabilityTesting {
       browserInfo: {
         userAgent: navigator.userAgent,
         platform: navigator.platform,
-        language: navigator.language
-      }
+        language: navigator.language,
+      },
     };
   }
 
@@ -520,6 +525,6 @@ export class ReliabilityTesting {
    * Utility delay function
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

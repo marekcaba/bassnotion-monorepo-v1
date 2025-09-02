@@ -20,13 +20,13 @@ describe('PatternScheduler Basic Tests', () => {
         startPosition: '0:0:0',
         duration: '1:0:0',
         loopCount: 1,
-        muted: false
-      }
+        muted: false,
+      },
     ];
 
     // Should not throw when registering
     expect(() => scheduler.registerTrack(trackId, regions)).not.toThrow();
-    
+
     // Should not throw when unregistering
     expect(() => scheduler.unregisterTrack(trackId)).not.toThrow();
   });
@@ -34,7 +34,7 @@ describe('PatternScheduler Basic Tests', () => {
   it('should provide metrics', () => {
     const scheduler = new PatternScheduler();
     const metrics = scheduler.getMetrics();
-    
+
     expect(metrics).toHaveProperty('scheduledEvents');
     expect(metrics).toHaveProperty('missedEvents');
     expect(metrics).toHaveProperty('avgLatency');
@@ -46,7 +46,7 @@ describe('PatternScheduler Basic Tests', () => {
   it('should have proper service configuration', () => {
     const scheduler = new PatternScheduler();
     const config = scheduler.getConfig();
-    
+
     expect(config).toHaveProperty('isRunning');
     expect(config.isRunning).toBe(false);
   });

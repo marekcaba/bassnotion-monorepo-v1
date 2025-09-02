@@ -69,7 +69,7 @@ import {
   LoopLength,
   DrumStyle,
   GM_DRUM_MAP,
-} from '../plugins/DrumInstrumentProcessor';
+} from '../../modules/instruments/implementations/drums/DrumInstrumentProcessor.js';
 
 describe('DrumInstrumentProcessor', () => {
   let drumProcessor: DrumInstrumentProcessor;

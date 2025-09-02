@@ -271,6 +271,104 @@ PORT=3000
 3. **Supabase Types**: Regenerate with `pnpm supabase gen types` after schema changes
 4. **PM2 Logs**: Check `logs/` directory for application logs
 5. **TypeScript Paths**: Use `@/` for app-specific imports, `@bassnotion/` for workspace libs
+6. **React Fragment Wrapper**: ALWAYS wrap page component returns in `<>...</>` to prevent rendering issues:
+   ```tsx
+   // ❌ Can cause page freezing/click blocking
+   return <ComplexComponent />;
+   
+   // ✅ Fragment prevents rendering boundary issues
+   return (
+     <>
+       <ComplexComponent />
+     </>
+   );
+   ```
+
+## React Best Practices (CRITICAL)
+
+### Preventing Infinite Render Loops and Page Freezing
+
+These issues can make pages completely unresponsive. Follow these rules to prevent them:
+
+1. **Always Memoize Event Handlers Passed as Props**:
+   ```tsx
+   // ❌ BAD: Creates new function every render
+   <Widget onUpdate={() => setState(value)} />
+   
+   // ✅ GOOD: Memoized with useCallback
+   const handleUpdate = useCallback(() => {
+     setState(value);
+   }, [value]);
+   <Widget onUpdate={handleUpdate} />
+   ```
+
+2. **Never Include State Setters in useEffect Dependencies**:
+   ```tsx
+   // ❌ BAD: Causes infinite re-renders
+   useEffect(() => {
+     // some logic
+   }, [transport, setCurrentPosition, currentPosition]);
+   
+   // ✅ GOOD: State setters are stable, exclude them
+   useEffect(() => {
+     // some logic
+   }, [transport, currentPosition]);
+   ```
+
+3. **Always Include Dependency Arrays in useEffect**:
+   ```tsx
+   // ❌ BAD: Runs on every render
+   useEffect(() => {
+     setRenderCount(prev => prev + 1);
+   });
+   
+   // ✅ GOOD: Only runs once on mount
+   useEffect(() => {
+     setRenderCount(prev => prev + 1);
+   }, []);
+   ```
+
+4. **Wrap Page Components in React Fragments**:
+   ```tsx
+   // ❌ BAD: Can cause rendering boundary issues
+   export default function Page() {
+     return <AudioEnabledTutorial {...props} />;
+   }
+   
+   // ✅ GOOD: Fragment ensures proper rendering
+   export default function Page() {
+     return (
+       <>
+         <AudioEnabledTutorial {...props} />
+       </>
+     );
+   }
+   ```
+
+5. **Avoid Circular State Updates**:
+   ```tsx
+   // ❌ BAD: Setting state based on same state in render
+   if (selectedExercise !== widgetState.selectedExercise) {
+     widgetState.setSelectedExercise(selectedExercise);
+   }
+   
+   // ✅ GOOD: Use effects with proper dependencies
+   useEffect(() => {
+     if (selectedExercise?.id !== widgetState.selectedExercise?.id) {
+       widgetState.setSelectedExercise(selectedExercise);
+     }
+   }, [selectedExercise?.id]);
+   ```
+
+### Debugging Frozen Pages
+
+If a page becomes unresponsive:
+
+1. Check browser console for "Maximum update depth exceeded" errors
+2. Look for components rendering 1000+ times
+3. Search for unmemoized callbacks in component props
+4. Check useEffect dependency arrays for state setters
+5. Verify page components are wrapped in fragments
 
 ## Useful Resources
 
@@ -279,3 +377,189 @@ PORT=3000
 - Memory Bank: `/memory-bank/` for project context and progress
 - Component Inventory: `/docs/ui-component-inventory.md`
 - 3D Fretboard Docs: `/docs/fretboard-3d-implementation.md`
+- React Rendering Issues: `/docs/REACT-RENDERING-GOTCHAS.md`
+- Click Blocking Debug: `/docs/CLICK-BLOCKING-DEBUG-PROGRESS.md`
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+
+## Debugging & Development Tools
+
+### Correlation IDs (ALWAYS USE)
+```typescript
+// In React components
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
+const { correlationId, logger } = useCorrelation('ComponentName');
+
+// In API calls
+await apiClient.get('/api/endpoint', { correlationId });
+
+// Find issues across system
+grep "correlation-id-here" logs/*.log
+```
+
+### Structured Logging (NEVER use console.log)
+```typescript
+// ❌ NEVER DO THIS
+console.log('Something happened');
+
+// ✅ ALWAYS DO THIS
+logger.info('Action description', { data, correlationId });
+logger.error('Error description', error, { context });
+```
+
+### Audio Debugging
+```typescript
+// Enable in .env.local
+NEXT_PUBLIC_DEBUG_AUDIO=true
+
+// Use in components
+import { useAudioDebug } from '@/shared/debug/AudioDebugger';
+const debug = useAudioDebug('ComponentName');
+debug.log('event-name', { data });
+```
+
+### Health Checks
+- Backend: GET http://localhost:3000/health
+- Frontend: Check bottom-left indicator (🟢 healthy, 🟡 degraded, 🔴 unhealthy)
+
+## Critical Coding Standards
+
+### Golden Rules
+1. **Always use pnpm** (never npm or yarn)
+2. **Always add correlation IDs** to API calls
+3. **Always use structured logging** (never plain console.log)
+4. **Always wrap page components in fragments** `<>...</>`
+5. **Always memoize callbacks** passed as props
+
+### Prevent Infinite Loops
+```typescript
+// ❌ CAUSES FREEZE
+useEffect(() => {
+  setState(value);
+}); // Missing dependency array!
+
+// ✅ CORRECT
+useEffect(() => {
+  setState(value);
+}, [value]);
+
+// ❌ UNMEMOIZED CALLBACK
+<Component onUpdate={() => doSomething()} />
+
+// ✅ MEMOIZED
+const handleUpdate = useCallback(() => doSomething(), []);
+<Component onUpdate={handleUpdate} />
+```
+
+### Import Rules
+```typescript
+// ✅ CORRECT IMPORTS
+import { Something } from '@bassnotion/contracts'; // No extension for packages
+import { Component } from '@/domains/user/types'; // No extension for aliases
+import { Service } from './service.js'; // .js extension for relative imports
+```
+
+## Common Debugging Patterns
+
+### When Something Breaks
+1. Get correlation ID from error
+2. Check health indicator (bottom-left)
+3. Check Audio Debug Panel (bottom-right) if audio-related
+4. Search logs: `grep "correlation-id" logs/*.log`
+5. Add more logging before/after the problem area
+
+### Page Frozen?
+Check for:
+- Missing useEffect dependencies
+- Unmemoized callbacks in props
+- setState during render
+- Circular state updates
+
+### Audio Not Playing?
+1. Check Audio Debug Panel for events
+2. Common issue: AudioContext suspended (needs user interaction)
+3. Check Network tab for 404s on samples
+4. Verify Supabase bucket is public
+
+### API Errors?
+1. Check health status indicator
+2. Verify correlation ID is passed
+3. Check pm2 logs: `pm2 logs bassnotion-backend`
+4. Common: Missing env variables in production
+
+## Project-Specific Patterns
+
+### Audio Component Pattern
+```typescript
+export function AudioWidget() {
+  const { correlationId, logger } = useCorrelation('AudioWidget');
+  const debug = useAudioDebug('AudioWidget');
+  
+  const play = useCallback(async () => {
+    debug.log('play-start', { time: Date.now() });
+    try {
+      await audioEngine.play();
+      debug.log('play-success');
+    } catch (error) {
+      debug.log('play-error', { error: error.message });
+      logger.error('Playback failed', error);
+    }
+  }, []);
+  
+  return <button onClick={play}>Play</button>;
+}
+```
+
+### API Call Pattern
+```typescript
+async function fetchData() {
+  const { correlationId, logger } = useCorrelation('DataFetcher');
+  
+  try {
+    logger.info('Fetching data');
+    const result = await apiClient.get('/api/data', { correlationId });
+    logger.info('Data fetched', { count: result.length });
+    return result;
+  } catch (error) {
+    logger.error('Failed to fetch data', error);
+    throw error;
+  }
+}
+```
+
+## Emergency Commands
+
+```bash
+# Restart everything
+pm2 restart all
+
+# Complete reset
+pm2 delete all && pm2 start ecosystem.config.cjs
+
+# View logs
+pm2 logs bassnotion-frontend
+pm2 logs bassnotion-backend
+
+# Find what's using ports
+lsof -i :3000  # Backend
+lsof -i :3001  # Frontend
+```
+
+## Current Technical Debt (from AUDIT_08_25.md)
+
+1. **Playback domain**: 105 service files - needs breaking into smaller modules
+2. **Test pages**: Recently cleaned 207 test variations - DO NOT create new test pages
+3. **Widget versions**: Use V2 versions (HarmonyWidgetV2, DrummerWidgetV2)
+4. **God objects**: UnifiedTransport has 3000+ lines - needs refactoring
+
+## References
+
+For detailed guides see `/docs/developer-handbook/`:
+- DEVELOPER_GUIDE.md - Complete platform guide
+- TROUBLESHOOTING_FLOWCHART.md - Step-by-step debugging
+- DEBUGGING_EXAMPLES.md - Real-world scenarios
+- CODING_STANDARDS.md - Full coding standards

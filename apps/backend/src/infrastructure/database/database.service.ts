@@ -1,39 +1,52 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Injectable, OnModuleInit, Inject, Optional } from '@nestjs/common';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { RequestContextService } from '../../shared/services/request-context.service.js';
 
 @Injectable()
 export class DatabaseService implements OnModuleInit {
-  private readonly logger = new Logger(DatabaseService.name);
+  private readonly staticLogger = createStructuredLogger(DatabaseService.name);
   public supabase!: SupabaseClient;
 
-  constructor() {
-    this.logger.debug('DatabaseService constructor called');
+  constructor(
+    @Optional() @Inject(RequestContextService)
+    private readonly requestContext?: RequestContextService,
+  ) {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId() || 'system';
+    logger.debug('DatabaseService constructor called', { correlationId });
   }
 
-  onModuleInit() {
+  private initializeClient(): void {
     try {
-      this.logger.debug('DatabaseService initializing...');
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId() || 'system';
+      logger.debug('DatabaseService initializing...', { correlationId });
 
       // Use environment variables directly instead of ConfigService
       const supabaseUrl = process.env.SUPABASE_URL;
       const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
       if (!supabaseUrl || !supabaseServiceRoleKey) {
-        this.logger.warn(
-          'Supabase environment variables not found - creating mock client for tests',
-        );
+        logger.warn('Supabase environment variables not found - creating mock client for tests', { correlationId });
         // Create a mock client for test environments
         this.supabase = {} as SupabaseClient;
         return;
       }
 
       this.supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-      this.logger.log('DatabaseService initialized successfully');
+      logger.info('DatabaseService initialized successfully', { correlationId });
     } catch (error) {
-      this.logger.error('Error initializing DatabaseService:', error);
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId() || 'system';
+      logger.error('Error initializing DatabaseService:', error as Error, { correlationId });
       // Create fallback mock client
       this.supabase = {} as SupabaseClient;
     }
+  }
+
+  onModuleInit() {
+    this.initializeClient();
   }
 
   async initializeSupabaseClient(): Promise<void> {
@@ -45,5 +58,12 @@ export class DatabaseService implements OnModuleInit {
 
   isReady(): boolean {
     return !!this.supabase && Object.keys(this.supabase).length > 0;
+  }
+
+  getClient(): SupabaseClient {
+    if (!this.supabase) {
+      throw new Error('Database client not initialized');
+    }
+    return this.supabase;
   }
 }

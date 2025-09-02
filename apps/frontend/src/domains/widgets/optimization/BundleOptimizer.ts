@@ -67,7 +67,7 @@ export class BundleOptimizer {
     this.setupPerformanceObserver();
     this.startMetricsCollection();
 
-    console.debug('[BundleOptimizer] Initialized with config:', this.config);
+    logger.debug('[BundleOptimizer] Initialized with config:', this.config);
   }
 
   public static getInstance(): BundleOptimizer {
@@ -113,6 +113,7 @@ export class BundleOptimizer {
 
     try {
       const observer = new PerformanceObserver((list) => {
+  const { correlationId, logger } = useCorrelation('observer');
         const entries = list.getEntries();
         entries.forEach((entry) => {
           if (
@@ -126,7 +127,7 @@ export class BundleOptimizer {
 
       observer.observe({ entryTypes: ['navigation', 'resource'] });
     } catch (error) {
-      console.debug(
+      logger.debug(
         '[BundleOptimizer] PerformanceObserver not available:',
         error,
       );
@@ -145,7 +146,7 @@ export class BundleOptimizer {
         existingChunk.loadTime = entry.duration;
         existingChunk.loaded = true;
 
-        console.debug(
+        logger.debug(
           `[BundleOptimizer] Chunk loaded: ${chunkName} (${entry.duration.toFixed(1)}ms)`,
         );
       }
@@ -209,7 +210,7 @@ export class BundleOptimizer {
       });
     }
 
-    console.debug(
+    logger.debug(
       `[BundleOptimizer] Tracked chunk: ${chunkName} (${size} bytes)`,
     );
   }
@@ -229,7 +230,7 @@ export class BundleOptimizer {
 
     this.chunkRegistry.set(component.componentName, chunkInfo);
 
-    console.debug(
+    logger.debug(
       `[BundleOptimizer] Registered lazy component: ${component.componentName} (priority: ${component.priority})`,
     );
   }
@@ -288,7 +289,7 @@ export class BundleOptimizer {
       this.loadedComponents.set(componentName, component);
       this.pendingLoads.delete(componentName);
 
-      console.debug(
+      logger.debug(
         `[BundleOptimizer] Lazy loaded: ${componentName} (${loadTime.toFixed(1)}ms)`,
       );
       return component;
@@ -300,7 +301,7 @@ export class BundleOptimizer {
         chunkInfo.error = error as Error;
       }
 
-      console.error(
+      logger.error(
         `[BundleOptimizer] Failed to load component: ${componentName}`,
         error,
       );
@@ -344,7 +345,7 @@ export class BundleOptimizer {
         return priorityOrder[a.priority] - priorityOrder[b.priority];
       });
 
-    console.debug(
+    logger.debug(
       `[BundleOptimizer] Preloading ${criticalChunks.length} critical components`,
     );
 
@@ -353,7 +354,7 @@ export class BundleOptimizer {
         // Use link rel="modulepreload" for better performance
         this.preloadModule(chunk.name);
       } catch (error) {
-        console.warn(
+        logger.warn(
           `[BundleOptimizer] Failed to preload: ${chunk.name}`,
           error,
         );
@@ -375,11 +376,11 @@ export class BundleOptimizer {
     link.crossOrigin = 'anonymous';
 
     link.onload = () => {
-      console.debug(`[BundleOptimizer] Preloaded module: ${chunkName}`);
+      logger.debug(`[BundleOptimizer] Preloaded module: ${chunkName}`);
     };
 
     link.onerror = () => {
-      console.warn(`[BundleOptimizer] Failed to preload module: ${chunkName}`);
+      logger.warn(`[BundleOptimizer] Failed to preload module: ${chunkName}`);
     };
 
     document.head.appendChild(link);
@@ -451,7 +452,7 @@ export class BundleOptimizer {
     );
 
     if (slowChunks.length > 0) {
-      console.debug(
+      logger.debug(
         `[BundleOptimizer] Found ${slowChunks.length} slow-loading chunks`,
       );
 
@@ -459,14 +460,14 @@ export class BundleOptimizer {
       slowChunks.forEach((chunk) => {
         if (chunk.priority !== 'low') {
           chunk.preload = true;
-          console.debug(`[BundleOptimizer] Marked for preload: ${chunk.name}`);
+          logger.debug(`[BundleOptimizer] Marked for preload: ${chunk.name}`);
         }
       });
     }
 
     // Check bundle size warnings
     if (metrics.totalBundleSize > this.config.maxChunkSize * 10) {
-      console.warn(
+      logger.warn(
         `[BundleOptimizer] Large bundle size detected: ${(metrics.totalBundleSize / 1024).toFixed(1)}KB`,
       );
     }
@@ -587,7 +588,7 @@ ${this.generateOptimizationRecommendations(metrics, chunks).join('\n')}
    */
   public updateConfig(newConfig: Partial<AssetOptimizationConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    console.debug('[BundleOptimizer] Configuration updated:', this.config);
+    logger.debug('[BundleOptimizer] Configuration updated:', this.config);
   }
 
   /**
@@ -627,7 +628,7 @@ ${this.generateOptimizationRecommendations(metrics, chunks).join('\n')}
 
     BundleOptimizer.instance = null;
 
-    console.debug('[BundleOptimizer] Destroyed');
+    logger.debug('[BundleOptimizer] Destroyed');
   }
 }
 

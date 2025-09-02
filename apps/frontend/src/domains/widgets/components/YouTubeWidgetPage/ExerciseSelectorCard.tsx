@@ -21,6 +21,7 @@ import { useExerciseSelection } from '../../hooks/useExerciseSelection';
 import { SyncedWidget } from '../base';
 import type { SyncedWidgetRenderProps } from '../base';
 import type { Tutorial } from '@bassnotion/contracts';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface ExerciseSelectorCardProps {
   tutorialData?: Tutorial;
@@ -69,7 +70,7 @@ async function downloadMidiFile(
     // Open download URL in new tab
     window.open(data.downloadUrl, '_blank');
   } catch (error) {
-    console.error('Error downloading MIDI file:', error);
+    logger.error('Error downloading MIDI file:', error);
     // Could add toast notification here
   }
 }
@@ -110,8 +111,9 @@ export function ExerciseSelectorCard({
   exercises: propExercises,
   onExerciseSelect,
 }: ExerciseSelectorCardProps) {
+  const { correlationId, logger } = useCorrelation('ExerciseSelectorCard');
   // Debug: Log every render of ExerciseSelectorCard
-  // console.log('🔄 ExerciseSelectorCard RENDER:', {
+  // logger.info('🔄 ExerciseSelectorCard RENDER:', {
   //   tutorialSlug,
   //   propExercisesCount: propExercises?.length || 0,
   //   timestamp: new Date().toISOString(),
@@ -119,9 +121,9 @@ export function ExerciseSelectorCard({
 
   // Debug: Log mount/unmount
   React.useEffect(() => {
-    // console.log('🟢 ExerciseSelectorCard MOUNTED');
+    // logger.info('🟢 ExerciseSelectorCard MOUNTED');
     return () => {
-      // console.log('🔴 ExerciseSelectorCard UNMOUNTED');
+      // logger.info('🔴 ExerciseSelectorCard UNMOUNTED');
     };
   }, []);
 

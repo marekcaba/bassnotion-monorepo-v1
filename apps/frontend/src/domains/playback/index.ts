@@ -19,7 +19,7 @@ export {
   UnifiedTransport,
   PluginManager,
   CoreServices,
-  createCoreServices
+  createCoreServices,
 } from './services/core/index.js';
 
 // ============================================================================
@@ -290,7 +290,7 @@ export const LazyImports = {
    */
   loadDevTools: async () => {
     if (process.env.NODE_ENV === 'development') {
-      console.warn(
+      logger.warn(
         'Dev tools not yet implemented - will be added in future subtasks',
       );
     }
@@ -302,7 +302,7 @@ export const LazyImports = {
    */
   loadTestUtils: async () => {
     if (process.env.NODE_ENV === 'test') {
-      console.warn(
+      logger.warn(
         'Test utils not yet implemented - will be added in future subtasks',
       );
     }

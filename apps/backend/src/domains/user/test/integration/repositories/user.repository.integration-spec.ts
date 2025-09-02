@@ -1,5 +1,5 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { User } from '../../../entities/user.entity.js';
 import { UserRepository } from '../../../repositories/user.repository.js';
@@ -22,7 +22,17 @@ describe('UserRepository Integration Tests', () => {
     // Initialize Supabase client with test credentials
     supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    repository = new UserRepository(supabase);
+    const mockRequestContextService = {
+      getLogger: vi.fn().mockReturnValue({
+        info: vi.fn(),
+        error: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn(),
+      }),
+      getCorrelationId: vi.fn().mockReturnValue('test-correlation-id'),
+    };
+    
+    repository = new UserRepository(supabase, mockRequestContextService as any);
 
     // Create test user
     testUser = User.create(

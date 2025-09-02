@@ -1,6 +1,6 @@
 /**
  * Minimal test setup for real Tone.js tests
- * 
+ *
  * This setup file doesn't mock Tone.js to allow testing real behavior
  */
 

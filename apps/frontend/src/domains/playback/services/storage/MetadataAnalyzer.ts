@@ -20,6 +20,8 @@
  */
 
 import type {
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
   AudioAnalysisResult as AnalysisResult,
   TempoDetectionResult,
   KeyDetectionResult,
@@ -43,6 +45,7 @@ interface MetadataAnalyzerConfig {
   windowFunction: 'hanning' | 'hamming' | 'blackman';
   /** Tempo detection range in BPM */
   tempoRange: { min: number; max: number };
+  const { correlationId, logger } = useCorrelation('for');
   /** Enable high-precision analysis (slower but more accurate) */
   highPrecision: boolean;
   /** Maximum analysis duration in seconds */
@@ -91,7 +94,7 @@ export class MetadataAnalyzer {
         sampleRate: this.config.sampleRate,
       });
     } catch (error) {
-      console.warn(
+      logger.warn(
         'AudioContext not supported, MetadataAnalyzer will operate in limited mode:',
         error,
       );
@@ -191,7 +194,7 @@ export class MetadataAnalyzer {
         error instanceof Error &&
         error.message.includes('AudioContext not available')
       ) {
-        console.warn(
+        logger.warn(
           `🎵 MetadataAnalyzer: AudioContext not available, returning mock analysis for ${filename}`,
         );
 
@@ -1570,12 +1573,12 @@ export class MetadataAnalyzer {
         if (typeof this.audioContext.close === 'function') {
           await this.audioContext.close();
         } else {
-          console.warn(
+          logger.warn(
             '🔊 AudioContext.close() not available in MetadataAnalyzer, likely in test environment',
           );
         }
       } catch (error) {
-        console.warn(
+        logger.warn(
           '🔊 MetadataAnalyzer AudioContext cleanup failed, likely in test environment:',
           error,
         );

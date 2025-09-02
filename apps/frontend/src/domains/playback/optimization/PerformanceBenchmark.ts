@@ -1,7 +1,7 @@
 /**
  * PerformanceBenchmark - Performance benchmarking suite
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Comprehensive performance benchmarking for audio operations
  */
 
@@ -60,7 +60,7 @@ export class PerformanceBenchmark {
   constructor(
     eventBus: EventBus,
     audioEngine: AudioEngine,
-    config: BenchmarkConfig = {}
+    config: BenchmarkConfig = {},
   ) {
     this.eventBus = eventBus;
     this.audioEngine = audioEngine;
@@ -71,7 +71,7 @@ export class PerformanceBenchmark {
       noteCount: 50,
       effectCount: 5,
       concurrentOperations: 3,
-      ...config
+      ...config,
     };
   }
 
@@ -80,10 +80,10 @@ export class PerformanceBenchmark {
    */
   async runFullSuite(): Promise<BenchmarkSuite> {
     const startTime = performance.now();
-    
+
     this.eventBus.emit('benchmark:suite-started', {
       timestamp: Date.now(),
-      config: this.config
+      config: this.config,
     });
 
     // Ensure audio engine is initialized
@@ -92,7 +92,7 @@ export class PerformanceBenchmark {
     const environment = {
       userAgent: navigator.userAgent,
       audioContextSampleRate: this.audioEngine.getContext().sampleRate,
-      audioContextLatency: this.audioEngine.getContext().baseLatency
+      audioContextLatency: this.audioEngine.getContext().baseLatency,
     };
 
     // Run benchmarks
@@ -111,11 +111,11 @@ export class PerformanceBenchmark {
       timestamp: Date.now(),
       environment,
       results: [...this.results],
-      summary
+      summary,
     };
 
     this.eventBus.emit('benchmark:suite-completed', suite);
-    
+
     return suite;
   }
 
@@ -134,23 +134,23 @@ export class PerformanceBenchmark {
     // Actual benchmark
     for (let i = 0; i < this.config.iterations; i++) {
       await this.audioEngine.dispose();
-      
+
       const start = performance.now();
       await this.audioEngine.initialize();
       const end = performance.now();
-      
+
       times.push(end - start);
     }
 
     const result = this.calculateStats('Audio Initialization', times);
     this.results.push(result);
-    
+
     // Check against target (< 2 seconds)
     if (result.averageTime > 2000) {
       this.eventBus.emit('benchmark:target-failed', {
         benchmark: 'initialization',
         target: 2000,
-        actual: result.averageTime
+        actual: result.averageTime,
       });
     }
   }
@@ -164,21 +164,21 @@ export class PerformanceBenchmark {
 
     for (let i = 0; i < this.config.sampleCount; i++) {
       const start = performance.now();
-      
+
       const sampler = await this.audioEngine.createSampler({
         urls: {
-          'C4': '/samples/piano/C4.mp3',
-          'D4': '/samples/piano/D4.mp3',
-          'E4': '/samples/piano/E4.mp3',
-          'F4': '/samples/piano/F4.mp3',
-          'G4': '/samples/piano/G4.mp3'
+          C4: '/samples/piano/C4.mp3',
+          D4: '/samples/piano/D4.mp3',
+          E4: '/samples/piano/E4.mp3',
+          F4: '/samples/piano/F4.mp3',
+          G4: '/samples/piano/G4.mp3',
         },
-        release: 1
+        release: 1,
       });
-      
+
       const end = performance.now();
       times.push(end - start);
-      
+
       // Dispose to prevent memory buildup
       sampler.dispose();
     }
@@ -187,9 +187,9 @@ export class PerformanceBenchmark {
     const result = this.calculateStats('Sample Loading', times, {
       before: memoryBefore,
       after: memoryAfter,
-      delta: memoryAfter - memoryBefore
+      delta: memoryAfter - memoryBefore,
     });
-    
+
     this.results.push(result);
   }
 
@@ -198,10 +198,10 @@ export class PerformanceBenchmark {
    */
   private async benchmarkNoteTriggering(): Promise<void> {
     const times: number[] = [];
-    
+
     const sampler = await this.audioEngine.createSampler({
-      urls: { 'C4': '/samples/piano/C4.mp3' },
-      release: 0.1
+      urls: { C4: '/samples/piano/C4.mp3' },
+      release: 0.1,
     });
 
     // Warmup
@@ -214,12 +214,12 @@ export class PerformanceBenchmark {
       const start = performance.now();
       sampler.triggerAttackRelease('C4', 0.1);
       const end = performance.now();
-      
+
       times.push(end - start);
     }
 
     sampler.dispose();
-    
+
     const result = this.calculateStats('Note Triggering', times);
     this.results.push(result);
   }
@@ -230,22 +230,22 @@ export class PerformanceBenchmark {
   private async benchmarkEffectProcessing(): Promise<void> {
     const times: number[] = [];
     const tone = this.audioEngine.getTone();
-    
+
     for (let i = 0; i < this.config.effectCount; i++) {
       const start = performance.now();
-      
+
       // Create and connect effects
       const reverb = new (tone as any).Reverb(2);
       const delay = new (tone as any).Delay(0.25);
       const filter = new (tone as any).Filter(800, 'lowpass');
-      
+
       reverb.connect(delay);
       delay.connect(filter);
       filter.toDestination();
-      
+
       const end = performance.now();
       times.push(end - start);
-      
+
       // Cleanup
       reverb.dispose();
       delay.dispose();
@@ -263,20 +263,20 @@ export class PerformanceBenchmark {
     const times: number[] = [];
     const poolTimes: number[] = [];
     const optimizer = new PerformanceOptimizer(this.eventBus);
-    
+
     // Benchmark direct allocation
     for (let i = 0; i < this.config.iterations; i++) {
       const start = performance.now();
       const buffer = new Float32Array(4096);
       buffer.fill(0);
       const end = performance.now();
-      
+
       times.push(end - start);
     }
 
     // Benchmark pooled allocation
     optimizer.startOptimization();
-    
+
     for (let i = 0; i < this.config.iterations; i++) {
       const start = performance.now();
       const buffer = optimizer.getFromPool<Float32Array>('audioBuffers');
@@ -284,22 +284,28 @@ export class PerformanceBenchmark {
         optimizer.returnToPool('audioBuffers', buffer);
       }
       const end = performance.now();
-      
+
       poolTimes.push(end - start);
     }
 
     optimizer.dispose();
 
     const directResult = this.calculateStats('Direct Memory Allocation', times);
-    const pooledResult = this.calculateStats('Pooled Memory Allocation', poolTimes);
-    
+    const pooledResult = this.calculateStats(
+      'Pooled Memory Allocation',
+      poolTimes,
+    );
+
     this.results.push(directResult);
     this.results.push(pooledResult);
-    
+
     // Calculate improvement
-    const improvement = ((directResult.averageTime - pooledResult.averageTime) / directResult.averageTime) * 100;
+    const improvement =
+      ((directResult.averageTime - pooledResult.averageTime) /
+        directResult.averageTime) *
+      100;
     this.eventBus.emit('benchmark:memory-improvement', {
-      improvement: improvement.toFixed(2) + '%'
+      improvement: improvement.toFixed(2) + '%',
     });
   }
 
@@ -308,34 +314,34 @@ export class PerformanceBenchmark {
    */
   private async benchmarkConcurrentOperations(): Promise<void> {
     const times: number[] = [];
-    
+
     for (let i = 0; i < this.config.iterations / 10; i++) {
       const start = performance.now();
-      
+
       const promises: Promise<any>[] = [];
-      
+
       // Concurrent sampler creation
       for (let j = 0; j < this.config.concurrentOperations; j++) {
         promises.push(
           this.audioEngine.createSampler({
-            urls: { 'C4': '/samples/piano/C4.mp3' },
-            release: 0.1
-          })
+            urls: { C4: '/samples/piano/C4.mp3' },
+            release: 0.1,
+          }),
         );
       }
-      
+
       const samplers = await Promise.all(promises);
-      
+
       // Concurrent note triggering
       for (const sampler of samplers) {
         sampler.triggerAttackRelease('C4', 0.1);
       }
-      
+
       // Cleanup
       for (const sampler of samplers) {
         sampler.dispose();
       }
-      
+
       const end = performance.now();
       times.push(end - start);
     }
@@ -350,17 +356,19 @@ export class PerformanceBenchmark {
   private calculateStats(
     name: string,
     times: number[],
-    memoryUsage?: { before: number; after: number; delta: number }
+    memoryUsage?: { before: number; after: number; delta: number },
   ): BenchmarkResult {
     const total = times.reduce((sum, time) => sum + time, 0);
     const average = total / times.length;
     const min = Math.min(...times);
     const max = Math.max(...times);
-    
+
     // Calculate standard deviation
-    const variance = times.reduce((sum, time) => sum + Math.pow(time - average, 2), 0) / times.length;
+    const variance =
+      times.reduce((sum, time) => sum + Math.pow(time - average, 2), 0) /
+      times.length;
     const standardDeviation = Math.sqrt(variance);
-    
+
     return {
       name,
       iterations: times.length,
@@ -370,7 +378,7 @@ export class PerformanceBenchmark {
       maxTime: max,
       standardDeviation,
       memoryUsage,
-      cpuUsage: this.estimateCPUUsage()
+      cpuUsage: this.estimateCPUUsage(),
     };
   }
 
@@ -408,38 +416,57 @@ export class PerformanceBenchmark {
           passedTargets++;
         } else {
           failedTargets++;
-          recommendations.push('Audio initialization exceeds 2s target. Consider lazy loading or optimization.');
+          recommendations.push(
+            'Audio initialization exceeds 2s target. Consider lazy loading or optimization.',
+          );
         }
       }
-      
+
       if (result.name === 'Note Triggering') {
         if (result.averageTime < 5) {
           passedTargets++;
         } else {
           failedTargets++;
-          recommendations.push('Note triggering latency is high. Optimize sample loading and triggering.');
+          recommendations.push(
+            'Note triggering latency is high. Optimize sample loading and triggering.',
+          );
         }
       }
-      
+
       if (result.memoryUsage && result.memoryUsage.delta > 50) {
-        recommendations.push(`${result.name} has high memory usage (${result.memoryUsage.delta.toFixed(2)}MB). Consider optimization.`);
+        recommendations.push(
+          `${result.name} has high memory usage (${result.memoryUsage.delta.toFixed(2)}MB). Consider optimization.`,
+        );
       }
     }
 
     // Memory pool effectiveness
-    const directMem = this.results.find(r => r.name === 'Direct Memory Allocation');
-    const pooledMem = this.results.find(r => r.name === 'Pooled Memory Allocation');
-    if (directMem && pooledMem && pooledMem.averageTime < directMem.averageTime) {
+    const directMem = this.results.find(
+      (r) => r.name === 'Direct Memory Allocation',
+    );
+    const pooledMem = this.results.find(
+      (r) => r.name === 'Pooled Memory Allocation',
+    );
+    if (
+      directMem &&
+      pooledMem &&
+      pooledMem.averageTime < directMem.averageTime
+    ) {
       passedTargets++;
-      const improvement = ((directMem.averageTime - pooledMem.averageTime) / directMem.averageTime) * 100;
-      recommendations.push(`Memory pooling provides ${improvement.toFixed(1)}% performance improvement.`);
+      const improvement =
+        ((directMem.averageTime - pooledMem.averageTime) /
+          directMem.averageTime) *
+        100;
+      recommendations.push(
+        `Memory pooling provides ${improvement.toFixed(1)}% performance improvement.`,
+      );
     }
 
     return {
       totalDuration,
       passedTargets,
       failedTargets,
-      recommendations
+      recommendations,
     };
   }
 
@@ -487,7 +514,9 @@ export class PerformanceBenchmark {
       <th>Std Dev</th>
       <th>Memory Delta (MB)</th>
     </tr>
-    ${suite.results.map(result => `
+    ${suite.results
+      .map(
+        (result) => `
     <tr>
       <td>${result.name}</td>
       <td>${result.iterations}</td>
@@ -497,7 +526,9 @@ export class PerformanceBenchmark {
       <td>${result.standardDeviation.toFixed(2)}</td>
       <td>${result.memoryUsage ? result.memoryUsage.delta.toFixed(2) : 'N/A'}</td>
     </tr>
-    `).join('')}
+    `,
+      )
+      .join('')}
   </table>
   
   <h2>Summary</h2>
@@ -506,9 +537,13 @@ export class PerformanceBenchmark {
   <p class="fail">Failed Targets: ${suite.summary.failedTargets}</p>
   
   <h2>Recommendations</h2>
-  ${suite.summary.recommendations.map(rec => `
+  ${suite.summary.recommendations
+    .map(
+      (rec) => `
   <div class="recommendation">${rec}</div>
-  `).join('')}
+  `,
+    )
+    .join('')}
 </body>
 </html>
     `;

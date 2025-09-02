@@ -14,6 +14,9 @@
  * - MIDI synchronization and external clock support
  */
 
+import { loadGlobalTone } from './toneLoader';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
+
 // Dynamic import to avoid AudioContext initialization before user gesture
 // Tone will be loaded when the processor is initialized
 let Tone: any = null;
@@ -353,7 +356,7 @@ export class MetronomeInstrumentProcessor {
   private async ensureToneLoaded(): Promise<void> {
     if (!Tone) {
       Tone = await loadGlobalTone();
-      console.log(
+      logger.info(
         '🎵 Using global Tone.js instance in MetronomeInstrumentProcessor',
       );
     }
@@ -389,9 +392,9 @@ export class MetronomeInstrumentProcessor {
       }
 
       this.isInitialized = true;
-      console.log('MetronomeInstrumentProcessor initialized successfully');
+      logger.info('MetronomeInstrumentProcessor initialized successfully');
     } catch (error) {
-      console.error(
+      logger.error(
         'Failed to initialize MetronomeInstrumentProcessor:',
         error,
       );
@@ -405,7 +408,7 @@ export class MetronomeInstrumentProcessor {
   public start(): void {
     // TODO: Review non-null assertion - consider null safety
     if (!this.isInitialized) {
-      console.warn('MetronomeInstrumentProcessor not initialized');
+      logger.warn('MetronomeInstrumentProcessor not initialized');
       return;
     }
 
@@ -437,10 +440,10 @@ export class MetronomeInstrumentProcessor {
       }
 
       this.notifyStateChange();
-      console.log('Metronome started');
+      logger.info('Metronome started');
     } catch (error) {
       // Handle audio context or transport errors gracefully
-      console.error('Failed to start metronome:', error);
+      logger.error('Failed to start metronome:', error);
       this.state.isRunning = false;
     }
   }
@@ -465,7 +468,7 @@ export class MetronomeInstrumentProcessor {
     }
 
     this.notifyStateChange();
-    console.log('Metronome stopped');
+    logger.info('Metronome stopped');
   }
 
   /**
@@ -473,7 +476,7 @@ export class MetronomeInstrumentProcessor {
    */
   public setTempo(tempo: number, transitionTime = 0): void {
     if (tempo < 30 || tempo > 300) {
-      console.warn('Tempo out of range (30-300 BPM)');
+      logger.warn('Tempo out of range (30-300 BPM)');
       return;
     }
 
@@ -650,12 +653,12 @@ export class MetronomeInstrumentProcessor {
         if (typeof sampler.dispose === 'function') {
           sampler.dispose();
         } else {
-          console.warn(
+          logger.warn(
             '🎵 Sampler.dispose() not available, likely in test environment',
           );
         }
       } catch (error) {
-        console.warn(
+        logger.warn(
           '🎵 Sampler disposal failed, likely in test environment:',
           error,
         );
@@ -667,12 +670,12 @@ export class MetronomeInstrumentProcessor {
         if (typeof synth.dispose === 'function') {
           synth.dispose();
         } else {
-          console.warn(
+          logger.warn(
             '🎵 Synth.dispose() not available, likely in test environment',
           );
         }
       } catch (error) {
-        console.warn(
+        logger.warn(
           '🎵 Synth disposal failed, likely in test environment:',
           error,
         );
@@ -685,7 +688,71 @@ export class MetronomeInstrumentProcessor {
     this.midiSyncManager.dispose();
 
     this.isInitialized = false;
-    console.log('MetronomeInstrumentProcessor disposed');
+    logger.info('MetronomeInstrumentProcessor disposed');
+  }
+
+  /**
+   * Trigger a single click immediately (for DAW integration)
+   * Used by AudioEventRouter to play metronome clicks from the EventBus
+   */
+  public triggerClick(params: {
+    type: 'click' | 'accent';
+    time: number;
+    velocity?: number;
+  }): void {
+    if (!this.isInitialized || !Tone) {
+      logger.warn('MetronomeInstrumentProcessor not initialized');
+      return;
+    }
+
+    const clickType =
+      params.type === 'accent' ? ClickSoundType.ACCENT : ClickSoundType.REGULAR;
+
+    const velocity = params.velocity ?? (params.type === 'accent' ? 1.0 : 0.7);
+
+    // Get the appropriate sound source
+    const sampler = this.clickSamplers.get(clickType);
+    const synth = this.synthClicks.get(clickType);
+
+    if (sampler && sampler.loaded) {
+      // Use sampler if available
+      const pitch = params.type === 'accent' ? 'C5' : 'C4';
+      sampler.triggerAttackRelease(pitch, '16n', params.time, velocity);
+    } else if (synth) {
+      // Fall back to synth
+      const frequency = params.type === 'accent' ? 880 : 440;
+      synth.triggerAttackRelease(frequency, '16n', params.time, velocity);
+    } else {
+      // Last resort - create a simple synth
+      const tempSynth = new Tone.Synth({
+        oscillator: { type: 'sine' },
+        envelope: {
+          attack: 0.001,
+          decay: 0.05,
+          sustain: 0,
+          release: 0.05,
+        },
+      }).toDestination();
+
+      const frequency = params.type === 'accent' ? 880 : 440;
+      tempSynth.triggerAttackRelease(frequency, '16n', params.time, velocity);
+
+      // Clean up after a short delay
+      setTimeout(() => tempSynth.dispose(), 1000);
+    }
+
+    // Trigger visual sync if enabled
+    if (this.config.visualSync.enabled) {
+      this.visualSyncManager.triggerVisual({
+        type:
+          params.type === 'accent'
+            ? ClickSoundType.ACCENT
+            : ClickSoundType.REGULAR,
+        time: params.time,
+        beat: 0,
+        subdivision: 0,
+      });
+    }
   }
 
   // Private methods
@@ -815,7 +882,7 @@ export class MetronomeInstrumentProcessor {
     }
 
     await Promise.all(loadPromises);
-    console.log('Click samples loaded successfully');
+    logger.info('Click samples loaded successfully');
   }
 
   private setupSynthesizedClicks(): void {
@@ -869,12 +936,12 @@ export class MetronomeInstrumentProcessor {
         if (typeof sampler.toDestination === 'function') {
           sampler.toDestination();
         } else {
-          console.warn(
+          logger.warn(
             '🎵 Sampler.toDestination() not available, likely in test environment',
           );
         }
       } catch (error) {
-        console.warn(
+        logger.warn(
           '🎵 Sampler audio routing failed, likely in test environment:',
           error,
         );
@@ -886,12 +953,12 @@ export class MetronomeInstrumentProcessor {
         if (typeof synth.toDestination === 'function') {
           synth.toDestination();
         } else {
-          console.warn(
+          logger.warn(
             '🎵 Synth.toDestination() not available, likely in test environment',
           );
         }
       } catch (error) {
-        console.warn(
+        logger.warn(
           '🎵 Synth audio routing failed, likely in test environment:',
           error,
         );
@@ -1234,7 +1301,7 @@ export class MetronomeInstrumentProcessor {
       try {
         callback(event);
       } catch (error) {
-        console.error('Error in metronome event callback:', error);
+        logger.error('Error in metronome event callback:', error);
       }
     });
   }
@@ -1244,7 +1311,7 @@ export class MetronomeInstrumentProcessor {
       try {
         callback(this.state);
       } catch (error) {
-        console.error('Error in metronome state change callback:', error);
+        logger.error('Error in metronome state change callback:', error);
       }
     });
   }
@@ -1319,7 +1386,7 @@ class TimingEngine {
   private async setupUltraPrecisionTiming(): Promise<void> {
     // Implementation for ultra-precise timing using Web Audio worklets
     // This would involve setting up audio worklets for microsecond precision
-    console.log('Ultra-precision timing setup (placeholder implementation)');
+    logger.info('Ultra-precision timing setup (placeholder implementation)');
   }
 }
 
@@ -1407,7 +1474,7 @@ class VisualSyncManager {
       try {
         callback(data);
       } catch (error) {
-        console.error('Error in visual sync callback:', error);
+        logger.error('Error in visual sync callback:', error);
       }
     });
   }
@@ -1437,7 +1504,7 @@ class MidiSyncManager {
 
     // Initialize MIDI sync functionality
     // This would involve setting up Web MIDI API if available
-    console.log('MIDI sync initialization (placeholder implementation)');
+    logger.info('MIDI sync initialization (placeholder implementation)');
     this.isInitialized = true;
   }
 
@@ -1448,7 +1515,7 @@ class MidiSyncManager {
     }
 
     // Start sending MIDI clock signals
-    console.log(`Starting MIDI clock at ${tempo} BPM`);
+    logger.info(`Starting MIDI clock at ${tempo} BPM`);
   }
 
   public updateTempo(tempo: number): void {
@@ -1457,7 +1524,7 @@ class MidiSyncManager {
       return;
     }
 
-    console.log(`Updating MIDI clock tempo to ${tempo} BPM`);
+    logger.info(`Updating MIDI clock tempo to ${tempo} BPM`);
   }
 
   public stop(): void {
@@ -1466,7 +1533,7 @@ class MidiSyncManager {
       return;
     }
 
-    console.log('Stopping MIDI clock');
+    logger.info('Stopping MIDI clock');
   }
 
   public dispose(): void {

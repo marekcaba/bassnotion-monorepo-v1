@@ -18,6 +18,7 @@ import {
 } from '@bassnotion/contracts';
 
 import { SupabaseAssetClient } from './SupabaseAssetClient';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { PredictiveLoadingEngine } from './PredictiveLoadingEngine';
 import { AdaptiveAudioStreamer } from './AdaptiveAudioStreamer';
 // Epic 3.18: Removed services - using stubs or core services
@@ -28,10 +29,23 @@ import { SampleAnalyticsEngine } from './analytics/SampleAnalyticsEngine';
 import { EventEmitter } from 'events';
 // import { AudioEngineFactory } from '../AudioEngine.js'; // Story 3.18.3
 import { ServiceRegistry, AudioEngine } from '../core/index.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 // Stub for AudioCompressionEngine
 class AudioCompressionEngine {
-  async compressAudioBuffer(buffer: AudioBuffer, options: any): Promise<AudioBuffer> {
+  private static instance: AudioCompressionEngine | null = null;
+
+  static getInstance(): AudioCompressionEngine {
+    if (!AudioCompressionEngine.instance) {
+      AudioCompressionEngine.instance = new AudioCompressionEngine();
+    }
+    return AudioCompressionEngine.instance;
+  }
+
+  async compressAudioBuffer(
+    buffer: AudioBuffer,
+    options: any,
+  ): Promise<AudioBuffer> {
     return buffer; // Return uncompressed for now
   }
   async decompressAudioBuffer(buffer: AudioBuffer): Promise<AudioBuffer> {
@@ -52,6 +66,7 @@ class AudioCompressionEngine {
  * - Integration with existing storage and predictive loading systems
  */
 export class AudioSampleManager extends EventEmitter {
+  private static instance: AudioSampleManager | null = null;
   private config: AudioSampleManagerConfig;
   private storageClient: SupabaseAssetClient;
   private predictiveEngine?: PredictiveLoadingEngine;
@@ -105,6 +120,7 @@ export class AudioSampleManager extends EventEmitter {
     }
 
     if (config.enableFormatConversion) {
+  const { correlationId, logger } = useCorrelation('compressionEngine');
       // this.compressionEngine = new AudioCompressionEngine(config.compressionConfig);
     }
 
@@ -122,6 +138,48 @@ export class AudioSampleManager extends EventEmitter {
 
     // Initialize supported formats
     this.supportedFormats = new Set(config.supportedFormats);
+  }
+
+  /**
+   * Get singleton instance of AudioSampleManager
+   */
+  static getInstance(config?: AudioSampleManagerConfig): AudioSampleManager {
+    if (!AudioSampleManager.instance) {
+      if (!config) {
+        // Default configuration if none provided
+        config = {
+          storageClientConfig: {
+            supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+            supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+            bucketName: 'audio-samples',
+          },
+          cacheConfig: {
+            enabled: true,
+            maxSize: 100 * 1024 * 1024, // 100MB
+            ttl: 3600000, // 1 hour
+            persistentCache: false,
+          },
+          supportedFormats: ['wav', 'mp3', 'ogg', 'flac', 'aac', 'm4a', 'webm'],
+          streamingConfig: {
+            enabled: true,
+            chunkSize: 64 * 1024, // 64KB
+            preloadSize: 128 * 1024, // 128KB
+          },
+          enableFormatConversion: false,
+          predictiveLoadingEnabled: false,
+          enableBackgroundProcessing: false,
+          analyticsConfig: {
+            enabled: false,
+          },
+        };
+      }
+      AudioSampleManager.instance = new AudioSampleManager(config);
+    }
+    return AudioSampleManager.instance;
+  }
+
+  static resetInstance(): void {
+    AudioSampleManager.instance = null;
   }
 
   /**
@@ -561,14 +619,14 @@ export class AudioSampleManager extends EventEmitter {
         if (typeof this.audioContext.close === 'function') {
           await this.audioContext.close();
         } else {
-          console.warn(
+          logger.warn(
             '🔊 AudioContext.close() not available, likely in test environment',
           );
           // Gracefully handle test environment where close() might not exist
           this.audioContext = undefined;
         }
       } catch (error) {
-        console.warn(
+        logger.warn(
           '🔊 AudioContext cleanup failed, likely in test environment:',
           error,
         );
@@ -614,22 +672,29 @@ export class AudioSampleManager extends EventEmitter {
       // Story 3.18.3: Get AudioContext from AudioEngine instead of creating new one
       const audioEngine = AudioEngineFactory.getInstance();
       if (!audioEngine) {
-        console.warn('[AudioSampleManager] AudioEngine not initialized, deferring AudioContext access');
+        logger.warn(
+          '[AudioSampleManager] AudioEngine not initialized, deferring AudioContext access',
+        );
         return;
       }
 
       // Get the existing AudioContext from AudioEngine
       this.audioContext = audioEngine.getContext();
-      
+
       if (!this.audioContext) {
-        console.warn('[AudioSampleManager] AudioContext not available from AudioEngine');
+        logger.warn(
+          '[AudioSampleManager] AudioContext not available from AudioEngine',
+        );
         return;
       }
 
       // AudioEngine handles the suspended state management
-      console.log('[AudioSampleManager] Using AudioContext from AudioEngine');
+      logger.info('[AudioSampleManager] Using AudioContext from AudioEngine');
     } catch (error) {
-      console.warn('[AudioSampleManager] Failed to get AudioContext from AudioEngine:', error);
+      logger.warn(
+        '[AudioSampleManager] Failed to get AudioContext from AudioEngine:',
+        error,
+      );
       // Continue without AudioContext - some features will be limited
     }
   }
@@ -770,12 +835,12 @@ export class AudioSampleManager extends EventEmitter {
         }
 
         // If adaptive streaming failed, fall back to standard loading
-        console.warn(
+        logger.warn(
           `Adaptive streaming failed for sample ${sampleId}, falling back to standard loading:`,
           streamingResult.error?.message,
         );
       } catch (error) {
-        console.warn(
+        logger.warn(
           `Adaptive streaming error for sample ${sampleId}, falling back to standard loading:`,
           error instanceof Error ? error.message : 'Unknown error',
         );
@@ -1210,7 +1275,7 @@ export class AudioSampleManager extends EventEmitter {
         });
       }
     } catch (error) {
-      console.error('Error optimizing cache:', error);
+      logger.error('Error optimizing cache:', error);
     }
   }
 
@@ -1240,7 +1305,7 @@ export class AudioSampleManager extends EventEmitter {
       const report = this.analyticsEngine.generateReport();
       this.emit('analyticsReportGenerated', report);
     } catch (error) {
-      console.error('Error collecting analytics:', error);
+      logger.error('Error collecting analytics:', error);
     }
   }
 
@@ -1272,22 +1337,22 @@ export class AudioSampleManager extends EventEmitter {
     if (!this.analyticsEngine) return;
 
     this.analyticsEngine.on('alertsTriggered', (data) => {
-      console.warn('🚨 Sample analytics alerts triggered:', data);
+      logger.warn('🚨 Sample analytics alerts triggered:', data);
       this.emit('qualityAlert', data);
     });
 
     this.analyticsEngine.on('qualityAlert', (data) => {
-      console.warn('⚠️ Quality alert:', data);
+      logger.warn('⚠️ Quality alert:', data);
       this.emit('qualityAlert', data);
     });
 
     this.analyticsEngine.on('performanceAlert', (data) => {
-      console.warn('⚠️ Performance alert:', data);
+      logger.warn('⚠️ Performance alert:', data);
       this.emit('performanceAlert', data);
     });
 
     this.analyticsEngine.on('reportGenerated', (report) => {
-      console.log('📊 Analytics report generated:', report.reportId);
+      logger.info('📊 Analytics report generated:', report.reportId);
       this.emit('analyticsReport', report);
     });
   }

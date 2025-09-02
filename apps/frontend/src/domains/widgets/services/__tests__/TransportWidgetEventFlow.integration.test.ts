@@ -8,7 +8,12 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
   let syncService: WidgetSyncService;
   let transportController: UnifiedTransport;
   let audioEngine: AudioEngine;
-  let eventLog: Array<{ event: string; timestamp: number; source: string; data?: any }>;
+  let eventLog: Array<{
+    event: string;
+    timestamp: number;
+    source: string;
+    data?: any;
+  }>;
   let widgetMocks: Map<string, WidgetMock>;
 
   class WidgetMock {
@@ -50,7 +55,9 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
       const timeSinceLastSync = Date.now() - this.lastSyncTime;
       if (timeSinceLastSync > timeoutMs) {
         this.syncTimeouts++;
-        console.warn(`[${this.id}] Sync connection lost (${timeSinceLastSync}ms since last sync)`);
+        console.warn(
+          `[${this.id}] Sync connection lost (${timeSinceLastSync}ms since last sync)`,
+        );
         return true;
       }
       return false;
@@ -61,19 +68,21 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
     // Initialize services
     audioEngine = AudioEngine.getInstance();
     await audioEngine.initialize();
-    
+
     transportController = new TransportController(audioEngine);
     syncService = WidgetSyncService.getInstance();
-    
+
     // Reset event log
     eventLog = [];
-    
+
     // Create widget mocks
     widgetMocks = new Map();
-    ['enhanced-metronome-widget', 'harmony-widget', 'drummer-widget'].forEach(id => {
-      widgetMocks.set(id, new WidgetMock(id));
-    });
-    
+    ['enhanced-metronome-widget', 'harmony-widget', 'drummer-widget'].forEach(
+      (id) => {
+        widgetMocks.set(id, new WidgetMock(id));
+      },
+    );
+
     // Reset transport
     Tone.Transport.stop();
     Tone.Transport.position = 0;
@@ -97,17 +106,17 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
             event: 'PLAY',
             timestamp: Date.now(),
             source: id,
-            data
+            data,
           });
         });
-        
+
         syncService.on('STOP', (data) => {
           widget.handleEvent('STOP', data);
           eventLog.push({
             event: 'STOP',
             timestamp: Date.now(),
             source: id,
-            data
+            data,
           });
         });
       });
@@ -115,21 +124,21 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
       // Start transport
       const startTime = Date.now();
       await transportController.start();
-      
+
       // Emit play event
       syncService.emit('PLAY', { source: 'test-transport-page' });
 
       // Wait for propagation
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify all widgets received play event
       widgetMocks.forEach((widget, id) => {
         expect(widget.isPlaying).toBe(true);
-        expect(widget.eventLog.some(e => e.event === 'PLAY')).toBe(true);
+        expect(widget.eventLog.some((e) => e.event === 'PLAY')).toBe(true);
       });
 
       // Check event timing
-      const playEvents = eventLog.filter(e => e.event === 'PLAY');
+      const playEvents = eventLog.filter((e) => e.event === 'PLAY');
       expect(playEvents.length).toBe(3); // One for each widget
 
       // Events should arrive within 50ms of each other
@@ -143,10 +152,10 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
       await transportController.stop();
       syncService.emit('STOP', { source: 'test-transport-page' });
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify all widgets stopped
-      widgetMocks.forEach(widget => {
+      widgetMocks.forEach((widget) => {
         expect(widget.isPlaying).toBe(false);
       });
     });
@@ -156,7 +165,7 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
       const events: string[] = [];
 
       // Listen to multiple event types
-      ['PLAY', 'STOP', 'TEMPO_CHANGE', 'POSITION'].forEach(eventType => {
+      ['PLAY', 'STOP', 'TEMPO_CHANGE', 'POSITION'].forEach((eventType) => {
         syncService.on(eventType, () => {
           events.push(eventType);
           widget.handleEvent(eventType, {});
@@ -169,7 +178,7 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
       syncService.emit('POSITION', { position: '1:0:0' });
       syncService.emit('STOP', {});
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify order
       expect(events).toEqual(['PLAY', 'TEMPO_CHANGE', 'POSITION', 'STOP']);
@@ -201,7 +210,7 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
 
       // Check sync status over time
       for (let i = 0; i < 5; i++) {
-        await new Promise(resolve => setTimeout(resolve, 6000));
+        await new Promise((resolve) => setTimeout(resolve, 6000));
         const hasTimeout = widget.checkSyncTimeout();
         expect(hasTimeout).toBe(false);
       }
@@ -226,7 +235,9 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
       expect(hasTimeout).toBe(true);
 
       // This is the core issue - widgets lose sync after 30s
-      console.log('ISSUE IDENTIFIED: No heartbeat mechanism to maintain sync connection');
+      console.log(
+        'ISSUE IDENTIFIED: No heartbeat mechanism to maintain sync connection',
+      );
     });
   });
 
@@ -257,7 +268,7 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
 
     it('should handle multiple widgets subscribing to same event', () => {
       const handlers = new Map<string, vi.Mock>();
-      
+
       widgetMocks.forEach((widget, id) => {
         const handler = vi.fn();
         handlers.set(id, handler);
@@ -274,7 +285,10 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
 
   describe('Transport State Synchronization', () => {
     it('should sync transport state with widget state', async () => {
-      const stateLog: Array<{ transport: string; widgets: Map<string, boolean> }> = [];
+      const stateLog: Array<{
+        transport: string;
+        widgets: Map<string, boolean>;
+      }> = [];
 
       // Monitor state changes
       const checkStates = () => {
@@ -282,17 +296,17 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
         widgetMocks.forEach((widget, id) => {
           widgetStates.set(id, widget.isPlaying);
         });
-        
+
         stateLog.push({
           transport: Tone.Transport.state,
-          widgets: widgetStates
+          widgets: widgetStates,
         });
       };
 
       // Set up listeners
-      widgetMocks.forEach(widget => {
-        syncService.on('PLAY', () => widget.isPlaying = true);
-        syncService.on('STOP', () => widget.isPlaying = false);
+      widgetMocks.forEach((widget) => {
+        syncService.on('PLAY', () => (widget.isPlaying = true));
+        syncService.on('STOP', () => (widget.isPlaying = false));
       });
 
       // Initial state
@@ -307,7 +321,7 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
       // All should be playing
       const playingState = stateLog[stateLog.length - 1];
       expect(playingState.transport).toBe('started');
-      playingState.widgets.forEach(isPlaying => {
+      playingState.widgets.forEach((isPlaying) => {
         expect(isPlaying).toBe(true);
       });
 
@@ -319,7 +333,7 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
       // All should be stopped
       const stoppedState = stateLog[stateLog.length - 1];
       expect(stoppedState.transport).toBe('stopped');
-      stoppedState.widgets.forEach(isPlaying => {
+      stoppedState.widgets.forEach((isPlaying) => {
         expect(isPlaying).toBe(false);
       });
     });
@@ -330,18 +344,20 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
       expect(Tone.Transport.state).toBe('started');
 
       // Widgets not connected
-      widgetMocks.forEach(widget => {
+      widgetMocks.forEach((widget) => {
         expect(widget.isConnected).toBe(false);
       });
 
       // This is the mismatch scenario from the logs
-      console.log('MISMATCH: Transport is started but widgets are not connected');
+      console.log(
+        'MISMATCH: Transport is started but widgets are not connected',
+      );
 
       // Emit play event manually
       syncService.emit('PLAY', { source: 'transport' });
 
       // Widgets should receive event even if not connected
-      widgetMocks.forEach(widget => {
+      widgetMocks.forEach((widget) => {
         syncService.on('PLAY', () => {
           widget.isPlaying = true;
           // But they're not connected, so they can't actually play
@@ -352,9 +368,9 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
       });
 
       syncService.emit('PLAY', { source: 'transport' });
-      
+
       // This demonstrates the issue
-      widgetMocks.forEach(widget => {
+      widgetMocks.forEach((widget) => {
         expect(widget.isPlaying).toBe(false); // Because they're not connected
       });
     });
@@ -363,7 +379,7 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
   describe('Performance and Timing', () => {
     it('should process events quickly', async () => {
       const processingTimes: number[] = [];
-      
+
       syncService.on('PLAY', () => {
         const start = performance.now();
         // Simulate some processing
@@ -380,14 +396,14 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
       }
 
       // All should process quickly
-      processingTimes.forEach(time => {
+      processingTimes.forEach((time) => {
         expect(time).toBeLessThan(10); // Less than 10ms
       });
     });
 
     it('should handle rapid event bursts', async () => {
       let eventCount = 0;
-      
+
       syncService.on('POSITION', () => {
         eventCount++;
       });
@@ -395,11 +411,11 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
       // Simulate rapid position updates
       const startTime = Date.now();
       while (Date.now() - startTime < 1000) {
-        syncService.emit('POSITION', { 
+        syncService.emit('POSITION', {
           seconds: Tone.Transport.seconds,
-          position: Tone.Transport.position
+          position: Tone.Transport.position,
         });
-        await new Promise(resolve => setTimeout(resolve, 16)); // ~60fps
+        await new Promise((resolve) => setTimeout(resolve, 16)); // ~60fps
       }
 
       // Should handle many events
@@ -412,17 +428,17 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
       // Proposed solution: Add heartbeat to WidgetSyncService
       class WidgetSyncServiceWithHeartbeat extends WidgetSyncService {
         private heartbeatInterval: NodeJS.Timeout | null = null;
-        
+
         startHeartbeat() {
           this.heartbeatInterval = setInterval(() => {
-            this.emit('HEARTBEAT', { 
+            this.emit('HEARTBEAT', {
               timestamp: Date.now(),
               transportState: Tone.Transport.state,
-              position: Tone.Transport.position
+              position: Tone.Transport.position,
             });
           }, 5000); // Every 5 seconds
         }
-        
+
         stopHeartbeat() {
           if (this.heartbeatInterval) {
             clearInterval(this.heartbeatInterval);
@@ -432,11 +448,11 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
       }
 
       const enhancedSync = new WidgetSyncServiceWithHeartbeat();
-      
+
       // Set up widget with heartbeat listener
       const widget = widgetMocks.get('drummer-widget')!;
       widget.connect();
-      
+
       enhancedSync.on('HEARTBEAT', (data) => {
         widget.lastSyncTime = Date.now();
         console.log('Heartbeat received:', data);
@@ -447,7 +463,7 @@ describe('Transport-Widget Event Flow Integration Tests', () => {
 
       // Simulate long playback session
       for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
         const hasTimeout = widget.checkSyncTimeout();
         expect(hasTimeout).toBe(false);
         console.log(`After ${(i + 1) * 5} seconds: No timeout`);

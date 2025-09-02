@@ -10,26 +10,25 @@
  */
 
 // Export sample plugins (Story 2.1)
-export { BassProcessor } from './BassProcessor';
-export { DrumProcessor } from './DrumProcessor';
+export { BassProcessor } from '../../modules/instruments/implementations/bass/BassProcessor.js';
+export { DrumProcessor } from '../../modules/instruments/implementations/drums/DrumProcessor.js';
 export { SyncProcessor } from './SyncProcessor';
 
 // Export professional instrument processors (Story 2.2)
 export { MidiParserProcessor } from './MidiParserProcessor';
-export { BassInstrumentProcessor } from './BassInstrumentProcessor';
-export { DrumInstrumentProcessor } from './DrumInstrumentProcessor';
-export { ChordInstrumentProcessor } from './ChordInstrumentProcessor';
+export { BassInstrumentProcessor } from '../../modules/instruments/implementations/bass/BassInstrumentProcessor.js';
+export { DrumInstrumentProcessor } from '../../modules/instruments/implementations/drums/DrumInstrumentProcessor.js';
+// ChordInstrumentProcessor removed - unused code (37k lines)
 export { MetronomeInstrumentProcessor } from './MetronomeInstrumentProcessor';
+export { WamHarmonyProcessor } from '../../modules/instruments/adapters/wam/WamHarmonyProcessor';
 
 // Export enhanced processors with professional audio samples (Story 3.16)
 export {
   EnhancedMetronomeProcessor,
   createEnhancedMetronome,
 } from './EnhancedMetronomeProcessor';
-export {
-  EnhancedChordProcessor,
-  createEnhancedChordProcessor,
-} from './EnhancedChordProcessor';
+// EnhancedChordProcessor removed - unused code
+// Use WamKeyboard for harmony playback
 
 // Export WAM integration services (Story 3.21 Task 7)
 export { WamPluginAdapter } from './WamPluginAdapter';
@@ -37,10 +36,12 @@ export { WamHostManager } from './WamHostManager';
 export { WamDeviceOptimizer } from './WamDeviceOptimizer';
 
 // Plugin registry for easy registration
-import { BassProcessor } from './BassProcessor';
-import { DrumProcessor } from './DrumProcessor';
+import { BassProcessor } from '../../modules/instruments/implementations/bass/BassProcessor.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { DrumProcessor } from '../../modules/instruments/implementations/drums/DrumProcessor.js';
 import { SyncProcessor } from './SyncProcessor';
 import type { AudioPlugin } from '../../types/plugin';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 /**
  * Sample plugin registry
@@ -196,7 +197,7 @@ export async function applyPluginPreset(
     try {
       await plugin.setParameter(parameterId, value);
     } catch (error) {
-      console.warn(
+      logger.warn(
         `Failed to set parameter ${parameterId} to ${value}:`,
         error,
       );

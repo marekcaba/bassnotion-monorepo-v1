@@ -6,6 +6,8 @@
  */
 
 import {
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { createStructuredLogger } from '@bassnotion/contracts';
   getExercises,
   getExerciseWithNotes,
   getExercisesByDifficulty,
@@ -16,67 +18,67 @@ import {
  * Test all exercise API functions
  */
 export async function testExerciseAPI() {
-  console.log('🎸 Testing Exercise API Integration...\n');
+  logger.info('🎸 Testing Exercise API Integration...\n');
 
   try {
     // Test 1: Fetch all exercises
-    console.log('1️⃣ Testing getExercises()...');
+    logger.info('1️⃣ Testing getExercises()...');
     const allExercises = await getExercises();
-    console.log(`✅ Found ${allExercises.exercises.length} exercises`);
+    logger.info(`✅ Found ${allExercises.exercises.length} exercises`);
     allExercises.exercises.forEach((ex, i) => {
-      console.log(`   ${i + 1}. ${ex.title} (${ex.difficulty}, ${ex.bpm} BPM)`);
+      logger.info(`   ${i + 1}. ${ex.title} (${ex.difficulty}, ${ex.bpm} BPM)`);
     });
-    console.log('');
+    logger.info('');
 
     // Test 2: Fetch specific exercise with notes
     if (allExercises.exercises.length > 0) {
       const firstExercise = allExercises.exercises[0];
       if (firstExercise) {
-        console.log(
+        logger.info(
           `2️⃣ Testing getExerciseWithNotes('${firstExercise.id}')...`,
         );
         const exerciseWithNotes = await getExerciseWithNotes(firstExercise.id);
-        console.log(`✅ Loaded exercise: ${exerciseWithNotes.exercise.title}`);
-        console.log(`   Notes: ${exerciseWithNotes.exercise.notes.length}`);
-        console.log(`   Duration: ${exerciseWithNotes.exercise.duration}ms`);
-        console.log('');
+        logger.info(`✅ Loaded exercise: ${exerciseWithNotes.exercise.title}`);
+        logger.info(`   Notes: ${exerciseWithNotes.exercise.notes.length}`);
+        logger.info(`   Duration: ${exerciseWithNotes.exercise.duration}ms`);
+        logger.info('');
       }
     }
 
     // Test 3: Filter by difficulty
-    console.log('3️⃣ Testing getExercisesByDifficulty()...');
+    logger.info('3️⃣ Testing getExercisesByDifficulty()...');
     const beginnerExercises = await getExercisesByDifficulty('beginner');
     const intermediateExercises =
       await getExercisesByDifficulty('intermediate');
     const advancedExercises = await getExercisesByDifficulty('advanced');
 
-    console.log(`✅ Beginner: ${beginnerExercises.exercises.length}`);
-    console.log(`✅ Intermediate: ${intermediateExercises.exercises.length}`);
-    console.log(`✅ Advanced: ${advancedExercises.exercises.length}`);
-    console.log('');
+    logger.info(`✅ Beginner: ${beginnerExercises.exercises.length}`);
+    logger.info(`✅ Intermediate: ${intermediateExercises.exercises.length}`);
+    logger.info(`✅ Advanced: ${advancedExercises.exercises.length}`);
+    logger.info('');
 
     // Test 4: Search exercises
-    console.log('4️⃣ Testing searchExercises()...');
+    logger.info('4️⃣ Testing searchExercises()...');
     const bluesResults = await searchExercises('blues');
     const modalResults = await searchExercises('modal');
 
-    console.log(`✅ 'blues' search: ${bluesResults.exercises.length} results`);
-    console.log(`✅ 'modal' search: ${modalResults.exercises.length} results`);
-    console.log('');
+    logger.info(`✅ 'blues' search: ${bluesResults.exercises.length} results`);
+    logger.info(`✅ 'modal' search: ${modalResults.exercises.length} results`);
+    logger.info('');
 
     // TODO: Review non-null assertion - consider null safety
-    console.log('🎉 All tests passed! Exercise API is working correctly.');
+    logger.info('🎉 All tests passed! Exercise API is working correctly.');
     return true;
   } catch (error) {
-    console.error('❌ Exercise API test failed:', error);
-    console.log('\n📝 This is expected if:');
-    console.log('   - Supabase is not running locally');
-    console.log('   - Database migration has not been applied');
-    console.log('   - MCP server is not configured');
+    logger.error('❌ Exercise API test failed:', error);
+    logger.info('\n📝 This is expected if:');
+    logger.info('   - Supabase is not running locally');
+    logger.info('   - Database migration has not been applied');
+    logger.info('   - MCP server is not configured');
     // Configuration needed:
-    console.log('   1. Start Supabase: cd apps/backend && npx supabase start');
-    console.log('   2. Apply migration: npx supabase db reset');
-    console.log('   3. Or configure MCP server for Supabase');
+    logger.info('   1. Start Supabase: cd apps/backend && npx supabase start');
+    logger.info('   2. Apply migration: npx supabase db reset');
+    logger.info('   3. Or configure MCP server for Supabase');
     return false;
   }
 }
@@ -85,18 +87,18 @@ export async function testExerciseAPI() {
  * Test exercise data structure and types
  */
 export function testExerciseTypes() {
-  console.log('🔍 Testing Exercise Types...\n');
+  logger.info('🔍 Testing Exercise Types...\n');
 
   try {
-    console.log('✅ Exercise type validation passed');
-    console.log('   Types are properly defined in contracts');
-    console.log('');
+    logger.info('✅ Exercise type validation passed');
+    logger.info('   Types are properly defined in contracts');
+    logger.info('');
 
     // TODO: Review non-null assertion - consider null safety
-    console.log('🎯 Type system is working correctly!');
+    logger.info('🎯 Type system is working correctly!');
     return true;
   } catch (error) {
-    console.error('❌ Type validation failed:', error);
+    logger.error('❌ Type validation failed:', error);
     return false;
   }
 }
@@ -105,9 +107,9 @@ export function testExerciseTypes() {
  * Run all tests
  */
 export async function runAllTests() {
-  console.log('🚀 Running Exercise Integration Tests\n');
-  console.log('='.repeat(50));
-  console.log('');
+  logger.info('🚀 Running Exercise Integration Tests\n');
+  logger.info('='.repeat(50));
+  logger.info('');
 
   // Test types first (doesn't require database)
   const typesOk = testExerciseTypes();
@@ -115,19 +117,19 @@ export async function runAllTests() {
   // Test API (requires database)
   const apiOk = await testExerciseAPI();
 
-  console.log('='.repeat(50));
-  console.log(`\n📊 Test Results:`);
-  console.log(`   Types: ${typesOk ? '✅ PASS' : '❌ FAIL'}`);
-  console.log(`   API: ${apiOk ? '✅ PASS' : '❌ FAIL'}`);
+  logger.info('='.repeat(50));
+  logger.info(`\n📊 Test Results:`);
+  logger.info(`   Types: ${typesOk ? '✅ PASS' : '❌ FAIL'}`);
+  logger.info(`   API: ${apiOk ? '✅ PASS' : '❌ FAIL'}`);
 
   if (typesOk && apiOk) {
     // TODO: Review non-null assertion - consider null safety
-    console.log('\n🎉 All tests passed! Ready for production.');
+    logger.info('\n🎉 All tests passed! Ready for production.');
     // TODO: Review non-null assertion - consider null safety
   } else if (typesOk && !apiOk) {
-    console.log('\n⚠️  Types OK, API needs database setup.');
+    logger.info('\n⚠️  Types OK, API needs database setup.');
   } else {
-    console.log('\n❌ Tests failed. Check implementation.');
+    logger.info('\n❌ Tests failed. Check implementation.');
   }
 
   return typesOk && apiOk;

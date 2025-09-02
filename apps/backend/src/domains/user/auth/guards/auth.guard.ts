@@ -1,25 +1,23 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  UnauthorizedException,
-  Logger,
-  Inject,
-  forwardRef,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Inject, forwardRef } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 
 import { AuthService } from '../auth.service.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { RequestContextService } from '../../../../shared/services/request-context.service.js';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  private readonly logger = new Logger(AuthGuard.name);
+  private readonly staticLogger = createStructuredLogger(AuthGuard.name);
 
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
+    @Inject(RequestContextService)
+    private readonly requestContext: RequestContextService,
   ) {
-    this.logger.debug('AuthGuard initialized');
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug('AuthGuard initialized', { correlationId });
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

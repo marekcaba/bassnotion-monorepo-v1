@@ -3,6 +3,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 export function useToneInit() {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -14,23 +15,22 @@ export function useToneInit() {
       try {
         // Import Tone.js
         const Tone = await import('tone');
-        
-        // Set up the context but don't start it
-        const context = new AudioContext();
-        await context.suspend();
-        Tone.setContext(context);
-        
+
+        // Don't create a new AudioContext here - let AudioEngine handle it
+        // This was causing multiple contexts to be created
+        // Just ensure Tone.js is loaded and ready
+
         // Configure Transport
         Tone.Transport.bpm.value = 120;
-        
+
         // Store references
         setTone(Tone);
         setTransport(Tone.Transport);
         setIsInitialized(true);
-        
-        console.log('✅ Tone.JS initialized');
+
+        logger.info('✅ Tone.JS initialized');
       } catch (error) {
-        console.error('Failed to initialize Tone.js:', error);
+        logger.error('Failed to initialize Tone.js:', error);
       }
     };
 
@@ -45,6 +45,6 @@ export function useToneInit() {
       if (tone && tone.context.state !== 'running') {
         await tone.start();
       }
-    }
+    },
   };
 }

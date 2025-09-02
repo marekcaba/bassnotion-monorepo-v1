@@ -1,7 +1,7 @@
 /**
  * Command - Base Command Pattern Implementation
  * Story 3.18.4: Service Architecture Implementation
- * 
+ *
  * Base interface and abstract class for all commands in the system.
  * Enables undo/redo functionality and command history tracking.
  */
@@ -35,7 +35,7 @@ export abstract class Command<T = any> implements ICommand<T> {
   protected executed = false;
   protected undone = false;
   protected result?: CommandResult<T>;
-  
+
   constructor(name: string, context?: Record<string, any>) {
     this.metadata = {
       id: this.generateCommandId(),
@@ -68,7 +68,7 @@ export abstract class Command<T = any> implements ICommand<T> {
   canExecute(): boolean {
     return !this.executed || this.undone;
   }
-  
+
   /**
    * Reset command state for re-execution
    */
@@ -165,7 +165,10 @@ export class CompositeCommand<T = any> extends Command<T[]> {
               await executed.undo();
             } catch (rollbackError) {
               // Log rollback failure but continue with other rollbacks
-              console.error(`Failed to rollback command ${executed.metadata.name}:`, rollbackError);
+              logger.error(
+                `Failed to rollback command ${executed.metadata.name}:`,
+                rollbackError,
+              );
             }
           }
           return {
@@ -192,7 +195,10 @@ export class CompositeCommand<T = any> extends Command<T[]> {
           await executed.undo();
         } catch (rollbackError) {
           // Log rollback failure but continue with other rollbacks
-          console.error(`Failed to rollback command ${executed.metadata.name}:`, rollbackError);
+          logger.error(
+            `Failed to rollback command ${executed.metadata.name}:`,
+            rollbackError,
+          );
         }
       }
       return {
@@ -264,7 +270,7 @@ export class CompositeCommand<T = any> extends Command<T[]> {
   clone(): CompositeCommand<T> {
     return new CompositeCommand(
       this.metadata.name,
-      this.commands.map(cmd => cmd.clone())
+      this.commands.map((cmd) => cmd.clone()),
     );
   }
 }

@@ -11,6 +11,7 @@
  */
 
 import {
+import { createStructuredLogger } from '@bassnotion/contracts';
   SampleCacheEntry,
   AudioSampleQualityProfile,
   AudioSampleCategory,
@@ -462,7 +463,7 @@ export class UsagePatternAnalyzer {
     // Use setTimeout to avoid blocking
     setTimeout(() => {
       this.analyzePatterns().catch((error) => {
-        console.warn('Usage pattern analysis failed:', error);
+        logger.warn('Usage pattern analysis failed:', error);
       });
     }, 100);
   }

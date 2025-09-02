@@ -7,6 +7,8 @@
  */
 
 import {
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
   IntelligentCompressionConfig,
   CompressionBenefit,
   CompressionResult,
@@ -131,6 +133,7 @@ export class IntelligentCompressionEngine {
     const originalSize = data.byteLength;
 
     try {
+  const { correlationId, logger } = useCorrelation('startTime');
       // Analyze asset for optimal compression strategy
       const compressionStrategy = await this.analyzeCompressionStrategy(
         data,
@@ -984,7 +987,7 @@ export class IntelligentCompressionEngine {
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
-        console.warn(
+        logger.warn(
           `Failed to initialize compression worker ${i}: ${errorMessage}`,
         );
       }
@@ -1465,7 +1468,7 @@ export class IntelligentCompressionEngine {
       this.analytics.lastUpdated = Date.now();
       this.lastOperation = Date.now();
     } catch (error) {
-      console.error(
+      logger.error(
         'Failed to record compression operation:',
         error instanceof Error ? error.message : String(error),
       );

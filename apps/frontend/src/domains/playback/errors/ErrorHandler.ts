@@ -1,7 +1,7 @@
 /**
  * ErrorHandler - Centralized error handling system
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Professional error handling with recovery and reporting
  */
 
@@ -9,6 +9,7 @@ import { EventBus } from '../services/core/EventBus.js';
 import { AudioError } from './AudioErrors.js';
 import { ErrorReporter } from './ErrorReporting.js';
 import { ErrorRecovery } from './ErrorRecovery.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
 export interface ErrorContext {
   operation: string;
@@ -45,10 +46,7 @@ export class ErrorHandler {
   private readonly MAX_ERROR_HISTORY = 100;
   private userErrorCallback?: (message: string, severity: string) => void;
 
-  constructor(
-    eventBus: EventBus,
-    config: ErrorHandlerConfig = {}
-  ) {
+  constructor(eventBus: EventBus, config: ErrorHandlerConfig = {}) {
     this.eventBus = eventBus;
     this.config = {
       maxRetries: 3,
@@ -57,7 +55,7 @@ export class ErrorHandler {
       enableAutoRecovery: true,
       errorReporter: config.errorReporter || new ErrorReporter(eventBus),
       errorRecovery: config.errorRecovery || new ErrorRecovery(eventBus),
-      ...config
+      ...config,
     };
 
     this.errorReporter = this.config.errorReporter;
@@ -69,7 +67,9 @@ export class ErrorHandler {
   /**
    * Set callback for user error display
    */
-  setUserErrorCallback(callback: (message: string, severity: string) => void): void {
+  setUserErrorCallback(
+    callback: (message: string, severity: string) => void,
+  ): void {
     this.userErrorCallback = callback;
   }
 
@@ -82,7 +82,7 @@ export class ErrorHandler {
       context,
       timestamp: Date.now(),
       resolved: false,
-      retryCount: 0
+      retryCount: 0,
     };
 
     // Add to history
@@ -98,19 +98,19 @@ export class ErrorHandler {
     this.eventBus.emit('error:occurred', {
       error,
       context,
-      timestamp: errorRecord.timestamp
+      timestamp: errorRecord.timestamp,
     });
 
     // Attempt automatic recovery if enabled
     if (this.config.enableAutoRecovery) {
       const recovered = await this.attemptRecovery(errorRecord);
-      
+
       if (recovered) {
         errorRecord.resolved = true;
         this.eventBus.emit('error:recovered', {
           error,
           context,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
         return;
       }
@@ -127,20 +127,20 @@ export class ErrorHandler {
    */
   async handleAsyncError<T>(
     operation: () => Promise<T>,
-    context: ErrorContext
+    context: ErrorContext,
   ): Promise<T> {
     let lastError: Error | null = null;
-    
+
     for (let attempt = 0; attempt <= this.config.maxRetries; attempt++) {
       try {
         return await operation();
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        
+
         context.additionalData = {
           ...context.additionalData,
           attempt: attempt + 1,
-          maxRetries: this.config.maxRetries
+          maxRetries: this.config.maxRetries,
         };
 
         // Log attempt
@@ -149,17 +149,17 @@ export class ErrorHandler {
         // Check if we should retry
         if (attempt < this.config.maxRetries) {
           const shouldRetry = await this.shouldRetry(lastError, context);
-          
+
           if (shouldRetry) {
             // Wait before retry with exponential backoff
             const delay = this.config.retryDelay * Math.pow(2, attempt);
             await this.delay(delay);
-            
+
             this.eventBus.emit('error:retry', {
               error: lastError,
               context,
               attempt: attempt + 1,
-              delay
+              delay,
             });
             continue;
           }
@@ -182,14 +182,14 @@ export class ErrorHandler {
     try {
       const recovered = await this.errorRecovery.attempt(
         errorRecord.error,
-        errorRecord.context
+        errorRecord.context,
       );
 
       if (recovered) {
         this.eventBus.emit('error:recovery-success', {
           error: errorRecord.error,
           context: errorRecord.context,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
 
@@ -197,8 +197,10 @@ export class ErrorHandler {
     } catch (recoveryError) {
       // Recovery itself failed
       this.logError(
-        recoveryError instanceof Error ? recoveryError : new Error(String(recoveryError)),
-        { ...errorRecord.context, operation: 'error-recovery' }
+        recoveryError instanceof Error
+          ? recoveryError
+          : new Error(String(recoveryError)),
+        { ...errorRecord.context, operation: 'error-recovery' },
       );
       return false;
     }
@@ -207,16 +209,21 @@ export class ErrorHandler {
   /**
    * Determine if operation should be retried
    */
-  private async shouldRetry(error: Error, context: ErrorContext): Promise<boolean> {
+  private async shouldRetry(
+    error: Error,
+    context: ErrorContext,
+  ): Promise<boolean> {
     // Don't retry non-recoverable errors
     if (error instanceof AudioError && !error.isRecoverable()) {
       return false;
     }
 
     // Check specific error types
-    if (error.message.includes('Network') || 
-        error.message.includes('timeout') ||
-        error.message.includes('CORS')) {
+    if (
+      error.message.includes('Network') ||
+      error.message.includes('timeout') ||
+      error.message.includes('CORS')
+    ) {
       return true;
     }
 
@@ -228,13 +235,13 @@ export class ErrorHandler {
    * Show user-friendly error message
    */
   private showUserError(error: Error, context: ErrorContext): void {
-    const userMessage = error instanceof AudioError 
-      ? error.toUserMessage()
-      : 'An unexpected error occurred. Please try again.';
+    const userMessage =
+      error instanceof AudioError
+        ? error.toUserMessage()
+        : 'An unexpected error occurred. Please try again.';
 
-    const severity = error instanceof AudioError
-      ? error.getSeverity()
-      : 'medium';
+    const severity =
+      error instanceof AudioError ? error.getSeverity() : 'medium';
 
     // Use callback if set, otherwise emit event
     if (this.userErrorCallback) {
@@ -244,7 +251,7 @@ export class ErrorHandler {
         message: userMessage,
         severity,
         context,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
   }
@@ -257,14 +264,14 @@ export class ErrorHandler {
       message: error.message,
       stack: error.stack,
       context,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     // Development logging
     if (process.env.NODE_ENV === 'development') {
       console.group(`🔴 Audio Error: ${context.operation}`);
-      console.error('Error:', error);
-      console.error('Context:', context);
+      logger.error('Error:', error);
+      logger.error('Context:', context);
       console.groupEnd();
     }
 
@@ -277,7 +284,7 @@ export class ErrorHandler {
    */
   private addToHistory(errorRecord: ErrorRecord): void {
     this.errorHistory.push(errorRecord);
-    
+
     // Limit history size
     if (this.errorHistory.length > this.MAX_ERROR_HISTORY) {
       this.errorHistory.shift();
@@ -290,11 +297,14 @@ export class ErrorHandler {
   private setupEventListeners(): void {
     // Listen for audio-specific errors
     this.eventBus.on('audio:error', async ({ error, context }) => {
-      await this.handleError(error, context || {
-        operation: 'audio-operation',
-        component: 'audio-engine',
-        timestamp: Date.now()
-      });
+      await this.handleError(
+        error,
+        context || {
+          operation: 'audio-operation',
+          component: 'audio-engine',
+          timestamp: Date.now(),
+        },
+      );
     });
 
     // Listen for transport errors
@@ -302,7 +312,7 @@ export class ErrorHandler {
       await this.handleError(error, {
         operation: operation || 'transport-operation',
         component: 'transport-controller',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     });
 
@@ -312,7 +322,7 @@ export class ErrorHandler {
         operation: 'plugin-operation',
         component: `plugin-${pluginName}`,
         timestamp: Date.now(),
-        additionalData: { pluginName }
+        additionalData: { pluginName },
       });
     });
   }
@@ -327,17 +337,17 @@ export class ErrorHandler {
     recentErrors: ErrorRecord[];
   } {
     const errorsByType: Record<string, number> = {};
-    
-    this.errorHistory.forEach(record => {
+
+    this.errorHistory.forEach((record) => {
       const errorType = record.error.constructor.name;
       errorsByType[errorType] = (errorsByType[errorType] || 0) + 1;
     });
 
     return {
       totalErrors: this.errorHistory.length,
-      resolvedErrors: this.errorHistory.filter(r => r.resolved).length,
+      resolvedErrors: this.errorHistory.filter((r) => r.resolved).length,
       errorsByType,
-      recentErrors: this.errorHistory.slice(-10)
+      recentErrors: this.errorHistory.slice(-10),
     };
   }
 
@@ -353,6 +363,6 @@ export class ErrorHandler {
    * Utility delay function
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

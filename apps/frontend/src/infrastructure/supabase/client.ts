@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // TODO: Review non-null assertion - consider null safety
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -47,7 +48,7 @@ const createSupabaseClient = () => {
 
   // For webkit E2E testing, return a completely mocked client
   if (useMinimalConfig) {
-    console.log('Creating mocked Supabase client for webkit E2E testing');
+    logger.info('Creating mocked Supabase client for webkit E2E testing');
 
     // Create a minimal mock that prevents any actual network calls
     return {

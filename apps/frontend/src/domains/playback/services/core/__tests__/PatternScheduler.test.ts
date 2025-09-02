@@ -26,18 +26,29 @@ describe('PatternScheduler', () => {
   describe('initialization', () => {
     it('should initialize successfully', async () => {
       await scheduler.initialize();
-      
-      expect(mockTransport.on).toHaveBeenCalledWith('position-update', expect.any(Function));
-      expect(mockTransport.on).toHaveBeenCalledWith('state-change', expect.any(Function));
-      expect(mockEventBus.on).toHaveBeenCalledWith('track-regions-updated', expect.any(Function));
+
+      expect(mockTransport.on).toHaveBeenCalledWith(
+        'position-update',
+        expect.any(Function),
+      );
+      expect(mockTransport.on).toHaveBeenCalledWith(
+        'state-change',
+        expect.any(Function),
+      );
+      expect(mockEventBus.on).toHaveBeenCalledWith(
+        'track-regions-updated',
+        expect.any(Function),
+      );
     });
 
     it('should handle initialization errors', async () => {
       vi.mocked(UnifiedTransport.getInstance).mockImplementationOnce(() => {
         throw new Error('Transport error');
       });
-      
-      await expect(scheduler.initialize()).rejects.toThrow('Failed to initialize PatternScheduler');
+
+      await expect(scheduler.initialize()).rejects.toThrow(
+        'Failed to initialize PatternScheduler',
+      );
     });
   });
 
@@ -56,12 +67,12 @@ describe('PatternScheduler', () => {
           startPosition: '0:0:0',
           duration: '1:0:0',
           loopCount: 0,
-          muted: false
-        }
+          muted: false,
+        },
       ];
-      
+
       scheduler.registerTrack(trackId, regions);
-      
+
       // Verify internal state (would need to expose for testing)
       expect(scheduler.getMetrics().scheduledEvents).toBe(0);
     });
@@ -70,7 +81,7 @@ describe('PatternScheduler', () => {
       const trackId = 'test-track';
       scheduler.registerTrack(trackId, []);
       scheduler.unregisterTrack(trackId);
-      
+
       expect(scheduler.getMetrics().scheduledEvents).toBe(0);
     });
   });
@@ -86,9 +97,9 @@ describe('PatternScheduler', () => {
         id: 'drum-1',
         events: [
           { position: '0:0:0', drum: 'kick', velocity: 0.8 },
-          { position: '0:1:0', drum: 'snare', velocity: 0.6 }
+          { position: '0:1:0', drum: 'snare', velocity: 0.6 },
         ],
-        loopLength: 1
+        loopLength: 1,
       };
 
       const region: Region = {
@@ -99,19 +110,20 @@ describe('PatternScheduler', () => {
         duration: '1:0:0',
         pattern: drumPattern,
         loopCount: 1,
-        muted: false
+        muted: false,
       };
 
       scheduler.registerTrack('drums', [region]);
-      
+
       // Simulate position update
-      const positionHandler = vi.mocked(mockTransport.on).mock.calls
-        .find(call => call[0] === 'position-update')?.[1];
-      
+      const positionHandler = vi
+        .mocked(mockTransport.on)
+        .mock.calls.find((call) => call[0] === 'position-update')?.[1];
+
       if (positionHandler) {
         positionHandler({
           position: '0:0:0',
-          audioTime: 0
+          audioTime: 0,
         });
       }
 
@@ -127,7 +139,7 @@ describe('PatternScheduler', () => {
 
     it('should track performance metrics', () => {
       const metrics = scheduler.getMetrics();
-      
+
       expect(metrics).toHaveProperty('scheduledEvents');
       expect(metrics).toHaveProperty('missedEvents');
       expect(metrics).toHaveProperty('avgLatency');
@@ -141,17 +153,26 @@ describe('PatternScheduler', () => {
       await scheduler.start();
       await scheduler.stop();
       await scheduler.restart();
-      
+
       expect(scheduler.getConfig().isRunning).toBe(true);
     });
 
     it('should dispose properly', async () => {
       await scheduler.initialize();
       await scheduler.dispose();
-      
-      expect(mockTransport.off).toHaveBeenCalledWith('position-update', expect.any(Function));
-      expect(mockTransport.off).toHaveBeenCalledWith('state-change', expect.any(Function));
-      expect(mockEventBus.off).toHaveBeenCalledWith('track-regions-updated', expect.any(Function));
+
+      expect(mockTransport.off).toHaveBeenCalledWith(
+        'position-update',
+        expect.any(Function),
+      );
+      expect(mockTransport.off).toHaveBeenCalledWith(
+        'state-change',
+        expect.any(Function),
+      );
+      expect(mockEventBus.off).toHaveBeenCalledWith(
+        'track-regions-updated',
+        expect.any(Function),
+      );
     });
   });
 
@@ -159,14 +180,14 @@ describe('PatternScheduler', () => {
     it('should report healthy status when initialized', async () => {
       await scheduler.initialize();
       const health = await scheduler.healthCheck();
-      
+
       expect(health.status).toBe('healthy');
       expect(health.details?.isInitialized).toBe(true);
     });
 
     it('should report unhealthy status when not initialized', async () => {
       const health = await scheduler.healthCheck();
-      
+
       expect(health.status).toBe('unhealthy');
     });
   });

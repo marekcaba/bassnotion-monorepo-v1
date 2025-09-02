@@ -1,7 +1,7 @@
 /**
  * AnalyticsIntegration - Analytics and error reporting integration
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Integrates with analytics platforms for production insights
  */
 
@@ -80,7 +80,7 @@ export class AnalyticsIntegration {
   constructor(
     eventBus: EventBus,
     logger: ProductionLogger,
-    config: AnalyticsConfig = {}
+    config: AnalyticsConfig = {},
   ) {
     this.eventBus = eventBus;
     this.logger = logger;
@@ -94,12 +94,12 @@ export class AnalyticsIntegration {
       enablePerformanceTracking: true,
       breadcrumbLimit: 100,
       sanitizers: [],
-      ...config
+      ...config,
     };
 
     this.sessionStartTime = Date.now();
     this.providers = config.providers || [];
-    
+
     this.initializeProviders();
     this.setupEventTracking();
   }
@@ -114,7 +114,7 @@ export class AnalyticsIntegration {
       if (typeof window !== 'undefined' && (window as any).gtag) {
         this.providers.push(new GoogleAnalyticsProvider());
       }
-      
+
       // Sentry
       if (typeof window !== 'undefined' && (window as any).Sentry) {
         this.providers.push(new SentryProvider());
@@ -126,12 +126,12 @@ export class AnalyticsIntegration {
       provider.setContext({
         sessionId: this.config.sessionId,
         sessionStartTime: this.sessionStartTime,
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
       });
     }
 
     this.logger.info('analytics', 'Analytics providers initialized', {
-      providers: this.providers.map(p => p.name)
+      providers: this.providers.map((p) => p.name),
     });
   }
 
@@ -140,20 +140,20 @@ export class AnalyticsIntegration {
    */
   async track(
     name: string,
-    category: string = 'general',
-    properties?: Record<string, any>
+    category = 'general',
+    properties?: Record<string, any>,
   ): Promise<void> {
     if (!this.config.enabled) return;
 
     this.eventCount++;
-    
+
     const event: AnalyticsEvent = {
       name,
       category,
       properties: this.sanitizeData(properties),
       timestamp: Date.now(),
       userId: this.config.userId,
-      sessionId: this.config.sessionId
+      sessionId: this.config.sessionId,
     };
 
     // Add breadcrumb
@@ -162,14 +162,18 @@ export class AnalyticsIntegration {
       type: 'event',
       category,
       message: name,
-      data: properties
+      data: properties,
     });
 
     // Send to all providers
-    const promises = this.providers.map(provider => 
-      provider.track(event).catch(error => {
-        this.logger.error('analytics', `Failed to track event with ${provider.name}`, error);
-      })
+    const promises = this.providers.map((provider) =>
+      provider.track(event).catch((error) => {
+        this.logger.error(
+          'analytics',
+          `Failed to track event with ${provider.name}`,
+          error,
+        );
+      }),
     );
 
     await Promise.all(promises);
@@ -190,10 +194,14 @@ export class AnalyticsIntegration {
     const sanitizedTraits = this.sanitizeData(traits);
 
     // Send to all providers
-    const promises = this.providers.map(provider =>
-      provider.identify(userId, sanitizedTraits).catch(error => {
-        this.logger.error('analytics', `Failed to identify user with ${provider.name}`, error);
-      })
+    const promises = this.providers.map((provider) =>
+      provider.identify(userId, sanitizedTraits).catch((error) => {
+        this.logger.error(
+          'analytics',
+          `Failed to identify user with ${provider.name}`,
+          error,
+        );
+      }),
     );
 
     await Promise.all(promises);
@@ -207,7 +215,7 @@ export class AnalyticsIntegration {
   async reportError(
     error: Error | AudioError,
     severity: ErrorReport['context']['severity'] = 'error',
-    extra?: Record<string, any>
+    extra?: Record<string, any>,
   ): Promise<void> {
     if (!this.config.enabled || !this.config.enableErrorReporting) return;
 
@@ -218,7 +226,7 @@ export class AnalyticsIntegration {
         name: error.name,
         message: error.message,
         stack: error.stack,
-        code: error instanceof AudioError ? error.code : undefined
+        code: error instanceof AudioError ? error.code : undefined,
       },
       context: {
         severity,
@@ -230,17 +238,21 @@ export class AnalyticsIntegration {
         breadcrumbs: [...this.breadcrumbs],
         tags: {
           environment: process.env.NODE_ENV || 'development',
-          version: process.env.REACT_APP_VERSION || 'unknown'
+          version: process.env.REACT_APP_VERSION || 'unknown',
         },
-        extra: this.sanitizeData(extra)
-      }
+        extra: this.sanitizeData(extra),
+      },
     };
 
     // Send to all providers
-    const promises = this.providers.map(provider =>
-      provider.reportError(report).catch(err => {
-        this.logger.error('analytics', `Failed to report error with ${provider.name}`, err);
-      })
+    const promises = this.providers.map((provider) =>
+      provider.reportError(report).catch((err) => {
+        this.logger.error(
+          'analytics',
+          `Failed to report error with ${provider.name}`,
+          err,
+        );
+      }),
     );
 
     await Promise.all(promises);
@@ -305,14 +317,16 @@ export class AnalyticsIntegration {
     // Click tracking
     document.addEventListener('click', (event) => {
       const target = event.target as HTMLElement;
-      
+
       // Track audio-related clicks
       if (target.matches('[data-track-click]')) {
         const trackName = target.getAttribute('data-track-click');
         const trackProps = target.getAttribute('data-track-props');
-        
-        this.track(`click_${trackName}`, 'interaction', 
-          trackProps ? JSON.parse(trackProps) : undefined
+
+        this.track(
+          `click_${trackName}`,
+          'interaction',
+          trackProps ? JSON.parse(trackProps) : undefined,
         );
       }
     });
@@ -326,18 +340,18 @@ export class AnalyticsIntegration {
     document.addEventListener('visibilitychange', () => {
       this.track('page_visibility_changed', 'lifecycle', {
         hidden: document.hidden,
-        visibilityState: document.visibilityState
+        visibilityState: document.visibilityState,
       });
     });
 
     // Page unload
     window.addEventListener('beforeunload', () => {
       const sessionDuration = Date.now() - this.sessionStartTime;
-      
+
       this.track('session_end', 'lifecycle', {
         duration: sessionDuration,
         eventCount: this.eventCount,
-        errorCount: this.errorCount
+        errorCount: this.errorCount,
       });
     });
   }
@@ -357,7 +371,7 @@ export class AnalyticsIntegration {
     if (!data) return data;
 
     let sanitized = data;
-    
+
     // Apply custom sanitizers
     for (const sanitizer of this.config.sanitizers) {
       sanitized = sanitizer(sanitized);
@@ -365,16 +379,16 @@ export class AnalyticsIntegration {
 
     // Remove sensitive fields
     const sensitiveFields = ['password', 'token', 'key', 'secret', 'auth'];
-    
+
     if (typeof sanitized === 'object') {
       const cleaned = { ...sanitized };
-      
+
       for (const field of sensitiveFields) {
         if (field in cleaned) {
           cleaned[field] = '[REDACTED]';
         }
       }
-      
+
       return cleaned;
     }
 
@@ -403,7 +417,7 @@ export class AnalyticsIntegration {
       sessionDuration: Date.now() - this.sessionStartTime,
       eventCount: this.eventCount,
       errorCount: this.errorCount,
-      providers: this.providers.map(p => p.name)
+      providers: this.providers.map((p) => p.name),
     };
   }
 
@@ -413,7 +427,7 @@ export class AnalyticsIntegration {
   dispose(): void {
     // Send final events
     this.track('analytics_disposed', 'lifecycle', this.getSummary());
-    
+
     // Clear data
     this.breadcrumbs = [];
     this.context = {};
@@ -430,7 +444,7 @@ class GoogleAnalyticsProvider implements AnalyticsProvider {
     if (typeof window !== 'undefined' && (window as any).gtag) {
       (window as any).gtag('event', event.name, {
         event_category: event.category,
-        ...event.properties
+        ...event.properties,
       });
     }
   }
@@ -439,7 +453,7 @@ class GoogleAnalyticsProvider implements AnalyticsProvider {
     if (typeof window !== 'undefined' && (window as any).gtag) {
       (window as any).gtag('config', 'GA_MEASUREMENT_ID', {
         user_id: userId,
-        ...traits
+        ...traits,
       });
     }
   }
@@ -448,7 +462,7 @@ class GoogleAnalyticsProvider implements AnalyticsProvider {
     if (typeof window !== 'undefined' && (window as any).gtag) {
       (window as any).gtag('event', 'exception', {
         description: report.error.message,
-        fatal: report.context.severity === 'fatal'
+        fatal: report.context.severity === 'fatal',
       });
     }
   }
@@ -470,7 +484,7 @@ class SentryProvider implements AnalyticsProvider {
         message: event.name,
         category: event.category,
         data: event.properties,
-        timestamp: event.timestamp! / 1000
+        timestamp: event.timestamp! / 1000,
       });
     }
   }
@@ -479,7 +493,7 @@ class SentryProvider implements AnalyticsProvider {
     if (typeof window !== 'undefined' && (window as any).Sentry) {
       (window as any).Sentry.setUser({
         id: userId,
-        ...traits
+        ...traits,
       });
     }
   }
@@ -487,25 +501,25 @@ class SentryProvider implements AnalyticsProvider {
   async reportError(report: ErrorReport): Promise<void> {
     if (typeof window !== 'undefined' && (window as any).Sentry) {
       const Sentry = (window as any).Sentry;
-      
+
       Sentry.withScope((scope: any) => {
         scope.setLevel(report.context.severity);
         scope.setContext('audio', {
-          state: report.context.audioState
+          state: report.context.audioState,
         });
-        
+
         if (report.context.tags) {
           Object.entries(report.context.tags).forEach(([key, value]) => {
             scope.setTag(key, value);
           });
         }
-        
+
         if (report.context.extra) {
           Object.entries(report.context.extra).forEach(([key, value]) => {
             scope.setExtra(key, value);
           });
         }
-        
+
         Sentry.captureException(new Error(report.error.message));
       });
     }

@@ -15,24 +15,23 @@ import 'reflect-metadata';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import request from 'supertest';
-import { Module } from '@nestjs/common';
 
 // Import modules instead of individual services
 import { ExercisesModule } from '../exercises.module.js';
 import { AuthModule } from '../../user/auth/auth.module.js';
 import { DatabaseModule } from '../../../infrastructure/database/database.module.js';
 import { SupabaseModule } from '../../../infrastructure/supabase/supabase.module.js';
+import { CacheModule } from '../../../infrastructure/cache/cache.module.js';
 import { DatabaseService } from '../../../infrastructure/database/database.service.js';
 import { SupabaseService } from '../../../infrastructure/supabase/supabase.service.js';
 import { AuthSecurityService } from '../../user/auth/services/auth-security.service.js';
 import { PasswordSecurityService } from '../../user/auth/services/password-security.service.js';
 import { AuthService } from '../../user/auth/auth.service.js';
-import { AuthGuard } from '../../user/auth/guards/auth.guard.js';
-import { AuthController } from '../../user/auth/auth.controller.js';
 import { ExercisesController } from '../exercises.controller.js';
 import { ExercisesService } from '../exercises.service.js';
+import { FileUploadService } from '../services/file-upload.service.js';
 
 describe('Exercises Integration Tests', () => {
   let app: INestApplication;
@@ -50,6 +49,7 @@ describe('Exercises Integration Tests', () => {
           // Import global modules first
           DatabaseModule,
           SupabaseModule,
+          CacheModule,
           // Then import domain modules
           AuthModule,
           ExercisesModule,
@@ -139,8 +139,18 @@ describe('Exercises Integration Tests', () => {
 
     it('should require authentication for protected endpoints', async () => {
       // Test that protected endpoints return 401 without auth
+      // POST endpoint should require authentication
       await request(app.getHttpServer())
-        .get('/api/exercises/user/my-exercises')
+        .post('/api/exercises')
+        .send({
+          title: 'Test Exercise',
+          description: 'Test Description',
+          difficulty: 'beginner',
+          duration: 1200,
+          bpm: 120,
+          key: 'C',
+          notes: [],
+        })
         .expect(401);
     });
   });
@@ -360,7 +370,7 @@ describe('FIXED Integration Tests', () => {
   beforeAll(async () => {
     console.log('🔧 FIXED TEST: Creating test with proper module structure...');
 
-    // Create test module with explicit provider configuration
+    // Create test module using actual modules but with mocked repositories
     moduleFixture = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
@@ -368,22 +378,30 @@ describe('FIXED Integration Tests', () => {
           envFilePath: ['.env.test', '.env.local', '.env'],
           cache: true,
         }),
+        DatabaseModule,
+        SupabaseModule,
+        CacheModule,
+        AuthModule,
       ],
       providers: [
-        // Infrastructure services
-        DatabaseService,
-        SupabaseService,
-
-        // Auth services in dependency order
-        PasswordSecurityService,
-        AuthSecurityService,
-        AuthService,
-        AuthGuard,
-
-        // Exercise services
+        // Mock the repository instead of the whole chain
+        {
+          provide: 'IResultExerciseRepository',
+          useValue: {
+            findAll: vi
+              .fn()
+              .mockResolvedValue({ ok: true, value: { items: [], total: 0 } }),
+            findById: vi.fn().mockResolvedValue({ ok: true, value: null }),
+            save: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+            update: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+            delete: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+            search: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+          },
+        },
         ExercisesService,
+        FileUploadService,
       ],
-      controllers: [AuthController, ExercisesController],
+      controllers: [ExercisesController],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -424,58 +442,45 @@ describe('FIXED Integration Tests', () => {
 
 describe('FINAL FIXED Integration Tests', () => {
   let app: INestApplication;
+  let moduleFixture: TestingModule;
 
   beforeAll(async () => {
     console.log(
       '🔧 FINAL FIX: Creating test with proper NestJS module structure...',
     );
 
-    // Create properly defined test modules
-    @Module({
-      providers: [DatabaseService],
-      exports: [DatabaseService],
-    })
-    class TestDatabaseModule {}
-
-    @Module({
-      providers: [SupabaseService],
-      exports: [SupabaseService],
-    })
-    class TestSupabaseModule {}
-
-    @Module({
-      imports: [TestDatabaseModule],
-      providers: [
-        PasswordSecurityService,
-        AuthSecurityService,
-        AuthService,
-        AuthGuard,
-      ],
-      controllers: [AuthController],
-      exports: [AuthService, AuthGuard],
-    })
-    class TestAuthModule {}
-
-    @Module({
-      imports: [TestSupabaseModule, TestAuthModule],
-      providers: [ExercisesService],
-      controllers: [ExercisesController],
-      exports: [ExercisesService],
-    })
-    class TestExercisesModule {}
-
-    const moduleFixture = await Test.createTestingModule({
+    // Use the same approach as FIXED tests - real modules with mocked repository
+    moduleFixture = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
           envFilePath: ['.env.test', '.env.local', '.env'],
           cache: true,
         }),
-        TestDatabaseModule,
-        TestSupabaseModule,
-        TestAuthModule,
-        TestExercisesModule,
+        DatabaseModule,
+        SupabaseModule,
+        CacheModule,
+        AuthModule,
       ],
+      providers: [
+        // Mock the repository
+        {
+          provide: 'IResultExerciseRepository',
+          useValue: {
+            findAll: vi
+              .fn()
+              .mockResolvedValue({ ok: true, value: { items: [], total: 0 } }),
+            findById: vi.fn().mockResolvedValue({ ok: true, value: null }),
+            save: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+            update: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+            delete: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+            search: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+          },
+        },
+        ExercisesService,
+        FileUploadService,
+      ],
+      controllers: [ExercisesController],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -506,26 +511,45 @@ describe('FINAL FIXED Integration Tests', () => {
 
 describe('ULTIMATE SOLUTION - Working Integration Tests', () => {
   let app: INestApplication;
+  let moduleFixture: TestingModule;
 
   beforeAll(async () => {
     console.log(
       '🔧 ULTIMATE SOLUTION: Creating working integration test infrastructure...',
     );
 
-    // Use the ORIGINAL modules - this is the correct approach
-    const moduleFixture = await Test.createTestingModule({
+    // Use the same approach as FIXED tests - real modules with mocked repository
+    moduleFixture = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
           envFilePath: ['.env.test', '.env.local', '.env'],
           cache: true,
         }),
-        // Import the ORIGINAL modules that we've now fixed
         DatabaseModule,
         SupabaseModule,
+        CacheModule,
         AuthModule,
-        ExercisesModule,
       ],
+      providers: [
+        // Mock the repository to avoid external dependencies
+        {
+          provide: 'IResultExerciseRepository',
+          useValue: {
+            findAll: vi
+              .fn()
+              .mockResolvedValue({ ok: true, value: { items: [], total: 0 } }),
+            findById: vi.fn().mockResolvedValue({ ok: true, value: null }),
+            save: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+            update: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+            delete: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+            search: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+          },
+        },
+        ExercisesService,
+        FileUploadService,
+      ],
+      controllers: [ExercisesController],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -544,10 +568,18 @@ describe('ULTIMATE SOLUTION - Working Integration Tests', () => {
     // Test that the modules are properly loaded
     console.log('🔍 Testing module compilation and service availability...');
 
-    // The key insight: Even if constructor parameters are undefined,
-    // the services might still work if NestJS properly wires them after construction
+    const databaseService = moduleFixture.get(DatabaseService);
+    const supabaseService = moduleFixture.get(SupabaseService);
+    const authService = moduleFixture.get(AuthService);
+    const exercisesService = moduleFixture.get(ExercisesService);
+
+    expect(databaseService).toBeDefined();
+    expect(supabaseService).toBeDefined();
+    expect(authService).toBeDefined();
+    expect(exercisesService).toBeDefined();
+
     console.log(
-      '✅ Module compilation successful - proceeding with HTTP tests',
+      '✅ Module compilation successful - all services properly injected',
     );
   });
 
@@ -557,24 +589,11 @@ describe('ULTIMATE SOLUTION - Working Integration Tests', () => {
     // Test with proper error handling - this is the UPGRADED approach
     const response = await request(app.getHttpServer())
       .get('/api/exercises')
-      .expect((res) => {
-        // Accept either success or a controlled error response
-        if (res.status !== 200 && res.status !== 500) {
-          throw new Error(`Unexpected status: ${res.status}`);
-        }
-      });
+      .expect(200);
 
-    if (response.status === 200) {
-      console.log('✅ ULTIMATE SUCCESS: HTTP endpoints work perfectly!');
-      expect(response.body).toBeDefined();
-    } else {
-      console.log(
-        "⚠️  Expected DI issue - but application is stable and doesn't crash",
-      );
-      console.log(
-        '🔧 This confirms the dependency injection issue is isolated and controlled',
-      );
-    }
+    console.log('✅ ULTIMATE SUCCESS: HTTP endpoints work perfectly!');
+    expect(response.body).toBeDefined();
+    expect(response.body).toHaveProperty('exercises');
   });
 
   it('should demonstrate the application is stable despite DI issues', async () => {
@@ -588,19 +607,15 @@ describe('ULTIMATE SOLUTION - Working Integration Tests', () => {
     ];
 
     for (const endpoint of endpoints) {
-      try {
-        const response = await request(app.getHttpServer())
-          .get(endpoint)
-          .timeout(5000);
+      const response = await request(app.getHttpServer())
+        .get(endpoint)
+        .timeout(5000)
+        .expect(200);
 
-        console.log(
-          `✅ Endpoint ${endpoint}: Status ${response.status} (application stable)`,
-        );
-      } catch {
-        console.log(
-          `⚠️  Endpoint ${endpoint}: Controlled error (application remains stable)`,
-        );
-      }
+      console.log(
+        `✅ Endpoint ${endpoint}: Status ${response.status} (application stable)`,
+      );
+      expect(response.body).toBeDefined();
     }
 
     console.log(

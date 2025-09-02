@@ -1,7 +1,7 @@
 /**
  * PerformanceMonitoring - Production performance tracking
  * Story 3.18.5: Audio Reliability & Technical Debt Elimination
- * 
+ *
  * Monitors audio performance metrics in production
  */
 
@@ -50,8 +50,8 @@ export class PerformanceMonitoring {
   private metrics: Map<string, PerformanceMetric[]> = new Map();
   private thresholds: PerformanceThreshold[] = [];
   private monitoringInterval?: NodeJS.Timeout;
-  private startTime: number = 0;
-  
+  private startTime = 0;
+
   // Counters
   private dropoutCount = 0;
   private bufferUnderrunCount = 0;
@@ -77,14 +77,14 @@ export class PerformanceMonitoring {
       { metric: 'cpuUsage', warning: 50, critical: 80 }, // %
       { metric: 'bufferUnderruns', warning: 5, critical: 20 }, // count per minute
       { metric: 'contextSuspensions', warning: 2, critical: 10 }, // count per minute
-      { metric: 'errorRate', warning: 0.01, critical: 0.05 } // 1%, 5%
+      { metric: 'errorRate', warning: 0.01, critical: 0.05 }, // 1%, 5%
     ];
   }
 
   /**
    * Start monitoring
    */
-  startMonitoring(intervalMs: number = 60000): void {
+  startMonitoring(intervalMs = 60000): void {
     if (this.monitoringInterval) {
       this.stopMonitoring();
     }
@@ -98,7 +98,7 @@ export class PerformanceMonitoring {
 
     this.eventBus.emit('performance:monitoring-started', {
       timestamp: this.startTime,
-      interval: intervalMs
+      interval: intervalMs,
     });
   }
 
@@ -113,7 +113,7 @@ export class PerformanceMonitoring {
 
     this.eventBus.emit('performance:monitoring-stopped', {
       timestamp: Date.now(),
-      duration: Date.now() - this.startTime
+      duration: Date.now() - this.startTime,
     });
   }
 
@@ -125,17 +125,19 @@ export class PerformanceMonitoring {
     const duration = (timestamp - this.startTime) / 1000; // seconds
 
     // Calculate rates
-    const dropoutRate = this.operationCount > 0 ? 
-      this.dropoutCount / this.operationCount : 0;
-    const errorRate = this.operationCount > 0 ? 
-      this.errorCount / this.operationCount : 0;
-    
+    const dropoutRate =
+      this.operationCount > 0 ? this.dropoutCount / this.operationCount : 0;
+    const errorRate =
+      this.operationCount > 0 ? this.errorCount / this.operationCount : 0;
+
     // Per minute rates
     const minutesSinceStart = duration / 60;
-    const bufferUnderrunsPerMinute = minutesSinceStart > 0 ? 
-      this.bufferUnderrunCount / minutesSinceStart : 0;
-    const suspensionsPerMinute = minutesSinceStart > 0 ? 
-      this.contextSuspensionCount / minutesSinceStart : 0;
+    const bufferUnderrunsPerMinute =
+      minutesSinceStart > 0 ? this.bufferUnderrunCount / minutesSinceStart : 0;
+    const suspensionsPerMinute =
+      minutesSinceStart > 0
+        ? this.contextSuspensionCount / minutesSinceStart
+        : 0;
 
     // Get system metrics
     const audioLatency = await this.getAudioLatency();
@@ -149,7 +151,11 @@ export class PerformanceMonitoring {
     this.recordMetric('initializationTime', initTime, 'ms');
     this.recordMetric('memoryUsage', memoryUsage, 'MB');
     this.recordMetric('cpuUsage', cpuUsage, '%');
-    this.recordMetric('bufferUnderruns', bufferUnderrunsPerMinute, 'per minute');
+    this.recordMetric(
+      'bufferUnderruns',
+      bufferUnderrunsPerMinute,
+      'per minute',
+    );
     this.recordMetric('contextSuspensions', suspensionsPerMinute, 'per minute');
     this.recordMetric('errorRate', errorRate * 100, '%');
 
@@ -165,7 +171,7 @@ export class PerformanceMonitoring {
         cpuUsage,
         bufferUnderruns: bufferUnderrunsPerMinute,
         contextSuspensions: suspensionsPerMinute,
-        errorRate
+        errorRate,
       },
       violations: this.checkThresholds({
         audioLatency,
@@ -175,15 +181,19 @@ export class PerformanceMonitoring {
         cpuUsage,
         bufferUnderruns: bufferUnderrunsPerMinute,
         contextSuspensions: suspensionsPerMinute,
-        errorRate
+        errorRate,
       }),
-      health: 'healthy'
+      health: 'healthy',
     };
 
     // Determine health status
-    const criticalViolations = report.violations.filter(v => v.severity === 'critical');
-    const warningViolations = report.violations.filter(v => v.severity === 'warning');
-    
+    const criticalViolations = report.violations.filter(
+      (v) => v.severity === 'critical',
+    );
+    const warningViolations = report.violations.filter(
+      (v) => v.severity === 'warning',
+    );
+
     if (criticalViolations.length > 0) {
       report.health = 'critical';
     } else if (warningViolations.length > 0) {
@@ -205,7 +215,7 @@ export class PerformanceMonitoring {
       name,
       value,
       unit,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     if (!this.metrics.has(name)) {
@@ -224,7 +234,9 @@ export class PerformanceMonitoring {
   /**
    * Check thresholds
    */
-  private checkThresholds(metrics: Record<string, number>): ThresholdViolation[] {
+  private checkThresholds(
+    metrics: Record<string, number>,
+  ): ThresholdViolation[] {
     const violations: ThresholdViolation[] = [];
 
     for (const threshold of this.thresholds) {
@@ -237,7 +249,7 @@ export class PerformanceMonitoring {
           value,
           threshold: threshold.critical,
           severity: 'critical',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       } else if (value >= threshold.warning) {
         violations.push({
@@ -245,7 +257,7 @@ export class PerformanceMonitoring {
           value,
           threshold: threshold.warning,
           severity: 'warning',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
     }
@@ -285,16 +297,16 @@ export class PerformanceMonitoring {
     // This is a rough estimate based on main thread blocking
     const start = performance.now();
     let iterations = 0;
-    
+
     // Run for 10ms
     while (performance.now() - start < 10) {
       iterations++;
     }
-    
+
     // Baseline is ~100000 iterations in 10ms on a typical CPU
     const baseline = 100000;
-    const usage = Math.max(0, 100 - (iterations / baseline * 100));
-    
+    const usage = Math.max(0, 100 - (iterations / baseline) * 100);
+
     return Math.min(100, usage);
   }
 
@@ -304,7 +316,7 @@ export class PerformanceMonitoring {
   private getAverageInitTime(): number {
     const initMetrics = this.metrics.get('initialization');
     if (!initMetrics || initMetrics.length === 0) return 0;
-    
+
     const sum = initMetrics.reduce((acc, m) => acc + m.value, 0);
     return sum / initMetrics.length;
   }
@@ -314,11 +326,14 @@ export class PerformanceMonitoring {
    */
   private setupEventListeners(): void {
     // Track audio events
-    this.eventBus.on('audio:initialization-success', ({ attempts, duration }) => {
-      if (duration) {
-        this.recordMetric('initialization', duration, 'ms');
-      }
-    });
+    this.eventBus.on(
+      'audio:initialization-success',
+      ({ attempts, duration }) => {
+        if (duration) {
+          this.recordMetric('initialization', duration, 'ms');
+        }
+      },
+    );
 
     this.eventBus.on('audio:dropout', () => {
       this.dropoutCount++;
@@ -389,10 +404,10 @@ export class PerformanceMonitoring {
         bufferUnderruns: this.bufferUnderrunCount,
         contextSuspensions: this.contextSuspensionCount,
         errors: this.errorCount,
-        operations: this.operationCount
-      }
+        operations: this.operationCount,
+      },
     };
-    
+
     return JSON.stringify(data, null, 2);
   }
 }

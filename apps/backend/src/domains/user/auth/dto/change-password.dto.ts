@@ -1,7 +1,6 @@
 import {
   changePasswordSchema,
-  type ChangePasswordData,
-} from '@bassnotion/contracts';
+  type ChangePasswordData } from '@bassnotion/contracts';
 
 /**
  * Change password DTO using Zod validation from contracts

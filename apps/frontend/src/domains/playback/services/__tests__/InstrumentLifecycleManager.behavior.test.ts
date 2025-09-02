@@ -11,8 +11,8 @@ import {
   InstrumentLifecycleManager,
   type MemoryOptimizationConfig,
 } from '../plugins/InstrumentLifecycleManager';
-import { BassInstrumentProcessor } from '../plugins/BassInstrumentProcessor';
-import { DrumInstrumentProcessor } from '../plugins/DrumInstrumentProcessor';
+import { BassInstrumentProcessor } from '../../modules/instruments/implementations/bass/BassInstrumentProcessor.js';
+import { DrumInstrumentProcessor } from '../../modules/instruments/implementations/drums/DrumInstrumentProcessor.js';
 import { ChordInstrumentProcessor } from '../plugins/ChordInstrumentProcessor';
 import { MetronomeInstrumentProcessor } from '../plugins/MetronomeInstrumentProcessor';
 

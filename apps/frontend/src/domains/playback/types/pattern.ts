@@ -1,6 +1,6 @@
 /**
  * Professional DAW Pattern System
- * 
+ *
  * Widgets define patterns in musical time
  * Transport handles all timing and scheduling
  */
@@ -24,7 +24,15 @@ export interface PatternEvent {
  * Drum pattern definition
  */
 export interface DrumPatternEvent extends PatternEvent {
-  drum: 'kick' | 'snare' | 'hihat' | 'crash' | 'ride' | 'tom1' | 'tom2' | 'tom3';
+  drum:
+    | 'kick'
+    | 'snare'
+    | 'hihat'
+    | 'crash'
+    | 'ride'
+    | 'tom1'
+    | 'tom2'
+    | 'tom3';
 }
 
 export interface DrumPattern {
@@ -82,7 +90,11 @@ export interface BassPattern {
 /**
  * Generic pattern type
  */
-export type Pattern = DrumPattern | MetronomePattern | HarmonyPattern | BassPattern;
+export type Pattern =
+  | DrumPattern
+  | MetronomePattern
+  | HarmonyPattern
+  | BassPattern;
 
 /**
  * Pattern registration for transport
@@ -100,7 +112,10 @@ export interface RegisteredPattern {
  * Pattern registry interface
  */
 export interface PatternRegistry {
-  register(widgetId: string, registration: Omit<RegisteredPattern, 'widgetId'>): void;
+  register(
+    widgetId: string,
+    registration: Omit<RegisteredPattern, 'widgetId'>,
+  ): void;
   unregister(widgetId: string): void;
   update(widgetId: string, pattern: Pattern): void;
   setEnabled(widgetId: string, enabled: boolean): void;
@@ -111,18 +126,42 @@ export interface PatternRegistry {
 /**
  * Helper to convert beat/sixteenth to musical position
  */
-export function toMusicalPosition(bar: number, beat: number, sixteenth: number = 0): MusicalPosition {
+export function toMusicalPosition(
+  bar: number,
+  beat: number,
+  sixteenth = 0,
+): MusicalPosition {
   return `${bar}:${beat}:${sixteenth}`;
 }
 
 /**
  * Helper to parse musical position
  */
-export function parseMusicalPosition(position: MusicalPosition): {
+export function parseMusicalPosition(position: MusicalPosition | any): {
   bar: number;
   beat: number;
   sixteenth: number;
 } {
-  const [bar, beat, sixteenth] = position.split(':').map(Number);
-  return { bar, beat, sixteenth };
+  // Handle case where position might be an object instead of string
+  if (typeof position === 'object' && position !== null) {
+    // If it's already a parsed object with bars/beats/sixteenths
+    if ('bars' in position || 'bar' in position) {
+      return {
+        bar: position.bars || position.bar || 0,
+        beat: position.beats || position.beat || 0,
+        sixteenth: position.sixteenths || position.sixteenth || 0,
+      };
+    }
+    // If it's some other object, try to convert to string
+    position = String(position);
+  }
+
+  // Handle string format
+  if (typeof position === 'string') {
+    const [bar, beat, sixteenth] = position.split(':').map(Number);
+    return { bar: bar || 0, beat: beat || 0, sixteenth: sixteenth || 0 };
+  }
+
+  // Fallback for any other type
+  return { bar: 0, beat: 0, sixteenth: 0 };
 }

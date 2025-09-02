@@ -8,6 +8,7 @@
  */
 
 import { PerformanceMonitor } from '../../../playback/services/PerformanceMonitor';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 export interface WidgetPerformanceMetrics {
   // Rendering Performance
@@ -87,7 +88,7 @@ export class PerformanceBaseline {
    * Start comprehensive performance measurement
    */
   public async startBaseline(): Promise<WidgetPerformanceMetrics> {
-    console.log('🔄 Starting performance baseline measurement...');
+    logger.info('🔄 Starting performance baseline measurement...');
 
     this.isMonitoring = true;
     this.frameCount = 0;
@@ -127,7 +128,7 @@ export class PerformanceBaseline {
       timestamp: Date.now(),
     };
 
-    console.log('✅ Performance baseline measurement complete:', baseline);
+    logger.info('✅ Performance baseline measurement complete:', baseline);
     return baseline;
   }
 

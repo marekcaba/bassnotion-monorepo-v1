@@ -8,6 +8,7 @@ import type {
   MusicalPosition,
 } from '@bassnotion/contracts';
 import { MOCK_EXERCISES } from './mockExercises';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Feature flag for gradual migration
 const USE_BACKEND_API = process.env.NEXT_PUBLIC_USE_BACKEND_API === 'true';
@@ -150,7 +151,7 @@ async function retryWithBackoff<T>(
       const jitter = delay * 0.25 * (Math.random() - 0.5);
       const finalDelay = Math.max(0, delay + jitter);
 
-      console.log(
+      logger.info(
         `🔄 Retry attempt ${attempt + 1}/${maxRetries} after ${Math.round(finalDelay)}ms:`,
         lastError.message,
       );
@@ -166,7 +167,7 @@ async function retryWithBackoff<T>(
  * Create a fallback response with default exercise
  */
 function createFallbackResponse(): GetExercisesResponse {
-  console.log('🎯 Using default exercise fallback');
+  logger.info('🎯 Using default exercise fallback');
   return {
     exercises: [DEFAULT_EXERCISE],
   };
@@ -197,7 +198,7 @@ export async function getExercises(): Promise<GetExercisesResponse> {
           );
 
           if (!hasNotes) {
-            console.log(
+            logger.info(
               '🎯 Backend exercises have no notes, using mock exercises with notes',
             );
             return {
@@ -209,7 +210,7 @@ export async function getExercises(): Promise<GetExercisesResponse> {
             exercises: response.exercises,
           };
         } catch (error: any) {
-          console.error('Backend API error, falling back to Supabase:', error);
+          logger.error('Backend API error, falling back to Supabase:', error);
           // Fall through to Supabase implementation
         }
       }
@@ -222,7 +223,7 @@ export async function getExercises(): Promise<GetExercisesResponse> {
         .order('title', { ascending: true });
 
       if (error) {
-        console.error('Supabase error:', error);
+        logger.error('Supabase error:', error);
         throw new Error(`Failed to fetch exercises: ${error.message}`);
       }
 
@@ -230,7 +231,7 @@ export async function getExercises(): Promise<GetExercisesResponse> {
         throw new Error('No exercises found in database');
       }
 
-      console.log('🎯 Raw Supabase data:', {
+      logger.info('🎯 Raw Supabase data:', {
         count: data.length,
         firstExercise: data[0],
         firstExerciseKeys: Object.keys(data[0] || {}),
@@ -241,7 +242,7 @@ export async function getExercises(): Promise<GetExercisesResponse> {
 
       // Parse JSONB notes field from Supabase
       const exercises = data.map((exercise: any) => {
-        console.log(
+        logger.info(
           '🎯 Processing exercise:',
           exercise.title,
           'notes:',
@@ -253,14 +254,14 @@ export async function getExercises(): Promise<GetExercisesResponse> {
         if (exercise.notes && typeof exercise.notes === 'string') {
           try {
             exercise.notes = JSON.parse(exercise.notes);
-            console.log(
+            logger.info(
               '🎯 Successfully parsed notes for exercise:',
               exercise.title,
               'count:',
               exercise.notes.length,
             );
           } catch (error) {
-            console.error(
+            logger.error(
               '🎯 Failed to parse notes for exercise:',
               exercise.title,
               error,
@@ -268,14 +269,14 @@ export async function getExercises(): Promise<GetExercisesResponse> {
             exercise.notes = [];
           }
         } else if (!exercise.notes) {
-          console.log(
+          logger.info(
             '🎯 No notes found for exercise:',
             exercise.title,
             'setting empty array',
           );
           exercise.notes = [];
         } else {
-          console.log(
+          logger.info(
             '🎯 Notes already parsed for exercise:',
             exercise.title,
             'count:',
@@ -283,7 +284,7 @@ export async function getExercises(): Promise<GetExercisesResponse> {
           );
         }
 
-        console.log('🎯 Final exercise data:', {
+        logger.info('🎯 Final exercise data:', {
           id: exercise.id,
           title: exercise.title,
           notesCount: exercise.notes?.length || 0,
@@ -297,7 +298,7 @@ export async function getExercises(): Promise<GetExercisesResponse> {
       const hasNotes = exercises.some((ex) => ex.notes && ex.notes.length > 0);
 
       if (!hasNotes) {
-        console.log(
+        logger.info(
           '🎯 Database exercises have no notes, using mock exercises with notes',
         );
         return {
@@ -310,7 +311,7 @@ export async function getExercises(): Promise<GetExercisesResponse> {
       };
     });
   } catch (error) {
-    console.error(
+    logger.error(
       '🚨 All exercise fetch attempts failed, using fallback:',
       error,
     );
@@ -339,7 +340,7 @@ export async function getExercise(
           );
           return response;
         } catch (error: any) {
-          console.error('Backend API error, falling back to Supabase:', error);
+          logger.error('Backend API error, falling back to Supabase:', error);
           // Fall through to Supabase implementation
         }
       }
@@ -353,7 +354,7 @@ export async function getExercise(
         .single();
 
       if (error) {
-        console.error('Error fetching exercise:', error);
+        logger.error('Error fetching exercise:', error);
         throw new Error(`Failed to fetch exercise: ${error.message}`);
       }
 
@@ -366,7 +367,7 @@ export async function getExercise(
         try {
           data.notes = JSON.parse(data.notes);
         } catch (error) {
-          console.error(
+          logger.error(
             '🎯 Failed to parse notes for exercise:',
             data.title,
             error,
@@ -382,7 +383,7 @@ export async function getExercise(
       };
     });
   } catch (error) {
-    console.error(
+    logger.error(
       `🚨 Failed to fetch exercise ${exerciseId}, using default:`,
       error,
     );
@@ -421,7 +422,7 @@ export async function getExercisesByDifficulty(
             exercises: response.exercises,
           };
         } catch (error: any) {
-          console.error('Backend API error, falling back to Supabase:', error);
+          logger.error('Backend API error, falling back to Supabase:', error);
           // Fall through to Supabase implementation
         }
       }
@@ -435,7 +436,7 @@ export async function getExercisesByDifficulty(
         .order('title', { ascending: true });
 
       if (error) {
-        console.error('Error fetching exercises by difficulty:', error);
+        logger.error('Error fetching exercises by difficulty:', error);
         throw new Error(
           `Failed to fetch exercises by difficulty: ${error.message}`,
         );
@@ -450,7 +451,7 @@ export async function getExercisesByDifficulty(
       };
     });
   } catch (error) {
-    console.error(
+    logger.error(
       `🚨 Failed to fetch ${difficulty} exercises, using fallback:`,
       error,
     );
@@ -480,7 +481,7 @@ export async function searchExercises(
             exercises: response.exercises,
           };
         } catch (error: any) {
-          console.error('Backend API error, falling back to Supabase:', error);
+          logger.error('Backend API error, falling back to Supabase:', error);
           // Fall through to Supabase implementation
         }
       }
@@ -494,7 +495,7 @@ export async function searchExercises(
         .order('title', { ascending: true });
 
       if (error) {
-        console.error('Error searching exercises:', error);
+        logger.error('Error searching exercises:', error);
         throw new Error(`Failed to search exercises: ${error.message}`);
       }
 
@@ -503,7 +504,7 @@ export async function searchExercises(
       };
     });
   } catch (error) {
-    console.error(`🚨 Failed to search exercises for "${query}":`, error);
+    logger.error(`🚨 Failed to search exercises for "${query}":`, error);
     // Return default exercise if it matches the search query
     const queryLower = query.toLowerCase();
     const matchesDefault =

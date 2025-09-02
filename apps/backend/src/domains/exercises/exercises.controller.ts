@@ -1,53 +1,38 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Param,
-  Query,
-  Body,
-  Logger,
-  UseGuards,
-  Request,
-  BadRequestException,
-  UseInterceptors,
-  UploadedFile,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Query, Body, UseGuards, Request, BadRequestException, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { ExercisesService } from './exercises.service.js';
 import {
   ExercisesResponseDto,
-  ExerciseResponseDto,
-} from './dto/exercise-response.dto.js';
-import {
-  CustomBasslinesResponseDto,
-  CustomBasslineDto,
-} from './dto/custom-bassline.dto.js';
+  ExerciseResponseDto } from './dto/exercise-response.dto.js';
+// Custom bassline DTOs are now used in UserBasslinesController
 import {
   FileUploadDto,
   MusicXMLUploadConfigDto,
   MIDIUploadConfigDto,
   FileUploadResponseDto,
-  FileUploadErrorDto,
-} from './dto/file-upload.dto.js';
+  FileUploadErrorDto } from './dto/file-upload.dto.js';
 import { FileUploadService } from './services/file-upload.service.js';
 import { AuthGuard } from '../user/auth/guards/auth.guard.js';
+import { SupabaseService } from '../../infrastructure/supabase/supabase.service.js';
+import { createStructuredLogger } from '@bassnotion/contracts';
 
+@ApiTags('exercises')
 @Controller('api/exercises')
 export class ExercisesController {
-  private readonly logger = new Logger(ExercisesController.name);
+  private readonly staticLogger = createStructuredLogger(ExercisesController.name);
 
   constructor(
     private readonly exercisesService: ExercisesService,
     private readonly fileUploadService: FileUploadService,
+    private readonly supabaseService: SupabaseService,
   ) {
     // Defensive check for dependency injection issues
     if (!this.exercisesService) {
-      this.logger.error('ExercisesService is undefined - DI failure detected');
+      this.staticLogger.error('ExercisesService is undefined - DI failure detected');
     }
     if (!this.fileUploadService) {
-      this.logger.error('FileUploadService is undefined - DI failure detected');
+      this.staticLogger.error('FileUploadService is undefined - DI failure detected');
     }
   }
 
@@ -55,7 +40,7 @@ export class ExercisesController {
 
   private checkServiceAvailability(): boolean {
     if (!this.exercisesService) {
-      this.logger.error('ExercisesService is undefined - DI failure detected');
+      this.staticLogger.error('ExercisesService is undefined - DI failure detected');
       return false;
     }
     return true;
@@ -75,8 +60,7 @@ export class ExercisesController {
           notes: [],
           is_active: true,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
+          updated_at: new Date().toISOString() },
         {
           id: 'mock-2',
           title: 'Mock Exercise 2',
@@ -89,12 +73,10 @@ export class ExercisesController {
           notes: [],
           is_active: true,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
+          updated_at: new Date().toISOString() },
       ],
       total: 2,
-      cached: false,
-    };
+      cached: false };
   }
 
   /**
@@ -102,20 +84,33 @@ export class ExercisesController {
    * Get all active exercises with pagination support
    */
   @Get()
+  @ApiOperation({ summary: 'Get all active exercises with pagination' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default: 1)' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page (default: 10)' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of exercises retrieved successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid pagination parameters' })
   async getAllExercises(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ): Promise<ExercisesResponseDto> {
-    this.logger.log('GET /api/exercises - Fetching all exercises');
+    this.staticLogger.info('GET /api/exercises - Fetching all exercises');
 
     // Defensive programming: handle DI failure gracefully
     if (!this.checkServiceAvailability()) {
-      this.logger.warn('Returning mock data due to service unavailability');
+      this.staticLogger.warn('Returning mock data due to service unavailability');
       return this.getMockExercisesResponse();
     }
 
     const pageNum = parseInt(page || '1', 10);
-    const limitNum = parseInt(limit || '10', 10);
+    const limitNum = parseInt(limit || '50', 10);
 
     // Validate pagination parameters
     if (pageNum < 1 || limitNum < 1) {
@@ -130,38 +125,39 @@ export class ExercisesController {
    * Search exercises by title or description
    */
   @Get('search')
+  @ApiOperation({ summary: 'Search exercises by title or description' })
+  @ApiQuery({ name: 'q', required: true, description: 'Search query' })
+  @ApiResponse({
+    status: 200,
+    description: 'Search results returned successfully' })
   async searchExercises(
     @Query('q') query: string,
   ): Promise<ExercisesResponseDto> {
-    this.logger.log(
+    this.staticLogger.info(
       `GET /api/exercises/search?q=${query} - Searching exercises`,
     );
 
     if (!query || query.trim().length === 0) {
-      this.logger.warn('Empty search query provided');
-      return {
-        exercises: [],
-        total: 0,
-        cached: false,
-      };
+      this.staticLogger.warn('Empty search query provided');
+      throw new BadRequestException('Search query cannot be empty');
     }
 
     // Defensive programming: handle DI failure gracefully
     if (!this.checkServiceAvailability()) {
-      this.logger.warn('Returning mock data due to service unavailability');
+      this.staticLogger.warn('Returning mock data due to service unavailability');
       return this.getMockExercisesResponse();
     }
 
     try {
       const result = await this.exercisesService.searchExercises(query.trim());
-      this.logger.log(
+      this.staticLogger.info(
         `Successfully found ${result.total} exercises matching "${query}"`,
       );
       return result;
     } catch (error) {
-      this.logger.error(
+      this.staticLogger.error(
         `Error searching exercises with query "${query}":`,
-        error,
+        error as Error,
       );
       throw error;
     }
@@ -175,21 +171,27 @@ export class ExercisesController {
   async getExercisesByDifficulty(
     @Param('level') level: 'beginner' | 'intermediate' | 'advanced',
   ): Promise<ExercisesResponseDto> {
-    this.logger.log(
+    this.staticLogger.info(
       `GET /api/exercises/difficulty/${level} - Fetching exercises by difficulty`,
     );
+
+    // Defensive programming: handle DI failure gracefully
+    if (!this.checkServiceAvailability()) {
+      this.staticLogger.warn('Returning mock data due to service unavailability');
+      return this.getMockExercisesResponse();
+    }
 
     try {
       const result =
         await this.exercisesService.getExercisesByDifficulty(level);
-      this.logger.log(
+      this.staticLogger.info(
         `Successfully fetched ${result.total} exercises with difficulty ${level}`,
       );
       return result;
     } catch (error) {
-      this.logger.error(
+      this.staticLogger.error(
         `Error fetching exercises by difficulty ${level}:`,
-        error,
+        error as Error,
       );
       throw error;
     }
@@ -201,152 +203,33 @@ export class ExercisesController {
    */
   @Get(':id')
   async getExerciseById(@Param('id') id: string): Promise<ExerciseResponseDto> {
-    this.logger.log(`GET /api/exercises/${id} - Fetching exercise by ID`);
+    this.staticLogger.info(`GET /api/exercises/${id} - Fetching exercise by ID`);
+
+    // Defensive programming: handle DI failure gracefully
+    if (!this.checkServiceAvailability()) {
+      this.staticLogger.warn('Returning mock data due to service unavailability');
+      const mockResponse = this.getMockExercisesResponse();
+      return { exercise: mockResponse.exercises[0] };
+    }
 
     try {
       const result = await this.exercisesService.getExerciseById(id);
-      this.logger.log(
+      this.staticLogger.info(
         `Successfully fetched exercise: ${result.exercise.title}`,
       );
       return result;
     } catch (error) {
-      this.logger.error(`Error fetching exercise ${id}:`, error);
+      this.staticLogger.error(`Error fetching exercise ${id}:`, error as Error);
       throw error;
     }
   }
 
-  // ==================== USER EXERCISE MANAGEMENT ====================
-
-  /**
-   * GET /api/exercises/user/my-exercises
-   * Get user's custom basslines (requires authentication)
-   */
-  @Get('user/my-exercises')
-  @UseGuards(AuthGuard)
-  async getUserCustomBasslines(
-    @Request() req: any,
-  ): Promise<CustomBasslinesResponseDto> {
-    const userId = req.user?.id;
-    this.logger.log(`GET /api/exercises/user/my-exercises - User: ${userId}`);
-
-    if (!userId) {
-      throw new BadRequestException('User ID not found in request');
-    }
-
-    try {
-      const result = await this.exercisesService.getUserCustomBasslines(userId);
-      this.logger.log(
-        `Successfully fetched ${result.total} custom basslines for user ${userId}`,
-      );
-      return result;
-    } catch (error) {
-      this.logger.error(
-        `Error fetching custom basslines for user ${userId}:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * POST /api/exercises/user/save-bassline
-   * Save a custom bassline for the authenticated user
-   */
-  @Post('user/save-bassline')
-  @UseGuards(AuthGuard)
-  async saveCustomBassline(
-    @Request() req: any,
-    @Body() basslineData: unknown,
-  ): Promise<CustomBasslineDto> {
-    const userId = req.user?.id;
-    this.logger.log(`POST /api/exercises/user/save-bassline - User: ${userId}`);
-
-    if (!userId) {
-      throw new BadRequestException('User ID not found in request');
-    }
-
-    try {
-      const result = await this.exercisesService.saveCustomBassline(
-        userId,
-        basslineData,
-      );
-      this.logger.log(`Successfully saved custom bassline: ${result.id}`);
-      return result;
-    } catch (error) {
-      this.logger.error(
-        `Error saving custom bassline for user ${userId}:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * PUT /api/exercises/user/:basslineId
-   * Update a user's custom bassline
-   */
-  @Put('user/:basslineId')
-  @UseGuards(AuthGuard)
-  async updateCustomBassline(
-    @Request() req: any,
-    @Param('basslineId') basslineId: string,
-    @Body() updateData: unknown,
-  ): Promise<CustomBasslineDto> {
-    const userId = req.user?.id;
-    this.logger.log(`PUT /api/exercises/user/${basslineId} - User: ${userId}`);
-
-    if (!userId) {
-      throw new BadRequestException('User ID not found in request');
-    }
-
-    try {
-      const result = await this.exercisesService.updateCustomBassline(
-        userId,
-        basslineId,
-        updateData as any,
-      );
-      this.logger.log(`Successfully updated custom bassline: ${result.id}`);
-      return result;
-    } catch (error) {
-      this.logger.error(
-        `Error updating custom bassline ${basslineId} for user ${userId}:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * DELETE /api/exercises/user/:basslineId
-   * Delete a user's custom bassline
-   */
-  @Delete('user/:basslineId')
-  @UseGuards(AuthGuard)
-  async deleteCustomBassline(
-    @Request() req: any,
-    @Param('basslineId') basslineId: string,
-  ): Promise<{ message: string }> {
-    const userId = req.user?.id;
-    this.logger.log(
-      `DELETE /api/exercises/user/${basslineId} - User: ${userId}`,
-    );
-
-    if (!userId) {
-      throw new BadRequestException('User ID not found in request');
-    }
-
-    try {
-      await this.exercisesService.deleteCustomBassline(userId, basslineId);
-      this.logger.log(`Successfully deleted custom bassline: ${basslineId}`);
-      return { message: 'Custom bassline deleted successfully' };
-    } catch (error) {
-      this.logger.error(
-        `Error deleting custom bassline ${basslineId} for user ${userId}:`,
-        error,
-      );
-      throw error;
-    }
-  }
+  // NOTE: User bassline management endpoints have been moved to UserBasslinesController
+  // The following endpoints are now available at /api/user-basslines:
+  // - GET /api/user-basslines (get user's saved basslines)
+  // - POST /api/user-basslines (save new bassline)
+  // - PUT /api/user-basslines/:id/rename (rename bassline)
+  // - DELETE /api/user-basslines/:id (delete bassline)
 
   // ==================== EPIC 5 ADMIN OPERATIONS ====================
 
@@ -361,10 +244,15 @@ export class ExercisesController {
     @Body() exerciseData: unknown,
   ): Promise<ExerciseResponseDto> {
     const userId = req.user?.id;
-    this.logger.log(`POST /api/exercises - Creating exercise, User: ${userId}`);
+    this.staticLogger.info(`POST /api/exercises - Creating exercise, User: ${userId}`);
 
     if (!userId) {
       throw new BadRequestException('User ID not found in request');
+    }
+
+    // Defensive programming: handle DI failure gracefully
+    if (!this.checkServiceAvailability()) {
+      throw new BadRequestException('Service unavailable');
     }
 
     try {
@@ -372,10 +260,10 @@ export class ExercisesController {
         exerciseData,
         userId,
       );
-      this.logger.log(`Successfully created exercise: ${result.id}`);
+      this.staticLogger.info(`Successfully created exercise: ${result.id}`);
       return { exercise: result };
     } catch (error) {
-      this.logger.error(`Error creating exercise for user ${userId}:`, error);
+      this.staticLogger.error(`Error creating exercise for user ${userId}:`, error as Error);
       throw error;
     }
   }
@@ -392,12 +280,17 @@ export class ExercisesController {
     @Body() updateData: unknown,
   ): Promise<ExerciseResponseDto> {
     const userId = req.user?.id;
-    this.logger.log(
+    this.staticLogger.info(
       `PUT /api/exercises/${exerciseId} - Updating exercise, User: ${userId}`,
     );
 
     if (!userId) {
       throw new BadRequestException('User ID not found in request');
+    }
+
+    // Defensive programming: handle DI failure gracefully
+    if (!this.checkServiceAvailability()) {
+      throw new BadRequestException('Service unavailable');
     }
 
     try {
@@ -406,12 +299,12 @@ export class ExercisesController {
         updateData,
         userId,
       );
-      this.logger.log(`Successfully updated exercise: ${result.id}`);
+      this.staticLogger.info(`Successfully updated exercise: ${result.id}`);
       return { exercise: result };
     } catch (error) {
-      this.logger.error(
+      this.staticLogger.error(
         `Error updating exercise ${exerciseId} for user ${userId}:`,
-        error,
+        error as Error,
       );
       throw error;
     }
@@ -454,8 +347,7 @@ export class ExercisesController {
             false,
           );
         }
-      },
-    }),
+      } }),
   )
   async uploadMusicXML(
     @Request() req: any,
@@ -464,7 +356,7 @@ export class ExercisesController {
     @Body() configDto?: MusicXMLUploadConfigDto,
   ): Promise<FileUploadResponseDto | FileUploadErrorDto> {
     const userId = req.user?.id;
-    this.logger.log(
+    this.staticLogger.info(
       `POST /api/exercises/upload/musicxml - User: ${userId}, File: ${file?.originalname}`,
     );
 
@@ -474,6 +366,11 @@ export class ExercisesController {
 
     if (!file) {
       throw new BadRequestException('No file uploaded');
+    }
+
+    // Defensive programming: check file upload service
+    if (!this.fileUploadService) {
+      throw new BadRequestException('File upload service unavailable');
     }
 
     try {
@@ -486,14 +383,14 @@ export class ExercisesController {
         configDto,
       );
 
-      this.logger.log(
+      this.staticLogger.info(
         `Successfully processed MusicXML file: ${file.originalname}`,
       );
       return result;
     } catch (error) {
-      this.logger.error(
+      this.staticLogger.error(
         `Error processing MusicXML file ${file.originalname}:`,
-        error,
+        error as Error,
       );
       throw error;
     }
@@ -533,8 +430,7 @@ export class ExercisesController {
             false,
           );
         }
-      },
-    }),
+      } }),
   )
   async uploadMIDI(
     @Request() req: any,
@@ -543,7 +439,7 @@ export class ExercisesController {
     @Body() configDto?: MIDIUploadConfigDto,
   ): Promise<FileUploadResponseDto | FileUploadErrorDto> {
     const userId = req.user?.id;
-    this.logger.log(
+    this.staticLogger.info(
       `POST /api/exercises/upload/midi - User: ${userId}, File: ${file?.originalname}`,
     );
 
@@ -553,6 +449,11 @@ export class ExercisesController {
 
     if (!file) {
       throw new BadRequestException('No file uploaded');
+    }
+
+    // Defensive programming: check file upload service
+    if (!this.fileUploadService) {
+      throw new BadRequestException('File upload service unavailable');
     }
 
     try {
@@ -589,12 +490,11 @@ export class ExercisesController {
             original_filename: file.originalname,
             file_size: file.size,
             uploaded_at: new Date().toISOString(),
-            created_by: userId,
-          };
+            created_by: userId };
 
           // Save to database if service is available
           if (this.checkServiceAvailability()) {
-            this.logger.log(
+            this.staticLogger.info(
               `Saving exercise to database: ${result.exercise.title}`,
             );
 
@@ -603,25 +503,25 @@ export class ExercisesController {
               exerciseData,
             );
 
-            this.logger.log(
+            this.staticLogger.info(
               `Exercise saved successfully with MIDI file: ${result.storageInfo.filePath}`,
             );
           }
         } catch (dbError) {
-          this.logger.error('Error saving exercise to database:', dbError);
+          this.staticLogger.error('Error saving exercise to database:', dbError as Error);
           // Don't fail the upload if database save fails - file is already stored
-          this.logger.warn(
+          this.staticLogger.warn(
             'MIDI file processed and stored, but database save failed',
           );
         }
       }
 
-      this.logger.log(`Successfully processed MIDI file: ${file.originalname}`);
+      this.staticLogger.info(`Successfully processed MIDI file: ${file.originalname}`);
       return result;
     } catch (error) {
-      this.logger.error(
+      this.staticLogger.error(
         `Error processing MIDI file ${file.originalname}:`,
-        error,
+        error as Error,
       );
       throw error;
     }
@@ -638,7 +538,7 @@ export class ExercisesController {
     @Request() req: any,
   ): Promise<{ downloadUrl: string; filename: string } | { error: string }> {
     const userId = req.user?.id;
-    this.logger.log(
+    this.staticLogger.info(
       `GET /api/exercises/${exerciseId}/download-midi - User: ${userId}`,
     );
 
@@ -661,21 +561,20 @@ export class ExercisesController {
       }
 
       // Generate download URL for the MIDI file
-      const supabase = this.exercisesService['supabaseService'].getClient();
+      const supabase = this.supabaseService.getClient();
       const { data } = supabase.storage
         .from('exercise-files')
         .getPublicUrl(exercise.midi_file_path);
 
-      this.logger.log(`Generated download URL for exercise ${exerciseId}`);
+      this.staticLogger.info(`Generated download URL for exercise ${exerciseId}`);
 
       return {
         downloadUrl: data.publicUrl,
-        filename: exercise.original_filename || 'exercise.mid',
-      };
+        filename: exercise.original_filename || 'exercise.mid' };
     } catch (error) {
-      this.logger.error(
+      this.staticLogger.error(
         `Error generating download URL for exercise ${exerciseId}:`,
-        error,
+        error as Error,
       );
       return { error: 'Failed to generate download URL' };
     }
@@ -692,7 +591,7 @@ export class ExercisesController {
     @Request() req: any,
   ): Promise<{ success: boolean; message: string }> {
     const userId = req.user?.id;
-    this.logger.log(
+    this.staticLogger.info(
       `DELETE /api/exercises/${exerciseId}/midi-file - User: ${userId}`,
     );
 
@@ -718,18 +617,17 @@ export class ExercisesController {
       if (!exercise.midi_file_path) {
         return {
           success: false,
-          message: 'No MIDI file associated with this exercise',
-        };
+          message: 'No MIDI file associated with this exercise' };
       }
 
       // Delete file from storage
-      const supabase = this.exercisesService['supabaseService'].getClient();
+      const supabase = this.supabaseService.getClient();
       const { error } = await supabase.storage
         .from('exercise-files')
         .remove([exercise.midi_file_path]);
 
       if (error) {
-        this.logger.error('Error deleting MIDI file from storage:', error);
+        this.staticLogger.error('Error deleting MIDI file from storage:', error as Error);
         throw new BadRequestException('Failed to delete MIDI file');
       }
 
@@ -740,23 +638,21 @@ export class ExercisesController {
           midi_file_path: null,
           original_filename: null,
           file_size: null,
-          uploaded_at: null,
-        },
+          uploaded_at: null },
         userId,
       );
 
-      this.logger.log(
+      this.staticLogger.info(
         `Successfully deleted MIDI file for exercise ${exerciseId}`,
       );
 
       return {
         success: true,
-        message: 'MIDI file deleted successfully',
-      };
+        message: 'MIDI file deleted successfully' };
     } catch (error) {
-      this.logger.error(
+      this.staticLogger.error(
         `Error deleting MIDI file for exercise ${exerciseId}:`,
-        error,
+        error as Error,
       );
       throw error;
     }
@@ -796,8 +692,7 @@ export class ExercisesController {
           'Articulation detection',
           'Multiple instrument support',
           'Automatic difficulty analysis',
-        ],
-      },
+        ] },
       midi: {
         extensions: ['.mid', '.midi'],
         mimeTypes: ['audio/midi', 'audio/x-midi', 'application/x-midi'],
@@ -808,8 +703,6 @@ export class ExercisesController {
           'Rhythm quantization',
           'Musical analysis',
           'Multiple bass string configurations',
-        ],
-      },
-    };
+        ] } };
   }
 }

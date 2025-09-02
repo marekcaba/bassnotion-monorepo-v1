@@ -8,6 +8,7 @@
 
 import { Service } from '../services/core/ServiceRegistry.js';
 import { EventBus } from '../services/core/EventBus.js';
+import { generateCorrelationId, createStructuredLogger } from '@bassnotion/contracts';
 
 export interface ErrorBoundaryConfig {
   maxErrors?: number;
@@ -32,6 +33,7 @@ export interface ErrorContext {
   errorCount: number;
   lastError?: Error;
   metadata?: Record<string, any>;
+  correlationId: string;
 }
 
 export interface ErrorReport {
@@ -50,9 +52,10 @@ export interface ErrorReport {
 export class ServiceErrorBoundary {
   private config: Required<ErrorBoundaryConfig>;
   private eventBus: EventBus;
+  private logger = createStructuredLogger('ServiceErrorBoundary');
   private errorHistory: Map<
     string,
-    Array<{ error: Error; timestamp: number }>
+    Array<{ error: Error; timestamp: number; correlationId: string }>
   > = new Map();
   private recoveryInProgress = new Map<string, boolean>();
   private isolatedServices = new Set<string>();
@@ -79,8 +82,9 @@ export class ServiceErrorBoundary {
     operation: string,
     fn: () => Promise<T>,
     metadata?: Record<string, any>,
+    correlationId?: string,
   ): Promise<T> {
-    return this.executeWithBoundary(serviceName, operation, fn, metadata);
+    return this.executeWithBoundary(serviceName, operation, fn, metadata, correlationId);
   }
 
   /**
@@ -91,7 +95,9 @@ export class ServiceErrorBoundary {
     operation: string,
     fn: () => Promise<T>,
     metadata?: Record<string, any>,
+    correlationId?: string,
   ): Promise<T> {
+    const executionCorrelationId = correlationId || generateCorrelationId();
     // Check if service is isolated
     if (
       this.isolatedServices.has(serviceName) &&
@@ -107,9 +113,15 @@ export class ServiceErrorBoundary {
       if (this.recoveryInProgress.get(serviceName)) {
         this.clearErrorHistory(serviceName);
         this.recoveryInProgress.set(serviceName, false);
+        this.logger.info('Service recovery successful', {
+          serviceName,
+          operation,
+          correlationId: executionCorrelationId,
+        });
         this.eventBus.emit('errorboundary:recovery-success', {
           serviceName,
           operation,
+          correlationId: executionCorrelationId,
         });
       }
 
@@ -119,7 +131,7 @@ export class ServiceErrorBoundary {
         error instanceof Error ? error : new Error(String(error));
 
       // Record error
-      this.recordError(serviceName, errorObj);
+      this.recordError(serviceName, errorObj, executionCorrelationId);
 
       // Create error context
       const context: ErrorContext = {
@@ -129,14 +141,25 @@ export class ServiceErrorBoundary {
         errorCount: this.getErrorCount(serviceName),
         lastError: errorObj,
         metadata,
+        correlationId: executionCorrelationId,
       };
+      
+      // Log the error with correlation ID
+      this.logger.error('Service operation failed', errorObj, {
+        serviceName,
+        operation,
+        correlationId: executionCorrelationId,
+        errorCount: context.errorCount,
+        metadata,
+      });
 
-      // Emit error event
+      // Emit error event with correlation ID
       this.eventBus.emit('errorboundary:error', {
         serviceName,
         operation,
         error: errorObj,
         context,
+        correlationId: executionCorrelationId,
       });
 
       // Check if we should isolate the service
@@ -151,8 +174,8 @@ export class ServiceErrorBoundary {
       ) {
         const recovered = await this.attemptRecovery(errorObj, context);
         if (recovered) {
-          // Retry the operation
-          return this.executeWithBoundary(serviceName, operation, fn, metadata);
+          // Retry the operation with same correlation ID
+          return this.executeWithBoundary(serviceName, operation, fn, metadata, executionCorrelationId);
         }
       }
 
@@ -180,9 +203,9 @@ export class ServiceErrorBoundary {
   /**
    * Record error for tracking
    */
-  private recordError(serviceName: string, error: Error): void {
+  private recordError(serviceName: string, error: Error, correlationId: string): void {
     const errors = this.errorHistory.get(serviceName) || [];
-    errors.push({ error, timestamp: Date.now() });
+    errors.push({ error, timestamp: Date.now(), correlationId });
 
     // Clean old errors outside the window
     const cutoffTime = Date.now() - this.config.errorWindow;
@@ -191,7 +214,7 @@ export class ServiceErrorBoundary {
     this.errorHistory.set(serviceName, recentErrors);
 
     // Update error report
-    this.updateErrorReport(serviceName, error, false);
+    this.updateErrorReport(serviceName, error, false, correlationId);
   }
 
   /**
@@ -220,11 +243,20 @@ export class ServiceErrorBoundary {
     }
 
     this.isolatedServices.add(serviceName);
+    
+    const isolationCorrelationId = generateCorrelationId();
+    this.logger.warn('Service isolated due to errors', {
+      serviceName,
+      errorCount: this.getErrorCount(serviceName),
+      isolationLevel: this.config.isolationLevel,
+      correlationId: isolationCorrelationId,
+    });
 
     this.eventBus.emit('errorboundary:service-isolated', {
       serviceName,
       errorCount: this.getErrorCount(serviceName),
       isolationLevel: this.config.isolationLevel,
+      correlationId: isolationCorrelationId,
     });
 
     // Schedule automatic recovery check
@@ -260,7 +292,7 @@ export class ServiceErrorBoundary {
             success: true,
           });
 
-          this.updateErrorReport(context.serviceName, error, true);
+          this.updateErrorReport(context.serviceName, error, true, context.correlationId);
           return true;
         } catch (recoveryError) {
           this.eventBus.emit('errorboundary:recovery-attempted', {
@@ -285,8 +317,14 @@ export class ServiceErrorBoundary {
 
     if (errorCount === 0 && this.isolatedServices.has(serviceName)) {
       this.isolatedServices.delete(serviceName);
+      const correlationId = generateCorrelationId();
+      this.logger.info('Service health restored', {
+        serviceName,
+        correlationId,
+      });
       this.eventBus.emit('errorboundary:service-restored', {
         serviceName,
+        correlationId,
       });
     }
   }
@@ -305,6 +343,7 @@ export class ServiceErrorBoundary {
     serviceName: string,
     error: Error,
     recovered: boolean,
+    correlationId: string,
   ): void {
     const report = this.errorReports.get(serviceName) || {
       serviceName,
@@ -321,6 +360,7 @@ export class ServiceErrorBoundary {
         operation: 'unknown',
         timestamp: Date.now(),
         errorCount: this.getErrorCount(serviceName),
+        correlationId,
       },
       timestamp: Date.now(),
       recovered,
@@ -446,7 +486,7 @@ export class ServiceErrorBoundary {
 }
 
 /**
- * Decorator for automatic error boundary protection
+ * Decorator for automatic error boundary protection with correlation ID support
  */
 export function ErrorBoundary(
   serviceName: string,
@@ -460,11 +500,29 @@ export function ErrorBoundary(
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
+      // Extract correlation ID from args if available
+      let correlationId: string | undefined;
+      
+      // Check if first arg is an object with correlationId
+      if (args[0] && typeof args[0] === 'object' && 'correlationId' in args[0]) {
+        correlationId = args[0].correlationId;
+      }
+      
+      // Or check if any arg is a correlationId string
+      const correlationIdArg = args.find(arg => 
+        typeof arg === 'string' && arg.includes('-') && arg.length === 36
+      );
+      
+      if (!correlationId && correlationIdArg) {
+        correlationId = correlationIdArg;
+      }
+      
       return errorBoundary.protect(
         serviceName,
         propertyKey,
         () => originalMethod.apply(this, args),
         { args },
+        correlationId,
       );
     };
 

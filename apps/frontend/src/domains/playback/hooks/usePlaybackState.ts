@@ -11,6 +11,7 @@
 import { useCallback, useMemo } from 'react';
 import { usePlaybackStore } from '../store/playbackStore';
 import type { PlaybackState, AudioPerformanceMetrics } from '../types/audio';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // ============================================================================
 // HOOK INTERFACE
@@ -140,7 +141,7 @@ export function usePlaybackState(widgetId?: string): UsePlaybackStateReturn {
 
       // Log widget usage for analytics if widgetId provided
       if (widgetId) {
-        console.debug(`Widget ${widgetId} started playback`);
+        logger.debug(`Widget ${widgetId} started playback`);
       }
     }
   }, [isInitialized, isPlaying, setPlaybackState, widgetId]);
@@ -150,7 +151,7 @@ export function usePlaybackState(widgetId?: string): UsePlaybackStateReturn {
       setPlaybackState('paused');
 
       if (widgetId) {
-        console.debug(`Widget ${widgetId} paused playback`);
+        logger.debug(`Widget ${widgetId} paused playback`);
       }
     }
   }, [isInitialized, isPlaying, setPlaybackState, widgetId]);
@@ -160,7 +161,7 @@ export function usePlaybackState(widgetId?: string): UsePlaybackStateReturn {
       setPlaybackState('stopped');
 
       if (widgetId) {
-        console.debug(`Widget ${widgetId} stopped playback`);
+        logger.debug(`Widget ${widgetId} stopped playback`);
       }
     }
   }, [isInitialized, setPlaybackState, widgetId]);
@@ -171,7 +172,7 @@ export function usePlaybackState(widgetId?: string): UsePlaybackStateReturn {
         setTempo(bpm);
 
         if (widgetId) {
-          console.debug(`Widget ${widgetId} set tempo to ${bpm} BPM`);
+          logger.debug(`Widget ${widgetId} set tempo to ${bpm} BPM`);
         }
       }
     },
@@ -184,7 +185,7 @@ export function usePlaybackState(widgetId?: string): UsePlaybackStateReturn {
         setPitch(semitones);
 
         if (widgetId) {
-          console.debug(
+          logger.debug(
             `Widget ${widgetId} set pitch to ${semitones} semitones`,
           );
         }
@@ -199,7 +200,7 @@ export function usePlaybackState(widgetId?: string): UsePlaybackStateReturn {
         setMasterVolume(volume);
 
         if (widgetId) {
-          console.debug(`Widget ${widgetId} set volume to ${volume}`);
+          logger.debug(`Widget ${widgetId} set volume to ${volume}`);
         }
       }
     },
@@ -212,7 +213,7 @@ export function usePlaybackState(widgetId?: string): UsePlaybackStateReturn {
         updateSyncPosition(position);
 
         if (widgetId) {
-          console.debug(`Widget ${widgetId} seeked to position ${position}`);
+          logger.debug(`Widget ${widgetId} seeked to position ${position}`);
         }
       }
     },

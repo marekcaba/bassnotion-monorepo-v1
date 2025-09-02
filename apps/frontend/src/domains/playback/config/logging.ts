@@ -9,9 +9,11 @@ import { logger, LogLevel } from '../utils/logger';
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isTest = process.env.NODE_ENV === 'test';
 // Enable verbose logging with ?verbose=true in URL or NEXT_PUBLIC_VERBOSE_LOGGING env var
-const isVerboseEnabled = typeof window !== 'undefined' 
-  ? new URLSearchParams(window.location.search).has('verbose') || process.env.NEXT_PUBLIC_VERBOSE_LOGGING === 'true'
-  : false;
+const isVerboseEnabled =
+  typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).has('verbose') ||
+      process.env.NEXT_PUBLIC_VERBOSE_LOGGING === 'true'
+    : false;
 
 /**
  * Configure logging for the application
@@ -41,21 +43,21 @@ export function configureLogging() {
  */
 export function withLogLevel<T>(
   level: LogLevel,
-  operation: () => T | Promise<T>
+  operation: () => T | Promise<T>,
 ): T | Promise<T> {
   const originalLevel = logger.getLevel();
   logger.setLevel(level);
 
   try {
     const result = operation();
-    
+
     // Handle async operations
     if (result instanceof Promise) {
       return result.finally(() => {
         logger.setLevel(originalLevel);
       });
     }
-    
+
     logger.setLevel(originalLevel);
     return result;
   } catch (error) {
@@ -68,10 +70,10 @@ export function withLogLevel<T>(
  * Run initialization with reduced logging
  */
 export async function withQuietInitialization<T>(
-  operation: () => Promise<T>
+  operation: () => Promise<T>,
 ): Promise<T> {
   const originalLevel = logger.getLevel();
-  
+
   // Set to WARN level during initialization
   logger.setLevel(LogLevel.WARN);
   logger.setCompactInitialization(true);

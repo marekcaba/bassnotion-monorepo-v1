@@ -1,13 +1,6 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  InternalServerErrorException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException, ConflictException, Inject } from '@nestjs/common';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service.js';
-import {
-  SavedBasslineSchema,
+import { SavedBasslineSchema,
   SaveBasslineRequestSchema,
   AutoSaveRequestSchema,
   RenameBasslineRequestSchema,
@@ -16,15 +9,21 @@ import {
   type SavedBasslineInput,
   type SavedBasslinesResponseInput,
   type SaveBasslineResponseInput,
-  type AutoSaveResponseInput,
-} from '@bassnotion/contracts';
+  type AutoSaveResponseInput, createStructuredLogger } from '@bassnotion/contracts';
+import { RequestContextService } from '../../shared/services/request-context.service.js';
 
 @Injectable()
 export class UserBasslinesService {
-  private readonly logger = new Logger(UserBasslinesService.name);
+  private readonly staticLogger = createStructuredLogger(UserBasslinesService.name);
 
-  constructor(private readonly supabaseService: SupabaseService) {
-    this.logger.debug('🔧 UserBasslinesService constructor called');
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    @Inject(RequestContextService)
+    private readonly requestContext: RequestContextService,
+  ) {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    logger.debug('🔧 UserBasslinesService constructor called', { correlationId });
   }
 
   /**
@@ -34,8 +33,11 @@ export class UserBasslinesService {
     userId: string,
     requestData: unknown,
   ): Promise<SaveBasslineResponseInput> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
     try {
-      this.logger.debug(`Saving bassline for user: ${userId}`);
+      logger.debug(`Saving bassline for user: ${userId}`, { correlationId });
 
       // Validate input data
       const validatedData = SaveBasslineRequestSchema.parse(requestData);
@@ -70,8 +72,7 @@ export class UserBasslinesService {
         description: validatedData.description,
         notes: validatedData.notes,
         metadata: validatedData.metadata,
-        version: 1,
-      };
+        version: 1 };
 
       let result;
 
@@ -83,8 +84,7 @@ export class UserBasslinesService {
             description: basslineData.description,
             notes: basslineData.notes,
             metadata: basslineData.metadata,
-            updated_at: new Date().toISOString(),
-          })
+            updated_at: new Date().toISOString() })
           .eq('user_id', userId)
           .eq('name', validatedData.name)
           .is('deleted_at', null)
@@ -92,7 +92,7 @@ export class UserBasslinesService {
           .single();
 
         if (error) {
-          this.logger.error('Error updating bassline:', error);
+          logger.error('Error updating bassline:', error as Error, { correlationId });
           throw new InternalServerErrorException('Failed to update bassline');
         }
 
@@ -106,7 +106,7 @@ export class UserBasslinesService {
           .single();
 
         if (error) {
-          this.logger.error('Error creating bassline:', error);
+          logger.error('Error creating bassline:', error as Error, { correlationId });
           throw new InternalServerErrorException('Failed to create bassline');
         }
 
@@ -116,16 +116,15 @@ export class UserBasslinesService {
       // Transform to response format
       const savedBassline = this.transformToBassline(result);
 
-      this.logger.debug(`Successfully saved bassline: ${savedBassline.id}`);
+      logger.debug(`Successfully saved bassline: ${savedBassline.id}`, { correlationId });
 
       return {
         bassline: savedBassline,
         message: validatedData.overwriteExisting
           ? 'Bassline updated successfully'
-          : 'Bassline saved successfully',
-      };
+          : 'Bassline saved successfully' };
     } catch (error) {
-      this.logger.error(`Error saving bassline for user ${userId}:`, error);
+      logger.error(`Error saving bassline for user ${userId}:`, error as Error, { correlationId });
       if (
         error instanceof ConflictException ||
         error instanceof InternalServerErrorException
@@ -143,8 +142,10 @@ export class UserBasslinesService {
     userId: string,
     requestData: unknown,
   ): Promise<AutoSaveResponseInput> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     try {
-      this.logger.debug(`Auto-saving bassline for user: ${userId}`);
+      logger.debug(`Auto-saving bassline for user: ${userId}`, { correlationId });
 
       // Validate input data
       const validatedData = AutoSaveRequestSchema.parse(requestData);
@@ -161,26 +162,24 @@ export class UserBasslinesService {
         p_name: validatedData.name,
         p_notes: validatedData.notes,
         p_bassline_id: validatedData.basslineId || null,
-        p_metadata: validatedData.metadata,
-      });
+        p_metadata: validatedData.metadata });
 
       if (error) {
-        this.logger.error('Error in auto-save:', error);
+        logger.error('Error in auto-save:', error as Error, { correlationId });
         throw new InternalServerErrorException('Auto-save failed');
       }
 
       const basslineId = data as string;
       const now = new Date().toISOString();
 
-      this.logger.debug(`Auto-saved bassline: ${basslineId}`);
+      logger.debug(`Auto-saved bassline: ${basslineId}`, { correlationId });
 
       return {
         basslineId,
         lastSaved: now,
-        message: 'Auto-save completed',
-      };
+        message: 'Auto-save completed' };
     } catch (error) {
-      this.logger.error(`Error in auto-save for user ${userId}:`, error);
+      logger.error(`Error in auto-save for user ${userId}:`, error as Error, { correlationId });
       if (error instanceof InternalServerErrorException) {
         throw error;
       }
@@ -195,8 +194,11 @@ export class UserBasslinesService {
     userId: string,
     filters: unknown = {},
   ): Promise<SavedBasslinesResponseInput> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+    
     try {
-      this.logger.debug(`Fetching basslines for user: ${userId}`);
+      logger.debug(`Fetching basslines for user: ${userId}`, { correlationId });
 
       // Validate filters
       const validatedFilters = BasslineListFiltersSchema.parse(filters);
@@ -230,8 +232,7 @@ export class UserBasslinesService {
       const sortColumn =
         validatedFilters.sortBy === 'name' ? 'name' : validatedFilters.sortBy;
       query = query.order(sortColumn, {
-        ascending: validatedFilters.sortOrder === 'asc',
-      });
+        ascending: validatedFilters.sortOrder === 'asc' });
 
       // Apply pagination
       const offset = (validatedFilters.page - 1) * validatedFilters.limit;
@@ -240,7 +241,7 @@ export class UserBasslinesService {
       const { data, error, count } = await query;
 
       if (error) {
-        this.logger.error('Error fetching basslines:', error);
+        logger.error('Error fetching basslines:', error as Error, { correlationId });
         throw new InternalServerErrorException('Failed to fetch basslines');
       }
 
@@ -249,18 +250,18 @@ export class UserBasslinesService {
         this.transformToBassline(item),
       );
 
-      this.logger.debug(
+      logger.debug(
         `Found ${basslines.length} basslines (total: ${count})`,
+        { correlationId }
       );
 
       return {
         basslines,
         total: count || 0,
         page: validatedFilters.page,
-        limit: validatedFilters.limit,
-      };
+        limit: validatedFilters.limit };
     } catch (error) {
-      this.logger.error(`Error fetching basslines for user ${userId}:`, error);
+      logger.error(`Error fetching basslines for user ${userId}:`, error as Error, { correlationId });
       if (error instanceof InternalServerErrorException) {
         throw error;
       }
@@ -275,8 +276,10 @@ export class UserBasslinesService {
     userId: string,
     basslineId: string,
   ): Promise<SavedBasslineInput> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     try {
-      this.logger.debug(`Fetching bassline ${basslineId} for user: ${userId}`);
+      logger.debug(`Fetching bassline ${basslineId} for user: ${userId}`, { correlationId });
 
       const supabase = this.supabaseService.getClient();
 
@@ -296,13 +299,13 @@ export class UserBasslinesService {
         if (error.code === 'PGRST116') {
           throw new NotFoundException('Bassline not found');
         }
-        this.logger.error('Error fetching bassline:', error);
+        logger.error('Error fetching bassline:', error as Error, { correlationId });
         throw new InternalServerErrorException('Failed to fetch bassline');
       }
 
       return this.transformToBassline(data);
     } catch (error) {
-      this.logger.error(`Error fetching bassline ${basslineId}:`, error);
+      logger.error(`Error fetching bassline ${basslineId}:`, error as Error, { correlationId });
       if (
         error instanceof NotFoundException ||
         error instanceof InternalServerErrorException
@@ -321,11 +324,14 @@ export class UserBasslinesService {
     basslineId: string,
     requestData: unknown,
   ): Promise<SavedBasslineInput> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     try {
       const validatedData = RenameBasslineRequestSchema.parse(requestData);
 
-      this.logger.debug(
+      logger.debug(
         `Renaming bassline ${basslineId} to: ${validatedData.newName}`,
+        { correlationId }
       );
 
       const supabase = this.supabaseService.getClient();
@@ -360,7 +366,7 @@ export class UserBasslinesService {
         .single();
 
       if (error) {
-        this.logger.error('Error renaming bassline:', error);
+        logger.error('Error renaming bassline:', error as Error, { correlationId });
         throw new InternalServerErrorException('Failed to rename bassline');
       }
 
@@ -370,7 +376,7 @@ export class UserBasslinesService {
 
       return this.transformToBassline(data);
     } catch (error) {
-      this.logger.error(`Error renaming bassline ${basslineId}:`, error);
+      logger.error(`Error renaming bassline ${basslineId}:`, error as Error, { correlationId });
       if (
         error instanceof NotFoundException ||
         error instanceof ConflictException ||
@@ -390,11 +396,14 @@ export class UserBasslinesService {
     basslineId: string,
     requestData: unknown,
   ): Promise<SavedBasslineInput> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     try {
       const validatedData = DuplicateBasslineRequestSchema.parse(requestData);
 
-      this.logger.debug(
+      logger.debug(
         `Duplicating bassline ${basslineId} as: ${validatedData.newName}`,
+        { correlationId }
       );
 
       const supabase = this.supabaseService.getClient();
@@ -408,11 +417,10 @@ export class UserBasslinesService {
         p_user_id: userId,
         p_bassline_id: basslineId,
         p_new_name: validatedData.newName,
-        p_include_description: validatedData.includeDescription,
-      });
+        p_include_description: validatedData.includeDescription });
 
       if (error) {
-        this.logger.error('Error duplicating bassline:', error);
+        logger.error('Error duplicating bassline:', error as Error, { correlationId });
         throw new InternalServerErrorException('Failed to duplicate bassline');
       }
 
@@ -421,7 +429,7 @@ export class UserBasslinesService {
       // Fetch the newly created bassline
       return this.getBasslineById(userId, newBasslineId);
     } catch (error) {
-      this.logger.error(`Error duplicating bassline ${basslineId}:`, error);
+      logger.error(`Error duplicating bassline ${basslineId}:`, error as Error, { correlationId });
       if (error instanceof InternalServerErrorException) {
         throw error;
       }
@@ -433,8 +441,10 @@ export class UserBasslinesService {
    * Delete a bassline (soft delete)
    */
   async deleteBassline(userId: string, basslineId: string): Promise<void> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
     try {
-      this.logger.debug(`Deleting bassline ${basslineId} for user: ${userId}`);
+      logger.debug(`Deleting bassline ${basslineId} for user: ${userId}`, { correlationId });
 
       const supabase = this.supabaseService.getClient();
 
@@ -445,11 +455,10 @@ export class UserBasslinesService {
       // Use database function for soft delete
       const { data, error } = await supabase.rpc('soft_delete_bassline', {
         p_user_id: userId,
-        p_bassline_id: basslineId,
-      });
+        p_bassline_id: basslineId });
 
       if (error) {
-        this.logger.error('Error deleting bassline:', error);
+        logger.error('Error deleting bassline:', error as Error, { correlationId });
         throw new InternalServerErrorException('Failed to delete bassline');
       }
 
@@ -457,9 +466,9 @@ export class UserBasslinesService {
         throw new NotFoundException('Bassline not found');
       }
 
-      this.logger.debug(`Successfully deleted bassline: ${basslineId}`);
+      logger.debug(`Successfully deleted bassline: ${basslineId}`, { correlationId });
     } catch (error) {
-      this.logger.error(`Error deleting bassline ${basslineId}:`, error);
+      logger.error(`Error deleting bassline ${basslineId}:`, error as Error, { correlationId });
       if (
         error instanceof NotFoundException ||
         error instanceof InternalServerErrorException
@@ -484,13 +493,12 @@ export class UserBasslinesService {
         metadata: data.metadata,
         version: data.version,
         createdAt: data.created_at,
-        updatedAt: data.updated_at,
-      });
+        updatedAt: data.updated_at });
     } catch (validationError) {
-      this.logger.warn(
-        `Bassline ${data.id} failed validation:`,
-        validationError,
-      );
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      const correlationId = this.requestContext?.getCorrelationId();
+      
+      logger.warn(`Bassline ${data.id} failed validation:`, { error: validationError, correlationId });
       // Return as-is for backward compatibility
       return {
         id: data.id,
@@ -501,8 +509,7 @@ export class UserBasslinesService {
         metadata: data.metadata || {},
         version: data.version || 1,
         createdAt: data.created_at,
-        updatedAt: data.updated_at,
-      };
+        updatedAt: data.updated_at };
     }
   }
 }

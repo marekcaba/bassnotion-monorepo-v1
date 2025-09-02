@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { authService } from '../api/auth';
 import { useAuth } from './use-auth';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface UseIdleTimeoutOptions {
   /** Timeout in milliseconds (default: 30 minutes) */
@@ -47,7 +48,7 @@ export function useIdleTimeout(options: UseIdleTimeoutOptions = {}) {
       reset();
       onIdle?.();
     } catch (error) {
-      console.error('Error during idle logout:', error);
+      logger.error('Error during idle logout:', error);
       // Force reset even if logout fails
       reset();
       onIdle?.();

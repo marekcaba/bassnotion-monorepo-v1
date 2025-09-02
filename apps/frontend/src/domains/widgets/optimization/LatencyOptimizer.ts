@@ -103,9 +103,9 @@ export class LatencyOptimizer {
       await this.initializeAudioContext();
       await this.setupLatencyMeasurement();
 
-      console.debug('[LatencyOptimizer] Initialized successfully');
+      logger.debug('[LatencyOptimizer] Initialized successfully');
     } catch (error) {
-      console.error('[LatencyOptimizer] Initialization failed:', error);
+      logger.error('[LatencyOptimizer] Initialization failed:', error);
     }
   }
 
@@ -129,7 +129,7 @@ export class LatencyOptimizer {
       measurementAccuracy: this.estimateMeasurementAccuracy(deviceType),
     };
 
-    console.debug('[LatencyOptimizer] Device profile:', this.deviceProfile);
+    logger.debug('[LatencyOptimizer] Device profile:', this.deviceProfile);
   }
 
   /**
@@ -236,7 +236,7 @@ export class LatencyOptimizer {
 
       return Math.round((baseLatency + outputLatency) * 1000); // Convert to ms
     } catch (error) {
-      console.warn('[LatencyOptimizer] Baseline measurement failed:', error);
+      logger.warn('[LatencyOptimizer] Baseline measurement failed:', error);
       return 50; // Default fallback
     }
   }
@@ -246,7 +246,7 @@ export class LatencyOptimizer {
    */
   private async initializeAudioContext(): Promise<void> {
     if (typeof AudioContext === 'undefined') {
-      console.warn('[LatencyOptimizer] Web Audio API not available');
+      logger.warn('[LatencyOptimizer] Web Audio API not available');
       return;
     }
 
@@ -263,13 +263,13 @@ export class LatencyOptimizer {
         await this.audioContext.resume();
       }
 
-      console.debug('[LatencyOptimizer] Audio context initialized:', {
+      logger.debug('[LatencyOptimizer] Audio context initialized:', {
         sampleRate: this.audioContext.sampleRate,
         baseLatency: this.audioContext.baseLatency,
         outputLatency: this.audioContext.outputLatency,
       });
     } catch (error) {
-      console.error(
+      logger.error(
         '[LatencyOptimizer] Audio context initialization failed:',
         error,
       );
@@ -294,7 +294,7 @@ export class LatencyOptimizer {
       // Start periodic measurements
       this.startLatencyMeasurement();
     } catch (error) {
-      console.error('[LatencyOptimizer] Measurement setup failed:', error);
+      logger.error('[LatencyOptimizer] Measurement setup failed:', error);
     }
   }
 
@@ -307,12 +307,12 @@ export class LatencyOptimizer {
     try {
       // Note: In a real implementation, you would load an actual worklet file
       // For this example, we'll simulate the worklet setup
-      console.debug('[LatencyOptimizer] Audio Worklet would be loaded here');
+      logger.debug('[LatencyOptimizer] Audio Worklet would be loaded here');
 
       // Simulated worklet node creation
       // this.workletNode = new AudioWorkletNode(this.audioContext, 'latency-processor');
     } catch (error) {
-      console.warn('[LatencyOptimizer] Audio Worklet setup failed:', error);
+      logger.warn('[LatencyOptimizer] Audio Worklet setup failed:', error);
     }
   }
 
@@ -338,9 +338,9 @@ export class LatencyOptimizer {
         channelData[i] = Math.sin((2 * Math.PI * 1000 * i) / sampleRate) * 0.1;
       }
 
-      console.debug('[LatencyOptimizer] Calibration buffer created');
+      logger.debug('[LatencyOptimizer] Calibration buffer created');
     } catch (error) {
-      console.error(
+      logger.error(
         '[LatencyOptimizer] Calibration buffer creation failed:',
         error,
       );
@@ -432,7 +432,7 @@ export class LatencyOptimizer {
    */
   private checkOptimizationTriggers(measurement: LatencyMeasurement): void {
     if (measurement.totalLatency > this.settings.targetLatency * 1.5) {
-      console.warn(
+      logger.warn(
         `[LatencyOptimizer] High latency detected: ${measurement.totalLatency}ms`,
       );
 
@@ -449,7 +449,7 @@ export class LatencyOptimizer {
     const currentMeasurement = await this.measureCurrentLatency();
     const previousLatency = currentMeasurement.totalLatency;
 
-    console.debug('[LatencyOptimizer] Starting automatic optimization...');
+    logger.debug('[LatencyOptimizer] Starting automatic optimization...');
 
     // Try different optimization strategies
     const strategies = [
@@ -481,7 +481,7 @@ export class LatencyOptimizer {
           };
         }
       } catch (error) {
-        console.warn('[LatencyOptimizer] Strategy failed:', error);
+        logger.warn('[LatencyOptimizer] Strategy failed:', error);
       }
     }
 
@@ -502,7 +502,7 @@ export class LatencyOptimizer {
     const currentBuffer = this.settings.bufferSize;
     const targetBuffer = Math.max(128, currentBuffer / 2);
 
-    console.debug(
+    logger.debug(
       `[LatencyOptimizer] Optimizing buffer size: ${currentBuffer} → ${targetBuffer}`,
     );
 
@@ -520,7 +520,7 @@ export class LatencyOptimizer {
       return;
     }
 
-    console.debug('[LatencyOptimizer] Enabling Audio Worklets for low latency');
+    logger.debug('[LatencyOptimizer] Enabling Audio Worklets for low latency');
 
     // In a real implementation, you would set up Audio Worklets here
     await this.setupAudioWorklet();
@@ -534,7 +534,7 @@ export class LatencyOptimizer {
 
     // Higher sample rates can sometimes reduce latency on capable hardware
     if (this.deviceProfile?.supportsLowLatency && currentRate < 48000) {
-      console.debug(
+      logger.debug(
         `[LatencyOptimizer] Adjusting sample rate: ${currentRate} → 48000`,
       );
       this.settings.sampleRate = 48000;
@@ -545,7 +545,7 @@ export class LatencyOptimizer {
    * Optimize processing chain for lower latency
    */
   private async optimizeProcessingChain(): Promise<void> {
-    console.debug('[LatencyOptimizer] Optimizing audio processing chain');
+    logger.debug('[LatencyOptimizer] Optimizing audio processing chain');
 
     // In a real implementation, you would:
     // - Reduce the number of audio nodes
@@ -726,7 +726,7 @@ ${this.generateOptimizationRecommendations()}
     newSettings: Partial<LatencyOptimizationSettings>,
   ): void {
     this.settings = { ...this.settings, ...newSettings };
-    console.debug('[LatencyOptimizer] Settings updated:', this.settings);
+    logger.debug('[LatencyOptimizer] Settings updated:', this.settings);
   }
 
   /**
@@ -777,7 +777,7 @@ ${this.generateOptimizationRecommendations()}
 
     LatencyOptimizer.instance = null;
 
-    console.debug('[LatencyOptimizer] Destroyed');
+    logger.debug('[LatencyOptimizer] Destroyed');
   }
 }
 

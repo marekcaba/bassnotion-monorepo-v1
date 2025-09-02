@@ -10,8 +10,10 @@
  */
 
 import { playbackOrchestrator } from './PlaybackOrchestrator';
+import { createStructuredLogger } from '@bassnotion/contracts';
 import { syncPerformanceMonitor } from './SyncPerformanceMonitor';
 import { widgetSyncService } from './WidgetSyncService';
+import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // ============================================================================
 // INTERFACES
@@ -301,9 +303,9 @@ export class ErrorRecoveryManager {
       this.startHealthMonitoring();
 
       this.isInitialized = true;
-      console.log('[ErrorRecoveryManager] Initialized successfully');
+      logger.info('[ErrorRecoveryManager] Initialized successfully');
     } catch (error) {
-      console.error('[ErrorRecoveryManager] Initialization failed:', error);
+      logger.error('[ErrorRecoveryManager] Initialization failed:', error);
       throw error;
     }
   }
@@ -324,9 +326,9 @@ export class ErrorRecoveryManager {
       this.recoveryStrategies.clear();
 
       this.isInitialized = false;
-      console.log('[ErrorRecoveryManager] Disposed successfully');
+      logger.info('[ErrorRecoveryManager] Disposed successfully');
     } catch (error) {
-      console.error('[ErrorRecoveryManager] Disposal failed:', error);
+      logger.error('[ErrorRecoveryManager] Disposal failed:', error);
     }
   }
 
@@ -439,7 +441,7 @@ export class ErrorRecoveryManager {
     this.errorEvents.push(errorEvent);
     this.updateSystemHealth();
 
-    console.error(`[ErrorRecoveryManager] Error handled:`, {
+    logger.error(`[ErrorRecoveryManager] Error handled:`, {
       id: errorEvent.id,
       source,
       category,
@@ -480,7 +482,7 @@ export class ErrorRecoveryManager {
 
   private async attemptRecovery(errorEvent: ErrorEvent): Promise<void> {
     if (errorEvent.recoveryAttempts >= this.config.maxRetryAttempts) {
-      console.warn(
+      logger.warn(
         `[ErrorRecoveryManager] Max recovery attempts reached for error ${errorEvent.id}`,
       );
       return;
@@ -498,7 +500,7 @@ export class ErrorRecoveryManager {
         .sort((a, b) => a.priority - b.priority);
 
       for (const strategy of applicableStrategies) {
-        console.log(
+        logger.info(
           `[ErrorRecoveryManager] Attempting recovery strategy: ${strategy.name}`,
         );
 
@@ -508,12 +510,12 @@ export class ErrorRecoveryManager {
           if (result.success) {
             errorEvent.resolved = true;
             errorEvent.resolvedAt = Date.now();
-            console.log(
+            logger.info(
               `[ErrorRecoveryManager] Recovery successful: ${result.message}`,
             );
             break;
           } else {
-            console.warn(
+            logger.warn(
               `[ErrorRecoveryManager] Recovery failed: ${result.message}`,
             );
 
@@ -527,7 +529,7 @@ export class ErrorRecoveryManager {
             }
           }
         } catch (strategyError) {
-          console.error(
+          logger.error(
             `[ErrorRecoveryManager] Recovery strategy failed:`,
             strategyError,
           );
@@ -805,7 +807,7 @@ export class ErrorRecoveryManager {
 
       this.systemHealth.lastHealthCheck = Date.now();
     } catch (error) {
-      console.error('[ErrorRecoveryManager] Health check failed:', error);
+      logger.error('[ErrorRecoveryManager] Health check failed:', error);
     }
   }
 

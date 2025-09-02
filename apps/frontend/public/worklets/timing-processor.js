@@ -150,7 +150,10 @@ class TimingProcessor extends AudioWorkletProcessor {
         this.isPlaying = true;
         this.startFrame = currentFrame;
         if (event.data.fromFrame !== undefined) {
+          // When resuming from pause, set totalFrames to the exact pause position
           this.totalFrames = event.data.fromFrame;
+          // Reset pauseFrame to ensure continuity
+          this.pauseFrame = event.data.fromFrame;
         }
         console.log(`TimingProcessor[${this.processorId}] STARTED: isPlaying=${this.isPlaying}, totalFrames=${this.totalFrames}, updateCount=${this.updateCount}, currentFrame=${currentFrame}`);
         break;
