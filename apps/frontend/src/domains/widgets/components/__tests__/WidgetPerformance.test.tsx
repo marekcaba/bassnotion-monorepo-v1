@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { GlobalSampleCache } from '@/domains/playback/services/storage/GlobalSampleCache';
+import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache';
 
 // Mock dependencies
-vi.mock('@/domains/playback/services/storage/GlobalSampleCache');
+vi.mock('@/domains/playback/modules/storage/cache/GlobalSampleCache');
 
 describe('Widget Performance Tests', () => {
   const mockInstruments = {
@@ -12,14 +12,14 @@ describe('Widget Performance Tests', () => {
       audioNode: {
         connect: vi.fn(),
         disconnect: vi.fn(),
-        setParameterValues: vi.fn()
-      }
+        setParameterValues: vi.fn(),
+      },
     },
     drums: {
       1: { start: vi.fn(), volume: { value: -10 } },
       3: { start: vi.fn(), volume: { value: -10 } },
-      5: { start: vi.fn(), volume: { value: -10 } }
-    }
+      5: { start: vi.fn(), volume: { value: -10 } },
+    },
   };
 
   beforeEach(() => {
@@ -33,17 +33,21 @@ describe('Widget Performance Tests', () => {
   describe('Widget Mount Performance', () => {
     it('should mount widgets quickly with cached instruments', async () => {
       // Setup cache to return instruments
-      vi.mocked(GlobalSampleCache.getCachedInstrument).mockImplementation((key) => {
-        if (key === 'harmony-preloaded') return mockInstruments.harmony;
-        if (key === 'drums-preloaded') return mockInstruments.drums;
-        return null;
-      });
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockImplementation(
+        (key) => {
+          if (key === 'harmony-preloaded') return mockInstruments.harmony;
+          if (key === 'drums-preloaded') return mockInstruments.drums;
+          return null;
+        },
+      );
 
       const MockWidget = ({ name }: { name: string }) => {
         const [loaded, setLoaded] = React.useState(false);
 
         React.useEffect(() => {
-          const instrument = GlobalSampleCache.getCachedInstrument(`${name}-preloaded`);
+          const instrument = GlobalSampleCache.getCachedInstrument(
+            `${name}-preloaded`,
+          );
           if (instrument) {
             setLoaded(true);
           }
@@ -57,7 +61,7 @@ describe('Widget Performance Tests', () => {
         <>
           <MockWidget name="harmony" />
           <MockWidget name="drums" />
-        </>
+        </>,
       );
 
       await waitFor(() => {
@@ -79,7 +83,9 @@ describe('Widget Performance Tests', () => {
         const [status, setStatus] = React.useState('checking');
 
         React.useEffect(() => {
-          const instrument = GlobalSampleCache.getCachedInstrument(`${name}-preloaded`);
+          const instrument = GlobalSampleCache.getCachedInstrument(
+            `${name}-preloaded`,
+          );
           if (instrument) {
             setStatus('cached');
           } else {
@@ -87,7 +93,11 @@ describe('Widget Performance Tests', () => {
           }
         }, [name]);
 
-        return <div>{name}: {status}</div>;
+        return (
+          <div>
+            {name}: {status}
+          </div>
+        );
       };
 
       render(<MockWidget name="harmony" />);
@@ -97,16 +107,20 @@ describe('Widget Performance Tests', () => {
       });
 
       // Should handle fallback gracefully
-      expect(GlobalSampleCache.getCachedInstrument).toHaveBeenCalledWith('harmony-preloaded');
+      expect(GlobalSampleCache.getCachedInstrument).toHaveBeenCalledWith(
+        'harmony-preloaded',
+      );
     });
 
     it('should handle parallel widget mounting efficiently', async () => {
       // All instruments cached
-      vi.mocked(GlobalSampleCache.getCachedInstrument).mockImplementation((key) => {
-        if (key.includes('harmony')) return mockInstruments.harmony;
-        if (key.includes('drums')) return mockInstruments.drums;
-        return null;
-      });
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockImplementation(
+        (key) => {
+          if (key.includes('harmony')) return mockInstruments.harmony;
+          if (key.includes('drums')) return mockInstruments.drums;
+          return null;
+        },
+      );
 
       let readyCount = 0;
 
@@ -115,9 +129,11 @@ describe('Widget Performance Tests', () => {
 
         const WidgetComponent = ({ type }: { type: string }) => {
           React.useEffect(() => {
-            const instrument = GlobalSampleCache.getCachedInstrument(`${type}-preloaded`);
+            const instrument = GlobalSampleCache.getCachedInstrument(
+              `${type}-preloaded`,
+            );
             if (instrument) {
-              setWidgetsReady(prev => prev + 1);
+              setWidgetsReady((prev) => prev + 1);
             }
           }, [type]);
 
@@ -139,8 +155,12 @@ describe('Widget Performance Tests', () => {
         expect(screen.getByText('Widgets ready: 2/2')).toBeInTheDocument();
       });
 
-      expect(GlobalSampleCache.getCachedInstrument).toHaveBeenCalledWith('harmony-preloaded');
-      expect(GlobalSampleCache.getCachedInstrument).toHaveBeenCalledWith('drums-preloaded');
+      expect(GlobalSampleCache.getCachedInstrument).toHaveBeenCalledWith(
+        'harmony-preloaded',
+      );
+      expect(GlobalSampleCache.getCachedInstrument).toHaveBeenCalledWith(
+        'drums-preloaded',
+      );
     });
   });
 
@@ -148,13 +168,16 @@ describe('Widget Performance Tests', () => {
     it('should reuse same instrument instances across widgets', async () => {
       const instrumentRefs: any[] = [];
 
-      vi.mocked(GlobalSampleCache.getCachedInstrument).mockImplementation(() => {
-        return mockInstruments.harmony; // Return same instance
-      });
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockImplementation(
+        () => {
+          return mockInstruments.harmony; // Return same instance
+        },
+      );
 
       const MockWidget = ({ id }: { id: number }) => {
         React.useEffect(() => {
-          const instrument = GlobalSampleCache.getCachedInstrument('harmony-preloaded');
+          const instrument =
+            GlobalSampleCache.getCachedInstrument('harmony-preloaded');
           instrumentRefs.push(instrument);
         }, [id]);
 
@@ -165,7 +188,7 @@ describe('Widget Performance Tests', () => {
         <>
           <MockWidget id={1} />
           <MockWidget id={2} />
-        </>
+        </>,
       );
 
       await waitFor(() => {
@@ -180,10 +203,12 @@ describe('Widget Performance Tests', () => {
       let cacheCheckCount = 0;
 
       // Return cached instrument after first check
-      vi.mocked(GlobalSampleCache.getCachedInstrument).mockImplementation(() => {
-        cacheCheckCount++;
-        return mockInstruments.harmony;
-      });
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockImplementation(
+        () => {
+          cacheCheckCount++;
+          return mockInstruments.harmony;
+        },
+      );
 
       const MockWidget = () => {
         const [renderCount, setRenderCount] = React.useState(0);
@@ -191,13 +216,16 @@ describe('Widget Performance Tests', () => {
 
         React.useEffect(() => {
           if (!instrumentRef.current) {
-            instrumentRef.current = GlobalSampleCache.getCachedInstrument('test-instrument');
+            instrumentRef.current =
+              GlobalSampleCache.getCachedInstrument('test-instrument');
           }
         }, [renderCount]);
 
         return (
           <div>
-            <button onClick={() => setRenderCount(c => c + 1)}>Re-render</button>
+            <button onClick={() => setRenderCount((c) => c + 1)}>
+              Re-render
+            </button>
             <div>Render count: {renderCount}</div>
             <div>Has instrument: {instrumentRef.current ? 'yes' : 'no'}</div>
           </div>
@@ -205,14 +233,14 @@ describe('Widget Performance Tests', () => {
       };
 
       const { rerender } = render(<MockWidget />);
-      
+
       await waitFor(() => {
         expect(screen.getByText('Has instrument: yes')).toBeInTheDocument();
       });
-      
+
       // Re-render the component
       rerender(<MockWidget />);
-      
+
       // Should have checked cache only once despite re-render
       expect(cacheCheckCount).toBe(1);
     });
@@ -222,12 +250,18 @@ describe('Widget Performance Tests', () => {
     it('should initialize widgets faster with preloaded samples', async () => {
       const initTimes: Record<string, number> = {};
 
-      const MockOptimizedWidget = ({ name, cached }: { name: string; cached: boolean }) => {
+      const MockOptimizedWidget = ({
+        name,
+        cached,
+      }: {
+        name: string;
+        cached: boolean;
+      }) => {
         const [initialized, setInitialized] = React.useState(false);
 
         React.useEffect(() => {
           const startTime = performance.now();
-          
+
           if (cached) {
             // Simulate cached initialization (immediate)
             setInitialized(true);
@@ -241,7 +275,9 @@ describe('Widget Performance Tests', () => {
           }
         }, [name, cached]);
 
-        return <div>{initialized ? `${name} ready` : `${name} initializing`}</div>;
+        return (
+          <div>{initialized ? `${name} ready` : `${name} initializing`}</div>
+        );
       };
 
       // Test cached vs non-cached initialization
@@ -249,19 +285,24 @@ describe('Widget Performance Tests', () => {
         <>
           <MockOptimizedWidget name="harmony" cached={true} />
           <MockOptimizedWidget name="drums" cached={false} />
-        </>
+        </>,
       );
 
       await waitFor(() => {
         expect(screen.getByText('harmony ready')).toBeInTheDocument();
       });
-      
-      await waitFor(() => {
-        expect(screen.getByText('drums ready')).toBeInTheDocument();
-      }, { timeout: 100 });
+
+      await waitFor(
+        () => {
+          expect(screen.getByText('drums ready')).toBeInTheDocument();
+        },
+        { timeout: 100 },
+      );
 
       // Cached initialization should be much faster
-      expect(initTimes['harmony-cached']).toBeLessThan(initTimes['drums-fresh']);
+      expect(initTimes['harmony-cached']).toBeLessThan(
+        initTimes['drums-fresh'],
+      );
     });
   });
 });

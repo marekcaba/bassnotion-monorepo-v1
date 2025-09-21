@@ -2,11 +2,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { createStructuredLogger } from '@/shared/utils/errorHandling';
+
+const moduleLogger = createStructuredLogger('ToneProvider');
 
 // Export functions to get global Tone info for backward compatibility
 export function getGlobalTone() {
   // Deprecated - use AudioProvider and useAudioEngine hook instead
-  logger.warn(
+  moduleLogger.warn(
     '[ToneProvider] getGlobalTone is deprecated. Use AudioProvider.',
   );
   return null;
@@ -14,7 +17,7 @@ export function getGlobalTone() {
 
 export function getGlobalToneId() {
   // Deprecated - no longer using global instance IDs
-  logger.warn(
+  moduleLogger.warn(
     '[ToneProvider] getGlobalToneId is deprecated. Use AudioProvider.',
   );
   return 'deprecated';
@@ -22,7 +25,7 @@ export function getGlobalToneId() {
 
 export function getGlobalContextId() {
   // Deprecated - no longer using global state
-  logger.warn(
+  moduleLogger.warn(
     '[ToneProvider] getGlobalContextId is deprecated. Global state has been eliminated.',
   );
   return null;
@@ -46,9 +49,9 @@ interface ToneProviderProps {
 }
 
 export function ToneProvider({ children }: ToneProviderProps) {
-  const { correlationId, logger } = useCorrelation('ToneProvider');
-  const [tone, setTone] = useState<any>(null);
-  const [transport, setTransport] = useState<any>(null);
+  const { logger } = useCorrelation('ToneProvider');
+  const [tone] = useState<any>(null);
+  const [transport] = useState<any>(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -57,7 +60,7 @@ export function ToneProvider({ children }: ToneProviderProps) {
     );
     // Mark as ready immediately since this is just a stub
     setIsReady(true);
-  }, []);
+  }, [logger]);
 
   // Method to start audio context (needs user gesture)
   const startContext = async () => {

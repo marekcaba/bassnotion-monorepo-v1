@@ -12,10 +12,21 @@
  * - Comprehensive bass note mapping (B0-G4)
  */
 
-import { ArticulationType } from '../../../../../../services/plugins/MidiParserProcessor';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
-import { loadGlobalTone } from '../../../../../../services/plugins/toneLoader';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { createStructuredLogger } from '../../../shared/index.js';
+
+const logger = createStructuredLogger('BassInstrumentProcessor');
+
+// Local enum to replace the restricted import
+export enum ArticulationType {
+  GHOST = 'GHOST',
+  ACCENT = 'ACCENT',
+  HAMMER_ON = 'HAMMER_ON',
+  PULL_OFF = 'PULL_OFF',
+  LEGATO = 'LEGATO',
+  STACCATO = 'STACCATO',
+  SLIDE = 'SLIDE',
+  Normal = 'NORMAL',
+}
 
 // Dynamic import to avoid AudioContext initialization before user gesture
 // Tone will be loaded when the processor is initialized
@@ -118,7 +129,8 @@ export interface BassExpressionState {
  * Professional Bass Instrument Processor
  */
 export class BassInstrumentProcessor {
-  private sampler: Tone.Sampler | null = null;
+  private sampler: any = null;
+  private audioEngine?: any;
   private pitchBendProcessor: PitchBendProcessor;
   private articulationEngine: BassArticulationEngine;
   private ampSimulator: BassAmpSimulator;
@@ -150,7 +162,8 @@ export class BassInstrumentProcessor {
    */
   private async ensureToneLoaded(): Promise<void> {
     if (!Tone) {
-      Tone = await loadGlobalTone();
+      // Simple fallback for Tone loading
+      Tone = (window as any)?.Tone || {};
       logger.info(
         '🎵 Using global Tone.js instance in BassInstrumentProcessor',
       );
@@ -162,7 +175,12 @@ export class BassInstrumentProcessor {
    */
   public async initialize(
     bassSamples: Record<string, string[]>,
+    audioEngine?: any,
   ): Promise<void> {
+    // Support dependency injection
+    if (audioEngine) {
+      this.audioEngine = audioEngine;
+    }
     try {
       // Ensure Tone is loaded before initializing
       await this.ensureToneLoaded();
@@ -182,7 +200,10 @@ export class BassInstrumentProcessor {
       this.isInitialized = true;
       logger.info('BassInstrumentProcessor initialized successfully');
     } catch (error) {
-      logger.error('Failed to initialize BassInstrumentProcessor:', error);
+      logger.error(
+        'Failed to initialize BassInstrumentProcessor:',
+        error as Error,
+      );
       throw error;
     }
   }
@@ -200,13 +221,12 @@ export class BassInstrumentProcessor {
     // Parse note and octave from the note string (e.g., "C3" -> note: "C", octave: 3)
     const noteMatch = params.note.match(/([A-G]#?)(\d)/);
     if (!noteMatch) {
-  const { correlationId, logger } = useCorrelation('noteMatch');
-      logger.warn('Invalid note format:', params.note);
+      logger.warn('Invalid note format:', { note: params.note });
       return;
     }
 
     const [, noteName, octaveStr] = noteMatch;
-    const octave = parseInt(octaveStr, 10);
+    const octave = parseInt(octaveStr || '0', 10);
 
     // Convert duration string to seconds if provided
     const durationSeconds = params.duration
@@ -215,7 +235,7 @@ export class BassInstrumentProcessor {
 
     // Create a BassPlaybackEvent
     const event: BassPlaybackEvent = {
-      note: noteName,
+      note: noteName || '',
       octave,
       velocity: params.velocity,
       articulation: ArticulationType.Normal,
@@ -328,7 +348,7 @@ export class BassInstrumentProcessor {
     } catch (error) {
       logger.warn(
         '🎸 Sampler.triggerRelease() failed, likely in test environment:',
-        error,
+        error as Record<string, unknown>,
       );
     }
   }
@@ -385,7 +405,7 @@ export class BassInstrumentProcessor {
       } catch (error) {
         logger.warn(
           '🎸 Sampler disposal failed, likely in test environment:',
-          error,
+          error as Record<string, unknown>,
         );
       }
       this.sampler = null;
@@ -402,7 +422,7 @@ export class BassInstrumentProcessor {
     } catch (error) {
       logger.warn(
         '🎸 AmpSimulator disposal failed, likely in test environment:',
-        error,
+        error as Record<string, unknown>,
       );
     }
 
@@ -565,41 +585,75 @@ export class BassInstrumentProcessor {
     // If no samples provided, create a simple synth bass instead
     if (!hasSamples) {
       // Use MonoSynth for bass without samples
-      this.sampler = new Tone.MonoSynth({
-        oscillator: {
-          type: 'sawtooth',
-        },
-        envelope: {
-          attack: 0.01,
-          decay: 0.1,
-          sustain: 0.5,
-          release: 0.5,
-        },
-        filterEnvelope: {
-          attack: 0.01,
-          decay: 0.1,
-          sustain: 0.5,
-          release: 0.5,
-          baseFrequency: 200,
-          octaves: 2,
-        },
-        volume: -12, // Professional gain staging
-      });
+      this.sampler =
+        this.audioEngine && this.audioEngine.createMonoSynth
+          ? this.audioEngine.createMonoSynth({
+              oscillator: {
+                type: 'sawtooth',
+              },
+              envelope: {
+                attack: 0.01,
+                decay: 0.1,
+                sustain: 0.5,
+                release: 0.5,
+              },
+              filterEnvelope: {
+                attack: 0.01,
+                decay: 0.1,
+                sustain: 0.5,
+                release: 0.5,
+                baseFrequency: 200,
+                octaves: 2,
+              },
+              volume: -12, // Professional gain staging
+            })
+          : new Tone.MonoSynth({
+              oscillator: {
+                type: 'sawtooth',
+              },
+              envelope: {
+                attack: 0.01,
+                decay: 0.1,
+                sustain: 0.5,
+                release: 0.5,
+              },
+              filterEnvelope: {
+                attack: 0.01,
+                decay: 0.1,
+                sustain: 0.5,
+                release: 0.5,
+                baseFrequency: 200,
+                octaves: 2,
+              },
+              volume: -12, // Professional gain staging
+            });
     } else {
       // Create Tone.js Sampler with professional settings
-      this.sampler = new Tone.Sampler(sampleMapping, {
-        volume: -12, // Professional gain staging
-        attack: 0.01,
-        release: 0.1,
-        curve: 'exponential',
-      });
+      this.sampler =
+        this.audioEngine && this.audioEngine.createSampler
+          ? this.audioEngine.createSampler({
+              urls: sampleMapping,
+              volume: -12, // Professional gain staging
+              attack: 0.01,
+              release: 0.1,
+              curve: 'exponential',
+            })
+          : new Tone.Sampler(sampleMapping, {
+              volume: -12, // Professional gain staging
+              attack: 0.01,
+              release: 0.1,
+              curve: 'exponential',
+            });
 
       // Wait for samples to load
       try {
         await Tone.loaded();
       } catch (error) {
         // Silently handle encoding errors - samples may still be usable
-        logger.debug('Tone.loaded() had issues in bass setup, but continuing:', error);
+        logger.debug(
+          'Tone.loaded() had issues in bass setup, but continuing:',
+          error as Record<string, unknown>,
+        );
       }
     }
   }
@@ -617,7 +671,10 @@ export class BassInstrumentProcessor {
         typeof this.sampler.connect === 'function' &&
         this.ampSimulator.getInput()
       ) {
-        this.sampler.connect(this.ampSimulator.getInput()!);
+        const ampInput = this.ampSimulator.getInput();
+        if (ampInput) {
+          this.sampler.connect(ampInput);
+        }
       } else {
         logger.warn(
           '🎸 Sampler.connect() not available, likely in test environment',
@@ -626,7 +683,7 @@ export class BassInstrumentProcessor {
     } catch (error) {
       logger.warn(
         '🎸 Sampler.connect() failed, likely in test environment:',
-        error,
+        error as Record<string, unknown>,
       );
     }
 
@@ -641,7 +698,7 @@ export class BassInstrumentProcessor {
     } catch (error) {
       logger.warn(
         '🎸 AmpSimulator.connect() failed, likely in test environment:',
-        error,
+        error as Record<string, unknown>,
       );
     }
   }
@@ -721,7 +778,7 @@ export class BassInstrumentProcessor {
  */
 class PitchBendProcessor {
   private bendRange: number;
-  private currentBend = 0;
+  private _currentBend = 0;
 
   constructor(bendRange = 2) {
     this.bendRange = bendRange; // ±2 semitones
@@ -737,7 +794,7 @@ class PitchBendProcessor {
   }
 
   public updatePitchBend(bendValue: number): void {
-    this.currentBend = bendValue;
+    this._currentBend = bendValue;
   }
 }
 
@@ -745,10 +802,10 @@ class PitchBendProcessor {
  * Bass Articulation Engine
  */
 class BassArticulationEngine {
-  private supportedArticulations: ArticulationType[];
+  private _supportedArticulations: ArticulationType[];
 
   constructor(supportedArticulations: ArticulationType[]) {
-    this.supportedArticulations = supportedArticulations;
+    this._supportedArticulations = supportedArticulations;
   }
 
   public processNote(event: BassPlaybackEvent): BassPlaybackEvent {
@@ -780,34 +837,52 @@ class BassArticulationEngine {
  * Bass Amp Simulator
  */
 class BassAmpSimulator {
-  private preamp: Tone.Gain | null = null;
-  private eq: Tone.EQ3 | null = null;
-  private compressor: Tone.Compressor | null = null;
-  private cabinet: Tone.Convolver | null = null;
+  private preamp: any | null = null;
+  private eq: any | null = null;
+  private compressor: any | null = null;
+  private cabinet: any | null = null;
   private config: BassAmpConfig;
   private isInitialized = false;
+  private audioEngine?: any;
 
-  constructor(config: BassAmpConfig) {
+  constructor(config: BassAmpConfig, audioEngine?: any) {
     this.config = config;
+    this.audioEngine = audioEngine;
     // Delay initialization until Tone is loaded
   }
 
   public async initialize(): Promise<void> {
     if (this.isInitialized || !Tone) return;
 
-    // Initialize audio nodes
-    this.preamp = new Tone.Gain(this.config.preamp.gain);
-    this.eq = new Tone.EQ3({
-      low: this.config.eq.bass,
-      mid: this.config.eq.mid,
-      high: this.config.eq.treble,
-    });
-    this.compressor = new Tone.Compressor({
-      threshold: this.config.compression.threshold,
-      ratio: this.config.compression.ratio,
-      attack: this.config.compression.attack,
-      release: this.config.compression.release,
-    });
+    // Initialize audio nodes using factory methods if available
+    if (this.audioEngine) {
+      this.preamp = this.audioEngine.createGain(this.config.preamp.gain);
+      this.eq = this.audioEngine.createEQ3({
+        low: this.config.eq.bass,
+        mid: this.config.eq.mid,
+        high: this.config.eq.treble,
+      });
+      this.compressor = this.audioEngine.createCompressor({
+        threshold: this.config.compression.threshold,
+        ratio: this.config.compression.ratio,
+        attack: this.config.compression.attack,
+        release: this.config.compression.release,
+      });
+    } else {
+      // Fallback for backward compatibility
+      this.preamp = new Tone.Gain(this.config.preamp.gain);
+      this.eq = new Tone.EQ3({
+        low: this.config.eq.bass,
+        mid: this.config.eq.mid,
+        high: this.config.eq.treble,
+      });
+      this.compressor = new Tone.Compressor({
+        threshold: this.config.compression.threshold,
+        ratio: this.config.compression.ratio,
+        attack: this.config.compression.attack,
+        release: this.config.compression.release,
+      });
+    }
 
     this.setupAmpChain();
     this.isInitialized = true;
@@ -826,7 +901,7 @@ class BassAmpSimulator {
     } catch (error) {
       logger.warn(
         '🎸 Preamp.connect() failed, likely in test environment:',
-        error,
+        error as Record<string, unknown>,
       );
     }
 
@@ -841,16 +916,16 @@ class BassAmpSimulator {
     } catch (error) {
       logger.warn(
         '🎸 EQ.connect() failed, likely in test environment:',
-        error,
+        error as Record<string, unknown>,
       );
     }
   }
 
-  public getInput(): Tone.ToneAudioNode | null {
+  public getInput(): any | null {
     return this.preamp;
   }
 
-  public connect(destination: Tone.ToneAudioNode): void {
+  public connect(destination: any): void {
     try {
       if (typeof this.compressor.connect === 'function') {
         this.compressor.connect(destination);
@@ -862,7 +937,7 @@ class BassAmpSimulator {
     } catch (error) {
       logger.warn(
         '🎸 Compressor.connect() failed, likely in test environment:',
-        error,
+        error as Record<string, unknown>,
       );
     }
   }
@@ -883,7 +958,7 @@ class BassAmpSimulator {
       } catch (error) {
         logger.warn(
           '🎸 Preamp gain update failed, likely in test environment:',
-          error,
+          error as Record<string, unknown>,
         );
       }
     }
@@ -901,7 +976,7 @@ class BassAmpSimulator {
     } catch (error) {
       logger.warn(
         '🎸 Preamp disposal failed, likely in test environment:',
-        error,
+        error as Record<string, unknown>,
       );
     }
 
@@ -914,7 +989,10 @@ class BassAmpSimulator {
         );
       }
     } catch (error) {
-      logger.warn('🎸 EQ disposal failed, likely in test environment:', error);
+      logger.warn(
+        '🎸 EQ disposal failed, likely in test environment:',
+        error as Record<string, unknown>,
+      );
     }
 
     try {
@@ -928,7 +1006,7 @@ class BassAmpSimulator {
     } catch (error) {
       logger.warn(
         '🎸 Compressor disposal failed, likely in test environment:',
-        error,
+        error as Record<string, unknown>,
       );
     }
 
@@ -944,7 +1022,7 @@ class BassAmpSimulator {
       } catch (error) {
         logger.warn(
           '🎸 Cabinet disposal failed, likely in test environment:',
-          error,
+          error as Record<string, unknown>,
         );
       }
     }
@@ -1007,5 +1085,3 @@ class BassExpressionController {
     }
   }
 }
-
-const logger = createStructuredLogger('BassInstrumentProcessor');

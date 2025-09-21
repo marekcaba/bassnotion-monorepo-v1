@@ -1,6 +1,6 @@
 /**
  * StorageProvider - Base interface for storage providers
- * 
+ *
  * Defines the common interface that all storage providers must implement.
  * This allows for easy switching between different storage backends.
  */
@@ -11,7 +11,7 @@ export interface StorageProvider {
    */
   upload(
     data: ArrayBuffer | Blob | File,
-    options: UploadOptions
+    options: UploadOptions,
   ): Promise<StorageResult>;
 
   /**
@@ -19,7 +19,7 @@ export interface StorageProvider {
    */
   download(
     path: string,
-    options?: DownloadOptions
+    options?: DownloadOptions,
   ): Promise<StorageResult & { data?: ArrayBuffer }>;
 
   /**
@@ -32,7 +32,7 @@ export interface StorageProvider {
    */
   list(
     path?: string,
-    options?: ListOptions
+    options?: ListOptions,
   ): Promise<{ files: StorageObject[]; error?: Error }>;
 
   /**
@@ -50,7 +50,7 @@ export interface StorageProvider {
    */
   createSignedUrl?(
     path: string,
-    expiresIn: number
+    expiresIn: number,
   ): Promise<{ url?: string; error?: Error }>;
 
   /**
@@ -143,14 +143,17 @@ export interface StorageMetrics {
  * Factory for creating storage providers
  */
 export class StorageProviderFactory {
-  private static providers = new Map<string, new (...args: any[]) => StorageProvider>();
+  private static providers = new Map<
+    string,
+    new (...args: any[]) => StorageProvider
+  >();
 
   /**
    * Register a provider type
    */
   static register(
     type: string,
-    providerClass: new (...args: any[]) => StorageProvider
+    providerClass: new (...args: any[]) => StorageProvider,
   ): void {
     this.providers.set(type, providerClass);
   }
@@ -158,17 +161,13 @@ export class StorageProviderFactory {
   /**
    * Create a provider instance
    */
-  static create(
-    type: string,
-    config: any,
-    ...args: any[]
-  ): StorageProvider {
+  static create(type: string, config: any, ...args: any[]): StorageProvider {
     const ProviderClass = this.providers.get(type);
-    
+
     if (!ProviderClass) {
       throw new Error(`Unknown storage provider type: ${type}`);
     }
-    
+
     return new ProviderClass(config, ...args);
   }
 

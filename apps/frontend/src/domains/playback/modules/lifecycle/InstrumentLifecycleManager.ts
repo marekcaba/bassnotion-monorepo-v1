@@ -1,8 +1,8 @@
 /**
  * Instrument Lifecycle Manager - Enterprise Resource Management
- * 
+ *
  * Extracted from services/plugins/InstrumentLifecycleManager.ts
- * 
+ *
  * Provides enterprise-grade resource management for audio instruments with:
  * - Automatic memory optimization and thermal monitoring
  * - Smart resource allocation and pool management
@@ -11,15 +11,27 @@
  * - Performance analytics and predictive insights
  */
 
-import { createStructuredLogger } from '@bassnotion/contracts';
-import { EventBus } from '../../services/core/EventBus.js';
+import { EventBus, createStructuredLogger } from '../shared/index.js';
 
 const logger = createStructuredLogger('InstrumentLifecycleManager');
 
 // Core lifecycle types
 export type InstrumentType = 'bass' | 'drums' | 'chords' | 'metronome';
-export type InstrumentState = 'initializing' | 'ready' | 'playing' | 'paused' | 'fading' | 'stopped' | 'disposing' | 'disposed';
-export type DegradationLevel = 'optimal' | 'slight' | 'moderate' | 'severe' | 'critical';
+export type InstrumentState =
+  | 'initializing'
+  | 'ready'
+  | 'playing'
+  | 'paused'
+  | 'fading'
+  | 'stopped'
+  | 'disposing'
+  | 'disposed';
+export type DegradationLevel =
+  | 'optimal'
+  | 'slight'
+  | 'moderate'
+  | 'severe'
+  | 'critical';
 export type CleanupPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type ThermalState = 'nominal' | 'fair' | 'serious' | 'critical';
 
@@ -198,7 +210,12 @@ export interface GracefulDegradationStrategy {
 }
 
 export interface DegradationAction {
-  type: 'reduce_quality' | 'disable_feature' | 'limit_polyphony' | 'reduce_sampling_rate' | 'lower_bit_depth';
+  type:
+    | 'reduce_quality'
+    | 'disable_feature'
+    | 'limit_polyphony'
+    | 'reduce_sampling_rate'
+    | 'lower_bit_depth';
   target: string;
   value: number | boolean;
   reversible: boolean;
@@ -222,7 +239,7 @@ export interface ResourceUsageStats {
  */
 export class InstrumentLifecycleManager {
   private static instance: InstrumentLifecycleManager | null = null;
-  
+
   private config: MemoryOptimizationConfig;
   private instruments = new Map<string, InstrumentInstance>();
   private resourcePool: ResourcePool;
@@ -239,7 +256,7 @@ export class InstrumentLifecycleManager {
   private constructor(config: MemoryOptimizationConfig, eventBus?: EventBus) {
     this.config = config;
     this.eventBus = eventBus;
-    
+
     // Initialize resource pool
     this.resourcePool = {
       audioBuffers: new Map(),
@@ -277,12 +294,20 @@ export class InstrumentLifecycleManager {
   /**
    * Get singleton instance
    */
-  static getInstance(config?: MemoryOptimizationConfig, eventBus?: EventBus): InstrumentLifecycleManager {
+  static getInstance(
+    config?: MemoryOptimizationConfig,
+    eventBus?: EventBus,
+  ): InstrumentLifecycleManager {
     if (!InstrumentLifecycleManager.instance) {
       if (!config) {
-        throw new Error('Config required for first instantiation of InstrumentLifecycleManager');
+        throw new Error(
+          'Config required for first instantiation of InstrumentLifecycleManager',
+        );
       }
-      InstrumentLifecycleManager.instance = new InstrumentLifecycleManager(config, eventBus);
+      InstrumentLifecycleManager.instance = new InstrumentLifecycleManager(
+        config,
+        eventBus,
+      );
     }
     return InstrumentLifecycleManager.instance;
   }
@@ -377,7 +402,8 @@ export class InstrumentLifecycleManager {
 
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       return {
         memoryFreed: 0,
         instrumentsDisposed: 0,
@@ -420,7 +446,10 @@ export class InstrumentLifecycleManager {
       }
 
       // Calculate total memory freed
-      const totalMemoryFreed = results.reduce((total, result) => total + result.memoryFreed, 0);
+      const totalMemoryFreed = results.reduce(
+        (total, result) => total + result.memoryFreed,
+        0,
+      );
       this.totalMemoryUsage = Math.max(0, initialMemory - totalMemoryFreed);
 
       const result: MemoryOptimizationResult = {
@@ -428,7 +457,8 @@ export class InstrumentLifecycleManager {
         optimizationTime: Math.max(1, performance.now() - startTime),
         initialMemory,
         finalMemory: this.totalMemoryUsage,
-        efficiencyGain: initialMemory > 0 ? totalMemoryFreed / initialMemory : 0,
+        efficiencyGain:
+          initialMemory > 0 ? totalMemoryFreed / initialMemory : 0,
         strategies: results.map((r) => r.strategy),
         success: true,
       };
@@ -441,7 +471,10 @@ export class InstrumentLifecycleManager {
 
       return result;
     } catch (error) {
-      logger.error('❌ Memory optimization failed:', error);
+      logger.error(
+        '❌ Memory optimization failed:',
+        error instanceof Error ? error : new Error(String(error)),
+      );
       return {
         memoryFreed: 0,
         optimizationTime: Math.max(1, performance.now() - startTime),
@@ -473,14 +506,23 @@ export class InstrumentLifecycleManager {
   /**
    * Apply graceful degradation based on system constraints
    */
-  async applyGracefulDegradation(targetLevel: DegradationLevel): Promise<boolean> {
-    return this.degradationManager.applyDegradation(targetLevel, this.instruments);
+  async applyGracefulDegradation(
+    targetLevel: DegradationLevel,
+  ): Promise<boolean> {
+    return this.degradationManager.applyDegradation(
+      targetLevel,
+      this.instruments,
+    );
   }
 
   /**
    * Restore from degraded state
    */
-  async restoreFromDegradation(): Promise<{ restored: number; failed: number; improvements: string[] }> {
+  async restoreFromDegradation(): Promise<{
+    restored: number;
+    failed: number;
+    improvements: string[];
+  }> {
     return this.degradationManager.restore(this.instruments);
   }
 
@@ -490,7 +532,9 @@ export class InstrumentLifecycleManager {
   getResourceUsageStats(): ResourceUsageStats {
     return {
       totalInstruments: this.instruments.size,
-      activeInstruments: Array.from(this.instruments.values()).filter(i => i.state === 'playing').length,
+      activeInstruments: Array.from(this.instruments.values()).filter(
+        (i) => i.state === 'playing',
+      ).length,
       memoryUsage: this.calculateTotalMemoryUsage(),
       poolStats: { ...this.resourcePool },
       cleanupStats: {
@@ -533,7 +577,7 @@ export class InstrumentLifecycleManager {
 
           // Cleanup the instrument
           await this.gracefulShutdown(candidate);
-          
+
           memoryFreed += candidate.memoryUsage.total;
           instrumentsDisposed++;
 
@@ -543,12 +587,16 @@ export class InstrumentLifecycleManager {
 
           this.instruments.delete(candidate.id);
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error';
           errors.push(`Failed to cleanup ${candidate.id}: ${errorMessage}`);
         }
 
         // Check if we've met the target reduction
-        if (memoryFreed >= options.targetMemoryReduction * this.totalMemoryUsage) {
+        if (
+          memoryFreed >=
+          options.targetMemoryReduction * this.totalMemoryUsage
+        ) {
           break;
         }
       }
@@ -564,7 +612,8 @@ export class InstrumentLifecycleManager {
         errors,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       return {
         memoryFreed: 0,
         instrumentsDisposed: 0,
@@ -584,7 +633,7 @@ export class InstrumentLifecycleManager {
     if (instrument) {
       instrument.lastUsed = Date.now();
       instrument.resourceHealth.lastCheck = Date.now();
-      
+
       // Update analytics
       this.analyticsEngine.recordUsage(instrumentId, instrument);
     }
@@ -601,7 +650,7 @@ export class InstrumentLifecycleManager {
    * Get all instruments of a specific type
    */
   getInstrumentsByType(type: InstrumentType): InstrumentInstance[] {
-    return Array.from(this.instruments.values()).filter(i => i.type === type);
+    return Array.from(this.instruments.values()).filter((i) => i.type === type);
   }
 
   /**
@@ -614,8 +663,9 @@ export class InstrumentLifecycleManager {
   /**
    * Get current thermal state
    */
-  getCurrentThermalState(): ThermalState {
-    return this.thermalMonitor.getCurrentState().thermalState;
+  async getCurrentThermalState(): Promise<ThermalState> {
+    const result = await this.thermalMonitor.getCurrentState();
+    return result.thermalState;
   }
 
   /**
@@ -641,8 +691,8 @@ export class InstrumentLifecycleManager {
     }
 
     // Cleanup all registered instruments
-    const cleanupPromises = Array.from(this.instruments.keys()).map(id => 
-      this.unregisterInstrument(id)
+    const cleanupPromises = Array.from(this.instruments.keys()).map((id) =>
+      this.unregisterInstrument(id),
     );
     await Promise.all(cleanupPromises);
 
@@ -666,7 +716,7 @@ export class InstrumentLifecycleManager {
     }, this.config.gcInterval);
   }
 
-  private calculateMemoryUsage(processor: any): MemoryUsage {
+  private calculateMemoryUsage(_processor: any): MemoryUsage {
     // Estimate memory usage based on processor type and state
     const baseUsage = 1024 * 1024; // 1MB base
     return {
@@ -709,8 +759,14 @@ export class InstrumentLifecycleManager {
         total: sum.total + instrument.memoryUsage.total,
         peak: Math.max(sum.peak, instrument.memoryUsage.peak),
         allocated: sum.allocated + instrument.memoryUsage.allocated,
-        allocated_peak: Math.max(sum.allocated_peak, instrument.memoryUsage.allocated_peak),
-        fragmentation: Math.max(sum.fragmentation, instrument.memoryUsage.fragmentation),
+        allocated_peak: Math.max(
+          sum.allocated_peak,
+          instrument.memoryUsage.allocated_peak,
+        ),
+        fragmentation: Math.max(
+          sum.fragmentation,
+          instrument.memoryUsage.fragmentation,
+        ),
         efficiency: Math.min(sum.efficiency, instrument.memoryUsage.efficiency),
         recycled: sum.recycled + instrument.memoryUsage.recycled,
       }),
@@ -725,7 +781,7 @@ export class InstrumentLifecycleManager {
         fragmentation: 0,
         efficiency: 1.0,
         recycled: 0,
-      }
+      },
     );
 
     return totals;
@@ -747,7 +803,10 @@ export class InstrumentLifecycleManager {
     });
   }
 
-  private calculateCleanupScore(instrument: InstrumentInstance, options: any): number {
+  private calculateCleanupScore(
+    instrument: InstrumentInstance,
+    _options: any,
+  ): number {
     let score = 0;
 
     // Age factor (older = higher cleanup score)
@@ -758,51 +817,76 @@ export class InstrumentLifecycleManager {
     score += instrument.memoryUsage.total / (1024 * 1024); // 1 point per MB
 
     // State factor
-    if (instrument.state === 'stopped' || instrument.state === 'disposed') score += 5;
+    if (instrument.state === 'stopped' || instrument.state === 'disposed')
+      score += 5;
     if (instrument.state === 'playing') score -= 10;
 
     // Priority factor
     switch (instrument.cleanupPriority) {
-      case 'urgent': score += 15; break;
-      case 'high': score += 10; break;
-      case 'medium': score += 5; break;
-      case 'low': score += 0; break;
+      case 'urgent':
+        score += 15;
+        break;
+      case 'high':
+        score += 10;
+        break;
+      case 'medium':
+        score += 5;
+        break;
+      case 'low':
+        score += 0;
+        break;
     }
 
     return score;
   }
 
-  private async fadeOut(instrument: InstrumentInstance, duration: number): Promise<void> {
+  private async fadeOut(
+    instrument: InstrumentInstance,
+    duration: number,
+  ): Promise<void> {
     instrument.state = 'fading';
-    
+
     // Simulate fade-out process
-    await new Promise(resolve => setTimeout(resolve, duration));
-    
+    await new Promise((resolve) => setTimeout(resolve, duration));
+
     instrument.state = 'stopped';
   }
 
-  private async gracefulShutdown(instrument: InstrumentInstance): Promise<void> {
+  private async gracefulShutdown(
+    instrument: InstrumentInstance,
+  ): Promise<void> {
     instrument.state = 'disposing';
 
     try {
       // Stop the processor if it has a stop method
-      if (instrument.processor && typeof instrument.processor.stop === 'function') {
+      if (
+        instrument.processor &&
+        typeof instrument.processor.stop === 'function'
+      ) {
         await instrument.processor.stop();
       }
 
       // Dispose resources if it has a dispose method
-      if (instrument.processor && typeof instrument.processor.dispose === 'function') {
+      if (
+        instrument.processor &&
+        typeof instrument.processor.dispose === 'function'
+      ) {
         await instrument.processor.dispose();
       }
 
       instrument.state = 'disposed';
     } catch (error) {
-      logger.error(`Failed to gracefully shutdown instrument ${instrument.id}:`, error);
+      logger.error(
+        `Failed to gracefully shutdown instrument ${instrument.id}:`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
       throw error;
     }
   }
 
-  private async recycleResources(instrument: InstrumentInstance): Promise<number> {
+  private async recycleResources(
+    instrument: InstrumentInstance,
+  ): Promise<number> {
     let recycledCount = 0;
 
     // Add resources to recycling queue
@@ -822,7 +906,10 @@ export class InstrumentLifecycleManager {
     return recycledCount;
   }
 
-  private async cleanupUnusedResources(): Promise<{ memoryFreed: number; strategy: string }> {
+  private async cleanupUnusedResources(): Promise<{
+    memoryFreed: number;
+    strategy: string;
+  }> {
     let memoryFreed = 0;
 
     // Cleanup unused resources from pool
@@ -849,15 +936,22 @@ export class InstrumentLifecycleManager {
     return { memoryFreed, strategy: 'cleanup_unused' };
   }
 
-  private async optimizeResourcePool(): Promise<{ memoryFreed: number; strategy: string }> {
+  private async optimizeResourcePool(): Promise<{
+    memoryFreed: number;
+    strategy: string;
+  }> {
     let memoryFreed = 0;
 
     // Optimize pool size based on current usage
-    const currentUtilization = this.resourcePool.currentSize / this.resourcePool.maxSize;
-    
+    const currentUtilization =
+      this.resourcePool.currentSize / this.resourcePool.maxSize;
+
     if (currentUtilization < 0.5) {
       // Pool is underutilized - shrink it
-      const newMaxSize = Math.max(this.resourcePool.currentSize * 1.2, this.config.poolSize * 0.5);
+      const newMaxSize = Math.max(
+        this.resourcePool.currentSize * 1.2,
+        this.config.poolSize * 0.5,
+      );
       memoryFreed += this.resourcePool.maxSize - newMaxSize;
       this.resourcePool.maxSize = newMaxSize;
     }
@@ -890,23 +984,31 @@ export class InstrumentLifecycleManager {
 // ==========================================
 
 class MemoryOptimizer {
-  constructor(private config: MemoryOptimizationConfig) {}
+  constructor(_config: MemoryOptimizationConfig) {
+    // Config will be used for actual optimization logic
+  }
 
-  async optimizeAudioBuffers(): Promise<{ memoryFreed: number; strategy: string }> {
+  async optimizeAudioBuffers(): Promise<{
+    memoryFreed: number;
+    strategy: string;
+  }> {
     // Simulate audio buffer optimization
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
     return { memoryFreed: 1024 * 1024, strategy: 'audio_buffer_optimization' };
   }
 
-  async compressUnusedSamples(): Promise<{ memoryFreed: number; strategy: string }> {
+  async compressUnusedSamples(): Promise<{
+    memoryFreed: number;
+    strategy: string;
+  }> {
     // Simulate sample compression
-    await new Promise(resolve => setTimeout(resolve, 15));
+    await new Promise((resolve) => setTimeout(resolve, 15));
     return { memoryFreed: 512 * 1024, strategy: 'sample_compression' };
   }
 
   async defragmentMemory(): Promise<{ memoryFreed: number; strategy: string }> {
     // Simulate memory defragmentation
-    await new Promise(resolve => setTimeout(resolve, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
     return { memoryFreed: 256 * 1024, strategy: 'memory_defragmentation' };
   }
 }
@@ -918,10 +1020,12 @@ class ThermalMonitor {
     // Simulate thermal monitoring
     const temperature = 45 + Math.random() * 20; // 45-65°C
     let thermalState: ThermalState = 'nominal';
-    
+
     if (temperature > this.config.degradationThresholds.thermal.critical) {
       thermalState = 'critical';
-    } else if (temperature > this.config.degradationThresholds.thermal.serious) {
+    } else if (
+      temperature > this.config.degradationThresholds.thermal.serious
+    ) {
       thermalState = 'serious';
     } else if (temperature > this.config.degradationThresholds.thermal.fair) {
       thermalState = 'fair';
@@ -931,7 +1035,10 @@ class ThermalMonitor {
       currentTemperature: temperature,
       thermalState,
       throttlingActive: thermalState !== 'nominal',
-      recommendations: thermalState !== 'nominal' ? ['Reduce audio quality', 'Limit concurrent instruments'] : [],
+      recommendations:
+        thermalState !== 'nominal'
+          ? ['Reduce audio quality', 'Limit concurrent instruments']
+          : [],
     };
   }
 }
@@ -963,16 +1070,18 @@ class BatteryOptimizer {
 }
 
 class DegradationManager {
-  constructor(private config: MemoryOptimizationConfig) {}
+  constructor(_config: MemoryOptimizationConfig) {
+    // Config will be used for degradation thresholds
+  }
 
   async applyDegradation(
-    targetLevel: DegradationLevel, 
-    instruments: Map<string, InstrumentInstance>
+    targetLevel: DegradationLevel,
+    instruments: Map<string, InstrumentInstance>,
   ): Promise<boolean> {
     try {
-      for (const [id, instrument] of instruments.entries()) {
+      for (const [_id, instrument] of instruments.entries()) {
         instrument.degradationLevel = targetLevel;
-        
+
         // Apply degradation based on level
         switch (targetLevel) {
           case 'slight':
@@ -1003,7 +1112,10 @@ class DegradationManager {
       }
       return true;
     } catch (error) {
-      logger.error('Failed to apply degradation:', error);
+      logger.error(
+        'Failed to apply degradation:',
+        error instanceof Error ? error : new Error(String(error)),
+      );
       return false;
     }
   }
@@ -1028,7 +1140,10 @@ class DegradationManager {
         improvements.push(`Restored ${id} to optimal quality`);
       } catch (error) {
         failed++;
-        logger.error(`Failed to restore instrument ${id}:`, error);
+        logger.error(
+          `Failed to restore instrument ${id}:`,
+          error instanceof Error ? error : new Error(String(error)),
+        );
       }
     }
 
@@ -1041,7 +1156,7 @@ class LifecycleAnalyticsEngine {
 
   constructor(private config: MemoryOptimizationConfig) {}
 
-  recordUsage(instrumentId: string, instrument: InstrumentInstance): void {
+  recordUsage(instrumentId: string, _instrument: InstrumentInstance): void {
     if (!this.config.analyticsEnabled) return;
 
     const history = this.usageHistory.get(instrumentId) || [];
@@ -1063,7 +1178,7 @@ class LifecycleAnalyticsEngine {
 // Factory function for easier instantiation
 export function createInstrumentLifecycleManager(
   config: MemoryOptimizationConfig,
-  eventBus?: EventBus
+  eventBus?: EventBus,
 ): InstrumentLifecycleManager {
   return InstrumentLifecycleManager.getInstance(config, eventBus);
 }

@@ -1,13 +1,13 @@
 /**
  * TransportWithEventBus - Transport with EventBus integration
- * 
+ *
  * This extends the base Transport to add EventBus support for
  * compatibility with the existing system architecture.
  */
 
 import { Transport } from './Transport.js';
-import { TransportConfig, MusicalPosition, TransportState } from '../types/index.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { TransportConfig, MusicalPosition } from '../types/index.js';
+import { createStructuredLogger } from '../../shared/index.js';
 
 const logger = createStructuredLogger('TransportWithEventBus');
 
@@ -19,7 +19,7 @@ export interface EventBus {
 
 export class TransportWithEventBus extends Transport {
   private eventBus: EventBus | null = null;
-  private positionUpdateInterval: number | null = null;
+  private eventBusUpdateInterval: number | null = null;
 
   constructor(eventBus: EventBus, config?: Partial<TransportConfig>) {
     super(config);
@@ -32,7 +32,7 @@ export class TransportWithEventBus extends Transport {
    */
   async start(): Promise<void> {
     await super.start();
-    
+
     this.emitEvent('transport:start', {
       tempo: this.getTempo(),
       position: this.getPosition(),
@@ -47,9 +47,9 @@ export class TransportWithEventBus extends Transport {
    */
   async stop(): Promise<void> {
     const position = this.getPosition();
-    
+
     await super.stop();
-    
+
     this.emitEvent('transport:stop', {
       position,
     });
@@ -63,9 +63,9 @@ export class TransportWithEventBus extends Transport {
    */
   async pause(): Promise<void> {
     const position = this.getPosition();
-    
+
     await super.pause();
-    
+
     this.emitEvent('transport:pause', {
       position,
     });
@@ -78,7 +78,7 @@ export class TransportWithEventBus extends Transport {
    */
   async resume(): Promise<void> {
     await super.resume();
-    
+
     this.emitEvent('transport:resume', {
       position: this.getPosition(),
     });
@@ -91,7 +91,7 @@ export class TransportWithEventBus extends Transport {
    */
   async seek(position: MusicalPosition): Promise<void> {
     await super.seek(position);
-    
+
     this.emitEvent('transport:seek', {
       position,
     });
@@ -102,7 +102,7 @@ export class TransportWithEventBus extends Transport {
    */
   setTempo(bpm: number): void {
     super.setTempo(bpm);
-    
+
     this.emitEvent('transport:tempo', {
       tempo: bpm,
     });
@@ -113,7 +113,7 @@ export class TransportWithEventBus extends Transport {
    */
   setLoopEnabled(enabled: boolean): void {
     super.setLoopEnabled(enabled);
-    
+
     this.emitEvent('transport:loop', {
       enabled,
     });
@@ -124,7 +124,7 @@ export class TransportWithEventBus extends Transport {
    */
   setLoopPoints(start: MusicalPosition, end: MusicalPosition): void {
     super.setLoopPoints(start, end);
-    
+
     this.emitEvent('transport:loop-points', {
       start,
       end,
@@ -132,20 +132,10 @@ export class TransportWithEventBus extends Transport {
   }
 
   /**
-   * Emit transport state change
-   */
-  private emitStateChange(newState: TransportState): void {
-    this.emitEvent('transport:state-change', {
-      state: newState,
-      position: this.getPosition(),
-    });
-  }
-
-  /**
    * Start emitting position update events
    */
   private startPositionEvents(): void {
-    if (this.positionUpdateInterval !== null) {
+    if (this.eventBusUpdateInterval !== null) {
       return;
     }
 
@@ -161,16 +151,16 @@ export class TransportWithEventBus extends Transport {
     emit();
 
     // Set up periodic updates (40Hz to match original)
-    this.positionUpdateInterval = window.setInterval(emit, 25);
+    this.eventBusUpdateInterval = window.setInterval(emit, 25);
   }
 
   /**
    * Stop emitting position update events
    */
   private stopPositionEvents(): void {
-    if (this.positionUpdateInterval !== null) {
-      window.clearInterval(this.positionUpdateInterval);
-      this.positionUpdateInterval = null;
+    if (this.eventBusUpdateInterval !== null) {
+      window.clearInterval(this.eventBusUpdateInterval);
+      this.eventBusUpdateInterval = null;
     }
   }
 
@@ -183,7 +173,7 @@ export class TransportWithEventBus extends Transport {
         this.eventBus.emit(event, data);
         logger.debug('Event emitted', { event, data });
       } catch (error) {
-        logger.error('Failed to emit event', { event, error });
+        logger.error('Failed to emit event', error as Error, { event });
       }
     }
   }

@@ -19,12 +19,14 @@ export function HealthStatus() {
   const [health, setHealth] = useState<HealthCheck | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const { correlationId, logger } = useCorrelation('HealthStatus');
-  
+
   const checkHealth = async () => {
     setIsChecking(true);
     try {
       logger.info('Checking system health');
-      const result = await apiClient.get<HealthCheck>('/api/health', { correlationId });
+      const result = await apiClient.get<HealthCheck>('/api/health', {
+        correlationId,
+      });
       setHealth(result);
       logger.info('Health check completed', { status: result.status });
     } catch (error) {
@@ -42,21 +44,21 @@ export function HealthStatus() {
       setIsChecking(false);
     }
   };
-  
+
   useEffect(() => {
     checkHealth();
     const interval = setInterval(checkHealth, 30000); // Check every 30 seconds
     return () => clearInterval(interval);
   }, []);
-  
+
   if (!health) return null;
-  
+
   const statusColor = {
     healthy: '#10b981',
     degraded: '#f59e0b',
     unhealthy: '#ef4444',
   };
-  
+
   return (
     <div
       style={{
@@ -89,12 +91,18 @@ export function HealthStatus() {
       />
       <span>System: {health.status}</span>
       {health.version && <span>v{health.version}</span>}
-      
+
       <style jsx>{`
         @keyframes pulse {
-          0% { opacity: 1; }
-          50% { opacity: 0.3; }
-          100% { opacity: 1; }
+          0% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.3;
+          }
+          100% {
+            opacity: 1;
+          }
         }
       `}</style>
     </div>

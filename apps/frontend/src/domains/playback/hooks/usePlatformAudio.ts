@@ -17,9 +17,12 @@
 
 import { useState, useEffect } from 'react';
 import { useAudioServices } from '../providers/AudioProvider.js';
-import { getSamplePreloader, InitialSamplePreloader } from '../services/InitialSamplePreloader.js';
+import {
+  getSamplePreloader,
+  InitialSamplePreloader,
+} from '../services/InitialSamplePreloader.js';
 import type { CoreServices } from '../services/core/CoreServices.js';
-import type { UnifiedTransport } from '../services/core/UnifiedTransport.js';
+import type { TransportAdapter } from '../services/core/TransportAdapter.js';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 export interface PlatformAudioState {
@@ -27,7 +30,7 @@ export interface PlatformAudioState {
   coreServices: CoreServices | null;
 
   /** UnifiedTransport - same instance everywhere */
-  transport: UnifiedTransport | null;
+  transport: TransportAdapter | null;
 
   /** InitialSamplePreloader - automatic sample loading */
   sampleLoader: InitialSamplePreloader | null;

@@ -101,7 +101,8 @@ describe('ServiceRegistry - Enhanced Features', () => {
       await registry.start();
 
       // Manually trigger health check instead of relying on timer
-      const report = await registry.healthCheck();
+      await registry.healthCheck();
+      const report = await registry.getHealthReport();
 
       expect(mockService1.healthCheckCalls).toBeGreaterThan(0);
       expect(report.services.service1.status).toBe('healthy');
@@ -117,7 +118,7 @@ describe('ServiceRegistry - Enhanced Features', () => {
       await registry.initialize();
       await registry.start();
 
-      const report = await registry.healthCheck();
+      const report = await registry.getHealthReport();
 
       expect(report.overall).toBe('healthy');
       expect(report.services.service1.status).toBe('healthy');
@@ -131,10 +132,15 @@ describe('ServiceRegistry - Enhanced Features', () => {
       await registry.initialize();
       await registry.start();
 
-      // Stop one service to make it unhealthy
-      await mockService2.stop();
+      // Make service2 report as unhealthy while still being started
+      mockService2.healthCheck = async () => ({
+        status: 'unhealthy',
+        message: 'Service is unhealthy',
+        timestamp: Date.now(),
+      });
 
-      const report = await registry.healthCheck();
+      await registry.healthCheck();
+      const report = await registry.getHealthReport();
 
       expect(report.overall).toBe('degraded');
       expect(report.services.service1.status).toBe('healthy');
@@ -360,7 +366,7 @@ describe('ServiceRegistry - Enhanced Features', () => {
       await registry.initialize();
       await registry.start();
 
-      const report = await registry.healthCheck();
+      const report = await registry.getHealthReport();
       expect(report.services.basic.status).toBe('healthy');
       expect(report.services.basic.message).toContain(
         'Service status: started',

@@ -19,11 +19,11 @@ export type {
 
 // Cache-enabled widget components
 export { CachedSyncedWidget, useCachedInstrument } from './CachedSyncedWidget';
-export type { 
-  CachedSyncedWidgetProps, 
+export type {
+  CachedSyncedWidgetProps,
   CachedSyncedWidgetRenderProps,
   CachedInstrumentStatus,
-  UseCachedInstrumentOptions 
+  UseCachedInstrumentOptions,
 } from './CachedSyncedWidget';
 
 // Container components

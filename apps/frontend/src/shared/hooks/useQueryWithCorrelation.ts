@@ -1,4 +1,9 @@
-import { useQuery, useMutation, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  UseQueryOptions,
+  UseMutationOptions,
+} from '@tanstack/react-query';
 import { useCorrelation } from './useCorrelation';
 import { globalErrorHandler } from '@/shared/utils/errorHandling';
 
@@ -9,15 +14,18 @@ export function useQueryWithCorrelation<
   TQueryFnData = unknown,
   TError = unknown,
   TData = TQueryFnData,
-  TQueryKey extends readonly unknown[] = readonly unknown[]
+  TQueryKey extends readonly unknown[] = readonly unknown[],
 >(
   queryKey: TQueryKey,
   queryFn: (context: { correlationId: string }) => Promise<TQueryFnData>,
-  options?: Omit<UseQueryOptions<TQueryFnData, TError, TData, TQueryKey>, 'queryKey' | 'queryFn'>,
-  componentName?: string
+  options?: Omit<
+    UseQueryOptions<TQueryFnData, TError, TData, TQueryKey>,
+    'queryKey' | 'queryFn'
+  >,
+  componentName?: string,
 ) {
   const { correlationId, logger } = useCorrelation(componentName || 'Query');
-  
+
   return useQuery({
     queryKey,
     queryFn: async () => {
@@ -25,7 +33,7 @@ export function useQueryWithCorrelation<
         queryKey,
         correlationId,
       });
-      
+
       try {
         const result = await queryFn({ correlationId });
         logger.debug('Query succeeded', {
@@ -38,12 +46,16 @@ export function useQueryWithCorrelation<
           queryKey,
           correlationId,
         });
-        
+
         // Ensure error has correlation ID
         if (error instanceof Error) {
-          globalErrorHandler.handleError(error, correlationId, `query-${queryKey.join('-')}`);
+          globalErrorHandler.handleError(
+            error,
+            correlationId,
+            `query-${queryKey.join('-')}`,
+          );
         }
-        
+
         throw error;
       }
     },
@@ -51,7 +63,7 @@ export function useQueryWithCorrelation<
     onError: (error: TError) => {
       // Call original onError if provided
       options?.onError?.(error);
-      
+
       // Log with correlation ID
       logger.error('Query error handler triggered', error as Error, {
         queryKey,
@@ -68,26 +80,36 @@ export function useMutationWithCorrelation<
   TData = unknown,
   TError = unknown,
   TVariables = void,
-  TContext = unknown
+  TContext = unknown,
 >(
-  mutationFn: (variables: TVariables, context: { correlationId: string }) => Promise<TData>,
-  options?: Omit<UseMutationOptions<TData, TError, TVariables, TContext>, 'mutationFn'>,
-  componentName?: string
+  mutationFn: (
+    variables: TVariables,
+    context: { correlationId: string },
+  ) => Promise<TData>,
+  options?: Omit<
+    UseMutationOptions<TData, TError, TVariables, TContext>,
+    'mutationFn'
+  >,
+  componentName?: string,
 ) {
-  const { correlationId: baseCorrelationId, logger } = useCorrelation(componentName || 'Mutation');
-  
+  const { correlationId: baseCorrelationId, logger } = useCorrelation(
+    componentName || 'Mutation',
+  );
+
   return useMutation({
     mutationFn: async (variables: TVariables) => {
       // Generate a new correlation ID for each mutation
       const mutationCorrelationId = `${baseCorrelationId}-mut-${Date.now()}`;
-      
+
       logger.debug('Mutation started', {
         variables,
         correlationId: mutationCorrelationId,
       });
-      
+
       try {
-        const result = await mutationFn(variables, { correlationId: mutationCorrelationId });
+        const result = await mutationFn(variables, {
+          correlationId: mutationCorrelationId,
+        });
         logger.debug('Mutation succeeded', {
           correlationId: mutationCorrelationId,
         });
@@ -97,12 +119,16 @@ export function useMutationWithCorrelation<
           variables,
           correlationId: mutationCorrelationId,
         });
-        
+
         // Ensure error has correlation ID
         if (error instanceof Error) {
-          globalErrorHandler.handleError(error, mutationCorrelationId, `mutation-${componentName}`);
+          globalErrorHandler.handleError(
+            error,
+            mutationCorrelationId,
+            `mutation-${componentName}`,
+          );
         }
-        
+
         throw error;
       }
     },
@@ -110,7 +136,7 @@ export function useMutationWithCorrelation<
     onError: (error: TError, variables: TVariables, context?: TContext) => {
       // Call original onError if provided
       options?.onError?.(error, variables, context);
-      
+
       // Log with correlation ID
       logger.error('Mutation error handler triggered', error as Error, {
         variables,
@@ -129,21 +155,30 @@ export function createCorrelatedHooks(componentName: string) {
       TQueryFnData = unknown,
       TError = unknown,
       TData = TQueryFnData,
-      TQueryKey extends readonly unknown[] = readonly unknown[]
+      TQueryKey extends readonly unknown[] = readonly unknown[],
     >(
       queryKey: TQueryKey,
       queryFn: (context: { correlationId: string }) => Promise<TQueryFnData>,
-      options?: Omit<UseQueryOptions<TQueryFnData, TError, TData, TQueryKey>, 'queryKey' | 'queryFn'>
+      options?: Omit<
+        UseQueryOptions<TQueryFnData, TError, TData, TQueryKey>,
+        'queryKey' | 'queryFn'
+      >,
     ) => useQueryWithCorrelation(queryKey, queryFn, options, componentName),
-    
+
     useMutation: <
       TData = unknown,
       TError = unknown,
       TVariables = void,
-      TContext = unknown
+      TContext = unknown,
     >(
-      mutationFn: (variables: TVariables, context: { correlationId: string }) => Promise<TData>,
-      options?: Omit<UseMutationOptions<TData, TError, TVariables, TContext>, 'mutationFn'>
+      mutationFn: (
+        variables: TVariables,
+        context: { correlationId: string },
+      ) => Promise<TData>,
+      options?: Omit<
+        UseMutationOptions<TData, TError, TVariables, TContext>,
+        'mutationFn'
+      >,
     ) => useMutationWithCorrelation(mutationFn, options, componentName),
   };
 }

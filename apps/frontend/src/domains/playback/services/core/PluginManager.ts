@@ -9,46 +9,80 @@
 
 import { Service } from './ServiceRegistry.js';
 import { EventBus } from './EventBus.js';
-import { AudioEngine } from './AudioEngine.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { AudioEngine } from '../../modules/audio-engine/core/AudioEngine.js';
+import { getLogger } from '@/utils/logger.js';
+import { PluginState, PluginCategory } from '../../types/plugin.js';
 import type {
   AudioPlugin,
-  PluginState,
   PluginMetadata,
   PluginAudioContext,
-  PluginConfig,
+  PluginCapabilities,
+  PluginProcessingResult,
 } from '../../types/plugin.js';
 
-const logger = createStructuredLogger('PluginManager');
+const logger = getLogger('PluginManager');
 
 // BaseAudioPlugin stub - replaced by plugin types
-abstract class BaseAudioPlugin implements AudioPlugin {
+// BaseAudioPlugin stub - replaced by plugin types
+// This class is kept for backward compatibility but not actively used
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+class BaseAudioPlugin {
   id: string;
   type: string;
-  state: PluginState = 'unloaded';
+  state: PluginState = PluginState.UNLOADED;
   metadata: PluginMetadata;
 
   constructor(id: string, type: string) {
     this.id = id;
     this.type = type;
     this.metadata = {
+      id: id,
       name: id,
       version: '1.0.0',
       author: 'BassNotion',
       description: 'Audio plugin',
+      license: 'MIT',
+      category: PluginCategory.PROCESSOR,
+      tags: [],
+      capabilities: {} as PluginCapabilities,
+      dependencies: [],
     };
   }
 
-  abstract initialize(context: PluginAudioContext): Promise<void>;
-  abstract process(input: Float32Array, output: Float32Array): void;
-  abstract dispose(): void;
+  async initialize(_context: PluginAudioContext): Promise<void> {
+    // Implementation placeholder
+  }
+  async process(
+    _inputBuffer: AudioBuffer,
+    _outputBuffer: AudioBuffer,
+    _context: PluginAudioContext,
+  ): Promise<PluginProcessingResult> {
+    // Implementation placeholder
+    return {
+      success: true,
+      status: 'success' as any,
+      processingTime: 0,
+      bypassMode: false,
+      processedSamples: 0,
+      cpuUsage: 0,
+    };
+  }
+  async dispose(): Promise<void> {
+    // Implementation placeholder
+  }
 
-  start(): void {}
-  stop(): void {}
+  start(): void {
+    // Implementation placeholder
+  }
+  stop(): void {
+    // Implementation placeholder
+  }
   getParameters(): Record<string, any> {
     return {};
   }
-  setParameter(name: string, value: any): void {}
+  async setParameter(_name: string, _value: any): Promise<void> {
+    // Implementation placeholder
+  }
   getState(): PluginState {
     return this.state;
   }
@@ -102,12 +136,14 @@ export class PluginManager implements Service {
       // Create plugin audio context from audio engine
       const context = this.audioEngine.getContext();
       this.audioContext = {
+        audioContext: context,
         sampleRate: context.sampleRate,
+        bufferSize: 128, // Default buffer size
         currentTime: context.currentTime,
         baseLatency: context.baseLatency || 0,
         // Additional context properties for plugins
         getTone: () => this.audioEngine.getTone(),
-      };
+      } as PluginAudioContext;
 
       this.isInitialized = true;
       this.eventBus.emit('plugin-manager:initialized', {});
@@ -288,7 +324,7 @@ export class PluginManager implements Service {
       if (
         registration.plugin.capabilities &&
         'features' in registration.plugin.capabilities &&
-        registration.plugin.capabilities.features?.includes(capability)
+        (registration.plugin.capabilities as any).features?.includes(capability)
       ) {
         result.push(registration.plugin);
       }
@@ -523,14 +559,18 @@ export async function registerExistingPlugins(
   const pluginModules = [
     import('../../modules/instruments/implementations/bass/BassProcessor.js'),
     import('../../modules/instruments/implementations/drums/DrumProcessor.js'),
-    import('../plugins/MetronomeInstrumentProcessor.js'),
+    import(
+      '../../modules/instruments/implementations/metronome/MetronomeInstrumentProcessor.js'
+    ),
     // ChordInstrumentProcessor removed - use WamHarmonyProcessor instead
-    import('../../modules/instruments/implementations/drums/DrumInstrumentProcessor.js'),
-    import('../plugins/SyncProcessor.js'),
-    // Commented out plugins that depend on removed AssetManager:
+    import(
+      '../../modules/instruments/implementations/drums/DrumInstrumentProcessor.js'
+    ),
+    // All these plugins have been removed or relocated:
+    // import('../plugins/SyncProcessor.js'),
     // import('../plugins/InstrumentAssetOptimizer.js'),
     // import('../plugins/InstrumentLifecycleManager.js'),
-    import('../plugins/MusicalContextAnalyzer.js'),
+    // import('../plugins/MusicalContextAnalyzer.js'),
     // import('../plugins/N8nAssetPipelineProcessor.js'),
     // import('../plugins/PerformanceTunerOptimizer.js'),
     // import('../plugins/AssetInstrumentIntegrationProcessor.js'),
@@ -543,15 +583,24 @@ export async function registerExistingPlugins(
   // Register each plugin
   for (const module of loadedModules) {
     // Each module should export a default plugin class
-    const PluginClass = module.default || Object.values(module)[0];
+    const PluginClass =
+      (module as any).BassProcessor ||
+      (module as any).DrumProcessor ||
+      (module as any).HarmonyProcessor ||
+      (module as any).MetronomeProcessor ||
+      (module as any).EffectsProcessor ||
+      Object.values(module)[0];
     if (PluginClass && typeof PluginClass === 'function') {
       try {
         const plugin = new PluginClass();
-        if (plugin instanceof BaseAudioPlugin) {
-          await pluginManager.register(plugin);
+        if (plugin) {
+          await pluginManager.register(plugin as AudioPlugin);
         }
       } catch (error) {
-        logger.warn('Failed to register plugin:', { error, correlationId: 'system' });
+        logger.warn('Failed to register plugin:', {
+          error,
+          correlationId: 'system',
+        });
       }
     }
   }

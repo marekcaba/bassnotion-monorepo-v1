@@ -4,7 +4,9 @@
  */
 
 import { PlaybackError } from './base';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { getLogger } from '@/utils/logger.js';
+
+const logger = getLogger('ErrorReporter');
 
 export class ErrorReporter {
   /**

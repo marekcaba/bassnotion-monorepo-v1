@@ -4,7 +4,11 @@
  */
 
 import * as Tone from 'tone';
-import { getPersistentAudioContext, getOrCreatePersistentAudioContext, ensureToneUsesPersistentContext } from './audioContext.js';
+import {
+  getPersistentAudioContext,
+  getOrCreatePersistentAudioContext,
+  ensureToneUsesPersistentContext,
+} from './audioContext.js';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 /**
@@ -17,10 +21,10 @@ export async function ensureAudioContext(): Promise<void> {
   try {
     // First try to get or create persistent context
     const persistentContext = await getOrCreatePersistentAudioContext();
-    
+
     // Ensure Tone.js uses the persistent context
     ensureToneUsesPersistentContext();
-    
+
     // Get global services
     const globalServices =
       (window as any).__globalCoreServices || (window as any).__coreServices;
@@ -126,17 +130,17 @@ export function isAudioContextReady(): boolean {
 export async function ensureAudioContextLightweight(): Promise<void> {
   try {
     logger.info('ensureAudioContextLightweight: Called');
-    
+
     // First ensure we have persistent context
     const persistentContext = await getOrCreatePersistentAudioContext();
-    
+
     // Ensure Tone.js uses the persistent context
     ensureToneUsesPersistentContext();
-    
+
     // First check if everything is already initialized
     const globalServices =
       (window as any).__globalCoreServices || (window as any).__coreServices;
-    
+
     if (globalServices) {
       const audioEngine = globalServices.getAudioEngine?.();
       logger.info('ensureAudioContextLightweight: Global services check', {
@@ -145,23 +149,31 @@ export async function ensureAudioContextLightweight(): Promise<void> {
         isAudioEngineReady: audioEngine?.isReady?.(),
         toneContextState: Tone.context.state,
         servicesReady: globalServices.isReady?.(),
-        persistentContextState: persistentContext.state
+        persistentContextState: persistentContext.state,
       });
-      
-      if (audioEngine && audioEngine.isReady() && persistentContext.state === 'running') {
-        logger.info('ensureAudioContextLightweight: Audio already fully initialized, skipping all initialization');
+
+      if (
+        audioEngine &&
+        audioEngine.isReady() &&
+        persistentContext.state === 'running'
+      ) {
+        logger.info(
+          'ensureAudioContextLightweight: Audio already fully initialized, skipping all initialization',
+        );
         // Dispatch event even if already started
         window.dispatchEvent(new Event('audioContextStarted'));
         return;
       }
     }
-    
+
     // Ensure persistent context is running
     if (persistentContext.state === 'suspended') {
-      logger.info('ensureAudioContextLightweight: Resuming persistent context...');
+      logger.info(
+        'ensureAudioContextLightweight: Resuming persistent context...',
+      );
       await persistentContext.resume();
     }
-    
+
     // Just ensure Tone.js audio context is started
     if (Tone.context.state === 'suspended') {
       logger.info(

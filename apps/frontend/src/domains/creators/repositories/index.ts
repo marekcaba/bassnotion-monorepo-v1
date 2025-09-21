@@ -5,7 +5,11 @@ export type { ChannelType } from '../value-objects/channel-url.vo';
 
 // Entities
 export { Creator } from '../entities/creator.entity';
-export type { CreatorStats, CreatorProps, CreateCreatorProps } from '../entities/creator.entity';
+export type {
+  CreatorStats,
+  CreatorProps,
+  CreateCreatorProps,
+} from '../entities/creator.entity';
 
 // Repository Interfaces
 export type {

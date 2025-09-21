@@ -23,7 +23,9 @@ export class ExerciseRepository implements IExerciseRepository {
     }
   }
 
-  async findAll(options?: PaginationOptions): Promise<Result<PaginatedResult<Exercise>>> {
+  async findAll(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Exercise>>> {
     try {
       const params = new URLSearchParams();
       if (options) {
@@ -31,12 +33,14 @@ export class ExerciseRepository implements IExerciseRepository {
         params.append('limit', options.limit.toString());
       }
 
-      const response = await apiClient.get(`${this.baseUrl}?${params.toString()}`);
+      const response = await apiClient.get(
+        `${this.baseUrl}?${params.toString()}`,
+      );
       const { items, total, page, limit } = response.data;
-      
+
       const exercises = items.map((dto: any) => Exercise.fromDTO(dto));
       const totalPages = Math.ceil(total / limit);
-      
+
       return Result.ok({
         items: exercises,
         total,
@@ -54,18 +58,22 @@ export class ExerciseRepository implements IExerciseRepository {
   async findByDifficulty(difficulty: Difficulty): Promise<Result<Exercise[]>> {
     try {
       const response = await apiClient.get(
-        `${this.baseUrl}/difficulty/${difficulty.value}`
+        `${this.baseUrl}/difficulty/${difficulty.value}`,
       );
       const exercises = response.data.map((dto: any) => Exercise.fromDTO(dto));
       return Result.ok(exercises);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to fetch exercises by difficulty');
+      return Result.fail(
+        error.message || 'Failed to fetch exercises by difficulty',
+      );
     }
   }
 
   async findByTag(tag: string): Promise<Result<Exercise[]>> {
     try {
-      const response = await apiClient.get(`${this.baseUrl}/tag/${encodeURIComponent(tag)}`);
+      const response = await apiClient.get(
+        `${this.baseUrl}/tag/${encodeURIComponent(tag)}`,
+      );
       const exercises = response.data.map((dto: any) => Exercise.fromDTO(dto));
       return Result.ok(exercises);
     } catch (error: any) {
@@ -77,25 +85,27 @@ export class ExerciseRepository implements IExerciseRepository {
     try {
       const params = new URLSearchParams();
       params.append('q', options.query);
-      
+
       if (options.difficulty) {
         params.append('difficulty', options.difficulty.value);
       }
-      
+
       if (options.tags && options.tags.length > 0) {
         params.append('tags', options.tags.join(','));
       }
-      
+
       if (options.isActive !== undefined) {
         params.append('active', options.isActive.toString());
       }
-      
+
       if (options.bpmRange) {
         params.append('bpmMin', options.bpmRange.min.toString());
         params.append('bpmMax', options.bpmRange.max.toString());
       }
 
-      const response = await apiClient.get(`${this.baseUrl}/search?${params.toString()}`);
+      const response = await apiClient.get(
+        `${this.baseUrl}/search?${params.toString()}`,
+      );
       const exercises = response.data.map((dto: any) => Exercise.fromDTO(dto));
       return Result.ok(exercises);
     } catch (error: any) {
@@ -106,7 +116,7 @@ export class ExerciseRepository implements IExerciseRepository {
   async findByIds(ids: ExerciseId[]): Promise<Result<Exercise[]>> {
     try {
       const response = await apiClient.post(`${this.baseUrl}/batch`, {
-        ids: ids.map(id => id.value),
+        ids: ids.map((id) => id.value),
       });
       const exercises = response.data.map((dto: any) => Exercise.fromDTO(dto));
       return Result.ok(exercises);
@@ -139,7 +149,7 @@ export class ExerciseRepository implements IExerciseRepository {
     try {
       const response = await apiClient.put(
         `${this.baseUrl}/${exercise.id.value}`,
-        exercise.toDTO()
+        exercise.toDTO(),
       );
       const updatedExercise = Exercise.fromDTO(response.data);
       return Result.ok(updatedExercise);
@@ -160,9 +170,11 @@ export class ExerciseRepository implements IExerciseRepository {
   async saveMany(exercises: Exercise[]): Promise<Result<Exercise[]>> {
     try {
       const response = await apiClient.post(`${this.baseUrl}/batch/create`, {
-        exercises: exercises.map(e => e.toDTO()),
+        exercises: exercises.map((e) => e.toDTO()),
       });
-      const savedExercises = response.data.map((dto: any) => Exercise.fromDTO(dto));
+      const savedExercises = response.data.map((dto: any) =>
+        Exercise.fromDTO(dto),
+      );
       return Result.ok(savedExercises);
     } catch (error: any) {
       return Result.fail(error.message || 'Failed to save exercises');
@@ -172,7 +184,7 @@ export class ExerciseRepository implements IExerciseRepository {
   async deleteMany(ids: ExerciseId[]): Promise<Result<void>> {
     try {
       await apiClient.post(`${this.baseUrl}/batch/delete`, {
-        ids: ids.map(id => id.value),
+        ids: ids.map((id) => id.value),
       });
       return Result.ok(undefined);
     } catch (error: any) {
@@ -204,11 +216,13 @@ export class ExerciseRepository implements IExerciseRepository {
   async countByDifficulty(difficulty: Difficulty): Promise<Result<number>> {
     try {
       const response = await apiClient.get(
-        `${this.baseUrl}/count/difficulty/${difficulty.value}`
+        `${this.baseUrl}/count/difficulty/${difficulty.value}`,
       );
       return Result.ok(response.data.count);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to count exercises by difficulty');
+      return Result.fail(
+        error.message || 'Failed to count exercises by difficulty',
+      );
     }
   }
 }

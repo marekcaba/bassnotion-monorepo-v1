@@ -1,0 +1,296 @@
+{
+  "name": "MIDI Meta Events",
+  "version": "1.0.0",
+  "description": "MIDI meta event type definitions and handling rules",
+  "events": {
+    "0x00": {
+      "name": "Sequence Number",
+      "type": "SEQUENCE_NUMBER",
+      "category": "track_info",
+      "dataFormat": {
+        "length": 2,
+        "fields": [
+          {
+            "name": "sequenceNumber",
+            "bytes": 2,
+            "type": "uint16"
+          }
+        ]
+      }
+    },
+    "0x01": {
+      "name": "Text Event",
+      "type": "TEXT",
+      "category": "text",
+      "dataFormat": {
+        "length": "variable",
+        "encoding": "ascii"
+      }
+    },
+    "0x02": {
+      "name": "Copyright Notice",
+      "type": "COPYRIGHT",
+      "category": "text",
+      "dataFormat": {
+        "length": "variable",
+        "encoding": "ascii"
+      }
+    },
+    "0x03": {
+      "name": "Sequence/Track Name",
+      "type": "TRACK_NAME",
+      "category": "text",
+      "dataFormat": {
+        "length": "variable",
+        "encoding": "ascii"
+      }
+    },
+    "0x04": {
+      "name": "Instrument Name",
+      "type": "INSTRUMENT_NAME",
+      "category": "text",
+      "dataFormat": {
+        "length": "variable",
+        "encoding": "ascii"
+      }
+    },
+    "0x05": {
+      "name": "Lyric",
+      "type": "LYRIC",
+      "category": "text",
+      "dataFormat": {
+        "length": "variable",
+        "encoding": "ascii"
+      }
+    },
+    "0x06": {
+      "name": "Marker",
+      "type": "MARKER",
+      "category": "text",
+      "dataFormat": {
+        "length": "variable",
+        "encoding": "ascii"
+      }
+    },
+    "0x07": {
+      "name": "Cue Point",
+      "type": "CUE_POINT",
+      "category": "text",
+      "dataFormat": {
+        "length": "variable",
+        "encoding": "ascii"
+      }
+    },
+    "0x20": {
+      "name": "MIDI Channel Prefix",
+      "type": "CHANNEL_PREFIX",
+      "category": "channel",
+      "dataFormat": {
+        "length": 1,
+        "fields": [
+          {
+            "name": "channel",
+            "bytes": 1,
+            "type": "uint8",
+            "range": [0, 15]
+          }
+        ]
+      }
+    },
+    "0x2F": {
+      "name": "End of Track",
+      "type": "END_OF_TRACK",
+      "category": "track_control",
+      "dataFormat": {
+        "length": 0
+      }
+    },
+    "0x51": {
+      "name": "Set Tempo",
+      "type": "TEMPO",
+      "category": "timing",
+      "dataFormat": {
+        "length": 3,
+        "fields": [
+          {
+            "name": "microsecondsPerQuarterNote",
+            "bytes": 3,
+            "type": "uint24",
+            "conversion": "bpm = 60000000 / value"
+          }
+        ]
+      }
+    },
+    "0x54": {
+      "name": "SMPTE Offset",
+      "type": "SMPTE_OFFSET",
+      "category": "timing",
+      "dataFormat": {
+        "length": 5,
+        "fields": [
+          {
+            "name": "hour",
+            "bytes": 1,
+            "type": "uint8"
+          },
+          {
+            "name": "minute",
+            "bytes": 1,
+            "type": "uint8"
+          },
+          {
+            "name": "second",
+            "bytes": 1,
+            "type": "uint8"
+          },
+          {
+            "name": "frame",
+            "bytes": 1,
+            "type": "uint8"
+          },
+          {
+            "name": "subframe",
+            "bytes": 1,
+            "type": "uint8"
+          }
+        ]
+      }
+    },
+    "0x58": {
+      "name": "Time Signature",
+      "type": "TIME_SIGNATURE",
+      "category": "timing",
+      "dataFormat": {
+        "length": 4,
+        "fields": [
+          {
+            "name": "numerator",
+            "bytes": 1,
+            "type": "uint8"
+          },
+          {
+            "name": "denominator",
+            "bytes": 1,
+            "type": "uint8",
+            "conversion": "actualDenominator = Math.pow(2, value)"
+          },
+          {
+            "name": "clocksPerMetronomeClick",
+            "bytes": 1,
+            "type": "uint8"
+          },
+          {
+            "name": "32ndNotesPerQuarterNote",
+            "bytes": 1,
+            "type": "uint8",
+            "default": 8
+          }
+        ]
+      }
+    },
+    "0x59": {
+      "name": "Key Signature",
+      "type": "KEY_SIGNATURE",
+      "category": "musical",
+      "dataFormat": {
+        "length": 2,
+        "fields": [
+          {
+            "name": "sharpsFlats",
+            "bytes": 1,
+            "type": "int8",
+            "description": "Negative = flats, Positive = sharps"
+          },
+          {
+            "name": "majorMinor",
+            "bytes": 1,
+            "type": "uint8",
+            "values": {
+              "0": "major",
+              "1": "minor"
+            }
+          }
+        ]
+      }
+    },
+    "0x7F": {
+      "name": "Sequencer-Specific Meta Event",
+      "type": "SEQUENCER_SPECIFIC",
+      "category": "proprietary",
+      "dataFormat": {
+        "length": "variable",
+        "fields": [
+          {
+            "name": "manufacturerId",
+            "bytes": "variable",
+            "type": "manufacturerId"
+          },
+          {
+            "name": "data",
+            "bytes": "remaining",
+            "type": "bytes"
+          }
+        ]
+      }
+    }
+  },
+  "categories": {
+    "text": {
+      "name": "Text Events",
+      "description": "Human-readable text information"
+    },
+    "timing": {
+      "name": "Timing Events",
+      "description": "Tempo, time signature, and synchronization"
+    },
+    "musical": {
+      "name": "Musical Events",
+      "description": "Key signatures and musical notation"
+    },
+    "channel": {
+      "name": "Channel Events",
+      "description": "MIDI channel assignment"
+    },
+    "track_control": {
+      "name": "Track Control",
+      "description": "Track start/end markers"
+    },
+    "track_info": {
+      "name": "Track Information",
+      "description": "Track metadata"
+    },
+    "proprietary": {
+      "name": "Proprietary",
+      "description": "Vendor-specific extensions"
+    }
+  },
+  "keySignatures": {
+    "-7": { "major": "Cb", "minor": "Ab" },
+    "-6": { "major": "Gb", "minor": "Eb" },
+    "-5": { "major": "Db", "minor": "Bb" },
+    "-4": { "major": "Ab", "minor": "F" },
+    "-3": { "major": "Eb", "minor": "C" },
+    "-2": { "major": "Bb", "minor": "G" },
+    "-1": { "major": "F", "minor": "D" },
+    "0": { "major": "C", "minor": "A" },
+    "1": { "major": "G", "minor": "E" },
+    "2": { "major": "D", "minor": "B" },
+    "3": { "major": "A", "minor": "F#" },
+    "4": { "major": "E", "minor": "C#" },
+    "5": { "major": "B", "minor": "G#" },
+    "6": { "major": "F#", "minor": "D#" },
+    "7": { "major": "C#", "minor": "A#" }
+  },
+  "commonTempos": {
+    "grave": { "bpm": [20, 40], "description": "Very slow and solemn" },
+    "largo": { "bpm": [40, 60], "description": "Slow and broad" },
+    "lento": { "bpm": [45, 60], "description": "Slow" },
+    "adagio": { "bpm": [66, 76], "description": "Slow and stately" },
+    "andante": { "bpm": [76, 108], "description": "Walking pace" },
+    "moderato": { "bpm": [108, 120], "description": "Moderate speed" },
+    "allegro": { "bpm": [120, 168], "description": "Fast, quick, bright" },
+    "vivace": { "bpm": [168, 176], "description": "Lively and fast" },
+    "presto": { "bpm": [168, 200], "description": "Very fast" },
+    "prestissimo": { "bpm": [200, 250], "description": "Extremely fast" }
+  }
+}

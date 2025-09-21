@@ -59,7 +59,8 @@ export function MetronomeWidget({
   onToggleVisibility,
   onTogglePlay,
 }: MetronomeWidgetProps) {
-  const { correlationId, logger: componentLogger } = useCorrelation('MetronomeWidget');
+  const { correlationId, logger: componentLogger } =
+    useCorrelation('MetronomeWidget');
   const [metronomeDots, setMetronomeDots] = useState(initialDots);
   const [volume, setVolume] = useState(80);
   const [isMuted, setIsMuted] = useState(false);
@@ -97,15 +98,21 @@ export function MetronomeWidget({
   useEffect(() => {
     const checkPreloadedMetronome = async () => {
       // Check GlobalSampleCache first
-      const { GlobalSampleCache } = await import('@/domains/playback/services/storage/GlobalSampleCache');
-      const preloadedMetronome = GlobalSampleCache.getCachedInstrument('metronome-preloaded');
-      
+      const { GlobalSampleCache } = await import(
+        '@/domains/playback/services/storage/GlobalSampleCache'
+      );
+      const preloadedMetronome = GlobalSampleCache.getCachedInstrument(
+        'metronome-preloaded',
+      );
+
       if (preloadedMetronome) {
-        logger.debug('🔔 Metronome instrument found in GlobalSampleCache on mount!');
+        logger.debug(
+          '🔔 Metronome instrument found in GlobalSampleCache on mount!',
+        );
         metronomePluginRef.current = preloadedMetronome;
         setWamPluginLoaded(true);
         setPluginClassLoaded(true);
-        
+
         // Set initial volume
         if (preloadedMetronome.audioNode) {
           await preloadedMetronome.audioNode.setParameterValues({
@@ -193,23 +200,31 @@ export function MetronomeWidget({
 
       // Check GlobalSampleCache first for preloaded metronome
       try {
-        const { GlobalSampleCache } = await import('@/domains/playback/services/storage/GlobalSampleCache');
-        const preloadedMetronome = GlobalSampleCache.getCachedInstrument('metronome-preloaded');
-        
+        const { GlobalSampleCache } = await import(
+          '@/domains/playback/services/storage/GlobalSampleCache'
+        );
+        const preloadedMetronome = GlobalSampleCache.getCachedInstrument(
+          'metronome-preloaded',
+        );
+
         if (preloadedMetronome && preloadedMetronome.audioNode) {
-          logger.debug('🔔 Found pre-loaded metronome instrument in GlobalSampleCache!');
+          logger.debug(
+            '🔔 Found pre-loaded metronome instrument in GlobalSampleCache!',
+          );
           metronomePluginRef.current = preloadedMetronome;
           setWamPluginLoaded(true);
-          
+
           // Set initial volume
           await preloadedMetronome.audioNode.setParameterValues({
             volume: isMuted ? 0 : volume / 100,
           });
-          
+
           return;
         }
       } catch (error) {
-        logger.debug('GlobalSampleCache check failed, proceeding with normal loading');
+        logger.debug(
+          'GlobalSampleCache check failed, proceeding with normal loading',
+        );
       }
 
       try {
@@ -816,4 +831,3 @@ export function MetronomeWidget({
     </div>
   );
 }
-

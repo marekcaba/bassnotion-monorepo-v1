@@ -3,7 +3,10 @@
 import React, { Component, ReactNode } from 'react';
 import * as Sentry from '@sentry/nextjs';
 import { AlertCircle } from 'lucide-react';
-import { generateCorrelationId, createStructuredLogger } from '@bassnotion/contracts';
+import {
+  generateCorrelationId,
+  createStructuredLogger,
+} from '@bassnotion/contracts';
 
 interface Props {
   children: ReactNode;
@@ -20,7 +23,7 @@ interface State {
 
 export class ErrorBoundary extends Component<Props, State> {
   private logger = createStructuredLogger('ErrorBoundary');
-  
+
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false, error: null, errorCorrelationId: null };
@@ -32,8 +35,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    const correlationId = this.state.errorCorrelationId || this.props.correlationId || generateCorrelationId();
-    
+    const correlationId =
+      this.state.errorCorrelationId ||
+      this.props.correlationId ||
+      generateCorrelationId();
+
     // Log to Sentry with correlation ID
     Sentry.withScope((scope) => {
       scope.setContext('componentStack', {
@@ -114,17 +120,21 @@ export class ErrorBoundary extends Component<Props, State> {
  */
 export function useErrorHandler(componentName?: string) {
   const logger = createStructuredLogger(componentName || 'ErrorHandler');
-  
-  return (error: Error, errorInfo?: { componentStack?: string }, correlationId?: string) => {
+
+  return (
+    error: Error,
+    errorInfo?: { componentStack?: string },
+    correlationId?: string,
+  ) => {
     const errorCorrelationId = correlationId || generateCorrelationId();
-    
+
     // Log with structured logger
     logger.error('Error caught by error handler', error, {
       correlationId: errorCorrelationId,
       componentStack: errorInfo?.componentStack,
       componentName,
     });
-    
+
     // Log to Sentry with correlation ID
     Sentry.withScope((scope) => {
       if (errorInfo?.componentStack) {
@@ -136,7 +146,7 @@ export function useErrorHandler(componentName?: string) {
       scope.setLevel('error');
       Sentry.captureException(error);
     });
-    
+
     return errorCorrelationId;
   };
 }

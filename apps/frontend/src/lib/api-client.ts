@@ -3,7 +3,10 @@
  * Designed to work seamlessly with React Query
  */
 
-import { CORRELATION_HEADER, generateCorrelationId } from '@bassnotion/contracts';
+import {
+  CORRELATION_HEADER,
+  generateCorrelationId,
+} from '@bassnotion/contracts';
 
 export class ApiError extends Error {
   constructor(
@@ -45,10 +48,10 @@ class ApiClient {
     options: RequestOptions = {},
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     // Extract correlationId from options
     const { correlationId, ...requestOptions } = options;
-    
+
     // Generate or use provided correlation ID
     const requestCorrelationId = correlationId || generateCorrelationId();
 

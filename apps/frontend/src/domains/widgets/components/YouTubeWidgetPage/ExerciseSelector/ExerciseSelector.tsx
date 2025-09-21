@@ -15,7 +15,7 @@ import {
   Target,
   TrendingUp,
 } from 'lucide-react';
-import { getSamplePreloader } from '@/domains/playback/services/InitialSamplePreloader';
+import { getSamplePreloader } from '@/domains/playback/services/InitialSamplePreloader.bridge';
 import { getLogger } from '@/utils/logger.js';
 
 const logger = getLogger('exercise-selector');

@@ -1,0 +1,874 @@
+{
+  "name": "General MIDI Instruments",
+  "version": "1.0.0",
+  "description": "Standard General MIDI Level 1 instrument definitions",
+  "instruments": [
+    {
+      "program": 0,
+      "name": "Acoustic Grand Piano",
+      "category": "piano",
+      "family": "keyboard"
+    },
+    {
+      "program": 1,
+      "name": "Bright Acoustic Piano",
+      "category": "piano",
+      "family": "keyboard"
+    },
+    {
+      "program": 2,
+      "name": "Electric Grand Piano",
+      "category": "piano",
+      "family": "keyboard"
+    },
+    {
+      "program": 3,
+      "name": "Honky-tonk Piano",
+      "category": "piano",
+      "family": "keyboard"
+    },
+    {
+      "program": 4,
+      "name": "Electric Piano 1",
+      "category": "electric_piano",
+      "family": "keyboard"
+    },
+    {
+      "program": 5,
+      "name": "Electric Piano 2",
+      "category": "electric_piano",
+      "family": "keyboard"
+    },
+    {
+      "program": 6,
+      "name": "Harpsichord",
+      "category": "keyboard",
+      "family": "keyboard"
+    },
+    {
+      "program": 7,
+      "name": "Clavi",
+      "category": "keyboard",
+      "family": "keyboard"
+    },
+    {
+      "program": 8,
+      "name": "Celesta",
+      "category": "chromatic_percussion",
+      "family": "mallet"
+    },
+    {
+      "program": 9,
+      "name": "Glockenspiel",
+      "category": "chromatic_percussion",
+      "family": "mallet"
+    },
+    {
+      "program": 10,
+      "name": "Music Box",
+      "category": "chromatic_percussion",
+      "family": "mallet"
+    },
+    {
+      "program": 11,
+      "name": "Vibraphone",
+      "category": "chromatic_percussion",
+      "family": "mallet"
+    },
+    {
+      "program": 12,
+      "name": "Marimba",
+      "category": "chromatic_percussion",
+      "family": "mallet"
+    },
+    {
+      "program": 13,
+      "name": "Xylophone",
+      "category": "chromatic_percussion",
+      "family": "mallet"
+    },
+    {
+      "program": 14,
+      "name": "Tubular Bells",
+      "category": "chromatic_percussion",
+      "family": "mallet"
+    },
+    {
+      "program": 15,
+      "name": "Dulcimer",
+      "category": "chromatic_percussion",
+      "family": "mallet"
+    },
+    {
+      "program": 16,
+      "name": "Drawbar Organ",
+      "category": "organ",
+      "family": "organ"
+    },
+    {
+      "program": 17,
+      "name": "Percussive Organ",
+      "category": "organ",
+      "family": "organ"
+    },
+    {
+      "program": 18,
+      "name": "Rock Organ",
+      "category": "organ",
+      "family": "organ"
+    },
+    {
+      "program": 19,
+      "name": "Church Organ",
+      "category": "organ",
+      "family": "organ"
+    },
+    {
+      "program": 20,
+      "name": "Reed Organ",
+      "category": "organ",
+      "family": "organ"
+    },
+    {
+      "program": 21,
+      "name": "Accordion",
+      "category": "accordion",
+      "family": "reed"
+    },
+    {
+      "program": 22,
+      "name": "Harmonica",
+      "category": "harmonica",
+      "family": "reed"
+    },
+    {
+      "program": 23,
+      "name": "Tango Accordion",
+      "category": "accordion",
+      "family": "reed"
+    },
+    {
+      "program": 24,
+      "name": "Acoustic Guitar (nylon)",
+      "category": "guitar",
+      "family": "string"
+    },
+    {
+      "program": 25,
+      "name": "Acoustic Guitar (steel)",
+      "category": "guitar",
+      "family": "string"
+    },
+    {
+      "program": 26,
+      "name": "Electric Guitar (jazz)",
+      "category": "guitar",
+      "family": "string"
+    },
+    {
+      "program": 27,
+      "name": "Electric Guitar (clean)",
+      "category": "guitar",
+      "family": "string"
+    },
+    {
+      "program": 28,
+      "name": "Electric Guitar (muted)",
+      "category": "guitar",
+      "family": "string"
+    },
+    {
+      "program": 29,
+      "name": "Overdriven Guitar",
+      "category": "guitar",
+      "family": "string"
+    },
+    {
+      "program": 30,
+      "name": "Distortion Guitar",
+      "category": "guitar",
+      "family": "string"
+    },
+    {
+      "program": 31,
+      "name": "Guitar Harmonics",
+      "category": "guitar",
+      "family": "string"
+    },
+    {
+      "program": 32,
+      "name": "Acoustic Bass",
+      "category": "bass",
+      "family": "bass"
+    },
+    {
+      "program": 33,
+      "name": "Electric Bass (finger)",
+      "category": "bass",
+      "family": "bass"
+    },
+    {
+      "program": 34,
+      "name": "Electric Bass (pick)",
+      "category": "bass",
+      "family": "bass"
+    },
+    {
+      "program": 35,
+      "name": "Fretless Bass",
+      "category": "bass",
+      "family": "bass"
+    },
+    {
+      "program": 36,
+      "name": "Slap Bass 1",
+      "category": "bass",
+      "family": "bass"
+    },
+    {
+      "program": 37,
+      "name": "Slap Bass 2",
+      "category": "bass",
+      "family": "bass"
+    },
+    {
+      "program": 38,
+      "name": "Synth Bass 1",
+      "category": "bass",
+      "family": "bass"
+    },
+    {
+      "program": 39,
+      "name": "Synth Bass 2",
+      "category": "bass",
+      "family": "bass"
+    },
+    {
+      "program": 40,
+      "name": "Violin",
+      "category": "strings",
+      "family": "strings"
+    },
+    {
+      "program": 41,
+      "name": "Viola",
+      "category": "strings",
+      "family": "strings"
+    },
+    {
+      "program": 42,
+      "name": "Cello",
+      "category": "strings",
+      "family": "strings"
+    },
+    {
+      "program": 43,
+      "name": "Contrabass",
+      "category": "strings",
+      "family": "strings"
+    },
+    {
+      "program": 44,
+      "name": "Tremolo Strings",
+      "category": "strings",
+      "family": "strings"
+    },
+    {
+      "program": 45,
+      "name": "Pizzicato Strings",
+      "category": "strings",
+      "family": "strings"
+    },
+    {
+      "program": 46,
+      "name": "Orchestral Harp",
+      "category": "strings",
+      "family": "strings"
+    },
+    {
+      "program": 47,
+      "name": "Timpani",
+      "category": "strings",
+      "family": "percussion"
+    },
+    {
+      "program": 48,
+      "name": "String Ensemble 1",
+      "category": "ensemble",
+      "family": "strings"
+    },
+    {
+      "program": 49,
+      "name": "String Ensemble 2",
+      "category": "ensemble",
+      "family": "strings"
+    },
+    {
+      "program": 50,
+      "name": "Synth Strings 1",
+      "category": "ensemble",
+      "family": "synth"
+    },
+    {
+      "program": 51,
+      "name": "Synth Strings 2",
+      "category": "ensemble",
+      "family": "synth"
+    },
+    {
+      "program": 52,
+      "name": "Choir Aahs",
+      "category": "choir",
+      "family": "vocal"
+    },
+    {
+      "program": 53,
+      "name": "Voice Oohs",
+      "category": "choir",
+      "family": "vocal"
+    },
+    {
+      "program": 54,
+      "name": "Synth Voice",
+      "category": "choir",
+      "family": "synth"
+    },
+    {
+      "program": 55,
+      "name": "Orchestra Hit",
+      "category": "ensemble",
+      "family": "percussion"
+    },
+    {
+      "program": 56,
+      "name": "Trumpet",
+      "category": "brass",
+      "family": "brass"
+    },
+    {
+      "program": 57,
+      "name": "Trombone",
+      "category": "brass",
+      "family": "brass"
+    },
+    {
+      "program": 58,
+      "name": "Tuba",
+      "category": "brass",
+      "family": "brass"
+    },
+    {
+      "program": 59,
+      "name": "Muted Trumpet",
+      "category": "brass",
+      "family": "brass"
+    },
+    {
+      "program": 60,
+      "name": "French Horn",
+      "category": "brass",
+      "family": "brass"
+    },
+    {
+      "program": 61,
+      "name": "Brass Section",
+      "category": "ensemble",
+      "family": "brass"
+    },
+    {
+      "program": 62,
+      "name": "Synth Brass 1",
+      "category": "brass",
+      "family": "synth"
+    },
+    {
+      "program": 63,
+      "name": "Synth Brass 2",
+      "category": "brass",
+      "family": "synth"
+    },
+    {
+      "program": 64,
+      "name": "Soprano Sax",
+      "category": "reed",
+      "family": "woodwind"
+    },
+    {
+      "program": 65,
+      "name": "Alto Sax",
+      "category": "reed",
+      "family": "woodwind"
+    },
+    {
+      "program": 66,
+      "name": "Tenor Sax",
+      "category": "reed",
+      "family": "woodwind"
+    },
+    {
+      "program": 67,
+      "name": "Baritone Sax",
+      "category": "reed",
+      "family": "woodwind"
+    },
+    {
+      "program": 68,
+      "name": "Oboe",
+      "category": "reed",
+      "family": "woodwind"
+    },
+    {
+      "program": 69,
+      "name": "English Horn",
+      "category": "reed",
+      "family": "woodwind"
+    },
+    {
+      "program": 70,
+      "name": "Bassoon",
+      "category": "reed",
+      "family": "woodwind"
+    },
+    {
+      "program": 71,
+      "name": "Clarinet",
+      "category": "reed",
+      "family": "woodwind"
+    },
+    {
+      "program": 72,
+      "name": "Piccolo",
+      "category": "pipe",
+      "family": "woodwind"
+    },
+    {
+      "program": 73,
+      "name": "Flute",
+      "category": "pipe",
+      "family": "woodwind"
+    },
+    {
+      "program": 74,
+      "name": "Recorder",
+      "category": "pipe",
+      "family": "woodwind"
+    },
+    {
+      "program": 75,
+      "name": "Pan Flute",
+      "category": "pipe",
+      "family": "woodwind"
+    },
+    {
+      "program": 76,
+      "name": "Blown Bottle",
+      "category": "pipe",
+      "family": "woodwind"
+    },
+    {
+      "program": 77,
+      "name": "Shakuhachi",
+      "category": "pipe",
+      "family": "ethnic"
+    },
+    {
+      "program": 78,
+      "name": "Whistle",
+      "category": "pipe",
+      "family": "woodwind"
+    },
+    {
+      "program": 79,
+      "name": "Ocarina",
+      "category": "pipe",
+      "family": "woodwind"
+    },
+    {
+      "program": 80,
+      "name": "Lead 1 (square)",
+      "category": "synth_lead",
+      "family": "synth"
+    },
+    {
+      "program": 81,
+      "name": "Lead 2 (sawtooth)",
+      "category": "synth_lead",
+      "family": "synth"
+    },
+    {
+      "program": 82,
+      "name": "Lead 3 (calliope)",
+      "category": "synth_lead",
+      "family": "synth"
+    },
+    {
+      "program": 83,
+      "name": "Lead 4 (chiff)",
+      "category": "synth_lead",
+      "family": "synth"
+    },
+    {
+      "program": 84,
+      "name": "Lead 5 (charang)",
+      "category": "synth_lead",
+      "family": "synth"
+    },
+    {
+      "program": 85,
+      "name": "Lead 6 (voice)",
+      "category": "synth_lead",
+      "family": "synth"
+    },
+    {
+      "program": 86,
+      "name": "Lead 7 (fifths)",
+      "category": "synth_lead",
+      "family": "synth"
+    },
+    {
+      "program": 87,
+      "name": "Lead 8 (bass + lead)",
+      "category": "synth_lead",
+      "family": "synth"
+    },
+    {
+      "program": 88,
+      "name": "Pad 1 (new age)",
+      "category": "synth_pad",
+      "family": "synth"
+    },
+    {
+      "program": 89,
+      "name": "Pad 2 (warm)",
+      "category": "synth_pad",
+      "family": "synth"
+    },
+    {
+      "program": 90,
+      "name": "Pad 3 (polysynth)",
+      "category": "synth_pad",
+      "family": "synth"
+    },
+    {
+      "program": 91,
+      "name": "Pad 4 (choir)",
+      "category": "synth_pad",
+      "family": "synth"
+    },
+    {
+      "program": 92,
+      "name": "Pad 5 (bowed)",
+      "category": "synth_pad",
+      "family": "synth"
+    },
+    {
+      "program": 93,
+      "name": "Pad 6 (metallic)",
+      "category": "synth_pad",
+      "family": "synth"
+    },
+    {
+      "program": 94,
+      "name": "Pad 7 (halo)",
+      "category": "synth_pad",
+      "family": "synth"
+    },
+    {
+      "program": 95,
+      "name": "Pad 8 (sweep)",
+      "category": "synth_pad",
+      "family": "synth"
+    },
+    {
+      "program": 96,
+      "name": "FX 1 (rain)",
+      "category": "synth_effects",
+      "family": "synth"
+    },
+    {
+      "program": 97,
+      "name": "FX 2 (soundtrack)",
+      "category": "synth_effects",
+      "family": "synth"
+    },
+    {
+      "program": 98,
+      "name": "FX 3 (crystal)",
+      "category": "synth_effects",
+      "family": "synth"
+    },
+    {
+      "program": 99,
+      "name": "FX 4 (atmosphere)",
+      "category": "synth_effects",
+      "family": "synth"
+    },
+    {
+      "program": 100,
+      "name": "FX 5 (brightness)",
+      "category": "synth_effects",
+      "family": "synth"
+    },
+    {
+      "program": 101,
+      "name": "FX 6 (goblins)",
+      "category": "synth_effects",
+      "family": "synth"
+    },
+    {
+      "program": 102,
+      "name": "FX 7 (echoes)",
+      "category": "synth_effects",
+      "family": "synth"
+    },
+    {
+      "program": 103,
+      "name": "FX 8 (sci-fi)",
+      "category": "synth_effects",
+      "family": "synth"
+    },
+    {
+      "program": 104,
+      "name": "Sitar",
+      "category": "ethnic",
+      "family": "ethnic"
+    },
+    {
+      "program": 105,
+      "name": "Banjo",
+      "category": "ethnic",
+      "family": "string"
+    },
+    {
+      "program": 106,
+      "name": "Shamisen",
+      "category": "ethnic",
+      "family": "ethnic"
+    },
+    {
+      "program": 107,
+      "name": "Koto",
+      "category": "ethnic",
+      "family": "ethnic"
+    },
+    {
+      "program": 108,
+      "name": "Kalimba",
+      "category": "ethnic",
+      "family": "ethnic"
+    },
+    {
+      "program": 109,
+      "name": "Bag pipe",
+      "category": "ethnic",
+      "family": "ethnic"
+    },
+    {
+      "program": 110,
+      "name": "Fiddle",
+      "category": "ethnic",
+      "family": "string"
+    },
+    {
+      "program": 111,
+      "name": "Shanai",
+      "category": "ethnic",
+      "family": "ethnic"
+    },
+    {
+      "program": 112,
+      "name": "Tinkle Bell",
+      "category": "percussive",
+      "family": "percussion"
+    },
+    {
+      "program": 113,
+      "name": "Agogo",
+      "category": "percussive",
+      "family": "percussion"
+    },
+    {
+      "program": 114,
+      "name": "Steel Drums",
+      "category": "percussive",
+      "family": "percussion"
+    },
+    {
+      "program": 115,
+      "name": "Woodblock",
+      "category": "percussive",
+      "family": "percussion"
+    },
+    {
+      "program": 116,
+      "name": "Taiko Drum",
+      "category": "percussive",
+      "family": "percussion"
+    },
+    {
+      "program": 117,
+      "name": "Melodic Tom",
+      "category": "percussive",
+      "family": "percussion"
+    },
+    {
+      "program": 118,
+      "name": "Synth Drum",
+      "category": "percussive",
+      "family": "synth"
+    },
+    {
+      "program": 119,
+      "name": "Reverse Cymbal",
+      "category": "percussive",
+      "family": "percussion"
+    },
+    {
+      "program": 120,
+      "name": "Guitar Fret Noise",
+      "category": "sound_effects",
+      "family": "effects"
+    },
+    {
+      "program": 121,
+      "name": "Breath Noise",
+      "category": "sound_effects",
+      "family": "effects"
+    },
+    {
+      "program": 122,
+      "name": "Seashore",
+      "category": "sound_effects",
+      "family": "effects"
+    },
+    {
+      "program": 123,
+      "name": "Bird Tweet",
+      "category": "sound_effects",
+      "family": "effects"
+    },
+    {
+      "program": 124,
+      "name": "Telephone Ring",
+      "category": "sound_effects",
+      "family": "effects"
+    },
+    {
+      "program": 125,
+      "name": "Helicopter",
+      "category": "sound_effects",
+      "family": "effects"
+    },
+    {
+      "program": 126,
+      "name": "Applause",
+      "category": "sound_effects",
+      "family": "effects"
+    },
+    {
+      "program": 127,
+      "name": "Gunshot",
+      "category": "sound_effects",
+      "family": "effects"
+    }
+  ],
+  "categories": {
+    "piano": {
+      "name": "Piano",
+      "defaultRange": [21, 108],
+      "typicalVelocity": 80
+    },
+    "electric_piano": {
+      "name": "Electric Piano",
+      "defaultRange": [28, 103],
+      "typicalVelocity": 75
+    },
+    "organ": {
+      "name": "Organ",
+      "defaultRange": [36, 96],
+      "typicalVelocity": 90
+    },
+    "guitar": {
+      "name": "Guitar",
+      "defaultRange": [40, 88],
+      "typicalVelocity": 85
+    },
+    "bass": {
+      "name": "Bass",
+      "defaultRange": [28, 67],
+      "typicalVelocity": 95
+    },
+    "strings": {
+      "name": "Strings",
+      "defaultRange": [40, 96],
+      "typicalVelocity": 70
+    },
+    "brass": {
+      "name": "Brass",
+      "defaultRange": [40, 88],
+      "typicalVelocity": 100
+    },
+    "reed": {
+      "name": "Reed",
+      "defaultRange": [45, 96],
+      "typicalVelocity": 80
+    },
+    "pipe": {
+      "name": "Pipe",
+      "defaultRange": [60, 96],
+      "typicalVelocity": 70
+    },
+    "synth_lead": {
+      "name": "Synth Lead",
+      "defaultRange": [36, 96],
+      "typicalVelocity": 100
+    },
+    "synth_pad": {
+      "name": "Synth Pad",
+      "defaultRange": [36, 84],
+      "typicalVelocity": 60
+    }
+  },
+  "families": {
+    "keyboard": {
+      "name": "Keyboard Instruments",
+      "polyphonic": true,
+      "sustainPedal": true
+    },
+    "bass": {
+      "name": "Bass Instruments",
+      "polyphonic": false,
+      "sustainPedal": false
+    },
+    "strings": {
+      "name": "String Instruments",
+      "polyphonic": true,
+      "sustainPedal": false
+    },
+    "brass": {
+      "name": "Brass Instruments",
+      "polyphonic": false,
+      "sustainPedal": false
+    },
+    "woodwind": {
+      "name": "Woodwind Instruments",
+      "polyphonic": false,
+      "sustainPedal": false
+    },
+    "percussion": {
+      "name": "Percussion Instruments",
+      "polyphonic": true,
+      "sustainPedal": false
+    },
+    "synth": {
+      "name": "Synthesizer",
+      "polyphonic": true,
+      "sustainPedal": true
+    },
+    "ethnic": {
+      "name": "Ethnic Instruments",
+      "polyphonic": false,
+      "sustainPedal": false
+    }
+  }
+}

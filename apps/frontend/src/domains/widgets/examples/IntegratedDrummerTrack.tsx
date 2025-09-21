@@ -265,7 +265,9 @@ export function IntegratedDrummerTrack() {
           isVisible={true}
           isPlaying={isPlaying}
           exercise={exercise}
-          onPatternChange={(pattern) => logger.info('Pattern changed:', pattern)}
+          onPatternChange={(pattern) =>
+            logger.info('Pattern changed:', pattern)
+          }
           onToggleVisibility={() => logger.info('Visibility toggled')}
           onTogglePlay={() => setIsPlaying(!isPlaying)}
           tempo={tempo}

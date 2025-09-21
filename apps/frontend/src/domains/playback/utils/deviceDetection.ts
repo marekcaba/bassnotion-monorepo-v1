@@ -7,6 +7,10 @@
  * Part of Story 2.1: Core Audio Engine Foundation
  */
 
+import { createStructuredLogger } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('DeviceDetection');
+
 export interface DeviceCapabilities {
   isMobile: boolean;
   isIOS: boolean;
@@ -33,7 +37,6 @@ export interface MobileAudioConstraints {
  * Detect device capabilities and constraints
  */
 export function detectDeviceCapabilities(): DeviceCapabilities {
-  const { correlationId, logger } = useCorrelation('detectDeviceCapabilities');
   try {
     const userAgent = getUserAgentSafely();
     const isMobile =

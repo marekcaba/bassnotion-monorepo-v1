@@ -6,6 +6,10 @@
  * Enables undo/redo functionality and command history tracking.
  */
 
+import { createStructuredLogger } from '../modules/shared/index.js';
+
+const logger = createStructuredLogger('Command');
+
 export interface CommandMetadata {
   id: string;
   name: string;

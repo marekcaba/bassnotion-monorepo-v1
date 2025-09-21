@@ -79,34 +79,31 @@ interface AudioProviderProps {
  * Provides clean dependency injection for all audio services
  */
 export function AudioProvider({ children, config }: AudioProviderProps) {
-  const { correlationId, logger } = useCorrelation('AudioProvider');
+  const { logger } = useCorrelation('AudioProvider');
   const flags = getAudioArchitectureFlags();
   // Only log feature flags on first render
   const [hasLoggedFlags, setHasLoggedFlags] = useState(false);
 
-  useEffect(() => {
-    if (!hasLoggedFlags) {
-      logger.info('AudioProvider: Feature flags:', flags);
-      setHasLoggedFlags(true);
-    }
-  }, [hasLoggedFlags, flags]);
-
-  // Use old provider if feature flags are disabled or rollback is active
-  if (!isNewAudioArchitectureEnabled()) {
-    logMigrationEvent('Using legacy ToneProvider', {
-      reason: 'feature flags disabled',
-    });
-    return <ToneProvider>{children}</ToneProvider>;
-  }
-
+  // Always declare all hooks at the top level
   const [coreServices, setCoreServices] = useState<CoreServices | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const initRef = useRef(false);
-  const [servicesReady, setServicesReady] = useState(false);
+  const [_servicesReady, setServicesReady] = useState(false);
   const cleanupRef = useRef(false); // Prevent StrictMode double cleanup
 
+  const shouldUseLegacyProvider = !isNewAudioArchitectureEnabled();
+
   useEffect(() => {
+    if (!hasLoggedFlags) {
+      logger.info('AudioProvider: Feature flags:', { ...flags });
+      setHasLoggedFlags(true);
+    }
+  }, [hasLoggedFlags, flags, logger]);
+
+  useEffect(() => {
+    // Skip initialization if using legacy provider
+    if (shouldUseLegacyProvider) return;
     // Prevent double initialization in development
     if (initRef.current) return;
     initRef.current = true;
@@ -128,8 +125,7 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
           setIsInitialized(true);
           setServicesReady(true);
           logger.info(
-            'AudioProvider: Context state updated with existing services - isInitialized:',
-            true,
+            'AudioProvider: Context state updated with existing services - isInitialized: true',
           );
 
           logMigrationEvent('AudioProvider reusing existing global instance');
@@ -168,8 +164,8 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
           );
         } catch (timeoutError) {
           logger.error(
-            'AudioProvider: createCoreServicesWithPreInit timed out or failed:',
-            timeoutError,
+            'AudioProvider: createCoreServicesWithPreInit timed out or failed',
+            timeoutError as Error,
           );
           throw timeoutError;
         }
@@ -223,8 +219,8 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
             }
           } catch (error) {
             logger.error(
-              'AudioProvider: Failed to fully initialize services:',
-              error,
+              'AudioProvider: Failed to fully initialize services',
+              error as Error,
             );
           }
         };
@@ -234,8 +230,7 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
         eventBus.on('audio:initialized', handleAudioInitialized);
 
         logger.info(
-          'AudioProvider: Context state updated - isInitialized:',
-          true,
+          'AudioProvider: Context state updated - isInitialized: true',
         );
 
         logMigrationEvent('AudioProvider initialized successfully', {
@@ -246,8 +241,7 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
           err instanceof Error
             ? err
             : new Error('Failed to initialize audio services');
-        logger.error('AudioProvider: Initialization failed', {
-          error,
+        logger.error('AudioProvider: Initialization failed', error, {
           message: error.message,
           stack: error.stack,
           originalError: err,
@@ -260,7 +254,10 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
     }
 
     initializeServices().catch((err) => {
-      logger.error('AudioProvider: Failed to initialize services:', err);
+      logger.error(
+        'AudioProvider: Failed to initialize services',
+        err as Error,
+      );
       // Still set error state even if promise rejects
       const error =
         err instanceof Error
@@ -294,7 +291,15 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
         }, 100); // Small delay to see if component re-mounts
       }
     };
-  }, [config]);
+  }, [config, logger, shouldUseLegacyProvider]);
+
+  // Use old provider if feature flags are disabled or rollback is active
+  if (shouldUseLegacyProvider) {
+    logMigrationEvent('Using legacy ToneProvider', {
+      reason: 'feature flags disabled',
+    });
+    return <ToneProvider>{children}</ToneProvider>;
+  }
 
   // Build context value
   const contextValue: AudioContextValue = {

@@ -76,6 +76,7 @@ class Logger {
 
   private isDuplicate(message: string): boolean {
     if (!this.config.enableDuplicateFiltering) return false;
+    if (!message || typeof message !== 'string') return false;
 
     const now = Date.now();
     const lastTime = this.recentLogs.get(message);
@@ -100,6 +101,8 @@ class Logger {
   }
 
   private isInitializationLog(message: string): boolean {
+    if (!message || typeof message !== 'string') return false;
+
     const initPatterns = [
       'Initializing',
       'Loading',
@@ -164,23 +167,25 @@ class Logger {
 
     switch (level) {
       case LogLevel.ERROR:
-        logger.error(formattedMessage, ...args);
+        console.error(formattedMessage, ...args);
         break;
       case LogLevel.WARN:
-        logger.warn(formattedMessage, ...args);
+        console.warn(formattedMessage, ...args);
         break;
       case LogLevel.INFO:
-        logger.info(formattedMessage, ...args);
+        console.info(formattedMessage, ...args);
         break;
       case LogLevel.DEBUG:
       case LogLevel.VERBOSE:
-        logger.info(formattedMessage, ...args);
+        console.log(formattedMessage, ...args);
         break;
     }
   }
 
   private categorizeInitLog(message: string): string {
     // Categorize similar logs to prevent duplicates
+    if (!message || typeof message !== 'string') return 'unknown';
+
     if (message.includes('AudioContext')) return 'audio-context';
     if (message.includes('Transport')) return 'transport';
     if (message.includes('sampler') || message.includes('Sampler'))
@@ -231,7 +236,7 @@ class Logger {
 
     console.group(title);
     logs.forEach(({ prefix, message }) => {
-      logger.info(`${prefix} ${message}`);
+      console.info(`${prefix} ${message}`);
     });
     console.groupEnd();
   }

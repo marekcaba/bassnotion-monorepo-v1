@@ -10,8 +10,11 @@
  */
 
 import { create } from 'zustand';
-import { createStructuredLogger } from '@bassnotion/contracts';
 import { subscribeWithSelector } from 'zustand/middleware';
+import { createStructuredLogger } from '../modules/shared/index.js';
+
+const logger = createStructuredLogger('PlaybackStore');
+
 import type {
   PlaybackState,
   AudioContextState,

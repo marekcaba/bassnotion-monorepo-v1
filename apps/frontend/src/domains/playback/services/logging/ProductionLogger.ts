@@ -7,7 +7,9 @@
 
 import { EventBus } from '../core/EventBus.js';
 import { AudioError } from '../../errors/AudioErrors.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { getLogger } from '@/utils/logger.js';
+
+const logger = getLogger('ProductionLogger');
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
@@ -228,7 +230,7 @@ export class ProductionLogger {
     }
 
     // Emit to event bus for real-time monitoring
-    this.eventBus.emit('logger:entry', entry);
+    this.eventBus.emit('logger:entry', { entry });
   }
 
   /**
@@ -257,10 +259,14 @@ export class ProductionLogger {
   /**
    * Get performance context
    */
-  private getPerformanceContext(): LogEntry['context']['performance'] {
+  private getPerformanceContext():
+    | NonNullable<LogEntry['context']>['performance']
+    | undefined {
     const memory = performance.memory
       ? {
-          memory: Math.round(performance.memory.usedJSHeapSize / (1024 * 1024)),
+          memory: Math.round(
+            (performance as any).memory.usedJSHeapSize / (1024 * 1024),
+          ),
         }
       : {};
 
@@ -303,10 +309,11 @@ export class ProductionLogger {
     this.stats.totalLogs++;
     this.stats.byLevel[entry.level]++;
 
-    if (!this.stats.byCategory[entry.category]) {
-      this.stats.byCategory[entry.category] = 0;
+    const category = entry.category;
+    if (!this.stats.byCategory[category]) {
+      this.stats.byCategory[category] = 0;
     }
-    this.stats.byCategory[entry.category]++;
+    this.stats.byCategory[category]++;
 
     if (entry.level === 'error' || entry.level === 'fatal') {
       this.stats.errors++;
@@ -396,7 +403,7 @@ export class ProductionLogger {
     });
 
     this.eventBus.on('audio:error', ({ error }) => {
-      this.error('audio', 'Audio error occurred', error);
+      this.error('audio', 'Audio error occurred', error as Error | AudioError);
     });
 
     this.eventBus.on('audio:state-changed', (data) => {
@@ -439,7 +446,7 @@ export class ProductionLogger {
    * Generate session ID
    */
   private generateSessionId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
 
   /**

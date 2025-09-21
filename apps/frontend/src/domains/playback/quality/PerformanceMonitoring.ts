@@ -201,7 +201,7 @@ export class PerformanceMonitoring {
     }
 
     // Emit report
-    this.eventBus.emit('performance:report', report);
+    this.eventBus.emit('performance:report', { ...report });
 
     // Reset per-interval counters
     this.resetIntervalCounters();
@@ -222,12 +222,14 @@ export class PerformanceMonitoring {
       this.metrics.set(name, []);
     }
 
-    const metricHistory = this.metrics.get(name)!;
-    metricHistory.push(metric);
+    const metricHistory = this.metrics.get(name);
+    if (metricHistory) {
+      metricHistory.push(metric);
 
-    // Keep only last 100 entries
-    if (metricHistory.length > 100) {
-      metricHistory.shift();
+      // Keep only last 100 entries
+      if (metricHistory.length > 100) {
+        metricHistory.shift();
+      }
     }
   }
 
@@ -326,14 +328,12 @@ export class PerformanceMonitoring {
    */
   private setupEventListeners(): void {
     // Track audio events
-    this.eventBus.on(
-      'audio:initialization-success',
-      ({ attempts, duration }) => {
-        if (duration) {
-          this.recordMetric('initialization', duration, 'ms');
-        }
-      },
-    );
+    this.eventBus.on('audio:initialization-success', (data: any) => {
+      const duration = data?.duration;
+      if (typeof duration === 'number') {
+        this.recordMetric('initialization', duration, 'ms');
+      }
+    });
 
     this.eventBus.on('audio:dropout', () => {
       this.dropoutCount++;

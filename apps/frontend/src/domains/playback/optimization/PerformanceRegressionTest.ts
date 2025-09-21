@@ -6,10 +6,7 @@
  */
 
 import { EventBus } from '../services/core/EventBus.js';
-import {
-  PerformanceBenchmark,
-  BenchmarkSuite,
-} from './PerformanceBenchmark.js';
+import { BenchmarkSuite } from './PerformanceBenchmark.js';
 
 export interface RegressionThresholds {
   initialization?: number; // % increase allowed
@@ -162,7 +159,7 @@ export class PerformanceRegressionTest {
       summary,
     };
 
-    this.eventBus.emit('regression:test-completed', report);
+    this.eventBus.emit('regression:test-completed', { ...report });
 
     // Fail if overall regression detected
     if (summary.overallRegression) {

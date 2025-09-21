@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { GlobalSampleCache } from '@/domains/playback/services/storage/GlobalSampleCache';
+import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache';
 import * as Tone from 'tone';
 
 // Mock dependencies
-vi.mock('@/domains/playback/services/storage/GlobalSampleCache');
+vi.mock('@/domains/playback/modules/storage/cache/GlobalSampleCache');
 vi.mock('tone', () => ({
   start: vi.fn().mockResolvedValue(undefined),
   loaded: vi.fn().mockResolvedValue(undefined),
@@ -17,15 +17,15 @@ vi.mock('tone', () => ({
     bpm: { value: 120 },
     timeSignature: { value: [4, 4] },
     scheduleRepeat: vi.fn(),
-    cancel: vi.fn()
+    cancel: vi.fn(),
   },
   Player: vi.fn().mockImplementation(() => ({
     start: vi.fn(),
     stop: vi.fn(),
     volume: { value: -10 },
     toDestination: vi.fn().mockReturnThis(),
-    dispose: vi.fn()
-  }))
+    dispose: vi.fn(),
+  })),
 }));
 
 describe('MetronomeWidget - Cache Integration Tests', () => {
@@ -37,25 +37,25 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
     setTempo: vi.fn(),
     getTempo: vi.fn().mockReturnValue(120),
     isRunning: vi.fn().mockReturnValue(false),
-    dispose: vi.fn()
+    dispose: vi.fn(),
   };
 
   const mockClickSounds = {
-    accent: { 
+    accent: {
       start: vi.fn(),
       stop: vi.fn(),
-      volume: { value: 0 }
+      volume: { value: 0 },
     },
-    regular: { 
+    regular: {
       start: vi.fn(),
       stop: vi.fn(),
-      volume: { value: -5 }
-    }
+      volume: { value: -5 },
+    },
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Setup mocks
     vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(null);
     vi.mocked(GlobalSampleCache.getCachedUrl).mockImplementation((path) => {
@@ -86,9 +86,13 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
         const startMetronome = () => {
           setIsPlaying(true);
           // Simulate starting metronome with cached sounds
-          const accentUrl = GlobalSampleCache.getCachedUrl('metronome/Clicks_03.mp3');
-          const regularUrl = GlobalSampleCache.getCachedUrl('metronome/Clicks_01.mp3');
-          
+          const accentUrl = GlobalSampleCache.getCachedUrl(
+            'metronome/Clicks_03.mp3',
+          );
+          const regularUrl = GlobalSampleCache.getCachedUrl(
+            'metronome/Clicks_01.mp3',
+          );
+
           if (accentUrl && regularUrl) {
             clickCount.current = 0; // Reset click count
           }
@@ -115,24 +119,29 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
       };
 
       render(<MockMetronomeWidget />);
-      
+
       const user = userEvent.setup();
-      
+
       // Should use cached URLs
       expect(screen.getByText('Stopped')).toBeInTheDocument();
-      
+
       // Start metronome
       await user.click(screen.getByText('Start'));
       expect(screen.getByText('Playing')).toBeInTheDocument();
-      
+
       // Check that cached URLs were retrieved
-      expect(GlobalSampleCache.getCachedUrl).toHaveBeenCalledWith('metronome/Clicks_03.mp3');
-      expect(GlobalSampleCache.getCachedUrl).toHaveBeenCalledWith('metronome/Clicks_01.mp3');
+      expect(GlobalSampleCache.getCachedUrl).toHaveBeenCalledWith(
+        'metronome/Clicks_03.mp3',
+      );
+      expect(GlobalSampleCache.getCachedUrl).toHaveBeenCalledWith(
+        'metronome/Clicks_01.mp3',
+      );
     });
 
     it('should handle tempo changes during playback', async () => {
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(mockMetronomeInstrument);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        mockMetronomeInstrument,
+      );
 
       const MockMetronomeWidget = () => {
         const [bpm, setBpm] = React.useState(120);
@@ -157,7 +166,9 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
 
         return (
           <div>
-            <button onClick={togglePlayback}>{isPlaying ? 'Stop' : 'Start'}</button>
+            <button onClick={togglePlayback}>
+              {isPlaying ? 'Stop' : 'Start'}
+            </button>
             <button onClick={() => updateTempo(60)}>60 BPM</button>
             <button onClick={() => updateTempo(120)}>120 BPM</button>
             <button onClick={() => updateTempo(180)}>180 BPM</button>
@@ -167,7 +178,7 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
       };
 
       render(<MockMetronomeWidget />);
-      
+
       const user = userEvent.setup();
 
       // Start at 120 BPM
@@ -186,7 +197,7 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
     it('should sync metronome with transport timing', async () => {
       const MockMetronomeWidget = () => {
         const [synced, setSynced] = React.useState(false);
-        
+
         const toggleSync = () => {
           setSynced(!synced);
           if (!synced) {
@@ -208,17 +219,17 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
       };
 
       render(<MockMetronomeWidget />);
-      
+
       const user = userEvent.setup();
-      
+
       // Initially not synced
       expect(screen.getByText('Not Synced')).toBeInTheDocument();
-      
+
       // Enable sync
       await user.click(screen.getByText('Enable Transport Sync'));
       expect(screen.getByText('Synced')).toBeInTheDocument();
       expect(Tone.Transport.start).toHaveBeenCalled();
-      
+
       // Disable sync
       await user.click(screen.getByText('Disable Transport Sync'));
       expect(screen.getByText('Not Synced')).toBeInTheDocument();
@@ -228,7 +239,7 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
     it('should handle different time signatures', async () => {
       const MockMetronomeWidget = () => {
         const [timeSignature, setTimeSignature] = React.useState([4, 4]);
-        
+
         const changeTimeSignature = (newSig: number[]) => {
           setTimeSignature(newSig);
           // Update transport time signature
@@ -240,22 +251,24 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
             <button onClick={() => changeTimeSignature([4, 4])}>4/4</button>
             <button onClick={() => changeTimeSignature([3, 4])}>3/4</button>
             <button onClick={() => changeTimeSignature([6, 8])}>6/8</button>
-            <div>Time Signature: {timeSignature[0]}/{timeSignature[1]}</div>
+            <div>
+              Time Signature: {timeSignature[0]}/{timeSignature[1]}
+            </div>
           </div>
         );
       };
 
       render(<MockMetronomeWidget />);
-      
+
       const user = userEvent.setup();
-      
+
       // Test different time signatures
       await user.click(screen.getByText('3/4'));
       expect(screen.getByText('Time Signature: 3/4')).toBeInTheDocument();
-      
+
       await user.click(screen.getByText('6/8'));
       expect(screen.getByText('Time Signature: 6/8')).toBeInTheDocument();
-      
+
       await user.click(screen.getByText('4/4'));
       expect(screen.getByText('Time Signature: 4/4')).toBeInTheDocument();
     });
@@ -264,17 +277,19 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
   describe('Click Sound Management', () => {
     it('should use cached click sounds efficiently', async () => {
       // Return cached sounds
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockImplementation((key) => {
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockImplementation(
+        (key) => {
           if (key === 'metronome-clicks') return mockClickSounds;
           return null;
-        });
+        },
+      );
 
       const MockMetronomeWidget = () => {
         const [clicksLoaded, setClicksLoaded] = React.useState(false);
-        
+
         React.useEffect(() => {
-          const cachedClicks = GlobalSampleCache.getCachedInstrument('metronome-clicks');
+          const cachedClicks =
+            GlobalSampleCache.getCachedInstrument('metronome-clicks');
           if (cachedClicks) {
             setClicksLoaded(true);
           }
@@ -302,16 +317,16 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
       };
 
       render(<MockMetronomeWidget />);
-      
+
       // Should immediately load from cache
       expect(screen.getByText('Clicks Ready')).toBeInTheDocument();
-      
+
       const user = userEvent.setup();
-      
+
       // Test click sounds
       await user.click(screen.getByText('Accent Click'));
       expect(mockClickSounds.accent.start).toHaveBeenCalled();
-      
+
       await user.click(screen.getByText('Regular Click'));
       expect(mockClickSounds.regular.start).toHaveBeenCalled();
     });
@@ -319,7 +334,7 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
     it('should handle subdivision clicks', async () => {
       const MockMetronomeWidget = () => {
         const [subdivision, setSubdivision] = React.useState(1);
-        
+
         const playSubdivision = () => {
           // Play subdivision based on current setting
           for (let i = 0; i < subdivision; i++) {
@@ -339,13 +354,13 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
       };
 
       render(<MockMetronomeWidget />);
-      
+
       const user = userEvent.setup();
-      
+
       // Test different subdivisions
       await user.click(screen.getByText('Eighth Notes'));
       expect(screen.getByText('Subdivision: 2')).toBeInTheDocument();
-      
+
       await user.click(screen.getByText('Sixteenth Notes'));
       expect(screen.getByText('Subdivision: 4')).toBeInTheDocument();
     });
@@ -356,13 +371,14 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
       const MockMetronomeWidget = () => {
         const [isStable, setIsStable] = React.useState(true);
         const [runTime, setRunTime] = React.useState(0);
-        
+
         const simulateExtendedRun = () => {
           // Simulate running for extended period
           setRunTime(runTime + 1000); // Simulate 1 second
-          
+
           // Check stability (in real implementation, this would check timing accuracy)
-          if (runTime > 60000) { // After 60 seconds
+          if (runTime > 60000) {
+            // After 60 seconds
             setIsStable(true); // Assume stable for test
           }
         };
@@ -377,14 +393,14 @@ describe('MetronomeWidget - Cache Integration Tests', () => {
       };
 
       render(<MockMetronomeWidget />);
-      
+
       const user = userEvent.setup();
-      
+
       // Simulate extended operation
       for (let i = 0; i < 65; i++) {
         await user.click(screen.getByText('Simulate Run Time'));
       }
-      
+
       expect(screen.getByText('Status: Stable')).toBeInTheDocument();
     });
   });

@@ -23,26 +23,29 @@ import type {
   WamParameterDataMap,
   WamEvent,
   WamMidiEvent,
-  WamAutomationEvent,
-  WamParameterConfiguration,
 } from '../../../../types/wam.js';
-import { SalamanderVelocitySampler } from '../../implementations/harmony/SalamanderVelocitySampler.js';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
+// SalamanderVelocitySampler removed - using alternative samplers
+// import { SalamanderVelocitySampler } from '../../implementations/harmony/SalamanderVelocitySampler.js';
 import { RhodesVelocitySampler } from '../../implementations/harmony/RhodesVelocitySampler.js';
 import { WurlitzerVelocitySampler } from '../../implementations/harmony/WurlitzerVelocitySampler.js';
-import { GlobalSampleCache } from '../../../../services/storage/GlobalSampleCache.js';
-import { getPersistentAudioContext } from '../../../../utils/audioContext.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { GlobalSampleCache } from '../../../storage/cache/GlobalSampleCache.js';
+import { createStructuredLogger } from '../../../shared/index.js';
+
+// Create structured logger for this module
+const logger = createStructuredLogger('WamKeyboard');
 
 // Base WebAudioModule class - since we don't have the actual SDK, we'll create a minimal implementation
 abstract class WebAudioModuleBase implements WebAudioModule {
   abstract audioContext: BaseAudioContext;
-  abstract audioNode: AudioNode | null;
+  abstract audioNode: WamNode;
   abstract initialized: boolean;
   abstract moduleId: string;
   abstract instanceId: string;
+  abstract descriptor: WamDescriptor;
 
-  abstract createAudioNode(options?: any): Promise<AudioNode>;
+  abstract createAudioNode(options?: any): Promise<WamNode>;
+  abstract getState(): Promise<any>;
+  abstract setState(state: any): Promise<void>;
 
   async initialize(state?: any): Promise<WebAudioModule> {
     if (!this.initialized) {
@@ -52,8 +55,14 @@ abstract class WebAudioModuleBase implements WebAudioModule {
     return this;
   }
 
-  createGui?(): Promise<HTMLElement>;
-  destroyGui?(gui: Element): void;
+  createGui(): Promise<Element> {
+    const container = document.createElement('div');
+    return Promise.resolve(container);
+  }
+
+  destroyGui(gui: Element): void {
+    gui.remove();
+  }
 }
 
 /**
@@ -85,11 +94,26 @@ export class WamKeyboardNode implements WamNode {
     KeyboardInstrument.SALAMANDER_PIANO;
   private samplers: Map<KeyboardInstrument, any> = new Map();
   private activeSampler: any = null;
-  private eventQueue: WamEvent[] = [];
+  private _eventQueue: WamEvent[] = [];
   private sustainedNotes: Set<number> = new Set();
   private sustainPedal = false;
   private activeNotes: Map<number, number> = new Map(); // note -> voice ID for polyphony
   private _isConnected = false; // Track connection state
+
+  // Required AudioNode properties
+  channelCountMode: ChannelCountMode = 'max';
+  channelInterpretation: ChannelInterpretation = 'speakers';
+
+  // EventTarget methods (required by AudioNode)
+  addEventListener() {
+    /* stub */
+  }
+  dispatchEvent(): boolean {
+    return false;
+  }
+  removeEventListener() {
+    /* stub */
+  }
 
   get gain(): AudioParam | undefined {
     return this.gainNode?.gain;
@@ -98,23 +122,23 @@ export class WamKeyboardNode implements WamNode {
   get context(): BaseAudioContext {
     return this.module.audioContext;
   }
-  
+
   get isConnected(): boolean {
     return this._isConnected;
   }
-  
+
   get numberOfOutputs(): number {
     return this.gainNode?.numberOfOutputs || 0;
   }
-  
+
   get numberOfInputs(): number {
     return this.gainNode?.numberOfInputs || 0;
   }
-  
+
   get channelCount(): number {
     return this.gainNode?.channelCount || 2;
   }
-  
+
   /**
    * Check if an instrument is loaded
    */
@@ -123,10 +147,11 @@ export class WamKeyboardNode implements WamNode {
   }
 
   constructor(
-    private module: WebAudioModule,
-    options?: AudioNodeOptions,
+    public module: WebAudioModule,
+    _options?: AudioNodeOptions,
   ) {
     // Don't initialize here to avoid SSR issues
+    // Unused parameters prefixed with underscore to avoid eslint errors
   }
 
   /**
@@ -140,7 +165,7 @@ export class WamKeyboardNode implements WamNode {
       destination,
       gainValue: this.gainNode.gain.value,
       hasActiveSampler: !!this.activeSampler,
-      samplerConnected: this.activeSampler ? 'checking...' : 'no sampler'
+      samplerConnected: this.activeSampler ? 'checking...' : 'no sampler',
     });
     const result = this.gainNode.connect(destination as any);
     this._isConnected = true;
@@ -151,7 +176,6 @@ export class WamKeyboardNode implements WamNode {
    * Disconnect from destination
    */
   disconnect(destination?: AudioNode | AudioParam | number): void {
-  const { correlationId, logger } = useCorrelation('result');
     if (this.gainNode) {
       if (destination) {
         this.gainNode.disconnect(destination as any);
@@ -184,15 +208,24 @@ export class WamKeyboardNode implements WamNode {
         // DON'T switch Tone.js context - use the shared context
         // This was causing multiple context switches and buffer errors
         // Only log if there's a real issue
-        const toneContext = Tone.context?._context || Tone.context?._nativeAudioContext || Tone.context?.rawContext;
+        const toneContext =
+          Tone.context?._context ||
+          Tone.context?._nativeAudioContext ||
+          Tone.context?.rawContext;
         const persistentContext = (window as any).__persistentAudioContext;
-        
+
         if (toneContext && this.context && toneContext !== this.context) {
           // Check if using persistent context
-          if (persistentContext && (toneContext === persistentContext || this.context === persistentContext)) {
+          if (
+            persistentContext &&
+            (toneContext === persistentContext ||
+              this.context === persistentContext)
+          ) {
             // Using persistent context, this is normal
           } else {
-            logger.info('🎹 WamKeyboardNode: Different contexts detected, but continuing with shared context');
+            logger.info(
+              '🎹 WamKeyboardNode: Different contexts detected, but continuing with shared context',
+            );
           }
         }
       }
@@ -232,84 +265,127 @@ export class WamKeyboardNode implements WamNode {
     // CRITICAL FIX: Check if InitialSamplePreloader created a harmony instrument
     // The preloaded instrument is a full WamKeyboard instance, not just a sampler
     if (instrument === KeyboardInstrument.SALAMANDER_PIANO) {
-      const preloadedHarmony = GlobalSampleCache.getCachedInstrument('harmony-preloaded');
+      const preloadedHarmony =
+        GlobalSampleCache.getCachedInstrument('harmony-preloaded');
       if (preloadedHarmony && preloadedHarmony.audioNode) {
         logger.info('🎹 REUSING PRE-LOADED HARMONY INSTRUMENT FROM PHASE 2!');
-        
+
         // The preloaded harmony is a complete WamKeyboard instance
         // We need to extract its internal sampler to prevent duplicate loading
         const preloadedNode = preloadedHarmony.audioNode as WamKeyboardNode;
-        
+
         // Check if it has samplers already loaded
-        if (preloadedNode.samplers && preloadedNode.samplers.has(KeyboardInstrument.SALAMANDER_PIANO)) {
-          const existingSampler = preloadedNode.samplers.get(KeyboardInstrument.SALAMANDER_PIANO);
-          logger.info('🎹 Found existing SalamanderVelocitySampler in pre-loaded instrument!');
-          
+        if (
+          preloadedNode.samplers &&
+          preloadedNode.samplers.has(KeyboardInstrument.SALAMANDER_PIANO)
+        ) {
+          const existingSampler = preloadedNode.samplers.get(
+            KeyboardInstrument.SALAMANDER_PIANO,
+          );
+          logger.info(
+            '🎹 Found existing Piano sampler in pre-loaded instrument!',
+          );
+
           // CRITICAL: Check if the sampler's context matches our current context
           // If not, we can't reuse it due to AudioBuffer restrictions
-          const existingSamplerContext = existingSampler.destination?.context || 
-                                       (existingSampler.samplers?.values()?.next()?.value?.context);
+          const existingSamplerContext =
+            existingSampler.destination?.context ||
+            existingSampler.samplers?.values()?.next()?.value?.context;
           const persistentContext = (window as any).__persistentAudioContext;
-          
+
           if (existingSamplerContext && this.context) {
             // Get the actual native context from Tone wrapper if needed
-            const existingNativeContext = existingSamplerContext._context || existingSamplerContext._nativeAudioContext || existingSamplerContext.rawContext || existingSamplerContext;
-            const currentNativeContext = this.context._context || this.context._nativeAudioContext || this.context.rawContext || this.context;
-            
+            const existingNativeContext =
+              (existingSamplerContext as any)._context ||
+              (existingSamplerContext as any)._nativeAudioContext ||
+              (existingSamplerContext as any).rawContext ||
+              existingSamplerContext;
+            const currentNativeContext =
+              (this.context as any)._context ||
+              (this.context as any)._nativeAudioContext ||
+              (this.context as any).rawContext ||
+              this.context;
+
             if (existingNativeContext !== currentNativeContext) {
               // Check if both are using the persistent context
-              if (persistentContext && (existingNativeContext === persistentContext || currentNativeContext === persistentContext)) {
-                logger.info('🎹 Pre-loaded sampler using persistent context, can reuse!');
+              if (
+                persistentContext &&
+                (existingNativeContext === persistentContext ||
+                  currentNativeContext === persistentContext)
+              ) {
+                logger.info(
+                  '🎹 Pre-loaded sampler using persistent context, can reuse!',
+                );
                 // Continue with reuse
               } else {
-                logger.warn('🎹 Pre-loaded sampler uses different AudioContext, cannot reuse buffers');
+                logger.warn(
+                  '🎹 Pre-loaded sampler uses different AudioContext, cannot reuse buffers',
+                );
                 logger.info('🎹 Will create new sampler with current context');
                 // Fall through to create new sampler
                 return; // Exit early to create new sampler
               }
             }
           }
-          
-          
+
           // Context is compatible, proceed with reuse
           // CRITICAL: Ensure the sampler is ready before reusing it
-          if (existingSampler && typeof existingSampler.ensureReady === 'function') {
+          if (
+            existingSampler &&
+            typeof existingSampler.ensureReady === 'function'
+          ) {
             logger.info('🎹 Ensuring pre-loaded sampler is ready...');
             try {
               await existingSampler.ensureReady();
               logger.info('🎹 Pre-loaded sampler verified and ready!');
             } catch (err) {
-              logger.warn('🎹 Pre-loaded sampler not ready, will create new one:', err);
+              logger.warn(
+                '🎹 Pre-loaded sampler not ready, will create new one:',
+                { error: err as Error },
+              );
               // Fall through to create new sampler
               return; // Exit early to create new sampler
             }
           }
-          
+
           // Verify the sampler has loaded samplers with buffers
-          const status = existingSampler.getStatus ? existingSampler.getStatus() : null;
+          const status = existingSampler.getStatus
+            ? existingSampler.getStatus()
+            : null;
           if (status && status.loadedLayers && status.loadedLayers.length > 0) {
-            logger.info('🎹 Pre-loaded sampler has layers:', status.loadedLayers.join(', '));
-            
+            logger.info(
+              '🎹 Pre-loaded sampler has layers:',
+              status.loadedLayers.join(', '),
+            );
+
             // Ensure it's connected to our gain node
             if (this.gainNode && existingSampler.connect) {
               try {
                 existingSampler.disconnect();
                 existingSampler.connect(this.gainNode);
-                logger.info('🎹 Connected pre-loaded sampler to current gain node');
+                logger.info(
+                  '🎹 Connected pre-loaded sampler to current gain node',
+                );
               } catch (err) {
-                logger.warn('🎹 Failed to connect pre-loaded sampler:', err);
+                logger.warn('🎹 Failed to connect pre-loaded sampler:', {
+                  error: err as Error,
+                });
               }
             }
-            
+
             this.samplers.set(instrument, existingSampler);
             this.switchToInstrument(instrument);
-            
+
             // Also cache it with our key for future use
             GlobalSampleCache.cacheInstrument(cacheKey, existingSampler);
-            logger.info('🎹 NO NEW SAMPLES WILL BE LOADED - using Phase 2 samples!');
+            logger.info(
+              '🎹 NO NEW SAMPLES WILL BE LOADED - using Phase 2 samples!',
+            );
             return;
           } else {
-            logger.warn('🎹 Pre-loaded sampler has no loaded layers, will create new one');
+            logger.warn(
+              '🎹 Pre-loaded sampler has no loaded layers, will create new one',
+            );
             // Fall through to create new sampler
           }
         }
@@ -320,31 +396,26 @@ export class WamKeyboardNode implements WamNode {
 
     try {
       // Ensure Tone.js uses the same AudioContext as the WAM system BEFORE creating samplers
-      const Tone = (window as any).Tone;
       // DON'T switch Tone.js context when loading instrument
       // Use the shared context to avoid buffer errors
 
       switch (instrument) {
         case KeyboardInstrument.SALAMANDER_PIANO:
-          logger.info('🎹 WARNING: Creating NEW SalamanderVelocitySampler - this will load samples again!');
-          sampler = new SalamanderVelocitySampler();
+          logger.info(
+            '🎹 WARNING: SalamanderVelocitySampler removed - using RhodesVelocitySampler as fallback',
+          );
+          // Use Rhodes as fallback for piano sound
+          sampler = new RhodesVelocitySampler();
           // CRITICAL: Set the preferred context BEFORE initializing
           if (this.context) {
             sampler.setPreferredContext(this.context);
           }
-          // Initialize with default velocity layers to match SalamanderVelocitySampler defaults
-          await sampler.initialize(undefined, [
-            'v1',
-            'v6',
-            'v10',
-            'v14',
-            'v16',
-          ]); // pp, p, mf, f, ff
+          await sampler.initialize();
           // Connect to gain node AFTER initializing
           if (this.gainNode) {
             sampler.connect(this.gainNode);
             logger.info(
-              '🎹 Connected SalamanderVelocitySampler to gain node after initialization',
+              '🎹 Connected Rhodes sampler (as piano fallback) to gain node after initialization',
             );
           }
           break;
@@ -373,7 +444,7 @@ export class WamKeyboardNode implements WamNode {
 
       // Connection already done before initialize to ensure context sync
       // No need to connect again here
-      
+
       // DEBUG: Verify sampler is connected
       logger.info('🎹 WamKeyboard - After loading sampler:', {
         instrument,
@@ -381,7 +452,7 @@ export class WamKeyboardNode implements WamNode {
         hasDestination: !!sampler.destination,
         destination: sampler.destination,
         gainNodeValue: this.gainNode?.gain?.value,
-        isConnectedToGain: sampler.destination === this.gainNode
+        isConnectedToGain: sampler.destination === this.gainNode,
       });
 
       // Cache the sampler globally for reuse
@@ -392,7 +463,7 @@ export class WamKeyboardNode implements WamNode {
 
       logger.info(`✅ Loaded ${instrument} instrument`);
     } catch (error) {
-      logger.error(`Failed to load ${instrument}:`, error);
+      logger.error(`Failed to load ${instrument}:`, error as Error);
       throw error;
     }
   }
@@ -405,9 +476,9 @@ export class WamKeyboardNode implements WamNode {
       hasCurrentSampler: !!this.activeSampler,
       hasGainNode: !!this.gainNode,
       gainNodeValue: this.gainNode?.gain?.value,
-      availableSamplers: Array.from(this.samplers.keys())
+      availableSamplers: Array.from(this.samplers.keys()),
     });
-    
+
     // Disconnect previous sampler
     if (this.activeSampler) {
       if (this.activeSampler.output) {
@@ -426,10 +497,12 @@ export class WamKeyboardNode implements WamNode {
         samplerType: this.activeSampler.constructor?.name,
         hasConnect: typeof this.activeSampler.connect === 'function',
         hasOutput: !!this.activeSampler.output,
-        samplerStatus: this.activeSampler.getStatus ? this.activeSampler.getStatus() : 'no status method'
+        samplerStatus: this.activeSampler.getStatus
+          ? this.activeSampler.getStatus()
+          : 'no status method',
       });
-      
-      // SalamanderVelocitySampler doesn't have output property, connect directly
+
+      // Velocity samplers don't have output property, connect directly
       if (this.activeSampler.connect) {
         this.activeSampler.connect(this.gainNode);
         logger.info(`✅ Connected ${instrument} sampler to gain node`);
@@ -440,7 +513,7 @@ export class WamKeyboardNode implements WamNode {
     } else {
       logger.warn(`🎹 Cannot connect sampler:`, {
         hasActiveSampler: !!this.activeSampler,
-        hasGainNode: !!this.gainNode
+        hasGainNode: !!this.gainNode,
       });
     }
   }
@@ -449,28 +522,28 @@ export class WamKeyboardNode implements WamNode {
    * Trigger a note
    */
   triggerNote(note: number, velocity = 80, time?: number): void {
-    logger.info('🎹 triggerNote called:', { 
-      note, 
-      velocity, 
+    logger.info('🎹 triggerNote called:', {
+      note,
+      velocity,
       time,
       hasActiveSampler: !!this.activeSampler,
       activeSamplerType: this.activeSampler?.constructor?.name,
       gainNodeValue: this.gainNode?.gain?.value,
       isConnected: this._isConnected,
       contextState: this.context?.state,
-      gainNodeConnected: this.gainNode?.numberOfOutputs > 0
+      gainNodeConnected: (this.gainNode?.numberOfOutputs ?? 0) > 0,
     });
-    
+
     if (!this.gainNode) {
       logger.error('🎹 ERROR: No gain node! Cannot produce audio.');
       return;
     }
-    
+
     if (!this._isConnected) {
       logger.error('🎹 ERROR: Gain node not connected to destination!');
       return;
     }
-    
+
     if (!this.activeSampler) {
       logger.warn('🎹 No active sampler available!');
       return;
@@ -486,7 +559,7 @@ export class WamKeyboardNode implements WamNode {
 
       // Trigger the note on the sampler
       if (this.activeSampler.triggerAttackRelease) {
-        // For SalamanderVelocitySampler which uses triggerAttackRelease
+        // For velocity samplers which use triggerAttackRelease
         // Use Tone.js now() for immediate playback when no time is specified
         const toneTime =
           time !== undefined
@@ -495,18 +568,22 @@ export class WamKeyboardNode implements WamNode {
         logger.info(
           `🎹 Triggering note ${noteName} with velocity ${velocity} at time ${toneTime || 'now'}`,
           {
-            samplerStatus: this.activeSampler.getStatus ? this.activeSampler.getStatus() : 'no status method',
+            samplerStatus: this.activeSampler.getStatus
+              ? this.activeSampler.getStatus()
+              : 'no status method',
             destination: this.activeSampler.destination,
-            samplerConnected: this.activeSampler.destination === this.gainNode
-          }
+            samplerConnected: this.activeSampler.destination === this.gainNode,
+          },
         );
-        
+
         // CRITICAL: Ensure the gain node is not muted
         if (this.gainNode.gain.value === 0) {
-          logger.warn('🎹 WARNING: Gain node is muted (value = 0)! Setting to 0.8');
+          logger.warn(
+            '🎹 WARNING: Gain node is muted (value = 0)! Setting to 0.8',
+          );
           this.gainNode.gain.value = 0.8;
         }
-        
+
         this.activeSampler.triggerAttackRelease(
           noteName,
           2,
@@ -522,7 +599,7 @@ export class WamKeyboardNode implements WamNode {
         );
       }
     } catch (error) {
-      logger.error('Failed to trigger note:', error);
+      logger.error('Failed to trigger note:', error as Error);
     }
   }
 
@@ -542,7 +619,7 @@ export class WamKeyboardNode implements WamNode {
           this.activeSampler.triggerRelease(noteName, this.context.currentTime);
         }
       } catch (error) {
-        logger.error('Failed to release note:', error);
+        logger.error('Failed to release note:', error as Error);
       }
     }
   }
@@ -567,7 +644,11 @@ export class WamKeyboardNode implements WamNode {
     ];
     const octave = Math.floor(midi / 12) - 1;
     const noteIndex = midi % 12;
-    return noteNames[noteIndex] + octave;
+    const noteName = noteNames[noteIndex];
+    if (!noteName) {
+      throw new Error(`Invalid MIDI note: ${midi}`);
+    }
+    return noteName + octave;
   }
 
   /**
@@ -686,24 +767,29 @@ export class WamKeyboardNode implements WamNode {
     if (event.type === 'wam-midi') {
       const midiEvent = event as WamMidiEvent;
       const { bytes } = midiEvent.data;
-      const [status, note, velocity] = Array.from(bytes);
+      if (bytes && bytes.length >= 3) {
+        const [status, note, velocity] = Array.from(bytes);
 
-      // Handle MIDI events
-      const command = status & 0xf0;
-      const channel = status & 0x0f;
+        // Handle MIDI events
+        const command = (status ?? 0) & 0xf0;
+        const channel = (status ?? 0) & 0x0f;
 
-      // If event has a specific time, schedule it
-      if (event.time && event.time > this.context.currentTime) {
-        // Schedule for future
-        setTimeout(
-          () => {
+        // Safe checks for note and velocity
+        if (typeof note === 'number' && typeof velocity === 'number') {
+          // If event has a specific time, schedule it
+          if (event.time && event.time > this.context.currentTime) {
+            // Schedule for future
+            setTimeout(
+              () => {
+                this.handleMidiCommand(command, note, velocity, channel);
+              },
+              (event.time - this.context.currentTime) * 1000,
+            );
+          } else {
+            // Process immediately
             this.handleMidiCommand(command, note, velocity, channel);
-          },
-          (event.time - this.context.currentTime) * 1000,
-        );
-      } else {
-        // Process immediately
-        this.handleMidiCommand(command, note, velocity, channel);
+          }
+        }
       }
     }
   }
@@ -712,7 +798,7 @@ export class WamKeyboardNode implements WamNode {
     command: number,
     note: number,
     velocity: number,
-    channel: number,
+    _channel: number,
   ): void {
     switch (command) {
       case 0x90: // Note On
@@ -744,7 +830,7 @@ export class WamKeyboardNode implements WamNode {
   }
 
   clearEvents(): void {
-    this.eventQueue = [];
+    this._eventQueue = [];
     // Stop all playing notes
     if (this.activeSampler) {
       // SalamanderVelocitySampler doesn't have releaseAll, but we can release all active notes
@@ -790,6 +876,7 @@ export class WamKeyboardNode implements WamNode {
     if (!match) return [];
 
     const root = match[1];
+    if (!root) return [];
     const rootMidi = (rootNotes[root] || 0) + octave * 12 + 12; // +12 for MIDI offset
 
     // Chord intervals (semitones from root)
@@ -815,12 +902,42 @@ export class WamKeyboardNode implements WamNode {
     // Get chord type
     const chordType = chord.substring(root.length);
     const chordIntervals = intervals[chordType] || intervals[''];
+    if (!chordIntervals) return [];
 
     // Convert intervals to MIDI notes
     return chordIntervals.map((interval) => rootMidi + interval);
   }
 
-  destroy(): void {
+  // Required WamNode methods
+  async getState(): Promise<any> {
+    return {
+      currentInstrument: this.currentInstrument,
+      parameterValues: await this.getParameterValues(),
+    };
+  }
+
+  async setState(state: any): Promise<void> {
+    if (state.currentInstrument) {
+      await this.loadInstrument(state.currentInstrument);
+    }
+    if (state.parameterValues) {
+      await this.setParameterValues(state.parameterValues);
+    }
+  }
+
+  async getCompensationDelay(): Promise<number> {
+    return 0; // No compensation delay for this instrument
+  }
+
+  scheduleEvents(...events: WamEvent[]): void {
+    events.forEach((event) => this.scheduleEvent(event));
+  }
+
+  getCurrentInstrument(): KeyboardInstrument {
+    return this.currentInstrument;
+  }
+
+  async destroy(): Promise<void> {
     this.clearEvents();
     this.samplers.forEach((sampler) => {
       if (sampler.dispose) {
@@ -837,10 +954,26 @@ export class WamKeyboardNode implements WamNode {
  */
 export class WamKeyboard extends WebAudioModuleBase {
   readonly audioContext: BaseAudioContext;
-  audioNode: WamKeyboardNode | null = null;
+  audioNode!: WamKeyboardNode;
   initialized = false;
   readonly moduleId = 'com.bassnotion.keyboard';
   readonly instanceId: string;
+
+  descriptor: WamDescriptor = {
+    name: 'BassNotion Keyboard',
+    vendor: 'BassNotion',
+    version: '1.0.0',
+    sdkVersion: '2.0.0',
+    thumbnail: '',
+    keywords: ['instrument', 'keyboard', 'piano', 'rhodes'],
+    isInstrument: true,
+    website: 'https://bassnotion.com',
+    hasAudioInput: false,
+    hasAudioOutput: true,
+    hasMidiInput: true,
+    hasMidiOutput: false,
+    supportsMpe: false,
+  };
 
   static descriptor: WamDescriptor = {
     name: 'BassNotion Keyboard',
@@ -867,7 +1000,7 @@ export class WamKeyboard extends WebAudioModuleBase {
   /**
    * Create the audio node - follows WAM 2.0 standard
    */
-  async createAudioNode(initialState?: any): Promise<AudioNode> {
+  async createAudioNode(initialState?: any): Promise<WamNode> {
     this.audioNode = new WamKeyboardNode(this, initialState);
     await this.audioNode.initialize();
     return this.audioNode;
@@ -897,8 +1030,25 @@ export class WamKeyboard extends WebAudioModuleBase {
    */
   getCurrentInstrument(): KeyboardInstrument {
     return (
-      this.audioNode?.currentInstrument || KeyboardInstrument.SALAMANDER_PIANO
+      this.audioNode?.getCurrentInstrument() ||
+      KeyboardInstrument.SALAMANDER_PIANO
     );
+  }
+
+  async getState(): Promise<any> {
+    return {
+      instrument: this.getCurrentInstrument(),
+      volume: this.audioNode?.gain?.value || 0.8,
+    };
+  }
+
+  async setState(state: any): Promise<void> {
+    if (state.instrument) {
+      await this.audioNode?.loadInstrument(state.instrument);
+    }
+    if (state.volume && this.audioNode?.gain) {
+      this.audioNode.gain.value = state.volume;
+    }
   }
 
   /**
@@ -966,14 +1116,14 @@ export class WamKeyboard extends WebAudioModuleBase {
     ) as HTMLSelectElement;
     instrumentSelect.addEventListener('change', async () => {
       await this.audioNode.setParameterValues({
-        instrument: { value: parseInt(instrumentSelect.value) },
+        instrument: parseInt(instrumentSelect.value),
       });
     });
 
     const volumeSlider = container.querySelector('#volume') as HTMLInputElement;
     volumeSlider.addEventListener('input', async () => {
       await this.audioNode.setParameterValues({
-        volume: { value: parseFloat(volumeSlider.value) },
+        volume: parseFloat(volumeSlider.value),
       });
     });
 

@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { TransportSyncManager } from '../../playback/services/core/TransportSyncManager';
+import { WidgetSyncManager } from '../../playback/modules/transport/sync/WidgetSyncManager';
 import * as Tone from 'tone';
+
+// Helper function to format musical position
+const formatPosition = (pos: {
+  bars: number;
+  beats: number;
+  sixteenths: number;
+  ticks?: number;
+}): string => {
+  return `${pos.bars}:${pos.beats}:${pos.sixteenths}`;
+};
 
 /**
  * FAANG-style Transport Sync Hook
@@ -56,7 +66,7 @@ export function useTransportSync({
     lastSyncTime: Date.now(),
   });
 
-  const syncManager = useRef<TransportSyncManager>();
+  const syncManager = useRef<WidgetSyncManager>();
   const reconnectTimer = useRef<NodeJS.Timeout>();
   const reconnectCount = useRef(0);
   const lastHeartbeatTime = useRef(Date.now());
@@ -86,7 +96,7 @@ export function useTransportSync({
    * Handle connection
    */
   const connect = useCallback(() => {
-    syncManager.current = TransportSyncManager.getInstance();
+    syncManager.current = WidgetSyncManager.getInstance();
     syncManager.current.registerClient(widgetId);
 
     setSyncState((prev) => ({ ...prev, isConnected: true }));
@@ -100,9 +110,14 @@ export function useTransportSync({
     setSyncState((prev) => ({ ...prev, isConnected: false }));
 
     if (reconnectCount.current < reconnectAttempts) {
-      const delay = Math.min(1000 * Math.pow(2, reconnectCount.current), 30000);
+      // Increment reconnect count immediately to show isReconnecting state
+      reconnectCount.current++;
+
+      const delay = Math.min(
+        1000 * Math.pow(2, reconnectCount.current - 1),
+        30000,
+      );
       reconnectTimer.current = setTimeout(() => {
-        reconnectCount.current++;
         connect();
       }, delay);
     }
@@ -132,11 +147,15 @@ export function useTransportSync({
       setSyncState((prev) => ({
         ...prev,
         lastSyncTime: now,
-        isPlaying: data.transportState.isPlaying,
-        tempo: data.transportState.tempo,
-        loop: data.transportState.loop,
-        loopStart: data.transportState.loopStart,
-        loopEnd: data.transportState.loopEnd,
+        isPlaying: data.transportSnapshot?.state === 'playing',
+        tempo: data.transportSnapshot?.tempo || prev.tempo,
+        loop: data.transportSnapshot?.loop || prev.loop,
+        loopStart: data.transportSnapshot?.loopStart
+          ? formatPosition(data.transportSnapshot.loopStart)
+          : prev.loopStart,
+        loopEnd: data.transportSnapshot?.loopEnd
+          ? formatPosition(data.transportSnapshot.loopEnd)
+          : prev.loopEnd,
       }));
     },
     [widgetId],
@@ -263,13 +282,13 @@ export function useTransportSync({
     connect();
 
     // Setup event listeners
-    const manager = TransportSyncManager.getInstance();
+    const manager = WidgetSyncManager.getInstance();
 
     const handlers = {
       [`client:${widgetId}:HEARTBEAT`]: handleHeartbeat,
       [`client:${widgetId}:POSITION_UPDATE`]: handlePositionUpdate,
-      [`client:${widgetId}:PLAY`]: handlePlay,
-      [`client:${widgetId}:STOP`]: handleStop,
+      [`client:${widgetId}:TRANSPORT_START`]: handlePlay,
+      [`client:${widgetId}:TRANSPORT_STOP`]: handleStop,
       [`client:${widgetId}:TEMPO_CHANGE`]: handleTempoChange,
       [`client:${widgetId}:BATCH_UPDATE`]: handleBatchUpdate,
       [`client:${widgetId}:DISCONNECTED`]: handleDisconnect,

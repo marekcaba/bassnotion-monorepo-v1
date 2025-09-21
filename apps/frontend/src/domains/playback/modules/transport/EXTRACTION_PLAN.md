@@ -1,11 +1,13 @@
 # Transport Module Extraction Plan
 
 ## Overview
+
 Extract transport-related functionality from UnifiedTransport.ts (3,107 lines) into a modular structure within the playback domain.
 
 ## UnifiedTransport Analysis
 
 ### Current Responsibilities (Too Many!)
+
 1. **Timing & Clock Management**
    - Hardware clock synchronization
    - AudioWorklet timing
@@ -45,7 +47,9 @@ Extract transport-related functionality from UnifiedTransport.ts (3,107 lines) i
 ## Extraction Strategy
 
 ### Phase 1: Extract Types
+
 Create `types/index.ts` with all transport-related types:
+
 ```typescript
 // types/index.ts
 export interface MusicalPosition { ... }
@@ -60,52 +64,64 @@ export interface TransportConfig { ... }
 ### Phase 2: Extract Core Components
 
 #### 2.1 Clock.ts
+
 Responsibilities:
+
 - Hardware clock synchronization
 - AudioContext time management
 - Clock drift compensation
 - Time source abstraction
 
 Extract from UnifiedTransport:
+
 - `useHardwareClock`, `hardwareClockOffset`
 - `clockSyncInterval`, `clockSyncHistory`
 - `syncHardwareClock()`, `getAudioTime()`
 - `calculateClockOffset()`
 
 #### 2.2 Timeline.ts
+
 Responsibilities:
+
 - Musical position tracking
 - Bar:Beat:Sixteenth calculations
 - Position conversion utilities
 - Seek position management
 
 Extract from UnifiedTransport:
+
 - `getPosition()`, `seek()`
 - `convertMusicalToSeconds()`, `convertSecondsToMusical()`
 - Position state management
 - Quantization logic
 
 #### 2.3 Scheduler.ts
+
 Responsibilities:
+
 - Event queue management
 - Look-ahead scheduling
 - Priority-based scheduling
 - Tone.js integration
 
 Extract from UnifiedTransport:
+
 - `eventQueue`, `scheduledEvents`
 - `schedule()`, `scheduleImmediate()`, `scheduleOnce()`
 - `processScheduleQueue()`, `cleanupScheduledEvents()`
 - Event priority handling
 
 #### 2.4 Transport.ts (Main Coordinator)
+
 Responsibilities:
+
 - High-level transport control
 - State management
 - Component coordination
 - Public API
 
 Will use extracted components:
+
 - Clock for timing
 - Timeline for position
 - Scheduler for events
@@ -114,30 +130,39 @@ Will use extracted components:
 ### Phase 3: Extract Sync Components
 
 #### 3.1 TransportSync.ts
+
 Responsibilities:
+
 - Multi-component synchronization
 - State consistency
 - Event coordination
 
 #### 3.2 LatencyCompensation.ts
+
 Responsibilities:
+
 - Output latency tracking
 - Compensation calculations
 - Adaptive adjustments
 
 Extract from UnifiedTransport:
+
 - Latency measurement logic
 - Compensation algorithms
 - Buffer management
 
 #### 3.3 BeatGrid.ts
+
 Responsibilities:
+
 - Beat alignment
 - Grid snapping
 - Quantization helpers
 
 ### Phase 4: Pattern Support
+
 Move existing pattern handling:
+
 - `PatternScheduler.ts` (already exists in core)
 - `PatternConverter.ts` (already exists in core)
 - Create Pattern types and interfaces

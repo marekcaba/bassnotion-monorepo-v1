@@ -40,7 +40,7 @@ export class Exercise {
   }
 
   static create(
-    props: Omit<ExerciseProps, 'createdAt' | 'updatedAt'>
+    props: Omit<ExerciseProps, 'createdAt' | 'updatedAt'>,
   ): Exercise {
     const now = new Date();
     return new Exercise({
@@ -125,7 +125,9 @@ export class Exercise {
 
   // Business logic methods
   canBePlayedByBeginner(): boolean {
-    return this._props.difficulty.isBeginnerFriendly() && this._props.bpm <= 120;
+    return (
+      this._props.difficulty.isBeginnerFriendly() && this._props.bpm <= 120
+    );
   }
 
   getDurationInMinutes(): number {

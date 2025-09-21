@@ -49,7 +49,9 @@ describe('UserRepository', () => {
     });
 
     it('should validate email format', () => {
-      expect(() => Email.create('invalid-email')).toThrow('Invalid email format');
+      expect(() => Email.create('invalid-email')).toThrow(
+        'Invalid email format',
+      );
       expect(() => Email.create('valid@email.com')).not.toThrow();
     });
 
@@ -85,14 +87,14 @@ describe('UserRepository', () => {
         UserId.create('1'),
         Email.create('admin@example.com'),
         'Admin',
-        UserRole.create('admin')
+        UserRole.create('admin'),
       );
 
       const regularUser = User.create(
         UserId.create('2'),
         Email.create('user@example.com'),
         'User',
-        UserRole.create('user')
+        UserRole.create('user'),
       );
 
       expect(adminUser.canAccessAdminPanel()).toBe(true);
@@ -106,7 +108,7 @@ describe('UserRepository', () => {
         UserRole.create('user'),
         'Active User',
         undefined,
-        new Date() // Last login today
+        new Date(), // Last login today
       );
 
       const inactiveUser = User.reconstitute(
@@ -115,7 +117,7 @@ describe('UserRepository', () => {
         UserRole.create('user'),
         'Inactive User',
         undefined,
-        new Date('2020-01-01') // Last login years ago
+        new Date('2020-01-01'), // Last login years ago
       );
 
       expect(activeUser.isActive()).toBe(true);
@@ -127,7 +129,7 @@ describe('UserRepository', () => {
         UserId.create('1'),
         Email.create('test@example.com'),
         'Test User',
-        UserRole.create('user')
+        UserRole.create('user'),
       );
 
       user.updateProfile('New Name', 'https://avatar.url');
@@ -155,7 +157,7 @@ describe('UserRepository', () => {
       vi.mocked(apiClient.get).mockResolvedValueOnce(mockUser);
 
       const cachedRepository = new CachedUserRepository(repository);
-      
+
       // First call - should hit the API
       const user1 = await cachedRepository.findById(UserId.create('123'));
       expect(apiClient.get).toHaveBeenCalledTimes(1);
@@ -180,7 +182,7 @@ describe('UserRepository', () => {
       vi.mocked(apiClient.put).mockResolvedValue({});
 
       const cachedRepository = new CachedUserRepository(repository);
-      
+
       // Load user into cache
       const user = await cachedRepository.findById(UserId.create('123'));
       expect(user).not.toBeNull();

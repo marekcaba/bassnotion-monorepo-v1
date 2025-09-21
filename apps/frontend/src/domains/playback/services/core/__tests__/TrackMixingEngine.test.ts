@@ -8,16 +8,20 @@ import {
 } from '../TrackMixingEngine.js';
 import { Track } from '../Track.js';
 import { EventBus } from '../EventBus.js';
-import { AudioEngine } from '../AudioEngine.js';
+import { AudioEngine } from '../../../modules/audio-engine/core/AudioEngine.js';
 import { serviceRegistry } from '../ServiceRegistry.js';
-import { PlaybackError } from '../../errors/base.js';
+import { AudioError } from '../../../errors/AudioErrors.js';
 import {
   TrackState,
   type TrackMixingState,
   type TrackAutomation,
 } from '../../../types/track.js';
+import * as Tone from 'tone';
 
-// Mock Tone.js
+// Mock Tone.js - it will automatically use the __mocks__/tone.js file
+vi.mock('tone');
+
+// Helper functions for creating mock objects in tests
 const createMockToneNode = () => ({
   connect: vi.fn().mockReturnThis(),
   disconnect: vi.fn().mockReturnThis(),
@@ -38,38 +42,11 @@ const createMockTimeline = () => ({
   dispose: vi.fn(),
 });
 
-const mockTone = {
-  Gain: vi.fn().mockImplementation((value = 1) => ({
-    ...createMockToneNode(),
-    gain: {
-      value,
-      rampTo: vi.fn(),
-    },
-  })),
-  Panner: vi.fn().mockImplementation((value = 0) => ({
-    ...createMockToneNode(),
-    pan: {
-      value,
-      rampTo: vi.fn(),
-    },
-  })),
-  Compressor: vi.fn().mockImplementation((config) => ({
-    ...createMockToneNode(),
-    config,
-  })),
-  Limiter: vi.fn().mockImplementation((threshold) => ({
-    ...createMockToneNode(),
-    threshold,
-  })),
-  Timeline: vi.fn().mockImplementation(() => createMockTimeline()),
-  Destination: createMockToneNode(),
-};
-
 // Mock dependencies
-vi.mock('../AudioEngine.js', () => ({
+vi.mock('../../../modules/audio-engine/core/AudioEngine.js', () => ({
   AudioEngine: {
     getInstance: vi.fn(() => ({
-      getTone: vi.fn(() => mockTone),
+      getTone: vi.fn(() => ({})), // Return empty object, Tone is mocked separately
       isReady: vi.fn(() => true),
     })),
   },
@@ -162,6 +139,14 @@ describe('TrackMixingEngine', () => {
     mockEventBus = new EventBus();
     mockAudioEngine = AudioEngine.getInstance();
 
+    // Set up window.__serviceRegistry for the Mixer's local serviceRegistry
+    (window as any).__serviceRegistry = {
+      get: vi.fn((name: string) => {
+        if (name === 'eventBus') return mockEventBus;
+        throw new Error(`Service ${name} not found`);
+      }),
+    };
+
     (serviceRegistry.get as any).mockImplementation((name: string) => {
       if (name === 'eventBus') return mockEventBus;
       throw new Error(`Service ${name} not found`);
@@ -173,6 +158,7 @@ describe('TrackMixingEngine', () => {
   afterEach(() => {
     mixingEngine.dispose();
     (TrackMixingEngine as any).instance = null;
+    delete (window as any).__serviceRegistry;
   });
 
   describe('Singleton Pattern', () => {
@@ -216,8 +202,8 @@ describe('TrackMixingEngine', () => {
       expect(channel.mute).toBeDefined();
       expect(channel.solo).toBeDefined();
 
-      expect(mockTone.Gain).toHaveBeenCalledWith(track.mixing.volume);
-      expect(mockTone.Panner).toHaveBeenCalledWith(track.mixing.pan);
+      expect(Tone.Gain).toHaveBeenCalledWith(track.mixing.volume);
+      expect(Tone.Panner).toHaveBeenCalledWith(track.mixing.pan);
     });
 
     it('should emit event when track channel is created', () => {
@@ -241,9 +227,7 @@ describe('TrackMixingEngine', () => {
       const track = createMockTrack();
       mixingEngine.createTrackChannel(track);
 
-      expect(() => mixingEngine.createTrackChannel(track)).toThrow(
-        PlaybackError,
-      );
+      expect(() => mixingEngine.createTrackChannel(track)).toThrow(AudioError);
     });
 
     it('should remove track channel and clean up resources', () => {
@@ -279,7 +263,7 @@ describe('TrackMixingEngine', () => {
       const track = createMockTrack({ automation });
       mixingEngine.createTrackChannel(track);
 
-      expect(mockTone.Timeline).toHaveBeenCalled();
+      expect(Tone.Timeline).toHaveBeenCalled();
     });
   });
 
@@ -290,6 +274,9 @@ describe('TrackMixingEngine', () => {
     beforeEach(() => {
       track = createMockTrack();
       channel = mixingEngine.createTrackChannel(track);
+      // Ensure channel is created properly
+      expect(channel).toBeDefined();
+      expect(channel.gain).toBeDefined();
     });
 
     it('should update volume parameter', () => {
@@ -441,8 +428,8 @@ describe('TrackMixingEngine', () => {
         parentBusId: 'master',
       });
 
-      expect(mockTone.Compressor).toHaveBeenCalled();
-      expect(mockTone.Gain).toHaveBeenCalled();
+      expect(Tone.Compressor).toHaveBeenCalled();
+      expect(Tone.Gain).toHaveBeenCalled();
     });
 
     it('should create sub-bus with custom parent', () => {
@@ -461,14 +448,14 @@ describe('TrackMixingEngine', () => {
       mixingEngine.createSubBus('test', 'Test Bus');
 
       expect(() => mixingEngine.createSubBus('test', 'Another Bus')).toThrow(
-        PlaybackError,
+        AudioError,
       );
     });
 
     it('should throw error when parent bus does not exist', () => {
       expect(() =>
         mixingEngine.createSubBus('test', 'Test Bus', 'non-existent'),
-      ).toThrow(PlaybackError);
+      ).toThrow(AudioError);
     });
 
     it('should create aux bus', () => {
@@ -524,13 +511,13 @@ describe('TrackMixingEngine', () => {
 
       expect(() =>
         mixingEngine.routeTrackToBus('non-existent', 'drums'),
-      ).toThrow(PlaybackError);
+      ).toThrow(AudioError);
     });
 
     it('should throw error when routing to non-existent bus', () => {
       expect(() =>
         mixingEngine.routeTrackToBus(track.id, 'non-existent'),
-      ).toThrow(PlaybackError);
+      ).toThrow(AudioError);
     });
   });
 
@@ -573,7 +560,7 @@ describe('TrackMixingEngine', () => {
       const subBus = mixingEngine.createSubBus('drums', 'Drums');
 
       expect(() => mixingEngine.createSend(track.id, 'drums')).toThrow(
-        PlaybackError,
+        AudioError,
       );
     });
 
@@ -657,11 +644,11 @@ describe('TrackMixingEngine', () => {
 
     it('should setup automation timelines on channel creation', () => {
       const mockTimelineInstance = createMockTimeline();
-      (mockTone.Timeline as any).mockImplementation(() => mockTimelineInstance);
+      (Tone.Timeline as any).mockImplementation(() => mockTimelineInstance);
 
       mixingEngine.createTrackChannel(track);
 
-      expect(mockTone.Timeline).toHaveBeenCalled();
+      expect(Tone.Timeline).toHaveBeenCalled();
       expect(mockTimelineInstance.add).toHaveBeenCalledTimes(2); // Two automation points
     });
 
@@ -670,7 +657,7 @@ describe('TrackMixingEngine', () => {
         ...createMockTimeline(),
         get: vi.fn().mockReturnValue({ value: 0.75 }),
       };
-      (mockTone.Timeline as any).mockImplementation(() => mockTimelineInstance);
+      (Tone.Timeline as any).mockImplementation(() => mockTimelineInstance);
 
       const channel = mixingEngine.createTrackChannel(track);
       const rampToSpy = vi.spyOn(channel.gain.gain, 'rampTo');
@@ -697,7 +684,7 @@ describe('TrackMixingEngine', () => {
         ...createMockTimeline(),
         get: vi.fn().mockReturnValue({ value: -0.3 }),
       };
-      (mockTone.Timeline as any).mockImplementation(() => mockTimelineInstance);
+      (Tone.Timeline as any).mockImplementation(() => mockTimelineInstance);
 
       const channel = mixingEngine.createTrackChannel(trackWithPan);
       const rampToSpy = vi.spyOn(channel.panner.pan, 'rampTo');
@@ -804,9 +791,7 @@ describe('TrackMixingEngine', () => {
       const track = createMockTrack();
       mixingEngine.createTrackChannel(track);
 
-      expect(() => mixingEngine.createTrackChannel(track)).toThrow(
-        PlaybackError,
-      );
+      expect(() => mixingEngine.createTrackChannel(track)).toThrow(AudioError);
     });
 
     it('should validate bus existence for routing', () => {
@@ -815,7 +800,7 @@ describe('TrackMixingEngine', () => {
 
       expect(() =>
         mixingEngine.routeTrackToBus(track.id, 'invalid-bus'),
-      ).toThrow(PlaybackError);
+      ).toThrow(AudioError);
     });
 
     it('should validate aux bus type for sends', () => {
@@ -824,7 +809,7 @@ describe('TrackMixingEngine', () => {
       mixingEngine.createSubBus('drums', 'Drums'); // Not an aux bus
 
       expect(() => mixingEngine.createSend(track.id, 'drums')).toThrow(
-        PlaybackError,
+        AudioError,
       );
     });
   });
@@ -954,7 +939,7 @@ describe('TrackMixingEngine', () => {
       ];
 
       const mockTimelineInstance = createMockTimeline();
-      (mockTone.Timeline as any).mockImplementation(() => mockTimelineInstance);
+      (Tone.Timeline as any).mockImplementation(() => mockTimelineInstance);
 
       const track = createMockTrack({ automation });
       mixingEngine.createTrackChannel(track);
@@ -1057,11 +1042,12 @@ describe('TrackMixingEngine', () => {
         dispose: vi.fn(),
       };
 
-      // Mock Tone.js effect constructors
-      mockTone.Reverb = vi.fn(() => mockReverb);
-      mockTone.Filter = vi.fn(() => mockFilter);
-      mockTone.FeedbackDelay = vi.fn(() => mockDelay);
-      mockTone.Distortion = vi.fn(() => mockDistortion);
+      // The mocks are already set up in __mocks__/tone.js
+      // Just spy on them if needed
+      vi.mocked(Tone.Reverb).mockImplementation(() => mockReverb);
+      vi.mocked(Tone.Filter).mockImplementation(() => mockFilter);
+      vi.mocked(Tone.FeedbackDelay).mockImplementation(() => mockDelay);
+      vi.mocked(Tone.Distortion).mockImplementation(() => mockDistortion);
     });
 
     it('should handle bus effects operations', () => {
@@ -1083,14 +1069,14 @@ describe('TrackMixingEngine', () => {
       const busId = mixingEngine.createReverbReturn('Hall Reverb', 0.8, 2500);
 
       // Verify reverb creation
-      expect(mockTone.Reverb).toHaveBeenCalledWith({
+      expect(Tone.Reverb).toHaveBeenCalledWith({
         decay: 8, // 0.8 * 10
         preDelay: 0.01,
         wet: 1.0,
       });
 
       // Verify filter creation
-      expect(mockTone.Filter).toHaveBeenCalledWith({
+      expect(Tone.Filter).toHaveBeenCalledWith({
         frequency: 2500,
         type: 'lowpass',
       });
@@ -1103,14 +1089,14 @@ describe('TrackMixingEngine', () => {
       const busId = mixingEngine.createDelayReturn('Echo', '4n', 0.5, 0.8);
 
       // Verify delay creation
-      expect(mockTone.FeedbackDelay).toHaveBeenCalledWith({
+      expect(Tone.FeedbackDelay).toHaveBeenCalledWith({
         delayTime: '4n',
         feedback: 0.5,
         wet: 0.8,
       });
 
       // Verify high-pass filter
-      expect(mockTone.Filter).toHaveBeenCalledWith({
+      expect(Tone.Filter).toHaveBeenCalledWith({
         frequency: 100,
         type: 'highpass',
       });
@@ -1127,7 +1113,7 @@ describe('TrackMixingEngine', () => {
       );
 
       // Verify compressor creation
-      expect(mockTone.Compressor).toHaveBeenCalledWith({
+      expect(Tone.Compressor).toHaveBeenCalledWith({
         threshold: -15,
         ratio: 6,
         attack: 0.003,
@@ -1135,7 +1121,7 @@ describe('TrackMixingEngine', () => {
       });
 
       // Verify distortion creation
-      expect(mockTone.Distortion).toHaveBeenCalledWith({
+      expect(Tone.Distortion).toHaveBeenCalledWith({
         distortion: 0.05,
         wet: 0.3,
       });

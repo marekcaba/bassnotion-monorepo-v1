@@ -3,7 +3,10 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { InstrumentAdapter, createInstrumentAdapter } from '../base/InstrumentAdapter.js';
+import {
+  InstrumentAdapter,
+  createInstrumentAdapter,
+} from '../base/InstrumentAdapter.js';
 import type { LegacyProcessor } from '../base/InstrumentAdapter.js';
 import type { InstrumentConfig, InstrumentEvent } from '../types/index.js';
 
@@ -76,7 +79,11 @@ describe('InstrumentAdapter', () => {
       const errorProcessor = {
         initialize: vi.fn().mockRejectedValue(new Error('Init failed')),
       };
-      const errorAdapter = new InstrumentAdapter(config, errorProcessor, 'trigger');
+      const errorAdapter = new InstrumentAdapter(
+        config,
+        errorProcessor,
+        'trigger',
+      );
 
       await expect(errorAdapter.initialize()).rejects.toThrow('Init failed');
       expect(errorAdapter.state.error).toContain('Init failed');
@@ -85,9 +92,9 @@ describe('InstrumentAdapter', () => {
     it('should not initialize twice', async () => {
       await adapter.initialize();
       const spy = vi.spyOn(mockProcessor, 'initialize');
-      
+
       await adapter.initialize();
-      
+
       expect(spy).not.toHaveBeenCalled();
     });
   });
@@ -119,7 +126,11 @@ describe('InstrumentAdapter', () => {
     });
 
     it('should not trigger if not initialized', () => {
-      const uninitializedAdapter = new InstrumentAdapter(config, mockProcessor, 'triggerNote');
+      const uninitializedAdapter = new InstrumentAdapter(
+        config,
+        mockProcessor,
+        'triggerNote',
+      );
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       uninitializedAdapter.trigger({
@@ -127,24 +138,40 @@ describe('InstrumentAdapter', () => {
         timestamp: Date.now(),
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith('Instrument Test Bass not initialized');
+      // Check that console.warn was called with structured logging format
+      expect(consoleSpy).toHaveBeenCalled();
+      const callArgs = consoleSpy.mock.calls[0][0];
+      expect(callArgs).toContain('Instrument Test Bass not initialized');
+      expect(callArgs).toContain('"level":"WARN"');
       expect(mockProcessor.lastTriggeredNote).toBeNull();
-      
+
       consoleSpy.mockRestore();
     });
 
     it('should handle missing trigger method', async () => {
-      const badAdapter = new InstrumentAdapter(config, mockProcessor, 'nonExistentMethod');
+      const badAdapter = new InstrumentAdapter(
+        config,
+        mockProcessor,
+        'nonExistentMethod',
+      );
       await badAdapter.initialize();
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       badAdapter.trigger({
         audioTime: 1.0,
         timestamp: Date.now(),
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith('Trigger method nonExistentMethod not found on processor');
-      
+      // Check that console.error was called with structured logging format
+      expect(consoleSpy).toHaveBeenCalled();
+      const callArgs = consoleSpy.mock.calls[0][0];
+      expect(callArgs).toContain(
+        'Trigger method nonExistentMethod not found on processor',
+      );
+      expect(callArgs).toContain('"level":"ERROR"');
+
       consoleSpy.mockRestore();
     });
   });
@@ -210,7 +237,10 @@ describe('InstrumentAdapter', () => {
       const drumProcessor = { triggerDrum: vi.fn() };
       const drumAdapter = createInstrumentAdapter('drums', drumProcessor);
       const metronomeProcessor = { triggerClick: vi.fn() };
-      const metronomeAdapter = createInstrumentAdapter('metronome', metronomeProcessor);
+      const metronomeAdapter = createInstrumentAdapter(
+        'metronome',
+        metronomeProcessor,
+      );
 
       expect(bassAdapter).toBeInstanceOf(InstrumentAdapter);
       expect(bassAdapter.type).toBe('bass');

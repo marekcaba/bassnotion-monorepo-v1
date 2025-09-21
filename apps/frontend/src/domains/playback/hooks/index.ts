@@ -19,6 +19,24 @@ export type { UsePluginsResult } from './usePlugins.js';
 export { useTrack } from './useTrack.js';
 export type { UseTrackOptions, UseTrackResult } from './useTrack.js';
 
+// Modern hook - use this instead of useCorePlaybackEngine
+export { useCoreServices } from './useCoreServices.js';
+export type {
+  UseCoreServicesOptions,
+  UseCoreServicesReturn,
+  CoreServicesState,
+} from './useCoreServices.js';
+
+// Migration support
+export {
+  useTrackMigration,
+  usePlaybackStateMigrated,
+} from './useTrackMigration.js';
+export type {
+  UseTrackMigrationOptions,
+  UseTrackMigrationReturn,
+} from './useTrackMigration.js';
+
 // Legacy hooks (will be deprecated)
 export { useAssetLoading } from './useAssetLoading.js';
 export { useCorePlaybackEngine } from './useCorePlaybackEngine.js';

@@ -1,13 +1,13 @@
 /**
  * Lifecycle Management Module
- * 
+ *
  * Enterprise-grade resource lifecycle management for audio instruments
  * with automatic optimization, thermal monitoring, and graceful degradation.
  */
 
-export { 
+export {
   InstrumentLifecycleManager,
-  createInstrumentLifecycleManager 
+  createInstrumentLifecycleManager,
 } from './InstrumentLifecycleManager.js';
 
 export type {

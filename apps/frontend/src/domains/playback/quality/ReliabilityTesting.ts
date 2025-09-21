@@ -41,18 +41,16 @@ export interface ReliabilityReport {
 export class ReliabilityTesting {
   private eventBus: EventBus;
   private audioEngine: AudioEngine;
-  private serviceRegistry: ServiceRegistry;
   private tests: ReliabilityTest[] = [];
   private testResults: TestResult[] = [];
 
   constructor(
     eventBus: EventBus,
     audioEngine: AudioEngine,
-    serviceRegistry: ServiceRegistry,
+    _serviceRegistry: ServiceRegistry,
   ) {
     this.eventBus = eventBus;
     this.audioEngine = audioEngine;
-    this.serviceRegistry = serviceRegistry;
 
     this.initializeTests();
   }
@@ -186,7 +184,7 @@ export class ReliabilityTesting {
 
         // Small delay between iterations
         await this.delay(100);
-      } catch (error) {
+      } catch {
         // Count failures
       }
     }
@@ -230,7 +228,7 @@ export class ReliabilityTesting {
       // Test recovery
       await this.audioEngine.start();
       recovered = context.state === 'running';
-    } catch (error) {
+    } catch {
       recovered = false;
     }
 
@@ -265,7 +263,7 @@ export class ReliabilityTesting {
         await this.delay(50);
         successful++;
       }
-    } catch (error) {
+    } catch {
       // Count failures
     }
 
@@ -304,7 +302,7 @@ export class ReliabilityTesting {
           sampler.dispose();
         }
       }
-    } catch (error) {
+    } catch {
       // Count failures
     }
 
@@ -354,7 +352,7 @@ export class ReliabilityTesting {
 
       // Cleanup
       samplers.forEach((s) => s.dispose());
-    } catch (error) {
+    } catch {
       memoryStable = false;
     }
 
@@ -403,7 +401,7 @@ export class ReliabilityTesting {
           (result.value as any).dispose();
         }
       });
-    } catch (error) {
+    } catch {
       allSuccessful = false;
     }
 
@@ -432,11 +430,11 @@ export class ReliabilityTesting {
           urls: { C4: 'sample.wav' },
         });
         handled = false; // Should have thrown
-      } catch (error) {
+      } catch {
         // Error should be properly handled
         handled = true;
       }
-    } catch (error) {
+    } catch {
       handled = false;
     }
 
@@ -477,11 +475,11 @@ export class ReliabilityTesting {
           }
 
           await this.delay(100);
-        } catch (error) {
+        } catch {
           stable = false;
         }
       }
-    } catch (error) {
+    } catch {
       stable = false;
     }
 
@@ -515,7 +513,10 @@ export class ReliabilityTesting {
       testResults: this.testResults,
       browserInfo: {
         userAgent: navigator.userAgent,
-        platform: navigator.platform,
+        platform:
+          (navigator as any).userAgentData?.platform ||
+          navigator.platform ||
+          'unknown',
         language: navigator.language,
       },
     };

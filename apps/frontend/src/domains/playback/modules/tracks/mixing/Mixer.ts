@@ -10,17 +10,45 @@
 
 import * as Tone from 'tone';
 import { Track } from '../core/Track.js';
-import { EventBus } from '../../../services/core/EventBus.js';
-import { serviceRegistry } from '../../../services/core/ServiceRegistry.js';
-import { AudioEngine } from '../../../services/core/AudioEngine.js';
-import { PlaybackError, ErrorSeverity } from '../../../errors/base.js';
+import {
+  EventBus,
+  createStructuredLogger,
+  type MusicalPosition,
+} from '../../shared/index.js';
+import { AudioError } from '../../../errors/AudioErrors.js';
 import type {
   TrackMixingState,
   TrackAutomation,
   AutomationPoint,
-} from '../../types/track.js';
-import type { MusicalPosition } from '../../../services/core/UnifiedTransport.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+} from '../../../types/track.js';
+
+// Type adapter for Tone.Timeline compatibility
+type TimelineAutomationPoint = AutomationPoint & { time: number };
+
+// Local service implementations
+const serviceRegistry = {
+  get<T>(name: string): T {
+    if (typeof window !== 'undefined' && (window as any).__serviceRegistry) {
+      return (window as any).__serviceRegistry.get(name);
+    }
+    throw new Error(`Service ${name} not found`);
+  },
+};
+
+class AudioEngine {
+  private static instance: AudioEngine | null = null;
+
+  static getInstance(): AudioEngine {
+    if (!AudioEngine.instance) {
+      AudioEngine.instance = new AudioEngine();
+    }
+    return AudioEngine.instance;
+  }
+
+  getTone(): typeof Tone {
+    return Tone;
+  }
+}
 
 export interface TrackChannel {
   trackId: string;
@@ -112,7 +140,7 @@ export class Mixer {
   // Automation
   private automationTimelines = new Map<
     string,
-    Map<string, Tone.Timeline<AutomationPoint>>
+    Map<string, Tone.Timeline<TimelineAutomationPoint>>
   >();
 
   // Snapshots for recall
@@ -124,7 +152,7 @@ export class Mixer {
 
     try {
       this.eventBus = serviceRegistry.get<EventBus>('eventBus');
-    } catch (e) {
+    } catch {
       logger.warn('EventBus not found in ServiceRegistry');
     }
 
@@ -170,7 +198,7 @@ export class Mixer {
     // Chain: input -> compressor -> limiter -> gain -> output
     masterCompressor.connect(masterLimiter);
     masterLimiter.connect(masterGain);
-    masterGain.connect(this.tone.Destination);
+    masterGain.connect(this.tone.getDestination());
 
     this.masterBus = {
       busId: 'master',
@@ -193,10 +221,9 @@ export class Mixer {
    */
   public createTrackChannel(track: Track): TrackChannel {
     if (this.trackChannels.has(track.id)) {
-      throw new PlaybackError(
+      throw new AudioError(
         `Track channel already exists for ${track.id}`,
         'CHANNEL_EXISTS',
-        ErrorSeverity.MEDIUM,
       );
     }
 
@@ -392,19 +419,14 @@ export class Mixer {
     parentBusId = 'master',
   ): MixBus {
     if (this.mixBuses.has(busId)) {
-      throw new PlaybackError(
-        `Bus ${busId} already exists`,
-        'BUS_EXISTS',
-        ErrorSeverity.MEDIUM,
-      );
+      throw new AudioError(`Bus ${busId} already exists`, 'BUS_EXISTS');
     }
 
     const parentBus = this.mixBuses.get(parentBusId);
     if (!parentBus) {
-      throw new PlaybackError(
+      throw new AudioError(
         `Parent bus ${parentBusId} not found`,
         'PARENT_BUS_NOT_FOUND',
-        ErrorSeverity.HIGH,
       );
     }
 
@@ -447,11 +469,7 @@ export class Mixer {
    */
   public createAuxBus(busId: string, name: string): MixBus {
     if (this.mixBuses.has(busId)) {
-      throw new PlaybackError(
-        `Bus ${busId} already exists`,
-        'BUS_EXISTS',
-        ErrorSeverity.MEDIUM,
-      );
+      throw new AudioError(`Bus ${busId} already exists`, 'BUS_EXISTS');
     }
 
     // Create bus nodes
@@ -490,10 +508,9 @@ export class Mixer {
     const bus = this.mixBuses.get(busId);
 
     if (!channel || !bus) {
-      throw new PlaybackError(
+      throw new AudioError(
         `Track ${trackId} or bus ${busId} not found`,
         'ROUTING_ERROR',
-        ErrorSeverity.MEDIUM,
       );
     }
 
@@ -519,11 +536,7 @@ export class Mixer {
     const auxBus = this.mixBuses.get(auxBusId);
 
     if (!channel || !auxBus || auxBus.type !== 'aux') {
-      throw new PlaybackError(
-        'Invalid track or aux bus for send',
-        'SEND_ERROR',
-        ErrorSeverity.MEDIUM,
-      );
+      throw new AudioError('Invalid track or aux bus for send', 'SEND_ERROR');
     }
 
     // Create send gain
@@ -585,7 +598,9 @@ export class Mixer {
     // Disconnect current chain
     if (channel.effectsChain.length > 0) {
       const lastEffect = channel.effectsChain[channel.effectsChain.length - 1];
-      lastEffect.disconnect();
+      if (lastEffect) {
+        lastEffect.disconnect();
+      }
     } else {
       channel.solo.disconnect();
     }
@@ -593,7 +608,9 @@ export class Mixer {
     // Add effect to chain
     if (channel.effectsChain.length > 0) {
       const lastEffect = channel.effectsChain[channel.effectsChain.length - 1];
-      lastEffect.connect(effect);
+      if (lastEffect) {
+        lastEffect.connect(effect);
+      }
     } else {
       channel.solo.connect(effect);
     }
@@ -614,7 +631,9 @@ export class Mixer {
     // Disconnect current chain
     if (bus.effectsChain.length > 0) {
       const lastEffect = bus.effectsChain[bus.effectsChain.length - 1];
-      lastEffect.disconnect();
+      if (lastEffect) {
+        lastEffect.disconnect();
+      }
     } else {
       bus.input.disconnect();
     }
@@ -622,7 +641,9 @@ export class Mixer {
     // Add effect to chain
     if (bus.effectsChain.length > 0) {
       const lastEffect = bus.effectsChain[bus.effectsChain.length - 1];
-      lastEffect.connect(effect);
+      if (lastEffect) {
+        lastEffect.connect(effect);
+      }
     } else {
       bus.input.connect(effect);
     }
@@ -660,7 +681,10 @@ export class Mixer {
       // First effect
       bus.input.disconnect();
       if (bus.effectsChain.length > 1) {
-        bus.input.connect(bus.effectsChain[1]);
+        const nextEffect = bus.effectsChain[1];
+        if (nextEffect) {
+          bus.input.connect(nextEffect);
+        }
       } else {
         bus.input.connect(
           bus.type === 'master' ? bus.compressor || bus.gain : bus.gain,
@@ -669,21 +693,26 @@ export class Mixer {
     } else {
       // Middle or last effect
       const prevEffect = bus.effectsChain[effectIndex - 1];
-      prevEffect.disconnect();
+      if (prevEffect) {
+        prevEffect.disconnect();
 
-      if (effectIndex < bus.effectsChain.length - 1) {
-        // Connect to next effect
-        prevEffect.connect(bus.effectsChain[effectIndex + 1]);
-      } else {
-        // Connect to output
-        prevEffect.connect(
-          bus.type === 'master' ? bus.compressor || bus.gain : bus.gain,
-        );
+        if (effectIndex < bus.effectsChain.length - 1) {
+          // Connect to next effect
+          const nextEffect = bus.effectsChain[effectIndex + 1];
+          if (nextEffect) {
+            prevEffect.connect(nextEffect);
+          }
+        } else {
+          // Connect to output
+          prevEffect.connect(
+            bus.type === 'master' ? bus.compressor || bus.gain : bus.gain,
+          );
+        }
       }
     }
 
     // Dispose effect if possible
-    if ('dispose' in effect) {
+    if (effect && 'dispose' in effect) {
       (effect as any).dispose();
     }
 
@@ -702,7 +731,7 @@ export class Mixer {
     dampening = 3000,
   ): string {
     const busId = `aux-reverb-${Date.now()}`;
-    const auxBus = this.createAuxBus(busId, name);
+    this.createAuxBus(busId, name);
 
     // Create reverb effect
     const reverb = new this.tone.Reverb({
@@ -736,7 +765,7 @@ export class Mixer {
     mix = 1.0,
   ): string {
     const busId = `aux-delay-${Date.now()}`;
-    const auxBus = this.createAuxBus(busId, name);
+    this.createAuxBus(busId, name);
 
     // Create delay effect
     const delay = new this.tone.FeedbackDelay({
@@ -769,7 +798,7 @@ export class Mixer {
     ratio = 8,
   ): string {
     const busId = `aux-compression-${Date.now()}`;
-    const auxBus = this.createAuxBus(busId, name);
+    this.createAuxBus(busId, name);
 
     // Create compressor
     const compressor = new this.tone.Compressor({
@@ -805,14 +834,21 @@ export class Mixer {
     if (!channel) return;
 
     // Create timeline for each automated parameter
-    const trackTimelines = new Map<string, Tone.Timeline<AutomationPoint>>();
+    const trackTimelines = new Map<
+      string,
+      Tone.Timeline<TimelineAutomationPoint>
+    >();
 
     for (const automation of automations) {
-      const timeline = new this.tone.Timeline<AutomationPoint>();
+      const timeline = new this.tone.Timeline<TimelineAutomationPoint>();
 
-      // Add all automation points
+      // Add all automation points with time conversion
       for (const point of automation.points) {
-        timeline.add(point);
+        const timelinePoint: TimelineAutomationPoint = {
+          ...point,
+          time: this.tone.Transport.toSeconds(point.position),
+        };
+        timeline.add(timelinePoint);
       }
 
       trackTimelines.set(automation.parameter, timeline);
@@ -930,12 +966,9 @@ export class Mixer {
    * Convert musical position to seconds
    */
   private musicalPositionToSeconds(position: MusicalPosition): number {
-    // Simplified conversion - would use transport in real implementation
-    const tempo = 120; // Default tempo
-    const beatDuration = 60 / tempo;
-    const totalBeats =
-      position.bars * 4 + position.beats + position.sixteenths / 4;
-    return totalBeats * beatDuration;
+    // MusicalPosition is a string in "bars:beats:sixteenths" format
+    // Use Tone.js to convert it
+    return this.tone.Transport.toSeconds(position);
   }
 
   /**

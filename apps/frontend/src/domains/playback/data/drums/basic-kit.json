@@ -1,0 +1,214 @@
+{
+  "name": "Basic Drum Kit",
+  "version": "1.0.0",
+  "author": "BassNotion Team",
+  "description": "Standard acoustic drum kit with multiple velocity layers",
+  
+  "pieces": {
+    "kick": {
+      "noteMapping": 36,
+      "samples": {
+        "soft": "kick-soft.mp3",
+        "medium": "kick-medium.mp3",
+        "hard": "kick-hard.mp3"
+      },
+      "defaultSample": "kick-medium.mp3",
+      "volume": 0,
+      "pan": 0,
+      "envelope": {
+        "attack": 0,
+        "decay": 0.5,
+        "sustain": 0,
+        "release": 0.1
+      }
+    },
+    "snare": {
+      "noteMapping": 38,
+      "samples": {
+        "soft": "snare-soft.mp3",
+        "medium": "snare-medium.mp3",
+        "hard": "snare-hard.mp3",
+        "ghost": "snare-ghost.mp3"
+      },
+      "defaultSample": "snare-medium.mp3",
+      "volume": 0,
+      "pan": 0,
+      "envelope": {
+        "attack": 0,
+        "decay": 0.3,
+        "sustain": 0,
+        "release": 0.2
+      }
+    },
+    "hihat": {
+      "noteMapping": 42,
+      "samples": {
+        "closed-soft": "hihat-closed-soft.mp3",
+        "closed-medium": "hihat-closed-medium.mp3",
+        "closed-hard": "hihat-closed-hard.mp3"
+      },
+      "defaultSample": "hihat-closed-medium.mp3",
+      "volume": -3,
+      "pan": -0.2,
+      "envelope": {
+        "attack": 0,
+        "decay": 0.1,
+        "sustain": 0,
+        "release": 0.05
+      }
+    },
+    "hihat-open": {
+      "noteMapping": 46,
+      "samples": {
+        "soft": "hihat-open-soft.mp3",
+        "medium": "hihat-open-medium.mp3",
+        "hard": "hihat-open-hard.mp3"
+      },
+      "defaultSample": "hihat-open-medium.mp3",
+      "volume": -3,
+      "pan": -0.2,
+      "envelope": {
+        "attack": 0,
+        "decay": 0.5,
+        "sustain": 0,
+        "release": 0.3
+      }
+    },
+    "crash": {
+      "noteMapping": 49,
+      "samples": {
+        "soft": "crash-soft.mp3",
+        "medium": "crash-medium.mp3",
+        "hard": "crash-hard.mp3"
+      },
+      "defaultSample": "crash-medium.mp3",
+      "volume": -6,
+      "pan": 0.3,
+      "envelope": {
+        "attack": 0,
+        "decay": 2.0,
+        "sustain": 0,
+        "release": 1.5
+      }
+    },
+    "ride": {
+      "noteMapping": 51,
+      "samples": {
+        "tip": "ride-tip.mp3",
+        "bell": "ride-bell.mp3",
+        "crash": "ride-crash.mp3"
+      },
+      "defaultSample": "ride-tip.mp3",
+      "volume": -4,
+      "pan": 0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 1.5,
+        "sustain": 0,
+        "release": 1.0
+      }
+    },
+    "tom1": {
+      "noteMapping": 50,
+      "samples": {
+        "soft": "tom1-soft.mp3",
+        "medium": "tom1-medium.mp3",
+        "hard": "tom1-hard.mp3"
+      },
+      "defaultSample": "tom1-medium.mp3",
+      "volume": -2,
+      "pan": -0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 0.8,
+        "sustain": 0,
+        "release": 0.4
+      }
+    },
+    "tom2": {
+      "noteMapping": 48,
+      "samples": {
+        "soft": "tom2-soft.mp3",
+        "medium": "tom2-medium.mp3",
+        "hard": "tom2-hard.mp3"
+      },
+      "defaultSample": "tom2-medium.mp3",
+      "volume": -2,
+      "pan": 0,
+      "envelope": {
+        "attack": 0,
+        "decay": 0.8,
+        "sustain": 0,
+        "release": 0.4
+      }
+    },
+    "tom3": {
+      "noteMapping": 47,
+      "samples": {
+        "soft": "tom3-soft.mp3",
+        "medium": "tom3-medium.mp3",
+        "hard": "tom3-hard.mp3"
+      },
+      "defaultSample": "tom3-medium.mp3",
+      "volume": -2,
+      "pan": 0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 1.0,
+        "sustain": 0,
+        "release": 0.5
+      }
+    },
+    "rimshot": {
+      "noteMapping": 37,
+      "samples": {
+        "default": "rimshot.mp3"
+      },
+      "defaultSample": "rimshot.mp3",
+      "volume": 0,
+      "pan": 0,
+      "envelope": {
+        "attack": 0,
+        "decay": 0.2,
+        "sustain": 0,
+        "release": 0.1
+      }
+    },
+    "clap": {
+      "noteMapping": 39,
+      "samples": {
+        "default": "clap.mp3"
+      },
+      "defaultSample": "clap.mp3",
+      "volume": -2,
+      "pan": 0,
+      "envelope": {
+        "attack": 0,
+        "decay": 0.15,
+        "sustain": 0,
+        "release": 0.1
+      }
+    },
+    "cowbell": {
+      "noteMapping": 56,
+      "samples": {
+        "default": "cowbell.mp3"
+      },
+      "defaultSample": "cowbell.mp3",
+      "volume": -4,
+      "pan": 0.3,
+      "envelope": {
+        "attack": 0,
+        "decay": 0.3,
+        "sustain": 0,
+        "release": 0.2
+      }
+    }
+  },
+  
+  "settings": {
+    "humanizeAmount": 10,
+    "swingAmount": 0,
+    "defaultVelocity": 80
+  }
+}

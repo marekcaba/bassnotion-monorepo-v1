@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { GlobalSampleCache } from '@/domains/playback/services/storage/GlobalSampleCache';
+import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache';
 import { wamPluginSingleton } from '@/domains/widgets/utils/wamPluginSingleton';
 
 // Mock dependencies
-vi.mock('@/domains/playback/services/storage/GlobalSampleCache');
+vi.mock('@/domains/playback/modules/storage/cache/GlobalSampleCache');
 vi.mock('@/domains/widgets/utils/wamPluginSingleton');
 
 describe('HarmonyWidget - Cache Integration Tests', () => {
@@ -19,18 +19,20 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
       scheduleEvents: vi.fn(),
       isConnected: false,
       port: {
-        postMessage: vi.fn()
-      }
+        postMessage: vi.fn(),
+      },
     },
-    handlePatternEvent: vi.fn()
+    handlePatternEvent: vi.fn(),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Default mock behavior
     vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(null);
-    vi.mocked(wamPluginSingleton.getOrCreateKeyboardPlugin).mockResolvedValue(mockWamKeyboard);
+    vi.mocked(wamPluginSingleton.getOrCreateKeyboardPlugin).mockResolvedValue(
+      mockWamKeyboard,
+    );
   });
 
   afterEach(() => {
@@ -40,8 +42,9 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
   describe('Harmony Widget with Preloaded Instruments', () => {
     it('should use preloaded harmony instrument immediately', async () => {
       // Return cached instrument
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(mockWamKeyboard);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        mockWamKeyboard,
+      );
 
       const MockHarmonyWidget = () => {
         const [pluginLoaded, setPluginLoaded] = React.useState(false);
@@ -50,15 +53,18 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
         React.useEffect(() => {
           const loadPlugin = async () => {
             // Check cache first
-            const preloaded = GlobalSampleCache.getCachedInstrument('harmony-preloaded');
+            const preloaded =
+              GlobalSampleCache.getCachedInstrument('harmony-preloaded');
             if (preloaded) {
               keyboardRef.current = preloaded;
               setPluginLoaded(true);
               return;
             }
-            
+
             // Fallback
-            const plugin = await wamPluginSingleton.getOrCreateKeyboardPlugin({} as any);
+            const plugin = await wamPluginSingleton.getOrCreateKeyboardPlugin(
+              {} as any,
+            );
             keyboardRef.current = plugin;
             setPluginLoaded(true);
           };
@@ -70,7 +76,7 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
             keyboardRef.current.audioNode.scheduleEvents([
               { type: 'note', time: 0, note: 60, velocity: 0.8 },
               { type: 'note', time: 0, note: 64, velocity: 0.8 },
-              { type: 'note', time: 0, note: 67, velocity: 0.8 }
+              { type: 'note', time: 0, note: 67, velocity: 0.8 },
             ]);
           }
         };
@@ -94,7 +100,9 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
       });
 
       // Should not have called singleton
-      expect(wamPluginSingleton.getOrCreateKeyboardPlugin).not.toHaveBeenCalled();
+      expect(
+        wamPluginSingleton.getOrCreateKeyboardPlugin,
+      ).not.toHaveBeenCalled();
 
       // Test playing
       const user = userEvent.setup();
@@ -103,31 +111,37 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
       expect(mockWamKeyboard.audioNode.scheduleEvents).toHaveBeenCalledWith([
         { type: 'note', time: 0, note: 60, velocity: 0.8 },
         { type: 'note', time: 0, note: 64, velocity: 0.8 },
-        { type: 'note', time: 0, note: 67, velocity: 0.8 }
+        { type: 'note', time: 0, note: 67, velocity: 0.8 },
       ]);
     });
 
     it('should handle chord progressions with cached instrument', async () => {
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(mockWamKeyboard);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        mockWamKeyboard,
+      );
 
       const MockHarmonyWidget = () => {
         const keyboardRef = React.useRef<any>(mockWamKeyboard);
-        
+
         const playProgression = async () => {
           const chords = [
             [60, 64, 67], // C major
             [65, 69, 72], // F major
             [67, 71, 74], // G major
-            [60, 64, 67]  // C major
+            [60, 64, 67], // C major
           ];
 
           for (const chord of chords) {
             keyboardRef.current.audioNode.clearEvents();
             keyboardRef.current.audioNode.scheduleEvents(
-              chord.map(note => ({ type: 'note', time: 0, note, velocity: 0.7 }))
+              chord.map((note) => ({
+                type: 'note',
+                time: 0,
+                note,
+                velocity: 0.7,
+              })),
             );
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise((resolve) => setTimeout(resolve, 500));
           }
         };
 
@@ -135,34 +149,44 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
       };
 
       render(<MockHarmonyWidget />);
-      
+
       const user = userEvent.setup();
       await user.click(screen.getByText('Play Progression'));
 
-      await waitFor(() => {
-        // Should have cleared events and scheduled new ones multiple times
-        expect(mockWamKeyboard.audioNode.clearEvents).toHaveBeenCalledTimes(4);
-        expect(mockWamKeyboard.audioNode.scheduleEvents).toHaveBeenCalledTimes(4);
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          // Should have cleared events and scheduled new ones multiple times
+          expect(mockWamKeyboard.audioNode.clearEvents).toHaveBeenCalledTimes(
+            4,
+          );
+          expect(
+            mockWamKeyboard.audioNode.scheduleEvents,
+          ).toHaveBeenCalledTimes(4);
+        },
+        { timeout: 3000 },
+      );
     });
   });
 
   describe('Various Initialization Scenarios', () => {
     it('should handle late cache availability', async () => {
       let cacheCheckCount = 0;
-      
+
       // First few checks return null, then return instrument
-      vi.mocked(GlobalSampleCache.getCachedInstrument).mockImplementation(() => {
-        cacheCheckCount++;
-        return cacheCheckCount > 2 ? mockWamKeyboard : null;
-      });
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockImplementation(
+        () => {
+          cacheCheckCount++;
+          return cacheCheckCount > 2 ? mockWamKeyboard : null;
+        },
+      );
 
       const MockHarmonyWidget = () => {
         const [status, setStatus] = React.useState('checking');
-        
+
         React.useEffect(() => {
           const checkInterval = setInterval(() => {
-            const cached = GlobalSampleCache.getCachedInstrument('harmony-preloaded');
+            const cached =
+              GlobalSampleCache.getCachedInstrument('harmony-preloaded');
             if (cached) {
               setStatus('ready');
               clearInterval(checkInterval);
@@ -183,16 +207,20 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
       expect(screen.getByText('checking')).toBeInTheDocument();
 
       // Wait for cache to become available
-      await waitFor(() => {
-        expect(screen.getByText('ready')).toBeInTheDocument();
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText('ready')).toBeInTheDocument();
+        },
+        { timeout: 1000 },
+      );
 
       expect(cacheCheckCount).toBeGreaterThan(2);
     });
 
     it('should initialize correctly when AudioContext is suspended', async () => {
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(mockWamKeyboard);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        mockWamKeyboard,
+      );
 
       const MockHarmonyWidget = () => {
         const [canPlay, setCanPlay] = React.useState(false);
@@ -200,14 +228,14 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
 
         const handleUserInteraction = async () => {
           // Simulate resuming audio context
-          await new Promise(resolve => setTimeout(resolve, 50));
-          
+          await new Promise((resolve) => setTimeout(resolve, 50));
+
           // Configure instrument after context resumes
-          await keyboardRef.current.audioNode.setParameterValues({ 
+          await keyboardRef.current.audioNode.setParameterValues({
             volume: 0.8,
-            reverb: 0.3 
+            reverb: 0.3,
           });
-          
+
           setCanPlay(true);
         };
 
@@ -223,7 +251,7 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
       };
 
       render(<MockHarmonyWidget />);
-      
+
       const user = userEvent.setup();
       await user.click(screen.getByText('Enable Audio'));
 
@@ -231,10 +259,12 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
         expect(screen.getByText('Audio Ready')).toBeInTheDocument();
       });
 
-      expect(mockWamKeyboard.audioNode.setParameterValues).toHaveBeenCalledWith({
-        volume: 0.8,
-        reverb: 0.3
-      });
+      expect(mockWamKeyboard.audioNode.setParameterValues).toHaveBeenCalledWith(
+        {
+          volume: 0.8,
+          reverb: 0.3,
+        },
+      );
     });
 
     it('should handle connection state properly', async () => {
@@ -242,12 +272,13 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
         ...mockWamKeyboard,
         audioNode: {
           ...mockWamKeyboard.audioNode,
-          isConnected: false
-        }
+          isConnected: false,
+        },
       };
 
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(dynamicMockKeyboard);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        dynamicMockKeyboard,
+      );
 
       const MockHarmonyWidget = () => {
         const keyboardRef = React.useRef(dynamicMockKeyboard);
@@ -279,7 +310,7 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
       };
 
       render(<MockHarmonyWidget />);
-      
+
       const user = userEvent.setup();
 
       // Initially disconnected
@@ -297,47 +328,65 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
     });
 
     it('should handle parameter updates on cached instrument', async () => {
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(mockWamKeyboard);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        mockWamKeyboard,
+      );
 
       const MockHarmonyWidget = () => {
         const keyboardRef = React.useRef(mockWamKeyboard);
-        
+
         const updateParameters = async (params: any) => {
           await keyboardRef.current.audioNode.setParameterValues(params);
         };
 
         return (
           <div>
-            <button onClick={() => updateParameters({ volume: 0.5 })}>Quiet</button>
-            <button onClick={() => updateParameters({ volume: 1.0 })}>Loud</button>
-            <button onClick={() => updateParameters({ reverb: 0.8 })}>Reverb</button>
-            <button onClick={() => updateParameters({ filter: 500 })}>Filter</button>
+            <button onClick={() => updateParameters({ volume: 0.5 })}>
+              Quiet
+            </button>
+            <button onClick={() => updateParameters({ volume: 1.0 })}>
+              Loud
+            </button>
+            <button onClick={() => updateParameters({ reverb: 0.8 })}>
+              Reverb
+            </button>
+            <button onClick={() => updateParameters({ filter: 500 })}>
+              Filter
+            </button>
           </div>
         );
       };
 
       render(<MockHarmonyWidget />);
-      
+
       const user = userEvent.setup();
 
       // Test various parameter updates
       await user.click(screen.getByText('Quiet'));
-      expect(mockWamKeyboard.audioNode.setParameterValues).toHaveBeenCalledWith({ volume: 0.5 });
+      expect(mockWamKeyboard.audioNode.setParameterValues).toHaveBeenCalledWith(
+        { volume: 0.5 },
+      );
 
       await user.click(screen.getByText('Loud'));
-      expect(mockWamKeyboard.audioNode.setParameterValues).toHaveBeenCalledWith({ volume: 1.0 });
+      expect(mockWamKeyboard.audioNode.setParameterValues).toHaveBeenCalledWith(
+        { volume: 1.0 },
+      );
 
       await user.click(screen.getByText('Reverb'));
-      expect(mockWamKeyboard.audioNode.setParameterValues).toHaveBeenCalledWith({ reverb: 0.8 });
+      expect(mockWamKeyboard.audioNode.setParameterValues).toHaveBeenCalledWith(
+        { reverb: 0.8 },
+      );
 
       await user.click(screen.getByText('Filter'));
-      expect(mockWamKeyboard.audioNode.setParameterValues).toHaveBeenCalledWith({ filter: 500 });
+      expect(mockWamKeyboard.audioNode.setParameterValues).toHaveBeenCalledWith(
+        { filter: 500 },
+      );
     });
 
     it('should handle widget unmounting with cached instrument', async () => {
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(mockWamKeyboard);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        mockWamKeyboard,
+      );
 
       const MockHarmonyWidget = () => {
         const keyboardRef = React.useRef(mockWamKeyboard);
@@ -357,7 +406,7 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
       };
 
       const { unmount } = render(<MockHarmonyWidget />);
-      
+
       expect(screen.getByText('Harmony Widget Active')).toBeInTheDocument();
 
       // Unmount the widget properly
@@ -370,8 +419,9 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
 
   describe('Performance with Cached Harmony', () => {
     it('should play notes with minimal latency', async () => {
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(mockWamKeyboard);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        mockWamKeyboard,
+      );
 
       const noteTimes: number[] = [];
 
@@ -382,10 +432,10 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
 
       const MockHarmonyWidget = () => {
         const keyboardRef = React.useRef(mockWamKeyboard);
-        
+
         const playNote = (note: number) => {
           keyboardRef.current.audioNode.scheduleEvents([
-            { type: 'note', time: 0, note, velocity: 0.8 }
+            { type: 'note', time: 0, note, velocity: 0.8 },
           ]);
         };
 
@@ -399,7 +449,7 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
       };
 
       render(<MockHarmonyWidget />);
-      
+
       const user = userEvent.setup();
       const startTime = performance.now();
 
@@ -409,7 +459,7 @@ describe('HarmonyWidget - Cache Integration Tests', () => {
       await user.click(screen.getByText('E'));
 
       // Each note should be scheduled almost immediately (under 5ms from click)
-      noteTimes.forEach(time => {
+      noteTimes.forEach((time) => {
         const latency = time - startTime;
         expect(latency).toBeLessThan(50); // Very generous, should be much less
       });

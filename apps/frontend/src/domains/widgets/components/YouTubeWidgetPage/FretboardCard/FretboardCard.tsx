@@ -116,7 +116,7 @@ export const FretboardCard = React.memo(
     selectedExerciseId,
     onExerciseSelect,
   }: FretboardCardProps) {
-  const { correlationId, logger } = useCorrelation('FretboardCard');
+    const { correlationId, logger } = useCorrelation('FretboardCard');
     // Find the selected exercise object from the exercises list
     const selectedExercise =
       exercises?.find((ex) => ex.id === selectedExerciseId) || null;

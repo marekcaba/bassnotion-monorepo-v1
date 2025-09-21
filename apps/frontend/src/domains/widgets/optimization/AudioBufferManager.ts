@@ -96,7 +96,9 @@ export class AudioBufferManager {
       (typeof AudioContext !== 'undefined' && AudioContext);
 
     if (!AudioContextConstructor) {
-  const { correlationId, logger } = useCorrelation('AudioContextConstructor');
+      const { correlationId, logger } = useCorrelation(
+        'AudioContextConstructor',
+      );
       logger.warn('[AudioBufferManager] Web Audio API not available');
       return;
     }

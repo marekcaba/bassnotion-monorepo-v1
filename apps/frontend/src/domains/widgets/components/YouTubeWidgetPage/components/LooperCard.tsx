@@ -9,7 +9,7 @@ import type { SyncedWidgetRenderProps } from '../../base';
 import type { LoopRegion } from './LoopGridStrip';
 import type { MusicalExercise as Exercise } from '@bassnotion/contracts';
 import { useWidgetPageState } from '@/domains/widgets/hooks/useWidgetPageState';
-import { useCorePlaybackEngine } from '@/domains/playback/hooks/useCorePlaybackEngine';
+import { useTransport } from '@/domains/playback/hooks/useTransport';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface LooperCardProps {
@@ -67,9 +67,7 @@ function LooperCardContent({
   onToggleLoop?: () => void;
 }) {
   const widgetState = useWidgetPageState();
-  const { controls: playbackControls } = useCorePlaybackEngine({
-    enablePerformanceMonitoring: false, // Disable to prevent 1-second re-renders
-  });
+  const transport = useTransport();
 
   // Looper knob state
   const [selectedLooperBars, setSelectedLooperBars] = useState<number | null>(
@@ -102,8 +100,8 @@ function LooperCardContent({
 
   // Handle seek to position
   const handleSeek = (position: number) => {
-    if (playbackControls && playbackControls.seek) {
-      playbackControls.seek(position);
+    if (transport && transport.seekTo) {
+      transport.seekTo(position);
 
       // Emit sync event so all widgets update their position
       if (syncProps.sync && syncProps.sync.actions) {

@@ -7,7 +7,7 @@
  */
 
 // Epic 3.18: UnifiedTransportController removed - use UnifiedTransport stub instead
-import { UnifiedTransport } from '@/domains/playback/services/core/index.js';
+import { TransportAdapter } from '@/domains/playback/services/core/index.js';
 
 // Stub types
 type TransportState = 'stopped' | 'playing' | 'paused';
@@ -28,7 +28,7 @@ interface TransportObserver {
 // Stub UnifiedTransportController that wraps UnifiedTransport for backward compatibility
 class UnifiedTransportController {
   private static instance: UnifiedTransportController | null = null;
-  private unifiedTransport: UnifiedTransport | null = null;
+  private unifiedTransport: TransportAdapter | null = null;
 
   static getInstance() {
     if (!this.instance) {
@@ -43,7 +43,7 @@ class UnifiedTransportController {
     if (coreServices) {
       try {
         this.unifiedTransport =
-          coreServices.getUnifiedTransport() as UnifiedTransport;
+          coreServices.getUnifiedTransport() as TransportAdapter;
       } catch (error) {
         logger.warn(
           'UnifiedTransportController stub: Failed to get UnifiedTransport from CoreServices',

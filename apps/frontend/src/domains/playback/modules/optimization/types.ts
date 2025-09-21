@@ -1,6 +1,6 @@
 /**
  * Performance Optimization Types
- * 
+ *
  * Type definitions for comprehensive performance optimization system
  * including device capabilities, quality settings, and metrics.
  */
@@ -76,7 +76,11 @@ export interface InstrumentOptimizationConfig {
   quality: 'minimal' | 'low' | 'medium' | 'high' | 'ultra';
   cacheStrategy: 'memory' | 'hybrid' | 'progressive' | 'intelligent';
   compressionLevel: 'none' | 'light' | 'medium' | 'aggressive';
-  priorityScheme: 'frequency' | 'musical_context' | 'user_preference' | 'adaptive';
+  priorityScheme:
+    | 'frequency'
+    | 'musical_context'
+    | 'user_preference'
+    | 'adaptive';
 }
 
 // Instrument-specific optimization strategies
@@ -213,13 +217,13 @@ export interface MobileOptimizationResult {
 export interface IInstrumentAssetOptimizer {
   configureInstrumentOptimization(
     instrument: 'bass' | 'drums' | 'chords' | 'metronome',
-    config: InstrumentOptimizationConfig
+    config: InstrumentOptimizationConfig,
   ): void;
   setDeviceCapabilities(capabilities: DeviceCapabilities): void;
   setNetworkCapabilities(capabilities: NetworkCapabilities): void;
   optimizeAssetLoading(
     instrument: 'bass' | 'drums' | 'chords' | 'metronome',
-    assets: string[]
+    assets: string[],
   ): Promise<any[]>;
   getOptimizationMetrics(instrument: string): OptimizationMetrics | null;
   getOptimizationStatus(): {
@@ -250,7 +254,9 @@ export interface IPerformanceOptimizer {
 }
 
 export interface IAdaptiveQualityScaler {
-  calculateOptimalSettings(capabilities: DeviceCapabilities): Promise<QualitySettings>;
+  calculateOptimalSettings(
+    capabilities: DeviceCapabilities,
+  ): Promise<QualitySettings>;
   getRecommendations(): string[];
   dispose(): Promise<void>;
 }
@@ -258,7 +264,7 @@ export interface IAdaptiveQualityScaler {
 export interface IMobileOptimizer {
   optimize(
     capabilities: DeviceCapabilities,
-    settings: QualitySettings
+    settings: QualitySettings,
   ): Promise<MobileOptimizationResult>;
   dispose(): Promise<void>;
 }

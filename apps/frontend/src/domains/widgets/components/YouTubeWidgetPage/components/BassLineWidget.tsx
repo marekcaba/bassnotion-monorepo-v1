@@ -118,15 +118,18 @@ export function BassLineWidget({
   useEffect(() => {
     const checkPreloadedBass = async () => {
       // Check GlobalSampleCache first
-      const { GlobalSampleCache } = await import('@/domains/playback/services/storage/GlobalSampleCache');
-      const preloadedBass = GlobalSampleCache.getCachedInstrument('bass-preloaded');
-      
+      const { GlobalSampleCache } = await import(
+        '@/domains/playback/services/storage/GlobalSampleCache'
+      );
+      const preloadedBass =
+        GlobalSampleCache.getCachedInstrument('bass-preloaded');
+
       if (preloadedBass) {
         logger.debug('🎸 Bass instrument found in GlobalSampleCache on mount!');
         bassPluginRef.current = preloadedBass;
         setWamPluginLoaded(true);
         setPluginClassLoaded(true);
-        
+
         // Set initial volume
         if (preloadedBass.audioNode) {
           await preloadedBass.audioNode.setParameterValues({
@@ -183,23 +186,30 @@ export function BassLineWidget({
 
       // Check GlobalSampleCache first for preloaded bass instrument
       try {
-        const { GlobalSampleCache } = await import('@/domains/playback/services/storage/GlobalSampleCache');
-        const preloadedBass = GlobalSampleCache.getCachedInstrument('bass-preloaded');
-        
+        const { GlobalSampleCache } = await import(
+          '@/domains/playback/services/storage/GlobalSampleCache'
+        );
+        const preloadedBass =
+          GlobalSampleCache.getCachedInstrument('bass-preloaded');
+
         if (preloadedBass && preloadedBass.audioNode) {
-          logger.debug('🎸 Found pre-loaded bass instrument in GlobalSampleCache!');
+          logger.debug(
+            '🎸 Found pre-loaded bass instrument in GlobalSampleCache!',
+          );
           bassPluginRef.current = preloadedBass;
           setWamPluginLoaded(true);
-          
+
           // Set initial volume
           await preloadedBass.audioNode.setParameterValues({
             volume: isMuted ? 0 : volume / 100,
           });
-          
+
           return;
         }
       } catch (error) {
-        logger.debug('GlobalSampleCache check failed, proceeding with normal loading');
+        logger.debug(
+          'GlobalSampleCache check failed, proceeding with normal loading',
+        );
       }
 
       try {
@@ -708,4 +718,3 @@ export function BassLineWidget({
     </div>
   );
 }
-

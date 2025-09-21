@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Track } from '../Track.js';
 import { TrackState } from '../../../types/track.js';
+import { PluginState } from '../../../types/plugin.js';
 import type { EventBus } from '../EventBus.js';
 import type { ErrorReporter } from '../../errors/ErrorReporter.js';
 
@@ -28,6 +28,9 @@ describe('Track', () => {
     // Setup mocks
     mockEventBus = {
       emit: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+      getGlobalInstance: vi.fn(),
     } as any;
 
     mockErrorReporter = {
@@ -40,6 +43,22 @@ describe('Track', () => {
       if (key === 'errorReporter') return mockErrorReporter;
       throw new Error(`Service ${key} not found`);
     });
+
+    // Also set up global window mocks since Track checks these
+    if (typeof window !== 'undefined') {
+      (window as any).__serviceRegistry = {
+        get: vi.mocked(serviceRegistry.get),
+      };
+    }
+  });
+
+  afterEach(() => {
+    // Clean up global mocks
+    if (typeof window !== 'undefined') {
+      delete (window as any).__serviceRegistry;
+      delete (window as any).__globalEventBus;
+      delete (window as any).__globalCoreServices;
+    }
   });
 
   describe('constructor', () => {
@@ -144,9 +163,14 @@ describe('Track', () => {
     it('should handle plugin initialization', async () => {
       const mockPlugin = {
         id: 'plugin1',
-        state: 'LOADED',
+        state: PluginState.LOADED,
         initialize: vi.fn().mockResolvedValue(undefined),
-        metadata: { category: 'INSTRUMENT' },
+        metadata: { 
+          name: 'Test Plugin',
+          manufacturer: 'Test',
+          version: '1.0.0',
+          category: 'INSTRUMENT' 
+        },
       };
 
       const track = new Track({

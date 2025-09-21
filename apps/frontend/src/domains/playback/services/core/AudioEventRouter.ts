@@ -8,16 +8,14 @@
 
 import { EventBus } from './EventBus.js';
 import { serviceRegistry } from './ServiceRegistry.js';
-import {
-  MetronomeInstrumentProcessor,
-  ClickSoundType,
-} from '../plugins/MetronomeInstrumentProcessor.js';
+import { MetronomeInstrumentProcessor } from '../../modules/instruments/implementations/metronome/MetronomeInstrumentProcessor.js';
 import { DrumInstrumentProcessor } from '../../modules/instruments/implementations/drums/DrumInstrumentProcessor.js';
+import type { DrumPiece } from '../../modules/instruments/implementations/drums/DrumInstrumentProcessor.js';
 // ChordInstrumentProcessor removed - unused code (37k lines)
 // TODO: Implement WAM-based harmony playback for track system
 import { BassInstrumentProcessor } from '../../modules/instruments/implementations/bass/BassInstrumentProcessor.js';
 import { WamHarmonyProcessor } from '../../modules/instruments/adapters/wam/WamHarmonyProcessor.js';
-import { GlobalSampleCache } from '../storage/GlobalSampleCache.js';
+import { GlobalSampleCache } from '../../modules/storage/cache/GlobalSampleCache.js';
 import type {
   Service,
   ServiceConfig,
@@ -26,13 +24,15 @@ import type {
 import { getLogger } from '@/utils/logger.js';
 
 // New instruments module imports
-import type { Instrument, InstrumentEvent } from '../../modules/instruments/index.js';
-import { 
-  Metronome, 
-  DrumKit, 
-  BassInstrument, 
+import type {
+  Instrument,
+  InstrumentEvent,
+} from '../../modules/instruments/index.js';
+import {
+  Metronome,
+  DrumKit,
+  BassInstrument,
   HarmonyInstrument,
-  createInstrumentAdapter 
 } from '../../modules/instruments/index.js';
 import { featureFlags } from '../../config/featureFlags.js';
 
@@ -41,7 +41,8 @@ let Tone: any = null;
 const loadTone = async () => {
   if (!Tone) {
     const module = await import('tone');
-    Tone = module.default || module;
+    // Tone.js exports as default in ES modules
+    Tone = module;
   }
   return Tone;
 };
@@ -110,6 +111,8 @@ export class AudioEventRouter implements Service {
 
   // Event handlers (stored for cleanup)
   private eventHandlers = new Map<string, (data: any) => void>();
+  // Unsubscribe functions from EventBus
+  private unsubscribeFunctions = new Map<string, () => void>();
 
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
@@ -205,6 +208,7 @@ export class AudioEventRouter implements Service {
 
     this.activeInstruments.clear();
     this.eventHandlers.clear();
+    this.unsubscribeFunctions.clear();
     this.eventBus = null;
     this.isInitialized = false;
 
@@ -213,7 +217,7 @@ export class AudioEventRouter implements Service {
 
   async healthCheck(): Promise<HealthCheckResult> {
     const useModularInstruments = featureFlags.modularInstruments;
-    
+
     const details: any = {
       isInitialized: this.isInitialized,
       isRunning: this.isRunning,
@@ -264,6 +268,23 @@ export class AudioEventRouter implements Service {
     // Check if we should use modular instruments
     const useModularInstruments = featureFlags.modularInstruments;
 
+    // Get AudioEngine from CoreServices if available
+    let audioEngine: any;
+    try {
+      const globalServices =
+        (window as any).__coreServices || (window as any).__globalCoreServices;
+      if (globalServices?.getAudioEngine) {
+        audioEngine = globalServices.getAudioEngine();
+        this.logger.info(
+          'Got AudioEngine from CoreServices for dependency injection',
+        );
+      }
+    } catch {
+      this.logger.warn(
+        'Could not get AudioEngine from CoreServices, instruments will fall back to global Tone access',
+      );
+    }
+
     // Initialize metronome
     try {
       if (useModularInstruments) {
@@ -273,34 +294,31 @@ export class AudioEventRouter implements Service {
           name: 'Main Metronome',
           type: 'metronome',
           clickSounds: {
-            [ClickSoundType.ACOUSTIC_CLICK]: supabase.storage
+            click: supabase.storage
               .from('audio-samples')
               .getPublicUrl('metronome/Clicks_01.mp3').data.publicUrl,
-            [ClickSoundType.WOOD_BLOCK]: supabase.storage
-              .from('audio-samples')
-              .getPublicUrl('metronome/Clicks_01.mp3').data.publicUrl,
-            [ClickSoundType.SIDE_STICK]: supabase.storage
+            accent: supabase.storage
               .from('audio-samples')
               .getPublicUrl('metronome/Clicks_01.mp3').data.publicUrl,
           },
         });
-        await this.metronome.initialize();
+        await this.metronome.initialize(audioEngine);
         this.logger.info('Modular Metronome instrument initialized');
       } else {
         // Use legacy processor
         this.legacyMetronome = new MetronomeInstrumentProcessor();
         const metronomeSamples = {
-          [ClickSoundType.ACOUSTIC_CLICK]: supabase.storage
+          'acoustic-click': supabase.storage
             .from('audio-samples')
             .getPublicUrl('metronome/Clicks_01.mp3').data.publicUrl,
-          [ClickSoundType.WOOD_BLOCK]: supabase.storage
+          'wood-block': supabase.storage
             .from('audio-samples')
             .getPublicUrl('metronome/Clicks_01.mp3').data.publicUrl,
-          [ClickSoundType.SIDE_STICK]: supabase.storage
+          'side-stick': supabase.storage
             .from('audio-samples')
             .getPublicUrl('metronome/Clicks_01.mp3').data.publicUrl,
-        };
-        await this.legacyMetronome.initialize(metronomeSamples);
+        } as Record<string, string>;
+        await this.legacyMetronome.initialize(metronomeSamples, audioEngine);
         this.logger.info('Legacy Metronome instrument initialized');
       }
       this.activeInstruments.add('metronome');
@@ -397,12 +415,12 @@ export class AudioEventRouter implements Service {
           grooveStyle: 'straight',
           velocityLayers: 4,
         });
-        await this.drums.initialize();
+        await this.drums.initialize(audioEngine);
         this.logger.info('Modular DrumKit initialized');
       } else {
         // Use legacy processor
         this.legacyDrums = new DrumInstrumentProcessor();
-        await this.legacyDrums.initialize(drumSamples);
+        await this.legacyDrums.initialize(drumSamples as any, audioEngine);
         this.logger.info('Legacy drum instrument initialized');
       }
       this.activeInstruments.add('drums');
@@ -417,21 +435,33 @@ export class AudioEventRouter implements Service {
         this.harmony = new HarmonyInstrument({
           id: 'main-harmony',
           name: 'Main Piano',
-          type: 'harmony',
+          type: 'chords',
           instrument: 'piano',
           useWAM: true,
           voicing: 'close',
-        });
-        await this.harmony.initialize(Tone.context.rawContext || Tone.context._context || Tone.context);
+        }) as any;
+        // HarmonyInstrument doesn't need context parameter
+        if (this.harmony) {
+          await this.harmony.initialize(audioEngine);
+        }
         this.logger.info('Modular HarmonyInstrument initialized');
       } else {
         // Use legacy processor
-        const preloadedHarmony = GlobalSampleCache.getCachedInstrument('harmony-preloaded');
+        const preloadedHarmony = (
+          GlobalSampleCache as any
+        ).getCachedInstrument?.('harmony-preloaded');
         if (preloadedHarmony) {
-          this.logger.info('Using preloaded harmony instrument from GlobalSampleCache');
+          this.logger.info(
+            'Using preloaded harmony instrument from GlobalSampleCache',
+          );
         }
         this.legacyHarmony = new WamHarmonyProcessor();
-        await this.legacyHarmony.initialize(Tone.context.rawContext || Tone.context._context || Tone.context);
+        await this.legacyHarmony.initialize(
+          (Tone.context as any).rawContext ||
+            (Tone.context as any)._context ||
+            Tone.context,
+          audioEngine,
+        );
         this.logger.info('Legacy harmony instrument initialized');
       }
       this.activeInstruments.add('harmony');
@@ -456,23 +486,59 @@ export class AudioEventRouter implements Service {
           ampSimulation: true,
           velocityLayers: 6,
         });
-        await this.bass.initialize();
+        await this.bass.initialize(audioEngine);
         this.logger.info('Modular BassInstrument initialized');
       } else {
         // Use legacy processor
         this.legacyBass = new BassInstrumentProcessor();
         const bassSamples: Record<string, string[]> = {};
         const bassNotes = [
-          'E1', 'F1', 'Fs1', 'G1', 'Gs1', 'A1', 'As1', 'B1',
-          'C2', 'Cs2', 'D2', 'Ds2', 'E2', 'F2', 'Fs2', 'G2', 'Gs2', 'A2', 'As2', 'B2',
-          'C3', 'Cs3', 'D3', 'Ds3', 'E3', 'F3', 'Fs3', 'G3', 'Gs3', 'A3', 'As3', 'B3',
-          'C4', 'Cs4', 'D4', 'Ds4', 'E4', 'F4', 'Fs4', 'G4',
+          'E1',
+          'F1',
+          'Fs1',
+          'G1',
+          'Gs1',
+          'A1',
+          'As1',
+          'B1',
+          'C2',
+          'Cs2',
+          'D2',
+          'Ds2',
+          'E2',
+          'F2',
+          'Fs2',
+          'G2',
+          'Gs2',
+          'A2',
+          'As2',
+          'B2',
+          'C3',
+          'Cs3',
+          'D3',
+          'Ds3',
+          'E3',
+          'F3',
+          'Fs3',
+          'G3',
+          'Gs3',
+          'A3',
+          'As3',
+          'B3',
+          'C4',
+          'Cs4',
+          'D4',
+          'Ds4',
+          'E4',
+          'F4',
+          'Fs4',
+          'G4',
         ];
-        
+
         bassNotes.forEach((note) => {
           bassSamples[note] = []; // Empty array will use synth fallback
         });
-        
+
         await this.legacyBass.initialize(bassSamples);
         this.logger.info('Legacy bass instrument initialized');
       }
@@ -492,36 +558,44 @@ export class AudioEventRouter implements Service {
     const drumHandler = (data: DrumTriggerEvent) => {
       this.handleDrumTrigger(data);
     };
-    this.eventBus.on('drum-trigger', drumHandler);
+    const drumUnsubscribe = this.eventBus.on('drum-trigger', drumHandler);
     this.eventHandlers.set('drum-trigger', drumHandler);
+    this.unsubscribeFunctions.set('drum-trigger', drumUnsubscribe);
 
     // Metronome trigger handler
     const metronomeHandler = (data: MetronomeTriggerEvent) => {
       this.handleMetronomeTrigger(data);
     };
-    this.eventBus.on('metronome-trigger', metronomeHandler);
+    const metronomeUnsubscribe = this.eventBus.on(
+      'metronome-trigger',
+      metronomeHandler,
+    );
     this.eventHandlers.set('metronome-trigger', metronomeHandler);
+    this.unsubscribeFunctions.set('metronome-trigger', metronomeUnsubscribe);
 
     // Chord trigger handler
     const chordHandler = (data: ChordTriggerEvent) => {
       this.handleChordTrigger(data);
     };
-    this.eventBus.on('chord-trigger', chordHandler);
+    const chordUnsubscribe = this.eventBus.on('chord-trigger', chordHandler);
     this.eventHandlers.set('chord-trigger', chordHandler);
+    this.unsubscribeFunctions.set('chord-trigger', chordUnsubscribe);
 
     // Bass trigger handler
     const bassHandler = (data: BassTriggerEvent) => {
       this.handleBassTrigger(data);
     };
-    this.eventBus.on('bass-trigger', bassHandler);
+    const bassUnsubscribe = this.eventBus.on('bass-trigger', bassHandler);
     this.eventHandlers.set('bass-trigger', bassHandler);
+    this.unsubscribeFunctions.set('bass-trigger', bassUnsubscribe);
 
     // MIDI event handler
     const midiHandler = (data: MidiEvent) => {
       this.handleMidiEvent(data);
     };
-    this.eventBus.on('midi-event', midiHandler);
+    const midiUnsubscribe = this.eventBus.on('midi-event', midiHandler);
     this.eventHandlers.set('midi-event', midiHandler);
+    this.unsubscribeFunctions.set('midi-event', midiUnsubscribe);
 
     this.logger.info('Subscribed to trigger events');
   }
@@ -532,11 +606,13 @@ export class AudioEventRouter implements Service {
   private unsubscribeFromEvents(): void {
     if (!this.eventBus) return;
 
-    for (const [event, handler] of this.eventHandlers) {
-      this.eventBus.off(event, handler);
+    // Call all unsubscribe functions
+    for (const [event, unsubscribe] of this.unsubscribeFunctions) {
+      unsubscribe();
     }
 
     this.eventHandlers.clear();
+    this.unsubscribeFunctions.clear();
     this.logger.info('Unsubscribed from trigger events');
   }
 
@@ -567,14 +643,14 @@ export class AudioEventRouter implements Service {
           velocity: data.velocity || 0.8,
           duration: data.duration || '16n',
           data: {
-            drum: data.drum,
+            drum: data.drum as DrumPiece,
           },
         };
         this.drums.trigger(event);
       } else if (this.legacyDrums) {
         // Use legacy processor
         this.legacyDrums.triggerDrum({
-          drum: data.drum,
+          drum: data.drum as DrumPiece,
           velocity: data.velocity || 0.8,
           time: data.audioTime,
           duration: data.duration || '16n',
@@ -595,7 +671,9 @@ export class AudioEventRouter implements Service {
     );
 
     const useModularInstruments = featureFlags.modularInstruments;
-    const hasMetronome = useModularInstruments ? !!this.metronome : !!this.legacyMetronome;
+    const hasMetronome = useModularInstruments
+      ? !!this.metronome
+      : !!this.legacyMetronome;
 
     if (!this.isRunning || !hasMetronome) {
       this.logger.warn(
@@ -642,7 +720,9 @@ export class AudioEventRouter implements Service {
     );
 
     const useModularInstruments = featureFlags.modularInstruments;
-    const hasHarmony = useModularInstruments ? !!this.harmony : !!this.legacyHarmony;
+    const hasHarmony = useModularInstruments
+      ? !!this.harmony
+      : !!this.legacyHarmony;
 
     if (!this.isRunning || !hasHarmony) {
       this.logger.warn(

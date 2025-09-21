@@ -1,6 +1,6 @@
 /**
  * Audio Engine Module
- * 
+ *
  * Modular audio engine for web-based audio applications.
  * Provides abstraction over Web Audio API and Tone.js.
  */
@@ -31,5 +31,8 @@ export type {
 
 // Re-export specific processor types
 export type { ChannelStrip, AuxBus } from './processors/MixerNode.js';
-export type { VolumeScaling, VolumeAutomationPoint } from './processors/VolumeControl.js';
+export type {
+  VolumeScaling,
+  VolumeAutomationPoint,
+} from './processors/VolumeControl.js';
 export type { EffectNode } from './processors/EffectsChain.js';

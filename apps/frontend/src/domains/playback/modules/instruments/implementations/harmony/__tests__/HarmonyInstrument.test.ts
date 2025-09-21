@@ -1,22 +1,71 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HarmonyInstrument } from '../HarmonyInstrument.js';
-import type { HarmonyInstrumentConfig, ChordEvent } from '../../../types/index.js';
+import type {
+  HarmonyInstrumentConfig,
+  ChordEvent,
+} from '../../../types/index.js';
+import {
+  setupDIMocks,
+  cleanupDIMocks,
+} from '../../../__tests__/mocks/setupDI.js';
+
+// Mock the WamPluginSingletonManager
+vi.mock('@/domains/widgets/utils/wamPluginSingleton', () => {
+  const mockAudioNode = {
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    destroy: vi.fn(),
+  };
+
+  const mockWamPlugin = {
+    audioNode: mockAudioNode,
+    sendMidi: vi.fn(),
+    clearEvents: vi.fn(),
+    scheduleEvents: vi.fn(),
+    _audioNode: mockAudioNode,
+  };
+
+  return {
+    WamPluginSingletonManager: {
+      getInstance: vi.fn(() => ({
+        getOrCreateKeyboardPlugin: vi.fn().mockResolvedValue(mockWamPlugin),
+      })),
+    },
+    wamPluginSingleton: {
+      getOrCreateKeyboardPlugin: vi.fn().mockResolvedValue(mockWamPlugin),
+    },
+  };
+});
+
+// Store processor instances so we can access them in tests
+let createdProcessors: any[] = [];
 
 // Mock the WamHarmonyProcessor
-vi.mock('../../../../../services/plugins/WamHarmonyProcessor.js', () => {
+vi.mock('../../../adapters/wam/WamHarmonyProcessor.js', () => {
   return {
-    WamHarmonyProcessor: vi.fn().mockImplementation(() => ({
-      initialize: vi.fn().mockResolvedValue(undefined),
-      triggerChord: vi.fn(),
-      stopChord: vi.fn(),
-      setVolume: vi.fn(),
-      setPan: vi.fn(),
-      muteAll: vi.fn(),
-      setVoicing: vi.fn(),
-      setInstrument: vi.fn(),
-      setSustainPedal: vi.fn(),
-      dispose: vi.fn(),
-    })),
+    WamHarmonyProcessor: vi.fn().mockImplementation(() => {
+      const processor = {
+        initialize: vi
+          .fn()
+          .mockImplementation(async function (context, passedAudioEngine) {
+            // Store the audioEngine passed to initialize (second parameter)
+            processor.audioEngine = passedAudioEngine;
+          }),
+        triggerChord: vi.fn(),
+        stopChord: vi.fn(),
+        setVolume: vi.fn(),
+        setPan: vi.fn(),
+        muteAll: vi.fn(),
+        setVoicing: vi.fn(),
+        setInstrument: vi.fn(),
+        setSustainPedal: vi.fn(),
+        dispose: vi.fn(),
+        hasInstrumentLoaded: vi.fn().mockReturnValue(true),
+        audioEngine: undefined, // Will be set during initialize
+      };
+      createdProcessors.push(processor);
+      return processor;
+    }),
   };
 });
 
@@ -37,22 +86,68 @@ vi.mock('@/shared/hooks/useCorrelation', () => ({
 
 global.logger = mockLogger;
 
+// Mock createStructuredLogger to return console methods that output JSON
+vi.mock('../../../shared/index.js', () => ({
+  createStructuredLogger: vi.fn((name: string) => {
+    const formatLog = (level: string, message: string, data?: any) => {
+      return JSON.stringify({
+        service: name,
+        timestamp: new Date().toISOString(),
+        correlationId: 'system',
+        level: level.toUpperCase(),
+        message,
+        ...(data && { data }),
+      });
+    };
+
+    return {
+      info: vi.fn((msg: string, data?: any) =>
+        console.info(formatLog('info', msg, data)),
+      ),
+      error: vi.fn((msg: string, data?: any) =>
+        console.error(formatLog('error', msg, data)),
+      ),
+      warn: vi.fn((msg: string, data?: any) =>
+        console.warn(formatLog('warn', msg, data)),
+      ),
+      debug: vi.fn((msg: string, data?: any) =>
+        console.debug(formatLog('debug', msg, data)),
+      ),
+    };
+  }),
+}));
+
 describe('HarmonyInstrument', () => {
   let harmonyInstrument: HarmonyInstrument;
   let config: HarmonyInstrumentConfig;
+  let audioEngine: any;
+  let coreServices: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+    createdProcessors = [];
+
+    // Setup DI mocks
+    const diSetup = setupDIMocks();
+    audioEngine = diSetup.audioEngine;
+    coreServices = diSetup.coreServices;
+    (global as any).window = {
+      ...diSetup.window,
+      AudioContext: vi.fn().mockImplementation(() => diSetup.audioContext),
+      webkitAudioContext: vi
+        .fn()
+        .mockImplementation(() => diSetup.audioContext),
+    };
+
     config = {
       id: 'test-harmony',
       name: 'Test Piano',
       type: 'harmony',
       instrument: 'piano',
       samples: {
-        'C4': 'c4.wav',
-        'D4': 'd4.wav',
-        'E4': 'e4.wav',
+        C4: 'c4.wav',
+        D4: 'd4.wav',
+        E4: 'e4.wav',
       },
       useWAM: true,
       wamPlugin: 'piano-plugin',
@@ -61,7 +156,11 @@ describe('HarmonyInstrument', () => {
       sustainPedal: false,
     };
 
-    harmonyInstrument = new HarmonyInstrument(config);
+    harmonyInstrument = new HarmonyInstrument(config, audioEngine);
+  });
+
+  afterEach(() => {
+    cleanupDIMocks();
   });
 
   describe('Construction', () => {
@@ -79,7 +178,7 @@ describe('HarmonyInstrument', () => {
         type: 'harmony',
       };
 
-      const minimalHarmony = new HarmonyInstrument(minimalConfig);
+      const minimalHarmony = new HarmonyInstrument(minimalConfig, audioEngine);
       expect(minimalHarmony.id).toBe('minimal-harmony');
       expect(minimalHarmony.getInstrument()).toBe('piano'); // Default
       expect(minimalHarmony.getVoicing()).toBe('close'); // Default
@@ -88,46 +187,56 @@ describe('HarmonyInstrument', () => {
 
   describe('Initialization', () => {
     it('should initialize harmony instrument successfully', async () => {
-      // Mock window.AudioContext
-      (global as any).window = {
-        AudioContext: vi.fn(),
-        webkitAudioContext: vi.fn(),
-      };
-
       await harmonyInstrument.initialize();
-      
+
       expect(harmonyInstrument.state.isInitialized).toBe(true);
       expect(harmonyInstrument.state.isLoading).toBe(false);
       expect(harmonyInstrument.state.error).toBeNull();
     });
 
-    it('should not reinitialize if already initialized', async () => {
-      (global as any).window = {
-        AudioContext: vi.fn(),
-        webkitAudioContext: vi.fn(),
-      };
+    it('should pass audioEngine to processor during initialization', async () => {
+      await harmonyInstrument.initialize();
 
+      // Get the processor instance
+      const processor = (harmonyInstrument as any).processor;
+
+      // Verify audioEngine was passed to initialize
+      expect(processor.audioEngine).toBe(audioEngine);
+
+      // Verify initialize was called with audioEngine
+      expect(processor.initialize).toHaveBeenCalled();
+    });
+
+    it('should not reinitialize if already initialized', async () => {
       await harmonyInstrument.initialize();
       await harmonyInstrument.initialize(); // Second call should be ignored
-      
+
       expect(harmonyInstrument.state.isInitialized).toBe(true);
     });
 
     it('should handle initialization errors', async () => {
-      // Mock initialization failure
-      const mockProcessor = (harmonyInstrument as any).processor;
-      mockProcessor.initialize.mockRejectedValueOnce(new Error('WAM init failed'));
+      // Create a new harmony instrument for this test to ensure clean state
+      const failingHarmony = new HarmonyInstrument(config, audioEngine);
 
-      await expect(harmonyInstrument.initialize()).rejects.toThrow('WAM init failed');
-      expect(harmonyInstrument.state.isInitialized).toBe(false);
-      expect(harmonyInstrument.state.isLoading).toBe(false);
-      expect(harmonyInstrument.state.error).toContain('Failed to initialize harmony');
+      // Mock initialization failure
+      const mockProcessor = (failingHarmony as any).processor;
+      mockProcessor.initialize.mockRejectedValueOnce(
+        new Error('WAM init failed'),
+      );
+
+      await expect(failingHarmony.initialize()).rejects.toThrow(
+        'WAM init failed',
+      );
+      expect(failingHarmony.state.isInitialized).toBe(false);
+      expect(failingHarmony.state.isLoading).toBe(false);
+      expect(failingHarmony.state.error).toContain(
+        'Failed to initialize harmony',
+      );
     });
   });
 
   describe('Chord Triggering', () => {
     beforeEach(async () => {
-      (global as any).window = { AudioContext: vi.fn() };
       await harmonyInstrument.initialize();
     });
 
@@ -177,7 +286,7 @@ describe('HarmonyInstrument', () => {
     });
 
     it('should not trigger when not initialized', () => {
-      const uninitializedHarmony = new HarmonyInstrument(config);
+      const uninitializedHarmony = new HarmonyInstrument(config, audioEngine);
       const event = {
         audioTime: 0.5,
         timestamp: Date.now(),
@@ -186,17 +295,21 @@ describe('HarmonyInstrument', () => {
       };
 
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       uninitializedHarmony.trigger(event);
-      
-      expect(consoleSpy).toHaveBeenCalledWith('Harmony Test Piano not initialized');
+
+      // Check that console.warn was called with structured logging format
+      expect(consoleSpy).toHaveBeenCalled();
+      // The actual call will include JSON formatted log
+      const callArgs = consoleSpy.mock.calls[0][0];
+      expect(callArgs).toContain('Harmony Test Piano not initialized');
+      expect(callArgs).toContain('"level":"WARN"');
       consoleSpy.mockRestore();
     });
   });
 
   describe('Direct Chord Playing', () => {
     beforeEach(async () => {
-      (global as any).window = { AudioContext: vi.fn() };
       await harmonyInstrument.initialize();
     });
 
@@ -240,19 +353,23 @@ describe('HarmonyInstrument', () => {
     });
 
     it('should not play when not initialized', () => {
-      const uninitializedHarmony = new HarmonyInstrument(config);
+      const uninitializedHarmony = new HarmonyInstrument(config, audioEngine);
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       uninitializedHarmony.playChord('C', ['C4', 'E4', 'G4']);
-      
-      expect(consoleSpy).toHaveBeenCalledWith('Harmony not initialized');
+
+      // Check that console.warn was called with structured logging format
+      expect(consoleSpy).toHaveBeenCalled();
+      // The actual call will include JSON formatted log
+      const callArgs = consoleSpy.mock.calls[0][0];
+      expect(callArgs).toContain('Harmony not initialized');
+      expect(callArgs).toContain('"level":"WARN"');
       consoleSpy.mockRestore();
     });
   });
 
   describe('Chord Stopping', () => {
     beforeEach(async () => {
-      (global as any).window = { AudioContext: vi.fn() };
       await harmonyInstrument.initialize();
     });
 
@@ -266,7 +383,7 @@ describe('HarmonyInstrument', () => {
     });
 
     it('should handle stop when not initialized', () => {
-      const uninitializedHarmony = new HarmonyInstrument(config);
+      const uninitializedHarmony = new HarmonyInstrument(config, audioEngine);
 
       uninitializedHarmony.stop(['C4', 'E4', 'G4']);
 
@@ -277,7 +394,6 @@ describe('HarmonyInstrument', () => {
 
   describe('Instrument Controls', () => {
     beforeEach(async () => {
-      (global as any).window = { AudioContext: vi.fn() };
       await harmonyInstrument.initialize();
     });
 
@@ -339,7 +455,6 @@ describe('HarmonyInstrument', () => {
 
   describe('Parameter Updates', () => {
     beforeEach(async () => {
-      (global as any).window = { AudioContext: vi.fn() };
       await harmonyInstrument.initialize();
     });
 
@@ -351,8 +466,8 @@ describe('HarmonyInstrument', () => {
         voicing: 'open',
         sustainPedal: true,
         samples: {
-          'C4': 'new_c4.wav',
-          'D4': 'new_d4.wav',
+          C4: 'new_c4.wav',
+          D4: 'new_d4.wav',
         },
       });
 
@@ -364,7 +479,6 @@ describe('HarmonyInstrument', () => {
 
   describe('Audio Controls', () => {
     beforeEach(async () => {
-      (global as any).window = { AudioContext: vi.fn() };
       await harmonyInstrument.initialize();
     });
 
@@ -427,7 +541,6 @@ describe('HarmonyInstrument', () => {
 
   describe('Lifecycle', () => {
     it('should dispose properly', async () => {
-      (global as any).window = { AudioContext: vi.fn() };
       await harmonyInstrument.initialize();
       const mockProcessor = (harmonyInstrument as any).processor;
 

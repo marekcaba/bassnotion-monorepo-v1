@@ -26,7 +26,9 @@ export class TutorialRepository implements ITutorialRepository {
 
   async findBySlug(slug: TutorialSlug): Promise<Result<Tutorial>> {
     try {
-      const response = await apiClient.get(`${this.baseUrl}/slug/${slug.value}`);
+      const response = await apiClient.get(
+        `${this.baseUrl}/slug/${slug.value}`,
+      );
       const tutorial = Tutorial.fromDTO(response.data);
       return Result.ok(tutorial);
     } catch (error: any) {
@@ -34,7 +36,9 @@ export class TutorialRepository implements ITutorialRepository {
     }
   }
 
-  async findAll(options?: PaginationOptions): Promise<Result<PaginatedResult<Tutorial>>> {
+  async findAll(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Tutorial>>> {
     try {
       const params = new URLSearchParams();
       if (options) {
@@ -42,12 +46,14 @@ export class TutorialRepository implements ITutorialRepository {
         params.append('limit', options.limit.toString());
       }
 
-      const response = await apiClient.get(`${this.baseUrl}?${params.toString()}`);
+      const response = await apiClient.get(
+        `${this.baseUrl}?${params.toString()}`,
+      );
       const { items, total, page, limit } = response.data;
-      
+
       const tutorials = items.map((dto: any) => Tutorial.fromDTO(dto));
       const totalPages = Math.ceil(total / limit);
-      
+
       return Result.ok({
         items: tutorials,
         total,
@@ -65,7 +71,7 @@ export class TutorialRepository implements ITutorialRepository {
   async findByLevel(level: TutorialLevel): Promise<Result<Tutorial[]>> {
     try {
       const response = await apiClient.get(
-        `${this.baseUrl}/level/${level.value}`
+        `${this.baseUrl}/level/${level.value}`,
       );
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
       return Result.ok(tutorials);
@@ -77,7 +83,7 @@ export class TutorialRepository implements ITutorialRepository {
   async findByTag(tag: string): Promise<Result<Tutorial[]>> {
     try {
       const response = await apiClient.get(
-        `${this.baseUrl}/tag/${encodeURIComponent(tag)}`
+        `${this.baseUrl}/tag/${encodeURIComponent(tag)}`,
       );
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
       return Result.ok(tutorials);
@@ -89,48 +95,55 @@ export class TutorialRepository implements ITutorialRepository {
   async findByAuthor(authorName: string): Promise<Result<Tutorial[]>> {
     try {
       const response = await apiClient.get(
-        `${this.baseUrl}/author/${encodeURIComponent(authorName)}`
+        `${this.baseUrl}/author/${encodeURIComponent(authorName)}`,
       );
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
       return Result.ok(tutorials);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to fetch tutorials by author');
+      return Result.fail(
+        error.message || 'Failed to fetch tutorials by author',
+      );
     }
   }
 
-  async search(query: string, filters?: TutorialFilters): Promise<Result<Tutorial[]>> {
+  async search(
+    query: string,
+    filters?: TutorialFilters,
+  ): Promise<Result<Tutorial[]>> {
     try {
       const params = new URLSearchParams();
       params.append('q', query);
-      
+
       if (filters) {
         if (filters.level) {
           params.append('level', filters.level.value);
         }
-        
+
         if (filters.tags && filters.tags.length > 0) {
           params.append('tags', filters.tags.join(','));
         }
-        
+
         if (filters.isActive !== undefined) {
           params.append('active', filters.isActive.toString());
         }
-        
+
         if (filters.isPublished !== undefined) {
           params.append('published', filters.isPublished.toString());
         }
-        
+
         if (filters.authorName) {
           params.append('author', filters.authorName);
         }
-        
+
         if (filters.durationRange) {
           params.append('durationMin', filters.durationRange.min.toString());
           params.append('durationMax', filters.durationRange.max.toString());
         }
       }
 
-      const response = await apiClient.get(`${this.baseUrl}/search?${params.toString()}`);
+      const response = await apiClient.get(
+        `${this.baseUrl}/search?${params.toString()}`,
+      );
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
       return Result.ok(tutorials);
     } catch (error: any) {
@@ -141,7 +154,7 @@ export class TutorialRepository implements ITutorialRepository {
   async findByIds(ids: TutorialId[]): Promise<Result<Tutorial[]>> {
     try {
       const response = await apiClient.post(`${this.baseUrl}/batch`, {
-        ids: ids.map(id => id.value),
+        ids: ids.map((id) => id.value),
       });
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
       return Result.ok(tutorials);
@@ -150,7 +163,9 @@ export class TutorialRepository implements ITutorialRepository {
     }
   }
 
-  async findPublished(options?: PaginationOptions): Promise<Result<PaginatedResult<Tutorial>>> {
+  async findPublished(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Tutorial>>> {
     try {
       const params = new URLSearchParams();
       if (options) {
@@ -158,12 +173,14 @@ export class TutorialRepository implements ITutorialRepository {
         params.append('limit', options.limit.toString());
       }
 
-      const response = await apiClient.get(`${this.baseUrl}/published?${params.toString()}`);
+      const response = await apiClient.get(
+        `${this.baseUrl}/published?${params.toString()}`,
+      );
       const { items, total, page, limit } = response.data;
-      
+
       const tutorials = items.map((dto: any) => Tutorial.fromDTO(dto));
       const totalPages = Math.ceil(total / limit);
-      
+
       return Result.ok({
         items: tutorials,
         total,
@@ -174,14 +191,19 @@ export class TutorialRepository implements ITutorialRepository {
         hasPrevious: page > 1,
       });
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to fetch published tutorials');
+      return Result.fail(
+        error.message || 'Failed to fetch published tutorials',
+      );
     }
   }
 
-  async findRelated(tutorialId: TutorialId, limit: number = 5): Promise<Result<Tutorial[]>> {
+  async findRelated(
+    tutorialId: TutorialId,
+    limit: number = 5,
+  ): Promise<Result<Tutorial[]>> {
     try {
       const response = await apiClient.get(
-        `${this.baseUrl}/${tutorialId.value}/related?limit=${limit}`
+        `${this.baseUrl}/${tutorialId.value}/related?limit=${limit}`,
       );
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
       return Result.ok(tutorials);
@@ -204,7 +226,7 @@ export class TutorialRepository implements ITutorialRepository {
     try {
       const response = await apiClient.put(
         `${this.baseUrl}/${tutorial.id.value}`,
-        tutorial.toDTO()
+        tutorial.toDTO(),
       );
       const updatedTutorial = Tutorial.fromDTO(response.data);
       return Result.ok(updatedTutorial);
@@ -225,9 +247,11 @@ export class TutorialRepository implements ITutorialRepository {
   async saveMany(tutorials: Tutorial[]): Promise<Result<Tutorial[]>> {
     try {
       const response = await apiClient.post(`${this.baseUrl}/batch/create`, {
-        tutorials: tutorials.map(t => t.toDTO()),
+        tutorials: tutorials.map((t) => t.toDTO()),
       });
-      const savedTutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
+      const savedTutorials = response.data.map((dto: any) =>
+        Tutorial.fromDTO(dto),
+      );
       return Result.ok(savedTutorials);
     } catch (error: any) {
       return Result.fail(error.message || 'Failed to save tutorials');
@@ -237,7 +261,7 @@ export class TutorialRepository implements ITutorialRepository {
   async deleteMany(ids: TutorialId[]): Promise<Result<void>> {
     try {
       await apiClient.post(`${this.baseUrl}/batch/delete`, {
-        ids: ids.map(id => id.value),
+        ids: ids.map((id) => id.value),
       });
       return Result.ok(undefined);
     } catch (error: any) {
@@ -259,13 +283,17 @@ export class TutorialRepository implements ITutorialRepository {
 
   async existsBySlug(slug: TutorialSlug): Promise<Result<boolean>> {
     try {
-      const response = await apiClient.head(`${this.baseUrl}/slug/${slug.value}`);
+      const response = await apiClient.head(
+        `${this.baseUrl}/slug/${slug.value}`,
+      );
       return Result.ok(response.status === 200);
     } catch (error: any) {
       if (error.response?.status === 404) {
         return Result.ok(false);
       }
-      return Result.fail(error.message || 'Failed to check if tutorial exists by slug');
+      return Result.fail(
+        error.message || 'Failed to check if tutorial exists by slug',
+      );
     }
   }
 
@@ -281,7 +309,7 @@ export class TutorialRepository implements ITutorialRepository {
   async countByLevel(level: TutorialLevel): Promise<Result<number>> {
     try {
       const response = await apiClient.get(
-        `${this.baseUrl}/count/level/${level.value}`
+        `${this.baseUrl}/count/level/${level.value}`,
       );
       return Result.ok(response.data.count);
     } catch (error: any) {

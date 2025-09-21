@@ -141,7 +141,7 @@ export class MetricsCollector {
     }
 
     // Emit for real-time monitoring
-    this.eventBus.emit('metrics:recorded', metric);
+    this.eventBus.emit('metrics:recorded', { metric });
   }
 
   /**
@@ -335,7 +335,7 @@ export class MetricsCollector {
     const startTime = performance.now();
 
     // Update percentiles and standard deviation
-    for (const [key, aggregation] of this.aggregations) {
+    for (const [_key, aggregation] of this.aggregations) {
       const metricName = aggregation.name;
       const categoryMetrics = this.metricsBuffer.filter(
         (m) => m.category === aggregation.category && m.name === metricName,
@@ -390,7 +390,7 @@ export class MetricsCollector {
     // Audio metrics
     this.eventBus.on('audio:initialized', ({ attempts }) => {
       this.increment('audio.initialization.success');
-      this.gauge('audio.initialization.attempts', attempts);
+      this.gauge('audio.initialization.attempts', attempts as number);
     });
 
     this.eventBus.on('audio:error', () => {
@@ -398,7 +398,7 @@ export class MetricsCollector {
     });
 
     this.eventBus.on('audio:sampler-created', ({ creationTime }) => {
-      this.timing('audio.sampler.creation', creationTime);
+      this.timing('audio.sampler.creation', creationTime as number);
       this.increment('audio.samplers.created');
     });
 
@@ -417,15 +417,17 @@ export class MetricsCollector {
 
     // Optimization metrics
     this.eventBus.on('optimization:initialization-complete', ({ duration }) => {
-      this.timing('optimization.initialization', duration);
+      this.timing('optimization.initialization', duration as number);
     });
 
     this.eventBus.on('optimization:pool-exhausted', ({ pool }) => {
-      this.increment('optimization.pool.exhausted', 1, { pool });
+      this.increment('optimization.pool.exhausted', 1, {
+        pool: pool as string,
+      });
     });
 
     this.eventBus.on('optimization:gc-complete', ({ duration }) => {
-      this.timing('optimization.gc', duration);
+      this.timing('optimization.gc', duration as number);
     });
   }
 

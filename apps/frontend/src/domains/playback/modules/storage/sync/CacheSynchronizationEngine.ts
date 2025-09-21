@@ -1,8 +1,8 @@
 /**
  * Cache Synchronization Engine - Enterprise-grade cache synchronization
- * 
+ *
  * Extracted from services/storage/cache/CacheSynchronizationEngine.ts
- * 
+ *
  * Provides intelligent multi-layer cache synchronization with:
  * - Conflict resolution strategies (timestamp, version, content)
  * - Cross-layer consistency management
@@ -10,18 +10,33 @@
  * - Performance analytics and optimization
  */
 
-import { createStructuredLogger } from '@bassnotion/contracts';
-import { EventBus } from '../../../services/core/EventBus.js';
+import { EventBus, createStructuredLogger } from '../../shared/index.js';
 
 const logger = createStructuredLogger('CacheSynchronizationEngine');
 
 // Core types for cache synchronization
 export type CacheLayer = 'memory' | 'indexeddb' | 'serviceworker';
-export type ConflictType = 'timestamp_conflict' | 'version_conflict' | 'content_conflict';
-export type SyncEventType = 'engine_initialized' | 'layer_registered' | 'sync_started' | 'sync_completed' | 'sync_failed';
+export type ConflictType =
+  | 'timestamp_conflict'
+  | 'version_conflict'
+  | 'content_conflict';
+export type SyncEventType =
+  | 'engine_initialized'
+  | 'layer_registered'
+  | 'sync_started'
+  | 'sync_completed'
+  | 'sync_failed';
 export type SyncPriority = 'low' | 'normal' | 'high' | 'critical';
-export type SynchronizationStrategy = 'default' | 'intelligent' | 'aggressive' | 'conservative';
-export type CacheConflictResolution = 'server_wins' | 'client_wins' | 'merge_changes' | 'last_write_wins';
+export type SynchronizationStrategy =
+  | 'default'
+  | 'intelligent'
+  | 'aggressive'
+  | 'conservative';
+export type CacheConflictResolution =
+  | 'server_wins'
+  | 'client_wins'
+  | 'merge_changes'
+  | 'last_write_wins';
 
 // Configuration interfaces
 export interface CacheSynchronizationConfig {
@@ -168,7 +183,10 @@ export interface SyncAnalytics {
 // Internal strategy interfaces
 interface ExtendedResolutionStrategy {
   type: ConflictType;
-  resolve: (conflict: ConflictInfo, strategy: CacheConflictResolution) => Promise<{
+  resolve: (
+    conflict: ConflictInfo,
+    strategy: CacheConflictResolution,
+  ) => Promise<{
     method: string;
     resolvedEntry: CacheEntry;
     reason: string;
@@ -236,7 +254,10 @@ export class CacheSynchronizationEngine {
       logger.info('✅ CacheSynchronizationEngine: Initialization successful');
       this.emitSyncEvent('engine_initialized', { timestamp: Date.now() });
     } catch (error) {
-      logger.error('❌ Failed to initialize CacheSynchronizationEngine:', error);
+      logger.error(
+        '❌ Failed to initialize CacheSynchronizationEngine:',
+        error as Error,
+      );
       throw new Error(`Failed to initialize synchronization engine: ${error}`);
     }
   }
@@ -244,7 +265,11 @@ export class CacheSynchronizationEngine {
   /**
    * Register a cache layer for synchronization
    */
-  registerCacheLayer(layerId: string, layer: CacheLayer, config: CacheLayerConfig): void {
+  registerCacheLayer(
+    layerId: string,
+    layer: CacheLayer,
+    config: CacheLayerConfig,
+  ): void {
     this.cacheLayers.set(layerId, layer);
 
     const layerStatus: LayerSyncStatus = {
@@ -301,28 +326,43 @@ export class CacheSynchronizationEngine {
       }
 
       // Determine target layers
-      const targets = targetLayerIds || 
-        Array.from(this.cacheLayers.keys()).filter(id => id !== sourceLayerId);
+      const targets =
+        targetLayerIds ||
+        Array.from(this.cacheLayers.keys()).filter(
+          (id) => id !== sourceLayerId,
+        );
 
       // Perform synchronization to each target layer
       const syncResults = await this.withTimeout(
         Promise.allSettled(
-          targets.map(targetId =>
-            this.synchronizeToLayer(key, sourceEntry, sourceLayerId, targetId, options, operationId)
-          )
+          targets.map((targetId) =>
+            this.synchronizeToLayer(
+              key,
+              sourceEntry,
+              sourceLayerId,
+              targetId,
+              options,
+              operationId,
+            ),
+          ),
         ),
         timeout,
         `Synchronization timeout for key: ${key}`,
       );
 
       // Analyze results
-      const successfulSyncs = syncResults.filter(result => result.status === 'fulfilled').length;
-      const failedSyncs = syncResults.filter(result => result.status === 'rejected').length;
+      const successfulSyncs = syncResults.filter(
+        (result) => result.status === 'fulfilled',
+      ).length;
+      const failedSyncs = syncResults.filter(
+        (result) => result.status === 'rejected',
+      ).length;
       const conflicts = syncResults
-        .filter((result): result is PromiseFulfilledResult<SyncOperationResult> =>
-          result.status === 'fulfilled' && result.value.hasConflict
+        .filter(
+          (result): result is PromiseFulfilledResult<SyncOperationResult> =>
+            result.status === 'fulfilled' && result.value.hasConflict,
         )
-        .map(result => result.value.conflictInfo)
+        .map((result) => result.value.conflictInfo)
         .filter((conflict): conflict is ConflictInfo => Boolean(conflict));
 
       // Update analytics
@@ -350,7 +390,8 @@ export class CacheSynchronizationEngine {
         },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       await this.recordSyncOperation(
         operationId,
         'entry_sync',
@@ -376,11 +417,13 @@ export class CacheSynchronizationEngine {
   /**
    * Perform full cache synchronization across all layers
    */
-  async performFullSync(options: {
-    priority?: SyncPriority;
-    strategy?: SynchronizationStrategy;
-    includeMetadata?: boolean;
-  } = {}): Promise<SynchronizationResult> {
+  async performFullSync(
+    options: {
+      priority?: SyncPriority;
+      strategy?: SynchronizationStrategy;
+      includeMetadata?: boolean;
+    } = {},
+  ): Promise<SynchronizationResult> {
     if (!this.isInitialized) {
       await this.initialize();
     }
@@ -389,7 +432,10 @@ export class CacheSynchronizationEngine {
     const operationId = this.generateOperationId();
 
     try {
-      this.emitSyncEvent('sync_started', { operationId, timestamp: Date.now() });
+      this.emitSyncEvent('sync_started', {
+        operationId,
+        timestamp: Date.now(),
+      });
 
       // Get all cache entries from all layers
       const layerEntries = await this.getAllLayerEntries();
@@ -401,7 +447,11 @@ export class CacheSynchronizationEngine {
       const conflictResolution = await this.resolveAllConflicts(unifiedState);
 
       // Apply synchronized state to all layers
-      const syncResults = await this.applySynchronizedState(unifiedState, conflictResolution, options);
+      const syncResults = await this.applySynchronizedState(
+        unifiedState,
+        conflictResolution,
+        options,
+      );
 
       // Update sync state
       this.updateSyncState(syncResults);
@@ -436,7 +486,8 @@ export class CacheSynchronizationEngine {
         },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.emitSyncEvent('sync_failed', {
         operationId,
         error: errorMessage,
@@ -469,14 +520,22 @@ export class CacheSynchronizationEngine {
       // Get conflict resolver
       const resolver = this.conflictResolvers.get(conflictInfo.type);
       if (!resolver) {
-        throw new Error(`No resolver found for conflict type: ${conflictInfo.type}`);
+        throw new Error(
+          `No resolver found for conflict type: ${conflictInfo.type}`,
+        );
       }
 
       // Resolve the conflict
-      const resolution = await resolver.resolve(conflictInfo, resolutionStrategy);
+      const resolution = await resolver.resolve(
+        conflictInfo,
+        resolutionStrategy,
+      );
 
       // Apply resolution
-      const applicationResult = await this.applyConflictResolution(conflictInfo, resolution);
+      const applicationResult = await this.applyConflictResolution(
+        conflictInfo,
+        resolution,
+      );
 
       // Record resolution
       await this.recordConflictResolution(
@@ -500,7 +559,8 @@ export class CacheSynchronizationEngine {
         },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       return {
         success: false,
         conflictId: conflictInfo.conflictId,
@@ -530,18 +590,25 @@ export class CacheSynchronizationEngine {
   /**
    * Add sync event listener
    */
-  addEventListener(eventType: SyncEventType, listener: SyncEventListener): void {
+  addEventListener(
+    eventType: SyncEventType,
+    listener: SyncEventListener,
+  ): void {
     if (!this.syncEventListeners.has(eventType)) {
       this.syncEventListeners.set(eventType, []);
     }
-    const listeners = this.syncEventListeners.get(eventType)!;
+    const listeners = this.syncEventListeners.get(eventType);
+    if (!listeners) return;
     listeners.push(listener);
   }
 
   /**
    * Remove sync event listener
    */
-  removeEventListener(eventType: SyncEventType, listener: SyncEventListener): void {
+  removeEventListener(
+    eventType: SyncEventType,
+    listener: SyncEventListener,
+  ): void {
     const listeners = this.syncEventListeners.get(eventType);
     if (listeners) {
       const index = listeners.indexOf(listener);
@@ -684,7 +751,10 @@ export class CacheSynchronizationEngine {
         if (strategy === 'merge_changes') {
           return this.performIntelligentMerge(conflict);
         } else if (strategy === 'last_write_wins') {
-          return this.conflictResolvers.get('timestamp_conflict')!.resolve(conflict, strategy);
+          const resolver = this.conflictResolvers.get('timestamp_conflict');
+          if (!resolver)
+            throw new Error('Timestamp conflict resolver not found');
+          return resolver.resolve(conflict, strategy);
         } else {
           // Server wins by default
           const serverEntry = conflict.conflictingEntries.find(
@@ -773,7 +843,10 @@ export class CacheSynchronizationEngine {
           layerState.lastSync = Date.now();
         }
       } catch (error) {
-        logger.error(`Failed to setup monitoring for layer ${layerId}:`, error);
+        logger.error(
+          `Failed to setup monitoring for layer ${layerId}:`,
+          error as Error,
+        );
       }
     }
   }
@@ -814,14 +887,14 @@ export class CacheSynchronizationEngine {
         try {
           listener(event);
         } catch (error) {
-          logger.error('Sync event listener error:', error);
+          logger.error('Sync event listener error:', error as Error);
         }
       });
     }
 
     // Also emit to EventBus if available
     if (this.eventBus) {
-      this.eventBus.emit(`cache:${eventType}`, event);
+      this.eventBus.emit(`cache:${eventType}`, { ...event });
     }
   }
 
@@ -833,7 +906,11 @@ export class CacheSynchronizationEngine {
     return `conflict_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  private withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    errorMessage: string,
+  ): Promise<T> {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         reject(new Error(`Timeout: ${errorMessage} (${timeoutMs}ms)`));
@@ -882,10 +959,17 @@ export class CacheSynchronizationEngine {
 
       if (conflictInfo) {
         // Resolve conflict
-        const resolution = await this.resolveConflict(conflictInfo, options.conflictResolution);
+        const resolution = await this.resolveConflict(
+          conflictInfo,
+          options.conflictResolution,
+        );
 
         if (resolution.success && resolution.resolvedValue) {
-          await this.setCacheEntry(targetLayer, key, resolution.resolvedValue as CacheEntry);
+          await this.setCacheEntry(
+            targetLayer,
+            key,
+            resolution.resolvedValue as CacheEntry,
+          );
         }
 
         return {
@@ -911,7 +995,9 @@ export class CacheSynchronizationEngine {
     };
   }
 
-  private async getAllLayerEntries(): Promise<Map<string, Map<string, CacheEntry>>> {
+  private async getAllLayerEntries(): Promise<
+    Map<string, Map<string, CacheEntry>>
+  > {
     const layerEntries = new Map<string, Map<string, CacheEntry>>();
 
     const layerEntryPromises = Array.from(this.cacheLayers.entries()).map(
@@ -920,7 +1006,10 @@ export class CacheSynchronizationEngine {
           const entries = await this.getAllCacheEntries(layer);
           layerEntries.set(layerId, entries);
         } catch (error) {
-          logger.error(`Failed to get entries from layer ${layerId}:`, error);
+          logger.error(
+            `Failed to get entries from layer ${layerId}:`,
+            error as Error,
+          );
           layerEntries.set(layerId, new Map());
         }
       },
@@ -1027,7 +1116,9 @@ export class CacheSynchronizationEngine {
       async ([layerId, layer]) => {
         try {
           // Apply all resolved entries to this layer
-          for (const [key, resolvedEntry] of Object.entries(conflictResolution.resolvedEntries)) {
+          for (const [key, resolvedEntry] of Object.entries(
+            conflictResolution.resolvedEntries,
+          )) {
             await this.setCacheEntry(layer, key, resolvedEntry);
           }
 
@@ -1042,7 +1133,10 @@ export class CacheSynchronizationEngine {
             layerState.status = 'idle';
           }
         } catch (error) {
-          logger.error(`Failed to apply synchronized state to layer ${layerId}:`, error);
+          logger.error(
+            `Failed to apply synchronized state to layer ${layerId}:`,
+            error as Error,
+          );
           layerResults.set(layerId, false);
           failedLayers++;
 
@@ -1129,7 +1223,10 @@ export class CacheSynchronizationEngine {
     return null;
   }
 
-  private async analyzeMultiEntryConflict(key: string, entries: CacheEntry[]): Promise<ConflictInfo | null> {
+  private async analyzeMultiEntryConflict(
+    key: string,
+    entries: CacheEntry[],
+  ): Promise<ConflictInfo | null> {
     if (entries.length < 2) return null;
 
     const firstEntry = entries[0];
@@ -1149,7 +1246,9 @@ export class CacheSynchronizationEngine {
     let conflictType: ConflictType = 'content_conflict';
     if (entries.some((e) => e.syncVersion !== firstEntry.syncVersion)) {
       conflictType = 'version_conflict';
-    } else if (entries.some((e) => Math.abs(e.timestamp - firstEntry.timestamp) > 1000)) {
+    } else if (
+      entries.some((e) => Math.abs(e.timestamp - firstEntry.timestamp) > 1000)
+    ) {
       conflictType = 'timestamp_conflict';
     }
 
@@ -1227,12 +1326,20 @@ export class CacheSynchronizationEngine {
       const targetLayer = this.cacheLayers.get(conflictInfo.targetLayerId);
 
       if (sourceLayer) {
-        await this.setCacheEntry(sourceLayer, conflictInfo.entryKey, resolvedEntry);
+        await this.setCacheEntry(
+          sourceLayer,
+          conflictInfo.entryKey,
+          resolvedEntry,
+        );
         affectedLayers.push(conflictInfo.sourceLayerId);
       }
 
       if (targetLayer) {
-        await this.setCacheEntry(targetLayer, conflictInfo.entryKey, resolvedEntry);
+        await this.setCacheEntry(
+          targetLayer,
+          conflictInfo.entryKey,
+          resolvedEntry,
+        );
         affectedLayers.push(conflictInfo.targetLayerId);
       }
 
@@ -1257,7 +1364,7 @@ export class CacheSynchronizationEngine {
     try {
       await this.performLightweightSync();
     } catch (error) {
-      logger.error('Periodic sync failed:', error);
+      logger.error('Periodic sync failed:', error as Error);
     } finally {
       this.syncState.isActive = false;
     }
@@ -1310,7 +1417,9 @@ export class CacheSynchronizationEngine {
 
     // Update averages
     this.syncAnalytics.averageSyncTime =
-      (this.syncAnalytics.averageSyncTime * (this.syncAnalytics.totalSyncOperations - 1) + duration) /
+      (this.syncAnalytics.averageSyncTime *
+        (this.syncAnalytics.totalSyncOperations - 1) +
+        duration) /
       this.syncAnalytics.totalSyncOperations;
 
     // Store operation result
@@ -1318,7 +1427,8 @@ export class CacheSynchronizationEngine {
       this.syncOperationQueue.set(operationType, []);
     }
 
-    const operationQueue = this.syncOperationQueue.get(operationType)!;
+    const operationQueue = this.syncOperationQueue.get(operationType);
+    if (!operationQueue) return;
     operationQueue.push({
       success: failureCount === 0,
       operationId,
@@ -1344,7 +1454,10 @@ export class CacheSynchronizationEngine {
   // Cache Layer Interface Methods
   // ==========================================
 
-  private async getCacheEntry(layer: CacheLayer, key: string): Promise<CacheEntry | null> {
+  private async getCacheEntry(
+    layer: CacheLayer,
+    key: string,
+  ): Promise<CacheEntry | null> {
     try {
       // Check if layer is an object with get method (mock layer)
       if (typeof layer === 'object' && layer !== null && 'get' in layer) {
@@ -1364,12 +1477,16 @@ export class CacheSynchronizationEngine {
           return null;
       }
     } catch (error) {
-      logger.error(`Failed to get cache entry from ${layer}:`, error);
+      logger.error(`Failed to get cache entry from ${layer}:`, error as Error);
       return null;
     }
   }
 
-  private async setCacheEntry(layer: CacheLayer, key: string, entry: CacheEntry): Promise<void> {
+  private async setCacheEntry(
+    layer: CacheLayer,
+    key: string,
+    entry: CacheEntry,
+  ): Promise<void> {
     try {
       // Check if layer is an object with set method (mock layer)
       if (typeof layer === 'object' && layer !== null && 'set' in layer) {
@@ -1390,12 +1507,14 @@ export class CacheSynchronizationEngine {
           break;
       }
     } catch (error) {
-      logger.error(`Failed to set cache entry in ${layer}:`, error);
+      logger.error(`Failed to set cache entry in ${layer}:`, error as Error);
       throw error;
     }
   }
 
-  private async getAllCacheEntries(layer: CacheLayer): Promise<Map<string, CacheEntry>> {
+  private async getAllCacheEntries(
+    layer: CacheLayer,
+  ): Promise<Map<string, CacheEntry>> {
     try {
       switch (layer) {
         case 'memory':
@@ -1408,7 +1527,10 @@ export class CacheSynchronizationEngine {
           return new Map();
       }
     } catch (error) {
-      logger.error(`Failed to get all cache entries from ${layer}:`, error);
+      logger.error(
+        `Failed to get all cache entries from ${layer}:`,
+        error as Error,
+      );
       return new Map();
     }
   }
@@ -1445,15 +1567,20 @@ export class CacheSynchronizationEngine {
     };
   }
 
-  private async simulateMemoryCacheSet(key: string, entry: CacheEntry): Promise<void> {
+  private async simulateMemoryCacheSet(
+    key: string,
+    entry: CacheEntry,
+  ): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 1));
-    logger.debug(`Memory cache: Set entry ${key}`, entry);
+    logger.debug(`Memory cache: Set entry ${key}`, { entry });
   }
 
   private simulateMemoryCacheGetAll(): Map<string, CacheEntry> {
     const entries = new Map<string, CacheEntry>();
-    entries.set('test-key-1', this.simulateMemoryCacheGet('test-key-1')!);
-    entries.set('test-key-2', this.simulateMemoryCacheGet('test-key-2')!);
+    const testKey1 = this.simulateMemoryCacheGet('test-key-1');
+    if (testKey1) entries.set('test-key-1', testKey1);
+    const testKey2 = this.simulateMemoryCacheGet('test-key-2');
+    if (testKey2) entries.set('test-key-2', testKey2);
     return entries;
   }
 
@@ -1485,15 +1612,20 @@ export class CacheSynchronizationEngine {
     };
   }
 
-  private async simulateIndexedDBSet(key: string, entry: CacheEntry): Promise<void> {
+  private async simulateIndexedDBSet(
+    key: string,
+    entry: CacheEntry,
+  ): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 5));
-    logger.debug(`IndexedDB: Set entry ${key}`, entry);
+    logger.debug(`IndexedDB: Set entry ${key}`, { entry });
   }
 
   private simulateIndexedDBGetAll(): Map<string, CacheEntry> {
     const entries = new Map<string, CacheEntry>();
-    entries.set('persistent-1', this.simulateIndexedDBGet('persistent-1')!);
-    entries.set('persistent-2', this.simulateIndexedDBGet('persistent-2')!);
+    const persistent1 = this.simulateIndexedDBGet('persistent-1');
+    if (persistent1) entries.set('persistent-1', persistent1);
+    const persistent2 = this.simulateIndexedDBGet('persistent-2');
+    if (persistent2) entries.set('persistent-2', persistent2);
     return entries;
   }
 
@@ -1525,14 +1657,18 @@ export class CacheSynchronizationEngine {
     };
   }
 
-  private async simulateServiceWorkerSet(key: string, entry: CacheEntry): Promise<void> {
+  private async simulateServiceWorkerSet(
+    key: string,
+    entry: CacheEntry,
+  ): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 2));
-    logger.debug(`Service Worker: Set entry ${key}`, entry);
+    logger.debug(`Service Worker: Set entry ${key}`, { entry });
   }
 
   private simulateServiceWorkerGetAll(): Map<string, CacheEntry> {
     const entries = new Map<string, CacheEntry>();
-    entries.set('sw-cache-1', this.simulateServiceWorkerGet('sw-cache-1')!);
+    const swCache1 = this.simulateServiceWorkerGet('sw-cache-1');
+    if (swCache1) entries.set('sw-cache-1', swCache1);
     return entries;
   }
 }

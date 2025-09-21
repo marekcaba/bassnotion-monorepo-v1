@@ -1,6 +1,6 @@
 /**
  * Global Sample Cache - Enhanced singleton cache
- * 
+ *
  * Combines functionality from the original GlobalSampleCache with the new SampleCache
  * to provide comprehensive caching for:
  * - Audio samples (URLs, AudioBuffers, Tone.js samplers)
@@ -11,9 +11,8 @@
 
 import type { Sampler } from 'tone';
 import type { AudioSampleMetadata } from '@bassnotion/contracts';
-import { createStructuredLogger } from '@bassnotion/contracts';
-import { EventBus } from '../../../services/core/EventBus.js';
-import { SampleCache, type SampleCacheEntry, type CacheConfig } from './SampleCache.js';
+import { EventBus, createStructuredLogger } from '../../shared/index.js';
+import { SampleCache, type CacheConfig } from './SampleCache.js';
 
 const logger = createStructuredLogger('GlobalSampleCache');
 
@@ -40,6 +39,7 @@ export interface GlobalCacheStats {
   totalCachedBuffers: number;
   totalCachedUrls: number;
   estimatedMemoryMB: number;
+  intelligentCacheStats?: any;
 }
 
 /**
@@ -59,7 +59,7 @@ export class GlobalSampleCacheImpl {
 
   private constructor() {
     this.eventBus = new EventBus();
-    
+
     // Initialize with production-ready defaults
     const cacheConfig: CacheConfig = {
       maxSize: 500 * 1024 * 1024, // 500MB
@@ -125,18 +125,23 @@ export class GlobalSampleCacheImpl {
     });
 
     // Also cache in new system for unified access
-    const metadata: AudioSampleMetadata = {
-      name: path,
+    const metadata: Partial<AudioSampleMetadata> = {
       path,
-      fileSize: buffer.numberOfChannels * buffer.length * 4,
+      size: buffer.numberOfChannels * buffer.length * 4,
       duration: buffer.duration,
       sampleRate: buffer.sampleRate,
+      bitDepth: 32,
+      channels: buffer.numberOfChannels,
+      bitRate: Math.round(
+        (buffer.numberOfChannels * buffer.sampleRate * 32) / 1000,
+      ),
+      format: 'wav' as any,
       tags: ['buffer', 'legacy'],
     };
 
     // Convert AudioBuffer to ArrayBuffer for new cache
     const arrayBuffer = this.audioBufferToArrayBuffer(buffer);
-    this.sampleCache.set(path, arrayBuffer, metadata);
+    this.sampleCache.set(path, arrayBuffer, metadata as AudioSampleMetadata);
 
     logger.info(`🔊 Cached buffer: ${path}`);
   }
@@ -179,10 +184,10 @@ export class GlobalSampleCacheImpl {
       sampler,
       loadedAt: Date.now(),
     });
-    
+
     logger.info(`✅ Cached instrument: ${name}`, {
       currentCachedInstruments: Array.from(this.instruments.keys()),
-      totalInstruments: this.instruments.size
+      totalInstruments: this.instruments.size,
     });
   }
 
@@ -276,7 +281,7 @@ export class GlobalSampleCacheImpl {
     this.instruments.clear();
     this.urlCache.clear();
     this.sampleCache.clear();
-    
+
     logger.info('🗑️ Global sample cache cleared');
   }
 
@@ -315,10 +320,10 @@ export class GlobalSampleCacheImpl {
         clearedCount++;
       }
     });
-    
+
     // Clear all from new cache too (it doesn't distinguish buffer vs URL)
     this.sampleCache.clear();
-    
+
     logger.info(
       `[GlobalSampleCache] Cleared ${clearedCount} buffers due to context change`,
     );
@@ -381,21 +386,23 @@ export class GlobalSampleCacheImpl {
   private audioBufferToArrayBuffer(audioBuffer: AudioBuffer): ArrayBuffer {
     const numberOfChannels = audioBuffer.numberOfChannels;
     const length = audioBuffer.length;
-    const sampleRate = audioBuffer.sampleRate;
-    
+
     // Create a simple PCM representation
     const buffer = new ArrayBuffer(numberOfChannels * length * 4); // 32-bit float
     const view = new Float32Array(buffer);
-    
+
     for (let channel = 0; channel < numberOfChannels; channel++) {
       const channelData = audioBuffer.getChannelData(channel);
       const offset = channel * length;
-      
+
       for (let i = 0; i < length; i++) {
-        view[offset + i] = channelData[i];
+        const value = channelData[i];
+        if (value !== undefined) {
+          view[offset + i] = value;
+        }
       }
     }
-    
+
     return buffer;
   }
 
@@ -411,8 +418,6 @@ export class GlobalSampleCacheImpl {
    * Preload essential samples
    */
   async preloadEssentials(essentialPaths: string[]): Promise<void> {
-    const operations = [];
-    
     for (const path of essentialPaths) {
       if (!this.hasSample(path)) {
         logger.info(`⏳ Preloading essential sample: ${path}`);
@@ -423,8 +428,36 @@ export class GlobalSampleCacheImpl {
   }
 }
 
-// Export singleton instance
-export const GlobalSampleCache = GlobalSampleCacheImpl.getInstance();
-
-// Export for testing
-export { GlobalSampleCacheImpl };
+// Export singleton getter to avoid circular dependency issues
+export const GlobalSampleCache = {
+  getInstance: () => GlobalSampleCacheImpl.getInstance(),
+  // Convenience methods that delegate to the singleton
+  hasSample: (url: string) =>
+    GlobalSampleCacheImpl.getInstance().hasSample(url),
+  getCachedBuffer: (url: string) =>
+    GlobalSampleCacheImpl.getInstance().getCachedBuffer(url),
+  getCachedUrl: (url: string) =>
+    GlobalSampleCacheImpl.getInstance().getCachedUrl(url),
+  getCachedSampler: (url: string) =>
+    GlobalSampleCacheImpl.getInstance().getCachedSampler(url),
+  getCachedInstrument: (name: string) =>
+    GlobalSampleCacheImpl.getInstance().getCachedInstrument(name),
+  cacheUrl: (path: string, url: string) =>
+    GlobalSampleCacheImpl.getInstance().cacheUrl(path, url),
+  cacheBuffer: (path: string, buffer: AudioBuffer) =>
+    GlobalSampleCacheImpl.getInstance().cacheBuffer(path, buffer),
+  cacheSampler: (path: string, sampler: Sampler) =>
+    GlobalSampleCacheImpl.getInstance().cacheSampler(path, sampler),
+  cacheInstrument: (name: string, sampler: any) =>
+    GlobalSampleCacheImpl.getInstance().cacheInstrument(name, sampler),
+  clearBuffer: (path: string) =>
+    GlobalSampleCacheImpl.getInstance().clearBuffer(path),
+  clearAllBuffers: () => GlobalSampleCacheImpl.getInstance().clearAllBuffers(),
+  clear: () => GlobalSampleCacheImpl.getInstance().clear(),
+  getStats: () => GlobalSampleCacheImpl.getInstance().getStats(),
+  getCacheStats: () => GlobalSampleCacheImpl.getInstance().getCacheStats(),
+  // Note: these methods don't exist on the implementation - remove them
+  // getAudioBuffer: (url: string) => GlobalSampleCacheImpl.getInstance().getAudioBuffer(url),
+  // cacheAudioBuffer: (url: string, buffer: AudioBuffer) => GlobalSampleCacheImpl.getInstance().cacheAudioBuffer(url, buffer),
+  // clearCache: () => GlobalSampleCacheImpl.getInstance().clearCache(),
+};

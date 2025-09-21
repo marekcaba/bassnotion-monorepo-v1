@@ -12,34 +12,33 @@
 // Export sample plugins (Story 2.1)
 export { BassProcessor } from '../../modules/instruments/implementations/bass/BassProcessor.js';
 export { DrumProcessor } from '../../modules/instruments/implementations/drums/DrumProcessor.js';
-export { SyncProcessor } from './SyncProcessor';
+// SyncProcessor removed - file does not exist
 
 // Export professional instrument processors (Story 2.2)
-export { MidiParserProcessor } from './MidiParserProcessor';
+export { MidiParserProcessor } from '../../modules/midi/MidiParserProcessor.js';
 export { BassInstrumentProcessor } from '../../modules/instruments/implementations/bass/BassInstrumentProcessor.js';
 export { DrumInstrumentProcessor } from '../../modules/instruments/implementations/drums/DrumInstrumentProcessor.js';
 // ChordInstrumentProcessor removed - unused code (37k lines)
-export { MetronomeInstrumentProcessor } from './MetronomeInstrumentProcessor';
-export { WamHarmonyProcessor } from '../../modules/instruments/adapters/wam/WamHarmonyProcessor';
+export { MetronomeInstrumentProcessor } from '../../modules/instruments/implementations/metronome/MetronomeInstrumentProcessor.js';
+export { WamHarmonyProcessor } from '../../modules/instruments/adapters/wam/WamHarmonyProcessor.js';
 
 // Export enhanced processors with professional audio samples (Story 3.16)
 export {
   EnhancedMetronomeProcessor,
   createEnhancedMetronome,
-} from './EnhancedMetronomeProcessor';
+} from '../../modules/instruments/implementations/metronome/EnhancedMetronomeProcessor.js';
 // EnhancedChordProcessor removed - unused code
 // Use WamKeyboard for harmony playback
 
 // Export WAM integration services (Story 3.21 Task 7)
-export { WamPluginAdapter } from './WamPluginAdapter';
-export { WamHostManager } from './WamHostManager';
-export { WamDeviceOptimizer } from './WamDeviceOptimizer';
+export { WamPluginAdapter } from '../../modules/instruments/adapters/wam/WamPluginAdapter.js';
+export { WamHostManager } from '../../modules/instruments/adapters/wam/WamHostManager.js';
+export { WamDeviceOptimizer } from '../../modules/instruments/adapters/wam/WamDeviceOptimizer.js';
 
 // Plugin registry for easy registration
 import { BassProcessor } from '../../modules/instruments/implementations/bass/BassProcessor.js';
 import { createStructuredLogger } from '@bassnotion/contracts';
 import { DrumProcessor } from '../../modules/instruments/implementations/drums/DrumProcessor.js';
-import { SyncProcessor } from './SyncProcessor';
 import type { AudioPlugin } from '../../types/plugin';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
@@ -49,7 +48,7 @@ import { useCorrelation } from '@/shared/hooks/useCorrelation';
 export const SAMPLE_PLUGINS = new Map<string, () => AudioPlugin>([
   ['bassnotion.bass-processor', () => new BassProcessor()],
   ['bassnotion.drum-processor', () => new DrumProcessor()],
-  ['bassnotion.sync-processor', () => new SyncProcessor()],
+  // ['bassnotion.sync-processor', () => new SyncProcessor()], // Removed - SyncProcessor does not exist
 ]);
 
 /**
@@ -58,7 +57,7 @@ export const SAMPLE_PLUGINS = new Map<string, () => AudioPlugin>([
 export const PLUGIN_CATEGORIES = {
   EFFECTS: ['bassnotion.bass-processor'],
   ANALYSIS: ['bassnotion.drum-processor'],
-  UTILITY: ['bassnotion.sync-processor'],
+  // UTILITY: ['bassnotion.sync-processor'], // Removed - SyncProcessor does not exist
 } as const;
 
 /**
@@ -148,26 +147,26 @@ export const PLUGIN_PRESETS = {
       snareBoost: 2,
     },
   },
-  'bassnotion.sync-processor': {
-    precise: {
-      tempoSensitivity: 90,
-      syncAccuracy: 95,
-      phaseTolerrance: 5,
-      latencyCompensation: 0,
-    },
-    relaxed: {
-      tempoSensitivity: 70,
-      syncAccuracy: 80,
-      phaseTolerrance: 15,
-      latencyCompensation: 10,
-    },
-    adaptive: {
-      tempoSensitivity: 80,
-      syncAccuracy: 85,
-      phaseTolerrance: 10,
-      latencyCompensation: 5,
-    },
-  },
+  // 'bassnotion.sync-processor': { // Removed - SyncProcessor does not exist
+  //   precise: {
+  //     tempoSensitivity: 90,
+  //     syncAccuracy: 95,
+  //     phaseTolerrance: 5,
+  //     latencyCompensation: 0,
+  //   },
+  //   relaxed: {
+  //     tempoSensitivity: 70,
+  //     syncAccuracy: 80,
+  //     phaseTolerrance: 15,
+  //     latencyCompensation: 10,
+  //   },
+  //   adaptive: {
+  //     tempoSensitivity: 80,
+  //     syncAccuracy: 85,
+  //     phaseTolerrance: 10,
+  //     latencyCompensation: 5,
+  //   },
+  // },
 } as const;
 
 /**
@@ -197,10 +196,7 @@ export async function applyPluginPreset(
     try {
       await plugin.setParameter(parameterId, value);
     } catch (error) {
-      logger.warn(
-        `Failed to set parameter ${parameterId} to ${value}:`,
-        error,
-      );
+      logger.warn(`Failed to set parameter ${parameterId} to ${value}:`, error);
     }
   }
 }

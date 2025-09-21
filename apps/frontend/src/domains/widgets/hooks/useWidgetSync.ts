@@ -7,7 +7,7 @@
  */
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createStructuredLogger } from '@bassnotion/contracts';
-import { usePlaybackState } from '@/domains/playback/hooks/usePlaybackState';
+import { useTrackMigration } from '@/domains/playback/hooks/useTrackMigration';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 // REMOVED: useExerciseSelection import - causes circular updates
 
@@ -39,8 +39,8 @@ export interface PerformanceMetrics {
 export function useWidgetSync(options: UseWidgetSyncOptions) {
   const { widgetId, debugMode = false } = options;
 
-  // Get global playback state
-  const playbackState = usePlaybackState();
+  // Get global playback state using migration hook
+  const playbackState = useTrackMigration({ widgetId, debug: debugMode });
   // REMOVED: useExerciseSelection - causes circular updates
   // Exercise selection should come from parent props, not global state
 

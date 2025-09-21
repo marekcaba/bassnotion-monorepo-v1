@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { getSamplePreloader } from '../services/InitialSamplePreloader';
+import { getSamplePreloader } from '../services/InitialSamplePreloader.bridge';
 import { getLogger } from '@/utils/logger.js';
 
 const logger = getLogger('scroll-trigger-loader');

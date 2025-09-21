@@ -1,6 +1,6 @@
 /**
  * Intelligent Loading System Module
- * 
+ *
  * Machine learning-based predictive loading with adaptive streaming,
  * progressive downloads, and intelligent asset management.
  */
@@ -24,7 +24,7 @@ export type {
   PrefetchResourceLimits,
   NetworkCondition,
   IPredictiveLoadingEngine,
-  
+
   // Adaptive Audio Streaming Types
   AdaptiveAudioStreamingConfig,
   AudioSampleMetadata,
@@ -36,7 +36,7 @@ export type {
   StreamingPerformanceMetrics,
   DownloadOptions,
   IAdaptiveAudioStreamer,
-  
+
   // Shared Types
   PredictionPriority,
   AssetType,

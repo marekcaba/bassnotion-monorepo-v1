@@ -107,7 +107,7 @@ export class SessionManager {
       name: config.name || 'New Session',
       tempo: config.tempo || 120,
       timeSignature: config.timeSignature || { numerator: 4, denominator: 4 },
-      duration: config.duration || '16:0:0', // 16 bars default
+      duration: config.duration || { measure: 16, beat: 1, subdivision: 0 }, // 16 bars default
       tracks: config.tracks || [],
       metadata: {
         createdAt: new Date(),
@@ -147,8 +147,12 @@ export class SessionManager {
           id: this.generateId(),
           name: `${track.type} Region`,
           trackId: track.id,
-          startPosition: '0:0:0',
-          duration: exerciseData.duration || '4:0:0',
+          startPosition: { measure: 1, beat: 1, subdivision: 0 },
+          duration: exerciseData.duration || {
+            measure: 4,
+            beat: 1,
+            subdivision: 0,
+          },
           loopCount: exerciseData.loopCount || 0,
           muted: false,
           midiData: {
@@ -163,8 +167,12 @@ export class SessionManager {
           id: this.generateId(),
           name: `${track.type} Pattern`,
           trackId: track.id,
-          startPosition: '0:0:0',
-          duration: exerciseData.duration || '4:0:0',
+          startPosition: { measure: 1, beat: 1, subdivision: 0 },
+          duration: exerciseData.duration || {
+            measure: 4,
+            beat: 1,
+            subdivision: 0,
+          },
           loopCount: exerciseData.loopCount || 0,
           muted: false,
           pattern: exerciseTrack.pattern,
@@ -183,6 +191,8 @@ export class SessionManager {
       tracks,
       metadata: {
         exerciseId: exerciseData.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
     });
   }
@@ -252,6 +262,6 @@ export class SessionManager {
   }
 
   private generateId(): string {
-    return Math.random().toString(36).substr(2, 9);
+    return Math.random().toString(36).substring(2, 11);
   }
 }

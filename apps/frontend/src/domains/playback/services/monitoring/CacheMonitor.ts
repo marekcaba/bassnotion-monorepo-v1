@@ -3,8 +3,10 @@
  * Provides detailed metrics on cache hits, misses, and performance
  */
 
-import { GlobalSampleCache } from '../storage/GlobalSampleCache.js';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { GlobalSampleCache } from '../../modules/storage/cache/GlobalSampleCache.js';
+import { getLogger } from '@/utils/logger.js';
+
+const logger = getLogger('CacheMonitor');
 
 interface LoadEvent {
   url: string;
@@ -147,9 +149,9 @@ export class CacheMonitor {
    */
   printReport(): void {
     const metrics = this.getMetrics();
-    const globalStats = GlobalSampleCache.getCacheStats();
+    const globalStats = GlobalSampleCache.getInstance().getCacheStats();
 
-    console.group('📊 Cache Performance Report');
+    logger.info('📊 Cache Performance Report:');
 
     logger.info(`Total Loads: ${metrics.totalLoads}`);
     logger.info(
@@ -172,23 +174,19 @@ export class CacheMonitor {
       }`,
     );
 
-    console.group('By Plugin:');
+    logger.info('By Plugin:');
     Object.entries(metrics.byPlugin).forEach(([plugin, stats]) => {
       logger.info(
         `${plugin}: ${stats.loads} loads, ${(stats.hitRate * 100).toFixed(1)}% hit rate`,
       );
     });
-    console.groupEnd();
 
-    console.group('Global Cache Stats:');
+    logger.info('Global Cache Stats:');
     logger.info(`Total URLs in cache: ${globalStats.urlCount}`);
     logger.info(`Total buffers cached: ${globalStats.bufferCount}`);
     logger.info(
       `Cache memory: ~${(globalStats.bufferCount * 0.5).toFixed(1)}MB (estimated)`,
     );
-    console.groupEnd();
-
-    console.groupEnd();
   }
 
   /**

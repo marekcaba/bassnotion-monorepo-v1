@@ -17,8 +17,9 @@ import type {
   DrumPattern,
   DrumPatternEvent,
 } from '@/domains/playback/types/pattern';
-import type { MusicalPosition } from '@/domains/playback/services/core/UnifiedTransport';
+import type { MusicalPosition } from '@/domains/playback/modules/transport/types/index.js';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { logger } from '@/domains/playback/utils/logger.js';
 
 interface UseWamDrummerOptions {
   widgetId: string;
@@ -102,18 +103,20 @@ export function useWamDrummer(
           { AudioEngine },
           { UnifiedTransport },
         ] = await Promise.all([
-          import('@/domains/playback/modules/instruments/adapters/wam/WamDrummer'),
-          import('@/domains/playback/services/plugins/WamPluginAdapter'),
-          import('@/domains/playback/services/plugins/WamHostManager'),
+          import(
+            '@/domains/playback/modules/instruments/adapters/wam/WamDrummer'
+          ),
+          import('@/domains/playback/modules/instruments/adapters/wam/WamPluginAdapter'),
+          import('@/domains/playback/modules/instruments/adapters/wam/WamHostManager'),
           import('@/domains/playback/services/core/ServiceRegistry'),
           import('@/domains/playback/services/core/AudioEngine'),
-          import('@/domains/playback/services/core/UnifiedTransport'),
+          import('@/domains/playback/services/core/TransportAdapter'),
         ]);
 
         // Get services
         audioEngineRef.current =
           serviceRegistry.get<AudioEngine>('audioEngine');
-        transportRef.current = UnifiedTransport.getInstance();
+        transportRef.current = TransportAdapter.getInstance();
 
         const audioContext = audioEngineRef.current.getContext();
         if (!audioContext) {

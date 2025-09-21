@@ -1,6 +1,6 @@
 /**
  * Performance Optimization Module
- * 
+ *
  * Comprehensive performance optimization system including device detection,
  * adaptive quality scaling, mobile optimizations, and production validation.
  */

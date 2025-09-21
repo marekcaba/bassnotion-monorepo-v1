@@ -1,12 +1,12 @@
 /**
  * Device Capability Detector
- * 
+ *
  * Detects device capabilities for performance optimization decisions.
  * Extracted from PerformanceOptimizer with enhanced detection logic.
  */
 
 import type { DeviceCapabilities, NetworkCapabilities } from './types';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { createStructuredLogger } from '../shared/index.js';
 
 const logger = createStructuredLogger('DeviceCapabilityDetector');
 
@@ -16,7 +16,7 @@ export class DeviceCapabilityDetector {
    */
   async detectDeviceCapabilities(): Promise<DeviceCapabilities> {
     logger.info('🔍 Detecting device capabilities...');
-    
+
     const capabilities: DeviceCapabilities = {
       cpu: await this.detectCPUCapabilities(),
       memory: await this.detectMemoryCapabilities(),
@@ -25,7 +25,7 @@ export class DeviceCapabilityDetector {
       battery: await this.detectBatteryCapabilities(),
       platform: this.detectPlatform(),
     };
-    
+
     logger.info('✅ Device capabilities detected:', {
       platform: capabilities.platform,
       cpuCores: capabilities.cpu.cores,
@@ -34,63 +34,69 @@ export class DeviceCapabilityDetector {
       networkType: capabilities.network.type,
       batteryLevel: capabilities.battery.level,
     });
-    
+
     return capabilities;
   }
-  
+
   /**
    * Detect CPU capabilities
    */
   private async detectCPUCapabilities(): Promise<DeviceCapabilities['cpu']> {
     const cores = navigator.hardwareConcurrency || 4;
-    
+
     return {
       cores,
       architecture: this.detectArchitecture(),
       performance: this.detectCPUPerformance(cores),
     };
   }
-  
+
   /**
    * Detect memory capabilities
    */
-  private async detectMemoryCapabilities(): Promise<DeviceCapabilities['memory']> {
+  private async detectMemoryCapabilities(): Promise<
+    DeviceCapabilities['memory']
+  > {
     const total = this.detectTotalMemory();
     const available = this.detectAvailableMemory(total);
-    const usage = this.calculateMemoryUsage(total, available);
-    
+    const usage = this.calculateMemoryUsage();
+
     return {
       total,
       available,
       usage,
     };
   }
-  
+
   /**
    * Detect audio capabilities
    */
-  private async detectAudioCapabilities(): Promise<DeviceCapabilities['audio']> {
+  private async detectAudioCapabilities(): Promise<
+    DeviceCapabilities['audio']
+  > {
     let sampleRate = 48000;
-    let bufferSize = 256;
+    const bufferSize = 256;
     let latency = 20;
-    let channels = 2;
-    
+    const channels = 2;
+
     try {
       // Try to get actual audio context capabilities
       if (typeof window !== 'undefined' && window.AudioContext) {
         const tempContext = new AudioContext();
         sampleRate = tempContext.sampleRate;
-        
+
         if (tempContext.baseLatency !== undefined) {
           latency = tempContext.baseLatency * 1000; // Convert to ms
         }
-        
+
         await tempContext.close();
       }
     } catch (error) {
-      logger.warn('Could not detect audio capabilities:', error);
+      logger.warn('Could not detect audio capabilities:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
-    
+
     return {
       sampleRate,
       bufferSize,
@@ -98,16 +104,18 @@ export class DeviceCapabilityDetector {
       channels,
     };
   }
-  
+
   /**
    * Detect network capabilities
    */
-  private async detectNetworkCapabilities(): Promise<DeviceCapabilities['network']> {
+  private async detectNetworkCapabilities(): Promise<
+    DeviceCapabilities['network']
+  > {
     const type = this.detectNetworkType();
     const speed = this.detectNetworkSpeed();
     const latency = await this.measureNetworkLatency();
     const bandwidth = this.estimateBandwidth();
-    
+
     return {
       type,
       speed,
@@ -115,63 +123,67 @@ export class DeviceCapabilityDetector {
       bandwidth,
     };
   }
-  
+
   /**
    * Detect battery capabilities
    */
-  private async detectBatteryCapabilities(): Promise<DeviceCapabilities['battery']> {
+  private async detectBatteryCapabilities(): Promise<
+    DeviceCapabilities['battery']
+  > {
     const level = await this.getBatteryLevel();
     const charging = await this.getBatteryCharging();
     const temperature = 25; // Default - not available in web APIs
-    
+
     return {
       level,
       charging,
       temperature,
     };
   }
-  
+
   /**
    * Detect platform type
    */
   private detectPlatform(): 'desktop' | 'mobile' | 'tablet' | 'embedded' {
     // Check for test environment mocking first
     if (typeof (navigator as any).mockPlatform === 'string') {
-      logger.info(`📱 Using mocked platform: ${(navigator as any).mockPlatform}`);
+      logger.info(
+        `📱 Using mocked platform: ${(navigator as any).mockPlatform}`,
+      );
       return (navigator as any).mockPlatform;
     }
-    
+
     const userAgent = navigator.userAgent.toLowerCase();
-    
+
     // Mobile detection
-    if (userAgent.includes('iphone') || 
-        userAgent.includes('android') ||
-        userAgent.includes('mobile')) {
+    if (
+      userAgent.includes('iphone') ||
+      userAgent.includes('android') ||
+      userAgent.includes('mobile')
+    ) {
       return 'mobile';
     }
-    
+
     // Tablet detection
-    if (userAgent.includes('ipad') || 
-        userAgent.includes('tablet')) {
+    if (userAgent.includes('ipad') || userAgent.includes('tablet')) {
       return 'tablet';
     }
-    
+
     // Embedded detection
-    if (userAgent.includes('embedded') ||
-        userAgent.includes('iot')) {
+    if (userAgent.includes('embedded') || userAgent.includes('iot')) {
       return 'embedded';
     }
-    
+
     return 'desktop';
   }
-  
+
   /**
    * Detect CPU architecture
    */
   private detectArchitecture(): string {
     // Limited detection in browser environment
     const userAgent = navigator.userAgent.toLowerCase();
-    
+
     if (userAgent.includes('arm64') || userAgent.includes('aarch64')) {
       return 'arm64';
     }
@@ -184,17 +196,19 @@ export class DeviceCapabilityDetector {
     if (userAgent.includes('x86')) {
       return 'x86';
     }
-    
+
     return 'unknown';
   }
-  
+
   /**
    * Detect CPU performance level
    */
-  private detectCPUPerformance(cores: number): 'low' | 'medium' | 'high' | 'ultra' {
+  private detectCPUPerformance(
+    cores: number,
+  ): 'low' | 'medium' | 'high' | 'ultra' {
     // Performance estimation based on core count and platform
     const platform = this.detectPlatform();
-    
+
     if (platform === 'mobile') {
       // Mobile devices generally have lower performance per core
       if (cores >= 8) return 'high';
@@ -202,14 +216,14 @@ export class DeviceCapabilityDetector {
       if (cores >= 4) return 'medium';
       return 'low';
     }
-    
+
     // Desktop/tablet performance scaling
     if (cores >= 16) return 'ultra';
     if (cores >= 8) return 'high';
     if (cores >= 4) return 'medium';
     return 'low';
   }
-  
+
   /**
    * Detect total memory
    */
@@ -219,23 +233,23 @@ export class DeviceCapabilityDetector {
     if (typeof deviceMemoryGB === 'number') {
       return deviceMemoryGB * 1024; // Convert GB to MB
     }
-    
+
     // Fallback estimation based on platform
     const platform = this.detectPlatform();
     const cores = navigator.hardwareConcurrency || 4;
-    
+
     if (platform === 'mobile') {
       if (cores >= 8) return 6 * 1024; // 6GB
       if (cores >= 6) return 4 * 1024; // 4GB
       return 2 * 1024; // 2GB
     }
-    
+
     // Desktop fallback
     if (cores >= 8) return 16 * 1024; // 16GB
     if (cores >= 4) return 8 * 1024; // 8GB
     return 4 * 1024; // 4GB
   }
-  
+
   /**
    * Detect available memory
    */
@@ -243,7 +257,7 @@ export class DeviceCapabilityDetector {
     // Estimate available memory (70% of total as reasonable assumption)
     return totalMemory * 0.7;
   }
-  
+
   /**
    * Calculate current memory usage
    */
@@ -253,11 +267,11 @@ export class DeviceCapabilityDetector {
       const memInfo = (performance as any).memory;
       return (memInfo.usedJSHeapSize / memInfo.totalJSHeapSize) * 100;
     }
-    
+
     // Fallback estimation
     return Math.random() * 30 + 20; // 20-50%
   }
-  
+
   /**
    * Detect network type
    */
@@ -271,31 +285,35 @@ export class DeviceCapabilityDetector {
           return mockConnection.type;
         }
       }
-      
+
       // Network Connection API is experimental
-      const connection = (navigator as any).connection ||
-                        (navigator as any).mozConnection ||
-                        (navigator as any).webkitConnection;
-      
+      const connection =
+        (navigator as any).connection ||
+        (navigator as any).mozConnection ||
+        (navigator as any).webkitConnection;
+
       if (connection?.type) {
         return connection.type;
       }
     } catch (error) {
-      logger.warn('Could not detect network type:', error);
+      logger.warn('Could not detect network type:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
-    
+
     return 'unknown';
   }
-  
+
   /**
    * Detect network speed
    */
   private detectNetworkSpeed(): 'slow' | 'medium' | 'fast' | 'ultra' {
     try {
-      const connection = (navigator as any).connection ||
-                        (navigator as any).mozConnection ||
-                        (navigator as any).webkitConnection;
-      
+      const connection =
+        (navigator as any).connection ||
+        (navigator as any).mozConnection ||
+        (navigator as any).webkitConnection;
+
       if (connection?.effectiveType) {
         switch (connection.effectiveType) {
           case 'slow-2g':
@@ -312,46 +330,53 @@ export class DeviceCapabilityDetector {
         }
       }
     } catch (error) {
-      logger.warn('Could not detect network speed:', error);
+      logger.warn('Could not detect network speed:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
-    
+
     return 'medium';
   }
-  
+
   /**
    * Measure network latency
    */
   private async measureNetworkLatency(): Promise<number> {
     try {
       const startTime = performance.now();
-      
+
       // Try to make a simple request to measure latency
       await fetch('/', { method: 'HEAD', cache: 'no-cache' });
-      
+
       const latency = performance.now() - startTime;
       return latency;
     } catch (error) {
-      logger.warn('Could not measure network latency:', error);
+      logger.warn('Could not measure network latency:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return Math.random() * 50 + 10; // 10-60ms fallback
     }
   }
-  
+
   /**
    * Estimate bandwidth
    */
   private estimateBandwidth(): number {
     try {
-      const connection = (navigator as any).connection ||
-                        (navigator as any).mozConnection ||
-                        (navigator as any).webkitConnection;
-      
+      const connection =
+        (navigator as any).connection ||
+        (navigator as any).mozConnection ||
+        (navigator as any).webkitConnection;
+
       return connection?.downlink || 10; // Mbps
     } catch (error) {
-      logger.warn('Could not estimate bandwidth:', error);
+      logger.warn('Could not estimate bandwidth:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return 10; // Default bandwidth
     }
   }
-  
+
   /**
    * Get battery level
    */
@@ -361,20 +386,24 @@ export class DeviceCapabilityDetector {
       if ((global.navigator as any)?.getBattery) {
         const mockBattery = await (global.navigator as any).getBattery();
         if (mockBattery && typeof mockBattery.level === 'number') {
-          logger.info(`🔋 Using mocked battery level: ${mockBattery.level * 100}%`);
+          logger.info(
+            `🔋 Using mocked battery level: ${mockBattery.level * 100}%`,
+          );
           return mockBattery.level * 100;
         }
       }
-      
+
       // Battery API is experimental
       const battery = await (navigator as any).getBattery?.();
       return battery ? battery.level * 100 : 100;
     } catch (error) {
-      logger.warn('Could not get battery level:', error);
+      logger.warn('Could not get battery level:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return 100; // Default for non-mobile devices
     }
   }
-  
+
   /**
    * Get battery charging status
    */
@@ -387,25 +416,28 @@ export class DeviceCapabilityDetector {
           return mockBattery.charging;
         }
       }
-      
+
       // Battery API is experimental
       const battery = await (navigator as any).getBattery?.();
       return battery ? battery.charging : true;
     } catch (error) {
-      logger.warn('Could not get battery charging status:', error);
+      logger.warn('Could not get battery charging status:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return true; // Default for non-mobile devices
     }
   }
-  
+
   /**
    * Get detailed network capabilities
    */
   async getNetworkCapabilities(): Promise<NetworkCapabilities> {
     try {
-      const connection = (navigator as any).connection ||
-                        (navigator as any).mozConnection ||
-                        (navigator as any).webkitConnection;
-      
+      const connection =
+        (navigator as any).connection ||
+        (navigator as any).mozConnection ||
+        (navigator as any).webkitConnection;
+
       if (connection) {
         return {
           connectionType: connection.type || 'unknown',
@@ -415,9 +447,11 @@ export class DeviceCapabilityDetector {
         };
       }
     } catch (error) {
-      logger.warn('Could not get network capabilities:', error);
+      logger.warn('Could not get network capabilities:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
-    
+
     // Fallback network capabilities
     return {
       connectionType: 'unknown',

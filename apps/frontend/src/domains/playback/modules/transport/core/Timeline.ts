@@ -1,6 +1,6 @@
 /**
  * Timeline - Musical position tracking and conversion
- * 
+ *
  * Responsibilities:
  * - Musical position state management
  * - Bar:Beat:Sixteenth calculations
@@ -8,10 +8,13 @@
  * - Looping support
  */
 
-import { MusicalPosition, TimeSignature, TransportPosition } from '../types/index.js';
+import {
+  MusicalPosition,
+  TimeSignature,
+  TransportPosition,
+} from '../types/index.js';
 import { TimelineError } from '../types/errors.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
-import * as Tone from 'tone';
+import { createStructuredLogger } from '../../shared/index.js';
 
 const logger = createStructuredLogger('TransportTimeline');
 
@@ -52,7 +55,9 @@ export class Timeline {
    */
   setTempo(bpm: number): void {
     if (bpm <= 0 || bpm > 999) {
-      throw new TimelineError(`Invalid tempo: ${bpm}. Must be between 1 and 999.`);
+      throw new TimelineError(
+        `Invalid tempo: ${bpm}. Must be between 1 and 999.`,
+      );
     }
     this.tempo = bpm;
     logger.info('Tempo updated', { bpm });
@@ -73,7 +78,7 @@ export class Timeline {
       throw new TimelineError('Invalid time signature');
     }
     this.timeSignature = { ...timeSignature };
-    logger.info('Time signature updated', timeSignature);
+    logger.info('Time signature updated', { timeSignature });
   }
 
   /**
@@ -95,13 +100,13 @@ export class Timeline {
    */
   setPosition(position: MusicalPosition): void {
     this.musicalPosition = { ...position };
-    logger.debug('Position updated', position);
+    logger.debug('Position updated', { position });
   }
 
   /**
    * Update position from seconds
    */
-  updatePositionFromSeconds(seconds: number, sampleRate?: number): void {
+  updatePositionFromSeconds(seconds: number, _sampleRate?: number): void {
     const bpm = this.tempo;
     const beatsPerSecond = bpm / 60;
     const totalBeats = seconds * beatsPerSecond;
@@ -113,7 +118,7 @@ export class Timeline {
     const fractionalBeat = beatsInBar % 1;
     const sixteenthsInBeat = fractionalBeat * 4;
     const sixteenths = Math.floor(sixteenthsInBeat);
-    
+
     // Calculate ticks with sub-sixteenth precision
     // 960 ticks per quarter note (MIDI standard), so 240 ticks per sixteenth
     const ticksPerSixteenth = 240;
@@ -256,7 +261,7 @@ export class Timeline {
     if (currentSixteenths >= loopEndSixteenths) {
       // Jump back to loop start
       this.musicalPosition = { ...this.loopStart };
-      logger.debug('Looped back to start', this.loopStart);
+      logger.debug('Looped back to start', { loopStart: this.loopStart });
       return true;
     }
 
@@ -298,19 +303,28 @@ export class Timeline {
   /**
    * Quantize a position to the nearest subdivision
    */
-  quantizePosition(position: MusicalPosition, subdivision: string): MusicalPosition {
+  quantizePosition(
+    position: MusicalPosition,
+    subdivision: string,
+  ): MusicalPosition {
     // Parse subdivision (e.g., '16n' = 16th note, '8n' = 8th note)
     const match = subdivision.match(/^(\d+)n$/);
     if (!match) {
       throw new TimelineError(`Invalid subdivision: ${subdivision}`);
     }
 
-    const divisor = parseInt(match[1], 10);
+    const matchValue = match[1];
+    if (!matchValue) {
+      throw new TimelineError(`Invalid subdivision: ${subdivision}`);
+    }
+    const divisor = parseInt(matchValue, 10);
     const sixteenthsPerSubdivision = 16 / divisor;
-    
+
     const totalSixteenths = this.positionToSixteenths(position);
-    const quantizedSixteenths = Math.round(totalSixteenths / sixteenthsPerSubdivision) * sixteenthsPerSubdivision;
-    
+    const quantizedSixteenths =
+      Math.round(totalSixteenths / sixteenthsPerSubdivision) *
+      sixteenthsPerSubdivision;
+
     return this.sixteenthsToPosition(quantizedSixteenths);
   }
 }

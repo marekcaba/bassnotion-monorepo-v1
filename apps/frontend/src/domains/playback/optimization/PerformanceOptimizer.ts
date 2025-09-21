@@ -6,7 +6,6 @@
  */
 
 import { EventBus } from '../services/core/EventBus.js';
-import { AudioError } from '../errors/AudioErrors.js';
 
 export interface OptimizationConfig {
   enableMemoryPooling?: boolean;
@@ -198,7 +197,9 @@ export class PerformanceOptimizer {
 
     let item: T;
     if (pool.items.length > 0) {
-      item = pool.items.pop()!;
+      const poppedItem = pool.items.pop();
+      if (!poppedItem) return null;
+      item = poppedItem;
     } else if (pool.inUse.size < pool.maxSize) {
       item = pool.factory();
     } else {
@@ -434,8 +435,8 @@ export class PerformanceOptimizer {
       this.metrics.audioMetrics.bufferUnderruns++;
     });
 
-    this.eventBus.on('audio:latency-measured', ({ latency }) => {
-      this.metrics.audioMetrics.latency = latency;
+    this.eventBus.on('audio:latency-measured', (data: any) => {
+      this.metrics.audioMetrics.latency = (data as { latency: number }).latency;
     });
   }
 

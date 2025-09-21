@@ -165,10 +165,7 @@ export function usePlugins(
       try {
         return pluginManagerRef.current.getPluginsByCapability(capability);
       } catch (err) {
-        logger.error(
-          `Failed to get plugins by capability ${capability}:`,
-          err,
-        );
+        logger.error(`Failed to get plugins by capability ${capability}:`, err);
         return [];
       }
     },

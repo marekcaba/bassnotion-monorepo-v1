@@ -1,7 +1,11 @@
 export type UserRoleType = 'user' | 'moderator' | 'admin';
 
 export class UserRole {
-  private static readonly VALID_ROLES: UserRoleType[] = ['user', 'moderator', 'admin'];
+  private static readonly VALID_ROLES: UserRoleType[] = [
+    'user',
+    'moderator',
+    'admin',
+  ];
 
   constructor(public readonly value: UserRoleType) {
     if (!UserRole.isValid(value)) {

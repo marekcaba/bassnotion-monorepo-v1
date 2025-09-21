@@ -5,7 +5,10 @@
 export { SampleCache } from './SampleCache.js';
 export { CacheManager } from './CacheManager.js';
 export { MemoryManager } from './MemoryManager.js';
-export { GlobalSampleCache, GlobalSampleCacheImpl } from './GlobalSampleCache.js';
+export {
+  GlobalSampleCache,
+  GlobalSampleCacheImpl,
+} from './GlobalSampleCache.js';
 
 export type {
   SampleCacheEntry,

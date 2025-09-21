@@ -76,25 +76,25 @@ export class ProductionDebugger {
   private eventBus: EventBus;
   private logger: ProductionLogger;
   private metrics: MetricsCollector;
-  private health: HealthMonitor;
+  // private _health: HealthMonitor;
   private config: Required<DebugConfig>;
   private sessions: Map<string, DebugSession> = new Map();
   private activeSession: DebugSession | null = null;
   private captures: DebugCapture[] = [];
   private snapshotTimer?: NodeJS.Timeout;
-  private debugHandlers: Map<string, Function> = new Map();
+  // private _debugHandlers: Map<string, (data: any) => void> = new Map();
 
   constructor(
     eventBus: EventBus,
     logger: ProductionLogger,
     metrics: MetricsCollector,
-    health: HealthMonitor,
+    _health: HealthMonitor,
     config: DebugConfig = {},
   ) {
     this.eventBus = eventBus;
     this.logger = logger;
     this.metrics = metrics;
-    this.health = health;
+    // this._health = health;
     this.config = {
       enabled: false, // Disabled by default in production
       maxCaptures: 1000,
@@ -210,9 +210,9 @@ export class ProductionDebugger {
    */
   captureSnapshot(): DebugSnapshot {
     const audioEngine = this.getAudioEngine();
-    const healthReport = this.health.getCurrentStatus();
+    // const _healthReport = this._health.getCurrentStatus();
     const metricsSnapshot = this.metrics.getSnapshot();
-    const logStats = this.logger.getStats();
+    // const _logStats = this.logger.getStats();
 
     const snapshot: DebugSnapshot = {
       timestamp: Date.now(),
@@ -224,8 +224,10 @@ export class ProductionDebugger {
         activeNodes: this.countActiveAudioNodes(),
       },
       performance: {
-        memory: performance.memory?.usedJSHeapSize
-          ? Math.round(performance.memory.usedJSHeapSize / (1024 * 1024))
+        memory: (performance as any).memory?.usedJSHeapSize
+          ? Math.round(
+              (performance as any).memory.usedJSHeapSize / (1024 * 1024),
+            )
           : undefined,
         audioDropouts:
           metricsSnapshot.counters['performance.audio.dropouts'] || 0,
@@ -236,13 +238,18 @@ export class ProductionDebugger {
     };
 
     // Calculate FPS if possible
-    if (this.frameTimestamps.length > 1) {
-      const frameDelta =
-        this.frameTimestamps[this.frameTimestamps.length - 1] -
-        this.frameTimestamps[0];
-      snapshot.performance.fps = Math.round(
-        (this.frameTimestamps.length - 1) / (frameDelta / 1000),
-      );
+    if (this.frameTimestamps && this.frameTimestamps.length > 1) {
+      const lastTimestamp =
+        this.frameTimestamps[this.frameTimestamps.length - 1];
+      const firstTimestamp = this.frameTimestamps[0];
+      if (lastTimestamp && firstTimestamp) {
+        const frameDelta = lastTimestamp - firstTimestamp;
+        if (snapshot.performance) {
+          snapshot.performance.fps = Math.round(
+            (this.frameTimestamps.length - 1) / (frameDelta / 1000),
+          );
+        }
+      }
     }
 
     this.logger.debug('debug', 'Snapshot captured', {
@@ -275,11 +282,15 @@ export class ProductionDebugger {
 
     // Capture metrics
     this.eventBus.on('metrics:recorded', (metric) => {
-      if (this.config.enabled && this.shouldCapture('metric', metric.name)) {
+      const metricData = metric as any;
+      if (
+        this.config.enabled &&
+        this.shouldCapture('metric', metricData.name)
+      ) {
         this.addCapture({
           timestamp: Date.now(),
           type: 'metric',
-          category: metric.category,
+          category: metricData.category || 'metric',
           data: metric,
         });
       }
@@ -287,11 +298,12 @@ export class ProductionDebugger {
 
     // Capture logs
     this.eventBus.on('logger:entry', (entry) => {
-      if (this.config.enabled && this.shouldCapture('log', entry.category)) {
+      const logEntry = entry as any;
+      if (this.config.enabled && this.shouldCapture('log', logEntry.category)) {
         this.addCapture({
-          timestamp: entry.timestamp,
+          timestamp: logEntry.timestamp || Date.now(),
           type: 'log',
-          category: entry.category,
+          category: logEntry.category || 'unknown',
           data: entry,
         });
       }
@@ -318,7 +330,7 @@ export class ProductionDebugger {
           filter.pattern instanceof RegExp
             ? filter.pattern
             : new RegExp(filter.pattern);
-        return pattern.test(value);
+        return pattern.test(String(value));
       }
 
       return true;
@@ -392,10 +404,10 @@ export class ProductionDebugger {
       const nextCapture = session.captures[i + 1];
 
       // Emit replay event
-      this.eventBus.emit('debug:replay-event', capture);
+      this.eventBus.emit('debug:replay-event', { capture });
 
       // Wait for next event timing
-      if (nextCapture) {
+      if (nextCapture && capture) {
         const delay = nextCapture.timestamp - capture.timestamp;
         await new Promise((resolve) =>
           setTimeout(resolve, Math.min(delay, 1000)),
@@ -417,7 +429,7 @@ export class ProductionDebugger {
     this.captures
       .filter((c) => c.type === 'log' && c.data.level === 'error')
       .forEach((capture) => {
-        const message = capture.data.message;
+        const message = (capture.data as any).message || 'Unknown error';
         const existing = errorMap.get(message);
 
         if (existing) {
@@ -442,12 +454,12 @@ export class ProductionDebugger {
    */
   private getKeyMetrics(snapshot: any): Record<string, number> {
     return {
-      'audio.errors': snapshot.counters['audio.errors'] || 0,
-      'audio.dropouts': snapshot.counters['performance.audio.dropouts'] || 0,
+      'audio.errors': snapshot?.counters?.['audio.errors'] || 0,
+      'audio.dropouts': snapshot?.counters?.['performance.audio.dropouts'] || 0,
       'audio.initialization.attempts':
-        snapshot.gauges['audio.initialization.attempts'] || 0,
-      'memory.usage': performance.memory?.usedJSHeapSize
-        ? Math.round(performance.memory.usedJSHeapSize / (1024 * 1024))
+        snapshot?.gauges?.['audio.initialization.attempts'] || 0,
+      'memory.usage': (performance as any).memory?.usedJSHeapSize
+        ? Math.round((performance as any).memory.usedJSHeapSize / (1024 * 1024))
         : 0,
     };
   }
@@ -473,7 +485,10 @@ export class ProductionDebugger {
    */
   private async sendToRemote(capture: DebugCapture): Promise<void> {
     try {
-      await fetch(this.config.remoteEndpoint!, {
+      if (!this.config.remoteEndpoint) {
+        return;
+      }
+      await fetch(this.config.remoteEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -481,7 +496,7 @@ export class ProductionDebugger {
           capture,
         }),
       });
-    } catch (error) {
+    } catch {
       // Silently fail to avoid debug affecting production
     }
   }
@@ -556,8 +571,8 @@ export class ProductionDebugger {
   exportDebugData(): string {
     const data = {
       sessions: Array.from(this.sessions.entries()).map(([id, session]) => ({
-        id,
         ...session,
+        id,
       })),
       currentCaptures: this.captures,
       snapshot: this.captureSnapshot(),
@@ -570,7 +585,7 @@ export class ProductionDebugger {
    * Generate session ID
    */
   private generateSessionId(): string {
-    return `debug-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `debug-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
 
   /**

@@ -1,11 +1,34 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/shared/components/ui/card';
 import { Alert, AlertDescription } from '@/shared/components/ui/alert';
 import { Progress } from '@/shared/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
-import { Activity, AlertCircle, CheckCircle2, Clock, Database, Globe, HardDrive, Loader2, Server, Users, Zap } from 'lucide-react';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/shared/components/ui/tabs';
+import {
+  Activity,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Database,
+  Globe,
+  HardDrive,
+  Loader2,
+  Server,
+  Users,
+  Zap,
+} from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { cn } from '@/shared/utils/cn';
 import { MetricsChart } from './components/MetricsChart';
@@ -70,18 +93,30 @@ interface PerformanceMetrics {
 }
 
 export default function MonitoringDashboard() {
-  const [healthData, setHealthData] = useState<DetailedHealthStatus | null>(null);
-  const [performanceData, setPerformanceData] = useState<PerformanceMetrics[]>([]);
+  const [healthData, setHealthData] = useState<DetailedHealthStatus | null>(
+    null,
+  );
+  const [performanceData, setPerformanceData] = useState<PerformanceMetrics[]>(
+    [],
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshInterval, setRefreshInterval] = useState(5000);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  
+
   // Historical metrics for charts
-  const [cpuHistory, setCpuHistory] = useState<Array<{ timestamp: number; value: number }>>([]);
-  const [memoryHistory, setMemoryHistory] = useState<Array<{ timestamp: number; value: number }>>([]);
-  const [responseTimeHistory, setResponseTimeHistory] = useState<Array<{ timestamp: number; value: number }>>([]);
-  const [errorRateHistory, setErrorRateHistory] = useState<Array<{ timestamp: number; value: number }>>([]);
+  const [cpuHistory, setCpuHistory] = useState<
+    Array<{ timestamp: number; value: number }>
+  >([]);
+  const [memoryHistory, setMemoryHistory] = useState<
+    Array<{ timestamp: number; value: number }>
+  >([]);
+  const [responseTimeHistory, setResponseTimeHistory] = useState<
+    Array<{ timestamp: number; value: number }>
+  >([]);
+  const [errorRateHistory, setErrorRateHistory] = useState<
+    Array<{ timestamp: number; value: number }>
+  >([]);
 
   const fetchHealthData = async () => {
     try {
@@ -93,13 +128,13 @@ export default function MonitoringDashboard() {
         },
         mode: 'cors',
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       // Ensure backward compatibility by mapping old format
       const mappedData: DetailedHealthStatus = {
         ...data,
@@ -112,20 +147,36 @@ export default function MonitoringDashboard() {
         errorRate: data.errorRate || 0,
         requestCount: data.requestCount || 0,
       };
-      
+
       setHealthData(mappedData);
       setLastUpdate(new Date());
       setError(null);
-      
+
       // Update historical data
       const timestamp = Date.now();
-      setCpuHistory(prev => [...prev, { timestamp, value: mappedData.system.cpu.usage }].slice(-50));
-      setMemoryHistory(prev => [...prev, { timestamp, value: mappedData.system.memory.percentage }].slice(-50));
-      setResponseTimeHistory(prev => [...prev, { timestamp, value: mappedData.responseTime || 0 }].slice(-50));
-      setErrorRateHistory(prev => [...prev, { timestamp, value: mappedData.errorRate || 0 }].slice(-50));
+      setCpuHistory((prev) =>
+        [...prev, { timestamp, value: mappedData.system.cpu.usage }].slice(-50),
+      );
+      setMemoryHistory((prev) =>
+        [
+          ...prev,
+          { timestamp, value: mappedData.system.memory.percentage },
+        ].slice(-50),
+      );
+      setResponseTimeHistory((prev) =>
+        [...prev, { timestamp, value: mappedData.responseTime || 0 }].slice(
+          -50,
+        ),
+      );
+      setErrorRateHistory((prev) =>
+        [...prev, { timestamp, value: mappedData.errorRate || 0 }].slice(-50),
+      );
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch health data';
-      setError(`Unable to connect to backend API. Please ensure the backend is running on port 3000. Error: ${errorMessage}`);
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to fetch health data';
+      setError(
+        `Unable to connect to backend API. Please ensure the backend is running on port 3000. Error: ${errorMessage}`,
+      );
       logger.error('Health fetch error:', err);
     }
   };
@@ -140,11 +191,11 @@ export default function MonitoringDashboard() {
         },
         mode: 'cors',
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       setPerformanceData(data.endpoints || []);
     } catch (err) {
@@ -217,7 +268,9 @@ export default function MonitoringDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">System Monitoring</h1>
-            <p className="text-gray-600">Real-time system health and performance metrics</p>
+            <p className="text-gray-600">
+              Real-time system health and performance metrics
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-500">
@@ -248,7 +301,9 @@ export default function MonitoringDashboard() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">System Status</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  System Status
+                </CardTitle>
                 <Server className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -266,7 +321,9 @@ export default function MonitoringDashboard() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Response Time</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Response Time
+                </CardTitle>
                 <Zap className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -274,7 +331,10 @@ export default function MonitoringDashboard() {
                   {(healthData.responseTime || 0).toFixed(0)}ms
                 </div>
                 <Progress
-                  value={Math.min(((healthData.responseTime || 0) / 1000) * 100, 100)}
+                  value={Math.min(
+                    ((healthData.responseTime || 0) / 1000) * 100,
+                    100,
+                  )}
                   className="mt-2"
                 />
               </CardContent>
@@ -282,11 +342,20 @@ export default function MonitoringDashboard() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Error Rate
+                </CardTitle>
                 <AlertCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className={cn("text-2xl font-bold", (healthData.errorRate || 0) > 5 ? "text-red-500" : "text-green-500")}>
+                <div
+                  className={cn(
+                    'text-2xl font-bold',
+                    (healthData.errorRate || 0) > 5
+                      ? 'text-red-500'
+                      : 'text-green-500',
+                  )}
+                >
                   {(healthData.errorRate || 0).toFixed(1)}%
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -333,7 +402,13 @@ export default function MonitoringDashboard() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Badge variant={healthData.checks.api.status === 'healthy' ? 'default' : 'destructive'}>
+                      <Badge
+                        variant={
+                          healthData.checks.api.status === 'healthy'
+                            ? 'default'
+                            : 'destructive'
+                        }
+                      >
                         {healthData.checks.api.status}
                       </Badge>
                     </CardContent>
@@ -347,12 +422,19 @@ export default function MonitoringDashboard() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Badge variant={healthData.checks.database.status === 'healthy' ? 'default' : 'destructive'}>
+                      <Badge
+                        variant={
+                          healthData.checks.database.status === 'healthy'
+                            ? 'default'
+                            : 'destructive'
+                        }
+                      >
                         {healthData.checks.database.status}
                       </Badge>
                       {healthData.checks.database.responseTime && (
                         <p className="mt-2 text-sm text-muted-foreground">
-                          Response time: {healthData.checks.database.responseTime}ms
+                          Response time:{' '}
+                          {healthData.checks.database.responseTime}ms
                         </p>
                       )}
                     </CardContent>
@@ -366,12 +448,19 @@ export default function MonitoringDashboard() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Badge variant={healthData.checks.supabase.status === 'healthy' ? 'default' : 'destructive'}>
+                      <Badge
+                        variant={
+                          healthData.checks.supabase.status === 'healthy'
+                            ? 'default'
+                            : 'destructive'
+                        }
+                      >
                         {healthData.checks.supabase.status}
                       </Badge>
                       {healthData.checks.supabase.responseTime && (
                         <p className="mt-2 text-sm text-muted-foreground">
-                          Response time: {healthData.checks.supabase.responseTime}ms
+                          Response time:{' '}
+                          {healthData.checks.supabase.responseTime}ms
                         </p>
                       )}
                     </CardContent>
@@ -393,7 +482,22 @@ export default function MonitoringDashboard() {
                       <div>
                         <div className="flex justify-between text-sm">
                           <span>Used</span>
-                          <span>{(healthData.system.memory.used / 1024 / 1024 / 1024).toFixed(1)}GB / {(healthData.system.memory.total / 1024 / 1024 / 1024).toFixed(1)}GB</span>
+                          <span>
+                            {(
+                              healthData.system.memory.used /
+                              1024 /
+                              1024 /
+                              1024
+                            ).toFixed(1)}
+                            GB /{' '}
+                            {(
+                              healthData.system.memory.total /
+                              1024 /
+                              1024 /
+                              1024
+                            ).toFixed(1)}
+                            GB
+                          </span>
                         </div>
                         <Progress
                           value={healthData.system.memory.percentage}
@@ -414,16 +518,28 @@ export default function MonitoringDashboard() {
                   <CardContent>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">1 min</span>
-                        <span className="font-mono">{healthData.system.load[0]?.toFixed(2) || 'N/A'}</span>
+                        <span className="text-sm text-muted-foreground">
+                          1 min
+                        </span>
+                        <span className="font-mono">
+                          {healthData.system.load[0]?.toFixed(2) || 'N/A'}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">5 min</span>
-                        <span className="font-mono">{healthData.system.load[1]?.toFixed(2) || 'N/A'}</span>
+                        <span className="text-sm text-muted-foreground">
+                          5 min
+                        </span>
+                        <span className="font-mono">
+                          {healthData.system.load[1]?.toFixed(2) || 'N/A'}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">15 min</span>
-                        <span className="font-mono">{healthData.system.load[2]?.toFixed(2) || 'N/A'}</span>
+                        <span className="text-sm text-muted-foreground">
+                          15 min
+                        </span>
+                        <span className="font-mono">
+                          {healthData.system.load[2]?.toFixed(2) || 'N/A'}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
@@ -459,18 +575,32 @@ export default function MonitoringDashboard() {
                         <tbody>
                           {performanceData.map((metric, index) => (
                             <tr key={index} className="border-b">
-                              <td className="p-2 font-mono text-xs">{metric.endpoint}</td>
+                              <td className="p-2 font-mono text-xs">
+                                {metric.endpoint}
+                              </td>
                               <td className="p-2">
                                 <Badge variant="outline">{metric.method}</Badge>
                               </td>
-                              <td className="p-2 text-right">{metric.averageResponseTime.toFixed(0)}ms</td>
-                              <td className="p-2 text-right">{metric.p95ResponseTime.toFixed(0)}ms</td>
-                              <td className="p-2 text-right">{metric.p99ResponseTime.toFixed(0)}ms</td>
-                              <td className="p-2 text-right">{metric.requestCount}</td>
                               <td className="p-2 text-right">
-                                <span className={cn(
-                                  metric.errorRate > 5 ? 'text-red-500' : 'text-green-500'
-                                )}>
+                                {metric.averageResponseTime.toFixed(0)}ms
+                              </td>
+                              <td className="p-2 text-right">
+                                {metric.p95ResponseTime.toFixed(0)}ms
+                              </td>
+                              <td className="p-2 text-right">
+                                {metric.p99ResponseTime.toFixed(0)}ms
+                              </td>
+                              <td className="p-2 text-right">
+                                {metric.requestCount}
+                              </td>
+                              <td className="p-2 text-right">
+                                <span
+                                  className={cn(
+                                    metric.errorRate > 5
+                                      ? 'text-red-500'
+                                      : 'text-green-500',
+                                  )}
+                                >
                                   {metric.errorRate.toFixed(1)}%
                                 </span>
                               </td>

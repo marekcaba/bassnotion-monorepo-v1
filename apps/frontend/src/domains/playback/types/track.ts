@@ -1,4 +1,4 @@
-import type { InstrumentType } from '../services/plugins/TrackManagerProcessor.js';
+import type { InstrumentType } from '../modules/tracks/management/TrackManagerProcessor.js';
 import type { AudioPlugin, PluginConfig } from './plugin.js';
 import type { Pattern } from './pattern.js';
 import type { TimeSignature, MusicalPosition } from './timing.js';
@@ -72,6 +72,9 @@ export interface TrackAutomation {
 
   /** Automation mode */
   mode: 'read' | 'write' | 'touch' | 'latch' | 'off';
+
+  /** Whether automation is enabled */
+  enabled?: boolean;
 
   /** Curve type between points */
   curveType: 'linear' | 'exponential' | 'step';

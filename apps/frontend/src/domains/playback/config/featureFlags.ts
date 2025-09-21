@@ -50,11 +50,11 @@ const defaultFlags: AudioArchitectureFlags = {
   ROLLBACK_TO_OLD_SYSTEM: false,
   ENABLE_MIGRATION_MONITORING: true,
   ROLLOUT_PERCENTAGE: 100,
-  USE_MODULAR_TRANSPORT: false, // Start with false for safety
-  DEBUG_TRANSPORT_MIGRATION: false,
-  COMPARE_TRANSPORT_PERFORMANCE: false,
-  USE_MODULAR_INSTRUMENTS: false, // Start with false for safety
-  DEBUG_INSTRUMENTS_MIGRATION: false,
+  USE_MODULAR_TRANSPORT: true, // Modular transport is now the default
+  DEBUG_TRANSPORT_MIGRATION: false, // Migration complete
+  COMPARE_TRANSPORT_PERFORMANCE: false, // No longer needed
+  USE_MODULAR_INSTRUMENTS: true, // Modular instruments are now the default
+  DEBUG_INSTRUMENTS_MIGRATION: false, // Migration complete
 };
 
 /**
@@ -227,7 +227,7 @@ export function logTransportMigrationEvent(
   data?: Record<string, any>,
 ): void {
   const flags = getAudioArchitectureFlags();
-  
+
   if (flags.DEBUG_TRANSPORT_MIGRATION) {
     logger.info(`[Transport Migration] ${event}`, {
       ...data,
@@ -245,7 +245,7 @@ export function logInstrumentsMigrationEvent(
   data?: Record<string, any>,
 ): void {
   const flags = getAudioArchitectureFlags();
-  
+
   if (flags.DEBUG_INSTRUMENTS_MIGRATION) {
     logger.info(`[Instruments Migration] ${event}`, {
       ...data,

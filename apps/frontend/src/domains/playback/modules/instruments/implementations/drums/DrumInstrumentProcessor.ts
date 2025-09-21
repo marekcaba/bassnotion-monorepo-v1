@@ -14,28 +14,12 @@
  * - Looping after 2, 4, or 8 bars (user-selectable)
  */
 
-// TODO: Move HybridDrumSampleManager to storage module
-// import {
-//   HybridDrumSampleManager,
-//   DrumKitSamples,
-//   DrumKitMetadata,
-// } from '../../../../services/HybridDrumSampleManager.js';
+import { DrumKitManager, DrumKitConfig } from './components/DrumKitManager.js';
+import { DrumMidiMapper } from './components/DrumMidiMapper.js';
+import { loadGlobalTone } from '../../../shared/index.js';
+import { createStructuredLogger } from '../../../shared/index.js';
 
-// Temporary type definitions (to be moved to storage module)
-interface HybridDrumSampleManager {
-  // Placeholder interface
-}
-
-interface DrumKitSamples {
-  // Placeholder interface
-}
-
-interface DrumKitMetadata {
-  // Placeholder interface
-}
-import { loadGlobalTone } from '../../../../services/plugins/toneLoader.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
+const logger = createStructuredLogger('DrumInstrumentProcessor');
 
 // Dynamic import to avoid AudioContext initialization before user gesture
 // Tone will be loaded when the processor is initialized
@@ -235,57 +219,77 @@ export const GM_DRUM_MAP: Record<number, DrumPiece> = {
  * Professional Drum Instrument Processor with Logic Pro X Drummer features
  */
 export class DrumInstrumentProcessor {
-  private drumSamplers: Map<DrumPiece, Tone.Sampler>;
-  private audioLoopPlayer: Tone.Player | null = null;
-  private drummerEngine: DrummerEngine;
+  private drumSamplers: Map<DrumPiece, any>;
+  private audioLoopPlayer: any | null = null;
   private grooveEngine: GrooveEngine;
-  private fillScheduler: FillScheduler;
-  private patternManager: PatternManager;
   private humanizationEngine: HumanizationEngine;
   private config: DrumInstrumentConfig;
   private isInitialized = false;
   private currentPattern: DrumPattern | null = null;
   private currentLoop: DrumLoop | null = null;
   private isPlaying = false;
+  private audioEngine?: any; // Optional AudioEngine for DI
 
-  // Story 3.16: Enhanced hybrid drum sample support
-  private hybridSampleManager?: HybridDrumSampleManager;
-  private currentKitSamples?: DrumKitSamples;
+  // Simplified drum kit management
+  private kitManager: DrumKitManager;
+  private midiMapper: DrumMidiMapper;
 
-  constructor(config?: Partial<DrumInstrumentConfig>) {
+  constructor(config?: Partial<DrumInstrumentConfig>, audioEngine?: any) {
     this.config = this.createDefaultConfig(config);
     this.drumSamplers = new Map();
+    this.audioEngine = audioEngine;
 
-    this.drummerEngine = new DrummerEngine(this.config);
+    // Initialize simplified components
+    this.kitManager = new DrumKitManager();
+    this.midiMapper = new DrumMidiMapper();
     this.grooveEngine = new GrooveEngine();
-    this.fillScheduler = new FillScheduler(this.config.fillTriggerMode);
-    this.patternManager = new PatternManager();
     this.humanizationEngine = new HumanizationEngine(
       this.config.humanizationAmount,
     );
 
-    this.setupEventListeners();
+    // Event listeners simplified for MIDI-only playback
   }
 
   /**
    * Ensure Tone.js is loaded dynamically
    */
-  private async ensureToneLoaded(): Promise<void> {
+  private async ensureToneLoaded(audioEngine?: any): Promise<void> {
     if (!Tone) {
-      Tone = await loadGlobalTone();
+      // Pass audioEngine if available for dependency injection
+      Tone = await loadGlobalTone(undefined, audioEngine || this.audioEngine);
       logger.info(
         '🎵 Using global Tone.js instance in DrumInstrumentProcessor',
+        { hasAudioEngine: !!(audioEngine || this.audioEngine) },
       );
     }
   }
 
   public async initialize(
     drumSamples: Record<DrumPiece, string[]>,
-    audioLoops?: Record<string, string>,
+    audioLoopsOrAudioEngine?: Record<string, string> | any,
+    audioEngine?: any,
   ): Promise<void> {
+    // Support both old signature and new DI pattern
+    let audioLoops: Record<string, string> | undefined;
+    let engine = audioEngine;
+
+    if (audioLoopsOrAudioEngine && audioLoopsOrAudioEngine.getTone) {
+      // It's an AudioEngine, not audioLoops
+      engine = audioLoopsOrAudioEngine;
+      audioLoops = undefined;
+    } else {
+      // It's audioLoops
+      audioLoops = audioLoopsOrAudioEngine;
+    }
+
+    // Store the engine if provided
+    if (engine) {
+      this.audioEngine = engine;
+    }
+
     try {
       // Ensure Tone is loaded before initializing
-      await this.ensureToneLoaded();
+      await this.ensureToneLoaded(engine);
       logger.info('DrumInstrumentProcessor initializing...');
 
       // Initialize drum samplers for each piece
@@ -299,102 +303,61 @@ export class DrumInstrumentProcessor {
       // Setup audio routing and effects
       this.setupAudioRouting();
 
-      // Load default patterns and fills
-      await this.loadDefaultPatterns();
+      // Setup for MIDI file playback
 
       this.isInitialized = true;
       logger.info('DrumInstrumentProcessor initialized successfully');
     } catch (error) {
-      logger.error('Failed to initialize DrumInstrumentProcessor:', error);
+      logger.error(
+        'Failed to initialize DrumInstrumentProcessor:',
+        error instanceof Error ? error : new Error(String(error)),
+      );
       throw error;
     }
   }
 
   /**
-   * Story 3.16: Initialize hybrid drum sample manager
+   * Load a drum kit with 5 velocity layers
    */
-  public setHybridSampleManager(
-    hybridSampleManager: HybridDrumSampleManager,
-  ): void {
-    this.hybridSampleManager = hybridSampleManager;
-
-    // Listen for kit changes
-    this.hybridSampleManager.on('kitChanged', async (event) => {
-      await this.onKitChanged(event);
-    });
-  }
-
-  /**
-   * Story 3.16: Load a hybrid drum kit (admin or Hydrogen)
-   */
-  public async loadHybridDrumKit(
-    kitId: string,
-    source: 'admin' | 'hydrogen',
-  ): Promise<void> {
-    if (!this.hybridSampleManager) {
-      throw new Error(
-        'HybridSampleManager not initialized. Call setHybridSampleManager first.',
-      );
-    }
-
+  public async loadDrumKit(kitId: string): Promise<void> {
     try {
-      logger.info(`Loading hybrid drum kit: ${kitId} (${source})`);
+      logger.info(`Loading drum kit: ${kitId}`);
 
-      // Load samples from hybrid manager
-      const kitSamples = await this.hybridSampleManager.loadDrumLibrary(
-        kitId,
-        source,
-      );
-      this.currentKitSamples = kitSamples;
+      const kit = await this.kitManager.loadDrumKit(kitId);
 
-      // Convert to Tone.js samplers
-      await this.setupHybridDrumSamplers(kitSamples);
+      // Update WAM plugin with new samples
+      await this.updateWamSamples(kit);
 
-      logger.info(`Hybrid drum kit loaded successfully: ${kitId}`);
+      logger.info(`Drum kit loaded successfully: ${kitId}`);
     } catch (error) {
-      logger.error(`Failed to load hybrid drum kit ${kitId}:`, error);
+      logger.error(
+        `Failed to load drum kit: ${kitId}`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
       throw error;
     }
   }
 
   /**
-   * Story 3.16: Switch drum kits using hybrid manager
+   * Switch drum kits (5 velocity layers each)
    */
-  public async switchDrumKit(
-    kitId: string,
-    source: 'admin' | 'hydrogen',
-  ): Promise<void> {
-    if (!this.hybridSampleManager) {
-      throw new Error('HybridSampleManager not initialized');
-    }
-
-    await this.hybridSampleManager.switchDrumKit(kitId, source);
+  public async switchDrumKit(kitId: string): Promise<void> {
+    await this.loadDrumKit(kitId);
   }
 
   /**
-   * Story 3.16: Handle kit change events from hybrid manager
+   * Update WAM plugin with new kit samples
    */
-  private async onKitChanged(event: {
-    kitId: string;
-    source: 'admin' | 'hydrogen';
-    metadata: DrumKitMetadata;
-    samples: DrumKitSamples;
-  }): Promise<void> {
-    try {
-      this.currentKitSamples = event.samples;
-      await this.setupHybridDrumSamplers(event.samples);
-      logger.info(`Switched to drum kit: ${event.metadata.name}`);
-    } catch (error) {
-      logger.error('Failed to switch drum kit:', error);
-    }
+  private async updateWamSamples(kit: DrumKitConfig): Promise<void> {
+    // This would update the WAM plugin's sample mappings
+    // Each drum piece gets 5 velocity-mapped samples
+    logger.info(`Updating WAM samples for kit: ${kit.name}`);
   }
 
   /**
    * Story 3.16: Setup Tone.js samplers from hybrid kit samples
    */
-  private async setupHybridDrumSamplers(
-    kitSamples: DrumKitSamples,
-  ): Promise<void> {
+  private async _setupHybridDrumSamplers(kitSamples: any): Promise<void> {
     // Clear existing samplers
     this.drumSamplers.forEach((sampler) => sampler.dispose());
     this.drumSamplers.clear();
@@ -435,7 +398,7 @@ export class DrumInstrumentProcessor {
     // Setup crash
     if (kitSamples.crash.length > 0) {
       setupPromises.push(
-        this.createSamplerFromBuffers(DrumPiece.CRASH, kitSamples.crash),
+        this.createSamplerFromBuffers(DrumPiece.CRASH_1, kitSamples.crash),
       );
     }
 
@@ -449,17 +412,17 @@ export class DrumInstrumentProcessor {
     // Setup toms
     if (kitSamples.tom1 && kitSamples.tom1.length > 0) {
       setupPromises.push(
-        this.createSamplerFromBuffers(DrumPiece.TOM_HIGH, kitSamples.tom1),
+        this.createSamplerFromBuffers(DrumPiece.TOM_1, kitSamples.tom1),
       );
     }
     if (kitSamples.tom2 && kitSamples.tom2.length > 0) {
       setupPromises.push(
-        this.createSamplerFromBuffers(DrumPiece.TOM_MID, kitSamples.tom2),
+        this.createSamplerFromBuffers(DrumPiece.TOM_2, kitSamples.tom2),
       );
     }
     if (kitSamples.tom3 && kitSamples.tom3.length > 0) {
       setupPromises.push(
-        this.createSamplerFromBuffers(DrumPiece.TOM_LOW, kitSamples.tom3),
+        this.createSamplerFromBuffers(DrumPiece.TOM_3, kitSamples.tom3),
       );
     }
 
@@ -486,18 +449,42 @@ export class DrumInstrumentProcessor {
         });
 
         // Create Tone.js sampler
-        const sampler = new Tone.Sampler({
-          urls: sampleMapping,
-          release: 1,
-          onload: () => {
-            this.drumSamplers.set(drumPiece, sampler);
-            resolve();
-          },
-          onerror: (error) => {
-            logger.error(`Failed to load sampler for ${drumPiece}:`, error);
-            reject(error);
-          },
-        }).toDestination();
+        const sampler =
+          this.audioEngine && this.audioEngine.createSampler
+            ? this.audioEngine.createSampler({
+                urls: sampleMapping,
+                release: 1,
+                onload: () => {
+                  this.drumSamplers.set(drumPiece, sampler);
+                  resolve();
+                },
+                onerror: (error: any) => {
+                  logger.error(
+                    `Failed to load sampler for ${drumPiece}:`,
+                    error,
+                  );
+                  reject(error);
+                },
+              })
+            : new Tone.Sampler({
+                urls: sampleMapping,
+                release: 1,
+                onload: () => {
+                  this.drumSamplers.set(drumPiece, sampler);
+                  resolve();
+                },
+                onerror: (error: any) => {
+                  logger.error(
+                    `Failed to load sampler for ${drumPiece}:`,
+                    error,
+                  );
+                  reject(error);
+                },
+              }).toDestination();
+
+        if (sampler && sampler.toDestination && !this.audioEngine) {
+          sampler.toDestination();
+        }
       } catch (error) {
         reject(error);
       }
@@ -536,7 +523,7 @@ export class DrumInstrumentProcessor {
     view.setUint16(32, numberOfChannels * 2, true);
     view.setUint16(34, 16, true);
     writeString(36, 'data');
-    view.setUint32(40, length * numberOfChannels * 2, true);
+    view.setUint32(40, (length || 0) * numberOfChannels * 2, true);
 
     // Convert float32 samples to int16
     let offset = 44;
@@ -544,7 +531,7 @@ export class DrumInstrumentProcessor {
       for (let channel = 0; channel < numberOfChannels; channel++) {
         const sample = Math.max(
           -1,
-          Math.min(1, buffer.getChannelData(channel)[i]),
+          Math.min(1, buffer.getChannelData(channel)[i] || 0),
         );
         view.setInt16(offset, sample * 0x7fff, true);
         offset += 2;
@@ -609,7 +596,7 @@ export class DrumInstrumentProcessor {
     } catch (error) {
       logger.warn(
         '🥁 Drum hit playback failed, likely in test environment:',
-        error,
+        error as Record<string, unknown>,
       );
     }
   }
@@ -636,49 +623,7 @@ export class DrumInstrumentProcessor {
     this.playDrumHit(drumEvent);
   }
 
-  public startPattern(patternId: string): void {
-    const pattern = this.patternManager.getPattern(patternId);
-    // TODO: Review non-null assertion - consider null safety
-    if (!pattern) {
-      logger.warn(`Pattern not found: ${patternId}`);
-      return;
-    }
-
-    this.currentPattern = pattern;
-    this.drummerEngine.startPattern(pattern);
-    this.isPlaying = true;
-  }
-
-  public startLoop(loopId: string, tempo: number): void {
-    const loop = this.patternManager.getLoop(loopId);
-    // TODO: Review non-null assertion - consider null safety
-    if (!loop || !this.audioLoopPlayer) {
-      logger.warn(`Loop not found or audio player not initialized: ${loopId}`);
-      return;
-    }
-
-    this.currentLoop = loop;
-    this.drummerEngine.startLoop(loop, tempo);
-    this.isPlaying = true;
-  }
-
-  public triggerFill(fillId?: string): void {
-    // TODO: Review non-null assertion - consider null safety
-    if (!this.isPlaying) {
-      logger.warn('Cannot trigger fill when not playing');
-      return;
-    }
-
-    this.fillScheduler.triggerFill(fillId);
-  }
-
-  public switchPattern(patternId: string, quantized = true): void {
-    if (quantized) {
-      this.patternManager.schedulePatternSwitch(patternId);
-    } else {
-      this.startPattern(patternId);
-    }
-  }
+  // Pattern/fill methods removed - using MIDI files from Supabase instead
 
   public updateGroove(style: GrooveStyle, swingAmount: number): void {
     this.config.grooveStyle = style;
@@ -695,18 +640,7 @@ export class DrumInstrumentProcessor {
     }
   }
 
-  public setLoopLength(length: LoopLength): void {
-    this.config.loopLength = length;
-    this.drummerEngine.setLoopLength(length);
-  }
-
-  public setMode(mode: DrumMode): void {
-    this.config.mode = mode;
-    this.drummerEngine.setMode(mode);
-  }
-
   public stop(): void {
-    this.drummerEngine.stop();
     this.audioLoopPlayer?.stop();
     this.isPlaying = false;
   }
@@ -736,8 +670,6 @@ export class DrumInstrumentProcessor {
   }
 
   public dispose(): void {
-    this.drummerEngine.dispose();
-
     // ✅ CRITICAL FIX: Dispose drum samplers with test environment handling
     this.drumSamplers.forEach((sampler) => {
       try {
@@ -751,7 +683,7 @@ export class DrumInstrumentProcessor {
       } catch (error) {
         logger.warn(
           '🥁 Sampler disposal failed, likely in test environment:',
-          error,
+          error as Record<string, unknown>,
         );
       }
     });
@@ -769,7 +701,7 @@ export class DrumInstrumentProcessor {
       } catch (error) {
         logger.warn(
           '🥁 AudioLoopPlayer disposal failed, likely in test environment:',
-          error,
+          error as Record<string, unknown>,
         );
       }
     }
@@ -820,20 +752,38 @@ export class DrumInstrumentProcessor {
         params.time,
         finalVelocity,
       );
-    } else if (this.hybridSampleManager && this.currentKitSamples) {
+    } else if (
+      (this as any).hybridSampleManager &&
+      (this as any).currentKitSamples
+    ) {
       // Try to use hybrid sample manager if available
-      const sample = this.currentKitSamples.samples[drumPiece];
+      const sample = (this as any).currentKitSamples.samples[drumPiece];
       if (sample && sample.url) {
         // Create a temporary player for this sample
-        const tempPlayer = new Tone.Player({
-          url: sample.url,
-          onload: () => {
-            tempPlayer.start(params.time, 0, params.duration);
-            tempPlayer.volume.value = Tone.gainToDb(finalVelocity);
-            // Clean up after playback
-            setTimeout(() => tempPlayer.dispose(), 5000);
-          },
-        }).toDestination();
+        const tempPlayer =
+          this.audioEngine && this.audioEngine.createPlayer
+            ? this.audioEngine.createPlayer({
+                url: sample.url,
+                onload: () => {
+                  tempPlayer.start(params.time, 0, params.duration);
+                  tempPlayer.volume.value = Tone.gainToDb(finalVelocity);
+                  // Clean up after playback
+                  setTimeout(() => tempPlayer.dispose(), 5000);
+                },
+              })
+            : new Tone.Player({
+                url: sample.url,
+                onload: () => {
+                  tempPlayer.start(params.time, 0, params.duration);
+                  tempPlayer.volume.value = Tone.gainToDb(finalVelocity);
+                  // Clean up after playback
+                  setTimeout(() => tempPlayer.dispose(), 5000);
+                },
+              }).toDestination();
+
+        if (tempPlayer && tempPlayer.toDestination && !this.audioEngine) {
+          tempPlayer.toDestination();
+        }
       }
     } else {
       // Fallback: synthesize a drum sound
@@ -861,11 +811,11 @@ export class DrumInstrumentProcessor {
       'closed-hihat': DrumPiece.HIHAT_CLOSED,
       'open-hihat': DrumPiece.HIHAT_OPEN,
       openhat: DrumPiece.HIHAT_OPEN,
-      crash: DrumPiece.CRASH,
+      crash: DrumPiece.CRASH_1,
       ride: DrumPiece.RIDE,
-      tom1: DrumPiece.TOM_HIGH,
-      tom2: DrumPiece.TOM_MID,
-      tom3: DrumPiece.TOM_LOW,
+      tom1: DrumPiece.TOM_1,
+      tom2: DrumPiece.TOM_2,
+      tom3: DrumPiece.TOM_3,
       clap: DrumPiece.CLAP,
       cowbell: DrumPiece.COWBELL,
       tambourine: DrumPiece.TAMBOURINE,
@@ -883,48 +833,119 @@ export class DrumInstrumentProcessor {
     velocity: number,
     duration: string,
   ): void {
-    let synth: Tone.Synth | Tone.NoiseSynth;
+    let synth: any;
 
     switch (drumPiece) {
       case DrumPiece.KICK:
         // Low sine wave for kick
-        synth = new Tone.Synth({
-          oscillator: { type: 'sine' },
-          envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 },
-        }).toDestination();
+        synth =
+          this.audioEngine && this.audioEngine.createSynth
+            ? this.audioEngine.createSynth({
+                oscillator: { type: 'sine' },
+                envelope: {
+                  attack: 0.001,
+                  decay: 0.1,
+                  sustain: 0,
+                  release: 0.1,
+                },
+              })
+            : new Tone.Synth({
+                oscillator: { type: 'sine' },
+                envelope: {
+                  attack: 0.001,
+                  decay: 0.1,
+                  sustain: 0,
+                  release: 0.1,
+                },
+              }).toDestination();
+        if (synth && synth.toDestination && !this.audioEngine) {
+          synth.toDestination();
+        }
         synth.triggerAttackRelease(60, duration, time, velocity);
         break;
 
       case DrumPiece.SNARE:
         // Noise + tone for snare
-        synth = new Tone.NoiseSynth({
-          noise: { type: 'white' },
-          envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 },
-        }).toDestination();
+        synth =
+          this.audioEngine && this.audioEngine.createNoiseSynth
+            ? this.audioEngine.createNoiseSynth({
+                noise: { type: 'white' },
+                envelope: {
+                  attack: 0.001,
+                  decay: 0.05,
+                  sustain: 0,
+                  release: 0.05,
+                },
+              })
+            : new Tone.NoiseSynth({
+                noise: { type: 'white' },
+                envelope: {
+                  attack: 0.001,
+                  decay: 0.05,
+                  sustain: 0,
+                  release: 0.05,
+                },
+              }).toDestination();
+        if (synth && synth.toDestination && !this.audioEngine) {
+          synth.toDestination();
+        }
         synth.triggerAttackRelease(duration, time, velocity);
         break;
 
       case DrumPiece.HIHAT_CLOSED:
       case DrumPiece.HIHAT_OPEN:
         // High-passed noise for hi-hat
-        synth = new Tone.NoiseSynth({
-          noise: { type: 'white' },
-          envelope: {
-            attack: 0.001,
-            decay: drumPiece === DrumPiece.HIHAT_OPEN ? 0.3 : 0.02,
-            sustain: 0,
-            release: drumPiece === DrumPiece.HIHAT_OPEN ? 0.3 : 0.02,
-          },
-        }).toDestination();
+        synth =
+          this.audioEngine && this.audioEngine.createNoiseSynth
+            ? this.audioEngine.createNoiseSynth({
+                noise: { type: 'white' },
+                envelope: {
+                  attack: 0.001,
+                  decay: drumPiece === DrumPiece.HIHAT_OPEN ? 0.3 : 0.02,
+                  sustain: 0,
+                  release: drumPiece === DrumPiece.HIHAT_OPEN ? 0.3 : 0.02,
+                },
+              })
+            : new Tone.NoiseSynth({
+                noise: { type: 'white' },
+                envelope: {
+                  attack: 0.001,
+                  decay: drumPiece === DrumPiece.HIHAT_OPEN ? 0.3 : 0.02,
+                  sustain: 0,
+                  release: drumPiece === DrumPiece.HIHAT_OPEN ? 0.3 : 0.02,
+                },
+              }).toDestination();
+        if (synth && synth.toDestination && !this.audioEngine) {
+          synth.toDestination();
+        }
         synth.triggerAttackRelease(duration, time, velocity * 0.5);
         break;
 
       default:
         // Generic percussion sound
-        synth = new Tone.Synth({
-          oscillator: { type: 'triangle' },
-          envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 },
-        }).toDestination();
+        synth =
+          this.audioEngine && this.audioEngine.createSynth
+            ? this.audioEngine.createSynth({
+                oscillator: { type: 'triangle' },
+                envelope: {
+                  attack: 0.001,
+                  decay: 0.05,
+                  sustain: 0,
+                  release: 0.05,
+                },
+              })
+            : new Tone.Synth({
+                oscillator: { type: 'triangle' },
+                envelope: {
+                  attack: 0.001,
+                  decay: 0.05,
+                  sustain: 0,
+                  release: 0.05,
+                },
+              }).toDestination();
+        if (synth && synth.toDestination && !this.audioEngine) {
+          synth.toDestination();
+        }
         synth.triggerAttackRelease(200, duration, time, velocity);
     }
 
@@ -976,16 +997,28 @@ export class DrumInstrumentProcessor {
           const volume =
             this.config?.individualVolumes?.[piece as keyof DrumVolumeConfig] ??
             0.7;
-          const synth = new Tone.MembraneSynth({
-            octaves: 1,
-            envelope: {
-              attack: 0.001,
-              decay: 0.1,
-              sustain: 0,
-              release: 0.1,
-            },
-            volume: Tone.gainToDb(volume),
-          });
+          const synth =
+            this.audioEngine && this.audioEngine.createMembraneSynth
+              ? this.audioEngine.createMembraneSynth({
+                  octaves: 1,
+                  envelope: {
+                    attack: 0.001,
+                    decay: 0.1,
+                    sustain: 0,
+                    release: 0.1,
+                  },
+                  volume: Tone.gainToDb(volume),
+                })
+              : new Tone.MembraneSynth({
+                  octaves: 1,
+                  envelope: {
+                    attack: 0.001,
+                    decay: 0.1,
+                    sustain: 0,
+                    release: 0.1,
+                  },
+                  volume: Tone.gainToDb(volume),
+                });
 
           this.drumSamplers.set(drumPiece, synth);
           return;
@@ -1003,11 +1036,19 @@ export class DrumInstrumentProcessor {
         const volume =
           this.config?.individualVolumes?.[piece as keyof DrumVolumeConfig] ??
           0.7;
-        const sampler = new Tone.Sampler(sampleMapping, {
-          volume: Tone.gainToDb(volume),
-          attack: 0.001,
-          release: 0.1,
-        });
+        const sampler =
+          this.audioEngine && this.audioEngine.createSampler
+            ? this.audioEngine.createSampler({
+                urls: sampleMapping,
+                volume: Tone.gainToDb(volume),
+                attack: 0.001,
+                release: 0.1,
+              })
+            : new Tone.Sampler(sampleMapping, {
+                volume: Tone.gainToDb(volume),
+                attack: 0.001,
+                release: 0.1,
+              });
 
         this.drumSamplers.set(drumPiece, sampler);
       },
@@ -1018,7 +1059,10 @@ export class DrumInstrumentProcessor {
       await Tone.loaded();
     } catch (error) {
       // Silently handle encoding errors - samples may still be usable
-      logger.debug('Tone.loaded() had issues in drum setup, but continuing:', error);
+      logger.debug(
+        'Tone.loaded() had issues in drum setup, but continuing:',
+        error as Record<string, unknown>,
+      );
     }
   }
 
@@ -1029,12 +1073,20 @@ export class DrumInstrumentProcessor {
     const firstLoopUrl = Object.values(audioLoops)[0];
     if (firstLoopUrl) {
       // Create player and connect to destination properly
-      this.audioLoopPlayer = new Tone.Player({
-        url: firstLoopUrl,
-        loop: true,
-        autostart: false,
-        volume: -6, // Slightly lower volume for loops
-      });
+      this.audioLoopPlayer =
+        this.audioEngine && this.audioEngine.createPlayer
+          ? this.audioEngine.createPlayer({
+              url: firstLoopUrl,
+              loop: true,
+              autostart: false,
+              volume: -6, // Slightly lower volume for loops
+            })
+          : new Tone.Player({
+              url: firstLoopUrl,
+              loop: true,
+              autostart: false,
+              volume: -6, // Slightly lower volume for loops
+            });
 
       // ✅ CRITICAL FIX: Connect to destination with test environment handling
       try {
@@ -1048,7 +1100,7 @@ export class DrumInstrumentProcessor {
       } catch (error) {
         logger.warn(
           '🥁 AudioLoopPlayer audio routing failed, likely in test environment:',
-          error,
+          error as Record<string, unknown>,
         );
       }
 
@@ -1057,7 +1109,10 @@ export class DrumInstrumentProcessor {
         await Tone.loaded();
       } catch (error) {
         // Silently handle encoding errors - samples may still be usable
-        logger.debug('Tone.loaded() had issues in audio loops setup, but continuing:', error);
+        logger.debug(
+          'Tone.loaded() had issues in audio loops setup, but continuing:',
+          error as Record<string, unknown>,
+        );
       }
     }
   }
@@ -1076,7 +1131,7 @@ export class DrumInstrumentProcessor {
       } catch (error) {
         logger.warn(
           '🥁 Sampler audio routing failed, likely in test environment:',
-          error,
+          error as Record<string, unknown>,
         );
       }
     });
@@ -1094,64 +1149,15 @@ export class DrumInstrumentProcessor {
       } catch (error) {
         logger.warn(
           '🥁 AudioLoopPlayer connect failed, likely in test environment:',
-          error,
+          error as Record<string, unknown>,
         );
       }
     }
   }
 
-  private async loadDefaultPatterns(): Promise<void> {
-    // Load some default drum patterns
-    const defaultPatterns: DrumPattern[] = [
-      this.createBasicRockPattern(),
-      this.createBasicJazzPattern(),
-      this.createBasicFunkPattern(),
-    ];
+  // Pattern loading removed - using MIDI files from Supabase
 
-    defaultPatterns.forEach((pattern) => {
-      this.patternManager.addPattern(pattern);
-    });
-
-    // Load default loops
-    const defaultLoops: DrumLoop[] = [
-      {
-        id: 'rock_loop_120',
-        name: 'Rock Loop 120 BPM',
-        audioUrl: 'rock-loop-120bpm.wav',
-        originalTempo: 120,
-        bars: 4,
-        timeSignature: [4, 4],
-        style: DrumStyle.ROCK,
-        intensity: 6,
-      },
-      {
-        id: 'jazz_loop_140',
-        name: 'Jazz Loop 140 BPM',
-        audioUrl: 'jazz-loop-140bpm.wav',
-        originalTempo: 140,
-        bars: 4,
-        timeSignature: [4, 4],
-        style: DrumStyle.JAZZ,
-        intensity: 5,
-      },
-      {
-        id: 'funk_loop_110',
-        name: 'Funk Loop 110 BPM',
-        audioUrl: 'funk-loop-110bpm.wav',
-        originalTempo: 110,
-        bars: 4,
-        timeSignature: [4, 4],
-        style: DrumStyle.FUNK,
-        intensity: 7,
-      },
-    ];
-
-    defaultLoops.forEach((loop) => {
-      this.patternManager.addLoop(loop);
-    });
-  }
-
-  private createBasicRockPattern(): DrumPattern {
+  private _createBasicRockPattern(): DrumPattern {
     return {
       id: 'basic_rock',
       name: 'Basic Rock',
@@ -1240,7 +1246,7 @@ export class DrumInstrumentProcessor {
     };
   }
 
-  private createBasicJazzPattern(): DrumPattern {
+  private _createBasicJazzPattern(): DrumPattern {
     return {
       id: 'basic_jazz',
       name: 'Basic Jazz',
@@ -1305,7 +1311,7 @@ export class DrumInstrumentProcessor {
     };
   }
 
-  private createBasicFunkPattern(): DrumPattern {
+  private _createBasicFunkPattern(): DrumPattern {
     return {
       id: 'basic_funk',
       name: 'Basic Funk',
@@ -1382,18 +1388,7 @@ export class DrumInstrumentProcessor {
     };
   }
 
-  private setupEventListeners(): void {
-    // Setup event listeners for fill scheduling and pattern switching
-    this.fillScheduler.onFillTriggered((fill) => {
-      this.playFill(fill);
-    });
-
-    this.patternManager.onPatternSwitch((patternId) => {
-      this.startPattern(patternId);
-    });
-  }
-
-  private playFill(fill: DrumFill): void {
+  private _playFill(fill: DrumFill): void {
     fill.events.forEach((event) => {
       this.playDrumHit(event);
     });
@@ -1459,94 +1454,6 @@ export class DrumInstrumentProcessor {
     };
 
     return noteMap[drumPiece] || 'C1';
-  }
-}
-
-/**
- * DrummerEngine - Core Logic Pro X Drummer-inspired engine
- */
-class DrummerEngine {
-  private config: DrumInstrumentConfig;
-  private currentPattern: DrumPattern | null = null;
-  private currentLoop: DrumLoop | null = null;
-  private loopId: number | null = null;
-  private isPlaying = false;
-
-  constructor(config: DrumInstrumentConfig) {
-    this.config = config;
-  }
-
-  public startPattern(pattern: DrumPattern): void {
-    this.currentPattern = pattern;
-    this.schedulePatternLoop();
-    this.isPlaying = true;
-  }
-
-  public startLoop(loop: DrumLoop, tempo: number): void {
-    this.currentLoop = loop;
-    this.scheduleAudioLoop(tempo);
-    this.isPlaying = true;
-  }
-
-  public setLoopLength(length: LoopLength): void {
-    this.config.loopLength = length;
-    if (this.isPlaying) {
-      this.restartCurrentLoop();
-    }
-  }
-
-  public setMode(mode: DrumMode): void {
-    this.config.mode = mode;
-  }
-
-  public stop(): void {
-    if (this.loopId) {
-      Tone.Transport.clear(this.loopId);
-      this.loopId = null;
-    }
-    this.isPlaying = false;
-  }
-
-  public dispose(): void {
-    this.stop();
-  }
-
-  private schedulePatternLoop(): void {
-    // TODO: Review non-null assertion - consider null safety
-    if (!this.currentPattern) return;
-
-    const loopDuration = `${this.config.loopLength}m`; // bars in Tone.js notation
-
-    this.loopId = Tone.Transport.scheduleRepeat((time) => {
-      this.currentPattern?.events.forEach((event) => {
-        const _eventTime = time + event.time * Tone.Time('1m').toSeconds();
-        // Note: In a full implementation, this would trigger the actual drum hit
-        // For now, we're just scheduling the timing
-      });
-    }, loopDuration);
-  }
-
-  private scheduleAudioLoop(tempo: number): void {
-    // TODO: Review non-null assertion - consider null safety
-    if (!this.currentLoop) return;
-
-    // Calculate time-stretch ratio
-    const _stretchRatio = this.currentLoop.originalTempo / tempo;
-    const loopDuration = `${this.config.loopLength}m`;
-
-    // Note: In a full implementation, this would handle audio time-stretching
-    this.loopId = Tone.Transport.scheduleRepeat(() => {
-      // Trigger audio loop playback with time-stretching
-    }, loopDuration);
-  }
-
-  private restartCurrentLoop(): void {
-    this.stop();
-    if (this.currentPattern) {
-      this.startPattern(this.currentPattern);
-    } else if (this.currentLoop) {
-      this.startLoop(this.currentLoop, Tone.Transport.bpm.value);
-    }
   }
 }
 
@@ -1637,108 +1544,6 @@ class GrooveEngine {
     }
 
     return time;
-  }
-}
-
-/**
- * FillScheduler - Interactive fill triggering and scheduling
- */
-class FillScheduler {
-  private mode: FillTriggerMode;
-  private pendingFill: DrumFill | null = null;
-  private fillCallbacks: ((fill: DrumFill) => void)[] = [];
-
-  constructor(mode: FillTriggerMode) {
-    this.mode = mode;
-  }
-
-  public triggerFill(fillId?: string): void {
-    // In a full implementation, this would:
-    // 1. Find the fill by ID or select a random one
-    // 2. Schedule it for the next appropriate time (end of bar/loop)
-    // 3. Trigger the callback when it's time to play
-
-    const fill: DrumFill = {
-      id: fillId || 'default',
-      name: 'Default Fill',
-      duration: 1,
-      events: [],
-      intensity: 5,
-      style: FillStyle.SIMPLE,
-    };
-
-    this.scheduleFill(fill);
-  }
-
-  public onFillTriggered(callback: (fill: DrumFill) => void): void {
-    this.fillCallbacks.push(callback);
-  }
-
-  private scheduleFill(fill: DrumFill): void {
-    // Schedule fill for next appropriate time
-    const nextFillTime = this.calculateNextFillTime();
-
-    Tone.Transport.scheduleOnce(() => {
-      this.fillCallbacks.forEach((callback) => callback(fill));
-    }, nextFillTime);
-  }
-
-  private calculateNextFillTime(): string {
-    // Calculate when the next fill should occur
-    // This would typically be at the end of the current loop
-    return '+1m'; // Placeholder: 1 measure from now
-  }
-}
-
-/**
- * PatternManager - Pattern and loop management with quantized switching
- */
-class PatternManager {
-  private patterns: Map<string, DrumPattern> = new Map();
-  private loops: Map<string, DrumLoop> = new Map();
-  private switchCallbacks: ((patternId: string) => void)[] = [];
-  private pendingSwitch: string | null = null;
-
-  public addPattern(pattern: DrumPattern): void {
-    this.patterns.set(pattern.id, pattern);
-  }
-
-  public addLoop(loop: DrumLoop): void {
-    this.loops.set(loop.id, loop);
-  }
-
-  public getPattern(id: string): DrumPattern | undefined {
-    return this.patterns.get(id);
-  }
-
-  public getLoop(id: string): DrumLoop | undefined {
-    return this.loops.get(id);
-  }
-
-  public schedulePatternSwitch(patternId: string): void {
-    this.pendingSwitch = patternId;
-
-    // Schedule switch for next bar boundary
-    const nextBarTime = this.calculateNextBarTime();
-
-    Tone.Transport.scheduleOnce(() => {
-      if (this.pendingSwitch) {
-        this.switchCallbacks.forEach((callback) =>
-          // TODO: Review non-null assertion - consider null safety
-          callback(this.pendingSwitch!),
-        );
-        this.pendingSwitch = null;
-      }
-    }, nextBarTime);
-  }
-
-  public onPatternSwitch(callback: (patternId: string) => void): void {
-    this.switchCallbacks.push(callback);
-  }
-
-  private calculateNextBarTime(): string {
-    // Calculate the next bar boundary for quantized switching
-    return '+1m'; // Placeholder: 1 measure from now
   }
 }
 

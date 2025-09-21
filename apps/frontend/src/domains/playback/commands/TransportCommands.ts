@@ -7,7 +7,7 @@
  */
 
 import { Command, CommandResult } from './Command.js';
-import { UnifiedTransport } from '../services/core/index.js';
+import { TransportAdapter } from '../services/core/index.js';
 import { EventBus } from '../services/core/EventBus.js';
 
 export interface TransportState {
@@ -23,13 +23,13 @@ export interface TransportState {
  * Base class for transport commands
  */
 abstract class TransportCommand<T = any> extends Command<T> {
-  protected transportController: UnifiedTransport;
+  protected transportController: TransportAdapter;
   protected eventBus: EventBus;
   protected previousState?: TransportState;
 
   constructor(
     name: string,
-    transportController: UnifiedTransport,
+    transportController: TransportAdapter,
     eventBus: EventBus,
     context?: Record<string, any>,
   ) {
@@ -335,7 +335,7 @@ export class SetTempoCommand extends TransportCommand<number> {
   private newBPM: number;
 
   constructor(
-    transportController: UnifiedTransport,
+    transportController: TransportAdapter,
     eventBus: EventBus,
     bpm: number,
   ) {
@@ -445,7 +445,7 @@ export class SetPositionCommand extends TransportCommand<number> {
   private newPosition: number;
 
   constructor(
-    transportController: UnifiedTransport,
+    transportController: TransportAdapter,
     eventBus: EventBus,
     position: number,
   ) {
@@ -564,7 +564,7 @@ export class SetLoopCommand extends TransportCommand<{
   private loopEnd: number;
 
   constructor(
-    transportController: UnifiedTransport,
+    transportController: TransportAdapter,
     eventBus: EventBus,
     start: number,
     end: number,

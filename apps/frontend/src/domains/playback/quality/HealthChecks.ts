@@ -178,7 +178,7 @@ export class HealthChecks {
     const report = this.generateReport(results);
 
     // Emit overall health report
-    this.eventBus.emit('health:report', report);
+    this.eventBus.emit('health:report', { ...report });
 
     return report;
   }
@@ -198,7 +198,7 @@ export class HealthChecks {
         };
       }
 
-      if (!audioEngine.isReady()) {
+      if (!(audioEngine as any).isReady?.()) {
         return {
           name: 'audio-context',
           status: 'unhealthy',
@@ -207,7 +207,7 @@ export class HealthChecks {
         };
       }
 
-      const context = audioEngine.getContext();
+      const context = (audioEngine as any).getContext?.();
       const state = context.state;
 
       if (state === 'running') {
@@ -254,7 +254,7 @@ export class HealthChecks {
    */
   private async checkServiceRegistry(): Promise<HealthCheckResult> {
     try {
-      const serviceCount = this.serviceRegistry.getAll().size;
+      const serviceCount = (this.serviceRegistry as any).getAll?.()?.size || 0;
       const healthReport = await this.serviceRegistry.healthCheck();
 
       if (healthReport.overall === 'healthy') {
@@ -273,7 +273,7 @@ export class HealthChecks {
           name: 'service-registry',
           status: 'degraded',
           message: 'Some services are degraded',
-          details: healthReport,
+          details: { ...healthReport },
           timestamp: Date.now(),
         };
       } else {
@@ -281,7 +281,7 @@ export class HealthChecks {
           name: 'service-registry',
           status: 'unhealthy',
           message: 'Service registry has unhealthy services',
-          details: healthReport,
+          details: { ...healthReport },
           timestamp: Date.now(),
         };
       }
@@ -369,7 +369,11 @@ export class HealthChecks {
 
       this.eventBus.on('health:test-event', testHandler);
       this.eventBus.emit('health:test-event', { test: true });
-      this.eventBus.off('health:test-event', testHandler);
+      if ((this.eventBus as any).off) {
+        (this.eventBus as any).off('health:test-event', testHandler);
+      } else if ((this.eventBus as any).removeListener) {
+        (this.eventBus as any).removeListener('health:test-event', testHandler);
+      }
 
       if (received) {
         return {
@@ -403,7 +407,8 @@ export class HealthChecks {
     try {
       // Simple performance check
       const start = performance.now();
-      const testArray = new Array(10000).fill(0).map((_, i) => i * 2);
+      // Perform a simple computation to test performance
+      new Array(10000).fill(0).map((_, i) => i * 2);
       const duration = performance.now() - start;
 
       if (duration < 10) {
@@ -526,7 +531,7 @@ export class HealthChecks {
     try {
       // Check available resources
       const audioEngine = this.serviceRegistry.get('AudioEngine');
-      const metrics = audioEngine?.getPerformanceMetrics();
+      const metrics = (audioEngine as any)?.getPerformanceMetrics?.();
 
       return {
         name: 'resources',
@@ -576,11 +581,14 @@ export class HealthChecks {
    * Setup event listeners
    */
   private setupEventListeners(): void {
-    this.eventBus.on('error:occurred', ({ error }) => {
-      this.lastError = {
-        message: error.message,
-        timestamp: Date.now(),
-      };
+    this.eventBus.on('error:occurred', (data: any) => {
+      const error = data?.error;
+      if (error) {
+        this.lastError = {
+          message: error.message || String(error),
+          timestamp: Date.now(),
+        };
+      }
     });
   }
 

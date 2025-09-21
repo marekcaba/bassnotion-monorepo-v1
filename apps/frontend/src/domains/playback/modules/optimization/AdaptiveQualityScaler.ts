@@ -1,65 +1,70 @@
 /**
  * Adaptive Quality Scaler
- * 
+ *
  * Automatically adjusts quality settings based on device capabilities
  * to maintain optimal performance. Extracted from PerformanceOptimizer.
  */
 
-import type { 
-  DeviceCapabilities, 
+import type {
+  DeviceCapabilities,
   QualitySettings,
-  IAdaptiveQualityScaler 
+  IAdaptiveQualityScaler,
 } from './types';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { createStructuredLogger } from '../shared/index.js';
 
 const logger = createStructuredLogger('AdaptiveQualityScaler');
 
 export class AdaptiveQualityScaler implements IAdaptiveQualityScaler {
   private recommendations: string[] = [];
-  
+
   /**
    * Calculate optimal quality settings based on device capabilities
    */
-  async calculateOptimalSettings(capabilities: DeviceCapabilities): Promise<QualitySettings> {
+  async calculateOptimalSettings(
+    capabilities: DeviceCapabilities,
+  ): Promise<QualitySettings> {
     logger.info('🎯 Calculating optimal quality settings...', {
       platform: capabilities.platform,
       cpuPerformance: capabilities.cpu.performance,
       memoryTotal: capabilities.memory.total,
       batteryLevel: capabilities.battery.level,
     });
-    
+
     this.recommendations = [];
-    
+
     const settings: QualitySettings = {
       audio: this.calculateAudioSettings(capabilities),
       instruments: this.calculateInstrumentSettings(capabilities),
       processing: this.calculateProcessingSettings(capabilities),
       visual: this.calculateVisualSettings(capabilities),
     };
-    
+
     this.generateRecommendations(capabilities, settings);
-    
+
     logger.info('✅ Optimal quality settings calculated:', {
       audioSampleRate: settings.audio.sampleRate,
       instrumentPolyphony: settings.instruments.polyphony,
-      processingFeatures: Object.values(settings.processing).filter(Boolean).length,
+      processingFeatures: Object.values(settings.processing).filter(Boolean)
+        .length,
       visualFrameRate: settings.visual.frameRate,
     });
-    
+
     return settings;
   }
-  
+
   /**
    * Calculate audio quality settings
    */
-  private calculateAudioSettings(capabilities: DeviceCapabilities): QualitySettings['audio'] {
+  private calculateAudioSettings(
+    capabilities: DeviceCapabilities,
+  ): QualitySettings['audio'] {
     const { cpu, memory, network, battery, platform } = capabilities;
-    
+
     let sampleRate = capabilities.audio.sampleRate;
     let bitDepth = 24;
     let bufferSize = 256;
     let compression: 'none' | 'low' | 'medium' | 'high' = 'none';
-    
+
     // Platform-specific audio settings
     if (platform === 'mobile') {
       bufferSize = 512; // Higher buffer for mobile stability
@@ -69,7 +74,7 @@ export class AdaptiveQualityScaler implements IAdaptiveQualityScaler {
         compression = 'medium';
       }
     }
-    
+
     // CPU performance adjustments
     if (cpu.performance === 'low') {
       sampleRate = Math.min(sampleRate, 44100);
@@ -81,21 +86,22 @@ export class AdaptiveQualityScaler implements IAdaptiveQualityScaler {
       bitDepth = 24;
       bufferSize = 128;
     }
-    
+
     // Memory constraints
-    if (memory.total < 2048) { // Less than 2GB
+    if (memory.total < 2048) {
+      // Less than 2GB
       compression = 'high';
     } else if (memory.usage > 80) {
       compression = 'medium';
     }
-    
+
     // Network-based compression
     if (network.speed === 'slow') {
       compression = 'high';
     } else if (network.speed === 'medium') {
       compression = compression === 'none' ? 'low' : compression;
     }
-    
+
     return {
       sampleRate,
       bitDepth,
@@ -103,18 +109,20 @@ export class AdaptiveQualityScaler implements IAdaptiveQualityScaler {
       compression,
     };
   }
-  
+
   /**
    * Calculate instrument quality settings
    */
-  private calculateInstrumentSettings(capabilities: DeviceCapabilities): QualitySettings['instruments'] {
+  private calculateInstrumentSettings(
+    capabilities: DeviceCapabilities,
+  ): QualitySettings['instruments'] {
     const { cpu, memory, battery, platform } = capabilities;
-    
+
     let polyphony = 16;
     let velocityLayers = 6;
     let roundRobinSamples = 3;
     let reverbQuality: 'off' | 'low' | 'medium' | 'high' = 'high';
-    
+
     // CPU performance scaling
     switch (cpu.performance) {
       case 'low':
@@ -142,7 +150,7 @@ export class AdaptiveQualityScaler implements IAdaptiveQualityScaler {
         reverbQuality = 'high';
         break;
     }
-    
+
     // Memory constraints
     if (memory.total < 2048) {
       polyphony = Math.min(polyphony, 8);
@@ -152,7 +160,7 @@ export class AdaptiveQualityScaler implements IAdaptiveQualityScaler {
       polyphony = Math.min(polyphony, 12);
       velocityLayers = Math.min(velocityLayers, 4);
     }
-    
+
     // Platform-specific adjustments
     if (platform === 'mobile') {
       polyphony = Math.min(polyphony, 12);
@@ -161,7 +169,7 @@ export class AdaptiveQualityScaler implements IAdaptiveQualityScaler {
         reverbQuality = reverbQuality === 'high' ? 'medium' : 'low';
       }
     }
-    
+
     return {
       polyphony,
       velocityLayers,
@@ -169,18 +177,20 @@ export class AdaptiveQualityScaler implements IAdaptiveQualityScaler {
       reverbQuality,
     };
   }
-  
+
   /**
    * Calculate processing feature settings
    */
-  private calculateProcessingSettings(capabilities: DeviceCapabilities): QualitySettings['processing'] {
+  private calculateProcessingSettings(
+    capabilities: DeviceCapabilities,
+  ): QualitySettings['processing'] {
     const { cpu, battery, platform } = capabilities;
-    
+
     let humanization = true;
     let microTiming = true;
     let advancedArticulation = true;
     let contextAnalysis = true;
-    
+
     // CPU performance scaling
     if (cpu.performance === 'low') {
       humanization = false;
@@ -199,7 +209,7 @@ export class AdaptiveQualityScaler implements IAdaptiveQualityScaler {
       contextAnalysis = true;
     }
     // Ultra keeps all features enabled
-    
+
     // Mobile and battery optimizations
     if (platform === 'mobile' && battery.level < 20) {
       humanization = false;
@@ -208,7 +218,7 @@ export class AdaptiveQualityScaler implements IAdaptiveQualityScaler {
     } else if (platform === 'mobile' && battery.level < 50) {
       advancedArticulation = false;
     }
-    
+
     return {
       humanization,
       microTiming,
@@ -216,17 +226,19 @@ export class AdaptiveQualityScaler implements IAdaptiveQualityScaler {
       contextAnalysis,
     };
   }
-  
+
   /**
    * Calculate visual quality settings
    */
-  private calculateVisualSettings(capabilities: DeviceCapabilities): QualitySettings['visual'] {
+  private calculateVisualSettings(
+    capabilities: DeviceCapabilities,
+  ): QualitySettings['visual'] {
     const { cpu, battery, platform } = capabilities;
-    
+
     let frameRate = 60;
     let animations = true;
     let effects: 'minimal' | 'standard' | 'enhanced' = 'enhanced';
-    
+
     // Platform-specific visual settings
     if (platform === 'mobile') {
       frameRate = 30; // Mobile devices often benefit from 30fps
@@ -237,7 +249,7 @@ export class AdaptiveQualityScaler implements IAdaptiveQualityScaler {
         effects = 'standard';
       }
     }
-    
+
     // CPU performance scaling
     if (cpu.performance === 'low') {
       frameRate = 30;
@@ -248,72 +260,97 @@ export class AdaptiveQualityScaler implements IAdaptiveQualityScaler {
       effects = 'standard';
     }
     // High and ultra keep enhanced settings
-    
+
     return {
       frameRate,
       animations,
       effects,
     };
   }
-  
+
   /**
    * Generate optimization recommendations
    */
-  private generateRecommendations(capabilities: DeviceCapabilities, settings: QualitySettings): void {
+  private generateRecommendations(
+    capabilities: DeviceCapabilities,
+    settings: QualitySettings,
+  ): void {
     const { cpu, memory, battery, platform, network } = capabilities;
-    
+
     // CPU recommendations
     if (cpu.performance === 'low') {
-      this.recommendations.push('Consider closing other applications to improve CPU performance');
+      this.recommendations.push(
+        'Consider closing other applications to improve CPU performance',
+      );
     }
-    
+
     // Memory recommendations
     if (memory.usage > 80) {
-      this.recommendations.push('High memory usage detected - consider reducing sample quality');
+      this.recommendations.push(
+        'High memory usage detected - consider reducing sample quality',
+      );
     }
     if (memory.total < 4096) {
-      this.recommendations.push('Limited memory available - reduced polyphony and samples');
+      this.recommendations.push(
+        'Limited memory available - reduced polyphony and samples',
+      );
     }
-    
+
     // Battery recommendations
     if (platform === 'mobile') {
       if (battery.level < 20) {
-        this.recommendations.push('Low battery detected - enabled aggressive power saving');
+        this.recommendations.push(
+          'Low battery detected - enabled aggressive power saving',
+        );
       } else if (battery.level < 50 && !battery.charging) {
-        this.recommendations.push('Battery optimization enabled - some features reduced');
+        this.recommendations.push(
+          'Battery optimization enabled - some features reduced',
+        );
       }
     }
-    
+
     // Network recommendations
     if (network.speed === 'slow') {
-      this.recommendations.push('Slow network detected - enabled high compression');
+      this.recommendations.push(
+        'Slow network detected - enabled high compression',
+      );
     }
     if (network.type === 'cellular') {
-      this.recommendations.push('Cellular connection detected - optimized for data usage');
+      this.recommendations.push(
+        'Cellular connection detected - optimized for data usage',
+      );
     }
-    
+
     // Quality settings feedback
     if (settings.audio.compression !== 'none') {
-      this.recommendations.push(`Audio compression set to ${settings.audio.compression} for optimal performance`);
+      this.recommendations.push(
+        `Audio compression set to ${settings.audio.compression} for optimal performance`,
+      );
     }
     if (settings.instruments.polyphony < 16) {
-      this.recommendations.push(`Polyphony limited to ${settings.instruments.polyphony} for device compatibility`);
+      this.recommendations.push(
+        `Polyphony limited to ${settings.instruments.polyphony} for device compatibility`,
+      );
     }
-    
+
     // General recommendations
-    this.recommendations.push('Quality settings automatically optimized for your device');
+    this.recommendations.push(
+      'Quality settings automatically optimized for your device',
+    );
     if (platform === 'mobile') {
-      this.recommendations.push('Mobile optimizations applied for better battery life');
+      this.recommendations.push(
+        'Mobile optimizations applied for better battery life',
+      );
     }
   }
-  
+
   /**
    * Get current recommendations
    */
   getRecommendations(): string[] {
     return [...this.recommendations];
   }
-  
+
   /**
    * Dispose of the adaptive quality scaler
    */

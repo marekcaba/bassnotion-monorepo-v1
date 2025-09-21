@@ -1,24 +1,8 @@
 /**
- * Pattern Scheduling Module
- * 
- * Professional DAW-style pattern scheduler extracted from the original
- * PatternScheduler with all critical features preserved.
+ * Pattern Module - Simplified for MIDI file playback
+ *
+ * Since the bass practice platform loads MIDI files directly,
+ * pattern generation and scheduling have been removed.
  */
 
-export { PatternScheduler } from './PatternScheduler';
-export { RegionManager } from './RegionManager';
-export { EventScheduler } from './EventScheduler';
-export { PatternConverter } from './PatternConverter';
-
-export type {
-  IPatternScheduler,
-  PatternSchedulerConfig,
-  PatternSchedulingMetrics,
-  SchedulableEvent,
-  ScheduledRegion,
-  EventSchedulingResult,
-  MusicalTimeOptions,
-  LoopIteration,
-  RegionActivationState,
-  PatternSchedulerEvents,
-} from './types';
+// Exports removed - using MIDI files directly

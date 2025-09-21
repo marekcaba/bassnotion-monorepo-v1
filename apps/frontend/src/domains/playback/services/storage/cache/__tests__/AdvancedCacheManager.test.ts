@@ -22,8 +22,8 @@ import {
   AudioSampleQualityProfile,
 } from '@bassnotion/contracts';
 
-import { AdvancedCacheManager } from '../AdvancedCacheManager';
-import SampleCacheManager from '../SampleCacheManager';
+import { AdvancedCacheManager } from '../../../../modules/storage/advanced/AdvancedCacheManager.js';
+import { CacheManager } from '../../../../modules/storage/cache/CacheManager.js';
 
 // Mock performance.now for consistent testing
 const mockPerformanceNow = vi.fn();
@@ -39,7 +39,7 @@ vi.spyOn(console, 'error').mockImplementation(() => {
 
 describe('AdvancedCacheManager - Comprehensive Tests', () => {
   let cacheManager: AdvancedCacheManager;
-  let baseCacheManager: SampleCacheManager;
+  let baseCacheManager: CacheManager;
   let config: AdvancedCacheManagerConfig;
   let baseConfig: IntelligentSampleCacheConfig;
   let mockData: Blob;
@@ -80,7 +80,7 @@ describe('AdvancedCacheManager - Comprehensive Tests', () => {
     };
 
     // Create base cache manager
-    baseCacheManager = new SampleCacheManager(baseConfig);
+    baseCacheManager = new CacheManager(baseConfig);
 
     // Advanced cache configuration - simplified to avoid complex layer mocking issues
     config = {
@@ -543,7 +543,7 @@ describe('AdvancedCacheManager - Comprehensive Tests', () => {
   });
 
   describe('8. Integration and Compatibility', () => {
-    it('should integrate with base SampleCacheManager', () => {
+    it('should integrate with base CacheManager', () => {
       expect(cacheManager).toBeDefined();
       // The integration should be seamless
       expect(typeof cacheManager.get).toBe('function');

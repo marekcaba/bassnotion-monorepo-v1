@@ -127,6 +127,26 @@
       }
     },
     {
+      "files": ["apps/frontend/src/domains/playback/modules/**/*.ts", "apps/frontend/src/domains/playback/modules/**/*.tsx"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/services/*", "!**/shared/**"],
+                "message": "Modules should not import from services directly. Use the shared module for cross-cutting concerns like EventBus, CircuitBreaker, etc."
+              },
+              {
+                "group": ["../../../services/*"],
+                "message": "Use relative imports through the shared module instead of reaching into services."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["*.js", "*.jsx"],
       "extends": ["eslint:recommended", "plugin:@nx/javascript", "prettier"],
       "rules": {

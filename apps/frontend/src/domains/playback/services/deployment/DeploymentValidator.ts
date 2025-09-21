@@ -540,7 +540,7 @@ export class DeploymentValidator {
       recommendations,
     };
 
-    this.eventBus.emit('deployment:validation-completed', report);
+    this.eventBus.emit('deployment:validation-completed', { report });
 
     // Send to webhook if configured
     if (this.config.webhookUrl) {
@@ -555,7 +555,10 @@ export class DeploymentValidator {
    */
   private async sendToWebhook(report: DeploymentReport): Promise<void> {
     try {
-      await fetch(this.config.webhookUrl!, {
+      if (!this.config.webhookUrl) {
+        return;
+      }
+      await fetch(this.config.webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(report),

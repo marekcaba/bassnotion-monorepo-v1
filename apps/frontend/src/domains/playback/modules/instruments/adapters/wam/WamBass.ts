@@ -24,27 +24,33 @@ import type {
   WamEvent,
   WamMidiEvent,
 } from '../../../../types/wam.js';
+import { createStructuredLogger } from '../../../shared/index.js';
+
+const logger = createStructuredLogger('WamBass');
 
 // Base WebAudioModule class - minimal implementation for compatibility
-abstract class WebAudioModuleBase implements WebAudioModule {
+abstract class WebAudioModuleBase implements Partial<WebAudioModule> {
   abstract audioContext: BaseAudioContext;
-  abstract audioNode: AudioNode | null;
+  abstract audioNode: WamNode | undefined;
   abstract initialized: boolean;
   abstract moduleId: string;
   abstract instanceId: string;
+  abstract descriptor: WamDescriptor;
 
-  abstract createAudioNode(options?: any): Promise<AudioNode>;
+  abstract createAudioNode(options?: any): Promise<WamNode>;
 
   async initialize(state?: any): Promise<WebAudioModule> {
     if (!this.initialized) {
       this.audioNode = await this.createAudioNode(state);
       (this as any).initialized = true;
     }
-    return this;
+    return this as unknown as WebAudioModule;
   }
 
-  createGui?(): Promise<HTMLElement>;
-  destroyGui?(gui: Element): void;
+  abstract createGui(): Promise<Element>;
+  abstract destroyGui(gui: Element): void;
+  abstract getState(): any;
+  abstract setState(state: any): Promise<void>;
 }
 
 /**
@@ -116,10 +122,53 @@ export class WamBassNode implements WamNode {
     return this.module.audioContext;
   }
 
-  constructor(
-    private module: WebAudioModule,
-    options?: AudioNodeOptions,
-  ) {
+  // AudioNode interface properties (delegated to compressor)
+  get channelCount(): number {
+    return this.compressor?.channelCount || 2;
+  }
+  set channelCount(value: number) {
+    if (this.compressor) this.compressor.channelCount = value;
+  }
+
+  get channelCountMode(): ChannelCountMode {
+    return this.compressor?.channelCountMode || 'max';
+  }
+  set channelCountMode(value: ChannelCountMode) {
+    if (this.compressor) this.compressor.channelCountMode = value;
+  }
+
+  get channelInterpretation(): ChannelInterpretation {
+    return this.compressor?.channelInterpretation || 'speakers';
+  }
+  set channelInterpretation(value: ChannelInterpretation) {
+    if (this.compressor) this.compressor.channelInterpretation = value;
+  }
+
+  get numberOfInputs(): number {
+    return 1;
+  }
+
+  get numberOfOutputs(): number {
+    return 1;
+  }
+
+  addEventListener(): void {
+    // No-op - WAM nodes don't typically use DOM events
+  }
+
+  removeEventListener(): void {
+    // No-op - WAM nodes don't typically use DOM events
+  }
+
+  dispatchEvent(): boolean {
+    // No-op - WAM nodes don't typically use DOM events
+    return false;
+  }
+
+  module: WebAudioModule;
+
+  constructor(module: WebAudioModule, _options?: AudioNodeOptions) {
+    this.module = module;
     // Don't initialize here to avoid SSR issues
   }
 
@@ -219,7 +268,7 @@ export class WamBassNode implements WamNode {
         '✅ Placeholder bass synth initialized (waiting for real samples)',
       );
     } catch (error) {
-      logger.error('Failed to initialize placeholder synth:', error);
+      logger.error('Failed to initialize placeholder synth:', error as Error);
     }
   }
 
@@ -266,7 +315,7 @@ export class WamBassNode implements WamNode {
         this.sampleMaps.set(articulation, []);
       });
     } catch (error) {
-      logger.error('Failed to load bass samples:', error);
+      logger.error('Failed to load bass samples:', error as Error);
     }
   }
 
@@ -353,7 +402,7 @@ export class WamBassNode implements WamNode {
         volume,
       );
     } catch (error) {
-      logger.error('Failed to trigger placeholder note:', error);
+      logger.error('Failed to trigger placeholder note:', error as Error);
     }
   }
 
@@ -361,9 +410,9 @@ export class WamBassNode implements WamNode {
    * Trigger actual sample (when available)
    */
   private triggerSample(
-    note: number,
-    velocity: number,
-    articulation: BassArticulation,
+    _note: number,
+    _velocity: number,
+    _articulation: BassArticulation,
   ): void {
     // TODO: Implement actual sample triggering
     // This will find the appropriate sample based on note and velocity
@@ -544,21 +593,23 @@ export class WamBassNode implements WamNode {
       const midiEvent = event as WamMidiEvent;
       const { bytes } = midiEvent.data;
       const [status, note, velocity] = Array.from(bytes);
+      const noteValue = note || 0;
+      const velocityValue = velocity || 0;
 
       // Handle MIDI events
-      const command = status & 0xf0;
+      const command = (status || 0) & 0xf0;
 
       // If event has a specific time, schedule it
       if (event.time && event.time > this.context.currentTime) {
         setTimeout(
           () => {
-            this.handleMidiCommand(command, note, velocity);
+            this.handleMidiCommand(command, noteValue, velocityValue);
           },
           (event.time - this.context.currentTime) * 1000,
         );
       } else {
         // Process immediately
-        this.handleMidiCommand(command, note, velocity);
+        this.handleMidiCommand(command, noteValue, velocityValue);
       }
     }
   }
@@ -592,12 +643,53 @@ export class WamBassNode implements WamNode {
     this.activeSamples.clear();
   }
 
-  destroy(): void {
+  async destroy(): Promise<void> {
     this.clearEvents();
     if (this.placeholderSynth) {
       this.placeholderSynth.dispose();
     }
     this.disconnect();
+  }
+
+  // Additional WamNode interface methods
+  async getState(): Promise<any> {
+    return {
+      volume: this.gainNode?.gain.value || 0.8,
+      articulation: Object.values(BassArticulation).indexOf(
+        this.currentArticulation,
+      ),
+      activeNotes: Array.from(this.activeNotes.entries()),
+    };
+  }
+
+  async setState(state: any): Promise<void> {
+    await this.setParameterValues(state);
+  }
+
+  async getCompensationDelay(): Promise<number> {
+    // Return 0 as we're not doing any processing that introduces delay
+    return 0;
+  }
+
+  scheduleEvents(...events: WamEvent[]): void {
+    events.forEach((event) => this.scheduleEvent(event));
+  }
+
+  clearScheduledEvents(): void {
+    this.clearEvents();
+  }
+
+  // These are plugin-specific and not used in this implementation
+  connectEvents(): { from: any; to: any } {
+    return { from: null, to: null };
+  }
+
+  disconnectEvents(): void {
+    // No-op for this implementation
+  }
+
+  destroyEvents(): void {
+    this.clearEvents();
   }
 }
 
@@ -606,10 +698,11 @@ export class WamBassNode implements WamNode {
  */
 export class WamBass extends WebAudioModuleBase {
   readonly audioContext: BaseAudioContext;
-  audioNode: WamBassNode | null = null;
+  audioNode: WamBassNode | undefined = undefined;
   initialized = false;
   readonly moduleId = 'com.bassnotion.bass';
   readonly instanceId: string;
+  descriptor: WamDescriptor;
 
   static descriptor: WamDescriptor = {
     name: 'BassNotion Bass',
@@ -631,15 +724,19 @@ export class WamBass extends WebAudioModuleBase {
     super();
     this.audioContext = audioContext;
     this.instanceId = `${this.moduleId}-${Date.now()}`;
+    this.descriptor = WamBass.descriptor;
   }
 
   /**
    * Create the audio node - follows WAM 2.0 standard
    */
-  async createAudioNode(initialState?: any): Promise<AudioNode> {
-    this.audioNode = new WamBassNode(this, initialState);
+  async createAudioNode(initialState?: any): Promise<WamNode> {
+    this.audioNode = new WamBassNode(
+      this as unknown as WebAudioModule,
+      initialState,
+    );
     await this.audioNode.initialize();
-    return this.audioNode;
+    return this.audioNode as unknown as WamNode;
   }
 
   /**
@@ -666,7 +763,12 @@ export class WamBass extends WebAudioModuleBase {
       BASS_TUNING.D,
       BASS_TUNING.G,
     ];
-    const note = openStrings[4 - string] + fret;
+    const openStringNote = openStrings[4 - string];
+    if (openStringNote === undefined) {
+      logger.error('Invalid string number', { string } as any);
+      return;
+    }
+    const note = openStringNote + fret;
 
     const time = this.audioContext.currentTime;
     this.audioNode?.scheduleBassNote({
@@ -749,6 +851,25 @@ export class WamBass extends WebAudioModuleBase {
 
   destroyGui(gui: Element): void {
     gui.remove();
+  }
+
+  // WebAudioModule interface methods
+  getState(): any {
+    return {
+      volume: this.audioNode?.gain?.value || 0.8,
+      articulation: this.audioNode
+        ? Object.values(BassArticulation).indexOf(
+            (this.audioNode as any).currentArticulation ||
+              BassArticulation.FINGERSTYLE,
+          )
+        : 0,
+    };
+  }
+
+  async setState(state: any): Promise<void> {
+    if (this.audioNode && state) {
+      await this.audioNode.setParameterValues(state);
+    }
   }
 
   /**

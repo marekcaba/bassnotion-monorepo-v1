@@ -1,5 +1,9 @@
 // Repository interfaces
-export type { IUserRepository, PaginationOptions, PaginatedResult } from './user.repository.interface';
+export type {
+  IUserRepository,
+  PaginationOptions,
+  PaginatedResult,
+} from './user.repository.interface';
 
 // Repository implementations
 export { UserRepository } from './user.repository';
@@ -15,12 +19,12 @@ export { Email } from '../value-objects/email.vo';
 export { UserRole, type UserRoleType } from '../value-objects/user-role.vo';
 
 // Store integration
-export { 
+export {
   useUserRepositoryStore,
   useCurrentUser,
   useUserRepository,
   useUserLoading,
-  useUserError
+  useUserError,
 } from '../stores/user.repository.store';
 
 // Factory function for creating the repository stack

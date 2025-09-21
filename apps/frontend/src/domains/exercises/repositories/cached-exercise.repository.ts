@@ -51,7 +51,7 @@ export class CachedExerciseRepository implements IExerciseRepository {
     } else {
       // Clear specific patterns
       for (const [key] of this.cache) {
-        if (patterns.some(pattern => key.startsWith(pattern))) {
+        if (patterns.some((pattern) => key.startsWith(pattern))) {
           this.cache.delete(key);
         }
       }
@@ -61,7 +61,7 @@ export class CachedExerciseRepository implements IExerciseRepository {
   async findById(id: ExerciseId): Promise<Result<Exercise>> {
     const cacheKey = this.getCacheKey('findById', [id.value]);
     const cached = this.getCached<Result<Exercise>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -70,14 +70,16 @@ export class CachedExerciseRepository implements IExerciseRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
-  async findAll(options?: PaginationOptions): Promise<Result<PaginatedResult<Exercise>>> {
+  async findAll(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Exercise>>> {
     const cacheKey = this.getCacheKey('findAll', [options]);
     const cached = this.getCached<Result<PaginatedResult<Exercise>>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -86,14 +88,14 @@ export class CachedExerciseRepository implements IExerciseRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async findByDifficulty(difficulty: Difficulty): Promise<Result<Exercise[]>> {
     const cacheKey = this.getCacheKey('findByDifficulty', [difficulty.value]);
     const cached = this.getCached<Result<Exercise[]>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -102,14 +104,14 @@ export class CachedExerciseRepository implements IExerciseRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async findByTag(tag: string): Promise<Result<Exercise[]>> {
     const cacheKey = this.getCacheKey('findByTag', [tag]);
     const cached = this.getCached<Result<Exercise[]>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -118,7 +120,7 @@ export class CachedExerciseRepository implements IExerciseRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
@@ -135,7 +137,7 @@ export class CachedExerciseRepository implements IExerciseRepository {
     for (const id of ids) {
       const cacheKey = this.getCacheKey('findById', [id.value]);
       const cached = this.getCached<Result<Exercise>>(cacheKey);
-      
+
       if (cached && cached.isSuccess && cached.value) {
         cachedExercises.push(cached.value);
       } else {
@@ -154,7 +156,7 @@ export class CachedExerciseRepository implements IExerciseRepository {
         const cacheKey = this.getCacheKey('findById', [exercise.id.value]);
         this.setCached(cacheKey, Result.ok(exercise));
       }
-      
+
       return Result.ok([...cachedExercises, ...result.value]);
     }
 
@@ -164,7 +166,7 @@ export class CachedExerciseRepository implements IExerciseRepository {
   async findActive(): Promise<Result<Exercise[]>> {
     const cacheKey = this.getCacheKey('findActive', []);
     const cached = this.getCached<Result<Exercise[]>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -173,28 +175,28 @@ export class CachedExerciseRepository implements IExerciseRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async save(exercise: Exercise): Promise<Result<Exercise>> {
     const result = await this.repository.save(exercise);
-    
+
     if (result.isSuccess) {
       // Invalidate relevant caches
       this.invalidateCache(['findAll', 'findActive', 'count']);
-      
+
       // Cache the new exercise
       const cacheKey = this.getCacheKey('findById', [result.value!.id.value]);
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async update(exercise: Exercise): Promise<Result<Exercise>> {
     const result = await this.repository.update(exercise);
-    
+
     if (result.isSuccess) {
       // Invalidate relevant caches
       this.invalidateCache([
@@ -204,33 +206,33 @@ export class CachedExerciseRepository implements IExerciseRepository {
         'findActive',
         `findById:${JSON.stringify([exercise.id.value])}`,
       ]);
-      
+
       // Cache the updated exercise
       const cacheKey = this.getCacheKey('findById', [result.value!.id.value]);
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async delete(id: ExerciseId): Promise<Result<void>> {
     const result = await this.repository.delete(id);
-    
+
     if (result.isSuccess) {
       // Invalidate all caches
       this.invalidateCache();
     }
-    
+
     return result;
   }
 
   async saveMany(exercises: Exercise[]): Promise<Result<Exercise[]>> {
     const result = await this.repository.saveMany(exercises);
-    
+
     if (result.isSuccess) {
       // Invalidate relevant caches
       this.invalidateCache(['findAll', 'findActive', 'count']);
-      
+
       // Cache individual exercises
       if (result.value) {
         for (const exercise of result.value) {
@@ -239,18 +241,18 @@ export class CachedExerciseRepository implements IExerciseRepository {
         }
       }
     }
-    
+
     return result;
   }
 
   async deleteMany(ids: ExerciseId[]): Promise<Result<void>> {
     const result = await this.repository.deleteMany(ids);
-    
+
     if (result.isSuccess) {
       // Invalidate all caches
       this.invalidateCache();
     }
-    
+
     return result;
   }
 
@@ -258,7 +260,7 @@ export class CachedExerciseRepository implements IExerciseRepository {
     // Check if we have it cached
     const cacheKey = this.getCacheKey('findById', [id.value]);
     const cached = this.getCached<Result<Exercise>>(cacheKey);
-    
+
     if (cached && cached.isSuccess) {
       return Result.ok(true);
     }
@@ -269,7 +271,7 @@ export class CachedExerciseRepository implements IExerciseRepository {
   async count(): Promise<Result<number>> {
     const cacheKey = this.getCacheKey('count', []);
     const cached = this.getCached<Result<number>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -278,14 +280,14 @@ export class CachedExerciseRepository implements IExerciseRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async countByDifficulty(difficulty: Difficulty): Promise<Result<number>> {
     const cacheKey = this.getCacheKey('countByDifficulty', [difficulty.value]);
     const cached = this.getCached<Result<number>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -294,7 +296,7 @@ export class CachedExerciseRepository implements IExerciseRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 

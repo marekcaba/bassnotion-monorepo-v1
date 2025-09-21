@@ -27,28 +27,34 @@ export class CreatorRepository implements ICreatorRepository {
   async findByChannelUrl(channelUrl: ChannelUrl): Promise<Result<Creator>> {
     try {
       const response = await apiClient.get(
-        `${this.baseUrl}/channel-url/${encodeURIComponent(channelUrl.value)}`
+        `${this.baseUrl}/channel-url/${encodeURIComponent(channelUrl.value)}`,
       );
       const creator = Creator.fromDTO(response.data);
       return Result.ok(creator);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to fetch creator by channel URL');
+      return Result.fail(
+        error.message || 'Failed to fetch creator by channel URL',
+      );
     }
   }
 
   async findByChannelId(channelId: string): Promise<Result<Creator>> {
     try {
       const response = await apiClient.get(
-        `${this.baseUrl}/channel-id/${channelId}`
+        `${this.baseUrl}/channel-id/${channelId}`,
       );
       const creator = Creator.fromDTO(response.data);
       return Result.ok(creator);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to fetch creator by channel ID');
+      return Result.fail(
+        error.message || 'Failed to fetch creator by channel ID',
+      );
     }
   }
 
-  async findAll(options?: PaginationOptions): Promise<Result<PaginatedResult<Creator>>> {
+  async findAll(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Creator>>> {
     try {
       const params = new URLSearchParams();
       if (options) {
@@ -56,12 +62,14 @@ export class CreatorRepository implements ICreatorRepository {
         params.append('limit', options.limit.toString());
       }
 
-      const response = await apiClient.get(`${this.baseUrl}?${params.toString()}`);
+      const response = await apiClient.get(
+        `${this.baseUrl}?${params.toString()}`,
+      );
       const { items, total, page, limit } = response.data;
-      
+
       const creators = items.map((dto: any) => Creator.fromDTO(dto));
       const totalPages = Math.ceil(total / limit);
-      
+
       return Result.ok({
         items: creators,
         total,
@@ -79,7 +87,7 @@ export class CreatorRepository implements ICreatorRepository {
   async findByIds(ids: CreatorId[]): Promise<Result<Creator[]>> {
     try {
       const response = await apiClient.post(`${this.baseUrl}/batch`, {
-        ids: ids.map(id => id.value),
+        ids: ids.map((id) => id.value),
       });
       const creators = response.data.map((dto: any) => Creator.fromDTO(dto));
       return Result.ok(creators);
@@ -88,38 +96,43 @@ export class CreatorRepository implements ICreatorRepository {
     }
   }
 
-  async search(query: string, filters?: CreatorFilters): Promise<Result<Creator[]>> {
+  async search(
+    query: string,
+    filters?: CreatorFilters,
+  ): Promise<Result<Creator[]>> {
     try {
       const params = new URLSearchParams();
       params.append('q', query);
-      
+
       if (filters) {
         if (filters.subscriberCountMin !== undefined) {
           params.append('subscriberMin', filters.subscriberCountMin.toString());
         }
-        
+
         if (filters.subscriberCountMax !== undefined) {
           params.append('subscriberMax', filters.subscriberCountMax.toString());
         }
-        
+
         if (filters.country) {
           params.append('country', filters.country);
         }
-        
+
         if (filters.isVerified !== undefined) {
           params.append('verified', filters.isVerified.toString());
         }
-        
+
         if (filters.hasCustomUrl !== undefined) {
           params.append('customUrl', filters.hasCustomUrl.toString());
         }
-        
+
         if (filters.isStale !== undefined) {
           params.append('stale', filters.isStale.toString());
         }
       }
 
-      const response = await apiClient.get(`${this.baseUrl}/search?${params.toString()}`);
+      const response = await apiClient.get(
+        `${this.baseUrl}/search?${params.toString()}`,
+      );
       const creators = response.data.map((dto: any) => Creator.fromDTO(dto));
       return Result.ok(creators);
     } catch (error: any) {
@@ -127,10 +140,13 @@ export class CreatorRepository implements ICreatorRepository {
     }
   }
 
-  async findStale(hoursThreshold: number = 24, limit: number = 100): Promise<Result<Creator[]>> {
+  async findStale(
+    hoursThreshold: number = 24,
+    limit: number = 100,
+  ): Promise<Result<Creator[]>> {
     try {
       const response = await apiClient.get(
-        `${this.baseUrl}/stale?hours=${hoursThreshold}&limit=${limit}`
+        `${this.baseUrl}/stale?hours=${hoursThreshold}&limit=${limit}`,
       );
       const creators = response.data.map((dto: any) => Creator.fromDTO(dto));
       return Result.ok(creators);
@@ -139,7 +155,9 @@ export class CreatorRepository implements ICreatorRepository {
     }
   }
 
-  async findVerified(options?: PaginationOptions): Promise<Result<PaginatedResult<Creator>>> {
+  async findVerified(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Creator>>> {
     try {
       const params = new URLSearchParams();
       if (options) {
@@ -147,12 +165,14 @@ export class CreatorRepository implements ICreatorRepository {
         params.append('limit', options.limit.toString());
       }
 
-      const response = await apiClient.get(`${this.baseUrl}/verified?${params.toString()}`);
+      const response = await apiClient.get(
+        `${this.baseUrl}/verified?${params.toString()}`,
+      );
       const { items, total, page, limit } = response.data;
-      
+
       const creators = items.map((dto: any) => Creator.fromDTO(dto));
       const totalPages = Math.ceil(total / limit);
-      
+
       return Result.ok({
         items: creators,
         total,
@@ -167,10 +187,13 @@ export class CreatorRepository implements ICreatorRepository {
     }
   }
 
-  async findTop(sortBy: CreatorSortOptions, limit: number = 10): Promise<Result<Creator[]>> {
+  async findTop(
+    sortBy: CreatorSortOptions,
+    limit: number = 10,
+  ): Promise<Result<Creator[]>> {
     try {
       const response = await apiClient.get(
-        `${this.baseUrl}/top?sortBy=${sortBy.field}&direction=${sortBy.direction}&limit=${limit}`
+        `${this.baseUrl}/top?sortBy=${sortBy.field}&direction=${sortBy.direction}&limit=${limit}`,
       );
       const creators = response.data.map((dto: any) => Creator.fromDTO(dto));
       return Result.ok(creators);
@@ -193,7 +216,7 @@ export class CreatorRepository implements ICreatorRepository {
     try {
       const response = await apiClient.put(
         `${this.baseUrl}/${creator.id.value}`,
-        creator.toDTO()
+        creator.toDTO(),
       );
       const updatedCreator = Creator.fromDTO(response.data);
       return Result.ok(updatedCreator);
@@ -214,9 +237,11 @@ export class CreatorRepository implements ICreatorRepository {
   async saveMany(creators: Creator[]): Promise<Result<Creator[]>> {
     try {
       const response = await apiClient.post(`${this.baseUrl}/batch/create`, {
-        creators: creators.map(c => c.toDTO()),
+        creators: creators.map((c) => c.toDTO()),
       });
-      const savedCreators = response.data.map((dto: any) => Creator.fromDTO(dto));
+      const savedCreators = response.data.map((dto: any) =>
+        Creator.fromDTO(dto),
+      );
       return Result.ok(savedCreators);
     } catch (error: any) {
       return Result.fail(error.message || 'Failed to save creators');
@@ -226,9 +251,11 @@ export class CreatorRepository implements ICreatorRepository {
   async updateMany(creators: Creator[]): Promise<Result<Creator[]>> {
     try {
       const response = await apiClient.put(`${this.baseUrl}/batch/update`, {
-        creators: creators.map(c => c.toDTO()),
+        creators: creators.map((c) => c.toDTO()),
       });
-      const updatedCreators = response.data.map((dto: any) => Creator.fromDTO(dto));
+      const updatedCreators = response.data.map((dto: any) =>
+        Creator.fromDTO(dto),
+      );
       return Result.ok(updatedCreators);
     } catch (error: any) {
       return Result.fail(error.message || 'Failed to update creators');
@@ -238,7 +265,7 @@ export class CreatorRepository implements ICreatorRepository {
   async deleteMany(ids: CreatorId[]): Promise<Result<void>> {
     try {
       await apiClient.post(`${this.baseUrl}/batch/delete`, {
-        ids: ids.map(id => id.value),
+        ids: ids.map((id) => id.value),
       });
       return Result.ok(undefined);
     } catch (error: any) {
@@ -246,15 +273,18 @@ export class CreatorRepository implements ICreatorRepository {
     }
   }
 
-  async updateStats(id: CreatorId, stats: {
-    subscriberCount?: number;
-    videoCount?: number;
-    viewCount?: number;
-  }): Promise<Result<Creator>> {
+  async updateStats(
+    id: CreatorId,
+    stats: {
+      subscriberCount?: number;
+      videoCount?: number;
+      viewCount?: number;
+    },
+  ): Promise<Result<Creator>> {
     try {
       const response = await apiClient.patch(
         `${this.baseUrl}/${id.value}/stats`,
-        stats
+        stats,
       );
       const updatedCreator = Creator.fromDTO(response.data);
       return Result.ok(updatedCreator);
@@ -287,14 +317,16 @@ export class CreatorRepository implements ICreatorRepository {
   async existsByChannelUrl(channelUrl: ChannelUrl): Promise<Result<boolean>> {
     try {
       const response = await apiClient.head(
-        `${this.baseUrl}/channel-url/${encodeURIComponent(channelUrl.value)}`
+        `${this.baseUrl}/channel-url/${encodeURIComponent(channelUrl.value)}`,
       );
       return Result.ok(response.status === 200);
     } catch (error: any) {
       if (error.response?.status === 404) {
         return Result.ok(false);
       }
-      return Result.fail(error.message || 'Failed to check if creator exists by channel URL');
+      return Result.fail(
+        error.message || 'Failed to check if creator exists by channel URL',
+      );
     }
   }
 
@@ -310,11 +342,13 @@ export class CreatorRepository implements ICreatorRepository {
   async countByCountry(country: string): Promise<Result<number>> {
     try {
       const response = await apiClient.get(
-        `${this.baseUrl}/count/country/${encodeURIComponent(country)}`
+        `${this.baseUrl}/count/country/${encodeURIComponent(country)}`,
       );
       return Result.ok(response.data.count);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to count creators by country');
+      return Result.fail(
+        error.message || 'Failed to count creators by country',
+      );
     }
   }
 

@@ -3,9 +3,29 @@
  * Verifies that the new Transport provides all methods needed by UnifiedTransport
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Transport } from '../core/Transport.js';
 import { TransportWithEventBus } from '../core/TransportWithEventBus.js';
+
+// Mock Tone.js
+vi.mock('tone', () => ({
+  start: vi.fn().mockResolvedValue(undefined),
+  Transport: {
+    bpm: {
+      value: 120,
+    },
+    schedule: vi.fn(),
+    scheduleRepeat: vi.fn(),
+    clear: vi.fn(),
+    start: vi.fn().mockResolvedValue(undefined), // Add missing start method
+    stop: vi.fn().mockResolvedValue(undefined), // Add missing stop method
+    pause: vi.fn().mockResolvedValue(undefined), // Add missing pause method
+    state: 'stopped',
+    seconds: 0,
+  },
+  getContext: vi.fn(() => ({})),
+  context: {},
+}));
 
 describe('Transport API Compatibility', () => {
   const transport = new Transport();
@@ -140,7 +160,10 @@ describe('Transport API Compatibility', () => {
       await transportWithEvents.initialize(mockAudioContext as any);
       await transportWithEvents.start();
 
-      expect(mockEventBus.emit).toHaveBeenCalledWith('transport:start', expect.any(Object));
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'transport:start',
+        expect.any(Object),
+      );
     });
   });
 

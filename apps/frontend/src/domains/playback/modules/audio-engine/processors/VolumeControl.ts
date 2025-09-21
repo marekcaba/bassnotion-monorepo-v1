@@ -1,6 +1,6 @@
 /**
  * VolumeControl - Advanced volume control with smooth transitions
- * 
+ *
  * Features:
  * - Smooth volume transitions (no clicks/pops)
  * - Logarithmic/linear scaling options
@@ -9,7 +9,7 @@
  * - Metering support
  */
 
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { createStructuredLogger } from '../../shared/index.js';
 import { AudioNodeManager } from '../core/AudioNodeManager.js';
 import { AudioNodeWrapper } from '../types/index.js';
 
@@ -34,13 +34,17 @@ export class VolumeControl {
   private maxDb = 6;
   private fadeInProgress = false;
 
-  constructor(context: AudioContext, initialVolume = 1.0, scaling: VolumeScaling = 'logarithmic') {
+  constructor(
+    context: AudioContext,
+    initialVolume = 1.0,
+    scaling: VolumeScaling = 'logarithmic',
+  ) {
     this.context = context;
     this.nodeManager = new AudioNodeManager(context);
     this.gainNode = this.nodeManager.createGainNode(initialVolume);
     this.currentVolume = initialVolume;
     this.scaling = scaling;
-    
+
     logger.info('VolumeControl created', { initialVolume, scaling });
   }
 
@@ -50,11 +54,14 @@ export class VolumeControl {
   setVolume(volume: number): void {
     this.currentVolume = Math.max(0, Math.min(1, volume));
     const scaledValue = this.scaleVolume(this.currentVolume);
-    
+
     const gain = this.gainNode.node as GainNode;
     gain.gain.value = scaledValue;
-    
-    logger.debug('Volume set', { volume: this.currentVolume, scaled: scaledValue });
+
+    logger.debug('Volume set', {
+      volume: this.currentVolume,
+      scaled: scaledValue,
+    });
   }
 
   /**
@@ -63,27 +70,27 @@ export class VolumeControl {
   setVolumeSmooth(volume: number, duration = 0.05): void {
     this.currentVolume = Math.max(0, Math.min(1, volume));
     const scaledValue = this.scaleVolume(this.currentVolume);
-    
+
     const gain = this.gainNode.node as GainNode;
     const now = this.context.currentTime;
-    
+
     // Cancel any scheduled changes
     gain.gain.cancelScheduledValues(now);
-    
+
     // Set current value
     gain.gain.setValueAtTime(gain.gain.value, now);
-    
+
     // Ramp to target
     if (this.scaling === 'exponential' && scaledValue > 0) {
       gain.gain.exponentialRampToValueAtTime(scaledValue, now + duration);
     } else {
       gain.gain.linearRampToValueAtTime(scaledValue, now + duration);
     }
-    
-    logger.debug('Volume ramped', { 
-      volume: this.currentVolume, 
+
+    logger.debug('Volume ramped', {
+      volume: this.currentVolume,
       scaled: scaledValue,
-      duration 
+      duration,
     });
   }
 
@@ -95,23 +102,23 @@ export class VolumeControl {
       logger.warn('Fade already in progress');
       return;
     }
-    
+
     this.fadeInProgress = true;
     const startVolume = this.currentVolume;
-    
+
     logger.info('Fade in started', { duration, targetVolume, startVolume });
-    
+
     // Set to zero if starting from silence
     if (startVolume === 0) {
       this.setVolume(0.001); // Small value for exponential ramp
     }
-    
+
     // Perform fade
     this.setVolumeSmooth(targetVolume, duration);
-    
+
     // Wait for fade to complete
     await this.delay(duration * 1000);
-    
+
     this.fadeInProgress = false;
     logger.info('Fade in completed');
   }
@@ -124,18 +131,18 @@ export class VolumeControl {
       logger.warn('Fade already in progress');
       return;
     }
-    
+
     this.fadeInProgress = true;
     const startVolume = this.currentVolume;
-    
+
     logger.info('Fade out started', { duration, startVolume });
-    
+
     // Perform fade
     this.setVolumeSmooth(0, duration);
-    
+
     // Wait for fade to complete
     await this.delay(duration * 1000);
-    
+
     this.fadeInProgress = false;
     logger.info('Fade out completed');
   }
@@ -146,24 +153,27 @@ export class VolumeControl {
   async crossFade(targetVolume: number, duration: number): Promise<void> {
     const startVolume = this.currentVolume;
     const startTime = this.context.currentTime;
-    
+
     logger.info('Cross-fade started', { startVolume, targetVolume, duration });
-    
+
     // Schedule volume curve
     const gain = this.gainNode.node as GainNode;
     gain.gain.cancelScheduledValues(startTime);
     gain.gain.setValueAtTime(this.scaleVolume(startVolume), startTime);
-    
+
     // Use appropriate curve
     const targetScaled = this.scaleVolume(targetVolume);
     if (targetVolume > startVolume && this.scaling === 'exponential') {
-      gain.gain.exponentialRampToValueAtTime(targetScaled, startTime + duration);
+      gain.gain.exponentialRampToValueAtTime(
+        targetScaled,
+        startTime + duration,
+      );
     } else {
       gain.gain.linearRampToValueAtTime(targetScaled, startTime + duration);
     }
-    
+
     this.currentVolume = targetVolume;
-    
+
     await this.delay(duration * 1000);
     logger.info('Cross-fade completed');
   }
@@ -173,21 +183,21 @@ export class VolumeControl {
    */
   applyAutomation(points: VolumeAutomationPoint[]): void {
     if (points.length === 0) return;
-    
+
     const gain = this.gainNode.node as GainNode;
     const now = this.context.currentTime;
-    
+
     // Cancel existing automation
     gain.gain.cancelScheduledValues(now);
-    
+
     // Sort points by time
     const sortedPoints = [...points].sort((a, b) => a.time - b.time);
-    
+
     // Apply automation points
     sortedPoints.forEach((point, index) => {
       const time = now + point.time;
       const value = this.scaleVolume(Math.max(0, Math.min(1, point.value)));
-      
+
       if (index === 0) {
         gain.gain.setValueAtTime(value, time);
       } else {
@@ -199,11 +209,13 @@ export class VolumeControl {
         }
       }
     });
-    
+
     // Update current volume to last point
     const lastPoint = sortedPoints[sortedPoints.length - 1];
-    this.currentVolume = lastPoint.value;
-    
+    if (lastPoint) {
+      this.currentVolume = lastPoint.value;
+    }
+
     logger.info('Automation applied', { points: sortedPoints.length });
   }
 
@@ -212,10 +224,10 @@ export class VolumeControl {
    */
   enableMetering(): void {
     if (this.meterNode) return;
-    
+
     this.meterNode = this.nodeManager.createAnalyser(2048);
     this.gainNode.connect(this.meterNode);
-    
+
     logger.info('Metering enabled');
   }
 
@@ -224,19 +236,22 @@ export class VolumeControl {
    */
   getCurrentLevel(): number {
     if (!this.meterNode) return 0;
-    
+
     const analyser = this.meterNode.node as AnalyserNode;
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Float32Array(bufferLength);
-    
+
     analyser.getFloatTimeDomainData(dataArray);
-    
+
     // Calculate RMS
     let sum = 0;
     for (let i = 0; i < bufferLength; i++) {
-      sum += dataArray[i] * dataArray[i];
+      const value = dataArray[i];
+      if (value !== undefined) {
+        sum += value * value;
+      }
     }
-    
+
     return Math.sqrt(sum / bufferLength);
   }
 
@@ -245,19 +260,22 @@ export class VolumeControl {
    */
   getPeakLevel(): number {
     if (!this.meterNode) return 0;
-    
+
     const analyser = this.meterNode.node as AnalyserNode;
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Float32Array(bufferLength);
-    
+
     analyser.getFloatTimeDomainData(dataArray);
-    
+
     // Find peak
     let peak = 0;
     for (let i = 0; i < bufferLength; i++) {
-      peak = Math.max(peak, Math.abs(dataArray[i]));
+      const value = dataArray[i];
+      if (value !== undefined) {
+        peak = Math.max(peak, Math.abs(value));
+      }
     }
-    
+
     return peak;
   }
 
@@ -338,17 +356,18 @@ export class VolumeControl {
     switch (this.scaling) {
       case 'linear':
         return linear;
-        
-      case 'logarithmic':
+
+      case 'logarithmic': {
         // Convert to dB scale
         if (linear === 0) return 0;
         const db = this.minDb + (this.maxDb - this.minDb) * linear;
         return this.fromDecibels(db);
-        
+      }
+
       case 'exponential':
         // Exponential curve for more natural volume control
         return Math.pow(linear, 2);
-        
+
       default:
         return linear;
     }
@@ -358,7 +377,7 @@ export class VolumeControl {
    * Utility delay function
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

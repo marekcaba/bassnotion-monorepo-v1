@@ -68,15 +68,17 @@ export function TransportClock({
     const instanceId = Math.random().toString(36).substr(2, 9);
     globalInstanceCount++;
     const currentInstanceCount = globalInstanceCount;
-    
-    logger.info(`⏰ [TransportClock-${instanceId}] Instance ${currentInstanceCount} mounting - total instances: ${globalInstanceCount}`);
-    
+
+    logger.info(
+      `⏰ [TransportClock-${instanceId}] Instance ${currentInstanceCount} mounting - total instances: ${globalInstanceCount}`,
+    );
+
     let checkCount = 0;
     let isActiveInstance = true;
 
     const checkAudioContext = () => {
       if (!isActiveInstance) return;
-      
+
       checkCount++;
 
       const coreServices = (window as any).__globalCoreServices;
@@ -157,17 +159,23 @@ export function TransportClock({
     }
 
     return () => {
-      logger.info(`⏰ [TransportClock-${instanceId}] Instance ${currentInstanceCount} unmounting`);
+      logger.info(
+        `⏰ [TransportClock-${instanceId}] Instance ${currentInstanceCount} unmounting`,
+      );
       isActiveInstance = false;
       globalInstanceCount--;
-      
+
       // Only clear global interval when the last instance unmounts
       if (globalInstanceCount === 0 && globalAudioContextInterval) {
-        logger.info(`⏰ [TransportClock-${instanceId}] Last instance unmounting, cleaning up GLOBAL interval`);
+        logger.info(
+          `⏰ [TransportClock-${instanceId}] Last instance unmounting, cleaning up GLOBAL interval`,
+        );
         clearInterval(globalAudioContextInterval);
         globalAudioContextInterval = null;
       } else {
-        logger.info(`⏰ [TransportClock-${instanceId}] Instance unmounted, ${globalInstanceCount} instances remaining`);
+        logger.info(
+          `⏰ [TransportClock-${instanceId}] Instance unmounted, ${globalInstanceCount} instances remaining`,
+        );
       }
     };
   }, []);

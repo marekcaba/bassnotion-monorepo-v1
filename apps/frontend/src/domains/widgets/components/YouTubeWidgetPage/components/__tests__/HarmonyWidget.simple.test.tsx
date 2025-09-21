@@ -6,8 +6,8 @@ import { HarmonyWidget } from '../HarmonyWidget';
 // Mock dependencies
 vi.mock('@/domains/playback/hooks/useTrack', () => ({
   useTrack: () => ({
-    track: { 
-      id: 'harmony-widget-track', 
+    track: {
+      id: 'harmony-widget-track',
       state: 'ready',
       audioContext: new AudioContext(),
       isPlaying: false,
@@ -16,34 +16,43 @@ vi.mock('@/domains/playback/hooks/useTrack', () => ({
     play: vi.fn(),
     stop: vi.fn(),
     pause: vi.fn(),
-  })
+  }),
 }));
 
 vi.mock('@/domains/playback/utils/ensureAudioContext', () => ({
   ensureAudioContext: vi.fn(),
-  withAudioContext: (fn: Function) => fn
+  withAudioContext: (fn: Function) => fn,
 }));
 
 // Mock the GlobalSampleCache
-vi.mock('@/domains/playback/services/storage/GlobalSampleCache', () => ({
+vi.mock('@/domains/playback/modules/storage/cache/GlobalSampleCache', () => ({
   GlobalSampleCache: {
     getCachedInstrument: vi.fn().mockReturnValue(null),
     getCachedInstrumentNames: vi.fn().mockReturnValue([]),
     hasInstrument: vi.fn().mockReturnValue(false),
-  }
+    getStats: vi.fn().mockReturnValue({
+      samplesCount: 0,
+      instrumentsCount: 0,
+      totalSize: 0,
+    }),
+  },
 }));
 
 // Mock UI components
 vi.mock('../VolumeKnob', () => ({
-  VolumeKnob: () => <div data-testid="volume-knob">Volume Knob</div>
+  VolumeKnob: () => <div data-testid="volume-knob">Volume Knob</div>,
 }));
 
 vi.mock('../ChordSlotSelector', () => ({
-  ChordSlotSelector: () => <div data-testid="chord-slot-selector">Chord Slot Selector</div>
+  ChordSlotSelector: () => (
+    <div data-testid="chord-slot-selector">Chord Slot Selector</div>
+  ),
 }));
 
 vi.mock('../ProfessionalKeyboardSelector', () => ({
-  ProfessionalKeyboardSelector: () => <div data-testid="keyboard-selector">Keyboard Selector</div>
+  ProfessionalKeyboardSelector: () => (
+    <div data-testid="keyboard-selector">Keyboard Selector</div>
+  ),
 }));
 
 describe('HarmonyWidget Simple Tests', () => {
@@ -63,14 +72,16 @@ describe('HarmonyWidget Simple Tests', () => {
     };
 
     render(<HarmonyWidget {...props} />);
-    
+
     // Should render the widget
     expect(screen.getByText('Harmony Track')).toBeInTheDocument();
   });
 
   it('should check for pre-loaded instruments on mount', async () => {
-    const { GlobalSampleCache } = await import('@/domains/playback/services/storage/GlobalSampleCache');
-    
+    const { GlobalSampleCache } = await import(
+      '@/domains/playback/modules/storage/cache/GlobalSampleCache'
+    );
+
     const props = {
       progression: ['C'],
       currentChord: 0,
@@ -82,10 +93,12 @@ describe('HarmonyWidget Simple Tests', () => {
     };
 
     render(<HarmonyWidget {...props} />);
-    
+
     // Should check for pre-loaded instrument
     await waitFor(() => {
-      expect(GlobalSampleCache.getCachedInstrument).toHaveBeenCalledWith('harmony-preloaded');
+      expect(GlobalSampleCache.getCachedInstrument).toHaveBeenCalledWith(
+        'harmony-preloaded',
+      );
     });
   });
 
@@ -101,7 +114,7 @@ describe('HarmonyWidget Simple Tests', () => {
     };
 
     const { container } = render(<HarmonyWidget {...props} />);
-    
+
     expect(container.firstChild).toBeNull();
   });
 });

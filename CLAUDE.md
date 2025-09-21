@@ -386,6 +386,36 @@ NEVER create files unless they're absolutely necessary for achieving your goal.
 ALWAYS prefer editing an existing file to creating a new one.
 NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
 
+## Documentation Rules (CRITICAL)
+
+### Before Creating ANY Documentation
+1. **CHECK docs/INDEX.md FIRST** - Is there already a doc for this?
+2. **NEVER create docs in root directory** - Only README.md and CLAUDE.md belong there
+3. **Follow the structure**:
+   ```
+   docs/
+   ├── INDEX.md                    # UPDATE THIS when adding docs
+   ├── architecture/analysis/      # System analysis
+   ├── implementations/            # Completed features
+   ├── archived/fixes/            # Bug fixes
+   ├── developer-handbook/         # How-to guides
+   └── NEW STORIES/               # Active development
+   ```
+
+### When You MUST Create Documentation
+- User explicitly asks for it
+- Completing a major implementation
+- Document goes in proper folder per structure above
+- UPDATE docs/INDEX.md immediately after creating
+
+### Common Mistakes to AVOID
+- Creating test-*.md files in root
+- Creating multiple docs for same topic
+- Not checking INDEX.md first
+- Creating temporary debugging docs
+
+See `/docs/DOCUMENTATION_GUIDELINES.md` for full rules.
+
 ## Debugging & Development Tools
 
 ### Correlation IDs (ALWAYS USE)

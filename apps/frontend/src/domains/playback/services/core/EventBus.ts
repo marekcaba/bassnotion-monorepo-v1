@@ -9,9 +9,10 @@
  */
 
 import { Service } from './ServiceRegistry.js';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { CircuitBreaker } from '../errors/CircuitBreaker.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { getLogger } from '@/utils/logger.js';
+
+const logger = getLogger('EventBus');
 
 export interface EventData {
   [key: string]: unknown;
@@ -106,7 +107,11 @@ export class EventBus implements Service {
     logger.info(
       `🎵 EventBus CREATED: Instance #${EventBus._instanceCount}, ID: ${this._instanceId}`,
     );
-    console.trace('EventBus creation stack trace');
+    if (process.env.NODE_ENV === 'development') {
+      logger.debug('EventBus creation stack trace', {
+        instanceId: this._instanceId,
+      });
+    }
   }
 
   /**
@@ -144,12 +149,14 @@ export class EventBus implements Service {
       this.handlers.set(event, new Set());
     }
 
-    const handlers = this.handlers.get(event)!;
+    const handlers = this.handlers.get(event);
+    if (!handlers) {
+      throw new Error(`No handlers found for event: ${event}`);
+    }
     handlers.add(handler as EventHandler);
 
     // Return unsubscribe function
     return () => {
-  const { correlationId, logger } = useCorrelation('handlers');
       handlers.delete(handler as EventHandler);
       if (handlers.size === 0) {
         this.handlers.delete(event);
@@ -244,7 +251,10 @@ export class EventBus implements Service {
           await handler(data, metadata);
         } catch (error) {
           // Log error but don't propagate to other handlers
-          logger.error(`Error in event handler for '${event}':`, error);
+          logger.error(
+            `Error in event handler for '${event}':`,
+            error as Error,
+          );
           throw error; // Re-throw for circuit breaker tracking
         }
       });
@@ -273,7 +283,11 @@ export class EventBus implements Service {
         }),
       );
     }
-    return this.circuitBreakers.get(event)!;
+    const circuitBreaker = this.circuitBreakers.get(event);
+    if (!circuitBreaker) {
+      throw new Error(`No circuit breaker found for event: ${event}`);
+    }
+    return circuitBreaker;
   }
 
   /**
@@ -380,16 +394,19 @@ export class EventBus implements Service {
    * Validate event data against schema
    */
   private validateEventData(
-    event: string,
-    data: EventData,
-    schema: EventSchema,
+    _event: string,
+    _data: EventData,
+    _schema: EventSchema,
   ): boolean {
     // Simple validation - in production, use Zod or similar
     try {
       // This is a placeholder - implement actual schema validation
       return true;
     } catch (error) {
-      logger.error(`Schema validation failed for event '${event}':`, error);
+      logger.error(
+        `Schema validation failed for event '${_event}':`,
+        error as Error,
+      );
       return false;
     }
   }
@@ -571,7 +588,7 @@ export class EventBus implements Service {
     this.eventHistory.push({ event, data, metadata });
 
     // Trim history if it exceeds max size
-    if (this.eventHistory.length > this.config.maxEventHistory!) {
+    if (this.eventHistory.length > this.config.maxEventHistory) {
       this.eventHistory.shift();
     }
   }

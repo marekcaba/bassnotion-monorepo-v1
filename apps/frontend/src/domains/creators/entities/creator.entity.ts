@@ -175,20 +175,26 @@ export class Creator {
     const hasEnoughSubscribers = (this._props.subscriberCount || 0) >= 10000;
     const hasEnoughVideos = (this._props.videoCount || 0) >= 50;
     const isOldEnough = this._props.publishedAt
-      ? new Date().getTime() - this._props.publishedAt.getTime() > 365 * 24 * 60 * 60 * 1000
+      ? new Date().getTime() - this._props.publishedAt.getTime() >
+        365 * 24 * 60 * 60 * 1000
       : false;
 
     return hasEnoughSubscribers && hasEnoughVideos && isOldEnough;
   }
 
   getEngagementRate(): number | null {
-    if (!this._props.viewCount || !this._props.videoCount || !this._props.subscriberCount) {
+    if (
+      !this._props.viewCount ||
+      !this._props.videoCount ||
+      !this._props.subscriberCount
+    ) {
       return null;
     }
 
     const avgViewsPerVideo = this._props.viewCount / this._props.videoCount;
-    const engagementRate = (avgViewsPerVideo / this._props.subscriberCount) * 100;
-    
+    const engagementRate =
+      (avgViewsPerVideo / this._props.subscriberCount) * 100;
+
     return Math.round(engagementRate * 100) / 100; // Round to 2 decimal places
   }
 
@@ -197,15 +203,15 @@ export class Creator {
 
     const now = new Date();
     const published = new Date(this._props.publishedAt);
-    
+
     let years = now.getFullYear() - published.getFullYear();
     let months = now.getMonth() - published.getMonth();
-    
+
     if (months < 0) {
       years--;
       months += 12;
     }
-    
+
     return { years, months };
   }
 
@@ -247,7 +253,9 @@ export class Creator {
       country: dto.country,
       customUrl: dto.custom_url,
       publishedAt: dto.published_at ? new Date(dto.published_at) : undefined,
-      lastFetchedAt: dto.last_fetched_at ? new Date(dto.last_fetched_at) : undefined,
+      lastFetchedAt: dto.last_fetched_at
+        ? new Date(dto.last_fetched_at)
+        : undefined,
       isVerified: dto.is_verified,
       createdAt: new Date(dto.created_at),
       updatedAt: new Date(dto.updated_at),

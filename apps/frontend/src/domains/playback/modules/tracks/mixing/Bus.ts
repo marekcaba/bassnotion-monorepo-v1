@@ -1,6 +1,6 @@
 /**
  * Bus - Audio bus for mixing and routing
- * 
+ *
  * Types of buses:
  * - Master Bus: Final output destination
  * - Sub Bus: Group multiple tracks (e.g., drums bus)
@@ -10,8 +10,7 @@
 
 import * as Tone from 'tone';
 import { Channel } from './Channel.js';
-import { EventBus } from '../../../services/core/EventBus.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { EventBus, createStructuredLogger } from '../../shared/index.js';
 
 const logger = createStructuredLogger('Bus');
 
@@ -25,6 +24,7 @@ export interface BusConfig {
   initialGain?: number;
   hasDynamics?: boolean;
   hasEQ?: boolean;
+  audioEngine?: any; // Optional AudioEngine for DI
 }
 
 export interface BusDynamics {
@@ -46,32 +46,32 @@ export class Bus {
   public name: string;
   public readonly type: BusType;
   public parentBusId?: string;
-  
+
   // Audio nodes
   private input: Tone.Gain;
   private output: Tone.Gain;
   private gainNode: Tone.Gain;
-  
+
   // Processing
   private dynamics?: BusDynamics;
   private eq?: Tone.EQ3;
   private inserts: BusInsert[] = [];
-  
+
   // Child management
   private childBusIds = new Set<string>();
   private connectedChannels = new Set<string>();
-  
+
   // Metering
   private meter: Tone.Meter;
   private analyser: Tone.Analyser;
-  
+
   // State
   private gain: number;
-  private isMuted: boolean = false;
-  private isBypassed: boolean = false;
-  
+  private isMuted = false;
+
   // Event handling
   private eventBus?: EventBus;
+  private audioEngine?: any; // Optional AudioEngine for DI
 
   constructor(config: BusConfig) {
     this.id = config.busId;
@@ -79,28 +79,29 @@ export class Bus {
     this.type = config.type;
     this.parentBusId = config.parentBusId;
     this.gain = config.initialGain ?? 1;
-    
-    // Create audio nodes
-    this.input = new Tone.Gain(1);
-    this.output = new Tone.Gain(1);
-    this.gainNode = new Tone.Gain(this.gain);
-    
+    this.audioEngine = config.audioEngine;
+
+    // Create audio nodes using factory if available
+    this.input = this.createGain(1);
+    this.output = this.createGain(1);
+    this.gainNode = this.createGain(this.gain);
+
     // Create metering
-    this.meter = new Tone.Meter();
-    this.analyser = new Tone.Analyser('waveform', 2048);
-    
+    this.meter = this.createMeter();
+    this.analyser = this.createAnalyser('waveform', 2048);
+
     // Create optional processing
     if (config.hasDynamics ?? (this.type === 'master' || this.type === 'sub')) {
       this.createDynamics();
     }
-    
+
     if (config.hasEQ ?? (this.type === 'master' || this.type === 'sub')) {
       this.createEQ();
     }
-    
+
     // Build signal chain
     this.buildSignalChain();
-    
+
     logger.info('Bus created', {
       busId: this.id,
       name: this.name,
@@ -112,18 +113,18 @@ export class Bus {
    * Create dynamics processing
    */
   private createDynamics(): void {
-    const compressor = new Tone.Compressor({
+    const compressor = this.createCompressor({
       threshold: -12,
       ratio: 3,
       attack: 0.01,
       release: 0.1,
       knee: 2,
     });
-    
-    const limiter = new Tone.Limiter({
+
+    const limiter = this.createLimiter({
       threshold: -1,
     });
-    
+
     this.dynamics = {
       compressor,
       limiter,
@@ -135,7 +136,7 @@ export class Bus {
    * Create EQ
    */
   private createEQ(): void {
-    this.eq = new Tone.EQ3({
+    this.eq = this.createEQ3({
       low: 0,
       mid: 0,
       high: 0,
@@ -149,17 +150,17 @@ export class Bus {
    */
   private buildSignalChain(): void {
     let currentNode: Tone.ToneAudioNode = this.input;
-    
+
     // Gain stage
     currentNode.connect(this.gainNode);
     currentNode = this.gainNode;
-    
+
     // EQ (optional)
     if (this.eq) {
       currentNode.connect(this.eq);
       currentNode = this.eq;
     }
-    
+
     // Insert effects would go here
     for (const insert of this.inserts) {
       if (!insert.bypassed) {
@@ -167,22 +168,22 @@ export class Bus {
         currentNode = insert.effect;
       }
     }
-    
+
     // Dynamics (optional)
     if (this.dynamics && !this.dynamics.bypassed) {
       currentNode.connect(this.dynamics.compressor);
       currentNode = this.dynamics.compressor;
-      
+
       if (this.type === 'master') {
         currentNode.connect(this.dynamics.limiter);
         currentNode = this.dynamics.limiter;
       }
     }
-    
+
     // Metering
     currentNode.connect(this.meter);
     currentNode.connect(this.analyser);
-    
+
     // Output
     currentNode.connect(this.output);
   }
@@ -195,15 +196,15 @@ export class Bus {
       logger.warn('Channel already connected', { channelId, busId: this.id });
       return;
     }
-    
+
     channel.getOutput().connect(this.input);
     this.connectedChannels.add(channelId);
-    
+
     logger.debug('Channel connected to bus', {
       channelId,
       busId: this.id,
     });
-    
+
     this.emitEvent('channelConnected', { channelId });
   }
 
@@ -214,15 +215,15 @@ export class Bus {
     if (!this.connectedChannels.has(channelId)) {
       return;
     }
-    
+
     channel.getOutput().disconnect(this.input);
     this.connectedChannels.delete(channelId);
-    
+
     logger.debug('Channel disconnected from bus', {
       channelId,
       busId: this.id,
     });
-    
+
     this.emitEvent('channelDisconnected', { channelId });
   }
 
@@ -233,14 +234,14 @@ export class Bus {
     if (this.childBusIds.has(childBusId)) {
       return;
     }
-    
+
     this.childBusIds.add(childBusId);
-    
+
     logger.debug('Child bus added', {
       parentBusId: this.id,
       childBusId,
     });
-    
+
     this.emitEvent('childBusAdded', { childBusId });
   }
 
@@ -249,36 +250,37 @@ export class Bus {
    */
   removeChildBus(childBusId: string): void {
     this.childBusIds.delete(childBusId);
-    
+
     logger.debug('Child bus removed', {
       parentBusId: this.id,
       childBusId,
     });
-    
+
     this.emitEvent('childBusRemoved', { childBusId });
   }
 
   /**
    * Set gain (0-2, where 1 is unity)
    */
-  setGain(gain: number, rampTime: number = 0.05): void {
+  setGain(gain: number, rampTime = 0.05): void {
     const clampedGain = Math.max(0, Math.min(2, gain));
     this.gain = clampedGain;
-    
+
     if (rampTime > 0) {
       this.gainNode.gain.rampTo(clampedGain, rampTime);
     } else {
       this.gainNode.gain.value = clampedGain;
     }
-    
+
     this.emitEvent('gainChanged', { gain: clampedGain });
   }
 
   /**
    * Set gain in dB
    */
-  setGainDb(db: number, rampTime: number = 0.05): void {
-    const linear = Tone.dbToGain(db);
+  setGainDb(db: number, rampTime = 0.05): void {
+    const tone = this.audioEngine?.getTone?.() || Tone;
+    const linear = tone.dbToGain(db);
     this.setGain(linear, rampTime);
   }
 
@@ -305,7 +307,7 @@ export class Bus {
     if (!this.eq) {
       throw new Error('Bus has no EQ');
     }
-    
+
     const clampedGain = Math.max(-24, Math.min(24, gain));
     this.eq.low.value = clampedGain;
   }
@@ -317,7 +319,7 @@ export class Bus {
     if (!this.eq) {
       throw new Error('Bus has no EQ');
     }
-    
+
     const clampedGain = Math.max(-24, Math.min(24, gain));
     this.eq.mid.value = clampedGain;
   }
@@ -329,7 +331,7 @@ export class Bus {
     if (!this.eq) {
       throw new Error('Bus has no EQ');
     }
-    
+
     const clampedGain = Math.max(-24, Math.min(24, gain));
     this.eq.high.value = clampedGain;
   }
@@ -341,7 +343,7 @@ export class Bus {
     if (!this.dynamics) {
       throw new Error('Bus has no dynamics');
     }
-    
+
     this.dynamics.compressor.threshold.value = threshold;
   }
 
@@ -352,7 +354,7 @@ export class Bus {
     if (!this.dynamics) {
       throw new Error('Bus has no dynamics');
     }
-    
+
     this.dynamics.compressor.ratio.value = ratio;
   }
 
@@ -363,7 +365,7 @@ export class Bus {
     if (!this.dynamics) {
       return;
     }
-    
+
     this.dynamics.bypassed = bypassed;
     this.buildSignalChain();
   }
@@ -378,20 +380,24 @@ export class Bus {
       effect,
       bypassed: false,
     };
-    
-    if (position !== undefined && position >= 0 && position <= this.inserts.length) {
+
+    if (
+      position !== undefined &&
+      position >= 0 &&
+      position <= this.inserts.length
+    ) {
       this.inserts.splice(position, 0, insert);
     } else {
       this.inserts.push(insert);
     }
-    
+
     this.buildSignalChain();
-    
+
     logger.debug('Insert added to bus', {
       busId: this.id,
       insertId,
     });
-    
+
     return insertId;
   }
 
@@ -399,18 +405,20 @@ export class Bus {
    * Remove insert
    */
   removeInsert(insertId: string): void {
-    const index = this.inserts.findIndex(i => i.id === insertId);
+    const index = this.inserts.findIndex((i) => i.id === insertId);
     if (index === -1) {
       return;
     }
-    
+
     const insert = this.inserts[index];
-    insert.effect.disconnect();
-    insert.effect.dispose();
-    
+    if (insert) {
+      insert.effect.disconnect();
+      insert.effect.dispose();
+    }
+
     this.inserts.splice(index, 1);
     this.buildSignalChain();
-    
+
     logger.debug('Insert removed from bus', {
       busId: this.id,
       insertId,
@@ -421,11 +429,11 @@ export class Bus {
    * Bypass insert
    */
   bypassInsert(insertId: string, bypassed: boolean): void {
-    const insert = this.inserts.find(i => i.id === insertId);
+    const insert = this.inserts.find((i) => i.id === insertId);
     if (!insert) {
       return;
     }
-    
+
     insert.bypassed = bypassed;
     this.buildSignalChain();
   }
@@ -450,12 +458,16 @@ export class Bus {
   getPeak(): number {
     const waveform = this.getWaveform();
     let peak = 0;
-    
+
     for (let i = 0; i < waveform.length; i++) {
-      peak = Math.max(peak, Math.abs(waveform[i]));
+      const sample = waveform[i];
+      if (sample !== undefined) {
+        peak = Math.max(peak, Math.abs(sample));
+      }
     }
-    
-    return Tone.gainToDb(peak);
+
+    const tone = this.audioEngine?.getTone?.() || Tone;
+    return tone.gainToDb(peak);
   }
 
   /**
@@ -464,13 +476,17 @@ export class Bus {
   getRMS(): number {
     const waveform = this.getWaveform();
     let sum = 0;
-    
+
     for (let i = 0; i < waveform.length; i++) {
-      sum += waveform[i] * waveform[i];
+      const sample = waveform[i];
+      if (sample !== undefined) {
+        sum += sample * sample;
+      }
     }
-    
+
     const rms = Math.sqrt(sum / waveform.length);
-    return Tone.gainToDb(rms);
+    const tone = this.audioEngine?.getTone?.() || Tone;
+    return tone.gainToDb(rms);
   }
 
   /**
@@ -531,40 +547,73 @@ export class Bus {
     this.gainNode.disconnect();
     this.meter.disconnect();
     this.analyser.disconnect();
-    
+
     // Dispose nodes
     this.input.dispose();
     this.output.dispose();
     this.gainNode.dispose();
     this.meter.dispose();
     this.analyser.dispose();
-    
+
     // Dispose optional components
     if (this.eq) {
       this.eq.disconnect();
       this.eq.dispose();
     }
-    
+
     if (this.dynamics) {
       this.dynamics.compressor.disconnect();
       this.dynamics.compressor.dispose();
       this.dynamics.limiter.disconnect();
       this.dynamics.limiter.dispose();
     }
-    
+
     // Dispose inserts
-    this.inserts.forEach(insert => {
+    this.inserts.forEach((insert) => {
       insert.effect.disconnect();
       insert.effect.dispose();
     });
-    
+
     this.inserts = [];
     this.connectedChannels.clear();
     this.childBusIds.clear();
-    
+
     logger.info('Bus disposed', {
       busId: this.id,
       busType: this.type,
     });
+  }
+
+  // Factory methods for DI support
+  private createGain(gain?: number): any {
+    return this.audioEngine?.createGain?.(gain) || new Tone.Gain(gain);
+  }
+
+  private createMeter(options?: any): any {
+    return this.audioEngine?.createMeter?.(options) || new Tone.Meter(options);
+  }
+
+  private createAnalyser(type?: string, size?: number): any {
+    return (
+      this.audioEngine?.createAnalyser?.(type, size) ||
+      new Tone.Analyser(type as any, size)
+    );
+  }
+
+  private createCompressor(options?: any): any {
+    return (
+      this.audioEngine?.createCompressor?.(options) ||
+      new Tone.Compressor(options)
+    );
+  }
+
+  private createLimiter(options?: any): any {
+    return (
+      this.audioEngine?.createLimiter?.(options) || new Tone.Limiter(options)
+    );
+  }
+
+  private createEQ3(options?: any): any {
+    return this.audioEngine?.createEQ3?.(options) || new Tone.EQ3(options);
   }
 }

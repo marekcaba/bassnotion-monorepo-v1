@@ -1,6 +1,6 @@
 /**
  * WAM Adapter Exports
- * 
+ *
  * Web Audio Module (WAM) adapters for instrument integration
  */
 

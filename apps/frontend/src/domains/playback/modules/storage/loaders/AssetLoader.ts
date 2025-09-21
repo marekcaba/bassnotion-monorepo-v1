@@ -1,15 +1,19 @@
 /**
  * AssetLoader - Comprehensive asset loading and management
- * 
+ *
  * Extends SampleLoader to handle various asset types including
  * audio samples, instrument definitions, presets, and metadata.
  * Provides batch loading, dependency resolution, and manifest support.
  */
 
-import { SampleLoader, type LoadOptions, type LoadResult } from './SampleLoader.js';
+import {
+  SampleLoader,
+  type LoadOptions,
+  type LoadResult,
+} from './SampleLoader.js';
 import { SampleCache } from '../cache/SampleCache.js';
-import { EventBus } from '../../../services/core/EventBus.js';
-import { createStructuredLogger, type AudioSampleMetadata } from '@bassnotion/contracts';
+import { EventBus, createStructuredLogger } from '../../shared/index.js';
+import type { AudioSampleMetadata } from '@bassnotion/contracts';
 
 const logger = createStructuredLogger('AssetLoader');
 
@@ -32,12 +36,12 @@ export interface AssetDefinition {
   qualityProfiles?: QualityProfile[];
 }
 
-export type AssetType = 
-  | 'sample' 
-  | 'instrument' 
-  | 'preset' 
-  | 'impulse' 
-  | 'wavetable' 
+export type AssetType =
+  | 'sample'
+  | 'instrument'
+  | 'preset'
+  | 'impulse'
+  | 'wavetable'
   | 'soundfont'
   | 'configuration'
   | 'metadata';
@@ -80,15 +84,14 @@ export class AssetLoader extends SampleLoader {
   private assetConfig: AssetLoaderConfig;
   private manifest?: AssetManifest;
   private loadedAssets = new Map<string, AssetLoadResult>();
-  private loadingQueue: AssetDefinition[] = [];
   private dependencyGraph = new Map<string, Set<string>>();
 
   constructor(
-    config: AssetLoaderConfig & Parameters<typeof SampleLoader>[0],
+    config: AssetLoaderConfig & ConstructorParameters<typeof SampleLoader>[0],
     cache?: SampleCache,
-    eventBus?: EventBus
+    eventBus?: EventBus,
   ) {
-    super(config, cache, eventBus);
+    super(config as any, cache, eventBus);
     this.assetConfig = config;
   }
 
@@ -102,22 +105,29 @@ export class AssetLoader extends SampleLoader {
     }
 
     try {
-      logger.info('Loading asset manifest from:', manifestUrl);
-      
+      logger.info('Loading asset manifest from:', { manifestUrl });
+
       const response = await fetch(manifestUrl);
       if (!response.ok) {
         throw new Error(`Failed to load manifest: ${response.statusText}`);
       }
-      
+
       this.manifest = await response.json();
-      
+
       // Build dependency graph
       this.buildDependencyGraph();
-      
+
+      if (!this.manifest) {
+        throw new Error('Failed to parse manifest');
+      }
+
       logger.info(`Loaded manifest with ${this.manifest.assets.length} assets`);
       return this.manifest;
     } catch (error) {
-      logger.error('Failed to load manifest:', error);
+      logger.error(
+        'Failed to load manifest:',
+        error instanceof Error ? error : new Error(String(error)),
+      );
       throw error;
     }
   }
@@ -127,7 +137,7 @@ export class AssetLoader extends SampleLoader {
    */
   async loadAsset(
     assetId: string,
-    options: LoadOptions = {}
+    options: LoadOptions = {},
   ): Promise<AssetLoadResult> {
     // Check if already loaded
     const existing = this.loadedAssets.get(assetId);
@@ -149,13 +159,13 @@ export class AssetLoader extends SampleLoader {
 
     // Load based on asset type
     const result = await this.loadAssetByType(asset, options);
-    
+
     // Store result
     this.loadedAssets.set(assetId, result);
-    
+
     // Emit progress
     this.emitAssetLoaded(asset, result);
-    
+
     return result;
   }
 
@@ -164,26 +174,29 @@ export class AssetLoader extends SampleLoader {
    */
   async loadAssets(
     assetIds: string[],
-    options: LoadOptions = {}
+    options: LoadOptions = {},
   ): Promise<Map<string, AssetLoadResult>> {
     const results = new Map<string, AssetLoadResult>();
-    
+
     // Resolve load order if dependencies enabled
     const loadOrder = this.assetConfig.enableDependencyResolution
       ? this.resolveLoadOrder(assetIds)
       : assetIds;
-    
+
     // Load in batches
     const batchSize = this.assetConfig.batchSize;
     for (let i = 0; i < loadOrder.length; i += batchSize) {
       const batch = loadOrder.slice(i, i + batchSize);
-      
+
       const batchPromises = batch.map(async (assetId) => {
         try {
           const result = await this.loadAsset(assetId, options);
           results.set(assetId, result);
         } catch (error) {
-          logger.error(`Failed to load asset ${assetId}:`, error);
+          logger.error(
+            `Failed to load asset ${assetId}:`,
+            error instanceof Error ? error : new Error(String(error)),
+          );
           results.set(assetId, {
             assetId,
             assetType: 'sample',
@@ -196,33 +209,39 @@ export class AssetLoader extends SampleLoader {
           });
         }
       });
-      
+
       await Promise.all(batchPromises);
-      
+
       // Emit batch progress
       this.emitBatchProgress({
         total: loadOrder.length,
         loaded: results.size,
-        failed: Array.from(results.values()).filter(r => !r.success).length,
+        failed: Array.from(results.values()).filter((r) => !r.success).length,
         percentage: (results.size / loadOrder.length) * 100,
       });
     }
-    
+
     return results;
   }
 
   /**
    * Load all essential assets
    */
-  async loadEssentialAssets(options: LoadOptions = {}): Promise<Map<string, AssetLoadResult>> {
+  async loadEssentialAssets(
+    options: LoadOptions = {},
+  ): Promise<Map<string, AssetLoadResult>> {
     if (!this.manifest) {
       await this.loadManifest();
     }
-    
-    const essentialAssets = this.manifest!.assets
-      .filter(a => a.priority === 'essential')
-      .map(a => a.id);
-    
+
+    if (!this.manifest) {
+      throw new Error('Manifest not loaded');
+    }
+
+    const essentialAssets = this.manifest.assets
+      .filter((a) => a.priority === 'essential')
+      .map((a) => a.id);
+
     logger.info(`Loading ${essentialAssets.length} essential assets`);
     return this.loadAssets(essentialAssets, options);
   }
@@ -232,16 +251,20 @@ export class AssetLoader extends SampleLoader {
    */
   async loadAssetsByType(
     type: AssetType,
-    options: LoadOptions = {}
+    options: LoadOptions = {},
   ): Promise<Map<string, AssetLoadResult>> {
     if (!this.manifest) {
       await this.loadManifest();
     }
-    
-    const assets = this.manifest!.assets
-      .filter(a => a.type === type)
-      .map(a => a.id);
-    
+
+    if (!this.manifest) {
+      throw new Error('Manifest not loaded');
+    }
+
+    const assets = this.manifest.assets
+      .filter((a) => a.type === type)
+      .map((a) => a.id);
+
     logger.info(`Loading ${assets.length} ${type} assets`);
     return this.loadAssets(assets, options);
   }
@@ -253,24 +276,34 @@ export class AssetLoader extends SampleLoader {
     if (!this.manifest) {
       await this.loadManifest();
     }
-    
+
     // Group by priority
     const priorityGroups = new Map<string, AssetDefinition[]>();
-    for (const asset of this.manifest!.assets) {
+    if (!this.manifest) {
+      return;
+    }
+
+    for (const asset of this.manifest.assets) {
       const priority = asset.priority || 'normal';
       if (!priorityGroups.has(priority)) {
         priorityGroups.set(priority, []);
       }
-      priorityGroups.get(priority)!.push(asset);
+      const group = priorityGroups.get(priority);
+      if (group) {
+        group.push(asset);
+      }
     }
-    
+
     // Load in priority order
     const priorities = ['essential', 'high', 'normal', 'low'];
     for (const priority of priorities) {
       const assets = priorityGroups.get(priority);
       if (assets && assets.length > 0) {
         logger.info(`Preloading ${assets.length} ${priority} priority assets`);
-        await this.loadAssets(assets.map(a => a.id), { ...options, preload: true });
+        await this.loadAssets(
+          assets.map((a) => a.id),
+          { ...options, preload: true },
+        );
       }
     }
   }
@@ -280,13 +313,13 @@ export class AssetLoader extends SampleLoader {
    */
   private async loadAssetByType(
     asset: AssetDefinition,
-    options: LoadOptions
+    options: LoadOptions,
   ): Promise<AssetLoadResult> {
     const startTime = performance.now();
-    
+
     try {
       let result: LoadResult;
-      
+
       switch (asset.type) {
         case 'sample':
         case 'impulse':
@@ -294,28 +327,28 @@ export class AssetLoader extends SampleLoader {
           // Use parent class sample loading
           result = await this.loadSample(asset.url, asset.metadata, options);
           break;
-          
+
         case 'instrument':
         case 'preset':
           // Load as JSON
           result = await this.loadJSON(asset.url, options);
           break;
-          
+
         case 'soundfont':
           // Load as binary
           result = await this.loadBinary(asset.url, options);
           break;
-          
+
         case 'configuration':
         case 'metadata':
           // Load as JSON
           result = await this.loadJSON(asset.url, options);
           break;
-          
+
         default:
           throw new Error(`Unknown asset type: ${asset.type}`);
       }
-      
+
       return {
         ...result,
         assetId: asset.id,
@@ -324,7 +357,7 @@ export class AssetLoader extends SampleLoader {
       };
     } catch (error) {
       const loadTime = performance.now() - startTime;
-      
+
       return {
         assetId: asset.id,
         assetType: asset.type,
@@ -342,19 +375,22 @@ export class AssetLoader extends SampleLoader {
   /**
    * Load JSON asset
    */
-  private async loadJSON(url: string, options: LoadOptions): Promise<LoadResult> {
+  private async loadJSON(
+    url: string,
+    _options: LoadOptions,
+  ): Promise<LoadResult> {
     const startTime = performance.now();
-    
+
     try {
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       const text = JSON.stringify(data);
       const buffer = new TextEncoder().encode(text).buffer;
-      
+
       return {
         success: true,
         data: buffer,
@@ -379,7 +415,10 @@ export class AssetLoader extends SampleLoader {
   /**
    * Load binary asset
    */
-  private async loadBinary(url: string, options: LoadOptions): Promise<LoadResult> {
+  private async loadBinary(
+    url: string,
+    options: LoadOptions,
+  ): Promise<LoadResult> {
     // Use parent class sample loader for binary data
     return this.loadSample(url, undefined, options);
   }
@@ -389,7 +428,7 @@ export class AssetLoader extends SampleLoader {
    */
   private async loadDependencies(
     dependencies: string[],
-    options: LoadOptions
+    options: LoadOptions,
   ): Promise<void> {
     for (const depId of dependencies) {
       if (!this.loadedAssets.has(depId)) {
@@ -404,29 +443,37 @@ export class AssetLoader extends SampleLoader {
    */
   private buildDependencyGraph(): void {
     if (!this.manifest) return;
-    
+
     this.dependencyGraph.clear();
-    
+
     for (const asset of this.manifest.assets) {
       if (!this.dependencyGraph.has(asset.id)) {
         this.dependencyGraph.set(asset.id, new Set());
       }
-      
+
       if (asset.dependencies) {
         for (const dep of asset.dependencies) {
-          this.dependencyGraph.get(asset.id)!.add(dep);
+          const deps = this.dependencyGraph.get(asset.id);
+          if (deps) {
+            deps.add(dep);
+          }
         }
       }
     }
-    
+
     // Add manifest-level dependencies
     if (this.manifest.dependencies) {
-      for (const [assetId, deps] of Object.entries(this.manifest.dependencies)) {
+      for (const [assetId, deps] of Object.entries(
+        this.manifest.dependencies,
+      )) {
         if (!this.dependencyGraph.has(assetId)) {
           this.dependencyGraph.set(assetId, new Set());
         }
         for (const dep of deps) {
-          this.dependencyGraph.get(assetId)!.add(dep);
+          const assetDeps = this.dependencyGraph.get(assetId);
+          if (assetDeps) {
+            assetDeps.add(dep);
+          }
         }
       }
     }
@@ -438,27 +485,27 @@ export class AssetLoader extends SampleLoader {
   private resolveLoadOrder(assetIds: string[]): string[] {
     const resolved: string[] = [];
     const visited = new Set<string>();
-    
+
     const visit = (id: string) => {
       if (visited.has(id)) return;
       visited.add(id);
-      
+
       const deps = this.dependencyGraph.get(id);
       if (deps) {
         for (const dep of deps) {
           visit(dep);
         }
       }
-      
+
       if (assetIds.includes(id)) {
         resolved.push(id);
       }
     };
-    
+
     for (const id of assetIds) {
       visit(id);
     }
-    
+
     return resolved;
   }
 
@@ -466,13 +513,16 @@ export class AssetLoader extends SampleLoader {
    * Find asset definition
    */
   private findAssetDefinition(assetId: string): AssetDefinition | undefined {
-    return this.manifest?.assets.find(a => a.id === assetId);
+    return this.manifest?.assets.find((a) => a.id === assetId);
   }
 
   /**
    * Emit asset loaded event
    */
-  private emitAssetLoaded(asset: AssetDefinition, result: AssetLoadResult): void {
+  private emitAssetLoaded(
+    asset: AssetDefinition,
+    result: AssetLoadResult,
+  ): void {
     const eventBus = (this as any).eventBus;
     if (eventBus) {
       eventBus.emit('asset:loaded', {
@@ -527,22 +577,26 @@ export class AssetLoader extends SampleLoader {
   /**
    * Validate asset checksum
    */
-  private async validateChecksum(
+  private async _validateChecksum(
     data: ArrayBuffer,
-    expectedChecksum?: string
+    expectedChecksum?: string,
   ): Promise<boolean> {
     if (!expectedChecksum || !this.assetConfig.enableChecksumValidation) {
       return true;
     }
-    
+
     try {
       const hashBuffer = await crypto.subtle.digest('SHA-256', data);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      
+      const hashHex = hashArray
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+
       return hashHex === expectedChecksum;
     } catch (error) {
-      logger.warn('Checksum validation failed:', error);
+      logger.warn('Checksum validation failed:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return true; // Don't fail load on checksum error
     }
   }

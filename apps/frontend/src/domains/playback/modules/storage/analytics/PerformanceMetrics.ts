@@ -1,12 +1,11 @@
 /**
  * PerformanceMetrics - Storage performance monitoring and optimization
- * 
+ *
  * Tracks detailed performance metrics for storage operations,
  * identifies bottlenecks, and provides optimization recommendations.
  */
 
-import { EventBus } from '../../../services/core/EventBus.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { EventBus, createStructuredLogger } from '../../shared/index.js';
 
 const logger = createStructuredLogger('PerformanceMetrics');
 
@@ -106,12 +105,12 @@ export interface BottleneckAnalysis {
 export class PerformanceMetrics {
   private config: PerformanceMetricsConfig;
   private eventBus?: EventBus;
-  
+
   // Metrics storage
   private operations: OperationMetrics[] = [];
   private traces = new Map<string, PerformanceTrace>();
   private currentOperations = new Map<string, Partial<OperationMetrics>>();
-  
+
   // Performance tracking
   private startTime = Date.now();
   private operationCount = 0;
@@ -121,7 +120,7 @@ export class PerformanceMetrics {
   constructor(config: PerformanceMetricsConfig, eventBus?: EventBus) {
     this.config = config;
     this.eventBus = eventBus;
-    
+
     if (config.enabled) {
       this.startMonitoring();
     }
@@ -140,17 +139,17 @@ export class PerformanceMetrics {
   startOperation(
     operationId: string,
     type: OperationMetrics['type'],
-    metadata?: OperationMetrics['metadata']
+    metadata?: OperationMetrics['metadata'],
   ): void {
     if (!this.config.enabled) return;
-    
+
     this.currentOperations.set(operationId, {
       operationId,
       type,
       startTime: performance.now(),
       metadata,
     });
-    
+
     // Start trace if sampled
     if (Math.random() < this.config.traceSampleRate) {
       this.startTrace(operationId, type);
@@ -164,19 +163,19 @@ export class PerformanceMetrics {
     operationId: string,
     success: boolean,
     size?: number,
-    error?: string
+    error?: string,
   ): void {
     if (!this.config.enabled) return;
-    
+
     const operation = this.currentOperations.get(operationId);
     if (!operation || !operation.startTime) return;
-    
+
     const endTime = performance.now();
     const duration = endTime - operation.startTime;
-    
+
     const metrics: OperationMetrics = {
       operationId,
-      type: operation.type!,
+      type: operation.type || ('unknown' as OperationMetrics['type']),
       startTime: operation.startTime,
       endTime,
       duration,
@@ -185,13 +184,13 @@ export class PerformanceMetrics {
       error,
       metadata: operation.metadata,
     };
-    
+
     this.recordOperation(metrics);
     this.currentOperations.delete(operationId);
-    
+
     // End trace if exists
     this.endTrace(operationId);
-    
+
     // Check for slow operations
     if (duration > this.config.slowOperationThreshold) {
       this.handleSlowOperation(metrics);
@@ -204,22 +203,22 @@ export class PerformanceMetrics {
   private recordOperation(metrics: OperationMetrics): void {
     this.operations.push(metrics);
     this.operationCount++;
-    
+
     if (metrics.size) {
       this.totalBytes += metrics.size;
     }
-    
+
     if (!metrics.success) {
       this.errorCount++;
     }
-    
+
     // Trim old operations
     if (this.operations.length > this.config.sampleSize) {
       this.operations.shift();
     }
-    
+
     // Emit metrics event
-    this.eventBus?.emit('performance:operation', metrics);
+    this.eventBus?.emit('performance:operation', { metrics });
   }
 
   /**
@@ -229,12 +228,10 @@ export class PerformanceMetrics {
     const now = Date.now();
     const periodMs = period || now - this.startTime;
     const cutoff = now - periodMs;
-    
+
     // Filter operations for period
-    const periodOps = this.operations.filter(
-      op => op.startTime >= cutoff
-    );
-    
+    const periodOps = this.operations.filter((op) => op.startTime >= cutoff);
+
     return {
       timestamp: now,
       period: periodMs,
@@ -250,16 +247,16 @@ export class PerformanceMetrics {
    */
   analyzeBottlenecks(): BottleneckAnalysis {
     const slowOps = this.operations
-      .filter(op => op.duration > this.config.slowOperationThreshold)
+      .filter((op) => op.duration > this.config.slowOperationThreshold)
       .sort((a, b) => b.duration - a.duration)
       .slice(0, 10);
-    
+
     const bottlenecks = this.identifyBottlenecks();
-    
+
     return {
       timestamp: Date.now(),
       bottlenecks,
-      slowOperations: slowOps.map(op => ({
+      slowOperations: slowOps.map((op) => ({
         operationId: op.operationId,
         duration: op.duration,
         type: op.type,
@@ -284,10 +281,10 @@ export class PerformanceMetrics {
     operationId: string,
     name: string,
     duration: number,
-    attributes?: Record<string, any>
+    attributes?: Record<string, any>,
   ): void {
     if (!this.config.enabled) return;
-    
+
     const trace = this.traces.get(operationId);
     if (trace) {
       trace.spans.push({
@@ -317,22 +314,22 @@ export class PerformanceMetrics {
    * Calculate operation statistics
    */
   private calculateOperationStats(
-    operations: OperationMetrics[]
+    operations: OperationMetrics[],
   ): PerformanceSummary['operations'] {
     const byType: Record<string, number> = {};
     let successful = 0;
     let failed = 0;
-    
+
     for (const op of operations) {
       byType[op.type] = (byType[op.type] || 0) + 1;
-      
+
       if (op.success) {
         successful++;
       } else {
         failed++;
       }
     }
-    
+
     return {
       total: operations.length,
       successful,
@@ -345,7 +342,7 @@ export class PerformanceMetrics {
    * Calculate latency statistics
    */
   private calculateLatencyStats(
-    operations: OperationMetrics[]
+    operations: OperationMetrics[],
   ): PerformanceSummary['latency'] {
     if (operations.length === 0) {
       return {
@@ -357,26 +354,27 @@ export class PerformanceMetrics {
         percentiles: {},
       };
     }
-    
-    const durations = operations.map(op => op.duration).sort((a, b) => a - b);
-    
-    const min = durations[0];
-    const max = durations[durations.length - 1];
+
+    const durations = operations.map((op) => op.duration).sort((a, b) => a - b);
+
+    const min = durations[0] || 0;
+    const max = durations[durations.length - 1] || 0;
     const mean = durations.reduce((a, b) => a + b, 0) / durations.length;
     const median = this.calculatePercentile(durations, 50);
-    
+
     // Calculate standard deviation
-    const variance = durations.reduce((sum, d) => {
-      return sum + Math.pow(d - mean, 2);
-    }, 0) / durations.length;
+    const variance =
+      durations.reduce((sum, d) => {
+        return sum + Math.pow(d - mean, 2);
+      }, 0) / durations.length;
     const stdDev = Math.sqrt(variance);
-    
+
     // Calculate percentiles
     const percentiles: Record<number, number> = {};
     for (const p of this.config.percentiles) {
       percentiles[p] = this.calculatePercentile(durations, p);
     }
-    
+
     return {
       min,
       max,
@@ -392,15 +390,15 @@ export class PerformanceMetrics {
    */
   private calculateThroughputStats(
     operations: OperationMetrics[],
-    periodMs: number
+    periodMs: number,
   ): PerformanceSummary['throughput'] {
     const periodSeconds = periodMs / 1000;
     const totalOps = operations.length;
     const totalBytes = operations.reduce((sum, op) => sum + (op.size || 0), 0);
-    
+
     // Calculate peak throughput (ops per second in 1-second windows)
     const windows = new Map<number, { ops: number; bytes: number }>();
-    
+
     for (const op of operations) {
       const windowStart = Math.floor(op.startTime / 1000) * 1000;
       const window = windows.get(windowStart) || { ops: 0, bytes: 0 };
@@ -408,15 +406,15 @@ export class PerformanceMetrics {
       window.bytes += op.size || 0;
       windows.set(windowStart, window);
     }
-    
+
     let peakOps = 0;
     let peakBytes = 0;
-    
+
     for (const window of windows.values()) {
       peakOps = Math.max(peakOps, window.ops);
       peakBytes = Math.max(peakBytes, window.bytes);
     }
-    
+
     return {
       operationsPerSecond: totalOps / periodSeconds,
       bytesPerSecond: totalBytes / periodSeconds,
@@ -429,16 +427,16 @@ export class PerformanceMetrics {
    * Calculate error statistics
    */
   private calculateErrorStats(
-    operations: OperationMetrics[]
+    operations: OperationMetrics[],
   ): PerformanceSummary['errors'] {
-    const errors = operations.filter(op => !op.success);
+    const errors = operations.filter((op) => !op.success);
     const byType: Record<string, number> = {};
-    
+
     for (const error of errors) {
       const type = error.error || 'unknown';
       byType[type] = (byType[type] || 0) + 1;
     }
-    
+
     return {
       count: errors.length,
       rate: operations.length > 0 ? errors.length / operations.length : 0,
@@ -449,11 +447,16 @@ export class PerformanceMetrics {
   /**
    * Calculate percentile
    */
-  private calculatePercentile(sortedValues: number[], percentile: number): number {
+  private calculatePercentile(
+    sortedValues: number[],
+    percentile: number,
+  ): number {
     if (sortedValues.length === 0) return 0;
-    
+
     const index = Math.ceil((percentile / 100) * sortedValues.length) - 1;
-    return sortedValues[Math.max(0, Math.min(index, sortedValues.length - 1))];
+    return (
+      sortedValues[Math.max(0, Math.min(index, sortedValues.length - 1))] || 0
+    );
   }
 
   /**
@@ -463,19 +466,21 @@ export class PerformanceMetrics {
     const trace: PerformanceTrace = {
       traceId: `trace-${operationId}`,
       operationId,
-      spans: [{
-        name: type,
-        startTime: performance.now(),
-        endTime: 0,
-        duration: 0,
-      }],
+      spans: [
+        {
+          name: type,
+          startTime: performance.now(),
+          endTime: 0,
+          duration: 0,
+        },
+      ],
       totalDuration: 0,
       metadata: {
         type,
         timestamp: Date.now(),
       },
     };
-    
+
     this.traces.set(operationId, trace);
   }
 
@@ -485,17 +490,22 @@ export class PerformanceMetrics {
   private endTrace(operationId: string): void {
     const trace = this.traces.get(operationId);
     if (!trace || trace.spans.length === 0) return;
-    
+
     const mainSpan = trace.spans[0];
-    mainSpan.endTime = performance.now();
-    mainSpan.duration = mainSpan.endTime - mainSpan.startTime;
-    trace.totalDuration = mainSpan.duration;
-    
+    if (mainSpan) {
+      mainSpan.endTime = performance.now();
+      mainSpan.duration = mainSpan.endTime - mainSpan.startTime;
+      trace.totalDuration = mainSpan.duration;
+    }
+
     // Keep only recent traces
     if (this.traces.size > 100) {
-      const oldest = Array.from(this.traces.entries())
-        .sort((a, b) => a[1].metadata.timestamp - b[1].metadata.timestamp)[0];
-      this.traces.delete(oldest[0]);
+      const oldest = Array.from(this.traces.entries()).sort(
+        (a, b) => a[1].metadata.timestamp - b[1].metadata.timestamp,
+      )[0];
+      if (oldest) {
+        this.traces.delete(oldest[0]);
+      }
     }
   }
 
@@ -503,8 +513,10 @@ export class PerformanceMetrics {
    * Handle slow operation
    */
   private handleSlowOperation(operation: OperationMetrics): void {
-    logger.warn(`Slow operation detected: ${operation.type} took ${operation.duration.toFixed(0)}ms`);
-    
+    logger.warn(
+      `Slow operation detected: ${operation.type} took ${operation.duration.toFixed(0)}ms`,
+    );
+
     this.eventBus?.emit('performance:slowOperation', {
       operation,
       threshold: this.config.slowOperationThreshold,
@@ -518,15 +530,15 @@ export class PerformanceMetrics {
     if (operation.size && operation.size > 10 * 1024 * 1024) {
       return 'Large file size';
     }
-    
+
     if (operation.type === 'load' && !operation.metadata?.cached) {
       return 'Network fetch required';
     }
-    
+
     if (operation.error) {
       return 'Error during operation';
     }
-    
+
     return 'Unknown';
   }
 
@@ -536,19 +548,24 @@ export class PerformanceMetrics {
   private identifyBottlenecks(): BottleneckAnalysis['bottlenecks'] {
     const bottlenecks: BottleneckAnalysis['bottlenecks'] = [];
     const summary = this.getSummary();
-    
+
     // Check for high latency
-    if (summary.latency.percentiles[95] > 1000) {
+    if (
+      summary.latency.percentiles &&
+      summary.latency.percentiles[95] &&
+      summary.latency.percentiles[95] > 1000
+    ) {
       bottlenecks.push({
         type: 'network',
         severity: 'high',
         impact: 0.8,
-        affectedOperations: this.operations.filter(op => op.duration > 1000).length,
+        affectedOperations: this.operations.filter((op) => op.duration > 1000)
+          .length,
         description: 'High network latency detected',
         recommendation: 'Consider using a CDN or edge storage',
       });
     }
-    
+
     // Check for high error rate
     if (summary.errors.rate > 0.05) {
       bottlenecks.push({
@@ -560,15 +577,15 @@ export class PerformanceMetrics {
         recommendation: 'Check network stability and storage service health',
       });
     }
-    
+
     // Check for cache misses
     const cacheMisses = this.operations.filter(
-      op => op.type === 'cache_miss'
+      (op) => op.type === 'cache_miss',
     ).length;
     const cacheTotal = this.operations.filter(
-      op => op.type === 'cache_hit' || op.type === 'cache_miss'
+      (op) => op.type === 'cache_hit' || op.type === 'cache_miss',
     ).length;
-    
+
     if (cacheTotal > 0 && cacheMisses / cacheTotal > 0.3) {
       bottlenecks.push({
         type: 'cache',
@@ -579,7 +596,7 @@ export class PerformanceMetrics {
         recommendation: 'Increase cache size or improve preloading strategy',
       });
     }
-    
+
     return bottlenecks;
   }
 
@@ -608,15 +625,14 @@ export class PerformanceMetrics {
     avgLatency: number;
   } {
     const now = performance.now();
-    const recentOps = this.operations.filter(
-      op => now - op.endTime < 1000
-    );
-    
+    const recentOps = this.operations.filter((op) => now - op.endTime < 1000);
+
     const totalBytes = recentOps.reduce((sum, op) => sum + (op.size || 0), 0);
-    const avgLatency = recentOps.length > 0
-      ? recentOps.reduce((sum, op) => sum + op.duration, 0) / recentOps.length
-      : 0;
-    
+    const avgLatency =
+      recentOps.length > 0
+        ? recentOps.reduce((sum, op) => sum + op.duration, 0) / recentOps.length
+        : 0;
+
     return {
       activeOperations: this.currentOperations.size,
       opsPerSecond: recentOps.length,

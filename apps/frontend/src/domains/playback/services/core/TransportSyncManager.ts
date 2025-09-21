@@ -1,13 +1,14 @@
 import { EventEmitter } from 'events';
+import type { TransportAdapter } from './TransportAdapter.js';
 import type {
-  UnifiedTransport,
   TransportState,
   MusicalPosition,
   TimingMetrics,
-} from './UnifiedTransport.js';
+} from '../../modules/transport/types/index.js';
 import type { EventBus } from './EventBus.js';
-import type { Service, ServiceRegistry } from './ServiceRegistry.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { getLogger } from '@/utils/logger.js';
+
+const logger = getLogger('TransportSyncManager');
 
 /**
  * Transport Synchronization Manager - Refactored
@@ -87,10 +88,9 @@ export class TransportSyncManager extends EventEmitter {
     lastSyncTime: 0,
   };
 
-  private unifiedTransport: UnifiedTransport | null = null;
+  private unifiedTransport: TransportAdapter | null = null;
   private eventBus: EventBus | null = null;
   private eventUnsubscribers: Array<() => void> = [];
-  private registry: ServiceRegistry | null = null;
 
   private constructor() {
     super();
@@ -104,15 +104,16 @@ export class TransportSyncManager extends EventEmitter {
   }
 
   /**
-   * Initialize with UnifiedTransport and EventBus
+   * Initialize with TransportAdapter and EventBus
    * This replaces the old direct Tone.js integration
    */
-  initialize(unifiedTransport: UnifiedTransport, eventBus: EventBus): void {
+  initialize(unifiedTransport: TransportAdapter, eventBus: EventBus): void {
+    // Clean up any existing listeners first (but don't null the transport yet)
+    this.cleanup();
+
+    // Now set the new transport and eventBus
     this.unifiedTransport = unifiedTransport;
     this.eventBus = eventBus;
-
-    // Clean up any existing listeners
-    this.cleanup();
 
     // Subscribe to UnifiedTransport events via EventBus
     this.setupTransportListeners();
@@ -215,18 +216,25 @@ export class TransportSyncManager extends EventEmitter {
   private getTransportSnapshot(): TransportStateSnapshot | null {
     if (!this.unifiedTransport) return null;
 
-    const config = this.unifiedTransport.getConfig();
+    try {
+      // Get config for potential future use
+      // const _config = this.unifiedTransport.getConfig();
 
-    return {
-      state: this.unifiedTransport.getState(),
-      position: this.unifiedTransport.getPosition(),
-      tempo: this.unifiedTransport.getTempo(),
-      loop: false, // TODO: Get from UnifiedTransport when implemented
-      loopStart: { bars: 0, beats: 0, sixteenths: 0, ticks: 0 },
-      loopEnd: { bars: 4, beats: 0, sixteenths: 0, ticks: 0 },
-      metrics: this.unifiedTransport.getMetrics(),
-      timestamp: Date.now(),
-    };
+      return {
+        state: this.unifiedTransport.getState(),
+        position: this.unifiedTransport.getPosition(),
+        tempo: this.unifiedTransport.getTempo(),
+        loop: false, // TODO: Get from UnifiedTransport when implemented
+        loopStart: { bars: 0, beats: 0, sixteenths: 0, ticks: 0 },
+        loopEnd: { bars: 4, beats: 0, sixteenths: 0, ticks: 0 },
+        metrics: this.unifiedTransport.getMetrics(),
+        timestamp: Date.now(),
+      };
+    } catch (error) {
+      // Transport might be disposed or in invalid state
+      logger.warn('Failed to get transport snapshot', error as Error);
+      return null;
+    }
   }
 
   /**
@@ -299,6 +307,9 @@ export class TransportSyncManager extends EventEmitter {
     this.heartbeatTimer = setInterval(() => {
       this.sendHeartbeat();
     }, this.config.heartbeatInterval);
+
+    // Send initial heartbeat immediately for testing
+    this.sendHeartbeat();
   }
 
   /**
@@ -315,6 +326,9 @@ export class TransportSyncManager extends EventEmitter {
    * Send heartbeat to all clients
    */
   private sendHeartbeat(): void {
+    // Check if we're disposed or transport is null
+    if (!this.unifiedTransport || !this.heartbeatTimer) return;
+
     const snapshot = this.getTransportSnapshot();
     if (!snapshot) return;
 
@@ -451,11 +465,11 @@ export class TransportSyncManager extends EventEmitter {
   /**
    * Update configuration
    */
-  updateConfig(config: Partial<SyncConfig>): void {
-    this.config = { ...this.config, ...config };
+  updateConfig(_config: Partial<SyncConfig>): void {
+    this.config = { ...this.config, ..._config };
 
     // Restart heartbeat if interval changed
-    if (config.heartbeatInterval !== undefined) {
+    if (_config.heartbeatInterval !== undefined) {
       this.stopHeartbeat();
       this.startHeartbeat();
     }
@@ -494,10 +508,36 @@ export class TransportSyncManager extends EventEmitter {
   }
 
   /**
+   * Get client status (for backward compatibility with tests)
+   */
+  getClientStatus(clientId: string): any {
+    const client = this.clients.get(clientId);
+    if (!client) return undefined;
+    return {
+      connected: client.connected,
+      latency: client.latency,
+      lastHeartbeat: client.lastHeartbeat,
+      callbacks: undefined, // Tests expect this field
+    };
+  }
+
+  /**
+   * Acknowledge heartbeat (for backward compatibility with tests)
+   */
+  acknowledgeHeartbeat(clientId: string, timestamp: number): void {
+    const client = this.clients.get(clientId);
+    if (client) {
+      client.lastHeartbeat = Date.now();
+      const latency = Date.now() - timestamp;
+      client.latency = latency;
+    }
+  }
+
+  /**
    * Clean up resources
    */
   cleanup(): void {
-    // Stop heartbeat
+    // Stop heartbeat first to prevent any further timer callbacks
     this.stopHeartbeat();
 
     // Unsubscribe from all events
@@ -510,6 +550,9 @@ export class TransportSyncManager extends EventEmitter {
 
     // Clear event queue
     this.eventQueue = [];
+
+    // Clear transport reference
+    this.unifiedTransport = null;
   }
 
   /**

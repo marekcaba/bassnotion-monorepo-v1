@@ -14,7 +14,11 @@ const timerSetInterval =
 const timerClearInterval =
   typeof clearInterval !== 'undefined'
     ? clearInterval
-    : globalThis?.clearInterval || (global as any)?.clearInterval || (() => {});
+    : globalThis?.clearInterval ||
+      (global as any)?.clearInterval ||
+      (() => {
+        // Empty implementation for environments without clearInterval
+      });
 
 export interface Service {
   initialize?(): Promise<void>;
@@ -92,6 +96,9 @@ export class ServiceRegistry implements Service {
     'audioEngine',
     'unifiedTransport',
     'pluginManager',
+    'trackRepository',
+    'pluginPresetRepository',
+    'transportRepository',
   ];
   private healthCheckInterval: NodeJS.Timeout | null = null;
   private options: Required<ServiceRegistryOptions>;
@@ -100,9 +107,9 @@ export class ServiceRegistry implements Service {
   // Logger instance
   private logger = getLogger('service');
 
-  private static instance: ServiceRegistry | null = null;
+  private static _instance: ServiceRegistry | null = null;
   static resetInstance(): void {
-    ServiceRegistry.instance = null;
+    ServiceRegistry._instance = null;
   }
 
   constructor(options?: ServiceRegistryOptions) {
@@ -247,7 +254,10 @@ export class ServiceRegistry implements Service {
     const startOrder = this.computeInitializationOrder();
 
     for (const serviceName of startOrder) {
-      const serviceInstance = this.services.get(serviceName)!;
+      const serviceInstance = this.services.get(serviceName);
+      if (!serviceInstance) {
+        continue; // Skip if service not found
+      }
 
       if (serviceInstance.status === 'started') {
         continue;
@@ -295,7 +305,10 @@ export class ServiceRegistry implements Service {
     const stopOrder = this.computeInitializationOrder().reverse();
 
     for (const serviceName of stopOrder) {
-      const serviceInstance = this.services.get(serviceName)!;
+      const serviceInstance = this.services.get(serviceName);
+      if (!serviceInstance) {
+        continue; // Skip if service not found
+      }
 
       if (serviceInstance.status !== 'started') {
         continue;
@@ -323,9 +336,19 @@ export class ServiceRegistry implements Service {
   }
 
   /**
+   * Restart the registry (implements Service interface)
+   */
+  async restart(): Promise<void> {
+    // Restart all services
+    for (const [serviceName] of this.services) {
+      await this.restartService(serviceName);
+    }
+  }
+
+  /**
    * Restart a specific service
    */
-  async restart(serviceName: string): Promise<void> {
+  async restartService(serviceName: string): Promise<void> {
     const serviceInstance = this.services.get(serviceName);
     if (!serviceInstance) {
       throw new ServiceError(`Service ${serviceName} not found`, serviceName);
@@ -384,7 +407,10 @@ export class ServiceRegistry implements Service {
     const disposeOrder = this.computeInitializationOrder().reverse();
 
     for (const serviceName of disposeOrder) {
-      const serviceInstance = this.services.get(serviceName)!;
+      const serviceInstance = this.services.get(serviceName);
+      if (!serviceInstance) {
+        continue; // Skip if service not found
+      }
       if (serviceInstance.instance.dispose) {
         try {
           await serviceInstance.instance.dispose();
@@ -442,9 +468,27 @@ export class ServiceRegistry implements Service {
    * Compute initialization order based on dependencies and predefined order
    */
   /**
-   * Perform health check on all services
+   * Perform health check (implements Service interface)
    */
-  async healthCheck(): Promise<HealthReport> {
+  async healthCheck(): Promise<HealthCheckResult> {
+    const healthReport = await this.getHealthReport();
+
+    // Convert HealthReport to HealthCheckResult
+    return {
+      status: healthReport.overall,
+      message: `ServiceRegistry health check: ${healthReport.overall}`,
+      details: {
+        services: healthReport.services,
+        timestamp: healthReport.timestamp,
+      },
+      timestamp: healthReport.timestamp,
+    };
+  }
+
+  /**
+   * Get detailed health report for all services
+   */
+  async getHealthReport(): Promise<HealthReport> {
     const report: HealthReport = {
       overall: 'healthy',
       timestamp: Date.now(),
@@ -548,7 +592,10 @@ export class ServiceRegistry implements Service {
    * Attempt to recover a failed service
    */
   private async attemptServiceRecovery(serviceName: string): Promise<void> {
-    const serviceInstance = this.services.get(serviceName)!;
+    const serviceInstance = this.services.get(serviceName);
+    if (!serviceInstance) {
+      throw new ServiceError(`Service ${serviceName} not found`, serviceName);
+    }
 
     this.logger.warn(`Attempting to recover service ${serviceName}`, {
       attempt: serviceInstance.metadata.restartCount + 1,
@@ -566,7 +613,7 @@ export class ServiceRegistry implements Service {
     await delay;
 
     try {
-      await this.restart(serviceName);
+      await this.restartService(serviceName);
       this.logger.info(`Service ${serviceName} recovered successfully`);
     } catch (error) {
       this.logger.error(`Failed to recover service ${serviceName}`, { error });
@@ -794,7 +841,7 @@ export const serviceRegistry = {
     if (typeof window !== 'undefined') {
       const windowRegistry = (window as any).__serviceRegistry;
       if (windowRegistry && windowRegistry.has(name)) {
-        return windowRegistry.get<T>(name);
+        return windowRegistry.get(name) as T;
       }
     }
 

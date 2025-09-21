@@ -113,7 +113,7 @@ export class BundleOptimizer {
 
     try {
       const observer = new PerformanceObserver((list) => {
-  const { correlationId, logger } = useCorrelation('observer');
+        const { correlationId, logger } = useCorrelation('observer');
         const entries = list.getEntries();
         entries.forEach((entry) => {
           if (

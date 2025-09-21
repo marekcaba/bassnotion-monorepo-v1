@@ -1,8 +1,8 @@
 import { Result } from '@/shared/patterns/result';
-import { 
-  IUserRepository, 
-  PaginatedResult, 
-  PaginationOptions 
+import {
+  IUserRepository,
+  PaginatedResult,
+  PaginationOptions,
 } from './user.repository.interface';
 import { User } from '../entities/user.entity';
 import { Email } from '../value-objects/email.vo';

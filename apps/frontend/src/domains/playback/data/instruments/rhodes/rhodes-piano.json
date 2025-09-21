@@ -1,0 +1,47 @@
+{
+  "name": "Rhodes Electric Piano",
+  "version": "1.0.0",
+  "author": "BassNotion Team",
+  "description": "Classic Rhodes electric piano with 4 velocity layers",
+  
+  "storage": {
+    "baseUrl": "https://htuztkrbuewheehjspcz.supabase.co/storage/v1/object/public/audio-samples",
+    "bucketPath": "Keyboards/rhodes"
+  },
+  
+  "velocityRanges": [
+    { "min": 0, "max": 31, "layer": "v1" },
+    { "min": 32, "max": 63, "layer": "v2" },
+    { "min": 64, "max": 95, "layer": "v3" },
+    { "min": 96, "max": 127, "layer": "v4" }
+  ],
+  
+  "sampleMapping": {
+    "C1": "C1.mp3",
+    "C2": "C2.mp3",
+    "C3": "C3.mp3",
+    "C4": "C4.mp3",
+    "C5": "C5.mp3",
+    "E1": "E1.mp3",
+    "E2": "E2.mp3",
+    "E3": "E3.mp3",
+    "E4": "E4.mp3",
+    "E5": "E5.mp3"
+  },
+  
+  "defaultLayers": ["v2", "v3"],
+  
+  "samplerConfig": {
+    "attack": 0.005,
+    "release": 0.2,
+    "curve": "exponential",
+    "volume": 0
+  },
+  
+  "optimization": {
+    "preloadPriority": ["v3", "v2"],
+    "memoryLimit": 50,
+    "streamingEnabled": false,
+    "compressionFormat": "mp3"
+  }
+}

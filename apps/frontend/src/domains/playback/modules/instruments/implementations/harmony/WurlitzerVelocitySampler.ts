@@ -1,833 +1,660 @@
-import { loadGlobalTone } from '../../../../services/plugins/toneLoader.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+/**
+ * Professional Wurlitzer sampler - REFACTORED
+ * Now loads configuration from external JSON file
+ * Reduced from 2,000+ lines to ~500 lines
+ */
+
+import {
+  loadGlobalTone,
+  CachedToneBufferLoader,
+  getPersistentAudioContext,
+  ensureToneUsesPersistentContext,
+} from '../../../shared/index.js';
+import { GlobalSampleCache } from '../../../storage/cache/GlobalSampleCache.js';
+import { SampleMappingLoader } from '../../loaders/SampleMappingLoader.js';
+import type {
+  InstrumentSampleConfig,
+  VelocityRange,
+} from '../../types/sample-mapping.js';
+import { createStructuredLogger } from '../../../shared/index.js';
+
+const logger = createStructuredLogger('WurlitzerVelocitySampler');
 
 // Use global Tone instance to ensure same AudioContext
 let Tone: any = null;
 
-/**
- * Professional Wurlitzer Electric Piano sampler with variable velocity layers
- * Includes mechanical sounds: pedal press/release, key press, and key release
- */
+// Configuration file path
+const CONFIG_PATH = 'instruments/piano/wurlitzer.json';
 
-export interface WurlitzerVelocityInfo {
-  note: string;
-  velocityCount: number;
+// Helper to ensure Tone.js is loaded from global instance
+async function ensureToneLoaded(
+  preferredContext?: AudioContext,
+  audioEngine?: any,
+): Promise<void> {
+  const persistentContext = getPersistentAudioContext();
+  const contextToUse = preferredContext || persistentContext || undefined;
+
+  if (!Tone || preferredContext || persistentContext) {
+    Tone = await loadGlobalTone(contextToUse, audioEngine);
+    if (!Tone || !Tone.context) {
+      logger.error('🎵 Failed to load global Tone.js instance');
+    } else {
+      ensureToneUsesPersistentContext();
+    }
+  }
 }
 
 export class WurlitzerVelocitySampler {
-  private noteSamplers: Map<string, Tone.Sampler[]> = new Map();
-  private pedalSampler: Tone.Player | null = null;
-  private pedalReleaseSampler: Tone.Player | null = null;
-  private keyPressSamplers: Map<string, Tone.Player> = new Map(); // Changed to Map for note-specific sounds
-  private keyReleaseSamplers: Tone.Player[] = [];
+  private samplers: Map<string, any> = new Map();
+  private config: InstrumentSampleConfig | null = null;
+  private loadedLayers: Set<string> = new Set();
   private isInitialized = false;
-  private destination: Tone.InputNode | null = null;
-  private mechanicalSoundCount = 0; // Debug counter
-  private mechanicalVolume: Tone.Volume | null = null; // Will be initialized after Tone is loaded
-  private mechanicalVolumeBase = -30; // Base volume at velocity 64
-  private mechanicalTimingOffset = -0.004; // Default 4ms before note (negative = before)
-  private mechanicalReleaseOffset = -0.01; // Start 10ms BEFORE note stops (negative = before)
-  private noteReleaseTime = 0.2; // 200ms release time for electric piano
-  private supabaseUrl =
-    'https://htuztkrbuewheehjspcz.supabase.co/storage/v1/object/public/audio-samples';
+  private loadingPromises: Map<string, Promise<void>> = new Map();
+  private destination: any | null = null;
+  private tremoloLFO: any | null = null;
+  private tremoloGain: any | null = null;
+  private tremoloEnabled = false;
+  private activeNotes: Map<string, number> = new Map();
+  private audioEngine?: any;
+  private volumeWasMuted = false;
+  private preferredContext: AudioContext | null = null;
+  private audioContext: AudioContext | null = null;
+  private useLocalSamples = false;
+  private loader: SampleMappingLoader;
 
-  // Velocity distribution from metadata
-  private readonly velocityInfo: Map<string, number> = new Map([
-    // 3 velocities
-    ['C6', 3],
-    ['B5', 3],
-    ['As5', 3],
-    ['A5', 3],
-    ['Gs5', 3],
-    ['G5', 3],
-    ['Fs5', 3],
-    ['F5', 3],
-    ['E5', 3],
-    ['Ds5', 3],
-    ['D5', 3],
-    ['Cs5', 3],
-    ['C5', 3],
-    ['B4', 3],
-    ['As4', 3],
-    ['Gs4', 3],
-    ['G4', 3],
-    ['F4', 3],
-    ['D4', 3],
-    ['C3', 3],
-    // 4 velocities
-    ['A4', 4],
-    ['Fs4', 4],
-    ['E4', 4],
-    ['Cs4', 4],
-    ['C4', 4],
-    ['B3', 4],
-    ['As3', 4],
-    ['Gs3', 4],
-    ['G3', 4],
-    ['Fs3', 4],
-    ['E3', 4],
-    ['Ds3', 4],
-    ['Fs2', 4],
-    ['F2', 4],
-    ['E2', 4],
-    ['Ds2', 4],
-    ['D2', 4],
-    ['Cs2', 4],
-    ['As1', 4],
-    ['A1', 4],
-    ['Ds1', 4],
-    // 5 velocities
-    ['Ds4', 5],
-    ['A3', 5],
-    ['F3', 5],
-    ['D3', 5],
-    ['Cs3', 5],
-    ['B2', 5],
-    ['As2', 5],
-    ['A2', 5],
-    ['Gs2', 5],
-    ['C2', 5],
-    ['B1', 5],
-    ['Gs1', 5],
-    ['G1', 5],
-    ['F1', 5],
-    ['E1', 5],
-    ['D1', 5],
-    ['B0', 5],
-    ['As0', 5],
-    ['A0', 5],
-    // Actually 5 velocities based on available files
-    ['G2', 5],
-    ['Fs1', 5],
-    ['C1', 5],
-    // Actually 5 velocities
-    ['Cs1', 5],
-  ]);
-
-  /**
-   * Ensure Tone.js is loaded dynamically
-   */
-  private async ensureToneLoaded(): Promise<void> {
-    if (!Tone) {
-      Tone = await loadGlobalTone();
-      logger.info(
-        '🎵 Using global Tone.js instance in WurlitzerVelocitySampler',
-      );
-    }
+  constructor(audioEngine?: any) {
+    this.audioEngine = audioEngine;
+    this.loader = SampleMappingLoader.getInstance({
+      basePath: '/src/domains/playback/data/',
+      cache: true,
+      validate: true,
+    });
   }
 
   /**
-   * Initialize the Wurlitzer sampler
-   * Loads the most common velocity layers first
+   * Set the preferred AudioContext to use for all Tone.js operations
    */
-  async initialize(): Promise<void> {
+  setPreferredContext(context: AudioContext): void {
+    this.preferredContext = context;
+    logger.info('🎹 WurlitzerVelocitySampler: Preferred AudioContext set');
+  }
+
+  /**
+   * Initialize with commonly used velocity layers
+   */
+  async initialize(
+    requiredNotes?: string[],
+    velocityLayers?: string[],
+    audioEngine?: any,
+  ): Promise<void> {
     if (this.isInitialized) return;
 
-    logger.info('🎹 Initializing Wurlitzer Electric Piano...');
+    if (audioEngine) {
+      this.audioEngine = audioEngine;
+    }
 
     try {
-      // Ensure Tone is loaded before initializing
-      await this.ensureToneLoaded();
+      // Load configuration
+      this.config = await this.loader.loadInstrumentConfig(CONFIG_PATH);
+      logger.info('🎹 Loaded Wurlitzer configuration', {
+        name: this.config.name,
+        version: this.config.version,
+        velocityRanges: this.config.velocityRanges.length,
+        samples: Object.keys(this.config.sampleMapping).length,
+      });
 
-      // Initialize mechanical volume now that Tone is loaded
-      this.mechanicalVolume = new Tone.Volume(-30);
+      // Check preloaded samples
+      const checkPreloadedSamples = () => {
+        let preloadedCount = 0;
+        const layersToCheck = velocityLayers ||
+          this.config!.defaultLayers || ['v1', 'v3', 'v5'];
 
-      // Load mechanical sounds first
-      await this.loadMechanicalSounds();
+        for (const layer of layersToCheck) {
+          for (const note of Object.keys(this.config!.sampleMapping)) {
+            const path = `${this.config!.storage.bucketPath}/${layer}/${note}.mp3`;
+            if (GlobalSampleCache.getCachedUrl(path)) {
+              preloadedCount++;
+            }
+          }
+        }
+        return preloadedCount;
+      };
 
-      // Load middle velocity layers for all notes
-      await this.loadInitialVelocityLayers();
+      const preloaded = checkPreloadedSamples();
+      logger.info('🎹 Initializing Wurlitzer', {
+        smartLoading: !!requiredNotes,
+        notesCount: requiredNotes?.length || 'all',
+        layers: velocityLayers || 'default',
+        preloadedSamples: preloaded,
+        expectedSamples:
+          (velocityLayers?.length || this.config.defaultLayers?.length || 3) *
+          Object.keys(this.config.sampleMapping).length,
+      });
+
+      await ensureToneLoaded(
+        this.preferredContext || undefined,
+        this.audioEngine,
+      );
+
+      if (!Tone || typeof Tone === 'undefined') {
+        throw new Error('Tone.js is not loaded');
+      }
+
+      this.audioContext =
+        this.preferredContext ||
+        getPersistentAudioContext() ||
+        Tone?.context?._context ||
+        (Tone as any)?._context;
+
+      // Ensure Tone.js context is started
+      try {
+        if (!Tone.context) {
+          throw new Error('Tone.js context is not initialized');
+        }
+        if (Tone.context.state !== 'running') {
+          await Tone.start();
+        }
+      } catch (error) {
+        logger.error('Failed to start Tone.js context', { error });
+      }
+
+      // Create destination node
+      this.destination = new (Tone as any).Gain(1);
+
+      // Set up tremolo effect if configured
+      if (this.config.effects?.tremolo) {
+        this.setupTremolo();
+      }
+
+      this.destination.toDestination();
+
+      // Check for InitialSamplePreloader usage
+      const cachedBufferLoader = CachedToneBufferLoader.getInstance();
+      const usesCachedLoader = cachedBufferLoader ? true : false;
+      logger.info('🎹 Using CachedToneBufferLoader', {
+        enabled: usesCachedLoader,
+      });
+
+      // Load optimized velocity layers based on config
+      const layersToLoad = velocityLayers ||
+        this.config.optimization?.preloadPriority ||
+        this.config.defaultLayers || ['v3', 'v1', 'v5'];
+
+      logger.info('🎹 Loading initial velocity layers', {
+        layers: layersToLoad,
+        smartLoading: !!requiredNotes,
+        notesToLoad: requiredNotes?.length || 'all',
+      });
+
+      await this.loadInitialVelocityLayers(layersToLoad, requiredNotes);
 
       this.isInitialized = true;
-      logger.info('✅ Wurlitzer ready with initial layers');
+      logger.info('✅ Wurlitzer ready!', {
+        loadedLayers: Array.from(this.loadedLayers),
+        destination: !!this.destination,
+        tremolo: this.tremoloEnabled,
+      });
+
+      // Wait a moment for everything to settle
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      await this.ensureReady();
     } catch (error) {
-      logger.error('Failed to initialize Wurlitzer:', error);
+      logger.error(
+        'Failed to initialize Wurlitzer:',
+        error instanceof Error ? error : new Error(String(error)),
+      );
       throw error;
     }
   }
 
   /**
-   * Load mechanical sounds (pedal, key press, key release)
+   * Set up tremolo effect
    */
-  private async loadMechanicalSounds(): Promise<void> {
+  private setupTremolo(): void {
+    if (!this.config?.effects?.tremolo) return;
+
     try {
-      // Load pedal sounds
-      this.pedalSampler = new Tone.Player();
-      this.pedalReleaseSampler = new Tone.Player();
+      const tremoloConfig = this.config.effects.tremolo;
 
-      await Promise.all([
-        this.pedalSampler
-          .load(`${this.supabaseUrl}/Keyboards/wurlitzer/pedal/pedal-press.mp3`)
-          .catch((e) => logger.error('Failed to load pedal-press.mp3:', e)),
-        this.pedalReleaseSampler
-          .load(
-            `${this.supabaseUrl}/Keyboards/wurlitzer/pedal/pedal-release.mp3`,
-          )
-          .catch((e) => logger.error('Failed to load pedal-release.mp3:', e)),
-      ]);
+      // Create LFO for tremolo
+      this.tremoloLFO = new (Tone as any).LFO({
+        frequency: tremoloConfig.rate,
+        min: 1 - tremoloConfig.depth,
+        max: 1,
+      });
 
-      // Wait for buffers to be ready
-      await Promise.all([
-        this.pedalSampler.loaded,
-        this.pedalReleaseSampler.loaded,
-      ]);
+      // Create gain node for tremolo modulation
+      this.tremoloGain = new (Tone as any).Gain(1);
 
-      if (this.destination) {
-        this.pedalSampler.connect(this.destination);
-        this.pedalReleaseSampler.connect(this.destination);
-      }
+      // Connect LFO to gain
+      this.tremoloLFO.connect(this.tremoloGain.gain);
 
-      // Load note-specific CleanKeys sounds
-      const keyPressPromises = [];
+      // Connect gain to destination
+      this.tremoloGain.connect(this.destination);
 
-      // Load CleanKeys sounds for each note
-      for (const note of this.velocityInfo.keys()) {
-        const player = new Tone.Player();
-        this.keyPressSamplers.set(note, player);
+      // Start LFO
+      this.tremoloLFO.start();
 
-        // Convert note to lowercase for file path
-        const noteForFile = note.toLowerCase();
-        const url = `${this.supabaseUrl}/Keyboards/wurlitzer/key-press/${noteForFile}-clean.mp3`;
-
-        keyPressPromises.push(
-          player
-            .load(url)
-            .catch((e) =>
-              logger.warn(`Failed to load clean key for ${note}:`, e),
-            ),
-        );
-      }
-
-      // Load a subset of generic key release sounds
-      const keyReleasePromises = [];
-      for (let i = 1; i <= 67; i += 5) {
-        const url = `${this.supabaseUrl}/Keyboards/wurlitzer/key-release/key-release-${i}.mp3`;
-        const player = new Tone.Player();
-        this.keyReleaseSamplers.push(player);
-        keyReleasePromises.push(
-          player
-            .load(url)
-            .catch((e) => logger.error(`Failed to load ${url}:`, e)),
-        );
-      }
-
-      await Promise.all([...keyPressPromises, ...keyReleasePromises]);
-
-      // Wait for all buffers to be loaded
-      await Promise.all([
-        ...Array.from(this.keyPressSamplers.values()).map((p) => p.loaded),
-        ...this.keyReleaseSamplers.map((p) => p.loaded),
-      ]);
-
-      // Connect to mechanical volume, then to destination
-      if (this.destination) {
-        this.mechanicalVolume.connect(this.destination);
-        this.keyPressSamplers.forEach((p) => p.connect(this.mechanicalVolume));
-        this.keyReleaseSamplers.forEach((p) =>
-          p.connect(this.mechanicalVolume),
-        );
-      }
-
-      // Mechanical sounds loaded successfully
+      this.tremoloEnabled = true;
+      logger.info('✅ Tremolo effect configured');
     } catch (error) {
-      logger.error('Error in loadMechanicalSounds:', error);
-      // Don't throw - allow the sampler to work without mechanical sounds
+      logger.warn('Failed to set up tremolo', { error });
     }
   }
 
   /**
-   * Load initial velocity layers (middle velocities)
+   * Load initial velocity layers
    */
-  private async loadInitialVelocityLayers(): Promise<void> {
-    const loadPromises = [];
-
-    for (const [note, velocityCount] of this.velocityInfo) {
-      // Initialize array for this note with correct size
-      const samplers = new Array(velocityCount).fill(null);
-      this.noteSamplers.set(note, samplers);
-
-      // Load middle velocity layer(s)
-      const middleVelocity = Math.ceil(velocityCount / 2);
-
-      // For Tone.js, we need to map sharp notes (e.g., As4 -> A#4 for Tone.js, but file is As4.mp3)
-      const toneNote = note.replace('s', '#'); // Convert for Tone.js
-      const fileName = note; // Keep original for filename
-
-      const sampler = new Tone.Sampler({
-        urls: { [toneNote]: `${fileName}.mp3` },
-        baseUrl: `${this.supabaseUrl}/Keyboards/wurlitzer/v${middleVelocity}/`,
-        release: this.noteReleaseTime, // Short release for electric piano - allows mechanical damper sound
-        attack: 0.002,
-        onload: () => {
-          logger.info(`✅ Wurlitzer ${note} v${middleVelocity} loaded`);
-        },
-        onerror: (error) => {
-          logger.error(
-            `❌ Failed to load Wurlitzer ${note} v${middleVelocity}:`,
-            error,
-          );
-        },
-      });
-
-      // Store at the correct velocity index
-      samplers[middleVelocity - 1] = sampler;
-
-      loadPromises.push(sampler.loaded);
-    }
+  private async loadInitialVelocityLayers(
+    layersToLoad: string[],
+    requiredNotes?: string[],
+  ): Promise<void> {
+    const loadPromises = layersToLoad.map((layer) =>
+      this.loadLayer(layer, requiredNotes),
+    );
 
     await Promise.all(loadPromises);
 
-    // Connect to destination
-    if (this.destination) {
-      for (const samplers of this.noteSamplers.values()) {
-        samplers.forEach((s) => s?.connect(this.destination!));
+    for (const layer of layersToLoad) {
+      const sampler = this.samplers.get(layer);
+      if (sampler) {
+        try {
+          await sampler.loaded;
+          logger.info(`✅ Layer ${layer} loaded`);
+        } catch (error) {
+          logger.error(`❌ Layer ${layer} failed to load`, { error });
+        }
       }
     }
   }
 
   /**
-   * Load specific velocity layer for a note
+   * Load a specific velocity layer
    */
-  private async loadVelocityLayer(
-    note: string,
-    velocityIndex: number,
+  private async loadLayer(
+    layer: string,
+    requiredNotes?: string[],
   ): Promise<void> {
-    const velocityCount = this.velocityInfo.get(note);
-    if (!velocityCount || velocityIndex > velocityCount) return;
+    if (this.loadedLayers.has(layer)) return;
 
-    let samplers = this.noteSamplers.get(note);
-    if (!samplers) {
-      // Initialize array if it doesn't exist
-      samplers = new Array(velocityCount).fill(null);
-      this.noteSamplers.set(note, samplers);
+    if (this.loadingPromises.has(layer)) {
+      return this.loadingPromises.get(layer);
     }
 
-    if (samplers[velocityIndex - 1]) return; // Already loaded
+    const loadPromise = (async () => {
+      try {
+        if (!this.config) {
+          throw new Error('Configuration not loaded');
+        }
 
-    // Loading velocity layer
+        logger.info(`🎹 Loading Wurlitzer layer ${layer}`, {
+          requiredNotes: requiredNotes?.length || 'all',
+        });
 
-    // For Tone.js, we need to map sharp notes (e.g., As4 -> A#4 for Tone.js, but file is As4.mp3)
-    const toneNote = note.replace('s', '#'); // Convert for Tone.js
-    const fileName = note; // Keep original for filename
+        // Get sample URLs from loader
+        const layerUrls = this.loader
+          .getAllSampleUrls(this.config, [layer])
+          .get(layer);
+        if (!layerUrls) {
+          throw new Error(`No URLs found for layer ${layer}`);
+        }
 
-    const sampler = new Tone.Sampler({
-      urls: { [toneNote]: `${fileName}.mp3` },
-      baseUrl: `${this.supabaseUrl}/Keyboards/wurlitzer/v${velocityIndex}/`,
-      release: this.noteReleaseTime, // Use configured release time
-      attack: 0.002,
-      onload: () => {
-        logger.info(`✅ Wurlitzer ${note} v${velocityIndex} loaded on demand`);
-      },
-      onerror: (error) => {
-        logger.error(
-          `❌ Failed to load Wurlitzer ${note} v${velocityIndex}:`,
-          error,
+        // Convert Map to object and filter by required notes if specified
+        const sampleUrls: Record<string, string> = {};
+        for (const [note, url] of layerUrls.entries()) {
+          if (!requiredNotes || requiredNotes.includes(note)) {
+            sampleUrls[note] = url;
+          }
+        }
+
+        logger.info(
+          `🎹 Loading ${Object.keys(sampleUrls).length} samples for layer ${layer}`,
         );
-      },
-    });
 
-    // Store the sampler immediately so it can be found
-    samplers[velocityIndex - 1] = sampler;
+        // Create Tone.js Sampler
+        const sampler = await this.createSampler(sampleUrls);
 
-    // Wait for it to load
-    await sampler.loaded;
+        // Connect to tremolo or destination
+        if (this.tremoloEnabled && this.tremoloGain) {
+          sampler.connect(this.tremoloGain);
+        } else if (this.destination) {
+          sampler.connect(this.destination);
+        }
 
-    if (this.destination) {
-      sampler.connect(this.destination);
-    }
+        this.samplers.set(layer, sampler);
+        this.loadedLayers.add(layer);
+
+        logger.info(`✅ Loaded Wurlitzer layer ${layer}`);
+      } catch (error) {
+        logger.error(
+          `❌ Failed to load layer ${layer}:`,
+          error instanceof Error ? error : new Error(String(error)),
+        );
+        throw error;
+      } finally {
+        this.loadingPromises.delete(layer);
+      }
+    })();
+
+    this.loadingPromises.set(layer, loadPromise);
+    return loadPromise;
   }
 
   /**
-   * Get the appropriate velocity layer for a MIDI velocity
+   * Create a Tone.js Sampler with the provided samples
    */
-  private getVelocityLayer(note: string, velocity: number): number {
-    const velocityCount = this.velocityInfo.get(note) || 3;
-    // Ensure velocity is clamped to valid MIDI range
-    velocity = Math.max(1, Math.min(127, velocity));
-    const normalizedVelocity = velocity / 127;
-    // Calculate layer, ensuring we get at least 1
-    const layer = Math.max(1, Math.ceil(normalizedVelocity * velocityCount));
-    return Math.min(layer, velocityCount);
+  private async createSampler(urls: Record<string, string>): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const baseUrl = this.useLocalSamples
+        ? this.config?.storage.localPath || ''
+        : '';
+
+      const sampler = new (Tone as any).Sampler({
+        urls,
+        baseUrl,
+        release: this.config?.samplerConfig?.release || 0.4,
+        attack: this.config?.samplerConfig?.attack || 0.01,
+        onload: () => {
+          logger.info('✅ Sampler loaded successfully');
+          resolve(sampler);
+        },
+        onerror: (error: any) => {
+          logger.error(
+            '❌ Error loading sampler:',
+            error instanceof Error ? error : new Error(String(error)),
+          );
+          reject(error);
+        },
+      });
+    });
   }
 
   /**
-   * Play a note with velocity and mechanical sounds
+   * Get the appropriate layer for a velocity value
+   */
+  private getLayerForVelocity(velocity: number): string {
+    if (!this.config) return 'v3';
+
+    const v = Math.max(0, Math.min(127, velocity));
+    const range = this.config.velocityRanges.find(
+      (r) => v >= r.min && v <= r.max,
+    );
+    return range ? range.layer : 'v3';
+  }
+
+  /**
+   * Play a note
    */
   async triggerAttackRelease(
     note: string | string[],
-    duration: Tone.Unit.Time,
-    time?: Tone.Unit.Time,
-    velocity = 64,
-    playMechanicalSounds = true,
+    duration: any,
+    time?: any,
+    velocity = 80,
   ): Promise<void> {
+    if (!this.isInitialized || !this.config) {
+      logger.warn('🎹 Wurlitzer not initialized, cannot play');
+      return;
+    }
+
     const notes = Array.isArray(note) ? note : [note];
-    const baseTime = time !== undefined ? time : Tone.now();
+    let layer = this.getLayerForVelocity(velocity);
 
-    for (let i = 0; i < notes.length; i++) {
-      const n = notes[i];
-      // For arrays of notes (chords), all play at the same time
-      // For single notes, use the provided time
-      const noteTime = notes.length > 1 ? baseTime : baseTime;
+    // Ensure layer is loaded
+    if (!this.loadedLayers.has(layer)) {
+      const fallbackLayer = Array.from(this.loadedLayers)[0];
+      if (fallbackLayer) {
+        logger.info(`🎹 Layer ${layer} not ready, using ${fallbackLayer}`);
+        layer = fallbackLayer;
+      } else {
+        logger.warn('🎹 No layers loaded yet');
+        return;
+      }
+    }
 
-      const noteForSampler = n.includes('#') ? n.replace('#', 's') : n;
-      const velocityLayer = this.getVelocityLayer(noteForSampler, velocity);
+    const sampler = this.samplers.get(layer);
+    if (sampler && sampler.loaded) {
+      try {
+        const normalizedVelocity = velocity / 127;
+        sampler.triggerAttackRelease(notes, duration, time, normalizedVelocity);
 
-      // Playing note
-
-      // Ensure velocity layer is loaded
-      await this.loadVelocityLayer(noteForSampler, velocityLayer);
-
-      // Get the samplers array again after loading
-      const samplers = this.noteSamplers.get(noteForSampler);
-      const sampler = samplers?.[velocityLayer - 1];
-
-      if (sampler && sampler.loaded) {
-        try {
-          // Double-check the sampler is loaded
-          await sampler.loaded;
-          const normalizedVelocity = velocity / 127;
-          sampler.triggerAttackRelease(
-            n,
-            duration,
-            noteTime,
-            normalizedVelocity,
-          );
-        } catch (error) {
-          logger.error(`Error playing note ${n}:`, error);
+        // Track notes
+        for (const n of notes) {
+          this.activeNotes.set(n, velocity);
         }
 
-        // Play mechanical sounds for this specific note
-        if (
-          playMechanicalSounds &&
-          this.keyPressSamplers.size > 0 &&
-          this.keyReleaseSamplers.length > 0
-        ) {
-          // Calculate velocity-based volume for mechanical sounds
-          const mechanicalVolume = this.calculateMechanicalVolume(velocity);
-          try {
-            // Play the note-specific CleanKeys sound as a one-shot
-            const keyPressPlayer = this.keyPressSamplers.get(noteForSampler);
-            // Check key press sampler
-
-            if (
-              keyPressPlayer &&
-              keyPressPlayer.buffer &&
-              keyPressPlayer.buffer.loaded
-            ) {
-              if (this.destination) {
-                // Create a new player instance for this specific playback to avoid conflicts
-                try {
-                  // Create a volume node for this specific mechanical sound
-                  const velocityVolume = new Tone.Volume(mechanicalVolume);
-                  velocityVolume.connect(this.mechanicalVolume); // Chain to master mechanical volume
-
-                  const oneShot = new Tone.Player(
-                    keyPressPlayer.buffer,
-                  ).connect(velocityVolume);
-                  // Start mechanical sound before the note (realistic piano action delay)
-                  const mechanicalTime = Math.max(
-                    0,
-                    noteTime + this.mechanicalTimingOffset,
-                  );
-                  oneShot.start(mechanicalTime);
-                  this.mechanicalSoundCount++;
-                  // Started key press sound
-                  // Clean up after the sound has played (CleanKeys are typically < 1 second)
-                  setTimeout(() => {
-                    // Disposing key press player
-                    oneShot.dispose();
-                    velocityVolume.dispose();
-                  }, 1000);
-                } catch (e) {
-                  logger.error(
-                    `[Mechanical] Failed to create/start key press sound for ${noteForSampler}:`,
-                    e,
-                  );
-                }
-              } else {
-                logger.warn(
-                  `[Mechanical] No destination connected for clean key sound ${noteForSampler}`,
-                );
-              }
-            } else {
-              logger.warn(
-                `[Mechanical] No clean key sound loaded for ${noteForSampler}`,
-              );
+        // Clean up after note ends
+        if (typeof duration === 'number') {
+          setTimeout(() => {
+            for (const n of notes) {
+              this.activeNotes.delete(n);
             }
-
-            // Schedule a random key release sound
-            // The mechanical release sound should play when the key is released (note-off event)
-            // For realistic timing, it plays slightly before the actual note-off to simulate the mechanical action
-            const noteDurationSeconds = Tone.Time(duration).toSeconds();
-            const actualNoteReleaseTime = noteTime + noteDurationSeconds;
-            // Mechanical release happens slightly before the electrical note-off
-            // This simulates the key mechanism starting to move before the tine is fully dampened
-            const mechanicalReleaseTime =
-              actualNoteReleaseTime + this.mechanicalReleaseOffset; // -10ms by default
-            const keyReleaseIndex = Math.floor(
-              Math.random() * this.keyReleaseSamplers.length,
-            );
-            const keyReleasePlayer = this.keyReleaseSamplers[keyReleaseIndex];
-            // Check key release sampler
-
-            if (
-              keyReleasePlayer &&
-              keyReleasePlayer.buffer &&
-              keyReleasePlayer.buffer.loaded &&
-              this.destination
-            ) {
-              // Calculate release-specific volume (slightly quieter than press)
-              const releaseVolume =
-                this.calculateMechanicalReleaseVolume(velocity);
-
-              // Create volume node and player for release sound
-              const releaseVelocityVolume = new Tone.Volume(releaseVolume);
-              releaseVelocityVolume.connect(this.mechanicalVolume);
-
-              const releaseOneShot = new Tone.Player(
-                keyReleasePlayer.buffer,
-              ).connect(releaseVelocityVolume);
-
-              // Schedule the release sound at the exact time
-              const releaseDuration = mechanicalReleaseTime - Tone.now();
-
-              // Use Tone.js scheduling instead of setTimeout
-              releaseOneShot.start(mechanicalReleaseTime);
-
-              // Clean up after the sound has played (approximate duration + buffer)
-              setTimeout(
-                () => {
-                  // Disposing key release player
-                  releaseOneShot.dispose();
-                  releaseVelocityVolume.dispose();
-                },
-                Math.max(releaseDuration * 1000 + 1000, 2000),
-              );
-            } else if (!this.destination) {
-              logger.warn('[Mechanical] No destination for key release sound');
-            }
-          } catch (error) {
-            logger.error(
-              `[Mechanical] Error playing mechanical sounds for ${noteForSampler}:`,
-              error,
-            );
-          }
+          }, duration * 1000);
         }
-      } else {
-        logger.error(
-          `No sampler found for ${noteForSampler} velocity layer ${velocityLayer}`,
-        );
+      } catch (error) {
+        logger.error('Error playing note', { error, note: notes, layer });
       }
     }
   }
 
   /**
-   * Trigger pedal press
+   * Trigger attack (note on)
    */
-  triggerPedalPress(time?: Tone.Unit.Time): void {
-    try {
-      if (
-        this.pedalSampler &&
-        this.pedalSampler.buffer.loaded &&
-        this.destination
-      ) {
-        // Create one-shot player for pedal press
-        const oneShot = new Tone.Player(this.pedalSampler.buffer).connect(
-          this.destination,
-        );
-        oneShot.start(time);
-        setTimeout(() => {
-          oneShot.dispose();
-        }, 1000);
-      } else {
-        logger.warn('Pedal press sampler not loaded or no destination');
+  async triggerAttack(
+    note: string | string[],
+    time?: any,
+    velocity = 80,
+  ): Promise<void> {
+    if (!this.isInitialized || !this.config) return;
+
+    const notes = Array.isArray(note) ? note : [note];
+    let layer = this.getLayerForVelocity(velocity);
+
+    if (!this.loadedLayers.has(layer)) {
+      layer = Array.from(this.loadedLayers)[0];
+      if (!layer) return;
+    }
+
+    const sampler = this.samplers.get(layer);
+    if (sampler && sampler.loaded) {
+      const normalizedVelocity = velocity / 127;
+      sampler.triggerAttack(notes, time, normalizedVelocity);
+
+      for (const n of notes) {
+        this.activeNotes.set(n, velocity);
       }
-    } catch (error) {
-      logger.warn('Error playing pedal press:', error);
     }
   }
 
   /**
-   * Trigger pedal release
+   * Trigger release (note off)
    */
-  triggerPedalRelease(time?: Tone.Unit.Time): void {
-    try {
-      if (
-        this.pedalReleaseSampler &&
-        this.pedalReleaseSampler.buffer.loaded &&
-        this.destination
-      ) {
-        // Create one-shot player for pedal release
-        const oneShot = new Tone.Player(
-          this.pedalReleaseSampler.buffer,
-        ).connect(this.destination);
-        oneShot.start(time);
-        setTimeout(() => {
-          oneShot.dispose();
-        }, 1000);
-      } else {
-        logger.warn('Pedal release sampler not loaded or no destination');
-      }
-    } catch (error) {
-      logger.warn('Error playing pedal release:', error);
-    }
-  }
+  triggerRelease(note: string | string[], time?: any): void {
+    if (!this.isInitialized) return;
 
-  /**
-   * Calculate mechanical volume based on velocity
-   * Scales from -45dB (velocity 1) to -15dB (velocity 127) with -30dB at velocity 64
-   */
-  private calculateMechanicalVolume(velocity: number): number {
-    // Normalize velocity to 0-1 range
-    const normalized = velocity / 127;
+    const notes = Array.isArray(note) ? note : [note];
 
-    // Create a curve that's -45dB at velocity 1, -30dB at velocity 64, and -15dB at velocity 127
-    // Using a power curve for more realistic scaling
-    const volumeRange = 30; // Total range from softest to loudest
-    const minVolume = -45; // Quietest mechanical sound
+    for (const n of notes) {
+      const velocity = this.activeNotes.get(n);
+      if (velocity !== undefined) {
+        const layer = this.getLayerForVelocity(velocity);
+        const sampler = this.samplers.get(layer);
 
-    // Power curve (squared for more natural response)
-    const scaledVolume = minVolume + volumeRange * Math.pow(normalized, 1.5);
-
-    return scaledVolume;
-  }
-
-  /**
-   * Calculate mechanical release volume based on velocity
-   * Release sounds are typically slightly louder than press sounds
-   * because the damper mechanism is more abrupt than the key press
-   */
-  private calculateMechanicalReleaseVolume(velocity: number): number {
-    // Scale from 0dB at velocity 127 down to -30dB at velocity 1
-    // This matches the loudest clean note (velocity 127 = 0dB)
-    const normalized = velocity / 127;
-    // Linear scaling from -30dB to 0dB
-    const scaledVolume = -30 + 30 * normalized;
-    return scaledVolume;
-  }
-
-  /**
-   * Set mechanical sounds base volume (in dB)
-   * This is the volume at velocity 64
-   */
-  setMechanicalVolume(volumeDb: number): void {
-    this.mechanicalVolumeBase = volumeDb;
-    // Update current volume if playing at velocity 64
-    this.mechanicalVolume.volume.value = volumeDb;
-  }
-
-  /**
-   * Set mechanical timing offset (in seconds, negative = before note)
-   * Typical values: -0.003 to -0.005 for realistic piano action
-   */
-  setMechanicalTimingOffset(offsetSeconds: number): void {
-    this.mechanicalTimingOffset = offsetSeconds;
-  }
-
-  /**
-   * Set mechanical release timing offset (in seconds, negative = before note release)
-   * Typical values: -0.005 to -0.015 for electric piano damper action
-   * The mechanical sound plays slightly before the electrical note-off
-   * to simulate the key mechanism starting to move before the tine is fully dampened
-   * Default: -0.010 (10ms before note release)
-   */
-  setMechanicalReleaseOffset(offsetSeconds: number): void {
-    this.mechanicalReleaseOffset = offsetSeconds;
-  }
-
-  /**
-   * Set the note release time (ADSR envelope release)
-   * Shorter values make the mechanical release sound more audible
-   * Typical values: 0.1 to 0.3 for electric piano
-   */
-  setNoteReleaseTime(releaseTime: number): void {
-    this.noteReleaseTime = releaseTime;
-    // Update all existing samplers
-    for (const samplers of this.noteSamplers.values()) {
-      samplers.forEach((sampler) => {
         if (sampler) {
-          sampler.release = releaseTime;
+          sampler.triggerRelease(n, time);
         }
-      });
+
+        this.activeNotes.delete(n);
+      }
     }
+  }
+
+  /**
+   * Enable or disable tremolo effect
+   */
+  setTremoloEnabled(enabled: boolean): void {
+    this.tremoloEnabled = enabled;
+
+    if (this.tremoloLFO) {
+      if (enabled) {
+        this.tremoloLFO.start();
+      } else {
+        this.tremoloLFO.stop();
+      }
+    }
+  }
+
+  /**
+   * Set tremolo rate
+   */
+  setTremoloRate(rate: number): void {
+    if (this.tremoloLFO) {
+      this.tremoloLFO.frequency.value = rate;
+    }
+  }
+
+  /**
+   * Set tremolo depth
+   */
+  setTremoloDepth(depth: number): void {
+    if (this.tremoloLFO) {
+      this.tremoloLFO.min = 1 - depth;
+    }
+  }
+
+  /**
+   * Ensure all loaded samplers are ready to play
+   */
+  async ensureReady(): Promise<void> {
+    logger.info('🎹 Ensuring all samplers are ready...');
+
+    for (const [layer, sampler] of this.samplers) {
+      if (sampler) {
+        try {
+          await sampler.loaded;
+          logger.info(`🎹 Layer ${layer} ready`);
+        } catch (err: unknown) {
+          logger.warn(`🎹 Layer ${layer} load failed`, {
+            error: err instanceof Error ? err : new Error(String(err)),
+          });
+        }
+      }
+    }
+
+    logger.info('🎹 All samplers checked and ready!');
+  }
+
+  /**
+   * Preload additional layers
+   */
+  async preloadLayers(layers: string[]): Promise<void> {
+    const promises = layers.map((layer) => this.loadLayer(layer));
+    await Promise.all(promises);
+  }
+
+  /**
+   * Preload all layers
+   */
+  async preloadAll(): Promise<void> {
+    if (!this.config) return;
+
+    const allLayers = this.config.velocityRanges.map((r) => r.layer);
+    await this.preloadLayers(allLayers);
   }
 
   /**
    * Connect to audio destination
    */
-  connect(destination: Tone.InputNode): this {
+  connect(destination: any): void {
     this.destination = destination;
 
-    // Connect all loaded samplers
-    for (const samplers of this.noteSamplers.values()) {
-      samplers.forEach((s) => s?.connect(destination));
-    }
-
-    // Connect mechanical volume to destination
-    this.mechanicalVolume.connect(destination);
-
-    // Connect mechanical sounds to mechanical volume (already done in loadMechanicalSounds)
-
-    return this;
-  }
-
-  /**
-   * Disconnect from audio
-   */
-  disconnect(): this {
-    for (const samplers of this.noteSamplers.values()) {
-      samplers.forEach((s) => s?.disconnect());
-    }
-
-    this.pedalSampler?.disconnect();
-    this.pedalReleaseSampler?.disconnect();
-    this.keyPressSamplers.forEach((p) => p.disconnect());
-    this.keyReleaseSamplers.forEach((p) => p.disconnect());
-
-    return this;
-  }
-
-  /**
-   * Stop all currently playing notes immediately
-   */
-  stopAll(): void {
-    // Stop all notes on all velocity layers
-    for (const samplers of this.noteSamplers.values()) {
-      samplers.forEach((sampler) => {
-        if (sampler && sampler.loaded) {
-          try {
-            // Store original envelope
-            const originalEnvelope = {
-              attack: sampler.attack,
-              decay: sampler.decay,
-              sustain: sampler.sustain,
-              release: sampler.release,
-            };
-
-            // Set to immediate silence
-            sampler.attack = 0;
-            sampler.decay = 0;
-            sampler.sustain = 0;
-            sampler.release = 0;
-
-            // Release all notes
-            sampler.releaseAll(Tone.immediate());
-
-            // Restore envelope after a brief moment
-            setTimeout(() => {
-              sampler.attack = originalEnvelope.attack;
-              sampler.decay = originalEnvelope.decay;
-              sampler.sustain = originalEnvelope.sustain;
-              sampler.release = originalEnvelope.release;
-            }, 50);
-          } catch (error) {
-            logger.warn('Failed to release notes on sampler:', error);
-          }
+    for (const sampler of this.samplers.values()) {
+      if (sampler) {
+        sampler.disconnect();
+        if (this.tremoloEnabled && this.tremoloGain) {
+          sampler.connect(this.tremoloGain);
+        } else {
+          sampler.connect(destination);
         }
-      });
+      }
+    }
+
+    if (this.tremoloGain) {
+      this.tremoloGain.disconnect();
+      this.tremoloGain.connect(destination);
     }
   }
 
   /**
-   * Dispose of all resources
+   * Disconnect from audio destination
    */
-  dispose(): void {
-    // Stop all notes first
-    this.stopAll();
+  disconnect(): void {
+    for (const sampler of this.samplers.values()) {
+      if (sampler) {
+        sampler.disconnect();
+      }
+    }
 
+    if (this.tremoloGain) {
+      this.tremoloGain.disconnect();
+    }
+  }
+
+  /**
+   * Set volume
+   */
+  setVolume(volumeDb: number): void {
+    if (this.destination) {
+      this.destination.gain.value = Math.pow(10, volumeDb / 20);
+    }
+  }
+
+  /**
+   * Get status
+   */
+  getStatus(): any {
+    const memoryUsage = this.loadedLayers.size * 10; // ~10MB per layer estimate
+
+    return {
+      isInitialized: this.isInitialized,
+      loadedLayers: Array.from(this.loadedLayers),
+      totalLayers: this.config?.velocityRanges.length || 0,
+      memoryEstimate: `~${memoryUsage}MB`,
+      isReady: this.isInitialized && this.loadedLayers.size > 0,
+      tremolo: this.tremoloEnabled,
+    };
+  }
+
+  /**
+   * Dispose of resources
+   */
+  async dispose(): Promise<void> {
     this.disconnect();
 
-    for (const samplers of this.noteSamplers.values()) {
-      samplers.forEach((s) => s?.dispose());
-    }
-    this.noteSamplers.clear();
-
-    this.pedalSampler?.dispose();
-    this.pedalReleaseSampler?.dispose();
-    this.keyPressSamplers.forEach((p) => p.dispose());
-    this.keyPressSamplers.clear();
-    this.keyReleaseSamplers.forEach((p) => p.dispose());
-    this.keyReleaseSamplers = [];
-  }
-
-  /**
-   * Preload all velocity layers for specific notes
-   */
-  async preloadNotes(notes: string[]): Promise<void> {
-    const loadPromises = [];
-
-    for (const note of notes) {
-      const noteForSampler = note.includes('#') ? note.replace('#', 's') : note;
-      const velocityCount = this.velocityInfo.get(noteForSampler) || 3;
-
-      for (let v = 1; v <= velocityCount; v++) {
-        loadPromises.push(this.loadVelocityLayer(noteForSampler, v));
+    for (const sampler of this.samplers.values()) {
+      if (sampler) {
+        sampler.dispose();
       }
     }
 
-    await Promise.all(loadPromises);
-  }
-
-  /**
-   * Get status information
-   */
-  getStatus() {
-    let loadedCount = 0;
-    let totalPossible = 0;
-
-    for (const [note, velocityCount] of this.velocityInfo) {
-      totalPossible += velocityCount;
-      const samplers = this.noteSamplers.get(note) || [];
-      loadedCount += samplers.filter((s) => s != null).length;
+    if (this.tremoloLFO) {
+      this.tremoloLFO.dispose();
     }
 
-    return {
-      initialized: this.isInitialized,
-      notesLoaded: `${loadedCount}/${totalPossible}`,
-      mechanicalSoundsLoaded: true,
-      totalNotes: this.velocityInfo.size,
-    };
+    if (this.tremoloGain) {
+      this.tremoloGain.dispose();
+    }
+
+    this.samplers.clear();
+    this.loadedLayers.clear();
+    this.activeNotes.clear();
+    this.isInitialized = false;
+
+    logger.info('💀 Wurlitzer disposed');
   }
 }
 
-const logger = createStructuredLogger('WurlitzerVelocitySampler');
-
-  /**
-   * Preload all velocity layers for specific notes
-   */
-  async preloadNotes(notes: string[]): Promise<void> {
-    const loadPromises = [];
-
-    for (const note of notes) {
-      const noteForSampler = note.includes('#') ? note.replace('#', 's') : note;
-      const velocityCount = this.velocityInfo.get(noteForSampler) || 3;
-
-      for (let v = 1; v <= velocityCount; v++) {
-        loadPromises.push(this.loadVelocityLayer(noteForSampler, v));
-      }
-    }
-
-    await Promise.all(loadPromises);
-  }
-
-  /**
-   * Get status information
-   */
-  getStatus() {
-    let loadedCount = 0;
-    let totalPossible = 0;
-
-    for (const [note, velocityCount] of this.velocityInfo) {
-      totalPossible += velocityCount;
-      const samplers = this.noteSamplers.get(note) || [];
-      loadedCount += samplers.filter((s) => s != null).length;
-    }
-
-    return {
-      initialized: this.isInitialized,
-      notesLoaded: `${loadedCount}/${totalPossible}`,
-      mechanicalSoundsLoaded: true,
-      totalNotes: this.velocityInfo.size,
-    };
-  }
-}
+/**
+ * Singleton instance for global use
+ */
+export const wurlitzerPiano = new WurlitzerVelocitySampler();

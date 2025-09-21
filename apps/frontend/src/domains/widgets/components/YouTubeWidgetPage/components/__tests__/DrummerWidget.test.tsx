@@ -46,7 +46,11 @@ vi.mock('@/domains/playback/utils/ensureAudioContext', () => ({
 vi.mock('../VolumeKnob', () => ({
   VolumeKnob: ({ value, onChange }: any) => (
     <div data-testid="volume-knob" data-value={value}>
-      <input type="range" value={value} onChange={(e) => onChange(Number(e.target.value))} />
+      <input
+        type="range"
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
     </div>
   ),
 }));
@@ -100,14 +104,14 @@ describe('DrummerWidget', () => {
 
   it('should render when visible', () => {
     render(<DrummerWidget {...defaultProps} />);
-    
+
     // Check for drum-specific elements
     expect(screen.getByTestId('volume-knob')).toBeInTheDocument();
   });
 
   it('should not render when not visible', () => {
     render(<DrummerWidget {...defaultProps} isVisible={false} />);
-    
+
     // The component should still mount but be hidden
     const container = document.querySelector('[data-visible="false"]');
     expect(container).toBeInTheDocument();
@@ -116,66 +120,60 @@ describe('DrummerWidget', () => {
   it('should handle pattern changes', () => {
     const onPatternChange = vi.fn();
     render(
-      <DrummerWidget 
-        {...defaultProps} 
+      <DrummerWidget
+        {...defaultProps}
         onPatternChange={onPatternChange}
         pattern="Rock Steady"
-      />
+      />,
     );
-    
+
     // Pattern is controlled by parent
     expect(onPatternChange).not.toHaveBeenCalled();
   });
 
   it('should initialize with correct tempo', () => {
-    const { rerender } = render(<DrummerWidget {...defaultProps} tempo={140} />);
-    
+    const { rerender } = render(
+      <DrummerWidget {...defaultProps} tempo={140} />,
+    );
+
     // Verify the component receives the tempo prop
     expect(defaultProps.tempo).toBe(120);
-    
+
     // Update tempo
     rerender(<DrummerWidget {...defaultProps} tempo={140} />);
   });
 
   it('should handle play/pause state', () => {
     const { rerender } = render(
-      <DrummerWidget 
-        {...defaultProps} 
-        isPlaying={false}
-      />
+      <DrummerWidget {...defaultProps} isPlaying={false} />,
     );
-    
+
     // Component should respond to playing state
-    rerender(
-      <DrummerWidget 
-        {...defaultProps} 
-        isPlaying={true}
-      />
-    );
+    rerender(<DrummerWidget {...defaultProps} isPlaying={true} />);
   });
 
   it('should handle visibility toggle', () => {
     const onToggleVisibility = vi.fn();
     const { rerender } = render(
-      <DrummerWidget 
-        {...defaultProps} 
+      <DrummerWidget
+        {...defaultProps}
         onToggleVisibility={onToggleVisibility}
         isVisible={true}
-      />
+      />,
     );
-    
+
     // Component should be visible
     expect(document.querySelector('[data-visible="true"]')).toBeTruthy();
-    
+
     // Change visibility
     rerender(
-      <DrummerWidget 
-        {...defaultProps} 
+      <DrummerWidget
+        {...defaultProps}
         onToggleVisibility={onToggleVisibility}
         isVisible={false}
-      />
+      />,
     );
-    
+
     // Component should be hidden
     expect(document.querySelector('[data-visible="false"]')).toBeTruthy();
   });
@@ -190,29 +188,21 @@ describe('DrummerWidget', () => {
       instrumentType: 'drums',
       tempo: 100,
     };
-    
-    render(
-      <DrummerWidget 
-        {...defaultProps} 
-        exercise={mockExercise as any}
-      />
-    );
-    
+
+    render(<DrummerWidget {...defaultProps} exercise={mockExercise as any} />);
+
     // The exercise should affect the widget's behavior
     // This would be internal to the component
   });
 
   it('should support different drum patterns', () => {
     const patterns = ['Rock Steady', 'Jazz Swing', 'Bossa Nova'];
-    
-    patterns.forEach(pattern => {
+
+    patterns.forEach((pattern) => {
       const { rerender } = render(
-        <DrummerWidget 
-          {...defaultProps} 
-          pattern={pattern}
-        />
+        <DrummerWidget {...defaultProps} pattern={pattern} />,
       );
-      
+
       // Each pattern should be handled
       rerender(<DrummerWidget {...defaultProps} pattern={pattern} />);
     });

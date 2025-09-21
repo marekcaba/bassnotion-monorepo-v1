@@ -1,24 +1,23 @@
 /**
  * Advanced Cache Analytics Engine
- * 
+ *
  * Enterprise-grade cache analytics with comprehensive pattern analysis,
  * performance monitoring, and optimization recommendations.
- * 
+ *
  * Extracted from services/storage/cache/CacheAnalyticsEngine.ts
  * Enhanced with modular architecture and improved type safety.
  */
 
-import { createStructuredLogger } from '@bassnotion/contracts';
-import { EventBus } from '../../../services/core/EventBus.js';
+import { EventBus, createStructuredLogger } from '../../shared/index.js';
 
 const logger = createStructuredLogger('CacheAnalyticsEngine');
 
 // Cache layer types
 export type CacheLayer = 'memory' | 'indexeddb' | 'serviceworker';
 
-export type CacheOptimizationCategory = 
+export type CacheOptimizationCategory =
   | 'routing_optimization'
-  | 'compression_tuning' 
+  | 'compression_tuning'
   | 'eviction_strategy'
   | 'layer_balancing'
   | 'preload_strategy'
@@ -192,7 +191,8 @@ export class CacheAnalyticsEngine {
 
   // Analytics data storage
   private usagePatterns: Map<string, CacheUsagePattern> = new Map();
-  private performanceHistory: Map<CacheLayer, LayerPerformanceData[]> = new Map();
+  private performanceHistory: Map<CacheLayer, LayerPerformanceData[]> =
+    new Map();
   private optimizationOpportunities: CacheOptimizationOpportunity[] = [];
   private healthHistory: CacheHealthScore[] = [];
 
@@ -202,7 +202,10 @@ export class CacheAnalyticsEngine {
   private errorTracking: Map<CacheLayer, number> = new Map(); // layer -> error count
   private hitCounts: Map<CacheLayer, number> = new Map(); // layer -> hit count
   private missCounts: Map<CacheLayer, number> = new Map(); // layer -> miss count
-  private compressionData: Map<string, { original: number; compressed: number }> = new Map();
+  private compressionData: Map<
+    string,
+    { original: number; compressed: number }
+  > = new Map();
 
   constructor(config: CacheAnalyticsConfig, eventBus?: EventBus) {
     this.config = config;
@@ -343,7 +346,9 @@ export class CacheAnalyticsEngine {
   /**
    * Get optimization recommendations
    */
-  async getOptimizationRecommendations(): Promise<CacheOptimizationOpportunity[]> {
+  async getOptimizationRecommendations(): Promise<
+    CacheOptimizationOpportunity[]
+  > {
     return [...this.optimizationOpportunities];
   }
 
@@ -433,7 +438,11 @@ export class CacheAnalyticsEngine {
     this.analyzeAccessPattern(sampleId, timestamp, 'get');
   }
 
-  private recordLayerOperation(layer: CacheLayer, duration: number, success: boolean): void {
+  private recordLayerOperation(
+    layer: CacheLayer,
+    duration: number,
+    success: boolean,
+  ): void {
     const metrics = this.operationMetrics.get(layer) || [];
     metrics.push(duration);
 
@@ -449,7 +458,11 @@ export class CacheAnalyticsEngine {
     }
   }
 
-  private analyzeAccessPattern(sampleId: string, timestamp: number, _operation: string): void {
+  private analyzeAccessPattern(
+    sampleId: string,
+    timestamp: number,
+    _operation: string,
+  ): void {
     const allAccesses = this.accessTracker.get(sampleId) || [];
 
     if (allAccesses.length >= 3) {
@@ -463,27 +476,36 @@ export class CacheAnalyticsEngine {
       }
 
       // Check for regular patterns
-      const avgInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
-      const variance = intervals.reduce((sum, interval) => sum + Math.pow(interval - avgInterval, 2), 0) / intervals.length;
+      const avgInterval =
+        intervals.reduce((sum, interval) => sum + interval, 0) /
+        intervals.length;
+      const variance =
+        intervals.reduce(
+          (sum, interval) => sum + Math.pow(interval - avgInterval, 2),
+          0,
+        ) / intervals.length;
 
-      const isRegularPattern = avgInterval === 0 
-        ? variance === 0 && intervals.length >= 3
-        : variance < avgInterval * 0.1;
+      const isRegularPattern =
+        avgInterval === 0
+          ? variance === 0 && intervals.length >= 3
+          : variance < avgInterval * 0.1;
 
       if (isRegularPattern) {
         const patternId = `regular_${sampleId}`;
         const pattern: CacheUsagePattern = {
           patternId,
-          description: avgInterval === 0 
-            ? `Rapid regular access pattern for ${sampleId}`
-            : `Regular access pattern for ${sampleId}`,
+          description:
+            avgInterval === 0
+              ? `Rapid regular access pattern for ${sampleId}`
+              : `Regular access pattern for ${sampleId}`,
           frequency: intervals.length,
           period: this.classifyPeriod(avgInterval),
-          confidence: avgInterval === 0 ? 0.9 : Math.max(0, 1 - variance / avgInterval),
+          confidence:
+            avgInterval === 0 ? 0.9 : Math.max(0, 1 - variance / avgInterval),
           detectedAt: timestamp,
           examples: [sampleId],
         };
-        
+
         this.usagePatterns.set(patternId, pattern);
 
         // Enforce maxPatterns limit
@@ -525,7 +547,8 @@ export class CacheAnalyticsEngine {
 
     Object.entries(hitRates).forEach(([layer, hitRate]) => {
       const layerName = layer as CacheLayer;
-      const threshold = this.config.performanceThresholds?.minHitRate?.[layerName] || 0.8;
+      const threshold =
+        this.config.performanceThresholds?.minHitRate?.[layerName] || 0.8;
 
       if (hitRate < threshold) {
         this.optimizationOpportunities.push({
@@ -586,17 +609,26 @@ export class CacheAnalyticsEngine {
 
   private checkEvictionOptimization(): void {
     const accessPatterns = Array.from(this.accessTracker.entries());
-    const frequentItems = accessPatterns.filter(([_, accesses]) => accesses.length > 10);
-    const rareItems = accessPatterns.filter(([_, accesses]) => accesses.length <= 2);
+    const frequentItems = accessPatterns.filter(
+      ([_, accesses]) => accesses.length > 10,
+    );
+    const rareItems = accessPatterns.filter(
+      ([_, accesses]) => accesses.length <= 2,
+    );
 
-    if (frequentItems.length > 0 && rareItems.length >= frequentItems.length * 2) {
+    if (
+      frequentItems.length > 0 &&
+      rareItems.length >= frequentItems.length * 2
+    ) {
       this.optimizationOpportunities.push({
         type: 'eviction_strategy',
         priority: 'medium',
         title: 'Optimize Eviction Policy',
-        description: 'Current eviction strategy may not be optimal for access patterns',
+        description:
+          'Current eviction strategy may not be optimal for access patterns',
         currentState: `${rareItems.length} rarely accessed items, ${frequentItems.length} frequently accessed`,
-        improvedState: 'Implement frequency-based eviction for better hit rates',
+        improvedState:
+          'Implement frequency-based eviction for better hit rates',
         expectedBenefit: {
           performance: 0.12,
           storage: 0,
@@ -620,12 +652,17 @@ export class CacheAnalyticsEngine {
     const memoryLatency = layerPerformance.memory.averageLatency;
     const indexeddbLatency = layerPerformance.indexeddb.averageLatency;
 
-    if (indexeddbLatency > 0 && memoryLatency > 0 && indexeddbLatency / memoryLatency > 10) {
+    if (
+      indexeddbLatency > 0 &&
+      memoryLatency > 0 &&
+      indexeddbLatency / memoryLatency > 10
+    ) {
       this.optimizationOpportunities.push({
         type: 'layer_balancing',
         priority: 'high',
         title: 'Optimize Layer Distribution',
-        description: 'Significant performance gap between cache layers detected',
+        description:
+          'Significant performance gap between cache layers detected',
         currentState: `Memory: ${memoryLatency.toFixed(1)}ms, IndexedDB: ${indexeddbLatency.toFixed(1)}ms`,
         improvedState: 'Better distribution of data across cache layers',
         expectedBenefit: {
@@ -651,7 +688,8 @@ export class CacheAnalyticsEngine {
 
     Object.entries(hitRates).forEach(([layer, hitRate]) => {
       const layerName = layer as CacheLayer;
-      const threshold = this.config.performanceThresholds?.minHitRate?.[layerName];
+      const threshold =
+        this.config.performanceThresholds?.minHitRate?.[layerName];
 
       if (threshold && hitRate < threshold) {
         logger.error(
@@ -692,7 +730,10 @@ export class CacheAnalyticsEngine {
     return totalSize || this.accessTracker.size * 1024; // Fallback estimate
   }
 
-  private calculateLayerDistribution(): Record<CacheLayer, { count: number; size: number }> {
+  private calculateLayerDistribution(): Record<
+    CacheLayer,
+    { count: number; size: number }
+  > {
     const distribution: Record<CacheLayer, { count: number; size: number }> = {
       memory: { count: 0, size: 0 },
       indexeddb: { count: 0, size: 0 },
@@ -714,12 +755,15 @@ export class CacheAnalyticsEngine {
       serviceworker: 0,
     };
 
-    (['memory', 'indexeddb', 'serviceworker'] as CacheLayer[]).forEach((layer) => {
-      const times = this.operationMetrics.get(layer) || [];
-      if (times.length > 0) {
-        averageAccessTime[layer] = times.reduce((sum, time) => sum + time, 0) / times.length;
-      }
-    });
+    (['memory', 'indexeddb', 'serviceworker'] as CacheLayer[]).forEach(
+      (layer) => {
+        const times = this.operationMetrics.get(layer) || [];
+        if (times.length > 0) {
+          averageAccessTime[layer] =
+            times.reduce((sum, time) => sum + time, 0) / times.length;
+        }
+      },
+    );
 
     return averageAccessTime;
   }
@@ -731,15 +775,17 @@ export class CacheAnalyticsEngine {
       serviceworker: 0.45,
     };
 
-    (['memory', 'indexeddb', 'serviceworker'] as CacheLayer[]).forEach((layer) => {
-      const hits = this.hitCounts.get(layer) || 0;
-      const misses = this.missCounts.get(layer) || 0;
-      const total = hits + misses;
+    (['memory', 'indexeddb', 'serviceworker'] as CacheLayer[]).forEach(
+      (layer) => {
+        const hits = this.hitCounts.get(layer) || 0;
+        const misses = this.missCounts.get(layer) || 0;
+        const total = hits + misses;
 
-      if (total > 0) {
-        hitRates[layer] = hits / total;
-      }
-    });
+        if (total > 0) {
+          hitRates[layer] = hits / total;
+        }
+      },
+    );
 
     return hitRates;
   }
@@ -758,7 +804,11 @@ export class CacheAnalyticsEngine {
     return totalOriginal > 0 ? totalCompressed / totalOriginal : 0.7;
   }
 
-  private calculatePredictionAccuracy(): { access: number; layer: number; compression: number } {
+  private calculatePredictionAccuracy(): {
+    access: number;
+    layer: number;
+    compression: number;
+  } {
     return {
       access: 0.85,
       layer: 0.78,
@@ -766,7 +816,11 @@ export class CacheAnalyticsEngine {
     };
   }
 
-  private calculateSyncHealth(): { consistency: number; conflictRate: number; averageSyncTime: number } {
+  private calculateSyncHealth(): {
+    consistency: number;
+    conflictRate: number;
+    averageSyncTime: number;
+  } {
     return {
       consistency: 0.95,
       conflictRate: 0.02,
@@ -802,7 +856,9 @@ export class CacheAnalyticsEngine {
     };
   }
 
-  private async generateOptimizationSuggestions(): Promise<CacheOptimizationSuggestion[]> {
+  private async generateOptimizationSuggestions(): Promise<
+    CacheOptimizationSuggestion[]
+  > {
     return this.optimizationOpportunities.map((opportunity) => ({
       type: opportunity.type,
       priority: opportunity.priority,
@@ -823,7 +879,9 @@ export class CacheAnalyticsEngine {
     };
   }
 
-  private calculateLayerPerformanceData(layer: CacheLayer): LayerPerformanceData {
+  private calculateLayerPerformanceData(
+    layer: CacheLayer,
+  ): LayerPerformanceData {
     const metrics = this.operationMetrics.get(layer) || [];
     const errorCount = this.errorTracking.get(layer) || 0;
     const hits = this.hitCounts.get(layer) || 0;
@@ -831,9 +889,10 @@ export class CacheAnalyticsEngine {
     const total = hits + misses;
 
     const hitRate = total > 0 ? hits / total : 0.75;
-    const averageLatency = metrics.length > 0 
-      ? metrics.reduce((sum, time) => sum + time, 0) / metrics.length 
-      : 0;
+    const averageLatency =
+      metrics.length > 0
+        ? metrics.reduce((sum, time) => sum + time, 0) / metrics.length
+        : 0;
 
     return {
       hitRate,
@@ -853,7 +912,8 @@ export class CacheAnalyticsEngine {
 
     Object.entries(layerPerformance).forEach(([layer, data]) => {
       const layerName = layer as CacheLayer;
-      const threshold = this.config.performanceThresholds?.maxLatency?.[layerName] || 100;
+      const threshold =
+        this.config.performanceThresholds?.maxLatency?.[layerName] || 100;
 
       if (data.averageLatency >= threshold) {
         bottlenecks.push({
@@ -877,7 +937,9 @@ export class CacheAnalyticsEngine {
     this.performanceHistory.forEach((history, layer) => {
       if (history.length >= 3) {
         const recent = history.slice(-3);
-        const latencyTrend = this.calculateTrend(recent.map((h) => h.averageLatency));
+        const latencyTrend = this.calculateTrend(
+          recent.map((h) => h.averageLatency),
+        );
 
         if (Math.abs(latencyTrend) > 0.1) {
           trends.push({
@@ -907,7 +969,7 @@ export class CacheAnalyticsEngine {
   private generatePerformancePredictions(): PerformancePrediction[] {
     const predictions: PerformancePrediction[] = [];
     const layerPerformance = this.analyzeLayerPerformance();
-    
+
     Object.entries(layerPerformance).forEach(([layer, data]) => {
       predictions.push({
         metric: 'latency',
@@ -924,7 +986,9 @@ export class CacheAnalyticsEngine {
 
   private calculatePerformanceScore(): number {
     const hitRates = this.calculateHitRates();
-    const avgHitRate = Object.values(hitRates).reduce((sum, rate) => sum + rate, 0) / Object.values(hitRates).length;
+    const avgHitRate =
+      Object.values(hitRates).reduce((sum, rate) => sum + rate, 0) /
+      Object.values(hitRates).length;
     return Math.round(avgHitRate * 100);
   }
 
@@ -934,15 +998,23 @@ export class CacheAnalyticsEngine {
   }
 
   private calculateReliabilityScore(): number {
-    const totalErrors = Array.from(this.errorTracking.values()).reduce((sum, count) => sum + count, 0);
-    const totalOperations = Array.from(this.operationMetrics.values()).reduce((sum, metrics) => sum + metrics.length, 0);
+    const totalErrors = Array.from(this.errorTracking.values()).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
+    const totalOperations = Array.from(this.operationMetrics.values()).reduce(
+      (sum, metrics) => sum + metrics.length,
+      0,
+    );
     const errorRate = totalOperations > 0 ? totalErrors / totalOperations : 0;
     return Math.round((1 - errorRate) * 100);
   }
 
   private calculateOptimizationScore(): number {
     const opportunities = this.optimizationOpportunities.length;
-    const criticalOpportunities = this.optimizationOpportunities.filter((op) => op.priority === 'critical').length;
+    const criticalOpportunities = this.optimizationOpportunities.filter(
+      (op) => op.priority === 'critical',
+    ).length;
 
     if (criticalOpportunities > 0) return 30;
     if (opportunities > 5) return 50;

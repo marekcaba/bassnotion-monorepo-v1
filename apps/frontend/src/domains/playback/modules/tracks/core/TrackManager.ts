@@ -1,6 +1,6 @@
 /**
  * TrackManager - Manages collection of tracks and their relationships
- * 
+ *
  * Responsibilities:
  * - Track lifecycle management (create, delete, reorder)
  * - Track routing and dependencies
@@ -11,9 +11,11 @@
 
 import { Track } from './Track.js';
 import type { TrackConfig } from '../../../types/track.js';
-import type { InstrumentType } from '../../../services/plugins/TrackManagerProcessor.js';
-import { EventBus } from '../../../services/core/EventBus.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import {
+  EventBus,
+  createStructuredLogger,
+  type InstrumentType,
+} from '../../shared/index.js';
 
 const logger = createStructuredLogger('TrackManager');
 
@@ -53,7 +55,10 @@ export class TrackManager {
    */
   private setupEventHandlers(): void {
     // Listen for track solo changes
-    this.eventBus.on('track:mixingUpdated', this.handleTrackMixingUpdate.bind(this));
+    this.eventBus.on(
+      'track:mixingUpdated',
+      this.handleTrackMixingUpdate.bind(this),
+    );
   }
 
   /**
@@ -93,7 +98,7 @@ export class TrackManager {
         id: 'harmony-track',
         name: 'Harmony Track',
         description: 'Piano/keyboard with chorus',
-        instrumentType: 'harmony',
+        instrumentType: 'chords',
         config: {
           name: 'Keys',
           color: '#10B981',
@@ -105,7 +110,7 @@ export class TrackManager {
       },
     ];
 
-    defaultTemplates.forEach(template => {
+    defaultTemplates.forEach((template) => {
       this.templates.set(template.id, template);
     });
   }
@@ -115,29 +120,29 @@ export class TrackManager {
    */
   async createTrack(config: TrackConfig): Promise<Track> {
     const track = new Track(config);
-    
+
     // Add to collection
     this.tracks.set(track.id, track);
     this.trackOrder.push(track.id);
-    
+
     // Update indices
     this.updateTrackIndices();
-    
+
     // Initialize track
     await track.initialize();
-    
+
     // Emit event
     this.eventBus.emit('trackManager:trackCreated', {
       trackId: track.id,
       instrumentType: track.instrumentType,
     });
-    
+
     logger.info('Track created', {
       trackId: track.id,
       name: track.name,
       type: track.instrumentType,
     });
-    
+
     return track;
   }
 
@@ -170,25 +175,25 @@ export class TrackManager {
 
     // Dispose track
     await track.dispose();
-    
+
     // Remove from collections
     this.tracks.delete(trackId);
-    this.trackOrder = this.trackOrder.filter(id => id !== trackId);
+    this.trackOrder = this.trackOrder.filter((id) => id !== trackId);
     this.soloTracks.delete(trackId);
-    
+
     // Remove from groups
-    this.groups.forEach(group => {
-      group.trackIds = group.trackIds.filter(id => id !== trackId);
+    this.groups.forEach((group) => {
+      group.trackIds = group.trackIds.filter((id) => id !== trackId);
     });
-    
+
     // Update indices
     this.updateTrackIndices();
-    
+
     // Emit event
     this.eventBus.emit('trackManager:trackDeleted', {
       trackId,
     });
-    
+
     logger.info('Track deleted', { trackId });
   }
 
@@ -203,14 +208,18 @@ export class TrackManager {
    * Get all tracks in order
    */
   getTracks(): Track[] {
-    return this.trackOrder.map(id => this.tracks.get(id)!).filter(Boolean);
+    return this.trackOrder
+      .map((id) => this.tracks.get(id))
+      .filter((track): track is Track => track !== undefined);
   }
 
   /**
    * Get tracks by instrument type
    */
   getTracksByType(instrumentType: InstrumentType): Track[] {
-    return this.getTracks().filter(track => track.instrumentType === instrumentType);
+    return this.getTracks().filter(
+      (track) => track.instrumentType === instrumentType,
+    );
   }
 
   /**
@@ -218,7 +227,7 @@ export class TrackManager {
    */
   reorderTracks(trackIds: string[]): void {
     // Validate all track IDs exist
-    const validIds = trackIds.filter(id => this.tracks.has(id));
+    const validIds = trackIds.filter((id) => this.tracks.has(id));
     if (validIds.length !== trackIds.length) {
       logger.warn('Some track IDs not found during reorder');
     }
@@ -242,11 +251,11 @@ export class TrackManager {
 
     // Remove from current position
     this.trackOrder.splice(currentIndex, 1);
-    
+
     // Insert at new position
     const targetIndex = Math.max(0, Math.min(newIndex, this.trackOrder.length));
     this.trackOrder.splice(targetIndex, 0, trackId);
-    
+
     this.updateTrackIndices();
 
     this.eventBus.emit('trackManager:trackMoved', {
@@ -264,7 +273,7 @@ export class TrackManager {
     const group: TrackGroup = {
       id: groupId,
       name,
-      trackIds: trackIds.filter(id => this.tracks.has(id)),
+      trackIds: trackIds.filter((id) => this.tracks.has(id)),
       color: color || '#6B7280',
       isCollapsed: false,
     };
@@ -319,7 +328,7 @@ export class TrackManager {
   private updateSoloMuteStates(): void {
     const hasSoloTracks = this.soloTracks.size > 0;
 
-    this.tracks.forEach(track => {
+    this.tracks.forEach((track) => {
       if (hasSoloTracks && !this.soloTracks.has(track.id)) {
         // Implicit mute when other tracks are soloed
         track.updateMixing({ mute: true });
@@ -346,7 +355,7 @@ export class TrackManager {
    * Generate unique track name
    */
   private generateUniqueTrackName(baseName: string): string {
-    const existingNames = Array.from(this.tracks.values()).map(t => t.name);
+    const existingNames = Array.from(this.tracks.values()).map((t) => t.name);
     let name = baseName;
     let counter = 1;
 
@@ -370,7 +379,7 @@ export class TrackManager {
    */
   addTemplate(template: TrackTemplate): void {
     this.templates.set(template.id, template);
-    
+
     this.eventBus.emit('trackManager:templateAdded', {
       templateId: template.id,
     });
@@ -385,7 +394,7 @@ export class TrackManager {
     }
 
     this.templates.delete(templateId);
-    
+
     this.eventBus.emit('trackManager:templateRemoved', {
       templateId,
     });
@@ -417,17 +426,19 @@ export class TrackManager {
    */
   async clear(): Promise<void> {
     // Dispose all tracks
-    const disposals = Array.from(this.tracks.values()).map(track => track.dispose());
+    const disposals = Array.from(this.tracks.values()).map((track) =>
+      track.dispose(),
+    );
     await Promise.all(disposals);
-    
+
     // Clear collections
     this.tracks.clear();
     this.trackOrder = [];
     this.groups.clear();
     this.soloTracks.clear();
-    
+
     this.eventBus.emit('trackManager:cleared');
-    
+
     logger.info('All tracks cleared');
   }
 }

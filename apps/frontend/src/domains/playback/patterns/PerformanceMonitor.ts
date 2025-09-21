@@ -182,6 +182,9 @@ export class EnhancedPerformanceMonitor {
       const popped = pool.available.pop();
       if (popped) {
         resource = popped;
+      } else {
+        // Fallback: create new resource if pop failed
+        resource = pool.create();
       }
     } else if (pool.inUse.size < pool.size) {
       // Create new resource if under limit
@@ -306,7 +309,7 @@ export class EnhancedPerformanceMonitor {
         .map((m) => m.memoryUsed as number);
 
       const report: PerformanceReport = {
-        serviceName: service,
+        serviceName: service || 'unknown',
         totalOperations: metricsList.length,
         successfulOperations: successful.length,
         failedOperations: failed.length,
@@ -329,8 +332,8 @@ export class EnhancedPerformanceMonitor {
               }
             : undefined,
         timeRange: {
-          start: metricsList[0].startTime,
-          end: metricsList[metricsList.length - 1].endTime,
+          start: metricsList[0]?.startTime || Date.now(),
+          end: metricsList[metricsList.length - 1]?.endTime || Date.now(),
         },
       };
 
@@ -490,7 +493,8 @@ export class EnhancedPerformanceMonitor {
     if (sortedValues.length === 0) return 0;
 
     const index = Math.ceil((percentile / 100) * sortedValues.length) - 1;
-    return sortedValues[Math.max(0, Math.min(index, sortedValues.length - 1))];
+    const validIndex = Math.max(0, Math.min(index, sortedValues.length - 1));
+    return sortedValues[validIndex] || 0;
   }
 
   /**

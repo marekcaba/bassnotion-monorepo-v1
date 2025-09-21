@@ -52,7 +52,7 @@ export class CachedCreatorRepository implements ICreatorRepository {
     } else {
       // Clear specific patterns
       for (const [key] of this.cache) {
-        if (patterns.some(pattern => key.startsWith(pattern))) {
+        if (patterns.some((pattern) => key.startsWith(pattern))) {
           this.cache.delete(key);
         }
       }
@@ -62,7 +62,7 @@ export class CachedCreatorRepository implements ICreatorRepository {
   async findById(id: CreatorId): Promise<Result<Creator>> {
     const cacheKey = this.getCacheKey('findById', [id.value]);
     const cached = this.getCached<Result<Creator>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -71,14 +71,14 @@ export class CachedCreatorRepository implements ICreatorRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async findByChannelUrl(channelUrl: ChannelUrl): Promise<Result<Creator>> {
     const cacheKey = this.getCacheKey('findByChannelUrl', [channelUrl.value]);
     const cached = this.getCached<Result<Creator>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -88,18 +88,20 @@ export class CachedCreatorRepository implements ICreatorRepository {
       this.setCached(cacheKey, result);
       // Also cache by ID for cross-reference
       if (result.value) {
-        const idCacheKey = this.getCacheKey('findById', [result.value.id.value]);
+        const idCacheKey = this.getCacheKey('findById', [
+          result.value.id.value,
+        ]);
         this.setCached(idCacheKey, result);
       }
     }
-    
+
     return result;
   }
 
   async findByChannelId(channelId: string): Promise<Result<Creator>> {
     const cacheKey = this.getCacheKey('findByChannelId', [channelId]);
     const cached = this.getCached<Result<Creator>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -109,18 +111,22 @@ export class CachedCreatorRepository implements ICreatorRepository {
       this.setCached(cacheKey, result);
       // Also cache by ID for cross-reference
       if (result.value) {
-        const idCacheKey = this.getCacheKey('findById', [result.value.id.value]);
+        const idCacheKey = this.getCacheKey('findById', [
+          result.value.id.value,
+        ]);
         this.setCached(idCacheKey, result);
       }
     }
-    
+
     return result;
   }
 
-  async findAll(options?: PaginationOptions): Promise<Result<PaginatedResult<Creator>>> {
+  async findAll(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Creator>>> {
     const cacheKey = this.getCacheKey('findAll', [options]);
     const cached = this.getCached<Result<PaginatedResult<Creator>>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -136,7 +142,7 @@ export class CachedCreatorRepository implements ICreatorRepository {
         }
       }
     }
-    
+
     return result;
   }
 
@@ -148,7 +154,7 @@ export class CachedCreatorRepository implements ICreatorRepository {
     for (const id of ids) {
       const cacheKey = this.getCacheKey('findById', [id.value]);
       const cached = this.getCached<Result<Creator>>(cacheKey);
-      
+
       if (cached && cached.isSuccess && cached.value) {
         cachedCreators.push(cached.value);
       } else {
@@ -167,27 +173,35 @@ export class CachedCreatorRepository implements ICreatorRepository {
         const cacheKey = this.getCacheKey('findById', [creator.id.value]);
         this.setCached(cacheKey, Result.ok(creator));
       }
-      
+
       return Result.ok([...cachedCreators, ...result.value]);
     }
 
     return result;
   }
 
-  async search(query: string, filters?: CreatorFilters): Promise<Result<Creator[]>> {
+  async search(
+    query: string,
+    filters?: CreatorFilters,
+  ): Promise<Result<Creator[]>> {
     // Don't cache search results as they are too dynamic
     return this.repository.search(query, filters);
   }
 
-  async findStale(hoursThreshold?: number, limit?: number): Promise<Result<Creator[]>> {
+  async findStale(
+    hoursThreshold?: number,
+    limit?: number,
+  ): Promise<Result<Creator[]>> {
     // Don't cache stale results as they change frequently
     return this.repository.findStale(hoursThreshold, limit);
   }
 
-  async findVerified(options?: PaginationOptions): Promise<Result<PaginatedResult<Creator>>> {
+  async findVerified(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Creator>>> {
     const cacheKey = this.getCacheKey('findVerified', [options]);
     const cached = this.getCached<Result<PaginatedResult<Creator>>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -203,14 +217,17 @@ export class CachedCreatorRepository implements ICreatorRepository {
         }
       }
     }
-    
+
     return result;
   }
 
-  async findTop(sortBy: CreatorSortOptions, limit?: number): Promise<Result<Creator[]>> {
+  async findTop(
+    sortBy: CreatorSortOptions,
+    limit?: number,
+  ): Promise<Result<Creator[]>> {
     const cacheKey = this.getCacheKey('findTop', [sortBy, limit]);
     const cached = this.getCached<Result<Creator[]>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -219,129 +236,148 @@ export class CachedCreatorRepository implements ICreatorRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async save(creator: Creator): Promise<Result<Creator>> {
     const result = await this.repository.save(creator);
-    
+
     if (result.isSuccess) {
       // Invalidate relevant caches
       this.invalidateCache(['findAll', 'findVerified', 'count', 'findTop']);
-      
+
       // Cache the new creator
       if (result.value) {
-        const idCacheKey = this.getCacheKey('findById', [result.value.id.value]);
-        const channelUrlCacheKey = this.getCacheKey('findByChannelUrl', [result.value.channelUrl.value]);
+        const idCacheKey = this.getCacheKey('findById', [
+          result.value.id.value,
+        ]);
+        const channelUrlCacheKey = this.getCacheKey('findByChannelUrl', [
+          result.value.channelUrl.value,
+        ]);
         this.setCached(idCacheKey, result);
         this.setCached(channelUrlCacheKey, result);
-        
+
         if (result.value.channelId) {
-          const channelIdCacheKey = this.getCacheKey('findByChannelId', [result.value.channelId]);
+          const channelIdCacheKey = this.getCacheKey('findByChannelId', [
+            result.value.channelId,
+          ]);
           this.setCached(channelIdCacheKey, result);
         }
       }
     }
-    
+
     return result;
   }
 
   async update(creator: Creator): Promise<Result<Creator>> {
     const result = await this.repository.update(creator);
-    
+
     if (result.isSuccess) {
       // Invalidate all caches since creator properties might have changed
       this.invalidateCache();
-      
+
       // Cache the updated creator
       if (result.value) {
-        const idCacheKey = this.getCacheKey('findById', [result.value.id.value]);
-        const channelUrlCacheKey = this.getCacheKey('findByChannelUrl', [result.value.channelUrl.value]);
+        const idCacheKey = this.getCacheKey('findById', [
+          result.value.id.value,
+        ]);
+        const channelUrlCacheKey = this.getCacheKey('findByChannelUrl', [
+          result.value.channelUrl.value,
+        ]);
         this.setCached(idCacheKey, result);
         this.setCached(channelUrlCacheKey, result);
-        
+
         if (result.value.channelId) {
-          const channelIdCacheKey = this.getCacheKey('findByChannelId', [result.value.channelId]);
+          const channelIdCacheKey = this.getCacheKey('findByChannelId', [
+            result.value.channelId,
+          ]);
           this.setCached(channelIdCacheKey, result);
         }
       }
     }
-    
+
     return result;
   }
 
   async delete(id: CreatorId): Promise<Result<void>> {
     const result = await this.repository.delete(id);
-    
+
     if (result.isSuccess) {
       // Invalidate all caches
       this.invalidateCache();
     }
-    
+
     return result;
   }
 
   async saveMany(creators: Creator[]): Promise<Result<Creator[]>> {
     const result = await this.repository.saveMany(creators);
-    
+
     if (result.isSuccess) {
       // Invalidate relevant caches
       this.invalidateCache(['findAll', 'findVerified', 'count']);
-      
+
       // Cache individual creators
       if (result.value) {
         for (const creator of result.value) {
           const idCacheKey = this.getCacheKey('findById', [creator.id.value]);
-          const channelUrlCacheKey = this.getCacheKey('findByChannelUrl', [creator.channelUrl.value]);
+          const channelUrlCacheKey = this.getCacheKey('findByChannelUrl', [
+            creator.channelUrl.value,
+          ]);
           this.setCached(idCacheKey, Result.ok(creator));
           this.setCached(channelUrlCacheKey, Result.ok(creator));
         }
       }
     }
-    
+
     return result;
   }
 
   async updateMany(creators: Creator[]): Promise<Result<Creator[]>> {
     const result = await this.repository.updateMany(creators);
-    
+
     if (result.isSuccess) {
       // Invalidate all caches
       this.invalidateCache();
-      
+
       // Cache updated creators
       if (result.value) {
         for (const creator of result.value) {
           const idCacheKey = this.getCacheKey('findById', [creator.id.value]);
-          const channelUrlCacheKey = this.getCacheKey('findByChannelUrl', [creator.channelUrl.value]);
+          const channelUrlCacheKey = this.getCacheKey('findByChannelUrl', [
+            creator.channelUrl.value,
+          ]);
           this.setCached(idCacheKey, Result.ok(creator));
           this.setCached(channelUrlCacheKey, Result.ok(creator));
         }
       }
     }
-    
+
     return result;
   }
 
   async deleteMany(ids: CreatorId[]): Promise<Result<void>> {
     const result = await this.repository.deleteMany(ids);
-    
+
     if (result.isSuccess) {
       // Invalidate all caches
       this.invalidateCache();
     }
-    
+
     return result;
   }
 
-  async updateStats(id: CreatorId, stats: {
-    subscriberCount?: number;
-    videoCount?: number;
-    viewCount?: number;
-  }): Promise<Result<Creator>> {
+  async updateStats(
+    id: CreatorId,
+    stats: {
+      subscriberCount?: number;
+      videoCount?: number;
+      viewCount?: number;
+    },
+  ): Promise<Result<Creator>> {
     const result = await this.repository.updateStats(id, stats);
-    
+
     if (result.isSuccess) {
       // Invalidate caches related to this creator
       const patterns = [
@@ -350,26 +386,28 @@ export class CachedCreatorRepository implements ICreatorRepository {
         'findAll',
       ];
       this.invalidateCache(patterns);
-      
+
       // Cache the updated creator
       if (result.value) {
-        const idCacheKey = this.getCacheKey('findById', [result.value.id.value]);
+        const idCacheKey = this.getCacheKey('findById', [
+          result.value.id.value,
+        ]);
         this.setCached(idCacheKey, result);
       }
     }
-    
+
     return result;
   }
 
   async markAsFetched(id: CreatorId): Promise<Result<void>> {
     const result = await this.repository.markAsFetched(id);
-    
+
     if (result.isSuccess) {
       // Invalidate the creator cache to get updated lastFetchedAt
       const cacheKey = this.getCacheKey('findById', [id.value]);
       this.cache.delete(cacheKey);
     }
-    
+
     return result;
   }
 
@@ -377,7 +415,7 @@ export class CachedCreatorRepository implements ICreatorRepository {
     // Check if we have it cached
     const cacheKey = this.getCacheKey('findById', [id.value]);
     const cached = this.getCached<Result<Creator>>(cacheKey);
-    
+
     if (cached && cached.isSuccess) {
       return Result.ok(true);
     }
@@ -389,7 +427,7 @@ export class CachedCreatorRepository implements ICreatorRepository {
     // Check if we have it cached
     const cacheKey = this.getCacheKey('findByChannelUrl', [channelUrl.value]);
     const cached = this.getCached<Result<Creator>>(cacheKey);
-    
+
     if (cached && cached.isSuccess) {
       return Result.ok(true);
     }
@@ -400,7 +438,7 @@ export class CachedCreatorRepository implements ICreatorRepository {
   async count(): Promise<Result<number>> {
     const cacheKey = this.getCacheKey('count', []);
     const cached = this.getCached<Result<number>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -409,14 +447,14 @@ export class CachedCreatorRepository implements ICreatorRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async countByCountry(country: string): Promise<Result<number>> {
     const cacheKey = this.getCacheKey('countByCountry', [country]);
     const cached = this.getCached<Result<number>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -425,14 +463,14 @@ export class CachedCreatorRepository implements ICreatorRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async countVerified(): Promise<Result<number>> {
     const cacheKey = this.getCacheKey('countVerified', []);
     const cached = this.getCached<Result<number>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -441,7 +479,7 @@ export class CachedCreatorRepository implements ICreatorRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 

@@ -1,12 +1,19 @@
 /**
  * Instrument Adapter
- * 
+ *
  * Adapts existing instrument processors to the new Instrument interface.
  * This allows gradual migration while maintaining backward compatibility.
  */
 
-import { BaseInstrument, type InstrumentConfig, type InstrumentEvent } from './Instrument.js';
-import type { InstrumentType } from '../../../services/plugins/TrackManagerProcessor.js';
+import {
+  BaseInstrument,
+  type InstrumentConfig,
+  type InstrumentEvent,
+} from './Instrument.js';
+import type { InstrumentType } from '../../shared/index.js';
+import { createStructuredLogger } from '../../shared/index.js';
+
+const logger = createStructuredLogger('InstrumentAdapter');
 
 /**
  * Generic processor interface that existing instruments implement
@@ -24,12 +31,11 @@ export interface LegacyProcessor {
 export class InstrumentAdapter extends BaseInstrument {
   private processor: LegacyProcessor;
   private triggerMethod: string;
-  private context?: any;
 
   constructor(
     config: InstrumentConfig,
     processor: LegacyProcessor,
-    triggerMethod: string
+    triggerMethod: string,
   ) {
     super(config);
     this.processor = processor;
@@ -39,12 +45,12 @@ export class InstrumentAdapter extends BaseInstrument {
   async initialize(context?: any): Promise<void> {
     if (this._state.isInitialized) return;
 
-    this.context = context;
     this._state.isLoading = true;
 
     try {
       // Call processor's initialize method if it exists
       if (this.processor.initialize) {
+        // Pass both context and audioEngine if available
         await this.processor.initialize(context);
       }
 
@@ -59,7 +65,7 @@ export class InstrumentAdapter extends BaseInstrument {
 
   trigger(event: InstrumentEvent): void {
     if (!this._state.isInitialized) {
-      console.warn(`Instrument ${this.name} not initialized`);
+      logger.warn(`Instrument ${this.name} not initialized`);
       return;
     }
 
@@ -71,7 +77,9 @@ export class InstrumentAdapter extends BaseInstrument {
       method.call(this.processor, processorEvent);
       this._state.isPlaying = true;
     } else {
-      console.error(`Trigger method ${this.triggerMethod} not found on processor`);
+      logger.error(
+        `Trigger method ${this.triggerMethod} not found on processor`,
+      );
     }
   }
 
@@ -166,7 +174,7 @@ export class InstrumentAdapter extends BaseInstrument {
 export function createInstrumentAdapter(
   type: InstrumentType,
   processor: LegacyProcessor,
-  config?: Partial<InstrumentConfig>
+  config?: Partial<InstrumentConfig>,
 ): InstrumentAdapter {
   const baseConfig: InstrumentConfig = {
     type,
@@ -179,8 +187,9 @@ export function createInstrumentAdapter(
     bass: 'triggerNote',
     drums: 'triggerDrum',
     metronome: 'triggerClick',
-    harmony: 'triggerChord',
+    chords: 'triggerChord',
     melody: 'triggerNote',
+    unknown: 'trigger',
   };
 
   const triggerMethod = triggerMethodMap[type] || 'trigger';

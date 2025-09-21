@@ -1,18 +1,22 @@
-export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
+export type DifficultyLevel =
+  | 'beginner'
+  | 'intermediate'
+  | 'advanced'
+  | 'expert';
 
 export class Difficulty {
   private static readonly VALID_LEVELS: DifficultyLevel[] = [
-    'beginner', 
-    'intermediate', 
-    'advanced', 
-    'expert'
+    'beginner',
+    'intermediate',
+    'advanced',
+    'expert',
   ];
 
   private static readonly LEVEL_VALUES: Record<DifficultyLevel, number> = {
-    'beginner': 1,
-    'intermediate': 2,
-    'advanced': 3,
-    'expert': 4
+    beginner: 1,
+    intermediate: 2,
+    advanced: 3,
+    expert: 4,
   };
 
   constructor(public readonly value: DifficultyLevel) {

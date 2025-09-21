@@ -52,7 +52,7 @@ export class CachedTutorialRepository implements ITutorialRepository {
     } else {
       // Clear specific patterns
       for (const [key] of this.cache) {
-        if (patterns.some(pattern => key.startsWith(pattern))) {
+        if (patterns.some((pattern) => key.startsWith(pattern))) {
           this.cache.delete(key);
         }
       }
@@ -62,7 +62,7 @@ export class CachedTutorialRepository implements ITutorialRepository {
   async findById(id: TutorialId): Promise<Result<Tutorial>> {
     const cacheKey = this.getCacheKey('findById', [id.value]);
     const cached = this.getCached<Result<Tutorial>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -71,14 +71,14 @@ export class CachedTutorialRepository implements ITutorialRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async findBySlug(slug: TutorialSlug): Promise<Result<Tutorial>> {
     const cacheKey = this.getCacheKey('findBySlug', [slug.value]);
     const cached = this.getCached<Result<Tutorial>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -88,18 +88,22 @@ export class CachedTutorialRepository implements ITutorialRepository {
       this.setCached(cacheKey, result);
       // Also cache by ID for cross-reference
       if (result.value) {
-        const idCacheKey = this.getCacheKey('findById', [result.value.id.value]);
+        const idCacheKey = this.getCacheKey('findById', [
+          result.value.id.value,
+        ]);
         this.setCached(idCacheKey, result);
       }
     }
-    
+
     return result;
   }
 
-  async findAll(options?: PaginationOptions): Promise<Result<PaginatedResult<Tutorial>>> {
+  async findAll(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Tutorial>>> {
     const cacheKey = this.getCacheKey('findAll', [options]);
     const cached = this.getCached<Result<PaginatedResult<Tutorial>>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -115,14 +119,14 @@ export class CachedTutorialRepository implements ITutorialRepository {
         }
       }
     }
-    
+
     return result;
   }
 
   async findByLevel(level: TutorialLevel): Promise<Result<Tutorial[]>> {
     const cacheKey = this.getCacheKey('findByLevel', [level.value]);
     const cached = this.getCached<Result<Tutorial[]>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -131,14 +135,14 @@ export class CachedTutorialRepository implements ITutorialRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async findByTag(tag: string): Promise<Result<Tutorial[]>> {
     const cacheKey = this.getCacheKey('findByTag', [tag]);
     const cached = this.getCached<Result<Tutorial[]>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -147,14 +151,14 @@ export class CachedTutorialRepository implements ITutorialRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async findByAuthor(authorName: string): Promise<Result<Tutorial[]>> {
     const cacheKey = this.getCacheKey('findByAuthor', [authorName]);
     const cached = this.getCached<Result<Tutorial[]>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -163,11 +167,14 @@ export class CachedTutorialRepository implements ITutorialRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
-  async search(query: string, filters?: TutorialFilters): Promise<Result<Tutorial[]>> {
+  async search(
+    query: string,
+    filters?: TutorialFilters,
+  ): Promise<Result<Tutorial[]>> {
     // Don't cache search results as they are too dynamic
     return this.repository.search(query, filters);
   }
@@ -180,7 +187,7 @@ export class CachedTutorialRepository implements ITutorialRepository {
     for (const id of ids) {
       const cacheKey = this.getCacheKey('findById', [id.value]);
       const cached = this.getCached<Result<Tutorial>>(cacheKey);
-      
+
       if (cached && cached.isSuccess && cached.value) {
         cachedTutorials.push(cached.value);
       } else {
@@ -199,17 +206,19 @@ export class CachedTutorialRepository implements ITutorialRepository {
         const cacheKey = this.getCacheKey('findById', [tutorial.id.value]);
         this.setCached(cacheKey, Result.ok(tutorial));
       }
-      
+
       return Result.ok([...cachedTutorials, ...result.value]);
     }
 
     return result;
   }
 
-  async findPublished(options?: PaginationOptions): Promise<Result<PaginatedResult<Tutorial>>> {
+  async findPublished(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Tutorial>>> {
     const cacheKey = this.getCacheKey('findPublished', [options]);
     const cached = this.getCached<Result<PaginatedResult<Tutorial>>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -225,14 +234,17 @@ export class CachedTutorialRepository implements ITutorialRepository {
         }
       }
     }
-    
+
     return result;
   }
 
-  async findRelated(tutorialId: TutorialId, limit?: number): Promise<Result<Tutorial[]>> {
+  async findRelated(
+    tutorialId: TutorialId,
+    limit?: number,
+  ): Promise<Result<Tutorial[]>> {
     const cacheKey = this.getCacheKey('findRelated', [tutorialId.value, limit]);
     const cached = this.getCached<Result<Tutorial[]>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -241,88 +253,105 @@ export class CachedTutorialRepository implements ITutorialRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async save(tutorial: Tutorial): Promise<Result<Tutorial>> {
     const result = await this.repository.save(tutorial);
-    
+
     if (result.isSuccess) {
       // Invalidate relevant caches
-      this.invalidateCache(['findAll', 'findPublished', 'count', 'findByLevel', 'findByTag', 'findByAuthor']);
-      
+      this.invalidateCache([
+        'findAll',
+        'findPublished',
+        'count',
+        'findByLevel',
+        'findByTag',
+        'findByAuthor',
+      ]);
+
       // Cache the new tutorial
       if (result.value) {
-        const idCacheKey = this.getCacheKey('findById', [result.value.id.value]);
-        const slugCacheKey = this.getCacheKey('findBySlug', [result.value.slug.value]);
+        const idCacheKey = this.getCacheKey('findById', [
+          result.value.id.value,
+        ]);
+        const slugCacheKey = this.getCacheKey('findBySlug', [
+          result.value.slug.value,
+        ]);
         this.setCached(idCacheKey, result);
         this.setCached(slugCacheKey, result);
       }
     }
-    
+
     return result;
   }
 
   async update(tutorial: Tutorial): Promise<Result<Tutorial>> {
     const result = await this.repository.update(tutorial);
-    
+
     if (result.isSuccess) {
       // Invalidate all caches since tutorial properties might have changed
       this.invalidateCache();
-      
+
       // Cache the updated tutorial
       if (result.value) {
-        const idCacheKey = this.getCacheKey('findById', [result.value.id.value]);
-        const slugCacheKey = this.getCacheKey('findBySlug', [result.value.slug.value]);
+        const idCacheKey = this.getCacheKey('findById', [
+          result.value.id.value,
+        ]);
+        const slugCacheKey = this.getCacheKey('findBySlug', [
+          result.value.slug.value,
+        ]);
         this.setCached(idCacheKey, result);
         this.setCached(slugCacheKey, result);
       }
     }
-    
+
     return result;
   }
 
   async delete(id: TutorialId): Promise<Result<void>> {
     const result = await this.repository.delete(id);
-    
+
     if (result.isSuccess) {
       // Invalidate all caches
       this.invalidateCache();
     }
-    
+
     return result;
   }
 
   async saveMany(tutorials: Tutorial[]): Promise<Result<Tutorial[]>> {
     const result = await this.repository.saveMany(tutorials);
-    
+
     if (result.isSuccess) {
       // Invalidate relevant caches
       this.invalidateCache(['findAll', 'findPublished', 'count']);
-      
+
       // Cache individual tutorials
       if (result.value) {
         for (const tutorial of result.value) {
           const idCacheKey = this.getCacheKey('findById', [tutorial.id.value]);
-          const slugCacheKey = this.getCacheKey('findBySlug', [tutorial.slug.value]);
+          const slugCacheKey = this.getCacheKey('findBySlug', [
+            tutorial.slug.value,
+          ]);
           this.setCached(idCacheKey, Result.ok(tutorial));
           this.setCached(slugCacheKey, Result.ok(tutorial));
         }
       }
     }
-    
+
     return result;
   }
 
   async deleteMany(ids: TutorialId[]): Promise<Result<void>> {
     const result = await this.repository.deleteMany(ids);
-    
+
     if (result.isSuccess) {
       // Invalidate all caches
       this.invalidateCache();
     }
-    
+
     return result;
   }
 
@@ -330,7 +359,7 @@ export class CachedTutorialRepository implements ITutorialRepository {
     // Check if we have it cached
     const cacheKey = this.getCacheKey('findById', [id.value]);
     const cached = this.getCached<Result<Tutorial>>(cacheKey);
-    
+
     if (cached && cached.isSuccess) {
       return Result.ok(true);
     }
@@ -342,7 +371,7 @@ export class CachedTutorialRepository implements ITutorialRepository {
     // Check if we have it cached
     const cacheKey = this.getCacheKey('findBySlug', [slug.value]);
     const cached = this.getCached<Result<Tutorial>>(cacheKey);
-    
+
     if (cached && cached.isSuccess) {
       return Result.ok(true);
     }
@@ -353,7 +382,7 @@ export class CachedTutorialRepository implements ITutorialRepository {
   async count(): Promise<Result<number>> {
     const cacheKey = this.getCacheKey('count', []);
     const cached = this.getCached<Result<number>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -362,14 +391,14 @@ export class CachedTutorialRepository implements ITutorialRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async countByLevel(level: TutorialLevel): Promise<Result<number>> {
     const cacheKey = this.getCacheKey('countByLevel', [level.value]);
     const cached = this.getCached<Result<number>>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -378,20 +407,20 @@ export class CachedTutorialRepository implements ITutorialRepository {
     if (result.isSuccess) {
       this.setCached(cacheKey, result);
     }
-    
+
     return result;
   }
 
   async incrementViewCount(id: TutorialId): Promise<Result<void>> {
     // Don't cache this operation
     const result = await this.repository.incrementViewCount(id);
-    
+
     if (result.isSuccess) {
       // Invalidate the tutorial cache to get updated view count
       const cacheKey = this.getCacheKey('findById', [id.value]);
       this.cache.delete(cacheKey);
     }
-    
+
     return result;
   }
 

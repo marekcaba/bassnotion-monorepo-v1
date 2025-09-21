@@ -8,8 +8,9 @@
  */
 
 import { ErrorCategory, ErrorSeverity } from './base';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { getLogger } from '@/utils/logger.js';
+
+const logger = getLogger('GracefulDegradation');
 
 export enum DegradationLevel {
   NONE = 'none', // Full functionality
@@ -113,7 +114,6 @@ export class GracefulDegradation {
 
     // TODO: Review non-null assertion - consider null safety
     if (!strategy) {
-  const { correlationId, logger } = useCorrelation('strategy');
       logger.info('No degradation strategy required for current context');
       return true;
     }

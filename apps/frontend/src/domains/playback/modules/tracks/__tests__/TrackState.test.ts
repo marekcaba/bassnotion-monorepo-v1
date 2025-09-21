@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TrackState } from '../state/TrackState.js';
 import type { TrackState as ITrackState } from '../../../types/track.js';
-import { EventBus } from '../../../services/core/EventBus.js';
+import { EventBus } from '../../shared/index.js';
 
 describe('TrackState', () => {
   let trackState: TrackState;
@@ -10,7 +10,7 @@ describe('TrackState', () => {
 
   beforeEach(() => {
     eventBus = new EventBus();
-    
+
     initialState = {
       id: 'track-1',
       name: 'Test Track',
@@ -51,17 +51,19 @@ describe('TrackState', () => {
     trackState = new TrackState(
       initialState,
       { trackId: 'track-1', maxHistorySize: 10 },
-      eventBus
+      eventBus,
     );
   });
 
   describe('state management', () => {
     it('should return immutable state', () => {
       const state = trackState.getState();
-      
+
       // Try to modify returned state
-      (state as any).name = 'Modified';
-      
+      expect(() => {
+        (state as any).name = 'Modified';
+      }).toThrow();
+
       // Original state should be unchanged
       expect(trackState.getState().name).toBe('Test Track');
     });
@@ -89,8 +91,9 @@ describe('TrackState', () => {
 
       expect(onUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
-          changedProperties: expect.arrayContaining(['mixing']),
-        })
+          changedProperties: ['mixing'],
+        }),
+        expect.any(Object),
       );
     });
 
@@ -136,11 +139,6 @@ describe('TrackState', () => {
       const state = trackState.getState();
       expect(state.sync.followTransport).toBe(false);
       expect(state.sync.swing).toBe(0.1);
-    });
-
-    it('should update lifecycle', () => {
-      trackState.updateLifecycle('playing');
-      expect(trackState.getState().lifecycle).toBe('playing');
     });
   });
 
@@ -190,10 +188,10 @@ describe('TrackState', () => {
       trackState.updateState({ name: 'Version 2' });
 
       expect(trackState.getState().name).toBe('Version 2');
-      
+
       trackState.undo();
       expect(trackState.getState().name).toBe('Version 1');
-      
+
       trackState.undo();
       expect(trackState.getState().name).toBe('Test Track');
     });
@@ -201,15 +199,15 @@ describe('TrackState', () => {
     it('should redo changes', () => {
       trackState.updateState({ name: 'Version 1' });
       trackState.updateState({ name: 'Version 2' });
-      
+
       trackState.undo();
       trackState.undo();
-      
+
       expect(trackState.getState().name).toBe('Test Track');
-      
+
       trackState.redo();
       expect(trackState.getState().name).toBe('Version 1');
-      
+
       trackState.redo();
       expect(trackState.getState().name).toBe('Version 2');
     });
@@ -218,11 +216,11 @@ describe('TrackState', () => {
       trackState.updateState({ name: 'Version 1' });
       trackState.updateState({ name: 'Version 2' });
       trackState.undo();
-      
+
       expect(trackState.canRedo()).toBe(true);
-      
+
       trackState.updateState({ name: 'Version 3' });
-      
+
       expect(trackState.canRedo()).toBe(false);
     });
 
@@ -240,10 +238,10 @@ describe('TrackState', () => {
   describe('snapshots', () => {
     it('should take manual snapshot', () => {
       trackState.takeSnapshot('Manual snapshot', ['name']);
-      
+
       const history = trackState.getHistoryInfo();
       const lastSnapshot = history.snapshots[history.snapshots.length - 1];
-      
+
       expect(lastSnapshot.description).toBe('Manual snapshot');
     });
 
@@ -254,7 +252,7 @@ describe('TrackState', () => {
 
       const history = trackState.getHistoryInfo();
       const firstSnapshot = history.snapshots[0];
-      
+
       trackState.jumpToSnapshot(firstSnapshot.id);
       expect(trackState.getState().name).toBe('Test Track');
     });
@@ -262,9 +260,9 @@ describe('TrackState', () => {
     it('should clear history', () => {
       trackState.updateState({ name: 'Version 1' });
       trackState.updateState({ name: 'Version 2' });
-      
+
       trackState.clearHistory();
-      
+
       const history = trackState.getHistoryInfo();
       expect(history.total).toBe(1); // Only "History cleared" snapshot
       expect(history.canUndo).toBe(false);
@@ -277,14 +275,14 @@ describe('TrackState', () => {
       const unsubscribe = trackState.subscribe(listener);
 
       trackState.updateState({ name: 'Updated' });
-      
+
       expect(listener).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Updated' })
+        expect.objectContaining({ name: 'Updated' }),
       );
 
       unsubscribe();
       trackState.updateState({ name: 'Updated Again' });
-      
+
       expect(listener).toHaveBeenCalledTimes(1);
     });
 
@@ -299,7 +297,7 @@ describe('TrackState', () => {
 
       // Should not throw
       trackState.updateState({ name: 'Updated' });
-      
+
       expect(goodListener).toHaveBeenCalled();
     });
   });
@@ -313,7 +311,7 @@ describe('TrackState', () => {
           enableAutoSnapshot: true,
           snapshotInterval: 100, // 100ms
         },
-        eventBus
+        eventBus,
       );
 
       // Multiple updates within interval

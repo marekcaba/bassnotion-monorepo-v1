@@ -9,25 +9,28 @@ import * as Tone from 'tone';
 
 // Mock Tone.js Transport
 vi.mock('tone', () => {
-  const scheduledCallbacks = new Map<number, { callback: Function; time: number }>();
+  const scheduledCallbacks = new Map<
+    number,
+    { callback: Function; time: number }
+  >();
   let scheduleIdCounter = 0;
   let transportState = 'stopped';
   let currentTime = 0;
 
   return {
     Transport: {
-      state: transportState,
-      seconds: 0,
       schedule: vi.fn((callback: Function, time: number) => {
         const id = ++scheduleIdCounter;
         scheduledCallbacks.set(id, { callback, time });
         return id;
       }),
-      scheduleRepeat: vi.fn((callback: Function, interval: string | number, startTime?: number) => {
-        const id = ++scheduleIdCounter;
-        scheduledCallbacks.set(id, { callback, time: startTime || 0 });
-        return id;
-      }),
+      scheduleRepeat: vi.fn(
+        (callback: Function, interval: string | number, startTime?: number) => {
+          const id = ++scheduleIdCounter;
+          scheduledCallbacks.set(id, { callback, time: startTime || 0 });
+          return id;
+        },
+      ),
       clear: vi.fn((id: number) => {
         scheduledCallbacks.delete(id);
       }),
@@ -96,7 +99,7 @@ describe('Scheduler', () => {
 
     it('should maintain events sorted by time', () => {
       const callback = vi.fn();
-      
+
       scheduler.scheduleEvent({ time: 2.0, callback, priority: 'normal' });
       scheduler.scheduleEvent({ time: 1.0, callback, priority: 'normal' });
       scheduler.scheduleEvent({ time: 1.5, callback, priority: 'normal' });
@@ -113,7 +116,11 @@ describe('Scheduler', () => {
       smallScheduler.scheduleEvent({ time: 2.0, callback, priority: 'normal' });
 
       expect(() => {
-        smallScheduler.scheduleEvent({ time: 3.0, callback, priority: 'normal' });
+        smallScheduler.scheduleEvent({
+          time: 3.0,
+          callback,
+          priority: 'normal',
+        });
       }).toThrow(SchedulingError);
     });
 
@@ -126,7 +133,7 @@ describe('Scheduler', () => {
       expect(Tone.Transport.scheduleRepeat).toHaveBeenCalledWith(
         expect.any(Function),
         '4n',
-        0
+        0,
       );
     });
   });
@@ -164,7 +171,7 @@ describe('Scheduler', () => {
 
     it('should clear all events', () => {
       const callback = vi.fn();
-      
+
       scheduler.scheduleEvent({ time: 1.0, callback, priority: 'normal' });
       scheduler.scheduleEvent({ time: 2.0, callback, priority: 'normal' });
       scheduler.scheduleRepeat(callback, '4n');
@@ -190,10 +197,12 @@ describe('Scheduler', () => {
     it('should not start twice', () => {
       scheduler.start();
       const consoleSpy = vi.spyOn(console, 'warn');
-      
+
       scheduler.start();
-      
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('already running'));
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('already running'),
+      );
     });
 
     it('should process events when running', () => {
@@ -261,7 +270,7 @@ describe('Scheduler', () => {
     it('should schedule immediate', () => {
       const callback = vi.fn();
       (Tone.Transport as any).seconds = 1.0;
-      
+
       const eventId = scheduler.scheduleImmediate(callback);
 
       expect(eventId).toBeDefined();
@@ -275,7 +284,7 @@ describe('Scheduler', () => {
       scheduler.scheduleRepeat(callback, '4n');
 
       const stats = scheduler.getStats();
-      
+
       expect(stats).toEqual({
         queueLength: 1,
         scheduledCount: 1,
@@ -310,7 +319,7 @@ describe('Scheduler', () => {
       const errorCallback = vi.fn(() => {
         throw new Error('Callback error');
       });
-      
+
       scheduler.start();
       (Tone.Transport as any).state = 'started';
 
@@ -330,7 +339,7 @@ describe('Scheduler', () => {
   describe('reset', () => {
     it('should reset all state', () => {
       const callback = vi.fn();
-      
+
       scheduler.start();
       scheduler.scheduleEvent({ time: 1.0, callback, priority: 'normal' });
       scheduler.scheduleRepeat(callback, '4n');

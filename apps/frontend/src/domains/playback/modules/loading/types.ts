@@ -1,6 +1,6 @@
 /**
  * Intelligent Loading System Types
- * 
+ *
  * Type definitions for machine learning-based predictive loading,
  * adaptive streaming, and intelligent asset management.
  */
@@ -430,18 +430,46 @@ export interface DownloadOptions {
 }
 
 // Enum types
-export type PredictionPriority = 'critical' | 'high' | 'medium' | 'low' | 'background';
-export type AssetType = 'midi_file' | 'audio_sample' | 'backing_track' | 'exercise_asset' | 'ambient_track' | 'user_recording' | 'system_asset';
-export type PracticePatternType = 'tempo_progression' | 'key_exploration' | 'difficulty_advancement' | 'session_structure';
+export type PredictionPriority =
+  | 'critical'
+  | 'high'
+  | 'medium'
+  | 'low'
+  | 'background';
+export type AssetType =
+  | 'midi_file'
+  | 'audio_sample'
+  | 'backing_track'
+  | 'exercise_asset'
+  | 'ambient_track'
+  | 'user_recording'
+  | 'system_asset';
+export type PracticePatternType =
+  | 'tempo_progression'
+  | 'key_exploration'
+  | 'difficulty_advancement'
+  | 'session_structure';
 export type AudioSampleFormat = 'wav' | 'mp3' | 'ogg' | 'flac';
-export type AudioSampleQualityProfile = 'studio' | 'performance' | 'practice' | 'preview' | 'mobile' | 'streaming';
+export type AudioSampleQualityProfile =
+  | 'studio'
+  | 'performance'
+  | 'practice'
+  | 'preview'
+  | 'mobile'
+  | 'streaming';
 
 // Interface definitions for main classes
 export interface IPredictiveLoadingEngine {
   initialize(): Promise<void>;
   processLearningEvent(event: LearningEvent): Promise<void>;
-  generatePredictions(userId: string, context: PredictionContext): Promise<AssetPrediction[]>;
-  executePrefetching(userId: string, predictions: AssetPrediction[]): Promise<PrefetchResult>;
+  generatePredictions(
+    userId: string,
+    context: PredictionContext,
+  ): Promise<AssetPrediction[]>;
+  executePrefetching(
+    userId: string,
+    predictions: AssetPrediction[],
+  ): Promise<PrefetchResult>;
   getPerformanceMetrics(): ModelPerformanceMetrics;
   getAdaptiveLearningMetrics(): AdaptiveLearningMetrics;
   getUserBehaviorProfile(userId: string): UserBehaviorProfile | undefined;
@@ -456,7 +484,7 @@ export interface IAdaptiveAudioStreamer {
       preferredQuality?: AudioSampleQualityProfile;
       startPlaybackEarly?: boolean;
       enableOptimization?: boolean;
-    }
+    },
   ): Promise<StreamingResult>;
   getNetworkConditions(): NetworkConditions;
   getActiveSessions(): StreamingSession[];

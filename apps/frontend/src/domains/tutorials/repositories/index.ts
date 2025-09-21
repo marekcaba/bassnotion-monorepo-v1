@@ -6,7 +6,10 @@ export type { TutorialLevelType } from '../value-objects/tutorial-level.vo';
 
 // Entities
 export { Tutorial } from '../entities/tutorial.entity';
-export type { TutorialSection, TutorialProps } from '../entities/tutorial.entity';
+export type {
+  TutorialSection,
+  TutorialProps,
+} from '../entities/tutorial.entity';
 
 // Repository Interfaces
 export type {

@@ -115,10 +115,16 @@ export async function createElement(plugin: WamKeyboard): Promise<HTMLElement> {
 
   // Set initial values
   if (params) {
-    instrumentSelect.value = params.instrument.toString();
-    volumeSlider.value = params.volume.toString();
-    volumeDisplay.textContent = `${Math.round(params.volume * 100)}%`;
-    sustainCheckbox.checked = params.sustain > 0.5;
+    if (params.instrument !== undefined) {
+      instrumentSelect.value = params.instrument.toString();
+    }
+    if (params.volume !== undefined) {
+      volumeSlider.value = params.volume.toString();
+      volumeDisplay.textContent = `${Math.round(params.volume * 100)}%`;
+    }
+    if (params.sustain !== undefined) {
+      sustainCheckbox.checked = params.sustain > 0.5;
+    }
   }
 
   // Instrument selector

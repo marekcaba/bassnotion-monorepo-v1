@@ -1,7 +1,7 @@
 /**
  * useDirectTransport Hook
  *
- * Performance-optimized hook for widgets that need direct access to UnifiedTransport
+ * Performance-optimized hook for widgets that need direct access to TransportAdapter
  * without the overhead of multiple event processing layers.
  *
  * This bypasses WidgetSyncService for timing-critical operations while still
@@ -9,16 +9,14 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type {
-  UnifiedTransport,
-  TransportState,
-} from '@/domains/playback/services/core/UnifiedTransport';
+import type { TransportAdapter } from '@/domains/playback/services/core/TransportAdapter';
+import type { TransportState } from '@/domains/playback/modules/transport/types/index';
 import type { EventBus } from '@/domains/playback/services/core/EventBus';
 import type { CoreServices } from '@/domains/playback/services/core/CoreServices';
 
 export interface UseDirectTransportResult {
   // Direct refs for performance-critical access
-  transportRef: React.MutableRefObject<UnifiedTransport | null>;
+  transportRef: React.MutableRefObject<TransportAdapter | null>;
   eventBusRef: React.MutableRefObject<EventBus | null>;
 
   // State for UI updates (less frequent)
@@ -36,7 +34,7 @@ export interface UseDirectTransportResult {
 
 export function useDirectTransport(): UseDirectTransportResult {
   // Refs for direct access without React re-renders
-  const transportRef = useRef<UnifiedTransport | null>(null);
+  const transportRef = useRef<TransportAdapter | null>(null);
   const eventBusRef = useRef<EventBus | null>(null);
 
   // Minimal state for UI updates

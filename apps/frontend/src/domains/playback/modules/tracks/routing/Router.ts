@@ -1,6 +1,6 @@
 /**
  * Router - Advanced audio routing system
- * 
+ *
  * Manages complex routing scenarios:
  * - Multi-channel routing
  * - Sidechain connections
@@ -9,11 +9,9 @@
  * - Signal flow validation
  */
 
-import type { Track } from '../core/Track.js';
 import type { Channel } from '../mixing/Channel.js';
 import type { Bus } from '../mixing/Bus.js';
-import { EventBus } from '../../../services/core/EventBus.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { EventBus, createStructuredLogger } from '../../shared/index.js';
 
 const logger = createStructuredLogger('Router');
 
@@ -93,7 +91,7 @@ export class Router {
       sourcePoint?: RoutePoint;
       gain?: number;
       pan?: number;
-    } = {}
+    } = {},
   ): Route {
     // Validate
     if (this.config.validateRouting) {
@@ -131,7 +129,7 @@ export class Router {
       name?: string;
       sourcePoint?: RoutePoint;
       gain?: number;
-    } = {}
+    } = {},
   ): Route {
     const bus = this.buses.get(auxBusId);
     if (!bus || bus.type !== 'aux') {
@@ -167,7 +165,7 @@ export class Router {
     options: {
       name?: string;
       sourcePoint?: RoutePoint;
-    } = {}
+    } = {},
   ): Route {
     const routeId = `sidechain-${sourceId}-${destinationId}-${Date.now()}`;
     const route: Route = {
@@ -201,7 +199,7 @@ export class Router {
       muted: boolean;
       soloed: boolean;
       active: boolean;
-    }>
+    }>,
   ): void {
     const route = this.routes.get(routeId);
     if (!route) {
@@ -264,7 +262,7 @@ export class Router {
     }
 
     return Array.from(destinations)
-      .map(destId => this.findRoute(sourceId, destId))
+      .map((destId) => this.findRoute(sourceId, destId))
       .filter(Boolean) as Route[];
   }
 
@@ -278,7 +276,7 @@ export class Router {
     }
 
     return Array.from(sources)
-      .map(sourceId => this.findRoute(sourceId, destinationId))
+      .map((sourceId) => this.findRoute(sourceId, destinationId))
       .filter(Boolean) as Route[];
   }
 
@@ -315,24 +313,32 @@ export class Router {
     // Check for feedback loops
     if (!this.config.allowFeedbackLoops) {
       const loops = this.detectFeedbackLoops();
-      loops.forEach(loop => {
+      loops.forEach((loop) => {
         errors.push(`Feedback loop detected: ${loop.join(' → ')}`);
       });
     }
 
     // Check for orphaned routes
-    this.routes.forEach(route => {
-      if (!this.channels.has(route.sourceId) && !this.buses.has(route.sourceId)) {
+    this.routes.forEach((route) => {
+      if (
+        !this.channels.has(route.sourceId) &&
+        !this.buses.has(route.sourceId)
+      ) {
         warnings.push(`Route source not found: ${route.sourceId}`);
       }
-      if (!this.channels.has(route.destinationId) && !this.buses.has(route.destinationId)) {
+      if (
+        !this.channels.has(route.destinationId) &&
+        !this.buses.has(route.destinationId)
+      ) {
         warnings.push(`Route destination not found: ${route.destinationId}`);
       }
     });
 
     // Check route count
     if (this.routes.size > this.config.maxRoutes) {
-      warnings.push(`Route count (${this.routes.size}) exceeds maximum (${this.config.maxRoutes})`);
+      warnings.push(
+        `Route count (${this.routes.size}) exceeds maximum (${this.config.maxRoutes})`,
+      );
     }
 
     return {
@@ -347,7 +353,9 @@ export class Router {
    */
   private addRoute(route: Route): void {
     if (this.routes.size >= this.config.maxRoutes) {
-      throw new Error(`Maximum route count (${this.config.maxRoutes}) exceeded`);
+      throw new Error(
+        `Maximum route count (${this.config.maxRoutes}) exceeded`,
+      );
     }
 
     this.routes.set(route.id, route);
@@ -356,12 +364,18 @@ export class Router {
     if (!this.connections.has(route.sourceId)) {
       this.connections.set(route.sourceId, new Set());
     }
-    this.connections.get(route.sourceId)!.add(route.destinationId);
+    const sourceConnections = this.connections.get(route.sourceId);
+    if (sourceConnections) {
+      sourceConnections.add(route.destinationId);
+    }
 
     if (!this.reverseConnections.has(route.destinationId)) {
       this.reverseConnections.set(route.destinationId, new Set());
     }
-    this.reverseConnections.get(route.destinationId)!.add(route.sourceId);
+    const destConnections = this.reverseConnections.get(route.destinationId);
+    if (destConnections) {
+      destConnections.add(route.sourceId);
+    }
 
     this.eventBus?.emit('router:routeAdded', { route });
   }
@@ -464,7 +478,10 @@ export class Router {
   /**
    * Check if route would create feedback loop
    */
-  private wouldCreateFeedbackLoop(sourceId: string, destinationId: string): boolean {
+  private wouldCreateFeedbackLoop(
+    sourceId: string,
+    destinationId: string,
+  ): boolean {
     // Simple DFS to check for cycles
     const visited = new Set<string>();
     const stack = new Set<string>();
@@ -537,9 +554,13 @@ export class Router {
   /**
    * Find route between source and destination
    */
-  private findRoute(sourceId: string, destinationId: string): Route | undefined {
+  private findRoute(
+    sourceId: string,
+    destinationId: string,
+  ): Route | undefined {
     return Array.from(this.routes.values()).find(
-      route => route.sourceId === sourceId && route.destinationId === destinationId
+      (route) =>
+        route.sourceId === sourceId && route.destinationId === destinationId,
     );
   }
 
@@ -554,7 +575,7 @@ export class Router {
    * Clear all routes
    */
   clear(): void {
-    this.routes.forEach(route => {
+    this.routes.forEach((route) => {
       this.disconnectRoute(route);
     });
 

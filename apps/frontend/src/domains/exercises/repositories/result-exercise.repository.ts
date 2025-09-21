@@ -24,17 +24,20 @@ export class ResultExerciseRepository implements IExerciseRepository {
       return await this.repository.findById(id);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching exercise'
+        error.message || 'An unexpected error occurred while fetching exercise',
       );
     }
   }
 
-  async findAll(options?: PaginationOptions): Promise<Result<PaginatedResult<Exercise>>> {
+  async findAll(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Exercise>>> {
     try {
       return await this.repository.findAll(options);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching exercises'
+        error.message ||
+          'An unexpected error occurred while fetching exercises',
       );
     }
   }
@@ -44,7 +47,8 @@ export class ResultExerciseRepository implements IExerciseRepository {
       return await this.repository.findByDifficulty(difficulty);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching exercises by difficulty'
+        error.message ||
+          'An unexpected error occurred while fetching exercises by difficulty',
       );
     }
   }
@@ -54,7 +58,8 @@ export class ResultExerciseRepository implements IExerciseRepository {
       return await this.repository.findByTag(tag);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching exercises by tag'
+        error.message ||
+          'An unexpected error occurred while fetching exercises by tag',
       );
     }
   }
@@ -64,7 +69,8 @@ export class ResultExerciseRepository implements IExerciseRepository {
       return await this.repository.search(options);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while searching exercises'
+        error.message ||
+          'An unexpected error occurred while searching exercises',
       );
     }
   }
@@ -74,7 +80,8 @@ export class ResultExerciseRepository implements IExerciseRepository {
       return await this.repository.findByIds(ids);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching exercises by ids'
+        error.message ||
+          'An unexpected error occurred while fetching exercises by ids',
       );
     }
   }
@@ -84,7 +91,8 @@ export class ResultExerciseRepository implements IExerciseRepository {
       return await this.repository.findActive();
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching active exercises'
+        error.message ||
+          'An unexpected error occurred while fetching active exercises',
       );
     }
   }
@@ -94,7 +102,7 @@ export class ResultExerciseRepository implements IExerciseRepository {
       return await this.repository.save(exercise);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while saving exercise'
+        error.message || 'An unexpected error occurred while saving exercise',
       );
     }
   }
@@ -104,7 +112,7 @@ export class ResultExerciseRepository implements IExerciseRepository {
       return await this.repository.update(exercise);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while updating exercise'
+        error.message || 'An unexpected error occurred while updating exercise',
       );
     }
   }
@@ -114,7 +122,7 @@ export class ResultExerciseRepository implements IExerciseRepository {
       return await this.repository.delete(id);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while deleting exercise'
+        error.message || 'An unexpected error occurred while deleting exercise',
       );
     }
   }
@@ -124,7 +132,7 @@ export class ResultExerciseRepository implements IExerciseRepository {
       return await this.repository.saveMany(exercises);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while saving exercises'
+        error.message || 'An unexpected error occurred while saving exercises',
       );
     }
   }
@@ -134,7 +142,8 @@ export class ResultExerciseRepository implements IExerciseRepository {
       return await this.repository.deleteMany(ids);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while deleting exercises'
+        error.message ||
+          'An unexpected error occurred while deleting exercises',
       );
     }
   }
@@ -144,7 +153,8 @@ export class ResultExerciseRepository implements IExerciseRepository {
       return await this.repository.exists(id);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while checking exercise existence'
+        error.message ||
+          'An unexpected error occurred while checking exercise existence',
       );
     }
   }
@@ -154,7 +164,8 @@ export class ResultExerciseRepository implements IExerciseRepository {
       return await this.repository.count();
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while counting exercises'
+        error.message ||
+          'An unexpected error occurred while counting exercises',
       );
     }
   }
@@ -164,7 +175,8 @@ export class ResultExerciseRepository implements IExerciseRepository {
       return await this.repository.countByDifficulty(difficulty);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while counting exercises by difficulty'
+        error.message ||
+          'An unexpected error occurred while counting exercises by difficulty',
       );
     }
   }

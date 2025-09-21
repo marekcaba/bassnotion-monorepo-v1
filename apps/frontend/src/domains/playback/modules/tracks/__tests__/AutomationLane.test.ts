@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AutomationLane } from '../automation/AutomationLane.js';
 import type { MusicalPosition } from '../../../types/pattern.js';
-import { EventBus } from '../../../services/core/EventBus.js';
+import { EventBus } from '../../shared/index.js';
 
 describe('AutomationLane', () => {
   let lane: AutomationLane;
@@ -20,7 +20,7 @@ describe('AutomationLane', () => {
         displayName: 'Volume',
         unit: 'dB',
       },
-      eventBus
+      eventBus,
     );
   });
 
@@ -44,7 +44,7 @@ describe('AutomationLane', () => {
 
     it('should replace point at same position', () => {
       const position: MusicalPosition = { bars: 1, beats: 0, sixteenths: 0 };
-      
+
       lane.addPoint(position, 0.5);
       lane.addPoint(position, 0.7);
 
@@ -57,26 +57,26 @@ describe('AutomationLane', () => {
       lane.addPoint({ bars: 1, beats: 0, sixteenths: 0 }, 0.7);
 
       lane.removePoint(0);
-      
+
       expect(lane.points).toHaveLength(1);
       expect(lane.points[0].value).toBe(0.7);
     });
 
     it('should update point value', () => {
       lane.addPoint({ bars: 0, beats: 0, sixteenths: 0 }, 0.5);
-      
+
       lane.updatePoint(0, 0.8, 'exponential');
-      
+
       expect(lane.points[0].value).toBe(0.8);
       expect(lane.points[0].curve).toBe('exponential');
     });
 
     it('should move point to new position', () => {
       lane.addPoint({ bars: 0, beats: 0, sixteenths: 0 }, 0.5);
-      
+
       const newPosition: MusicalPosition = { bars: 2, beats: 0, sixteenths: 0 };
       lane.movePoint(0, newPosition);
-      
+
       expect(lane.points[0].position).toEqual(newPosition);
     });
   });
@@ -122,11 +122,12 @@ describe('AutomationLane', () => {
 
     it('should handle curve interpolation', () => {
       lane.points[0].curve = 'curve';
-      const value = lane.getValueAt({ bars: 2, beats: 0, sixteenths: 0 });
-      // S-curve should be different from linear 0.5
-      expect(value).not.toBe(0.5);
-      expect(value).toBeGreaterThan(0);
-      expect(value).toBeLessThan(1);
+      const value = lane.getValueAt({ bars: 1, beats: 0, sixteenths: 0 }); // 1/4 of the way
+      // S-curve at 0.25 should be different from linear 0.25
+      const expectedLinear = 0.25;
+      const expectedCurve = 0.25 * 0.25 * (3 - 2 * 0.25); // smoothstep formula
+      expect(value).toBeCloseTo(expectedCurve, 5);
+      expect(value).not.toBeCloseTo(expectedLinear, 2);
     });
   });
 
@@ -153,21 +154,21 @@ describe('AutomationLane', () => {
     it('should record in touch mode while touching', () => {
       lane.setMode('touch');
       lane.startRecording(position);
-      
+
       // Simulate touch
       lane.recordValue(position, 0.5);
-      
+
       expect(lane.points).toHaveLength(1);
     });
 
     it('should record in latch mode after value change', () => {
       lane.setMode('latch');
       lane.startRecording(position);
-      
+
       // First value - establishes baseline
       lane.recordValue(position, 0.75); // Same as default
       expect(lane.points).toHaveLength(0);
-      
+
       // Changed value - should record
       lane.recordValue({ bars: 2, beats: 0, sixteenths: 0 }, 0.5);
       expect(lane.points).toHaveLength(1);
@@ -177,7 +178,7 @@ describe('AutomationLane', () => {
       lane.setMode('write');
       lane.startRecording(position);
       lane.stopRecording();
-      
+
       lane.recordValue(position, 0.5);
       expect(lane.points).toHaveLength(0);
     });
@@ -194,7 +195,7 @@ describe('AutomationLane', () => {
     it('should get points in range', () => {
       const points = lane.getPointsInRange(
         { bars: 1, beats: 0, sixteenths: 0 },
-        { bars: 5, beats: 0, sixteenths: 0 }
+        { bars: 5, beats: 0, sixteenths: 0 },
       );
 
       expect(points).toHaveLength(2);
@@ -216,7 +217,7 @@ describe('AutomationLane', () => {
       lane.addPoint({ bars: 4, beats: 0, sixteenths: 0 }, 1);
 
       lane.simplify(0.01);
-      
+
       // Middle point should be kept as it's on the line
       expect(lane.points.length).toBeLessThanOrEqual(3);
     });
@@ -229,7 +230,7 @@ describe('AutomationLane', () => {
 
       const originalCount = lane.points.length;
       lane.simplify(0.01);
-      
+
       // All points should be kept due to significant changes
       expect(lane.points).toHaveLength(originalCount);
     });
@@ -240,14 +241,24 @@ describe('AutomationLane', () => {
       const onChange = vi.fn();
       eventBus.on('automation:changed', onChange);
 
-      lane.addPoint({ bars: 1, beats: 0, sixteenths: 0 }, 0.5);
+      const testPoint = { bars: 1, beats: 0, sixteenths: 0 };
+      lane.addPoint(testPoint, 0.5);
 
       expect(onChange).toHaveBeenCalledWith(
         expect.objectContaining({
           trackId: 'track-1',
           parameter: 'volume',
           type: 'pointAdded',
-        })
+          pointCount: 1,
+          data: expect.objectContaining({
+            position: testPoint,
+            value: 0.5,
+          }),
+        }),
+        expect.objectContaining({
+          eventId: expect.any(String),
+          timestamp: expect.any(Number),
+        }),
       );
     });
 
@@ -259,10 +270,15 @@ describe('AutomationLane', () => {
 
       expect(onModeChange).toHaveBeenCalledWith(
         expect.objectContaining({
+          trackId: 'track-1',
           parameter: 'volume',
           oldMode: 'read',
           newMode: 'write',
-        })
+        }),
+        expect.objectContaining({
+          eventId: expect.any(String),
+          timestamp: expect.any(Number),
+        }),
       );
     });
   });

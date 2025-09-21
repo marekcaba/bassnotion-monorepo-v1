@@ -3,14 +3,14 @@
 // This module will be extracted from UnifiedTransport.ts
 
 // Types (to be extracted from UnifiedTransport)
-export type { 
+export type {
   MusicalPosition,
   TransportPosition,
   TimeSignature,
   TransportState,
   TimingEvent,
   TimingMetrics,
-  TransportConfig
+  TransportConfig,
 } from './types/index.js';
 
 // Core exports
@@ -19,10 +19,12 @@ export { Timeline } from './core/Timeline.js';
 export { Scheduler } from './core/Scheduler.js';
 export type { SchedulerConfig } from './core/Scheduler.js';
 export { Transport } from './core/Transport.js';
+export { TransportController } from './core/TransportController.js';
+export type { TransportControllerConfig } from './core/TransportController.js';
 
 // Sync exports - Widget synchronization system
 export { WidgetSyncManager } from './sync/index.js';
-export type { 
+export type {
   IWidgetSyncManager,
   SyncConfig,
   SyncMetrics,
@@ -32,25 +34,7 @@ export type {
   SyncEventData,
 } from './sync/index.js';
 
-// Pattern exports - Professional DAW-style pattern scheduling
-export { 
-  PatternScheduler,
-  RegionManager,
-  EventScheduler,
-  PatternConverter,
-} from './patterns/index.js';
-export type {
-  IPatternScheduler,
-  PatternSchedulerConfig,
-  PatternSchedulingMetrics,
-  SchedulableEvent,
-  ScheduledRegion,
-  EventSchedulingResult,
-  MusicalTimeOptions,
-  LoopIteration,
-  RegionActivationState,
-  PatternSchedulerEvents,
-} from './patterns/index.js';
+// Pattern exports removed - using MIDI files directly for bass practice platform
 
 // Error exports
 export { TransportError } from './types/errors.js';

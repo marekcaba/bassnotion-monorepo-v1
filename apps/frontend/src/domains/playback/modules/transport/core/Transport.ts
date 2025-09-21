@@ -1,6 +1,6 @@
 /**
  * Transport - Main transport coordinator
- * 
+ *
  * Responsibilities:
  * - High-level transport control (play/pause/stop/seek)
  * - Component coordination (Clock, Timeline, Scheduler)
@@ -10,7 +10,7 @@
 
 import { Clock } from './Clock.js';
 import { Timeline } from './Timeline.js';
-import { Scheduler, SchedulerConfig } from './Scheduler.js';
+import { Scheduler } from './Scheduler.js';
 import {
   TransportState,
   TransportConfig,
@@ -21,7 +21,8 @@ import {
   ScheduleOptions,
 } from '../types/index.js';
 import { TransportError } from '../types/errors.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { createStructuredLogger } from '../../shared/index.js';
+import { TRANSPORT_TIMING_CONFIG } from '../../../config/transportTiming.js';
 import * as Tone from 'tone';
 
 const logger = createStructuredLogger('Transport');
@@ -33,7 +34,9 @@ export class Transport {
   private state: TransportState = 'stopped';
   private config: TransportConfig;
   private isInitialized = false;
-  private audioContext: AudioContext | null = null;
+
+  // Position update callback
+  private positionUpdateCallback?: (seconds: number) => void;
 
   // Metrics tracking
   private metrics: TimingMetrics = {
@@ -49,11 +52,12 @@ export class Transport {
   };
 
   constructor(config: Partial<TransportConfig> = {}) {
+    // Use centralized timing configuration
     this.config = {
       tempo: 120,
       timeSignature: { numerator: 4, denominator: 4 },
-      lookAheadTime: 0.1,
-      scheduleInterval: 0.025,
+      lookAheadTime: TRANSPORT_TIMING_CONFIG.lookAheadTime,
+      scheduleInterval: TRANSPORT_TIMING_CONFIG.updateInterval,
       enableAudioWorklet: true,
       enableWebWorker: true,
       driftCompensation: 'adaptive',
@@ -62,18 +66,26 @@ export class Transport {
     };
 
     // Create components
-    this.clock = new Clock();
+    this.clock = new Clock({
+      useAudioWorklet: this.config.enableAudioWorklet,
+      driftCompensation: this.config.driftCompensation,
+    });
     this.timeline = new Timeline();
     this.scheduler = new Scheduler({
       lookAheadTime: this.config.lookAheadTime,
       scheduleInterval: this.config.scheduleInterval,
     });
 
+    logger.info('Transport initialized with timing config', {
+      lookAheadTime: `${this.config.lookAheadTime * 1000}ms`,
+      scheduleInterval: `${this.config.scheduleInterval * 1000}ms`,
+    });
+
     // Set initial config
     this.timeline.setTempo(this.config.tempo);
     this.timeline.setTimeSignature(this.config.timeSignature);
 
-    logger.info('Transport created', this.config);
+    logger.info('Transport created', { config: this.config });
   }
 
   /**
@@ -85,18 +97,16 @@ export class Transport {
       return;
     }
 
-    this.audioContext = audioContext;
-    
-    // Initialize components
-    this.clock.initialize(audioContext);
-    
-    // Start clock sync
+    // Initialize components (clock may use AudioWorklet)
+    await this.clock.initialize(audioContext);
+
+    // Start clock sync (only for basic mode)
     this.clock.startSync();
-    
+
     // Initialize Tone.js transport
     await Tone.start();
     Tone.Transport.bpm.value = this.config.tempo;
-    
+
     this.isInitialized = true;
     logger.info('Transport initialized');
   }
@@ -115,18 +125,23 @@ export class Transport {
     }
 
     // Start Tone.js transport
-    await Tone.Transport.start();
-    
+    Tone.Transport.start();
+
     // Start scheduler
     this.scheduler.start();
-    
+
+    // Start clock timing (for AudioWorklet mode)
+    this.clock.start();
+
     // Update state
     this.state = 'playing';
-    
+
     // Start position updates
     this.startPositionUpdates();
-    
-    logger.info('Transport started');
+
+    logger.info('Transport started', {
+      audioWorkletMode: this.clock.isUsingAudioWorklet(),
+    });
   }
 
   /**
@@ -140,10 +155,13 @@ export class Transport {
 
     // Stop Tone.js transport
     Tone.Transport.stop();
-    
+
     // Stop scheduler
     this.scheduler.stop();
-    
+
+    // Stop clock timing (for AudioWorklet mode)
+    this.clock.stop();
+
     // Reset timeline position
     this.timeline.setPosition({
       bars: 0,
@@ -151,16 +169,16 @@ export class Transport {
       sixteenths: 0,
       ticks: 0,
     });
-    
+
     // Reset Tone position
     Tone.Transport.position = '0:0:0';
-    
+
     // Update state
     this.state = 'stopped';
-    
+
     // Stop position updates
     this.stopPositionUpdates();
-    
+
     logger.info('Transport stopped');
   }
 
@@ -175,13 +193,16 @@ export class Transport {
 
     // Pause Tone.js transport
     Tone.Transport.pause();
-    
+
+    // Pause clock timing (for AudioWorklet mode)
+    this.clock.pause();
+
     // Update state
     this.state = 'paused';
-    
+
     // Stop position updates
     this.stopPositionUpdates();
-    
+
     logger.info('Transport paused', { position: this.timeline.getPosition() });
   }
 
@@ -196,13 +217,16 @@ export class Transport {
 
     // Resume Tone.js transport
     Tone.Transport.start();
-    
+
+    // Resume clock timing (for AudioWorklet mode)
+    this.clock.resume();
+
     // Update state
     this.state = 'playing';
-    
+
     // Resume position updates
     this.startPositionUpdates();
-    
+
     logger.info('Transport resumed');
   }
 
@@ -212,18 +236,22 @@ export class Transport {
   async seek(position: MusicalPosition): Promise<void> {
     // Update timeline
     this.timeline.setPosition(position);
-    
+
     // Update Tone.js position
     const tonePosition = this.timeline.positionToToneFormat(position);
     Tone.Transport.position = tonePosition;
-    
+
+    // Update clock position (for AudioWorklet mode)
+    const seconds = this.timeline.positionToSeconds(position);
+    this.clock.seek(seconds);
+
     // Clear and reschedule events if playing
     if (this.state === 'playing') {
       this.scheduler.clearAllScheduledEvents();
       // Events will be rescheduled on next update
     }
-    
-    logger.info('Transport seeked', position);
+
+    logger.info('Transport seeked', { position });
   }
 
   /**
@@ -268,12 +296,17 @@ export class Transport {
    * Get timing metrics
    */
   getMetrics(): TimingMetrics {
+    // Get clock metrics
+    const clockMetrics = this.clock.getMetrics();
+
     // Update metrics with current values
-    this.metrics.stability = this.clock.getStability() * 100;
-    
+    this.metrics.stability = clockMetrics.stability;
+    this.metrics.avgDrift = clockMetrics.avgDrift;
+    this.metrics.maxDrift = clockMetrics.maxDrift;
+
     const stats = this.scheduler.getStats();
     this.metrics.totalEvents = stats.queueLength + stats.scheduledCount;
-    
+
     return { ...this.metrics };
   }
 
@@ -287,7 +320,11 @@ export class Transport {
   /**
    * Schedule a callback at specific time
    */
-  schedule(callback: (time: number) => void, time: number, options?: ScheduleOptions): string {
+  schedule(
+    callback: (time: number) => void,
+    time: number,
+    options?: ScheduleOptions,
+  ): string {
     return this.scheduler.scheduleOnce(callback, time, options);
   }
 
@@ -297,7 +334,7 @@ export class Transport {
   scheduleRepeat(
     callback: (time: number) => void,
     interval: string | number,
-    startTime?: number
+    startTime?: number,
   ): string {
     return this.scheduler.scheduleRepeat(callback, interval, startTime);
   }
@@ -322,13 +359,27 @@ export class Transport {
    */
   setLoopPoints(start: MusicalPosition, end: MusicalPosition): void {
     this.timeline.setLoopPoints(start, end);
-    
+
     // Convert to Tone format
     const startStr = this.timeline.positionToToneFormat(start);
     const endStr = this.timeline.positionToToneFormat(end);
-    
+
     Tone.Transport.loopStart = startStr;
     Tone.Transport.loopEnd = endStr;
+  }
+
+  /**
+   * Register position update callback
+   */
+  onPositionUpdate(callback: (seconds: number) => void): void {
+    this.positionUpdateCallback = callback;
+  }
+
+  /**
+   * Check if using AudioWorklet
+   */
+  isUsingAudioWorklet(): boolean {
+    return this.config.enableAudioWorklet ?? true;
   }
 
   /**
@@ -336,11 +387,19 @@ export class Transport {
    */
   dispose(): void {
     this.stop();
-    this.clock.dispose();
+    this.clock.destroy();
     this.scheduler.reset();
     this.timeline.reset();
     this.isInitialized = false;
+    this.positionUpdateCallback = undefined;
     logger.info('Transport disposed');
+  }
+
+  /**
+   * Alias for dispose (for compatibility)
+   */
+  destroy(): void {
+    this.dispose();
   }
 
   // Private methods
@@ -361,12 +420,17 @@ export class Transport {
       }
 
       // Update timeline from clock
-      const currentTime = this.clock.getCurrentTime();
+      const currentTime = this.clock.getAudioTime();
       this.timeline.updatePositionFromSeconds(currentTime);
 
       // Emit position update event (would integrate with EventBus)
       const position = this.timeline.getTransportPosition();
-      logger.verbose('Position update', position);
+      logger.debug('Position update', { position });
+
+      // Call position update callback if registered
+      if (this.positionUpdateCallback) {
+        this.positionUpdateCallback(currentTime);
+      }
     };
 
     // Initial update
@@ -375,7 +439,7 @@ export class Transport {
     // Set up periodic updates
     this.positionUpdateInterval = window.setInterval(
       update,
-      this.config.scheduleInterval * 1000
+      this.config.scheduleInterval * 1000,
     );
   }
 
@@ -404,7 +468,10 @@ export class Transport {
       this.timeline.setTimeSignature(config.timeSignature);
     }
 
-    if (config.lookAheadTime !== undefined || config.scheduleInterval !== undefined) {
+    if (
+      config.lookAheadTime !== undefined ||
+      config.scheduleInterval !== undefined
+    ) {
       // Would need to recreate scheduler with new config
       logger.warn('Scheduler config changes require restart');
     }

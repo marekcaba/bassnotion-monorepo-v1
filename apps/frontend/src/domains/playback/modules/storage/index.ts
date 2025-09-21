@@ -1,6 +1,6 @@
 /**
  * Storage Module - Intelligent sample storage and asset management
- * 
+ *
  * This module provides comprehensive storage capabilities including:
  * - Multi-layer caching with intelligent eviction
  * - Memory-aware storage decisions
@@ -13,7 +13,10 @@
 export { SampleCache } from './cache/SampleCache.js';
 export { CacheManager } from './cache/CacheManager.js';
 export { MemoryManager } from './cache/MemoryManager.js';
-export { GlobalSampleCache, GlobalSampleCacheImpl } from './cache/GlobalSampleCache.js';
+export {
+  GlobalSampleCache,
+  GlobalSampleCacheImpl,
+} from './cache/GlobalSampleCache.js';
 
 // Types
 export type {
@@ -48,6 +51,10 @@ export type {
 export { SampleLoader } from './loaders/SampleLoader.js';
 export { AssetLoader } from './loaders/AssetLoader.js';
 export { PreloadStrategy } from './loaders/PreloadStrategy.js';
+export {
+  ToneBufferLoader,
+  CachedToneBufferLoader,
+} from './loaders/ToneBufferLoader.js';
 
 // Loader types
 export type {
@@ -79,9 +86,9 @@ export type {
 // Storage Providers
 export { SupabaseProvider } from './providers/SupabaseProvider.js';
 export { LocalProvider } from './providers/LocalProvider.js';
-export { 
-  StorageProviderFactory, 
-  StorageProviderType 
+export {
+  StorageProviderFactory,
+  StorageProviderType,
 } from './providers/StorageProvider.js';
 
 // Provider types
@@ -95,9 +102,7 @@ export type {
   StorageMetrics,
 } from './providers/StorageProvider.js';
 
-export type {
-  SupabaseProviderConfig,
-} from './providers/SupabaseProvider.js';
+export type { SupabaseProviderConfig } from './providers/SupabaseProvider.js';
 
 export type {
   LocalProviderConfig,
@@ -167,3 +172,49 @@ export type {
   LayerSyncStatus,
   SyncAnalytics,
 } from './sync/CacheSynchronizationEngine.js';
+
+// Batch Operations
+export { BatchProcessor } from './batch/BatchProcessor.js';
+export {
+  BaseBatchStrategy,
+  SizeBasedStrategy,
+  PriorityBasedStrategy,
+  TypeBasedStrategy,
+  ResourceBasedStrategy,
+  AdaptiveStrategy,
+} from './batch/strategies/BatchStrategy.js';
+export {
+  StorageBatchExecutor,
+  createStorageBatchExecutor,
+} from './batch/executors/StorageBatchExecutor.js';
+
+// Batch types
+export type {
+  BatchOperation,
+  BatchResult,
+  BatchProgress,
+  BatchConfig,
+  BatchExecutor,
+  BatchProcessor as IBatchProcessor,
+  BatchUploadOperation,
+  BatchDownloadOperation,
+  BatchDeleteOperation,
+  BatchTransferResult,
+  BatchStrategy,
+  BatchMetrics,
+} from './batch/types.js';
+
+export {
+  BatchError,
+  BatchTimeoutError,
+  BatchCancelledError,
+} from './batch/types.js';
+
+// CDN Optimization
+export * from './cdn/index.js';
+
+// Version Management
+export * from './versioning/index.js';
+
+// Resilience Patterns
+export * from './resilience/index.js';

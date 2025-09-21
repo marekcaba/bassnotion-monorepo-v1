@@ -28,7 +28,12 @@ export interface CreatorFilters {
 }
 
 export interface CreatorSortOptions {
-  field: 'subscriberCount' | 'videoCount' | 'viewCount' | 'createdAt' | 'updatedAt';
+  field:
+    | 'subscriberCount'
+    | 'videoCount'
+    | 'viewCount'
+    | 'createdAt'
+    | 'updatedAt';
   direction: 'asc' | 'desc';
 }
 
@@ -37,31 +42,44 @@ export interface ICreatorRepository {
   findById(id: CreatorId): Promise<Result<Creator>>;
   findByChannelUrl(channelUrl: ChannelUrl): Promise<Result<Creator>>;
   findByChannelId(channelId: string): Promise<Result<Creator>>;
-  findAll(options?: PaginationOptions): Promise<Result<PaginatedResult<Creator>>>;
+  findAll(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Creator>>>;
   findByIds(ids: CreatorId[]): Promise<Result<Creator[]>>;
   search(query: string, filters?: CreatorFilters): Promise<Result<Creator[]>>;
-  findStale(hoursThreshold?: number, limit?: number): Promise<Result<Creator[]>>;
-  findVerified(options?: PaginationOptions): Promise<Result<PaginatedResult<Creator>>>;
-  findTop(sortBy: CreatorSortOptions, limit?: number): Promise<Result<Creator[]>>;
-  
+  findStale(
+    hoursThreshold?: number,
+    limit?: number,
+  ): Promise<Result<Creator[]>>;
+  findVerified(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Creator>>>;
+  findTop(
+    sortBy: CreatorSortOptions,
+    limit?: number,
+  ): Promise<Result<Creator[]>>;
+
   // Write operations
   save(creator: Creator): Promise<Result<Creator>>;
   update(creator: Creator): Promise<Result<Creator>>;
   delete(id: CreatorId): Promise<Result<void>>;
-  
+
   // Batch operations
   saveMany(creators: Creator[]): Promise<Result<Creator[]>>;
   updateMany(creators: Creator[]): Promise<Result<Creator[]>>;
   deleteMany(ids: CreatorId[]): Promise<Result<void>>;
-  
+
   // Stats operations
-  updateStats(id: CreatorId, stats: {
-    subscriberCount?: number;
-    videoCount?: number;
-    viewCount?: number;
-  }): Promise<Result<Creator>>;
+  updateStats(
+    id: CreatorId,
+    stats: {
+      subscriberCount?: number;
+      videoCount?: number;
+      viewCount?: number;
+    },
+  ): Promise<Result<Creator>>;
   markAsFetched(id: CreatorId): Promise<Result<void>>;
-  
+
   // Utility operations
   exists(id: CreatorId): Promise<Result<boolean>>;
   existsByChannelUrl(channelUrl: ChannelUrl): Promise<Result<boolean>>;

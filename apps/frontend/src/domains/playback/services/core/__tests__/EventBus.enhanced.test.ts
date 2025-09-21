@@ -214,7 +214,7 @@ describe('EventBus - Enhanced Features', () => {
 
       const metrics = eventBus.getCircuitBreakerMetrics();
       expect(metrics['failing-event']).toBeDefined();
-      expect(metrics['failing-event'].failureCount).toBeGreaterThan(0);
+      expect(metrics['failing-event'].failedRequests).toBeGreaterThan(0);
     });
   });
 

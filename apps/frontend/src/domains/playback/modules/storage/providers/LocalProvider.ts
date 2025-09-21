@@ -1,13 +1,12 @@
 /**
  * LocalProvider - Local storage provider for audio assets
- * 
+ *
  * Provides storage capabilities using browser's local storage mechanisms
  * including IndexedDB for large binary data and localStorage for metadata.
  * Useful for offline support and development environments.
  */
 
-import { EventBus } from '../../../services/core/EventBus.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { EventBus, createStructuredLogger } from '../../shared/index.js';
 
 const logger = createStructuredLogger('LocalProvider');
 
@@ -46,7 +45,7 @@ export class LocalProvider {
   private eventBus?: EventBus;
   private db?: IDBDatabase;
   private isInitialized = false;
-  
+
   // Storage metrics
   private metrics = {
     stored: 0,
@@ -59,7 +58,7 @@ export class LocalProvider {
   constructor(config: LocalProviderConfig, eventBus?: EventBus) {
     this.config = config;
     this.eventBus = eventBus;
-    
+
     this.initialize();
   }
 
@@ -72,41 +71,41 @@ export class LocalProvider {
       if (!('indexedDB' in window)) {
         throw new Error('IndexedDB not supported');
       }
-      
+
       // Open database
       const request = indexedDB.open(this.config.dbName, this.config.dbVersion);
-      
+
       request.onerror = () => {
-        logger.error('Failed to open IndexedDB:', request.error);
+        logger.error('Failed to open IndexedDB:', request.error as Error);
         this.eventBus?.emit('storage:error', {
           provider: 'local',
           error: 'Failed to open database',
         });
       };
-      
+
       request.onsuccess = () => {
         this.db = request.result;
         this.isInitialized = true;
         logger.info('LocalProvider initialized with IndexedDB');
-        
+
         this.eventBus?.emit('storage:connected', {
           provider: 'local',
           database: this.config.dbName,
         });
-        
+
         // Calculate current storage size
         this.calculateStorageSize();
       };
-      
+
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        
+
         // Create object store if it doesn't exist
         if (!db.objectStoreNames.contains(this.config.objectStoreName)) {
           const store = db.createObjectStore(this.config.objectStoreName, {
             keyPath: 'path',
           });
-          
+
           // Create indexes
           store.createIndex('contentType', 'contentType', { unique: false });
           store.createIndex('createdAt', 'createdAt', { unique: false });
@@ -115,7 +114,7 @@ export class LocalProvider {
         }
       };
     } catch (error) {
-      logger.error('Failed to initialize LocalProvider:', error);
+      logger.error('Failed to initialize LocalProvider:', error as Error);
       this.isInitialized = false;
     }
   }
@@ -129,25 +128,25 @@ export class LocalProvider {
     options: {
       contentType?: string;
       metadata?: Record<string, any>;
-    } = {}
+    } = {},
   ): Promise<LocalStorageResult> {
     const startTime = performance.now();
-    
+
     try {
       await this.ensureInitialized();
-      
+
       // Check storage quota
       const canStore = await this.checkStorageQuota(data.byteLength);
       if (!canStore) {
         throw new Error('Storage quota exceeded');
       }
-      
+
       // Compress if enabled
       let storedData = data;
       if (this.config.enableCompression) {
         storedData = await this.compressData(data);
       }
-      
+
       // Create storage object
       const storageObject: LocalStorageObject = {
         path,
@@ -158,14 +157,18 @@ export class LocalProvider {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-      
+
       // Store in IndexedDB
-      const transaction = this.db!.transaction([this.config.objectStoreName], 'readwrite');
+      if (!this.db) throw new Error('Database not initialized');
+      const transaction = this.db.transaction(
+        [this.config.objectStoreName],
+        'readwrite',
+      );
       const store = transaction.objectStore(this.config.objectStoreName);
-      
+
       await new Promise<void>((resolve, reject) => {
         const request = store.put(storageObject);
-        
+
         request.onsuccess = () => {
           // Store metadata in localStorage
           this.storeMetadata(path, {
@@ -174,26 +177,26 @@ export class LocalProvider {
             compressed: this.config.enableCompression,
             ...options.metadata,
           });
-          
+
           // Update metrics
           this.metrics.stored++;
           this.metrics.totalSize += data.byteLength;
-          
+
           resolve();
         };
-        
+
         request.onerror = () => reject(request.error);
       });
-      
+
       const duration = performance.now() - startTime;
-      
+
       this.eventBus?.emit('storage:stored', {
         path,
         size: data.byteLength,
         duration,
         provider: 'local',
       });
-      
+
       return {
         success: true,
         path,
@@ -202,13 +205,13 @@ export class LocalProvider {
       };
     } catch (error) {
       this.metrics.errors++;
-      
+
       this.eventBus?.emit('storage:storeError', {
         path,
         error: (error as Error).message,
         provider: 'local',
       });
-      
+
       return {
         success: false,
         error: error as Error,
@@ -219,45 +222,53 @@ export class LocalProvider {
   /**
    * Retrieve data from local storage
    */
-  async retrieve(path: string): Promise<LocalStorageResult & { data?: ArrayBuffer }> {
+  async retrieve(
+    path: string,
+  ): Promise<LocalStorageResult & { data?: ArrayBuffer }> {
     const startTime = performance.now();
-    
+
     try {
       await this.ensureInitialized();
-      
-      const transaction = this.db!.transaction([this.config.objectStoreName], 'readonly');
+
+      if (!this.db) throw new Error('Database not initialized');
+      const transaction = this.db.transaction(
+        [this.config.objectStoreName],
+        'readonly',
+      );
       const store = transaction.objectStore(this.config.objectStoreName);
-      
-      const storageObject = await new Promise<LocalStorageObject | undefined>((resolve, reject) => {
-        const request = store.get(path);
-        
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-      
+
+      const storageObject = await new Promise<LocalStorageObject | undefined>(
+        (resolve, reject) => {
+          const request = store.get(path);
+
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        },
+      );
+
       if (!storageObject) {
         throw new Error('File not found');
       }
-      
+
       // Decompress if needed
       let data = storageObject.data;
       const metadata = this.getMetadata(path);
       if (metadata?.compressed) {
         data = await this.decompressData(data);
       }
-      
+
       // Update metrics
       this.metrics.retrieved++;
-      
+
       const duration = performance.now() - startTime;
-      
+
       this.eventBus?.emit('storage:retrieved', {
         path,
         size: data.byteLength,
         duration,
         provider: 'local',
       });
-      
+
       return {
         success: true,
         data,
@@ -267,13 +278,13 @@ export class LocalProvider {
       };
     } catch (error) {
       this.metrics.errors++;
-      
+
       this.eventBus?.emit('storage:retrieveError', {
         path,
         error: (error as Error).message,
         provider: 'local',
       });
-      
+
       return {
         success: false,
         error: error as Error,
@@ -287,55 +298,59 @@ export class LocalProvider {
   async delete(paths: string | string[]): Promise<LocalStorageResult> {
     try {
       await this.ensureInitialized();
-      
+
       const pathArray = Array.isArray(paths) ? paths : [paths];
-      const transaction = this.db!.transaction([this.config.objectStoreName], 'readwrite');
+      if (!this.db) throw new Error('Database not initialized');
+      const transaction = this.db.transaction(
+        [this.config.objectStoreName],
+        'readwrite',
+      );
       const store = transaction.objectStore(this.config.objectStoreName);
-      
+
       let deletedSize = 0;
-      
+
       for (const path of pathArray) {
         // Get size before deletion
         const metadata = this.getMetadata(path);
         if (metadata?.size) {
           deletedSize += metadata.size;
         }
-        
+
         await new Promise<void>((resolve, reject) => {
           const request = store.delete(path);
-          
+
           request.onsuccess = () => {
             // Remove metadata
             this.deleteMetadata(path);
             resolve();
           };
-          
+
           request.onerror = () => reject(request.error);
         });
       }
-      
+
       // Update metrics
       this.metrics.deleted += pathArray.length;
       this.metrics.totalSize -= deletedSize;
-      
+
       this.eventBus?.emit('storage:deleted', {
         paths: pathArray,
         provider: 'local',
       });
-      
+
       return {
         success: true,
         path: Array.isArray(paths) ? paths.join(',') : paths,
       };
     } catch (error) {
       this.metrics.errors++;
-      
+
       this.eventBus?.emit('storage:deleteError', {
         paths: Array.isArray(paths) ? paths : [paths],
         error: (error as Error).message,
         provider: 'local',
       });
-      
+
       return {
         success: false,
         error: error as Error,
@@ -347,31 +362,35 @@ export class LocalProvider {
    * List stored files
    */
   async list(
-    prefix: string = '',
+    prefix = '',
     options: {
       limit?: number;
       offset?: number;
-    } = {}
+    } = {},
   ): Promise<{ files: Array<{ path: string; size: number; metadata?: any }> }> {
     try {
       await this.ensureInitialized();
-      
-      const transaction = this.db!.transaction([this.config.objectStoreName], 'readonly');
+
+      if (!this.db) throw new Error('Database not initialized');
+      const transaction = this.db.transaction(
+        [this.config.objectStoreName],
+        'readonly',
+      );
       const store = transaction.objectStore(this.config.objectStoreName);
-      
+
       const files: Array<{ path: string; size: number; metadata?: any }> = [];
       let count = 0;
       let skipped = 0;
-      
+
       await new Promise<void>((resolve, reject) => {
         const request = store.openCursor();
-        
+
         request.onsuccess = (event) => {
           const cursor = (event.target as IDBRequest).result;
-          
+
           if (cursor) {
             const object = cursor.value as LocalStorageObject;
-            
+
             // Filter by prefix
             if (object.path.startsWith(prefix)) {
               // Handle offset
@@ -386,19 +405,19 @@ export class LocalProvider {
                 count++;
               }
             }
-            
+
             cursor.continue();
           } else {
             resolve();
           }
         };
-        
+
         request.onerror = () => reject(request.error);
       });
-      
+
       return { files };
     } catch (error) {
-      logger.error('Failed to list files:', error);
+      logger.error('Failed to list files:', error as Error);
       return { files: [] };
     }
   }
@@ -409,17 +428,21 @@ export class LocalProvider {
   async exists(path: string): Promise<boolean> {
     try {
       await this.ensureInitialized();
-      
-      const transaction = this.db!.transaction([this.config.objectStoreName], 'readonly');
+
+      if (!this.db) throw new Error('Database not initialized');
+      const transaction = this.db.transaction(
+        [this.config.objectStoreName],
+        'readonly',
+      );
       const store = transaction.objectStore(this.config.objectStoreName);
-      
+
       return new Promise<boolean>((resolve) => {
         const request = store.count(path);
-        
+
         request.onsuccess = () => resolve(request.result > 0);
         request.onerror = () => resolve(false);
       });
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -430,17 +453,21 @@ export class LocalProvider {
   async clear(): Promise<void> {
     try {
       await this.ensureInitialized();
-      
-      const transaction = this.db!.transaction([this.config.objectStoreName], 'readwrite');
+
+      if (!this.db) throw new Error('Database not initialized');
+      const transaction = this.db.transaction(
+        [this.config.objectStoreName],
+        'readwrite',
+      );
       const store = transaction.objectStore(this.config.objectStoreName);
-      
+
       await new Promise<void>((resolve, reject) => {
         const request = store.clear();
-        
+
         request.onsuccess = () => {
           // Clear all metadata
           this.clearAllMetadata();
-          
+
           // Reset metrics
           this.metrics = {
             stored: 0,
@@ -449,18 +476,18 @@ export class LocalProvider {
             errors: 0,
             totalSize: 0,
           };
-          
+
           resolve();
         };
-        
+
         request.onerror = () => reject(request.error);
       });
-      
+
       this.eventBus?.emit('storage:cleared', {
         provider: 'local',
       });
     } catch (error) {
-      logger.error('Failed to clear storage:', error);
+      logger.error('Failed to clear storage:', error as Error);
     }
   }
 
@@ -475,19 +502,21 @@ export class LocalProvider {
     try {
       if ('storage' in navigator && 'estimate' in navigator.storage) {
         const estimate = await navigator.storage.estimate();
-        
+
         return {
           used: estimate.usage || this.metrics.totalSize,
-          available: estimate.quota ? (estimate.quota - (estimate.usage || 0)) : undefined,
+          available: estimate.quota
+            ? estimate.quota - (estimate.usage || 0)
+            : undefined,
           quota: estimate.quota,
         };
       }
-      
+
       // Fallback to metrics
       return {
         used: this.metrics.totalSize,
       };
-    } catch (error) {
+    } catch {
       return {
         used: this.metrics.totalSize,
       };
@@ -500,14 +529,14 @@ export class LocalProvider {
   private async ensureInitialized(): Promise<void> {
     if (!this.isInitialized) {
       await this.initialize();
-      
+
       // Wait for initialization
       let attempts = 0;
       while (!this.isInitialized && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
         attempts++;
       }
-      
+
       if (!this.isInitialized) {
         throw new Error('Failed to initialize LocalProvider');
       }
@@ -519,13 +548,13 @@ export class LocalProvider {
    */
   private async checkStorageQuota(size: number): Promise<boolean> {
     const info = await this.getStorageInfo();
-    
+
     if (info.quota) {
-      return (info.used + size) < info.quota;
+      return info.used + size < info.quota;
     }
-    
+
     // Check against configured max size
-    return (this.metrics.totalSize + size) < this.config.maxStorageSize;
+    return this.metrics.totalSize + size < this.config.maxStorageSize;
   }
 
   /**
@@ -533,17 +562,21 @@ export class LocalProvider {
    */
   private async calculateStorageSize(): Promise<void> {
     try {
-      const transaction = this.db!.transaction([this.config.objectStoreName], 'readonly');
+      if (!this.db) throw new Error('Database not initialized');
+      const transaction = this.db.transaction(
+        [this.config.objectStoreName],
+        'readonly',
+      );
       const store = transaction.objectStore(this.config.objectStoreName);
-      
+
       let totalSize = 0;
-      
+
       await new Promise<void>((resolve) => {
         const request = store.openCursor();
-        
+
         request.onsuccess = (event) => {
           const cursor = (event.target as IDBRequest).result;
-          
+
           if (cursor) {
             const object = cursor.value as LocalStorageObject;
             totalSize += object.size;
@@ -553,11 +586,11 @@ export class LocalProvider {
             resolve();
           }
         };
-        
+
         request.onerror = () => resolve();
       });
     } catch (error) {
-      logger.error('Failed to calculate storage size:', error);
+      logger.error('Failed to calculate storage size:', error as Error);
     }
   }
 
@@ -569,7 +602,7 @@ export class LocalProvider {
       const key = `${this.config.metadataPrefix}:${path}`;
       localStorage.setItem(key, JSON.stringify(metadata));
     } catch (error) {
-      logger.warn('Failed to store metadata:', error);
+      logger.warn('Failed to store metadata:', { error });
     }
   }
 
@@ -581,7 +614,7 @@ export class LocalProvider {
       const key = `${this.config.metadataPrefix}:${path}`;
       const data = localStorage.getItem(key);
       return data ? JSON.parse(data) : null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -594,7 +627,7 @@ export class LocalProvider {
       const key = `${this.config.metadataPrefix}:${path}`;
       localStorage.removeItem(key);
     } catch (error) {
-      logger.warn('Failed to delete metadata:', error);
+      logger.warn('Failed to delete metadata:', { error });
     }
   }
 
@@ -603,8 +636,10 @@ export class LocalProvider {
    */
   private clearAllMetadata(): void {
     const prefix = `${this.config.metadataPrefix}:`;
-    const keys = Object.keys(localStorage).filter(key => key.startsWith(prefix));
-    keys.forEach(key => localStorage.removeItem(key));
+    const keys = Object.keys(localStorage).filter((key) =>
+      key.startsWith(prefix),
+    );
+    keys.forEach((key) => localStorage.removeItem(key));
   }
 
   /**

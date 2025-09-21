@@ -14,8 +14,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Track } from '../services/core/Track.js';
 import { serviceRegistry } from '../services/core/ServiceRegistry.js';
 import { EventBus } from '../services/core/EventBus.js';
-import { UnifiedTransport } from '../services/core/UnifiedTransport.js';
-import { EnhancedTrackManagerProcessor } from '../services/plugins/EnhancedTrackManagerProcessor.js';
+import { TransportAdapter } from '../services/core/TransportAdapter.js';
+import { TrackManager } from '../modules/tracks/core/TrackManager.js';
 import {
   TrackState,
   type TrackConfig,
@@ -171,7 +171,7 @@ export function useTrack(options: UseTrackOptions): UseTrackReturn {
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
 
   // Refs for services
-  const trackManagerRef = useRef<EnhancedTrackManagerProcessor | null>(null);
+  const trackManagerRef = useRef<TrackManager | null>(null);
   const transportRef = useRef<UnifiedTransport | null>(null);
   const eventBusRef = useRef<EventBus | null>(null);
   const unsubscribersRef = useRef<Array<() => void>>([]);
@@ -202,11 +202,10 @@ export function useTrack(options: UseTrackOptions): UseTrackReturn {
 
         // Get services
         eventBusRef.current = serviceRegistry.get<EventBus>('eventBus');
-        transportRef.current = UnifiedTransport.getInstance();
+        transportRef.current = TransportAdapter.getInstance();
 
         // Get or create track manager
-        trackManagerRef.current = new EnhancedTrackManagerProcessor();
-        await trackManagerRef.current.initializeEnhanced();
+        trackManagerRef.current = new TrackManager(eventBusRef.current);
 
         // Create track configuration
         const trackConfig: TrackConfig = {

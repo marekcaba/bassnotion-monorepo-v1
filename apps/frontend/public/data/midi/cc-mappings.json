@@ -1,0 +1,486 @@
+{
+  "name": "General MIDI CC Mappings",
+  "version": "1.0.0",
+  "description": "Standard MIDI Control Change mappings with extended definitions",
+  "mappings": {
+    "0": {
+      "name": "Bank Select MSB",
+      "type": "BANK_SELECT_MSB",
+      "range": [0, 127],
+      "default": 0,
+      "category": "bank"
+    },
+    "1": {
+      "name": "Modulation Wheel",
+      "type": "MODULATION",
+      "range": [0, 127],
+      "default": 0,
+      "category": "performance"
+    },
+    "2": {
+      "name": "Breath Controller",
+      "type": "BREATH",
+      "range": [0, 127],
+      "default": 0,
+      "category": "performance"
+    },
+    "4": {
+      "name": "Foot Controller",
+      "type": "FOOT",
+      "range": [0, 127],
+      "default": 0,
+      "category": "performance"
+    },
+    "5": {
+      "name": "Portamento Time",
+      "type": "PORTAMENTO_TIME",
+      "range": [0, 127],
+      "default": 0,
+      "category": "performance"
+    },
+    "6": {
+      "name": "Data Entry MSB",
+      "type": "DATA_ENTRY_MSB",
+      "range": [0, 127],
+      "default": 0,
+      "category": "data"
+    },
+    "7": {
+      "name": "Channel Volume",
+      "type": "VOLUME",
+      "range": [0, 127],
+      "default": 100,
+      "category": "mixer"
+    },
+    "8": {
+      "name": "Balance",
+      "type": "BALANCE",
+      "range": [0, 127],
+      "default": 64,
+      "category": "mixer"
+    },
+    "10": {
+      "name": "Pan",
+      "type": "PAN",
+      "range": [0, 127],
+      "default": 64,
+      "category": "mixer",
+      "centerValue": 64
+    },
+    "11": {
+      "name": "Expression Controller",
+      "type": "EXPRESSION",
+      "range": [0, 127],
+      "default": 127,
+      "category": "performance"
+    },
+    "12": {
+      "name": "Effect Control 1",
+      "type": "EFFECT_1",
+      "range": [0, 127],
+      "default": 0,
+      "category": "effects"
+    },
+    "13": {
+      "name": "Effect Control 2",
+      "type": "EFFECT_2",
+      "range": [0, 127],
+      "default": 0,
+      "category": "effects"
+    },
+    "16": {
+      "name": "General Purpose Controller 1",
+      "type": "GP_CONTROLLER_1",
+      "range": [0, 127],
+      "default": 0,
+      "category": "general"
+    },
+    "17": {
+      "name": "General Purpose Controller 2",
+      "type": "GP_CONTROLLER_2",
+      "range": [0, 127],
+      "default": 0,
+      "category": "general"
+    },
+    "18": {
+      "name": "General Purpose Controller 3",
+      "type": "GP_CONTROLLER_3",
+      "range": [0, 127],
+      "default": 0,
+      "category": "general"
+    },
+    "19": {
+      "name": "General Purpose Controller 4",
+      "type": "GP_CONTROLLER_4",
+      "range": [0, 127],
+      "default": 0,
+      "category": "general"
+    },
+    "32": {
+      "name": "Bank Select LSB",
+      "type": "BANK_SELECT_LSB",
+      "range": [0, 127],
+      "default": 0,
+      "category": "bank"
+    },
+    "38": {
+      "name": "Data Entry LSB",
+      "type": "DATA_ENTRY_LSB",
+      "range": [0, 127],
+      "default": 0,
+      "category": "data"
+    },
+    "64": {
+      "name": "Damper Pedal (Sustain)",
+      "type": "SUSTAIN",
+      "range": [0, 127],
+      "default": 0,
+      "category": "pedal",
+      "isSwitch": true,
+      "threshold": 64
+    },
+    "65": {
+      "name": "Portamento On/Off",
+      "type": "PORTAMENTO",
+      "range": [0, 127],
+      "default": 0,
+      "category": "performance",
+      "isSwitch": true,
+      "threshold": 64
+    },
+    "66": {
+      "name": "Sostenuto",
+      "type": "SOSTENUTO",
+      "range": [0, 127],
+      "default": 0,
+      "category": "pedal",
+      "isSwitch": true,
+      "threshold": 64
+    },
+    "67": {
+      "name": "Soft Pedal",
+      "type": "SOFT_PEDAL",
+      "range": [0, 127],
+      "default": 0,
+      "category": "pedal",
+      "isSwitch": true,
+      "threshold": 64
+    },
+    "68": {
+      "name": "Legato Footswitch",
+      "type": "LEGATO",
+      "range": [0, 127],
+      "default": 0,
+      "category": "performance",
+      "isSwitch": true,
+      "threshold": 64
+    },
+    "69": {
+      "name": "Hold 2",
+      "type": "HOLD_2",
+      "range": [0, 127],
+      "default": 0,
+      "category": "pedal",
+      "isSwitch": true,
+      "threshold": 64
+    },
+    "70": {
+      "name": "Sound Controller 1 (Sound Variation)",
+      "type": "SOUND_VARIATION",
+      "range": [0, 127],
+      "default": 0,
+      "category": "sound"
+    },
+    "71": {
+      "name": "Sound Controller 2 (Timbre/Harmonic Content)",
+      "type": "TIMBRE",
+      "range": [0, 127],
+      "default": 64,
+      "category": "sound"
+    },
+    "72": {
+      "name": "Sound Controller 3 (Release Time)",
+      "type": "RELEASE_TIME",
+      "range": [0, 127],
+      "default": 64,
+      "category": "envelope"
+    },
+    "73": {
+      "name": "Sound Controller 4 (Attack Time)",
+      "type": "ATTACK_TIME",
+      "range": [0, 127],
+      "default": 64,
+      "category": "envelope"
+    },
+    "74": {
+      "name": "Sound Controller 5 (Brightness)",
+      "type": "BRIGHTNESS",
+      "range": [0, 127],
+      "default": 64,
+      "category": "sound"
+    },
+    "75": {
+      "name": "Sound Controller 6 (Decay Time)",
+      "type": "DECAY_TIME",
+      "range": [0, 127],
+      "default": 64,
+      "category": "envelope"
+    },
+    "76": {
+      "name": "Sound Controller 7 (Vibrato Rate)",
+      "type": "VIBRATO_RATE",
+      "range": [0, 127],
+      "default": 64,
+      "category": "modulation"
+    },
+    "77": {
+      "name": "Sound Controller 8 (Vibrato Depth)",
+      "type": "VIBRATO_DEPTH",
+      "range": [0, 127],
+      "default": 64,
+      "category": "modulation"
+    },
+    "78": {
+      "name": "Sound Controller 9 (Vibrato Delay)",
+      "type": "VIBRATO_DELAY",
+      "range": [0, 127],
+      "default": 64,
+      "category": "modulation"
+    },
+    "79": {
+      "name": "Sound Controller 10",
+      "type": "SOUND_CONTROLLER_10",
+      "range": [0, 127],
+      "default": 64,
+      "category": "sound"
+    },
+    "80": {
+      "name": "General Purpose Controller 5",
+      "type": "GP_CONTROLLER_5",
+      "range": [0, 127],
+      "default": 0,
+      "category": "general"
+    },
+    "81": {
+      "name": "General Purpose Controller 6",
+      "type": "GP_CONTROLLER_6",
+      "range": [0, 127],
+      "default": 0,
+      "category": "general"
+    },
+    "82": {
+      "name": "General Purpose Controller 7",
+      "type": "GP_CONTROLLER_7",
+      "range": [0, 127],
+      "default": 0,
+      "category": "general"
+    },
+    "83": {
+      "name": "General Purpose Controller 8",
+      "type": "GP_CONTROLLER_8",
+      "range": [0, 127],
+      "default": 0,
+      "category": "general"
+    },
+    "84": {
+      "name": "Portamento Control",
+      "type": "PORTAMENTO_CONTROL",
+      "range": [0, 127],
+      "default": 0,
+      "category": "performance"
+    },
+    "91": {
+      "name": "Effects 1 Depth (Reverb)",
+      "type": "REVERB",
+      "range": [0, 127],
+      "default": 0,
+      "category": "effects"
+    },
+    "92": {
+      "name": "Effects 2 Depth (Tremolo)",
+      "type": "TREMOLO",
+      "range": [0, 127],
+      "default": 0,
+      "category": "effects"
+    },
+    "93": {
+      "name": "Effects 3 Depth (Chorus)",
+      "type": "CHORUS",
+      "range": [0, 127],
+      "default": 0,
+      "category": "effects"
+    },
+    "94": {
+      "name": "Effects 4 Depth (Celeste/Detune)",
+      "type": "CELESTE",
+      "range": [0, 127],
+      "default": 0,
+      "category": "effects"
+    },
+    "95": {
+      "name": "Effects 5 Depth (Phaser)",
+      "type": "PHASER",
+      "range": [0, 127],
+      "default": 0,
+      "category": "effects"
+    },
+    "96": {
+      "name": "Data Increment",
+      "type": "DATA_INCREMENT",
+      "range": [0, 127],
+      "default": 0,
+      "category": "data"
+    },
+    "97": {
+      "name": "Data Decrement",
+      "type": "DATA_DECREMENT",
+      "range": [0, 127],
+      "default": 0,
+      "category": "data"
+    },
+    "98": {
+      "name": "Non-Registered Parameter Number LSB",
+      "type": "NRPN_LSB",
+      "range": [0, 127],
+      "default": 127,
+      "category": "parameter"
+    },
+    "99": {
+      "name": "Non-Registered Parameter Number MSB",
+      "type": "NRPN_MSB",
+      "range": [0, 127],
+      "default": 127,
+      "category": "parameter"
+    },
+    "100": {
+      "name": "Registered Parameter Number LSB",
+      "type": "RPN_LSB",
+      "range": [0, 127],
+      "default": 127,
+      "category": "parameter"
+    },
+    "101": {
+      "name": "Registered Parameter Number MSB",
+      "type": "RPN_MSB",
+      "range": [0, 127],
+      "default": 127,
+      "category": "parameter"
+    },
+    "120": {
+      "name": "All Sound Off",
+      "type": "ALL_SOUND_OFF",
+      "range": [0, 0],
+      "default": 0,
+      "category": "channelMode"
+    },
+    "121": {
+      "name": "Reset All Controllers",
+      "type": "RESET_ALL",
+      "range": [0, 0],
+      "default": 0,
+      "category": "channelMode"
+    },
+    "122": {
+      "name": "Local Control On/Off",
+      "type": "LOCAL_CONTROL",
+      "range": [0, 127],
+      "default": 127,
+      "category": "channelMode"
+    },
+    "123": {
+      "name": "All Notes Off",
+      "type": "ALL_NOTES_OFF",
+      "range": [0, 0],
+      "default": 0,
+      "category": "channelMode"
+    },
+    "124": {
+      "name": "Omni Mode Off",
+      "type": "OMNI_OFF",
+      "range": [0, 0],
+      "default": 0,
+      "category": "channelMode"
+    },
+    "125": {
+      "name": "Omni Mode On",
+      "type": "OMNI_ON",
+      "range": [0, 0],
+      "default": 0,
+      "category": "channelMode"
+    },
+    "126": {
+      "name": "Mono Mode On",
+      "type": "MONO_ON",
+      "range": [0, 16],
+      "default": 0,
+      "category": "channelMode"
+    },
+    "127": {
+      "name": "Poly Mode On",
+      "type": "POLY_ON",
+      "range": [0, 0],
+      "default": 0,
+      "category": "channelMode"
+    }
+  },
+  "categories": {
+    "bank": {
+      "name": "Bank Selection",
+      "description": "Controllers for selecting banks and programs"
+    },
+    "performance": {
+      "name": "Performance",
+      "description": "Real-time performance controllers"
+    },
+    "mixer": {
+      "name": "Mixer",
+      "description": "Volume, pan, and balance controls"
+    },
+    "effects": {
+      "name": "Effects",
+      "description": "Effect send levels and parameters"
+    },
+    "pedal": {
+      "name": "Pedal",
+      "description": "Pedal and footswitch controllers"
+    },
+    "sound": {
+      "name": "Sound",
+      "description": "Sound shaping parameters"
+    },
+    "envelope": {
+      "name": "Envelope",
+      "description": "ADSR envelope controls"
+    },
+    "modulation": {
+      "name": "Modulation",
+      "description": "Vibrato and modulation controls"
+    },
+    "general": {
+      "name": "General Purpose",
+      "description": "User-assignable controllers"
+    },
+    "data": {
+      "name": "Data Entry",
+      "description": "Data entry and increment/decrement"
+    },
+    "parameter": {
+      "name": "Parameter",
+      "description": "RPN and NRPN parameter selection"
+    },
+    "channelMode": {
+      "name": "Channel Mode",
+      "description": "Channel mode messages"
+    }
+  },
+  "aliases": {
+    "sustain": ["damper", "hold"],
+    "volume": ["gain", "level"],
+    "pan": ["balance_lr", "stereo_position"],
+    "modulation": ["mod_wheel", "vibrato_wheel"],
+    "expression": ["dynamics", "volume_pedal"],
+    "reverb": ["effects_1", "reverb_send"],
+    "chorus": ["effects_3", "chorus_send"],
+    "brightness": ["cutoff", "filter_frequency"]
+  }
+}

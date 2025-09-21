@@ -17,7 +17,13 @@ import {
   AudioSampler,
 } from '../services/core/AudioEngine.js';
 import { AudioError } from '../errors/AudioErrors.js';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { getLogger } from '@/utils/logger';
+
+// Create logger instance for this hook
+const fallbackLogger = getLogger('useAudio');
+
+// Use fallback logger directly to avoid dynamic require issues
+const logger = fallbackLogger;
 
 export interface UseAudioResult {
   isReady: boolean;
@@ -40,6 +46,21 @@ export function useAudio(serviceRegistry?: ServiceRegistry): UseAudioResult {
   useEffect(() => {
     const checkAudioEngine = () => {
       try {
+        // If serviceRegistry was provided, use it (for testing)
+        if (serviceRegistry) {
+          const engine = serviceRegistry.get<AudioEngine>('audioEngine');
+          if (engine) {
+            audioEngineRef.current = engine;
+            if ((engine as any).isInitialized) {
+              setIsReady(true);
+              logger.info(
+                'useAudio: Got AudioEngine from provided ServiceRegistry',
+              );
+            }
+            return true;
+          }
+        }
+
         // Try CoreServices first (new approach)
         const coreServices = (window as any).__globalCoreServices;
         if (coreServices) {
@@ -100,13 +121,38 @@ export function useAudio(serviceRegistry?: ServiceRegistry): UseAudioResult {
         );
       };
     }
-  }, []);
+  }, [serviceRegistry]);
 
   // Initialize audio engine
   const initialize = useCallback(async () => {
     // CRITICAL: When using CoreServices, initialization should be done through CoreServices.initialize()
     // NOT by calling audioEngine.initialize() directly!
     // This ensures all services (including UnifiedTransport) are properly initialized
+
+    // If we have a direct AudioEngine reference from serviceRegistry, use it
+    if (serviceRegistry && audioEngineRef.current) {
+      logger.info(
+        'useAudio.initialize(): Using AudioEngine from ServiceRegistry',
+      );
+      setIsInitializing(true);
+      setError(null);
+
+      try {
+        if (!(audioEngineRef.current as any).isInitialized) {
+          await audioEngineRef.current.initialize();
+        }
+        setIsReady(true);
+        setIsInitializing(false);
+        logger.info(
+          'useAudio: AudioEngine initialized successfully via ServiceRegistry',
+        );
+        return;
+      } catch (err) {
+        setError(err as Error);
+        setIsInitializing(false);
+        throw err;
+      }
+    }
 
     // Check if we have CoreServices
     const coreServices = (window as any).__globalCoreServices;
@@ -180,11 +226,13 @@ export function useAudio(serviceRegistry?: ServiceRegistry): UseAudioResult {
     }
 
     // If no CoreServices available yet, it means we're being called too early
-    // This should not happen as the effect above ensures CoreServices is available
-    throw new Error(
-      'CoreServices not available - this indicates an initialization order issue',
-    );
-  }, []);
+    // Set error and return without throwing
+    const errorMsg =
+      'CoreServices not available - this indicates an initialization order issue';
+    logger.error(errorMsg);
+    setError(new Error(errorMsg));
+    setIsInitializing(false);
+  }, [serviceRegistry]);
 
   // Create sampler with error handling
   const createSampler = useCallback(
@@ -215,13 +263,11 @@ export function useAudio(serviceRegistry?: ServiceRegistry): UseAudioResult {
   // Get Tone.js instance
   const getTone = useCallback(() => {
     if (!audioEngineRef.current) {
-      logger.warn('useAudio: AudioEngine not available');
-      return null;
+      throw new Error('Audio not ready');
     }
 
     if (!isReady) {
-      logger.warn('useAudio: Audio not ready yet');
-      return null;
+      throw new Error('Audio not ready');
     }
 
     return audioEngineRef.current.getTone();

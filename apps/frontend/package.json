@@ -4,7 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "next build",
+    "build": "npm run build:workers && next build",
+    "build:analyze": "ANALYZE=true next build --config ./next.config.bundle-analyzer.js",
+    "build:worklet": "node scripts/build-worklet.js",
+    "build:worker": "node scripts/build-worker.js",
+    "build:workers": "npm run build:worklet && npm run build:worker",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest"
@@ -50,6 +54,7 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^15.5.2",
     "@supabase/supabase-js": "^2.50.5",
     "@testing-library/dom": "10.4.0",
     "@types/jsdom": "^21.1.7",

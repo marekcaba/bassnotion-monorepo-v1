@@ -1,0 +1,187 @@
+{
+  "name": "Bass Instrument CC Mappings",
+  "version": "1.0.0",
+  "description": "MIDI CC mappings optimized for bass instruments",
+  "extends": "/data/midi/cc-mappings.json",
+  "mappings": {
+    "1": {
+      "name": "Modulation (Vibrato Depth)",
+      "type": "MODULATION",
+      "range": [0, 127],
+      "default": 0,
+      "category": "performance",
+      "bassFunction": "vibrato_depth"
+    },
+    "2": {
+      "name": "Fingering Noise",
+      "type": "FINGERING_NOISE",
+      "range": [0, 127],
+      "default": 20,
+      "category": "articulation",
+      "bassFunction": "string_noise"
+    },
+    "4": {
+      "name": "Pick/Finger Balance",
+      "type": "PICK_FINGER",
+      "range": [0, 127],
+      "default": 64,
+      "category": "tone",
+      "bassFunction": "attack_type",
+      "centerValue": 64
+    },
+    "16": {
+      "name": "Slide Time",
+      "type": "SLIDE_TIME",
+      "range": [0, 127],
+      "default": 50,
+      "category": "articulation",
+      "bassFunction": "glissando_time"
+    },
+    "17": {
+      "name": "Ghost Note Mix",
+      "type": "GHOST_NOTE_MIX",
+      "range": [0, 127],
+      "default": 0,
+      "category": "articulation",
+      "bassFunction": "ghost_note_level"
+    },
+    "18": {
+      "name": "Hammer-On Force",
+      "type": "HAMMER_ON_FORCE",
+      "range": [0, 127],
+      "default": 80,
+      "category": "articulation",
+      "bassFunction": "legato_strength"
+    },
+    "19": {
+      "name": "String Resonance",
+      "type": "STRING_RESONANCE",
+      "range": [0, 127],
+      "default": 40,
+      "category": "tone",
+      "bassFunction": "sympathetic_resonance"
+    },
+    "20": {
+      "name": "Fret Buzz",
+      "type": "FRET_BUZZ",
+      "range": [0, 127],
+      "default": 10,
+      "category": "tone",
+      "bassFunction": "buzz_amount"
+    },
+    "21": {
+      "name": "Mute Position",
+      "type": "MUTE_POSITION",
+      "range": [0, 127],
+      "default": 0,
+      "category": "articulation",
+      "bassFunction": "palm_mute_position"
+    },
+    "22": {
+      "name": "Slap Intensity",
+      "type": "SLAP_INTENSITY",
+      "range": [0, 127],
+      "default": 0,
+      "category": "articulation",
+      "bassFunction": "slap_strength"
+    },
+    "23": {
+      "name": "Pop Intensity",
+      "type": "POP_INTENSITY",
+      "range": [0, 127],
+      "default": 0,
+      "category": "articulation",
+      "bassFunction": "pop_strength"
+    },
+    "71": {
+      "name": "Tone Color (Bridge/Neck)",
+      "type": "TONE_COLOR",
+      "range": [0, 127],
+      "default": 64,
+      "category": "tone",
+      "bassFunction": "pickup_position",
+      "centerValue": 64
+    },
+    "74": {
+      "name": "Body Resonance",
+      "type": "BODY_RESONANCE",
+      "range": [0, 127],
+      "default": 64,
+      "category": "tone",
+      "bassFunction": "body_character"
+    }
+  },
+  "bassArticulations": {
+    "normal": {
+      "ccValues": {},
+      "description": "Standard fingerstyle playing"
+    },
+    "slap": {
+      "ccValues": {
+        "22": 100,
+        "23": 0,
+        "74": 80
+      },
+      "description": "Slap bass technique"
+    },
+    "pop": {
+      "ccValues": {
+        "22": 0,
+        "23": 100,
+        "74": 90
+      },
+      "description": "Pop/pluck technique"
+    },
+    "muted": {
+      "ccValues": {
+        "21": 80,
+        "74": 30
+      },
+      "description": "Palm muted playing"
+    },
+    "harmonics": {
+      "ccValues": {
+        "19": 127,
+        "74": 20
+      },
+      "description": "Natural harmonics"
+    },
+    "ghost": {
+      "ccValues": {
+        "17": 100,
+        "74": 40
+      },
+      "description": "Ghost notes"
+    }
+  },
+  "presets": {
+    "vintage_motown": {
+      "name": "Vintage Motown",
+      "ccValues": {
+        "71": 75,
+        "74": 70,
+        "2": 15,
+        "20": 5
+      }
+    },
+    "modern_metal": {
+      "name": "Modern Metal",
+      "ccValues": {
+        "71": 30,
+        "74": 85,
+        "4": 90,
+        "20": 25
+      }
+    },
+    "jazz_upright": {
+      "name": "Jazz Upright",
+      "ccValues": {
+        "71": 64,
+        "74": 100,
+        "2": 30,
+        "19": 60,
+        "4": 20
+      }
+    }
+  }
+}

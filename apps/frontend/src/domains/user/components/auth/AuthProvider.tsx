@@ -200,17 +200,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 setShowIdleWarning(false);
               }
             } catch (error) {
-              logger.error('Error in auth state change handler', error as Error, { correlationId });
+              logger.error(
+                'Error in auth state change handler',
+                error as Error,
+                { correlationId },
+              );
             }
           },
         );
 
         subscription = authSubscription;
       } catch (error) {
-        logger.error('Error setting up auth state listener', error as Error, { correlationId });
+        logger.error('Error setting up auth state listener', error as Error, {
+          correlationId,
+        });
       }
     } else {
-      logger.warn('E2E testing detected: Skipping auth state listener setup', { correlationId });
+      logger.warn('E2E testing detected: Skipping auth state listener setup', {
+        correlationId,
+      });
     }
 
     return () => {
@@ -222,7 +230,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
           subscription.unsubscribe();
         } catch (error) {
-          logger.error('Error unsubscribing from auth changes', error as Error, { correlationId });
+          logger.error(
+            'Error unsubscribing from auth changes',
+            error as Error,
+            { correlationId },
+          );
         }
       }
     };

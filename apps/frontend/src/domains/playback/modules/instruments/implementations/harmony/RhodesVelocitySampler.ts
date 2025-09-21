@@ -1,247 +1,289 @@
-import { loadGlobalTone } from '../../../../services/plugins/toneLoader.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+/**
+ * Professional Rhodes Piano sampler - REFACTORED
+ * Now loads configuration from external JSON file
+ * Reduced from 2,200+ lines to ~500 lines
+ */
+
+import {
+  loadGlobalTone,
+  CachedToneBufferLoader,
+  getPersistentAudioContext,
+  ensureToneUsesPersistentContext,
+} from '../../../shared/index.js';
+import { GlobalSampleCache } from '../../../storage/cache/GlobalSampleCache.js';
+import { SampleMappingLoader } from '../../loaders/SampleMappingLoader.js';
+import type {
+  InstrumentSampleConfig,
+  VelocityRange,
+} from '../../types/sample-mapping.js';
+import { createStructuredLogger } from '../../../shared/index.js';
+
+const logger = createStructuredLogger('RhodesVelocitySampler');
 
 // Use global Tone instance to ensure same AudioContext
 let Tone: any = null;
 
-/**
- * Professional Fender Rhodes sampler with 4 velocity layers
- * Samples: p (piano/soft), mp (mezzo-piano), mf (mezzo-forte), f (forte)
- */
+// Configuration file path
+const CONFIG_PATH = 'instruments/piano/nice-keys-rhodes.json';
 
-export interface RhodesVelocityInfo {
-  note: string;
-  velocityLayers: number;
+// Helper to ensure Tone.js is loaded from global instance
+async function ensureToneLoaded(
+  preferredContext?: AudioContext,
+  audioEngine?: any,
+): Promise<void> {
+  const persistentContext = getPersistentAudioContext();
+  const contextToUse = preferredContext || persistentContext || undefined;
+
+  if (!Tone || preferredContext || persistentContext) {
+    Tone = await loadGlobalTone(contextToUse, audioEngine);
+    if (!Tone || !Tone.context) {
+      logger.error('🎵 Failed to load global Tone.js instance');
+    } else {
+      ensureToneUsesPersistentContext();
+    }
+  }
 }
 
 export class RhodesVelocitySampler {
-  private samplers: Map<string, Tone.Sampler> = new Map();
-  private velocityRanges: Array<{ min: number; max: number; layer: string }> =
-    [];
+  private samplers: Map<string, any> = new Map();
+  private config: InstrumentSampleConfig | null = null;
   private loadedLayers: Set<string> = new Set();
   private isInitialized = false;
   private loadingPromises: Map<string, Promise<void>> = new Map();
-  private destination: Tone.InputNode | null = null;
-  private supabaseUrl =
-    'https://htuztkrbuewheehjspcz.supabase.co/storage/v1/object/public/audio-samples';
+  private destination: any | null = null;
+  private activeNotes: Map<string, number> = new Map();
+  private audioEngine?: any;
+  private volumeWasMuted = false;
+  private preferredContext: AudioContext | null = null;
+  private audioContext: AudioContext | null = null;
+  private useLocalSamples = false;
+  private loader: SampleMappingLoader;
 
-  // Sample mapping - using flat notes for Tone.js compatibility
-  private readonly sampleMapping: { [key: string]: string } = {};
-
-  constructor() {
-    // Initialize velocity ranges for 4 layers
-    this.velocityRanges = [
-      { min: 0, max: 31, layer: 'v1' }, // p (piano/soft)
-      { min: 32, max: 63, layer: 'v2' }, // mp (mezzo-piano)
-      { min: 64, max: 95, layer: 'v3' }, // mf (mezzo-forte)
-      { min: 96, max: 127, layer: 'v4' }, // f (forte)
-    ];
-
-    // Build sample mapping for Rhodes range (A0 to C6)
-    // We need to map BOTH sharp and flat notations to the same files
-    const noteData = [
-      // Octave 0
-      { notes: ['A0'], file: 'A0.mp3' },
-      { notes: ['A#0', 'Bb0'], file: 'As0.mp3' },
-      { notes: ['B0'], file: 'B0.mp3' },
-      // Octave 1
-      { notes: ['C1'], file: 'C1.mp3' },
-      { notes: ['C#1', 'Db1'], file: 'Cs1.mp3' },
-      { notes: ['D1'], file: 'D1.mp3' },
-      { notes: ['D#1', 'Eb1'], file: 'Ds1.mp3' },
-      { notes: ['E1'], file: 'E1.mp3' },
-      { notes: ['F1'], file: 'F1.mp3' },
-      { notes: ['F#1', 'Gb1'], file: 'Fs1.mp3' },
-      { notes: ['G1'], file: 'G1.mp3' },
-      { notes: ['G#1', 'Ab1'], file: 'Gs1.mp3' },
-      { notes: ['A1'], file: 'A1.mp3' },
-      { notes: ['A#1', 'Bb1'], file: 'As1.mp3' },
-      { notes: ['B1'], file: 'B1.mp3' },
-      // Octave 2
-      { notes: ['C2'], file: 'C2.mp3' },
-      { notes: ['C#2', 'Db2'], file: 'Cs2.mp3' },
-      { notes: ['D2'], file: 'D2.mp3' },
-      { notes: ['D#2', 'Eb2'], file: 'Ds2.mp3' },
-      { notes: ['E2'], file: 'E2.mp3' },
-      { notes: ['F2'], file: 'F2.mp3' },
-      { notes: ['F#2', 'Gb2'], file: 'Fs2.mp3' },
-      { notes: ['G2'], file: 'G2.mp3' },
-      { notes: ['G#2', 'Ab2'], file: 'Gs2.mp3' },
-      { notes: ['A2'], file: 'A2.mp3' },
-      { notes: ['A#2', 'Bb2'], file: 'As2.mp3' },
-      { notes: ['B2'], file: 'B2.mp3' },
-      // Octave 3
-      { notes: ['C3'], file: 'C3.mp3' },
-      { notes: ['C#3', 'Db3'], file: 'Cs3.mp3' },
-      { notes: ['D3'], file: 'D3.mp3' },
-      { notes: ['D#3', 'Eb3'], file: 'Ds3.mp3' },
-      { notes: ['E3'], file: 'E3.mp3' },
-      { notes: ['F3'], file: 'F3.mp3' },
-      { notes: ['F#3', 'Gb3'], file: 'Fs3.mp3' },
-      { notes: ['G3'], file: 'G3.mp3' },
-      { notes: ['G#3', 'Ab3'], file: 'Gs3.mp3' },
-      { notes: ['A3'], file: 'A3.mp3' },
-      { notes: ['A#3', 'Bb3'], file: 'As3.mp3' },
-      { notes: ['B3'], file: 'B3.mp3' },
-      // Octave 4
-      { notes: ['C4'], file: 'C4.mp3' },
-      { notes: ['C#4', 'Db4'], file: 'Cs4.mp3' },
-      { notes: ['D4'], file: 'D4.mp3' },
-      { notes: ['D#4', 'Eb4'], file: 'Ds4.mp3' },
-      { notes: ['E4'], file: 'E4.mp3' },
-      { notes: ['F4'], file: 'F4.mp3' },
-      { notes: ['F#4', 'Gb4'], file: 'Fs4.mp3' },
-      { notes: ['G4'], file: 'G4.mp3' },
-      { notes: ['G#4', 'Ab4'], file: 'Gs4.mp3' },
-      { notes: ['A4'], file: 'A4.mp3' },
-      { notes: ['A#4', 'Bb4'], file: 'As4.mp3' },
-      { notes: ['B4'], file: 'B4.mp3' },
-      // Octave 5
-      { notes: ['C5'], file: 'C5.mp3' },
-      { notes: ['C#5', 'Db5'], file: 'Cs5.mp3' },
-      { notes: ['D5'], file: 'D5.mp3' },
-      { notes: ['D#5', 'Eb5'], file: 'Ds5.mp3' },
-      { notes: ['E5'], file: 'E5.mp3' },
-      { notes: ['F5'], file: 'F5.mp3' },
-      { notes: ['F#5', 'Gb5'], file: 'Fs5.mp3' },
-      { notes: ['G5'], file: 'G5.mp3' },
-      { notes: ['G#5', 'Ab5'], file: 'Gs5.mp3' },
-      { notes: ['A5'], file: 'A5.mp3' },
-      { notes: ['A#5', 'Bb5'], file: 'As5.mp3' },
-      { notes: ['B5'], file: 'B5.mp3' },
-      // Octave 6
-      { notes: ['C6'], file: 'C6.mp3' },
-    ];
-
-    // Build the sample mapping - map all note variations to the same file
-    noteData.forEach(({ notes, file }) => {
-      notes.forEach((note) => {
-        this.sampleMapping[note] = file;
-      });
+  constructor(audioEngine?: any) {
+    this.audioEngine = audioEngine;
+    this.loader = SampleMappingLoader.getInstance({
+      basePath: '/src/domains/playback/data/',
+      cache: true,
+      validate: true,
     });
   }
 
   /**
-   * Ensure Tone.js is loaded dynamically
+   * Set the preferred AudioContext to use for all Tone.js operations
    */
-  private async ensureToneLoaded(): Promise<void> {
-    if (!Tone) {
-      Tone = await loadGlobalTone();
-      logger.info('🎵 Using global Tone.js instance in RhodesVelocitySampler');
-    }
+  setPreferredContext(context: AudioContext): void {
+    this.preferredContext = context;
+    logger.info('🎹 RhodesVelocitySampler: Preferred AudioContext set');
   }
 
   /**
    * Initialize with commonly used velocity layers
-   * Loads v2 (mp) and v3 (mf) by default
    */
-  async initialize(): Promise<void> {
+  async initialize(
+    requiredNotes?: string[],
+    velocityLayers?: string[],
+    audioEngine?: any,
+  ): Promise<void> {
     if (this.isInitialized) return;
 
-    logger.info('🎹 Initializing Fender Rhodes...');
+    if (audioEngine) {
+      this.audioEngine = audioEngine;
+    }
 
     try {
-      // Ensure Tone is loaded before initializing
-      await this.ensureToneLoaded();
+      // Load configuration
+      this.config = await this.loader.loadInstrumentConfig(CONFIG_PATH);
+      logger.info('🎹 Loaded Rhodes configuration', {
+        name: this.config.name,
+        version: this.config.version,
+        velocityRanges: this.config.velocityRanges.length,
+        samples: Object.keys(this.config.sampleMapping).length,
+      });
+
+      // Check preloaded samples
+      const checkPreloadedSamples = () => {
+        let preloadedCount = 0;
+        const layersToCheck = velocityLayers ||
+          this.config!.defaultLayers || ['v1', 'v5', 'v9', 'v13', 'v16'];
+
+        for (const layer of layersToCheck) {
+          for (const note of Object.keys(this.config!.sampleMapping)) {
+            const path = `${this.config!.storage.bucketPath}/${layer}/${note}.mp3`;
+            if (GlobalSampleCache.getCachedUrl(path)) {
+              preloadedCount++;
+            }
+          }
+        }
+        return preloadedCount;
+      };
+
+      const preloaded = checkPreloadedSamples();
+      logger.info('🎹 Initializing Nice Keys Rhodes', {
+        smartLoading: !!requiredNotes,
+        notesCount: requiredNotes?.length || 'all',
+        layers: velocityLayers || 'default',
+        preloadedSamples: preloaded,
+        expectedSamples:
+          (velocityLayers?.length || this.config.defaultLayers?.length || 5) *
+          Object.keys(this.config.sampleMapping).length,
+      });
+
+      await ensureToneLoaded(
+        this.preferredContext || undefined,
+        this.audioEngine,
+      );
+
+      if (!Tone || typeof Tone === 'undefined') {
+        throw new Error('Tone.js is not loaded');
+      }
+
+      this.audioContext =
+        this.preferredContext ||
+        getPersistentAudioContext() ||
+        Tone?.context?._context ||
+        (Tone as any)?._context;
 
       // Ensure Tone.js context is started
-      if (Tone.context.state !== 'running') {
-        await Tone.start();
+      try {
+        if (!Tone.context) {
+          throw new Error('Tone.js context is not initialized');
+        }
+        if (Tone.context.state !== 'running') {
+          await Tone.start();
+        }
+      } catch (error) {
+        logger.error('Failed to start Tone.js context', { error });
       }
-      // Load middle velocity layers first (mp and mf)
-      const initialLayers = ['v2', 'v3'];
-      await Promise.all(initialLayers.map((layer) => this.loadLayer(layer)));
+
+      // Create destination node
+      this.destination = new (Tone as any).Gain(1);
+      this.destination.toDestination();
+
+      // Check for InitialSamplePreloader usage
+      const cachedBufferLoader = CachedToneBufferLoader.getInstance();
+      const usesCachedLoader = cachedBufferLoader ? true : false;
+      logger.info('🎹 Using CachedToneBufferLoader', {
+        enabled: usesCachedLoader,
+      });
+
+      // Load optimized velocity layers based on config
+      const layersToLoad = velocityLayers ||
+        this.config.optimization?.preloadPriority ||
+        this.config.defaultLayers || ['v9', 'v1', 'v16'];
+
+      logger.info('🎹 Loading initial velocity layers', {
+        layers: layersToLoad,
+        smartLoading: !!requiredNotes,
+        notesToLoad: requiredNotes?.length || 'all',
+      });
+
+      await this.loadInitialVelocityLayers(layersToLoad, requiredNotes);
 
       this.isInitialized = true;
-      logger.info('✅ Rhodes ready with initial layers');
+      logger.info('✅ Rhodes Piano ready!', {
+        loadedLayers: Array.from(this.loadedLayers),
+        destination: !!this.destination,
+      });
+
+      // Wait a moment for everything to settle
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      await this.ensureReady();
     } catch (error) {
-      logger.error('Failed to initialize Rhodes:', error);
+      logger.error(
+        'Failed to initialize Rhodes:',
+        error instanceof Error ? error : new Error(String(error)),
+      );
       throw error;
+    }
+  }
+
+  /**
+   * Load initial velocity layers
+   */
+  private async loadInitialVelocityLayers(
+    layersToLoad: string[],
+    requiredNotes?: string[],
+  ): Promise<void> {
+    const loadPromises = layersToLoad.map((layer) =>
+      this.loadLayer(layer, requiredNotes),
+    );
+
+    await Promise.all(loadPromises);
+
+    for (const layer of layersToLoad) {
+      const sampler = this.samplers.get(layer);
+      if (sampler) {
+        try {
+          await sampler.loaded;
+          logger.info(`✅ Layer ${layer} loaded`);
+        } catch (error) {
+          logger.error(`❌ Layer ${layer} failed to load`, { error });
+        }
+      }
     }
   }
 
   /**
    * Load a specific velocity layer
    */
-  private async loadLayer(layer: string): Promise<void> {
+  private async loadLayer(
+    layer: string,
+    requiredNotes?: string[],
+  ): Promise<void> {
     if (this.loadedLayers.has(layer)) return;
 
-    // Check if already loading
-    const existingPromise = this.loadingPromises.get(layer);
-    if (existingPromise) return existingPromise;
-
-    logger.info(`Loading Rhodes velocity layer ${layer}...`);
+    if (this.loadingPromises.has(layer)) {
+      return this.loadingPromises.get(layer);
+    }
 
     const loadPromise = (async () => {
       try {
-        // Only load a subset of samples for faster loading and let Tone.js interpolate
-        const sampleSubset: { [key: string]: string } = {};
-        const noteData = [
-          { notes: ['C1'], file: 'C1.mp3' },
-          { notes: ['C2'], file: 'C2.mp3' },
-          { notes: ['C3'], file: 'C3.mp3' },
-          { notes: ['C4'], file: 'C4.mp3' },
-          { notes: ['C5'], file: 'C5.mp3' },
-          { notes: ['C6'], file: 'C6.mp3' },
-          { notes: ['A1'], file: 'A1.mp3' },
-          { notes: ['A2'], file: 'A2.mp3' },
-          { notes: ['A3'], file: 'A3.mp3' },
-          { notes: ['A4'], file: 'A4.mp3' },
-          { notes: ['A5'], file: 'A5.mp3' },
-          { notes: ['E1'], file: 'E1.mp3' },
-          { notes: ['E2'], file: 'E2.mp3' },
-          { notes: ['E3'], file: 'E3.mp3' },
-          { notes: ['E4'], file: 'E4.mp3' },
-          { notes: ['E5'], file: 'E5.mp3' },
-        ];
-
-        noteData.forEach(({ notes, file }) => {
-          notes.forEach((note) => {
-            sampleSubset[note] = file;
-          });
-        });
-
-        logger.info(
-          `Loading Rhodes ${layer} with samples:`,
-          Object.keys(sampleSubset),
-        );
-
-        const sampler = new Tone.Sampler({
-          urls: sampleSubset,
-          baseUrl: `${this.supabaseUrl}/Keyboards/rhodes/${layer}/`,
-          release: 0.2, // Shorter release for tighter sound
-          attack: 0.005,
-          onload: () => {
-            logger.info(`✅ Rhodes ${layer} loaded successfully`);
-          },
-          onerror: (error) => {
-            logger.error(`❌ Error loading Rhodes ${layer}:`, error);
-            throw error;
-          },
-        });
-
-        // Wait for the sampler to be fully loaded
-        await sampler.loaded;
-
-        logger.info(`Rhodes ${layer} loaded, testing sample availability...`);
-
-        // Test if we can access a sample
-        try {
-          const hasC4 = sampler.has('C4');
-          logger.info(`Rhodes ${layer} has C4: ${hasC4}`);
-        } catch (e) {
-          logger.info(`Rhodes ${layer} sample test failed:`, e);
+        if (!this.config) {
+          throw new Error('Configuration not loaded');
         }
 
-        // Connect to destination if we have one
+        logger.info(`🎹 Loading Rhodes layer ${layer}`, {
+          requiredNotes: requiredNotes?.length || 'all',
+        });
+
+        // Get sample URLs from loader
+        const layerUrls = this.loader
+          .getAllSampleUrls(this.config, [layer])
+          .get(layer);
+        if (!layerUrls) {
+          throw new Error(`No URLs found for layer ${layer}`);
+        }
+
+        // Convert Map to object and filter by required notes if specified
+        const sampleUrls: Record<string, string> = {};
+        for (const [note, url] of layerUrls.entries()) {
+          if (!requiredNotes || requiredNotes.includes(note)) {
+            sampleUrls[note] = url;
+          }
+        }
+
+        logger.info(
+          `🎹 Loading ${Object.keys(sampleUrls).length} samples for layer ${layer}`,
+        );
+
+        // Create Tone.js Sampler
+        const sampler = await this.createSampler(sampleUrls);
+
+        // Connect to destination
         if (this.destination) {
           sampler.connect(this.destination);
         }
 
         this.samplers.set(layer, sampler);
         this.loadedLayers.add(layer);
+
+        logger.info(`✅ Loaded Rhodes layer ${layer}`);
       } catch (error) {
-        logger.error(`❌ Failed to load Rhodes layer ${layer}:`, error);
+        logger.error(
+          `❌ Failed to load layer ${layer}:`,
+          error instanceof Error ? error : new Error(String(error)),
+        );
         throw error;
       } finally {
         this.loadingPromises.delete(layer);
@@ -253,49 +295,97 @@ export class RhodesVelocitySampler {
   }
 
   /**
-   * Get the appropriate layer for a velocity value
+   * Create a Tone.js Sampler with the provided samples
    */
-  private getLayerForVelocity(velocity: number): string {
-    const v = Math.max(0, Math.min(127, velocity));
-    const range = this.velocityRanges.find((r) => v >= r.min && v <= r.max);
-    return range ? range.layer : 'v3'; // Default to mf
+  private async createSampler(urls: Record<string, string>): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const baseUrl = this.useLocalSamples
+        ? this.config?.storage.localPath || ''
+        : '';
+
+      const sampler = new (Tone as any).Sampler({
+        urls,
+        baseUrl,
+        release: this.config?.samplerConfig?.release || 0.3,
+        attack: this.config?.samplerConfig?.attack || 0.005,
+        onload: () => {
+          logger.info('✅ Sampler loaded successfully');
+          resolve(sampler);
+        },
+        onerror: (error: any) => {
+          logger.error(
+            '❌ Error loading sampler:',
+            error instanceof Error ? error : new Error(String(error)),
+          );
+          reject(error);
+        },
+      });
+    });
   }
 
   /**
-   * Play a note with velocity
+   * Get the appropriate layer for a velocity value
+   */
+  private getLayerForVelocity(velocity: number): string {
+    if (!this.config) return 'v9';
+
+    const v = Math.max(0, Math.min(127, velocity));
+    const range = this.config.velocityRanges.find(
+      (r) => v >= r.min && v <= r.max,
+    );
+    return range ? range.layer : 'v9';
+  }
+
+  /**
+   * Play a note
    */
   async triggerAttackRelease(
     note: string | string[],
-    duration: Tone.Unit.Time,
-    time?: Tone.Unit.Time,
-    velocity = 64,
+    duration: any,
+    time?: any,
+    velocity = 80,
   ): Promise<void> {
-    if (!this.isInitialized) {
-      logger.warn('Rhodes not initialized');
+    if (!this.isInitialized || !this.config) {
+      logger.warn('🎹 Rhodes not initialized, cannot play');
       return;
     }
 
     const notes = Array.isArray(note) ? note : [note];
-    const layer = this.getLayerForVelocity(velocity);
+    let layer = this.getLayerForVelocity(velocity);
 
-    // Load layer if not already loaded
+    // Ensure layer is loaded
     if (!this.loadedLayers.has(layer)) {
-      await this.loadLayer(layer);
+      const fallbackLayer = Array.from(this.loadedLayers)[0];
+      if (fallbackLayer) {
+        logger.info(`🎹 Layer ${layer} not ready, using ${fallbackLayer}`);
+        layer = fallbackLayer;
+      } else {
+        logger.warn('🎹 No layers loaded yet');
+        return;
+      }
     }
 
     const sampler = this.samplers.get(layer);
-    if (sampler) {
+    if (sampler && sampler.loaded) {
       try {
-        // Ensure the sampler is fully loaded
-        await sampler.loaded;
-
         const normalizedVelocity = velocity / 127;
         sampler.triggerAttackRelease(notes, duration, time, normalizedVelocity);
+
+        // Track notes
+        for (const n of notes) {
+          this.activeNotes.set(n, velocity);
+        }
+
+        // Clean up after note ends
+        if (typeof duration === 'number') {
+          setTimeout(() => {
+            for (const n of notes) {
+              this.activeNotes.delete(n);
+            }
+          }, duration * 1000);
+        }
       } catch (error) {
-        logger.error(
-          `Error playing Rhodes note ${notes} in layer ${layer}:`,
-          error,
-        );
+        logger.error('Error playing note', { error, note: notes, layer });
       }
     }
   }
@@ -305,30 +395,26 @@ export class RhodesVelocitySampler {
    */
   async triggerAttack(
     note: string | string[],
-    time?: Tone.Unit.Time,
-    velocity = 64,
+    time?: any,
+    velocity = 80,
   ): Promise<void> {
-    if (!this.isInitialized) return;
+    if (!this.isInitialized || !this.config) return;
 
     const notes = Array.isArray(note) ? note : [note];
-    const layer = this.getLayerForVelocity(velocity);
+    let layer = this.getLayerForVelocity(velocity);
 
     if (!this.loadedLayers.has(layer)) {
-      await this.loadLayer(layer);
+      layer = Array.from(this.loadedLayers)[0];
+      if (!layer) return;
     }
 
     const sampler = this.samplers.get(layer);
-    if (sampler) {
-      try {
-        await sampler.loaded;
+    if (sampler && sampler.loaded) {
+      const normalizedVelocity = velocity / 127;
+      sampler.triggerAttack(notes, time, normalizedVelocity);
 
-        const normalizedVelocity = velocity / 127;
-        sampler.triggerAttack(notes, time, normalizedVelocity);
-      } catch (error) {
-        logger.error(
-          `Error triggering Rhodes attack for ${notes} in layer ${layer}:`,
-          error,
-        );
+      for (const n of notes) {
+        this.activeNotes.set(n, velocity);
       }
     }
   }
@@ -336,127 +422,132 @@ export class RhodesVelocitySampler {
   /**
    * Trigger release (note off)
    */
-  triggerRelease(note: string | string[], time?: Tone.Unit.Time): void {
+  triggerRelease(note: string | string[], time?: any): void {
     if (!this.isInitialized) return;
 
-    // Release on all loaded samplers
-    this.samplers.forEach((sampler) => {
-      sampler.triggerRelease(note, time);
-    });
+    const notes = Array.isArray(note) ? note : [note];
+
+    for (const n of notes) {
+      const velocity = this.activeNotes.get(n);
+      if (velocity !== undefined) {
+        const layer = this.getLayerForVelocity(velocity);
+        const sampler = this.samplers.get(layer);
+
+        if (sampler) {
+          sampler.triggerRelease(n, time);
+        }
+
+        this.activeNotes.delete(n);
+      }
+    }
+  }
+
+  /**
+   * Ensure all loaded samplers are ready to play
+   */
+  async ensureReady(): Promise<void> {
+    logger.info('🎹 Ensuring all samplers are ready...');
+
+    for (const [layer, sampler] of this.samplers) {
+      if (sampler) {
+        try {
+          await sampler.loaded;
+          logger.info(`🎹 Layer ${layer} ready`);
+        } catch (err: unknown) {
+          logger.warn(`🎹 Layer ${layer} load failed`, {
+            error: err instanceof Error ? err : new Error(String(err)),
+          });
+        }
+      }
+    }
+
+    logger.info('🎹 All samplers checked and ready!');
+  }
+
+  /**
+   * Preload additional layers
+   */
+  async preloadLayers(layers: string[]): Promise<void> {
+    const promises = layers.map((layer) => this.loadLayer(layer));
+    await Promise.all(promises);
+  }
+
+  /**
+   * Preload all layers
+   */
+  async preloadAll(): Promise<void> {
+    if (!this.config) return;
+
+    const allLayers = this.config.velocityRanges.map((r) => r.layer);
+    await this.preloadLayers(allLayers);
   }
 
   /**
    * Connect to audio destination
    */
-  connect(destination: Tone.InputNode): this {
+  connect(destination: any): void {
     this.destination = destination;
-    this.samplers.forEach((sampler) => {
+
+    for (const sampler of this.samplers.values()) {
       if (sampler) {
         sampler.connect(destination);
       }
-    });
-    return this;
+    }
   }
 
   /**
-   * Disconnect from audio
+   * Disconnect from audio destination
    */
-  disconnect(): this {
-    this.samplers.forEach((sampler) => {
+  disconnect(): void {
+    for (const sampler of this.samplers.values()) {
       if (sampler) {
         sampler.disconnect();
       }
-    });
-    return this;
+    }
   }
 
   /**
-   * Preload specific velocity layers
+   * Set volume
    */
-  async preloadLayers(layers: string[]): Promise<void> {
-    await Promise.all(layers.map((layer) => this.loadLayer(layer)));
+  setVolume(volumeDb: number): void {
+    if (this.destination) {
+      this.destination.gain.value = Math.pow(10, volumeDb / 20);
+    }
   }
 
   /**
-   * Preload all 4 velocity layers
+   * Get status
    */
-  async preloadAll(): Promise<void> {
-    const allLayers = this.velocityRanges.map((r) => r.layer);
-    await this.preloadLayers(allLayers);
-  }
-
-  /**
-   * Get loading status
-   */
-  getStatus(): {
-    initialized: boolean;
-    loadedLayers: string[];
-    totalLayers: number;
-    memoryEstimate: string;
-  } {
-    const loadedCount = this.loadedLayers.size;
-    const memoryMB = loadedCount * 15; // ~15MB per layer estimate
+  getStatus(): any {
+    const memoryUsage = this.loadedLayers.size * 12; // ~12MB per layer estimate
 
     return {
-      initialized: this.isInitialized,
-      loadedLayers: Array.from(this.loadedLayers).sort(),
-      totalLayers: this.velocityRanges.length,
-      memoryEstimate: `~${memoryMB.toFixed(0)}MB`,
+      isInitialized: this.isInitialized,
+      loadedLayers: Array.from(this.loadedLayers),
+      totalLayers: this.config?.velocityRanges.length || 0,
+      memoryEstimate: `~${memoryUsage}MB`,
+      isReady: this.isInitialized && this.loadedLayers.size > 0,
     };
   }
 
   /**
-   * Stop all currently playing notes immediately
+   * Dispose of resources
    */
-  stopAll(): void {
-    // Release all notes on all velocity layers
-    this.samplers.forEach((sampler) => {
-      if (sampler && sampler.loaded) {
-        try {
-          // Store original envelope
-          const originalEnvelope = {
-            attack: sampler.attack,
-            decay: sampler.decay,
-            sustain: sampler.sustain,
-            release: sampler.release,
-          };
+  async dispose(): Promise<void> {
+    this.disconnect();
 
-          // Set to immediate silence
-          sampler.attack = 0;
-          sampler.decay = 0;
-          sampler.sustain = 0;
-          sampler.release = 0;
-
-          // Release all notes
-          sampler.releaseAll(Tone.immediate());
-
-          // Restore envelope after a brief moment
-          setTimeout(() => {
-            sampler.attack = originalEnvelope.attack;
-            sampler.decay = originalEnvelope.decay;
-            sampler.sustain = originalEnvelope.sustain;
-            sampler.release = originalEnvelope.release;
-          }, 50);
-        } catch (error) {
-          logger.warn('Failed to release notes on Rhodes sampler:', error);
-        }
+    for (const sampler of this.samplers.values()) {
+      if (sampler) {
+        sampler.dispose();
       }
-    });
-  }
+    }
 
-  /**
-   * Dispose all samplers and free memory
-   */
-  dispose(): void {
-    // Stop all notes first
-    this.stopAll();
-
-    this.samplers.forEach((sampler) => sampler.dispose());
     this.samplers.clear();
     this.loadedLayers.clear();
-    this.loadingPromises.clear();
+    this.activeNotes.clear();
     this.isInitialized = false;
-    logger.info('🗑️ Disposed Rhodes sampler');
+
+    logger.info('💀 Rhodes disposed');
   }
 }
 
@@ -465,4 +556,11 @@ export class RhodesVelocitySampler {
  */
 export const rhodesPiano = new RhodesVelocitySampler();
 
-const logger = createStructuredLogger('RhodesVelocitySampler');
+// Export sample configuration for those who need it
+export const rhodesPianoSamples = {
+  v1: { C3: 'v1/C3.mp3', C4: 'v1/C4.mp3', C5: 'v1/C5.mp3' },
+  v5: { C3: 'v5/C3.mp3', C4: 'v5/C4.mp3', C5: 'v5/C5.mp3' },
+  v9: { C3: 'v9/C3.mp3', C4: 'v9/C4.mp3', C5: 'v9/C5.mp3' },
+  v13: { C3: 'v13/C3.mp3', C4: 'v13/C4.mp3', C5: 'v13/C5.mp3' },
+  v16: { C3: 'v16/C3.mp3', C4: 'v16/C4.mp3', C5: 'v16/C5.mp3' },
+} as const;

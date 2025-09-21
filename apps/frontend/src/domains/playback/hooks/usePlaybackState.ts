@@ -12,6 +12,9 @@ import { useCallback, useMemo } from 'react';
 import { usePlaybackStore } from '../store/playbackStore';
 import type { PlaybackState, AudioPerformanceMetrics } from '../types/audio';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { createStructuredLogger } from '../modules/shared/index.js';
+
+const logger = createStructuredLogger('usePlaybackState');
 
 // ============================================================================
 // HOOK INTERFACE

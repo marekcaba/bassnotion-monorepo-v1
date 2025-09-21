@@ -114,7 +114,7 @@ export class PerformanceBenchmark {
       summary,
     };
 
-    this.eventBus.emit('benchmark:suite-completed', suite);
+    this.eventBus.emit('benchmark:suite-completed', { ...suite });
 
     return suite;
   }

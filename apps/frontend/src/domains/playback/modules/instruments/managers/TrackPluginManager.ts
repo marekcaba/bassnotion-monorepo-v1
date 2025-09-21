@@ -1,19 +1,25 @@
 /**
  * Track Plugin Manager - Advanced Plugin Resource Management
- * 
+ *
  * Extracted from services/plugins/TrackPluginManager.ts
- * 
+ *
  * Manages plugin instances across tracks with resource optimization:
  * - Per-track plugin instance pooling
- * - Resource sharing across plugin instances  
+ * - Resource sharing across plugin instances
  * - Plugin chain management with bypass capability
  * - Performance tracking and optimization
  * - Automatic resource allocation and cleanup
  */
 
-import { createStructuredLogger } from '@bassnotion/contracts';
-import { EventBus } from '../../../services/core/EventBus.js';
-import type { AudioPlugin, PluginCapability } from '../../../types/plugin.js';
+import { EventBus } from '../../shared/index.js';
+import { createStructuredLogger } from '@/shared/utils/errorHandling';
+import type { AudioPlugin } from '../../../types/plugin.js';
+import {
+  PluginCategory,
+  PluginPriority,
+  PluginState,
+  ProcessingResultStatus,
+} from '../../../types/plugin.js';
 import type * as Tone from 'tone';
 
 const logger = createStructuredLogger('TrackPluginManager');
@@ -72,7 +78,6 @@ export class TrackPluginManager {
 
   // Services
   private eventBus?: EventBus;
-  private tone: typeof Tone | null = null;
 
   // Performance tracking
   private metrics: PluginMetrics = {
@@ -91,8 +96,8 @@ export class TrackPluginManager {
   /**
    * Initialize with Tone.js instance
    */
-  initialize(tone: typeof Tone): void {
-    this.tone = tone;
+  initialize(_tone: typeof Tone): void {
+    // Tone instance is not used in this implementation
     logger.info('🔌 TrackPluginManager: Initialized');
   }
 
@@ -118,7 +123,7 @@ export class TrackPluginManager {
   async allocatePlugin(
     trackId: string,
     pluginType: string,
-    options: PluginAllocationOptions = {}
+    options: PluginAllocationOptions = {},
   ): Promise<string | null> {
     try {
       // Check if we can reuse from pool
@@ -155,10 +160,14 @@ export class TrackPluginManager {
         isActive: true,
       };
 
-      // Initialize plugin if needed
-      if (plugin.initialize) {
-        await plugin.initialize();
-      }
+      // Initialize plugin with a minimal context
+      const context: any = {
+        audioContext: new AudioContext(),
+        sampleRate: 48000,
+        bufferSize: 1024,
+        currentTime: 0,
+      };
+      await plugin.initialize(context);
 
       this.pluginInstances.set(instanceId, instance);
       this.addToTrackChain(trackId, instanceId);
@@ -169,7 +178,10 @@ export class TrackPluginManager {
 
       return instanceId;
     } catch (error) {
-      logger.error(`Failed to allocate plugin ${pluginType} for track ${trackId}:`, error);
+      logger.error(
+        `Failed to allocate plugin ${pluginType} for track ${trackId}:`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
       return null;
     }
   }
@@ -199,11 +211,17 @@ export class TrackPluginManager {
       this.updateMetrics();
 
       logger.info(`🔌 Deallocated plugin: ${instanceId}`);
-      this.emitEvent('plugin:deallocated', { instanceId, trackId: instance.trackId });
+      this.emitEvent('plugin:deallocated', {
+        instanceId,
+        trackId: instance.trackId,
+      });
 
       return true;
     } catch (error) {
-      logger.error(`Failed to deallocate plugin ${instanceId}:`, error);
+      logger.error(
+        `Failed to deallocate plugin ${instanceId}:`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
       return false;
     }
   }
@@ -223,7 +241,7 @@ export class TrackPluginManager {
     if (!chain) return [];
 
     return chain.plugins
-      .map(id => this.pluginInstances.get(id))
+      .map((id) => this.pluginInstances.get(id))
       .filter((instance): instance is PluginInstance => instance !== undefined);
   }
 
@@ -238,7 +256,7 @@ export class TrackPluginManager {
     }
 
     // Validate all plugin IDs exist
-    const validIds = pluginIds.filter(id => this.pluginInstances.has(id));
+    const validIds = pluginIds.filter((id) => this.pluginInstances.has(id));
     if (validIds.length !== pluginIds.length) {
       logger.warn(`Some plugin IDs not found for track ${trackId}`);
     }
@@ -285,12 +303,27 @@ export class TrackPluginManager {
         // Update usage tracking
         instance.lastUsed = Date.now();
 
-        // Process audio if plugin supports it
-        if (instance.plugin.processAudio) {
-          processedData = await instance.plugin.processAudio(processedData);
+        // Process audio through plugin's process method
+        const outputBuffer = processedData; // Assuming processedData is AudioBuffer
+        const context: any = {
+          audioContext: new AudioContext(),
+          sampleRate: 48000,
+          bufferSize: 1024,
+          currentTime: Date.now() / 1000,
+        };
+        const result = await instance.plugin.process(
+          processedData,
+          outputBuffer,
+          context,
+        );
+        if (result.success) {
+          processedData = outputBuffer;
         }
       } catch (error) {
-        logger.error(`Plugin processing error in ${instanceId}:`, error);
+        logger.error(
+          `Plugin processing error in ${instanceId}:`,
+          error instanceof Error ? error : new Error(String(error)),
+        );
         // Continue with next plugin instead of failing entire chain
       }
     }
@@ -308,12 +341,18 @@ export class TrackPluginManager {
   /**
    * Get resource pool statistics
    */
-  getPoolStats(): Record<string, { total: number; active: number; pooled: number }> {
-    const stats: Record<string, { total: number; active: number; pooled: number }> = {};
+  getPoolStats(): Record<
+    string,
+    { total: number; active: number; pooled: number }
+  > {
+    const stats: Record<
+      string,
+      { total: number; active: number; pooled: number }
+    > = {};
 
     for (const [pluginType, pool] of this.resourcePools.entries()) {
       const total = pool.instances.length;
-      const active = pool.instances.filter(i => i.isActive).length;
+      const active = pool.instances.filter((i) => i.isActive).length;
       const pooled = total - active;
 
       stats[pluginType] = { total, active, pooled };
@@ -325,12 +364,14 @@ export class TrackPluginManager {
   /**
    * Cleanup unused plugin instances
    */
-  async cleanupUnusedInstances(maxAge: number = 5 * 60 * 1000): Promise<number> {
+  async cleanupUnusedInstances(
+    maxAge: number = 5 * 60 * 1000,
+  ): Promise<number> {
     let cleanedCount = 0;
     const now = Date.now();
 
     const instancesToCleanup = Array.from(this.pluginInstances.values()).filter(
-      instance => !instance.isActive && (now - instance.lastUsed) > maxAge
+      (instance) => !instance.isActive && now - instance.lastUsed > maxAge,
     );
 
     for (const instance of instancesToCleanup) {
@@ -339,12 +380,15 @@ export class TrackPluginManager {
         this.pluginInstances.delete(instance.instanceId);
         cleanedCount++;
       } catch (error) {
-        logger.error(`Failed to cleanup instance ${instance.instanceId}:`, error);
+        logger.error(
+          `Failed to cleanup instance ${instance.instanceId}:`,
+          error instanceof Error ? error : new Error(String(error)),
+        );
       }
     }
 
     this.updateMetrics();
-    
+
     if (cleanedCount > 0) {
       logger.info(`🧹 Cleaned up ${cleanedCount} unused plugin instances`);
       this.emitEvent('cleanup:completed', { cleanedCount });
@@ -357,14 +401,17 @@ export class TrackPluginManager {
    * Optimize resource pools
    */
   async optimizePools(): Promise<void> {
-    for (const [pluginType, pool] of this.resourcePools.entries()) {
+    for (const [_pluginType, pool] of this.resourcePools.entries()) {
       // Remove inactive instances from pool
-      const activeInstances = pool.instances.filter(i => i.isActive);
-      const inactiveInstances = pool.instances.filter(i => !i.isActive);
+      const activeInstances = pool.instances.filter((i) => i.isActive);
+      const inactiveInstances = pool.instances.filter((i) => !i.isActive);
+
+      // Track instances to dispose
+      let toDispose: PluginInstance[] = [];
 
       // Dispose oldest inactive instances if pool is too large
       if (inactiveInstances.length > pool.maxInstances * 0.3) {
-        const toDispose = inactiveInstances
+        toDispose = inactiveInstances
           .sort((a, b) => a.lastUsed - b.lastUsed)
           .slice(0, Math.floor(inactiveInstances.length * 0.5));
 
@@ -376,7 +423,7 @@ export class TrackPluginManager {
 
       // Update pool
       pool.instances = activeInstances.concat(
-        inactiveInstances.filter(i => !toDispose.includes(i))
+        inactiveInstances.filter((i) => !toDispose.includes(i)),
       );
     }
 
@@ -389,8 +436,8 @@ export class TrackPluginManager {
    */
   async cleanup(): Promise<void> {
     // Dispose all instances
-    const disposePromises = Array.from(this.pluginInstances.values()).map(instance =>
-      this.disposeInstance(instance)
+    const disposePromises = Array.from(this.pluginInstances.values()).map(
+      (instance) => this.disposeInstance(instance),
     );
     await Promise.all(disposePromises);
 
@@ -411,44 +458,235 @@ export class TrackPluginManager {
   private initializeDefaultFactories(): void {
     // Register basic plugin types with simple factories
     this.registerPluginFactory('effect', () => this.createBasicEffectPlugin());
-    this.registerPluginFactory('analyzer', () => this.createBasicAnalyzerPlugin());
+    this.registerPluginFactory('analyzer', () =>
+      this.createBasicAnalyzerPlugin(),
+    );
   }
 
   private createBasicEffectPlugin(): AudioPlugin {
-    return {
-      id: this.generatePluginId('effect'),
-      name: 'Basic Effect',
-      type: 'effect',
-      capabilities: ['processAudio'],
+    const plugin: AudioPlugin = {
+      metadata: {
+        id: this.generatePluginId('effect'),
+        name: 'Basic Effect',
+        version: '1.0.0',
+        description: 'Basic effect plugin for testing',
+        author: 'BassNotion',
+        license: 'MIT',
+        category: PluginCategory.EFFECT,
+        tags: ['effect', 'basic'],
+        capabilities: {
+          supportsRealtimeProcessing: true,
+          supportsOfflineProcessing: false,
+          supportsAudioWorklet: false,
+          supportsMIDI: false,
+          supportsAutomation: false,
+          supportsPresets: false,
+          supportsSidechain: false,
+          supportsMultiChannel: false,
+          maxLatency: 0,
+          cpuUsage: 0.1,
+          memoryUsage: 1,
+          minSampleRate: 44100,
+          maxSampleRate: 192000,
+          supportedBufferSizes: [256, 512, 1024, 2048],
+          supportsN8nPayload: false,
+          supportsAssetLoading: false,
+          supportsMobileOptimization: false,
+        },
+        dependencies: [],
+      },
+      config: {
+        id: this.generatePluginId('effect'),
+        name: 'Basic Effect',
+        version: '1.0.0',
+        category: PluginCategory.EFFECT,
+        enabled: true,
+        priority: PluginPriority.NORMAL,
+        autoStart: false,
+        inputChannels: 2,
+        outputChannels: 2,
+        settings: {},
+      },
+      state: PluginState.UNLOADED,
+      capabilities: {
+        supportsRealtimeProcessing: true,
+        supportsOfflineProcessing: false,
+        supportsAudioWorklet: false,
+        supportsMIDI: false,
+        supportsAutomation: false,
+        supportsPresets: false,
+        supportsSidechain: false,
+        supportsMultiChannel: false,
+        maxLatency: 0,
+        cpuUsage: 0.1,
+        memoryUsage: 1,
+        minSampleRate: 44100,
+        maxSampleRate: 192000,
+        supportedBufferSizes: [256, 512, 1024, 2048],
+        supportsN8nPayload: false,
+        supportsAssetLoading: false,
+        supportsMobileOptimization: false,
+      },
+      parameters: new Map(),
+      load: async () => {
+        logger.debug('Basic effect plugin loaded');
+      },
       initialize: async () => {
         logger.debug('Basic effect plugin initialized');
       },
-      processAudio: async (audioData: any) => {
-        // Basic pass-through processing
-        return audioData;
+      activate: async () => {
+        logger.debug('Basic effect plugin activated');
+      },
+      deactivate: async () => {
+        logger.debug('Basic effect plugin deactivated');
       },
       dispose: async () => {
         logger.debug('Basic effect plugin disposed');
       },
+      process: async (_inputBuffer: AudioBuffer, outputBuffer: AudioBuffer) => {
+        // Basic pass-through processing
+        return {
+          success: true,
+          status: ProcessingResultStatus.SUCCESS,
+          processingTime: 0,
+          bypassMode: false,
+          processedSamples: outputBuffer.length,
+          cpuUsage: 0.1,
+          memoryUsage: 1,
+        };
+      },
+      setParameter: async () => {
+        // No parameters to set
+      },
+      getParameter: () => undefined,
+      resetParameters: async () => {
+        // No parameters to reset
+      },
+      savePreset: async () => ({}),
+      loadPreset: async () => {
+        // No preset to load
+      },
+      on: () => () => {
+        // Event handler stub
+      },
+      off: () => {
+        // Event handler stub
+      },
     };
+    return plugin;
   }
 
   private createBasicAnalyzerPlugin(): AudioPlugin {
-    return {
-      id: this.generatePluginId('analyzer'),
-      name: 'Basic Analyzer',
-      type: 'analyzer',
-      capabilities: ['analyzeAudio'],
+    const plugin: AudioPlugin = {
+      metadata: {
+        id: this.generatePluginId('analyzer'),
+        name: 'Basic Analyzer',
+        version: '1.0.0',
+        description: 'Basic analyzer plugin for testing',
+        author: 'BassNotion',
+        license: 'MIT',
+        category: PluginCategory.ANALYZER,
+        tags: ['analyzer', 'basic'],
+        capabilities: {
+          supportsRealtimeProcessing: true,
+          supportsOfflineProcessing: false,
+          supportsAudioWorklet: false,
+          supportsMIDI: false,
+          supportsAutomation: false,
+          supportsPresets: false,
+          supportsSidechain: false,
+          supportsMultiChannel: false,
+          maxLatency: 0,
+          cpuUsage: 0.05,
+          memoryUsage: 0.5,
+          minSampleRate: 44100,
+          maxSampleRate: 192000,
+          supportedBufferSizes: [256, 512, 1024, 2048],
+          supportsN8nPayload: false,
+          supportsAssetLoading: false,
+          supportsMobileOptimization: false,
+        },
+        dependencies: [],
+      },
+      config: {
+        id: this.generatePluginId('analyzer'),
+        name: 'Basic Analyzer',
+        version: '1.0.0',
+        category: PluginCategory.ANALYZER,
+        enabled: true,
+        priority: PluginPriority.NORMAL,
+        autoStart: false,
+        inputChannels: 2,
+        outputChannels: 2,
+        settings: {},
+      },
+      state: PluginState.UNLOADED,
+      capabilities: {
+        supportsRealtimeProcessing: true,
+        supportsOfflineProcessing: false,
+        supportsAudioWorklet: false,
+        supportsMIDI: false,
+        supportsAutomation: false,
+        supportsPresets: false,
+        supportsSidechain: false,
+        supportsMultiChannel: false,
+        maxLatency: 0,
+        cpuUsage: 0.05,
+        memoryUsage: 0.5,
+        minSampleRate: 44100,
+        maxSampleRate: 192000,
+        supportedBufferSizes: [256, 512, 1024, 2048],
+        supportsN8nPayload: false,
+        supportsAssetLoading: false,
+        supportsMobileOptimization: false,
+      },
+      parameters: new Map(),
+      load: async () => {
+        logger.debug('Basic analyzer plugin loaded');
+      },
       initialize: async () => {
         logger.debug('Basic analyzer plugin initialized');
       },
-      analyzeAudio: async (audioData: any) => {
-        return { level: 0.5, frequency: 440 }; // Basic analysis
+      activate: async () => {
+        logger.debug('Basic analyzer plugin activated');
+      },
+      deactivate: async () => {
+        logger.debug('Basic analyzer plugin deactivated');
       },
       dispose: async () => {
         logger.debug('Basic analyzer plugin disposed');
       },
+      process: async (_inputBuffer: AudioBuffer, outputBuffer: AudioBuffer) => {
+        // Basic analysis processing
+        return {
+          success: true,
+          status: ProcessingResultStatus.SUCCESS,
+          processingTime: 0,
+          bypassMode: false,
+          processedSamples: outputBuffer.length,
+          cpuUsage: 0.05,
+          memoryUsage: 0.5,
+        };
+      },
+      setParameter: async () => {
+        // No parameters to set
+      },
+      getParameter: () => undefined,
+      resetParameters: async () => {
+        // No parameters to reset
+      },
+      savePreset: async () => ({}),
+      loadPreset: async () => {
+        // No preset to load
+      },
+      on: () => () => {
+        // Event handler stub
+      },
+      off: () => {
+        // Event handler stub
+      },
     };
+    return plugin;
   }
 
   private calculateMaxInstances(pluginType: string): number {
@@ -457,32 +695,38 @@ export class TrackPluginManager {
       case 'effect':
         return 16; // Allow many effect instances
       case 'instrument':
-        return 8;  // Moderate instrument instances
+        return 8; // Moderate instrument instances
       case 'analyzer':
-        return 4;  // Few analyzer instances needed
+        return 4; // Few analyzer instances needed
       default:
         return 6;
     }
   }
 
-  private getPooledInstance(pluginType: string, trackId: string): PluginInstance | null {
+  private getPooledInstance(
+    pluginType: string,
+    trackId: string,
+  ): PluginInstance | null {
     const pool = this.resourcePools.get(pluginType);
     if (!pool) return null;
 
     // Find inactive instance that can be reused
-    const availableInstance = pool.instances.find(instance => 
-      !instance.isActive && instance.trackId === trackId
+    const availableInstance = pool.instances.find(
+      (instance) => !instance.isActive && instance.trackId === trackId,
     );
 
     // If no track-specific instance, try any inactive instance
     if (!availableInstance) {
-      return pool.instances.find(instance => !instance.isActive) || null;
+      return pool.instances.find((instance) => !instance.isActive) || null;
     }
 
     return availableInstance;
   }
 
-  private activatePooledInstance(instance: PluginInstance, trackId: string): string {
+  private activatePooledInstance(
+    instance: PluginInstance,
+    trackId: string,
+  ): string {
     instance.isActive = true;
     instance.trackId = trackId;
     instance.lastUsed = Date.now();
@@ -494,22 +738,25 @@ export class TrackPluginManager {
     return instance.instanceId;
   }
 
-  private canAllocateInstance(pluginType: string, options: PluginAllocationOptions): boolean {
+  private canAllocateInstance(
+    pluginType: string,
+    options: PluginAllocationOptions,
+  ): boolean {
     const pool = this.resourcePools.get(pluginType);
     if (!pool) return true; // No pool limits
 
-    const activeCount = pool.instances.filter(i => i.isActive).length;
+    const activeCount = pool.instances.filter((i) => i.isActive).length;
     const maxConcurrent = options.maxConcurrent || pool.maxInstances;
 
     return activeCount < maxConcurrent;
   }
 
   private generateInstanceId(pluginType: string, trackId: string): string {
-    return `${pluginType}_${trackId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `${pluginType}_${trackId}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 
   private generatePluginId(type: string): string {
-    return `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `${type}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 
   private addToTrackChain(trackId: string, instanceId: string): void {
@@ -545,20 +792,24 @@ export class TrackPluginManager {
 
   private shouldPool(instance: PluginInstance): boolean {
     // Pool instances that are recently used and not resource-intensive
-    const recentlyUsed = (Date.now() - instance.lastUsed) < 2 * 60 * 1000; // 2 minutes
-    const pool = this.resourcePools.get(instance.plugin.type);
-    const hasCapacity = pool ? pool.instances.length < pool.maxInstances : false;
+    const recentlyUsed = Date.now() - instance.lastUsed < 2 * 60 * 1000; // 2 minutes
+    const pool = this.resourcePools.get((instance.plugin as any).type);
+    const hasCapacity = pool
+      ? pool.instances.length < pool.maxInstances
+      : false;
 
     return recentlyUsed && hasCapacity;
   }
 
   private async poolInstance(instance: PluginInstance): Promise<void> {
     instance.isActive = false;
-    
-    const pool = this.resourcePools.get(instance.plugin.type);
+
+    const pool = this.resourcePools.get((instance.plugin as any).type);
     if (pool) {
       // Check if already in pool
-      const existingIndex = pool.instances.findIndex(i => i.instanceId === instance.instanceId);
+      const existingIndex = pool.instances.findIndex(
+        (i) => i.instanceId === instance.instanceId,
+      );
       if (existingIndex === -1) {
         pool.instances.push(instance);
       }
@@ -575,9 +826,11 @@ export class TrackPluginManager {
       }
 
       // Remove from pool if present
-      const pool = this.resourcePools.get(instance.plugin.type);
+      const pool = this.resourcePools.get((instance.plugin as any).type);
       if (pool) {
-        const index = pool.instances.findIndex(i => i.instanceId === instance.instanceId);
+        const index = pool.instances.findIndex(
+          (i) => i.instanceId === instance.instanceId,
+        );
         if (index > -1) {
           pool.instances.splice(index, 1);
         }
@@ -585,19 +838,23 @@ export class TrackPluginManager {
 
       logger.debug(`🗑️ Disposed plugin instance: ${instance.instanceId}`);
     } catch (error) {
-      logger.error(`Error disposing plugin instance ${instance.instanceId}:`, error);
+      logger.error(
+        `Error disposing plugin instance ${instance.instanceId}:`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
       throw error;
     }
   }
 
   private updateMetrics(): void {
     this.metrics.totalInstances = this.pluginInstances.size;
-    this.metrics.activeInstances = Array.from(this.pluginInstances.values())
-      .filter(i => i.isActive).length;
-    
+    this.metrics.activeInstances = Array.from(
+      this.pluginInstances.values(),
+    ).filter((i) => i.isActive).length;
+
     let pooledCount = 0;
     for (const pool of this.resourcePools.values()) {
-      pooledCount += pool.instances.filter(i => !i.isActive).length;
+      pooledCount += pool.instances.filter((i) => !i.isActive).length;
     }
     this.metrics.pooledInstances = pooledCount;
 
@@ -614,7 +871,9 @@ export class TrackPluginManager {
   }
 }
 
-// Factory function for easier instantiation  
-export function createTrackPluginManager(eventBus?: EventBus): TrackPluginManager {
+// Factory function for easier instantiation
+export function createTrackPluginManager(
+  eventBus?: EventBus,
+): TrackPluginManager {
   return new TrackPluginManager(eventBus);
 }

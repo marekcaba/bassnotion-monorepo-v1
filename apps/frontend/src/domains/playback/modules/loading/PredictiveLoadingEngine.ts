@@ -1,6 +1,6 @@
 /**
  * Predictive Loading Engine
- * 
+ *
  * Advanced machine learning-based predictive loading system that analyzes user behavior,
  * learns from practice patterns, and intelligently prefetches assets to ensure zero-wait
  * practice sessions. Extracted from original with all ML features preserved.
@@ -23,97 +23,104 @@ import type {
   PracticePatternType,
   IPredictiveLoadingEngine,
 } from './types';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { createStructuredLogger } from '../shared/index.js';
 
 const logger = createStructuredLogger('PredictiveLoadingEngine');
 
 export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
   private static instance: PredictiveLoadingEngine | null = null;
-  
+
   private config: PredictiveLoadingEngineConfig;
   private isInitialized = false;
-  private performanceMetrics: ModelPerformanceMetrics;
-  private adaptiveLearningMetrics: AdaptiveLearningMetrics;
-  
+  private performanceMetrics!: ModelPerformanceMetrics;
+  private adaptiveLearningMetrics!: AdaptiveLearningMetrics;
+
   // User behavior and learning
   private userProfiles = new Map<string, UserBehaviorProfile>();
   private learningHistory: LearningEvent[] = [];
   private predictionCache = new Map<string, AssetPrediction[]>();
-  
+
   // Machine Learning State
   private models = new Map<string, any>();
   private featureCache = new Map<string, Record<string, number>>();
-  
+
   // Prefetch Management
   private prefetchQueue = new Map<string, AssetPrediction[]>();
   private activePrefetches = new Map<string, Promise<PrefetchResult>>();
-  private resourceLimits: PrefetchResourceLimits;
-  
+  private resourceLimits!: PrefetchResourceLimits;
+
   // Background processing
   private backgroundInterval: NodeJS.Timeout | null = null;
-  
+
   constructor(config: PredictiveLoadingEngineConfig) {
     this.config = config;
     this.initializeResourceLimits();
     this.initializePerformanceMetrics();
     this.initializeAdaptiveLearningMetrics();
   }
-  
+
   /**
    * Get singleton instance
    */
-  static getInstance(config?: PredictiveLoadingEngineConfig): PredictiveLoadingEngine {
+  static getInstance(
+    config?: PredictiveLoadingEngineConfig,
+  ): PredictiveLoadingEngine {
     if (!PredictiveLoadingEngine.instance) {
       if (!config) {
-        throw new Error('Config required for first instantiation of PredictiveLoadingEngine');
+        throw new Error(
+          'Config required for first instantiation of PredictiveLoadingEngine',
+        );
       }
       PredictiveLoadingEngine.instance = new PredictiveLoadingEngine(config);
     }
     return PredictiveLoadingEngine.instance;
   }
-  
+
   /**
    * Initialize the predictive loading engine
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
-    
+
     logger.info('🤖 Initializing Predictive Loading Engine...');
-    
+
     try {
       // Initialize machine learning components
       if (this.config.learningConfig.enabled) {
         await this.initializeMachineLearning();
       }
-      
+
       // Initialize behavior analysis
       if (this.config.behaviorAnalysisConfig) {
         await this.initializeBehaviorAnalysis();
       }
-      
+
       // Initialize predictive models
       if (this.config.modelConfig) {
         await this.initializePredictiveModels();
       }
-      
+
       // Initialize adaptive learning
       if (this.config.adaptiveLearningConfig.enabled) {
         await this.initializeAdaptiveLearning();
       }
-      
+
       // Start background prefetching if enabled
       if (this.config.prefetchingConfig.backgroundPrefetching.enabled) {
         this.startBackgroundPrefetching();
       }
-      
+
       this.isInitialized = true;
       logger.info('✅ Predictive Loading Engine initialized successfully');
     } catch (error) {
-      logger.error('❌ Failed to initialize Predictive Loading Engine:', error);
+      logger.error(
+        '❌ Failed to initialize Predictive Loading Engine:',
+        error instanceof Error ? error : new Error(String(error)),
+      );
       throw error;
     }
   }
-  
+
   /**
    * Process a learning event and update models
    */
@@ -121,22 +128,22 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
     if (!this.isInitialized) {
       await this.initialize();
     }
-    
+
     // Validate event structure
     if (!event?.context?.sessionId) {
       logger.warn('⚠️ Invalid learning event structure, skipping...');
       return;
     }
-    
+
     // Store learning event
     this.learningHistory.push(event);
-    
+
     // Extract user ID from event context
     const userId = event.context.sessionId; // Using sessionId as user identifier
-    
+
     // Update user behavior profile
     await this.updateUserBehaviorProfile(userId, event);
-    
+
     // Generate predictions based on new learning
     if (this.config.modelConfig.exerciseProgressionModel.enabled) {
       await this.generatePredictions(userId, {
@@ -150,99 +157,123 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
         environmentalFactors: event.context.environmentalFactors,
       });
     }
-    
+
     // Trigger prefetching if confidence is high enough
     const predictions = this.predictionCache.get(userId);
     if (predictions?.length) {
       await this.executePrefetching(userId, predictions);
     }
-    
+
     // Update performance metrics
     this.updatePerformanceMetrics(true);
-    
+
     // Trigger adaptive learning updates
     if (this.config.adaptiveLearningConfig.enabled) {
       await this.triggerAdaptiveLearning(event);
     }
   }
-  
+
   /**
    * Generate asset predictions for a user
    */
-  async generatePredictions(userId: string, context: PredictionContext): Promise<AssetPrediction[]> {
+  async generatePredictions(
+    userId: string,
+    context: PredictionContext,
+  ): Promise<AssetPrediction[]> {
     const profileKey = context.sessionId;
-    
+
     // Ensure user profile exists
     if (!this.userProfiles.has(profileKey)) {
       await this.createUserBehaviorProfile(profileKey);
     }
-    
+
     const predictions: AssetPrediction[] = [];
-    
+
     // Exercise Progression Model
     if (this.config.modelConfig.exerciseProgressionModel.enabled) {
-      const progressionPredictions = await this.predictExerciseProgression(userId, context);
+      const progressionPredictions = await this.predictExerciseProgression(
+        userId,
+        context,
+      );
       predictions.push(...progressionPredictions);
     }
-    
+
     // Asset Demand Model
     if (this.config.modelConfig.assetDemandModel.enabled) {
       const demandPredictions = await this.predictAssetDemand(userId, context);
       predictions.push(...demandPredictions);
     }
-    
+
     // User Intent Model
     if (this.config.modelConfig.userIntentModel.enabled) {
       const intentPredictions = await this.predictUserIntent(userId, context);
       predictions.push(...intentPredictions);
     }
-    
+
     // Session Length Model
     if (this.config.modelConfig.sessionLengthModel.enabled) {
-      const sessionPredictions = await this.predictSessionAssets(userId, context);
+      const sessionPredictions = await this.predictSessionAssets(
+        userId,
+        context,
+      );
       predictions.push(...sessionPredictions);
     }
-    
+
     // Skill Development Model
     if (this.config.modelConfig.skillDevelopmentModel.enabled) {
-      const skillPredictions = await this.predictSkillDevelopment(userId, context);
+      const skillPredictions = await this.predictSkillDevelopment(
+        userId,
+        context,
+      );
       predictions.push(...skillPredictions);
     }
-    
+
     // Cache predictions
     this.predictionCache.set(profileKey, predictions);
-    
+
     // Sort by priority and confidence
     predictions.sort((a, b) => {
-      const priorityOrder = { critical: 5, high: 4, medium: 3, low: 2, background: 1 };
-      const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+      const priorityOrder = {
+        critical: 5,
+        high: 4,
+        medium: 3,
+        low: 2,
+        background: 1,
+      };
+      const priorityDiff =
+        priorityOrder[b.priority] - priorityOrder[a.priority];
       if (priorityDiff !== 0) return priorityDiff;
       return b.confidence - a.confidence;
     });
-    
-    logger.info(`🎯 Generated ${predictions.length} predictions for user ${userId}`);
+
+    logger.info(
+      `🎯 Generated ${predictions.length} predictions for user ${userId}`,
+    );
     return predictions;
   }
-  
+
   /**
    * Execute intelligent prefetching for predicted assets
    */
-  async executePrefetching(userId: string, predictions: AssetPrediction[]): Promise<PrefetchResult> {
+  async executePrefetching(
+    userId: string,
+    predictions: AssetPrediction[],
+  ): Promise<PrefetchResult> {
     if (!this.config.prefetchingConfig.enabled) {
       return this.createEmptyPrefetchResult();
     }
-    
+
     // Filter predictions by confidence threshold
     const confidenceThreshold = 0.7;
     const validPredictions = predictions.filter(
-      p => p.confidence >= confidenceThreshold && this.shouldPrefetchAsset(p)
+      (p) => p.confidence >= confidenceThreshold && this.shouldPrefetchAsset(p),
     );
-    
+
     if (validPredictions.length === 0) {
       logger.info('No valid predictions for prefetching');
       return this.createEmptyPrefetchResult();
     }
-    
+
     // Create prefetch request
     const prefetchRequest: PrefetchRequest = {
       requestId: `prefetch_${Date.now()}_${userId}`,
@@ -259,41 +290,41 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
         context: { userId, predictionCount: validPredictions.length },
       },
     };
-    
+
     // Execute prefetch
     const prefetchPromise = this.performPrefetch(prefetchRequest);
     this.activePrefetches.set(prefetchRequest.requestId, prefetchPromise);
-    
+
     const result = await prefetchPromise;
-    
+
     // Clean up
     this.activePrefetches.delete(prefetchRequest.requestId);
-    
+
     logger.info(`✅ Prefetch completed for ${validPredictions.length} assets`);
     return result;
   }
-  
+
   /**
    * Get current performance metrics
    */
   getPerformanceMetrics(): ModelPerformanceMetrics {
     return { ...this.performanceMetrics };
   }
-  
+
   /**
    * Get adaptive learning metrics
    */
   getAdaptiveLearningMetrics(): AdaptiveLearningMetrics {
     return { ...this.adaptiveLearningMetrics };
   }
-  
+
   /**
    * Get user behavior profile
    */
   getUserBehaviorProfile(userId: string): UserBehaviorProfile | undefined {
     return this.userProfiles.get(userId);
   }
-  
+
   // Private initialization methods
   private initializeResourceLimits(): void {
     this.resourceLimits = {
@@ -304,7 +335,7 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
       timeLimit: 30000, // 30 seconds
     };
   }
-  
+
   private initializePerformanceMetrics(): void {
     this.performanceMetrics = {
       modelId: 'predictive_loading_engine_v1',
@@ -334,7 +365,7 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
       lastEvaluated: Date.now(),
     };
   }
-  
+
   private initializeAdaptiveLearningMetrics(): void {
     this.adaptiveLearningMetrics = {
       adaptationRate: 0.1,
@@ -347,66 +378,76 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
       adaptationHistory: [],
     };
   }
-  
+
   private async initializeMachineLearning(): Promise<void> {
     logger.info('🧠 Initializing machine learning components...');
-    
+
     if (this.config.learningConfig.featureEngineering.enabled) {
       this.initializeFeatureEngineering();
     }
-    
+
     await this.initializeModelTraining();
   }
-  
+
   private initializeFeatureEngineering(): void {
     logger.info('🔧 Feature engineering initialized');
   }
-  
+
   private async initializeModelTraining(): Promise<void> {
     logger.info('📚 Model training initialized');
   }
-  
+
   private async initializeBehaviorAnalysis(): Promise<void> {
     logger.info('🎯 Behavior analysis initialized');
   }
-  
+
   private async initializePredictiveModels(): Promise<void> {
     logger.info('🔮 Predictive models initialized');
   }
-  
+
   private async initializeAdaptiveLearning(): Promise<void> {
     logger.info('🔄 Adaptive learning initialized');
   }
-  
+
   private startBackgroundPrefetching(): void {
     logger.info('🔄 Starting background prefetching...');
-    
+
     this.backgroundInterval = setInterval(async () => {
       for (const [userId, predictions] of this.predictionCache.entries()) {
-        const backgroundPredictions = predictions.filter(p => p.priority === 'background');
-        
+        const backgroundPredictions = predictions.filter(
+          (p) => p.priority === 'background',
+        );
+
         if (backgroundPredictions.length > 0) {
           await this.executePrefetching(userId, backgroundPredictions);
         }
       }
     }, 30000); // Every 30 seconds
   }
-  
+
   // Prediction methods
   private async predictExerciseProgression(
-    userId: string,
-    context: PredictionContext
+    _userId: string,
+    context: PredictionContext,
   ): Promise<AssetPrediction[]> {
     const predictions: AssetPrediction[] = [];
-    
+
     const exercises = [
-      { assetId: 'exercise_tempo_120', bucket: 'exercises', path: '/tempo/120bpm.mid' },
-      { assetId: 'exercise_scale_c_major', bucket: 'exercises', path: '/scales/c_major.mid' },
+      {
+        assetId: 'exercise_tempo_120',
+        bucket: 'exercises',
+        path: '/tempo/120bpm.mid',
+      },
+      {
+        assetId: 'exercise_scale_c_major',
+        bucket: 'exercises',
+        path: '/scales/c_major.mid',
+      },
     ];
-    
+
     for (const exercise of exercises) {
       predictions.push({
-        predictionId: `ep_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        predictionId: `ep_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         assetId: exercise.assetId,
         assetPath: exercise.path,
         bucket: exercise.bucket,
@@ -414,39 +455,51 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
         timeToNeed: Math.random() * 300000,
         priority: 'medium',
         context,
-        triggers: [{
-          triggerType: 'pattern_match',
-          confidence: 0.85,
-          evidence: ['user_progression_pattern'],
-          triggerTime: Date.now(),
-        }],
+        triggers: [
+          {
+            triggerType: 'pattern_match',
+            confidence: 0.85,
+            evidence: ['user_progression_pattern'],
+            triggerTime: Date.now(),
+          },
+        ],
         metadata: {
           modelVersion: 'exercise_progression_v1',
           predictionTime: Date.now(),
           features: { skillLevel: 0.7 },
-          explanations: ['User shows consistent progression in this exercise type'],
+          explanations: [
+            'User shows consistent progression in this exercise type',
+          ],
         },
         validUntil: Date.now() + 3600000,
       });
     }
-    
+
     return predictions;
   }
-  
+
   private async predictAssetDemand(
-    userId: string,
-    context: PredictionContext
+    _userId: string,
+    context: PredictionContext,
   ): Promise<AssetPrediction[]> {
     const predictions: AssetPrediction[] = [];
-    
+
     const assets = [
-      { assetId: 'backing_track_jazz_swing', bucket: 'backing-tracks', path: '/jazz/swing_120.mp3' },
-      { assetId: 'sample_bass_electric', bucket: 'samples', path: '/bass/electric_c.wav' },
+      {
+        assetId: 'backing_track_jazz_swing',
+        bucket: 'backing-tracks',
+        path: '/jazz/swing_120.mp3',
+      },
+      {
+        assetId: 'sample_bass_electric',
+        bucket: 'samples',
+        path: '/bass/electric_c.wav',
+      },
     ];
-    
+
     for (const asset of assets) {
       predictions.push({
-        predictionId: `ad_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        predictionId: `ad_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         assetId: asset.assetId,
         assetPath: asset.path,
         bucket: asset.bucket,
@@ -454,12 +507,14 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
         timeToNeed: Math.random() * 600000,
         priority: 'low',
         context,
-        triggers: [{
-          triggerType: 'pattern_match',
-          confidence: 0.7,
-          evidence: ['popularity_trend', 'user_preference'],
-          triggerTime: Date.now(),
-        }],
+        triggers: [
+          {
+            triggerType: 'pattern_match',
+            confidence: 0.7,
+            evidence: ['popularity_trend', 'user_preference'],
+            triggerTime: Date.now(),
+          },
+        ],
         metadata: {
           modelVersion: 'asset_demand_v1',
           predictionTime: Date.now(),
@@ -469,27 +524,38 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
         validUntil: Date.now() + 1800000, // 30 minutes
       });
     }
-    
+
     return predictions;
   }
-  
-  private async predictUserIntent(userId: string, context: PredictionContext): Promise<AssetPrediction[]> {
+
+  private async predictUserIntent(
+    _userId: string,
+    _context: PredictionContext,
+  ): Promise<AssetPrediction[]> {
     // Simplified user intent prediction
     return [];
   }
-  
-  private async predictSessionAssets(userId: string, context: PredictionContext): Promise<AssetPrediction[]> {
+
+  private async predictSessionAssets(
+    _userId: string,
+    _context: PredictionContext,
+  ): Promise<AssetPrediction[]> {
     // Simplified session asset prediction
     return [];
   }
-  
-  private async predictSkillDevelopment(userId: string, context: PredictionContext): Promise<AssetPrediction[]> {
+
+  private async predictSkillDevelopment(
+    _userId: string,
+    _context: PredictionContext,
+  ): Promise<AssetPrediction[]> {
     // Simplified skill development prediction
     return [];
   }
-  
+
   // User behavior profile management
-  private async createUserBehaviorProfile(userId: string): Promise<UserBehaviorProfile> {
+  private async createUserBehaviorProfile(
+    userId: string,
+  ): Promise<UserBehaviorProfile> {
     const profile: UserBehaviorProfile = {
       userId,
       profileId: `profile_${userId}_${Date.now()}`,
@@ -561,40 +627,48 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
         predictionHistory: [],
       },
     };
-    
+
     this.userProfiles.set(userId, profile);
     logger.info(`👤 Created behavior profile for user ${userId}`);
     return profile;
   }
-  
-  private async updateUserBehaviorProfile(userId: string, event: LearningEvent): Promise<void> {
+
+  private async updateUserBehaviorProfile(
+    userId: string,
+    event: LearningEvent,
+  ): Promise<void> {
     let profile = this.userProfiles.get(userId);
-    
+
     if (!profile) {
       profile = await this.createUserBehaviorProfile(userId);
     }
-    
+
     // Update asset usage patterns
     if (event.assets.length > 0) {
       await this.updateAssetUsagePatterns(profile, event);
     }
-    
+
     // Update practice patterns
     await this.updatePracticePatterns(profile, event);
-    
+
     profile.lastUpdated = Date.now();
   }
-  
-  private async updateAssetUsagePatterns(profile: UserBehaviorProfile, event: LearningEvent): Promise<void> {
+
+  private async updateAssetUsagePatterns(
+    profile: UserBehaviorProfile,
+    event: LearningEvent,
+  ): Promise<void> {
     const firstAsset = event.assets[0];
     if (!firstAsset) return;
-    
+
     const assetType = this.inferAssetType(firstAsset.assetId);
-    let pattern = profile.assetUsagePatterns.find(p => p.assetType === assetType);
-    
+    let pattern = profile.assetUsagePatterns.find(
+      (p) => p.assetType === assetType,
+    );
+
     if (!pattern) {
       pattern = {
-        patternId: `pattern_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        patternId: `pattern_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         assetType,
         usageFrequency: 0,
         accessSequence: [],
@@ -605,17 +679,20 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
       };
       profile.assetUsagePatterns.push(pattern);
     }
-    
+
     pattern.usageFrequency += 1;
   }
-  
-  private async updatePracticePatterns(profile: UserBehaviorProfile, event: LearningEvent): Promise<void> {
+
+  private async updatePracticePatterns(
+    profile: UserBehaviorProfile,
+    event: LearningEvent,
+  ): Promise<void> {
     const patternType = this.inferPracticePatternType(event);
-    let pattern = profile.practicePatterns.find(p => p.type === patternType);
-    
+    let pattern = profile.practicePatterns.find((p) => p.type === patternType);
+
     if (!pattern) {
       pattern = {
-        patternId: `practice_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        patternId: `practice_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         type: patternType,
         frequency: 0,
         consistency: 0.5,
@@ -661,43 +738,48 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
         confidence: 0.7,
         lastObserved: Date.now(),
       };
-      
+
       profile.practicePatterns.push(pattern);
     }
-    
+
     pattern.frequency += 1;
     pattern.lastObserved = Date.now();
     pattern.confidence = Math.min(pattern.confidence + 0.1, 1.0);
   }
-  
+
   // Helper methods
   private inferAssetType(assetId: string): AssetType {
     if (assetId.includes('.mid')) return 'midi_file';
-    if (assetId.includes('.wav') || assetId.includes('.mp3')) return 'audio_sample';
+    if (assetId.includes('.wav') || assetId.includes('.mp3'))
+      return 'audio_sample';
     if (assetId.includes('backing')) return 'backing_track';
     if (assetId.includes('exercise')) return 'exercise_asset';
     if (assetId.includes('ambient')) return 'ambient_track';
     return 'system_asset';
   }
-  
+
   private inferPracticePatternType(event: LearningEvent): PracticePatternType {
-    if (event.context.practiceGoal?.includes('tempo')) return 'tempo_progression';
+    if (event.context.practiceGoal?.includes('tempo'))
+      return 'tempo_progression';
     if (event.context.practiceGoal?.includes('key')) return 'key_exploration';
-    if (event.context.practiceGoal?.includes('difficulty')) return 'difficulty_advancement';
+    if (event.context.practiceGoal?.includes('difficulty'))
+      return 'difficulty_advancement';
     return 'session_structure';
   }
-  
+
   private shouldPrefetchAsset(prediction: AssetPrediction): boolean {
     return prediction.confidence > 0.6 && prediction.timeToNeed < 600000; // 10 minutes
   }
-  
-  private determinePrefetchPriority(predictions: AssetPrediction[]): PredictionPriority {
-    if (predictions.some(p => p.priority === 'critical')) return 'critical';
-    if (predictions.some(p => p.priority === 'high')) return 'high';
-    if (predictions.some(p => p.priority === 'medium')) return 'medium';
+
+  private determinePrefetchPriority(
+    predictions: AssetPrediction[],
+  ): PredictionPriority {
+    if (predictions.some((p) => p.priority === 'critical')) return 'critical';
+    if (predictions.some((p) => p.priority === 'high')) return 'high';
+    if (predictions.some((p) => p.priority === 'medium')) return 'medium';
     return 'low';
   }
-  
+
   private async getNetworkCondition(): Promise<NetworkCondition> {
     return {
       minBandwidth: 1024 * 1024, // 1 MB/s
@@ -705,10 +787,12 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
       connectionQuality: 'good',
     };
   }
-  
-  private async performPrefetch(request: PrefetchRequest): Promise<PrefetchResult> {
+
+  private async performPrefetch(
+    request: PrefetchRequest,
+  ): Promise<PrefetchResult> {
     // Mock prefetch implementation
-    const results = request.predictions.map(prediction => ({
+    const results = request.predictions.map((prediction) => ({
       assetId: prediction.assetId,
       status: 'success' as const,
       downloadTime: Math.random() * 1000 + 500,
@@ -717,12 +801,12 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
       quality: 0.9,
       cacheLocation: `cache/${prediction.assetId}`,
     }));
-    
+
     return {
       requestId: request.requestId,
       results,
       totalSize: results.reduce((sum, r) => sum + r.size, 0),
-      totalTime: Math.max(...results.map(r => r.downloadTime)),
+      totalTime: Math.max(...results.map((r) => r.downloadTime)),
       successRate: 1.0,
       networkEfficiency: 0.85,
       cacheUtilization: 0.7,
@@ -737,13 +821,13 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
         hitRate: 0.8,
         wasteRate: 0.1,
         timeToFirstByte: 50,
-        timeToFullDownload: Math.max(...results.map(r => r.downloadTime)),
+        timeToFullDownload: Math.max(...results.map((r) => r.downloadTime)),
         networkEfficiency: 0.85,
         userPerceptionScore: 0.9,
       },
     };
   }
-  
+
   private createEmptyPrefetchResult(): PrefetchResult {
     return {
       requestId: '',
@@ -770,11 +854,11 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
       },
     };
   }
-  
+
   // Performance tracking
   private updatePerformanceMetrics(wasCorrect: boolean): void {
     const metrics = this.performanceMetrics;
-    
+
     if (wasCorrect) {
       metrics.accuracy = Math.min(metrics.accuracy + 0.01, 1.0);
       metrics.precision = Math.min(metrics.precision + 0.01, 1.0);
@@ -782,44 +866,54 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
     } else {
       metrics.accuracy = Math.max(metrics.accuracy - 0.005, 0.0);
     }
-    
+
     // Update F1 score
-    metrics.f1Score = (2 * (metrics.precision * metrics.recall)) / (metrics.precision + metrics.recall);
-    
+    metrics.f1Score =
+      (2 * (metrics.precision * metrics.recall)) /
+      (metrics.precision + metrics.recall);
+
     // Update timestamp
     const currentTime = Date.now();
-    metrics.lastEvaluated = currentTime > metrics.lastEvaluated ? currentTime : metrics.lastEvaluated + 1;
-    
+    metrics.lastEvaluated =
+      currentTime > metrics.lastEvaluated
+        ? currentTime
+        : metrics.lastEvaluated + 1;
+
     // Check performance thresholds
     if (this.config.performanceOptimization.accuracyMetrics.enabled) {
       this.checkPerformanceThresholds();
     }
   }
-  
+
   private checkPerformanceThresholds(): void {
     if (this.performanceMetrics.accuracy < 0.7) {
-      logger.info('🔄 Performance below threshold, triggering adaptive learning...');
+      logger.info(
+        '🔄 Performance below threshold, triggering adaptive learning...',
+      );
       this.triggerModelRetraining();
     }
   }
-  
+
   private triggerModelRetraining(): void {
-    logger.info('🔄 Triggering model retraining with recent learning events...');
-    
+    logger.info(
+      '🔄 Triggering model retraining with recent learning events...',
+    );
+
     this.adaptiveLearningMetrics.adaptationRate += 0.1;
     this.adaptiveLearningMetrics.improvementTrend = 'improving';
-    this.adaptiveLearningMetrics.continuousAccuracy = this.performanceMetrics.accuracy;
+    this.adaptiveLearningMetrics.continuousAccuracy =
+      this.performanceMetrics.accuracy;
   }
-  
+
   private async triggerAdaptiveLearning(event: LearningEvent): Promise<void> {
     logger.info('🔄 Triggering adaptive learning based on learning event...');
-    
+
     this.adaptiveLearningMetrics.feedbackIncorporation += 0.01;
     this.adaptiveLearningMetrics.adaptationRate = Math.min(
       this.adaptiveLearningMetrics.adaptationRate + 0.05,
-      1.0
+      1.0,
     );
-    
+
     this.adaptiveLearningMetrics.adaptationHistory.push({
       timestamp: Date.now(),
       adaptationType: 'gradual',
@@ -830,7 +924,7 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
       userFeedback: 0.8,
     });
   }
-  
+
   /**
    * Dispose of the engine
    */
@@ -839,17 +933,17 @@ export class PredictiveLoadingEngine implements IPredictiveLoadingEngine {
       clearInterval(this.backgroundInterval);
       this.backgroundInterval = null;
     }
-    
+
     this.userProfiles.clear();
     this.learningHistory = [];
     this.predictionCache.clear();
     this.models.clear();
     this.featureCache.clear();
     this.prefetchQueue.clear();
-    
+
     // Clear singleton
     PredictiveLoadingEngine.instance = null;
-    
+
     logger.info('🧹 PredictiveLoadingEngine disposed');
   }
 }

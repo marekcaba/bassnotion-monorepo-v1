@@ -1,5 +1,9 @@
 import { supabase } from '@/infrastructure/supabase/client';
-import { RegistrationData, LoginData, createStructuredLogger } from '@bassnotion/contracts';
+import {
+  RegistrationData,
+  LoginData,
+  createStructuredLogger,
+} from '@bassnotion/contracts';
 import type { User, Session } from '@supabase/supabase-js';
 import { AuthError } from '@supabase/supabase-js';
 
@@ -363,17 +367,21 @@ export class AuthService {
 
       return data;
     } catch (error: any) {
-      logger.error('Unexpected error during Google sign-in:', new Error('See details'), {
-        message: error?.message,
-        name: error?.name,
-        stack: error?.stack,
-        code: error?.code,
-        status: error?.status,
-        isAuthError: error instanceof AuthError,
-        errorType: typeof error,
-        stringified: JSON.stringify(error),
-        fullErrorObject: error,
-      });
+      logger.error(
+        'Unexpected error during Google sign-in:',
+        new Error('See details'),
+        {
+          message: error?.message,
+          name: error?.name,
+          stack: error?.stack,
+          code: error?.code,
+          status: error?.status,
+          isAuthError: error instanceof AuthError,
+          errorType: typeof error,
+          stringified: JSON.stringify(error),
+          fullErrorObject: error,
+        },
+      );
 
       if (error instanceof AuthError) {
         throw error;

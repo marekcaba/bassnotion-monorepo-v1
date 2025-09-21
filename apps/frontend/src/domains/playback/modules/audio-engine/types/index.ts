@@ -1,11 +1,11 @@
 /**
  * Audio Engine Module Types
- * 
+ *
  * Core types and interfaces for the audio engine module
  */
 
 // Re-export common types from parent domain
-export type { TransportState } from '../../types/index.js';
+export type { TransportState } from '../../../types/audio-operations.js';
 
 /**
  * Audio engine configuration
@@ -30,7 +30,11 @@ export interface AudioEngineConfig {
 /**
  * Audio context state
  */
-export type AudioContextState = 'suspended' | 'running' | 'closed' | 'interrupted';
+export type AudioContextState =
+  | 'suspended'
+  | 'running'
+  | 'closed'
+  | 'interrupted';
 
 /**
  * Audio metrics for monitoring

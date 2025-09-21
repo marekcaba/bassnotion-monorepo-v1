@@ -35,6 +35,7 @@ interface RecoveryRecord {
 }
 
 export class ErrorRecovery {
+  private static instance: ErrorRecovery | null = null;
   private eventBus: EventBus;
   private config: Required<RecoveryConfig>;
   private strategies: RecoveryStrategy[] = [];
@@ -56,6 +57,38 @@ export class ErrorRecovery {
 
     // Add custom strategies
     this.strategies.push(...this.config.strategies);
+  }
+
+  /**
+   * Get singleton instance
+   */
+  static getInstance(
+    eventBus?: EventBus,
+    config?: RecoveryConfig,
+  ): ErrorRecovery {
+    if (!ErrorRecovery.instance) {
+      if (!eventBus) {
+        // Create a default EventBus if none provided
+        eventBus = new EventBus();
+      }
+      ErrorRecovery.instance = new ErrorRecovery(eventBus, config);
+    }
+    return ErrorRecovery.instance;
+  }
+
+  /**
+   * Reset the singleton instance (for testing)
+   */
+  reset(): void {
+    this.clearHistory();
+    this.strategies = [];
+    this.initializeDefaultStrategies();
+    if (this.config.strategies) {
+      this.strategies.push(...this.config.strategies);
+    }
+    this.audioEngineRef = undefined;
+    this.transportControllerRef = undefined;
+    ErrorRecovery.instance = null;
   }
 
   /**
@@ -361,5 +394,70 @@ export class ErrorRecovery {
   clearHistory(): void {
     this.recoveryHistory.clear();
     this.eventBus.emit('recovery:history-cleared', { timestamp: Date.now() });
+  }
+
+  /**
+   * Execute recovery (alias for attempt, for backward compatibility)
+   */
+  async executeRecovery(
+    error: Error,
+    context?: ErrorContext,
+  ): Promise<boolean> {
+    return this.attempt(
+      error,
+      context || {
+        component: 'unknown',
+        operation: 'unknown',
+        timestamp: Date.now(),
+        correlationId: 'test',
+      },
+    );
+  }
+
+  /**
+   * Get recovery metrics
+   */
+  getMetrics(): any {
+    const totalAttempts = Array.from(this.recoveryHistory.values()).reduce(
+      (sum, record) => sum + record.attempts,
+      0,
+    );
+    const successfulRecoveries = Array.from(
+      this.recoveryHistory.values(),
+    ).filter((record) => record.successful).length;
+    const failedRecoveries = Array.from(this.recoveryHistory.values()).filter(
+      (record) => !record.successful && record.attempts > 0,
+    ).length;
+
+    return {
+      totalRecoveryAttempts: totalAttempts,
+      successfulRecoveries,
+      failedRecoveries,
+      recoverySuccessRate:
+        totalAttempts > 0 ? successfulRecoveries / totalAttempts : 0,
+      totalErrors: this.recoveryHistory.size,
+    };
+  }
+
+  /**
+   * Get circuit breaker metrics (stub for compatibility)
+   */
+  getCircuitBreakerMetrics(): any {
+    return {
+      openCircuits: 0,
+      halfOpenCircuits: 0,
+      closedCircuits: 0,
+    };
+  }
+
+  /**
+   * Get degradation state (stub for compatibility)
+   */
+  getDegradationState(): any {
+    return {
+      isInDegradedMode: false,
+      degradationLevel: 0,
+      disabledFeatures: [],
+    };
   }
 }

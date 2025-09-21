@@ -66,11 +66,11 @@ export class ChannelUrl {
   getUsername(): string | null {
     const channelId = this.extractChannelId();
     const type = this.getChannelType();
-    
+
     if (type === 'handle' && channelId) {
       return channelId; // Without the @ symbol
     }
-    
+
     return null;
   }
 

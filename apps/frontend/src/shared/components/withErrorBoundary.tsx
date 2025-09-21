@@ -15,12 +15,14 @@ export interface WithErrorBoundaryOptions {
  */
 export function withErrorBoundary<P extends object>(
   Component: ComponentType<P>,
-  options: WithErrorBoundaryOptions = {}
+  options: WithErrorBoundaryOptions = {},
 ) {
   const ComponentWithErrorBoundary = (props: P) => {
     // Get correlation ID from the wrapped component's context
-    const { correlationId } = useCorrelation(Component.displayName || Component.name || 'Component');
-    
+    const { correlationId } = useCorrelation(
+      Component.displayName || Component.name || 'Component',
+    );
+
     return (
       <ErrorBoundary
         correlationId={correlationId}
@@ -33,7 +35,7 @@ export function withErrorBoundary<P extends object>(
   };
 
   ComponentWithErrorBoundary.displayName = `withErrorBoundary(${Component.displayName || Component.name || 'Component'})`;
-  
+
   return ComponentWithErrorBoundary;
 }
 
@@ -41,12 +43,17 @@ export function withErrorBoundary<P extends object>(
  * Hook to wrap async operations with error handling and correlation ID
  */
 export function useAsyncError(componentName?: string) {
-  const { correlationId, logger } = useCorrelation(componentName || 'AsyncOperation');
-  
-  return React.useCallback((error: Error) => {
-    logger.error('Async error caught', error, { correlationId });
-    
-    // Re-throw to trigger nearest error boundary
-    throw error;
-  }, [correlationId, logger]);
+  const { correlationId, logger } = useCorrelation(
+    componentName || 'AsyncOperation',
+  );
+
+  return React.useCallback(
+    (error: Error) => {
+      logger.error('Async error caught', error, { correlationId });
+
+      // Re-throw to trigger nearest error boundary
+      throw error;
+    },
+    [correlationId, logger],
+  );
 }

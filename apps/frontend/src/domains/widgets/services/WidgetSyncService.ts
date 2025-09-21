@@ -769,7 +769,7 @@ export class WidgetSyncService {
       if (this.isConnected) {
         return;
       }
-      
+
       connectionAttempts++;
 
       // Check for both old and new global service locations

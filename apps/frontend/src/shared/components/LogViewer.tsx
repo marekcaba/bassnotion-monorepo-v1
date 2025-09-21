@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/shared/api/client';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
@@ -42,7 +47,8 @@ interface LogTrace {
 }
 
 export function LogViewer() {
-  const { correlationId: currentCorrelationId, logger } = useCorrelation('LogViewer');
+  const { correlationId: currentCorrelationId, logger } =
+    useCorrelation('LogViewer');
   const [searchCorrelationId, setSearchCorrelationId] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
 
@@ -50,13 +56,19 @@ export function LogViewer() {
     queryKey: ['logs', 'trace', activeSearch],
     queryFn: async () => {
       if (!activeSearch) return null;
-      
-      logger.info('Searching logs', { searchCorrelationId: activeSearch, correlationId: currentCorrelationId });
-      
-      const response = await apiClient.get(`/api/v1/logs/trace?correlationId=${activeSearch}`, {
+
+      logger.info('Searching logs', {
+        searchCorrelationId: activeSearch,
         correlationId: currentCorrelationId,
       });
-      
+
+      const response = await apiClient.get(
+        `/api/v1/logs/trace?correlationId=${activeSearch}`,
+        {
+          correlationId: currentCorrelationId,
+        },
+      );
+
       return response.data.data as LogTrace;
     },
     enabled: !!activeSearch,
@@ -100,7 +112,10 @@ export function LogViewer() {
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             className="flex-1"
           />
-          <Button onClick={handleSearch} disabled={!searchCorrelationId.trim() || isLoading}>
+          <Button
+            onClick={handleSearch}
+            disabled={!searchCorrelationId.trim() || isLoading}
+          >
             {isLoading ? <Loader2 className="animate-spin" /> : 'Search'}
           </Button>
           <Button
@@ -126,7 +141,9 @@ export function LogViewer() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">Duration</p>
-                <p className="font-medium">{formatDuration(data.totalDuration)}</p>
+                <p className="font-medium">
+                  {formatDuration(data.totalDuration)}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Services</p>
@@ -138,13 +155,17 @@ export function LogViewer() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Correlation ID</p>
-                <p className="font-mono text-xs truncate">{data.correlationId}</p>
+                <p className="font-mono text-xs truncate">
+                  {data.correlationId}
+                </p>
               </div>
             </div>
 
             {/* Services involved */}
             <div>
-              <p className="text-sm text-muted-foreground mb-2">Services Involved</p>
+              <p className="text-sm text-muted-foreground mb-2">
+                Services Involved
+              </p>
               <div className="flex flex-wrap gap-2">
                 {data.services.map((service) => (
                   <Badge key={service} variant="outline">
@@ -156,19 +177,26 @@ export function LogViewer() {
 
             {/* Timeline */}
             <div>
-              <p className="text-sm text-muted-foreground mb-2">Request Timeline</p>
+              <p className="text-sm text-muted-foreground mb-2">
+                Request Timeline
+              </p>
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {data.timeline.map((event, index) => (
                   <div
                     key={index}
                     className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                   >
-                    <Badge variant={getLevelColor(event.level)} className="mt-0.5">
+                    <Badge
+                      variant={getLevelColor(event.level)}
+                      className="mt-0.5"
+                    >
                       {event.level}
                     </Badge>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-sm">{event.service}</span>
+                        <span className="font-medium text-sm">
+                          {event.service}
+                        </span>
                         <span className="text-xs text-muted-foreground">
                           +{formatDuration(event.duration)}
                         </span>
@@ -196,12 +224,20 @@ export function LogViewer() {
               </summary>
               <div className="mt-4 space-y-2 max-h-96 overflow-y-auto">
                 {data.logs.map((log, index) => (
-                  <div key={index} className="p-3 rounded-lg bg-muted/30 font-mono text-xs">
+                  <div
+                    key={index}
+                    className="p-3 rounded-lg bg-muted/30 font-mono text-xs"
+                  >
                     <div className="flex items-center gap-2 mb-2">
-                      <Badge variant={getLevelColor(log.level)} className="text-xs">
+                      <Badge
+                        variant={getLevelColor(log.level)}
+                        className="text-xs"
+                      >
                         {log.level}
                       </Badge>
-                      <span className="text-muted-foreground">{log.service}</span>
+                      <span className="text-muted-foreground">
+                        {log.service}
+                      </span>
                       <span className="text-muted-foreground">
                         {new Date(log.timestamp).toISOString()}
                       </span>

@@ -1,6 +1,6 @@
 /**
  * AudioNodeManager - Manages Web Audio API nodes and routing
- * 
+ *
  * Responsibilities:
  * - Create and manage audio nodes
  * - Handle audio routing and connections
@@ -8,7 +8,7 @@
  * - Track active nodes for cleanup
  */
 
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { createStructuredLogger } from '../../shared/index.js';
 import { AudioNodeWrapper } from '../types/index.js';
 
 const logger = createStructuredLogger('AudioNodeManager');
@@ -29,7 +29,7 @@ export class AudioNodeManager {
   createGainNode(initialValue = 1.0): AudioNodeWrapper {
     const node = this.context.createGain();
     node.gain.value = initialValue;
-    
+
     return this.wrapNode(node, 'gain');
   }
 
@@ -44,27 +44,32 @@ export class AudioNodeManager {
     release?: number;
   }): AudioNodeWrapper {
     const node = this.context.createDynamicsCompressor();
-    
+
     if (config) {
-      if (config.threshold !== undefined) node.threshold.value = config.threshold;
+      if (config.threshold !== undefined)
+        node.threshold.value = config.threshold;
       if (config.knee !== undefined) node.knee.value = config.knee;
       if (config.ratio !== undefined) node.ratio.value = config.ratio;
       if (config.attack !== undefined) node.attack.value = config.attack;
       if (config.release !== undefined) node.release.value = config.release;
     }
-    
+
     return this.wrapNode(node, 'compressor');
   }
 
   /**
    * Create a biquad filter node wrapper
    */
-  createFilter(type: BiquadFilterType = 'lowpass', frequency = 1000, q = 1): AudioNodeWrapper {
+  createFilter(
+    type: BiquadFilterType = 'lowpass',
+    frequency = 1000,
+    q = 1,
+  ): AudioNodeWrapper {
     const node = this.context.createBiquadFilter();
     node.type = type;
     node.frequency.value = frequency;
     node.Q.value = q;
-    
+
     return this.wrapNode(node, 'filter');
   }
 
@@ -73,11 +78,11 @@ export class AudioNodeManager {
    */
   createConvolver(impulseResponse?: AudioBuffer): AudioNodeWrapper {
     const node = this.context.createConvolver();
-    
+
     if (impulseResponse) {
       node.buffer = impulseResponse;
     }
-    
+
     return this.wrapNode(node, 'convolver');
   }
 
@@ -87,7 +92,7 @@ export class AudioNodeManager {
   createDelay(maxDelay = 1.0, delayTime = 0.5): AudioNodeWrapper {
     const node = this.context.createDelay(maxDelay);
     node.delayTime.value = delayTime;
-    
+
     return this.wrapNode(node, 'delay');
   }
 
@@ -97,7 +102,7 @@ export class AudioNodeManager {
   createAnalyser(fftSize = 2048): AudioNodeWrapper {
     const node = this.context.createAnalyser();
     node.fftSize = fftSize;
-    
+
     return this.wrapNode(node, 'analyser');
   }
 
@@ -123,7 +128,7 @@ export class AudioNodeManager {
   createStereoPanner(pan = 0): AudioNodeWrapper {
     const node = this.context.createStereoPanner();
     node.pan.value = pan;
-    
+
     return this.wrapNode(node, 'panner');
   }
 
@@ -137,10 +142,13 @@ export class AudioNodeManager {
   /**
    * Connect nodes
    */
-  connect(source: AudioNode | AudioNodeWrapper, destination: AudioNode | AudioNodeWrapper): void {
+  connect(
+    source: AudioNode | AudioNodeWrapper,
+    destination: AudioNode | AudioNodeWrapper,
+  ): void {
     const sourceNode = this.unwrapNode(source);
     const destNode = this.unwrapNode(destination);
-    
+
     sourceNode.connect(destNode);
     logger.debug('Connected nodes', {
       source: sourceNode.constructor.name,
@@ -187,7 +195,7 @@ export class AudioNodeManager {
    * Clear all nodes
    */
   clear(): void {
-    this.nodes.forEach(wrapper => {
+    this.nodes.forEach((wrapper) => {
       wrapper.disconnect();
     });
     this.nodes.clear();
@@ -199,7 +207,7 @@ export class AudioNodeManager {
    */
   private wrapNode(node: AudioNode, type: string): AudioNodeWrapper {
     const id = `${type}-${++this.nodeIdCounter}`;
-    
+
     const wrapper: AudioNodeWrapper = {
       node,
       input: node,
@@ -214,10 +222,10 @@ export class AudioNodeManager {
         this.removeNode(id);
       },
     };
-    
+
     this.nodes.set(id, wrapper);
     logger.debug('Created node', { id, type });
-    
+
     return wrapper;
   }
 
@@ -236,15 +244,20 @@ export class AudioNodeManager {
    */
   createImpulseResponse(duration = 2, decay = 2): AudioBuffer {
     const length = duration * this.context.sampleRate;
-    const impulse = this.context.createBuffer(2, length, this.context.sampleRate);
-    
+    const impulse = this.context.createBuffer(
+      2,
+      length,
+      this.context.sampleRate,
+    );
+
     for (let channel = 0; channel < 2; channel++) {
       const channelData = impulse.getChannelData(channel);
       for (let i = 0; i < length; i++) {
-        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+        channelData[i] =
+          (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
       }
     }
-    
+
     return impulse;
   }
 }

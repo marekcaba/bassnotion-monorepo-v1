@@ -4,13 +4,13 @@ export class TutorialLevel {
   private static readonly VALID_LEVELS: TutorialLevelType[] = [
     'beginner',
     'intermediate',
-    'advanced'
+    'advanced',
   ];
 
   private static readonly LEVEL_VALUES: Record<TutorialLevelType, number> = {
-    'beginner': 1,
-    'intermediate': 2,
-    'advanced': 3
+    beginner: 1,
+    intermediate: 2,
+    advanced: 3,
   };
 
   constructor(public readonly value: TutorialLevelType) {

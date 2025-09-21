@@ -1,6 +1,6 @@
 /**
  * MixerNode - Multi-channel audio mixer
- * 
+ *
  * Provides a flexible mixing console with:
  * - Multiple input channels
  * - Per-channel volume, pan, mute, solo
@@ -8,7 +8,7 @@
  * - Master output with limiter
  */
 
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { createStructuredLogger } from '../../shared/index.js';
 import { AudioNodeManager } from '../core/AudioNodeManager.js';
 import { AudioNodeWrapper } from '../types/index.js';
 
@@ -49,7 +49,7 @@ export class MixerNode {
 
   constructor(context: AudioContext) {
     this.nodeManager = new AudioNodeManager(context);
-    
+
     // Create master section
     this.masterGain = this.nodeManager.createGainNode(0.8);
     this.masterLimiter = this.nodeManager.createCompressor({
@@ -59,11 +59,11 @@ export class MixerNode {
       attack: 0.001,
       release: 0.1,
     });
-    
+
     // Connect master chain
     this.masterGain.connect(this.masterLimiter);
     this.output = this.masterLimiter;
-    
+
     logger.info('MixerNode created');
   }
 
@@ -73,19 +73,19 @@ export class MixerNode {
   addChannel(name?: string): string {
     const channelId = `ch-${++this.channelIdCounter}`;
     const channelName = name || `Channel ${this.channelIdCounter}`;
-    
+
     // Create channel strip nodes
     const input = this.nodeManager.createGainNode(1.0);
     const gainNode = this.nodeManager.createGainNode(0.7); // Default 70% volume
     const panNode = this.nodeManager.createStereoPanner(0);
     const muteNode = this.nodeManager.createGainNode(1.0);
-    
+
     // Connect channel strip
     input.connect(gainNode);
     gainNode.connect(panNode);
     panNode.connect(muteNode);
     muteNode.connect(this.masterGain);
-    
+
     const channel: ChannelStrip = {
       id: channelId,
       name: channelName,
@@ -99,9 +99,9 @@ export class MixerNode {
       volume: 0.7,
       pan: 0,
     };
-    
+
     this.channels.set(channelId, channel);
-    
+
     logger.info('Channel added', { id: channelId, name: channelName });
     return channelId;
   }
@@ -112,17 +112,17 @@ export class MixerNode {
   removeChannel(channelId: string): void {
     const channel = this.channels.get(channelId);
     if (!channel) return;
-    
+
     // Disconnect all nodes
     channel.input.disconnect();
     channel.gainNode.disconnect();
     channel.panNode.disconnect();
     channel.muteNode.disconnect();
-    channel.auxSends.forEach(send => send.disconnect());
-    
+    channel.auxSends.forEach((send) => send.disconnect());
+
     this.channels.delete(channelId);
     this.updateSoloState();
-    
+
     logger.info('Channel removed', { id: channelId });
   }
 
@@ -132,11 +132,11 @@ export class MixerNode {
   setChannelVolume(channelId: string, volume: number): void {
     const channel = this.channels.get(channelId);
     if (!channel) return;
-    
+
     channel.volume = Math.max(0, Math.min(1, volume));
     const gain = channel.gainNode.node as GainNode;
     gain.gain.value = channel.volume;
-    
+
     logger.debug('Channel volume set', { channelId, volume: channel.volume });
   }
 
@@ -146,11 +146,11 @@ export class MixerNode {
   setChannelPan(channelId: string, pan: number): void {
     const channel = this.channels.get(channelId);
     if (!channel) return;
-    
+
     channel.pan = Math.max(-1, Math.min(1, pan));
     const panner = channel.panNode.node as StereoPannerNode;
     panner.pan.value = channel.pan;
-    
+
     logger.debug('Channel pan set', { channelId, pan: channel.pan });
   }
 
@@ -160,10 +160,10 @@ export class MixerNode {
   setChannelMute(channelId: string, muted: boolean): void {
     const channel = this.channels.get(channelId);
     if (!channel) return;
-    
+
     channel.isMuted = muted;
     this.updateChannelMuteState(channel);
-    
+
     logger.debug('Channel mute set', { channelId, muted });
   }
 
@@ -173,10 +173,10 @@ export class MixerNode {
   setChannelSolo(channelId: string, soloed: boolean): void {
     const channel = this.channels.get(channelId);
     if (!channel) return;
-    
+
     channel.isSoloed = soloed;
     this.updateSoloState();
-    
+
     logger.debug('Channel solo set', { channelId, soloed });
   }
 
@@ -186,14 +186,14 @@ export class MixerNode {
   addAuxBus(name?: string): string {
     const auxId = `aux-${++this.auxIdCounter}`;
     const auxName = name || `Aux ${this.auxIdCounter}`;
-    
+
     const input = this.nodeManager.createGainNode(1.0);
     const output = this.nodeManager.createGainNode(1.0);
     const returnGain = this.nodeManager.createGainNode(0.5); // Default 50% return
-    
+
     // Aux output goes to master
     returnGain.connect(this.masterGain);
-    
+
     const auxBus: AuxBus = {
       id: auxId,
       name: auxName,
@@ -201,9 +201,9 @@ export class MixerNode {
       output,
       returnGain,
     };
-    
+
     this.auxBuses.set(auxId, auxBus);
-    
+
     logger.info('Aux bus added', { id: auxId, name: auxName });
     return auxId;
   }
@@ -214,9 +214,9 @@ export class MixerNode {
   setAuxSend(channelId: string, auxId: string, level: number): void {
     const channel = this.channels.get(channelId);
     const auxBus = this.auxBuses.get(auxId);
-    
+
     if (!channel || !auxBus) return;
-    
+
     // Get or create send
     let send = channel.auxSends.get(auxId);
     if (!send) {
@@ -225,11 +225,11 @@ export class MixerNode {
       send.connect(auxBus.input);
       channel.auxSends.set(auxId, send);
     }
-    
+
     // Set level
     const gain = send.node as GainNode;
     gain.gain.value = Math.max(0, Math.min(1, level));
-    
+
     logger.debug('Aux send set', { channelId, auxId, level });
   }
 
@@ -239,10 +239,10 @@ export class MixerNode {
   setAuxReturn(auxId: string, level: number): void {
     const auxBus = this.auxBuses.get(auxId);
     if (!auxBus) return;
-    
+
     const gain = auxBus.returnGain.node as GainNode;
     gain.gain.value = Math.max(0, Math.min(1, level));
-    
+
     logger.debug('Aux return set', { auxId, level });
   }
 
@@ -252,7 +252,7 @@ export class MixerNode {
   setMasterVolume(volume: number): void {
     const gain = this.masterGain.node as GainNode;
     gain.gain.value = Math.max(0, Math.min(1, volume));
-    
+
     logger.info('Master volume set', { volume });
   }
 
@@ -297,7 +297,7 @@ export class MixerNode {
   getChannelInfo(channelId: string) {
     const channel = this.channels.get(channelId);
     if (!channel) return null;
-    
+
     return {
       id: channel.id,
       name: channel.name,
@@ -313,7 +313,7 @@ export class MixerNode {
    */
   private updateChannelMuteState(channel: ChannelStrip): void {
     const muteGain = channel.muteNode.node as GainNode;
-    
+
     // If solo is active and this channel is not soloed, mute it
     if (this.soloActive && !channel.isSoloed) {
       muteGain.gain.value = 0;
@@ -329,13 +329,15 @@ export class MixerNode {
    */
   private updateSoloState(): void {
     // Check if any channel is soloed
-    this.soloActive = Array.from(this.channels.values()).some(ch => ch.isSoloed);
-    
+    this.soloActive = Array.from(this.channels.values()).some(
+      (ch) => ch.isSoloed,
+    );
+
     // Update all channel mute states
-    this.channels.forEach(channel => {
+    this.channels.forEach((channel) => {
       this.updateChannelMuteState(channel);
     });
-    
+
     logger.debug('Solo state updated', { soloActive: this.soloActive });
   }
 
@@ -345,16 +347,16 @@ export class MixerNode {
   clear(): void {
     // Remove all channels
     const channelIds = Array.from(this.channels.keys());
-    channelIds.forEach(id => this.removeChannel(id));
-    
+    channelIds.forEach((id) => this.removeChannel(id));
+
     // Remove all aux buses
-    this.auxBuses.forEach(aux => {
+    this.auxBuses.forEach((aux) => {
       aux.input.disconnect();
       aux.output.disconnect();
       aux.returnGain.disconnect();
     });
     this.auxBuses.clear();
-    
+
     logger.info('Mixer cleared');
   }
 
@@ -366,7 +368,7 @@ export class MixerNode {
     this.masterGain.disconnect();
     this.masterLimiter.disconnect();
     this.nodeManager.clear();
-    
+
     logger.info('MixerNode disposed');
   }
 }

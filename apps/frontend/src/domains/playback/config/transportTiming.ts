@@ -8,6 +8,10 @@
  * low latency, which is essential for a DAW-like experience.
  */
 
+import { createStructuredLogger } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('TransportTiming');
+
 export const TRANSPORT_TIMING_CONFIG = {
   /**
    * Look-ahead time in seconds

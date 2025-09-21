@@ -11,90 +11,95 @@
  */
 
 // Epic 3.18: BaseAudioPlugin removed - now using plugin types directly
-// import { BaseAudioPlugin } from '../BaseAudioPlugin.js';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import {
+  createStructuredLogger,
+  getAudioArchitectureFlags,
+  PluginState,
+  PluginCategory,
+  PluginPriority,
+  ProcessingResultStatus,
+  PluginParameterType,
+} from '../../../shared/index.js';
 import type {
   AudioPlugin,
-  PluginState,
   PluginMetadata,
   PluginConfig,
-  PluginCategory,
   PluginAudioContext,
-} from '../../../types/plugin.js';
+  PluginProcessingResult,
+  PluginParameter,
+  PluginCapabilities,
+} from '../../../shared/index.js';
 
-// BaseAudioPlugin stub implementation
+// BaseAudioPlugin stub implementation with all required methods
 abstract class BaseAudioPlugin implements AudioPlugin {
-  id: string;
-  type: string;
-  state: PluginState = 'unloaded';
-  metadata: PluginMetadata;
-  config?: PluginConfig;
-  capabilities?: any;
+  readonly state: PluginState = PluginState.UNLOADED;
+  readonly metadata: PluginMetadata;
+  readonly config: PluginConfig;
+  readonly capabilities: PluginCapabilities;
+  readonly parameters: Map<string, PluginParameter> = new Map();
 
-  constructor(id: string, type: string) {
-    this.id = id;
-    this.type = type;
-    this.metadata = {
-      id,
-      name: id,
-      version: '1.0.0',
-      author: 'BassNotion',
-      description: 'Audio plugin',
-      category: 'effect' as PluginCategory,
-      thumbnailUrl: '',
-    };
+  constructor(
+    metadata: PluginMetadata,
+    config: PluginConfig,
+    capabilities: PluginCapabilities,
+  ) {
+    this.metadata = metadata;
+    this.config = config;
+    this.capabilities = capabilities;
   }
 
   abstract initialize(context: PluginAudioContext): Promise<void>;
-  abstract process(input: Float32Array, output: Float32Array): void;
-  abstract dispose(): void;
+  abstract dispose(): Promise<void>;
+  abstract process(
+    inputBuffer: AudioBuffer,
+    outputBuffer: AudioBuffer,
+    context: PluginAudioContext,
+  ): Promise<PluginProcessingResult>;
 
   async load(): Promise<void> {
-    this.state = 'loaded';
+    // Implementation will be overridden by subclass
   }
   async activate(): Promise<void> {
-    this.state = 'active';
+    // Implementation will be overridden by subclass
   }
   async deactivate(): Promise<void> {
-    this.state = 'inactive';
+    // Implementation will be overridden by subclass
   }
-  on(event: string, handler: Function): void {}
-  off(event: string, handler: Function): void {}
-  emit(event: string, ...args: any[]): void {}
-  getParameters(): Record<string, any> {
+  on(_event: string, _handler: () => void): () => void {
+    return () => {
+      // Stub implementation for event unsubscribe
+    };
+  }
+  off(_event: string, _handler: () => void): void {
+    // Stub implementation for event unsubscribe
+  }
+  protected addParameter(param: PluginParameter): void {
+    this.parameters.set(param.id, param);
+  }
+  async setParameter(_name: string, _value: any): Promise<void> {
+    // Stub implementation - overridden by subclass
+  }
+  getParameter(parameterId: string): unknown {
+    const param = this.parameters.get(parameterId);
+    return param ? param.defaultValue : undefined;
+  }
+  async resetParameters(): Promise<void> {
+    // Stub implementation - overridden by subclass
+  }
+  async savePreset(_name: string): Promise<Record<string, unknown>> {
     return {};
   }
-  protected addParameter(param: any): void {}
-  setParameter(name: string, value: any): void {}
-  getState(): PluginState {
-    return this.state;
-  }
-  setState(state: PluginState): void {
-    this.state = state;
-  }
-  getMetadata(): PluginMetadata {
-    return this.metadata;
+  async loadPreset(_preset: Record<string, unknown>): Promise<void> {
+    // Stub implementation - overridden by subclass
   }
 }
-import {
-  PluginMetadata,
-  PluginConfig,
-  PluginCategory,
-  PluginPriority,
-  PluginAudioContext,
-  PluginProcessingResult,
-  ProcessingResultStatus,
-  PluginParameterType,
-} from '../../../types/plugin.js';
-import { getAudioArchitectureFlags } from '../../../config/featureFlags.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
 
 export class BassProcessor extends BaseAudioPlugin {
   // Store Tone reference from dependency injection
   private Tone: any;
 
-  // Plugin metadata
-  public readonly metadata: PluginMetadata = {
+  // Define metadata, config, and capabilities as static properties
+  private static readonly METADATA: PluginMetadata = {
     id: 'bassnotion.bass-processor',
     name: 'Bass Processor',
     version: '1.0.0',
@@ -103,7 +108,7 @@ export class BassProcessor extends BaseAudioPlugin {
     author: 'BassNotion Team',
     homepage: 'https://bassnotion.com',
     license: 'MIT',
-    category: PluginCategory.EFFECT,
+    category: 'effect' as PluginCategory,
     tags: ['bass', 'eq', 'compression', 'distortion', 'guitar'],
     capabilities: {
       supportsRealtimeProcessing: true,
@@ -132,13 +137,13 @@ export class BassProcessor extends BaseAudioPlugin {
     },
   };
 
-  public readonly config: PluginConfig = {
-    id: this.metadata.id,
-    name: this.metadata.name,
-    version: this.metadata.version,
-    category: PluginCategory.EFFECT,
+  private static readonly CONFIG: PluginConfig = {
+    id: BassProcessor.METADATA.id,
+    name: BassProcessor.METADATA.name,
+    version: BassProcessor.METADATA.version,
+    category: 'effect' as PluginCategory,
     enabled: true,
-    priority: PluginPriority.MEDIUM,
+    priority: 625 as PluginPriority, // PluginPriority.MEDIUM value
     autoStart: false,
     inputChannels: 2,
     outputChannels: 2,
@@ -150,8 +155,6 @@ export class BassProcessor extends BaseAudioPlugin {
       payloadTypes: ['bass-settings', 'exercise-config'],
     },
   };
-
-  public readonly capabilities = this.metadata.capabilities;
 
   // Audio processing chain (types will be 'any' until Tone is initialized)
   private audioChain: any[] = [];
@@ -176,7 +179,12 @@ export class BassProcessor extends BaseAudioPlugin {
   private isBypassed = false;
 
   constructor() {
-    super();
+    // Import enums dynamically to avoid circular dependency
+    const metadata = { ...BassProcessor.METADATA };
+    const config = { ...BassProcessor.CONFIG };
+    const capabilities = BassProcessor.METADATA.capabilities;
+
+    super(metadata, config, capabilities);
     this.initializeParameters();
   }
 
@@ -188,11 +196,11 @@ export class BassProcessor extends BaseAudioPlugin {
     );
   }
 
-  protected async onLoad(): Promise<void> {
+  async load(): Promise<void> {
     logger.info(`Loading BassProcessor plugin v${this.metadata.version}`);
   }
 
-  protected async onInitialize(context: PluginAudioContext): Promise<void> {
+  async initialize(context: PluginAudioContext): Promise<void> {
     try {
       // MIGRATION: Get Tone from context instead of direct import
       if (!context.getTone) {
@@ -206,7 +214,6 @@ export class BassProcessor extends BaseAudioPlugin {
       // Log migration status
       const flags = getAudioArchitectureFlags();
       if (flags.ENABLE_MIGRATION_MONITORING) {
-  const { correlationId, logger } = useCorrelation('flags');
         logger.info('[BassProcessor] Using Tone from dependency injection', {
           hasGetTone: !!context.getTone,
           architecture: 'new',
@@ -230,7 +237,7 @@ export class BassProcessor extends BaseAudioPlugin {
             try {
               await this.Tone.start();
             } catch (error) {
-              logger.warn('Could not start Tone.js context:', error);
+              logger.warn('Could not start Tone.js context:', error as any);
             }
           }
         }
@@ -255,13 +262,12 @@ export class BassProcessor extends BaseAudioPlugin {
 
       logger.info('BassProcessor initialized successfully');
     } catch (error) {
-      logger.error('Failed to initialize BassProcessor:', error);
+      logger.error('Failed to initialize BassProcessor:', error as Error);
       throw error;
     }
   }
 
-  protected async onActivate(): Promise<void> {
-    // TODO: Review non-null assertion - consider null safety
+  async activate(): Promise<void> {
     if (!this.audioChain.length) {
       throw new Error('Audio chain not initialized');
     }
@@ -272,20 +278,20 @@ export class BassProcessor extends BaseAudioPlugin {
     logger.info('BassProcessor activated');
   }
 
-  protected async onDeactivate(): Promise<void> {
+  async deactivate(): Promise<void> {
     // Disconnect audio chain
     this.disconnectAudioChain();
 
     logger.info('BassProcessor deactivated');
   }
 
-  protected async onDispose(): Promise<void> {
+  async dispose(): Promise<void> {
     // Dispose all Tone.js nodes
     this.audioChain.forEach((node) => {
       try {
         node.dispose();
       } catch (error) {
-        logger.warn('Error disposing audio node:', error);
+        logger.warn('Error disposing audio node:', error as any);
       }
     });
 
@@ -302,7 +308,11 @@ export class BassProcessor extends BaseAudioPlugin {
     logger.info('BassProcessor disposed');
   }
 
-  protected async onParameterChanged(
+  async setParameter(parameterId: string, value: unknown): Promise<void> {
+    await this.onParameterChanged(parameterId, value);
+  }
+
+  private async onParameterChanged(
     parameterId: string,
     value: unknown,
   ): Promise<void> {
@@ -399,12 +409,11 @@ export class BassProcessor extends BaseAudioPlugin {
           if (this.wetDryMix) {
             this.wetDryMix.fade.value = this.isBypassed
               ? 0
-              : (this.getParameter('wetDryMix') as number) / 100;
+              : (this.getParameterValue('wetDryMix') as number) / 100;
           }
           break;
 
         case 'wetDryMix':
-          // TODO: Review non-null assertion - consider null safety
           if (this.wetDryMix && !this.isBypassed) {
             this.wetDryMix.fade.value = (value as number) / 100;
           }
@@ -463,7 +472,7 @@ export class BassProcessor extends BaseAudioPlugin {
           logger.warn(`Unknown parameter: ${parameterId}`);
       }
     } catch (error) {
-      logger.error(`Error setting parameter ${parameterId}:`, error);
+      logger.error(`Error setting parameter ${parameterId}:`, error as Error);
     }
   }
 
@@ -481,7 +490,7 @@ export class BassProcessor extends BaseAudioPlugin {
       if (this.isBypassed) {
         this.copyAudioBuffer(inputBuffer, outputBuffer);
         return {
-          status: ProcessingResultStatus.SUCCESS,
+          status: 'success' as ProcessingResultStatus,
           success: true,
           bypassMode: true,
           processedSamples: inputBuffer.length,
@@ -512,7 +521,7 @@ export class BassProcessor extends BaseAudioPlugin {
         );
 
         return {
-          status: ProcessingResultStatus.SUCCESS,
+          status: 'success' as ProcessingResultStatus,
           success: true,
           bypassMode: false,
           processedSamples: inputBuffer.length,
@@ -520,9 +529,9 @@ export class BassProcessor extends BaseAudioPlugin {
           cpuUsage: 0.05 + Math.random() * 0.1, // 0.05-0.15 CPU usage
           memoryUsage: this.processingMetrics.memoryUsage,
           metadata: {
-            lowShelf: this.getParameter('lowShelf'),
-            compression: this.getParameter('compressorRatio'),
-            distortion: this.getParameter('distortionDrive'),
+            lowShelf: this.getParameterValue('lowShelf'),
+            compression: this.getParameterValue('compressorRatio'),
+            distortion: this.getParameterValue('distortionDrive'),
           },
         };
       }
@@ -596,7 +605,7 @@ export class BassProcessor extends BaseAudioPlugin {
       const totalProcessingTime = performance.now() - startTime;
 
       return {
-        status: ProcessingResultStatus.SUCCESS,
+        status: 'success' as ProcessingResultStatus,
         success: true,
         bypassMode: false,
         processedSamples: inputBuffer.length,
@@ -604,14 +613,14 @@ export class BassProcessor extends BaseAudioPlugin {
         cpuUsage: this.processingMetrics.cpuUsage,
         memoryUsage: this.processingMetrics.memoryUsage,
         metadata: {
-          lowShelf: this.getParameter('lowShelf'),
-          compression: this.getParameter('compressorRatio'),
-          distortion: this.getParameter('distortionDrive'),
+          lowShelf: this.getParameterValue('lowShelf'),
+          compression: this.getParameterValue('compressorRatio'),
+          distortion: this.getParameterValue('distortionDrive'),
         },
       };
     } catch (error) {
       return {
-        status: ProcessingResultStatus.ERROR,
+        status: 'error' as ProcessingResultStatus,
         success: false,
         bypassMode: false,
         processedSamples: 0,
@@ -654,7 +663,7 @@ export class BassProcessor extends BaseAudioPlugin {
         await this.applyBassStylePreset(bassPayload.bassSettings);
       }
     } catch (error) {
-      logger.error('Error processing n8n payload:', error);
+      logger.error('Error processing n8n payload:', error as Error);
     }
   }
 
@@ -796,7 +805,6 @@ export class BassProcessor extends BaseAudioPlugin {
       return;
     }
 
-    // TODO: Review non-null assertion - consider null safety
     if (!this.inputGain || !this.outputGain || !this.wetDryMix) return;
 
     // Connect dry signal path
@@ -840,7 +848,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'lowShelf',
       name: 'Low Shelf',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 0,
       minValue: -24,
       maxValue: 12,
@@ -852,7 +860,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'lowShelfFreq',
       name: 'Low Shelf Frequency',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 100,
       minValue: 40,
       maxValue: 200,
@@ -864,7 +872,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'midGain',
       name: 'Mid Gain',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 0,
       minValue: -12,
       maxValue: 12,
@@ -876,7 +884,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'midFreq',
       name: 'Mid Frequency',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 800,
       minValue: 200,
       maxValue: 2000,
@@ -888,7 +896,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'midQ',
       name: 'Mid Q',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 1,
       minValue: 0.1,
       maxValue: 10,
@@ -900,7 +908,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'highCut',
       name: 'High Cut',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 0,
       minValue: -12,
       maxValue: 12,
@@ -912,7 +920,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'highCutFreq',
       name: 'High Cut Frequency',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 4000,
       minValue: 2000,
       maxValue: 8000,
@@ -925,7 +933,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'compressorRatio',
       name: 'Compression Ratio',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 4,
       minValue: 1,
       maxValue: 10,
@@ -937,7 +945,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'compressorThreshold',
       name: 'Compression Threshold',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: -24,
       minValue: -40,
       maxValue: 0,
@@ -949,7 +957,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'compressorAttack',
       name: 'Compression Attack',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 0.003,
       minValue: 0.001,
       maxValue: 0.1,
@@ -961,7 +969,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'compressorRelease',
       name: 'Compression Release',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 0.1,
       minValue: 0.01,
       maxValue: 1,
@@ -973,7 +981,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'compressorKnee',
       name: 'Compression Knee',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 30,
       minValue: 0,
       maxValue: 40,
@@ -986,7 +994,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'distortionDrive',
       name: 'Distortion Drive',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 20,
       minValue: 0,
       maxValue: 100,
@@ -998,7 +1006,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'distortionTone',
       name: 'Distortion Tone',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 50,
       minValue: 0,
       maxValue: 100,
@@ -1010,7 +1018,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'distortionLevel',
       name: 'Distortion Level',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 50,
       minValue: 0,
       maxValue: 100,
@@ -1022,7 +1030,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'distortionWet',
       name: 'Distortion Wet',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 50,
       minValue: 0,
       maxValue: 100,
@@ -1035,7 +1043,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'compThreshold',
       name: 'Compression Threshold',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: -24,
       minValue: -40,
       maxValue: 0,
@@ -1047,7 +1055,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'compRatio',
       name: 'Compression Ratio',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 4,
       minValue: 1,
       maxValue: 20,
@@ -1059,7 +1067,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'compAttack',
       name: 'Compression Attack',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 0.003,
       minValue: 0.001,
       maxValue: 0.1,
@@ -1071,7 +1079,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'compRelease',
       name: 'Compression Release',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 0.1,
       minValue: 0.01,
       maxValue: 1,
@@ -1083,7 +1091,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'distAmount',
       name: 'Distortion Amount',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 0.2,
       minValue: 0,
       maxValue: 1,
@@ -1093,21 +1101,9 @@ export class BassProcessor extends BaseAudioPlugin {
     });
 
     this.addParameter({
-      id: 'highCutFreq',
-      name: 'High Cut Frequency',
-      type: PluginParameterType.FLOAT,
-      defaultValue: 4000,
-      minValue: 2000,
-      maxValue: 8000,
-      unit: 'Hz',
-      description: 'High cut frequency (alias)',
-      automatable: true,
-    });
-
-    this.addParameter({
       id: 'inputGain',
       name: 'Input Gain',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 1.0,
       minValue: 0,
       maxValue: 2,
@@ -1119,7 +1115,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'outputGain',
       name: 'Output Gain',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 1.0,
       minValue: 0,
       maxValue: 2,
@@ -1132,7 +1128,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'bypass',
       name: 'Bypass',
-      type: PluginParameterType.BOOLEAN,
+      type: 'boolean' as PluginParameterType,
       defaultValue: false,
       description: 'Effect bypass',
       automatable: false,
@@ -1141,7 +1137,7 @@ export class BassProcessor extends BaseAudioPlugin {
     this.addParameter({
       id: 'wetDryMix',
       name: 'Wet/Dry Mix',
-      type: PluginParameterType.FLOAT,
+      type: 'float' as PluginParameterType,
       defaultValue: 100,
       minValue: 0,
       maxValue: 100,
@@ -1152,9 +1148,14 @@ export class BassProcessor extends BaseAudioPlugin {
   }
 
   private resetParametersToDefaults(): void {
-    this.parameters.forEach((param) => {
+    this.parameters.forEach((param: PluginParameter) => {
       this.setParameter(param.id, param.defaultValue);
     });
+  }
+
+  private getParameterValue(parameterId: string): unknown {
+    const param = this.parameters.get(parameterId);
+    return param ? param.defaultValue : undefined;
   }
 
   private async applyBassStylePreset(settings: any): Promise<void> {
@@ -1162,46 +1163,46 @@ export class BassProcessor extends BaseAudioPlugin {
 
     switch (style) {
       case 'rock':
-        await this.setParameter('lowShelf', 2 + intensity / 50);
-        await this.setParameter('midGain', 1 + intensity / 100);
-        await this.setParameter('distortionDrive', 30 + intensity / 2);
+        this.setParameter('lowShelf', 2 + intensity / 50);
+        this.setParameter('midGain', 1 + intensity / 100);
+        this.setParameter('distortionDrive', 30 + intensity / 2);
         break;
 
       case 'jazz':
-        await this.setParameter('lowShelf', -1);
-        await this.setParameter('midGain', -0.5);
-        await this.setParameter('compressorRatio', 2 + intensity / 50);
-        await this.setParameter('distortionDrive', 5);
+        this.setParameter('lowShelf', -1);
+        this.setParameter('midGain', -0.5);
+        this.setParameter('compressorRatio', 2 + intensity / 50);
+        this.setParameter('distortionDrive', 5);
         break;
 
       case 'funk':
-        await this.setParameter('lowShelf', 3);
-        await this.setParameter('midGain', 2);
-        await this.setParameter('compressorRatio', 6 + intensity / 25);
-        await this.setParameter('distortionDrive', 15);
+        this.setParameter('lowShelf', 3);
+        this.setParameter('midGain', 2);
+        this.setParameter('compressorRatio', 6 + intensity / 25);
+        this.setParameter('distortionDrive', 15);
         break;
 
       case 'metal':
-        await this.setParameter('lowShelf', 1);
-        await this.setParameter('midGain', 3);
-        await this.setParameter('distortionDrive', 60 + intensity / 2);
-        await this.setParameter('compressorRatio', 8);
+        this.setParameter('lowShelf', 1);
+        this.setParameter('midGain', 3);
+        this.setParameter('distortionDrive', 60 + intensity / 2);
+        this.setParameter('compressorRatio', 8);
         break;
     }
 
     // Adjust for frequency preference
     switch (frequency) {
       case 'low':
-        await this.setParameter('lowShelfFreq', 80);
-        await this.setParameter('midFreq', 400);
+        this.setParameter('lowShelfFreq', 80);
+        this.setParameter('midFreq', 400);
         break;
       case 'mid':
-        await this.setParameter('lowShelfFreq', 100);
-        await this.setParameter('midFreq', 800);
+        this.setParameter('lowShelfFreq', 100);
+        this.setParameter('midFreq', 800);
         break;
       case 'high':
-        await this.setParameter('lowShelfFreq', 150);
-        await this.setParameter('midFreq', 1200);
+        this.setParameter('lowShelfFreq', 150);
+        this.setParameter('midFreq', 1200);
         break;
     }
   }
@@ -1222,7 +1223,6 @@ export class BassProcessor extends BaseAudioPlugin {
     // Estimate CPU usage based on active effects
     let usage = 0.02; // Base usage
 
-    // TODO: Review non-null assertion - consider null safety
     if (!this.isBypassed) {
       usage += 0.03; // EQ
       usage += 0.04; // Compressor

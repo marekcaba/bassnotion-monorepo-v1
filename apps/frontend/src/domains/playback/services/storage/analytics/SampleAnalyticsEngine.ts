@@ -5,7 +5,7 @@
 
 import { EventEmitter } from 'events';
 import {
-import { createStructuredLogger } from '@bassnotion/contracts';
+  createStructuredLogger,
   SampleAnalyticsConfig,
   SampleAnalyticsData,
   AudioSampleMetadata,

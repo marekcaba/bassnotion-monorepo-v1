@@ -1,6 +1,6 @@
 /**
  * Channel - Audio channel strip for track mixing
- * 
+ *
  * Provides a complete channel strip with:
  * - Gain control
  * - Pan control
@@ -12,9 +12,8 @@
  */
 
 import * as Tone from 'tone';
-import type { TrackMixingState, TrackSend } from '../../../types/track.js';
-import { EventBus } from '../../../services/core/EventBus.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import type { TrackMixingState } from '../../../types/track.js';
+import { EventBus, createStructuredLogger } from '../../shared/index.js';
 
 const logger = createStructuredLogger('Channel');
 
@@ -23,6 +22,7 @@ export interface ChannelConfig {
   name?: string;
   outputBus?: string;
   initialState?: Partial<TrackMixingState>;
+  audioEngine?: any; // Optional AudioEngine for DI
 }
 
 export interface ChannelInsert {
@@ -49,41 +49,39 @@ export class Channel {
   // Identity
   public readonly id: string;
   public name: string;
-  
+
   // Audio nodes
   private input: Tone.Gain;
   private output: Tone.Gain;
-  
+
   // Channel strip components
   private gainNode: Tone.Gain;
   private pannerNode: Tone.Panner;
   private muteNode: Tone.Gain;
   private soloNode: Tone.Gain;
-  
+
   // Processing
   private eq: ChannelEQ;
   private dynamics: ChannelDynamics;
   private inserts: ChannelInsert[] = [];
   private sends: Map<string, Tone.Gain> = new Map();
-  
+
   // State
   private state: TrackMixingState;
-  private isSoloed: boolean = false;
-  private isMuted: boolean = false;
-  private outputBus: string = 'master';
-  
+
   // Metering
   private meter: Tone.Meter;
   private analyser: Tone.Analyser;
-  
+
   // Event handling
   private eventBus?: EventBus;
+  private audioEngine?: any; // Optional AudioEngine for DI
 
   constructor(config: ChannelConfig) {
     this.id = config.channelId;
     this.name = config.name || `Channel ${this.id}`;
-    this.outputBus = config.outputBus || 'master';
-    
+    this.audioEngine = config.audioEngine;
+
     // Initialize state
     this.state = {
       volume: config.initialState?.volume ?? 0.75,
@@ -94,30 +92,30 @@ export class Channel {
       phaseInvert: config.initialState?.phaseInvert ?? false,
       delayCompensation: config.initialState?.delayCompensation ?? 0,
     };
-    
-    // Create audio nodes
-    this.input = new Tone.Gain(1);
-    this.output = new Tone.Gain(1);
-    
+
+    // Create audio nodes using factory if available
+    this.input = this.createGain(1);
+    this.output = this.createGain(1);
+
     // Create channel strip
-    this.gainNode = new Tone.Gain(this.state.volume);
-    this.pannerNode = new Tone.Panner(this.state.pan);
-    this.muteNode = new Tone.Gain(this.state.mute ? 0 : 1);
-    this.soloNode = new Tone.Gain(1);
-    
+    this.gainNode = this.createGain(this.state.volume);
+    this.pannerNode = this.createPanner(this.state.pan);
+    this.muteNode = this.createGain(this.state.mute ? 0 : 1);
+    this.soloNode = this.createGain(1);
+
     // Create EQ
     this.eq = this.createEQ();
-    
+
     // Create dynamics
     this.dynamics = this.createDynamics();
-    
+
     // Create metering
-    this.meter = new Tone.Meter();
-    this.analyser = new Tone.Analyser('waveform', 1024);
-    
+    this.meter = this.createMeter();
+    this.analyser = this.createAnalyser('waveform', 1024);
+
     // Build signal chain
     this.buildSignalChain();
-    
+
     // Apply initial state
     this.applyState();
   }
@@ -126,7 +124,7 @@ export class Channel {
    * Create EQ section
    */
   private createEQ(): ChannelEQ {
-    const highShelf = new Tone.EQ3({
+    const highShelf = this.createEQ3({
       low: 0,
       mid: 0,
       high: 0,
@@ -136,25 +134,25 @@ export class Channel {
 
     // Create 4-band parametric EQ
     const parametric = [
-      new Tone.Filter({
+      this.createFilter({
         type: 'peaking',
         frequency: 100,
         Q: 1,
         gain: 0,
       }),
-      new Tone.Filter({
+      this.createFilter({
         type: 'peaking',
         frequency: 1000,
         Q: 1,
         gain: 0,
       }),
-      new Tone.Filter({
+      this.createFilter({
         type: 'peaking',
         frequency: 5000,
         Q: 1,
         gain: 0,
       }),
-      new Tone.Filter({
+      this.createFilter({
         type: 'peaking',
         frequency: 10000,
         Q: 1,
@@ -174,13 +172,13 @@ export class Channel {
    */
   private createDynamics(): ChannelDynamics {
     return {
-      compressor: new Tone.Compressor({
+      compressor: this.createCompressor({
         threshold: -12,
         ratio: 4,
         attack: 0.003,
         release: 0.1,
       }),
-      gate: new Tone.Gate({
+      gate: this.createGate({
         threshold: -40,
         attack: 0.001,
         release: 0.1,
@@ -195,42 +193,42 @@ export class Channel {
   private buildSignalChain(): void {
     // Input -> Dynamics -> EQ -> Inserts -> Gain -> Pan -> Mute -> Solo -> Meter -> Output
     let currentNode: Tone.ToneAudioNode = this.input;
-    
+
     // Dynamics section (optional)
     if (this.dynamics.gate && !this.dynamics.bypassed) {
       currentNode.connect(this.dynamics.gate);
       currentNode = this.dynamics.gate;
     }
-    
+
     if (this.dynamics.compressor && !this.dynamics.bypassed) {
       currentNode.connect(this.dynamics.compressor);
       currentNode = this.dynamics.compressor;
     }
-    
+
     // EQ section
     if (!this.eq.bypassed) {
       currentNode.connect(this.eq.highShelf);
       currentNode = this.eq.highShelf;
-      
+
       // Chain parametric bands
       for (const band of this.eq.parametric) {
         currentNode.connect(band);
         currentNode = band;
       }
     }
-    
+
     // Insert effects would go here
-    
+
     // Channel strip
     currentNode.connect(this.gainNode);
     this.gainNode.connect(this.pannerNode);
     this.pannerNode.connect(this.muteNode);
     this.muteNode.connect(this.soloNode);
-    
+
     // Metering
     this.soloNode.connect(this.meter);
     this.soloNode.connect(this.analyser);
-    
+
     // Output
     this.soloNode.connect(this.output);
   }
@@ -242,30 +240,28 @@ export class Channel {
     this.gainNode.gain.value = this.state.volume;
     this.pannerNode.pan.value = this.state.pan;
     this.muteNode.gain.value = this.state.mute ? 0 : 1;
-    this.isMuted = this.state.mute;
-    this.isSoloed = this.state.solo;
   }
 
   /**
    * Set volume (0-1)
    */
-  setVolume(volume: number, rampTime: number = 0.05): void {
+  setVolume(volume: number, rampTime = 0.05): void {
     const clampedVolume = Math.max(0, Math.min(1, volume));
     this.state.volume = clampedVolume;
-    
+
     if (rampTime > 0) {
       this.gainNode.gain.rampTo(clampedVolume, rampTime);
     } else {
       this.gainNode.gain.value = clampedVolume;
     }
-    
+
     this.emitStateChange('volume', clampedVolume);
   }
 
   /**
    * Set volume in dB
    */
-  setVolumeDb(db: number, rampTime: number = 0.05): void {
+  setVolumeDb(db: number, rampTime = 0.05): void {
     const linear = Tone.dbToGain(db);
     this.setVolume(linear, rampTime);
   }
@@ -273,16 +269,16 @@ export class Channel {
   /**
    * Set pan (-1 to 1)
    */
-  setPan(pan: number, rampTime: number = 0.05): void {
+  setPan(pan: number, rampTime = 0.05): void {
     const clampedPan = Math.max(-1, Math.min(1, pan));
     this.state.pan = clampedPan;
-    
+
     if (rampTime > 0) {
       this.pannerNode.pan.rampTo(clampedPan, rampTime);
     } else {
       this.pannerNode.pan.value = clampedPan;
     }
-    
+
     this.emitStateChange('pan', clampedPan);
   }
 
@@ -291,7 +287,6 @@ export class Channel {
    */
   setMute(muted: boolean): void {
     this.state.mute = muted;
-    this.isMuted = muted;
     this.muteNode.gain.value = muted ? 0 : 1;
     this.emitStateChange('mute', muted);
   }
@@ -308,7 +303,6 @@ export class Channel {
    */
   setSolo(soloed: boolean): void {
     this.state.solo = soloed;
-    this.isSoloed = soloed;
     this.emitStateChange('solo', soloed);
   }
 
@@ -322,24 +316,24 @@ export class Channel {
   /**
    * Add send
    */
-  addSend(sendId: string, level: number = 0.5): Tone.Gain {
+  addSend(sendId: string, level = 0.5): Tone.Gain {
     if (this.sends.has(sendId)) {
       throw new Error(`Send ${sendId} already exists`);
     }
-    
-    const sendGain = new Tone.Gain(level);
-    
+
+    const sendGain = this.createGain(level);
+
     // Connect from post-fader by default
     this.pannerNode.connect(sendGain);
-    
+
     this.sends.set(sendId, sendGain);
-    
+
     logger.debug('Send added', {
       channelId: this.id,
       sendId,
       level,
     });
-    
+
     return sendGain;
   }
 
@@ -351,11 +345,11 @@ export class Channel {
     if (!send) {
       return;
     }
-    
+
     send.disconnect();
     send.dispose();
     this.sends.delete(sendId);
-    
+
     logger.debug('Send removed', {
       channelId: this.id,
       sendId,
@@ -365,14 +359,14 @@ export class Channel {
   /**
    * Set send level
    */
-  setSendLevel(sendId: string, level: number, rampTime: number = 0.05): void {
+  setSendLevel(sendId: string, level: number, rampTime = 0.05): void {
     const send = this.sends.get(sendId);
     if (!send) {
       throw new Error(`Send ${sendId} not found`);
     }
-    
+
     const clampedLevel = Math.max(0, Math.min(1, level));
-    
+
     if (rampTime > 0) {
       send.gain.rampTo(clampedLevel, rampTime);
     } else {
@@ -390,22 +384,26 @@ export class Channel {
       effect,
       bypassed: false,
     };
-    
-    if (position !== undefined && position >= 0 && position <= this.inserts.length) {
+
+    if (
+      position !== undefined &&
+      position >= 0 &&
+      position <= this.inserts.length
+    ) {
       this.inserts.splice(position, 0, insert);
     } else {
       this.inserts.push(insert);
     }
-    
+
     // Rebuild signal chain
     this.rebuildInsertChain();
-    
+
     logger.debug('Insert added', {
       channelId: this.id,
       insertId,
       position: position ?? this.inserts.length - 1,
     });
-    
+
     return insertId;
   }
 
@@ -413,20 +411,22 @@ export class Channel {
    * Remove insert effect
    */
   removeInsert(insertId: string): void {
-    const index = this.inserts.findIndex(i => i.id === insertId);
+    const index = this.inserts.findIndex((i) => i.id === insertId);
     if (index === -1) {
       return;
     }
-    
+
     const insert = this.inserts[index];
-    insert.effect.disconnect();
-    insert.effect.dispose();
-    
+    if (insert) {
+      insert.effect.disconnect();
+      insert.effect.dispose();
+    }
+
     this.inserts.splice(index, 1);
-    
+
     // Rebuild signal chain
     this.rebuildInsertChain();
-    
+
     logger.debug('Insert removed', {
       channelId: this.id,
       insertId,
@@ -437,11 +437,11 @@ export class Channel {
    * Bypass insert
    */
   bypassInsert(insertId: string, bypassed: boolean): void {
-    const insert = this.inserts.find(i => i.id === insertId);
+    const insert = this.inserts.find((i) => i.id === insertId);
     if (!insert) {
       throw new Error(`Insert ${insertId} not found`);
     }
-    
+
     insert.bypassed = bypassed;
     this.rebuildInsertChain();
   }
@@ -465,9 +465,12 @@ export class Channel {
     if (bandIndex < 0 || bandIndex >= this.eq.parametric.length) {
       throw new Error(`Invalid EQ band index: ${bandIndex}`);
     }
-    
+
     const clampedGain = Math.max(-24, Math.min(24, gain));
-    this.eq.parametric[bandIndex].gain.value = clampedGain;
+    const band = this.eq.parametric[bandIndex];
+    if (band && 'gain' in band) {
+      (band as any).gain.value = clampedGain;
+    }
   }
 
   /**
@@ -477,9 +480,12 @@ export class Channel {
     if (bandIndex < 0 || bandIndex >= this.eq.parametric.length) {
       throw new Error(`Invalid EQ band index: ${bandIndex}`);
     }
-    
+
     const clampedFreq = Math.max(20, Math.min(20000, frequency));
-    this.eq.parametric[bandIndex].frequency.value = clampedFreq;
+    const band = this.eq.parametric[bandIndex];
+    if (band) {
+      band.frequency.value = clampedFreq;
+    }
   }
 
   /**
@@ -489,9 +495,12 @@ export class Channel {
     if (bandIndex < 0 || bandIndex >= this.eq.parametric.length) {
       throw new Error(`Invalid EQ band index: ${bandIndex}`);
     }
-    
+
     const clampedQ = Math.max(0.1, Math.min(30, q));
-    this.eq.parametric[bandIndex].Q.value = clampedQ;
+    const band = this.eq.parametric[bandIndex];
+    if (band) {
+      band.Q.value = clampedQ;
+    }
   }
 
   /**
@@ -597,7 +606,7 @@ export class Channel {
     this.soloNode.disconnect();
     this.meter.disconnect();
     this.analyser.disconnect();
-    
+
     // Dispose nodes
     this.input.dispose();
     this.output.dispose();
@@ -607,31 +616,72 @@ export class Channel {
     this.soloNode.dispose();
     this.meter.dispose();
     this.analyser.dispose();
-    
+
     // Dispose EQ
     this.eq.highShelf.dispose();
-    this.eq.parametric.forEach(band => band.dispose());
-    
+    this.eq.parametric.forEach((band) => band.dispose());
+
     // Dispose dynamics
     this.dynamics.compressor?.dispose();
     this.dynamics.gate?.dispose();
     this.dynamics.limiter?.dispose();
-    
+
     // Dispose inserts
-    this.inserts.forEach(insert => {
+    this.inserts.forEach((insert) => {
       insert.effect.disconnect();
       insert.effect.dispose();
     });
-    
+
     // Dispose sends
-    this.sends.forEach(send => {
+    this.sends.forEach((send) => {
       send.disconnect();
       send.dispose();
     });
-    
+
     this.sends.clear();
     this.inserts = [];
-    
+
     logger.info('Channel disposed', { channelId: this.id });
+  }
+
+  // Factory methods for DI support
+  private createGain(gain?: number): any {
+    return this.audioEngine?.createGain?.(gain) || new Tone.Gain(gain);
+  }
+
+  private createPanner(pan?: number): any {
+    return this.audioEngine?.createPanner?.(pan) || new Tone.Panner(pan);
+  }
+
+  private createEQ3(options?: any): any {
+    return this.audioEngine?.createEQ3?.(options) || new Tone.EQ3(options);
+  }
+
+  private createFilter(options?: any): any {
+    return (
+      this.audioEngine?.createFilter?.(options) || new Tone.Filter(options)
+    );
+  }
+
+  private createCompressor(options?: any): any {
+    return (
+      this.audioEngine?.createCompressor?.(options) ||
+      new Tone.Compressor(options)
+    );
+  }
+
+  private createGate(options?: any): any {
+    return this.audioEngine?.createGate?.(options) || new Tone.Gate(options);
+  }
+
+  private createMeter(options?: any): any {
+    return this.audioEngine?.createMeter?.(options) || new Tone.Meter(options);
+  }
+
+  private createAnalyser(type?: string, size?: number): any {
+    return (
+      this.audioEngine?.createAnalyser?.(type, size) ||
+      new Tone.Analyser(type as any, size)
+    );
   }
 }

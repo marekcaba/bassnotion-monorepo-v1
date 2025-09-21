@@ -1,6 +1,6 @@
 /**
  * SampleLoader - Core sample loading functionality
- * 
+ *
  * Provides intelligent sample loading with caching integration,
  * quality adaptation, error recovery, and analytics tracking.
  * Consolidates loading logic from across the playback domain.
@@ -8,8 +8,8 @@
 
 import type * as Tone from 'tone';
 import { SampleCache } from '../cache/SampleCache.js';
-import { EventBus } from '../../../services/core/EventBus.js';
-import { createStructuredLogger, type AudioSampleMetadata } from '@bassnotion/contracts';
+import { EventBus, createStructuredLogger } from '../../shared/index.js';
+import type { AudioSampleMetadata } from '@bassnotion/contracts';
 
 const logger = createStructuredLogger('SampleLoader');
 
@@ -52,8 +52,7 @@ export class SampleLoader {
   private cache?: SampleCache;
   private eventBus?: EventBus;
   private tone?: typeof Tone;
-  private audioContext?: AudioContext;
-  
+
   // Loading state
   private activeLoads = new Map<string, Promise<LoadResult>>();
   private loadStats = {
@@ -68,7 +67,7 @@ export class SampleLoader {
   constructor(
     config: SampleLoaderConfig,
     cache?: SampleCache,
-    eventBus?: EventBus
+    eventBus?: EventBus,
   ) {
     this.config = config;
     this.cache = cache;
@@ -80,7 +79,6 @@ export class SampleLoader {
    */
   initializeTone(tone: typeof Tone): void {
     this.tone = tone;
-    this.audioContext = tone.context.rawContext as AudioContext;
   }
 
   /**
@@ -89,32 +87,32 @@ export class SampleLoader {
   async loadSample(
     sampleIdOrUrl: string,
     metadata?: AudioSampleMetadata,
-    options: LoadOptions = {}
+    options: LoadOptions = {},
   ): Promise<LoadResult> {
     const startTime = performance.now();
     const opts = this.normalizeOptions(options);
-    
+
     try {
       // Check if already loading
       const activeLoad = this.activeLoads.get(sampleIdOrUrl);
       if (activeLoad) {
-        logger.debug('Returning active load for:', sampleIdOrUrl);
+        logger.debug('Returning active load for:', { sampleIdOrUrl });
         return activeLoad;
       }
 
       // Create load promise
       const loadPromise = this.performLoad(sampleIdOrUrl, metadata, opts);
       this.activeLoads.set(sampleIdOrUrl, loadPromise);
-      
+
       // Wait for result
       const result = await loadPromise;
-      
+
       // Update stats
       this.updateStats(result, performance.now() - startTime);
-      
+
       // Clean up
       this.activeLoads.delete(sampleIdOrUrl);
-      
+
       return result;
     } catch (error) {
       this.activeLoads.delete(sampleIdOrUrl);
@@ -131,17 +129,17 @@ export class SampleLoader {
       url?: string;
       metadata?: AudioSampleMetadata;
       options?: LoadOptions;
-    }>
+    }>,
   ): Promise<Map<string, LoadResult>> {
     const results = new Map<string, LoadResult>();
-    
+
     // Create load promises
     const loadPromises = samples.map(async (sample) => {
       try {
         const result = await this.loadSample(
           sample.url || sample.id,
           sample.metadata,
-          sample.options
+          sample.options,
         );
         results.set(sample.id, result);
       } catch (error) {
@@ -155,10 +153,10 @@ export class SampleLoader {
         });
       }
     });
-    
+
     // Wait for all loads
     await Promise.all(loadPromises);
-    
+
     return results;
   }
 
@@ -167,7 +165,7 @@ export class SampleLoader {
    */
   async createToneBuffer(
     sampleIdOrUrl: string,
-    options: LoadOptions = {}
+    options: LoadOptions = {},
   ): Promise<Tone.ToneAudioBuffer | null> {
     if (!this.tone) {
       throw new Error('Tone.js not initialized');
@@ -178,25 +176,29 @@ export class SampleLoader {
       if (this.cache && options.useCache !== false) {
         const cachedData = this.cache.getData(sampleIdOrUrl);
         if (cachedData) {
-          logger.debug('Creating ToneBuffer from cache:', sampleIdOrUrl);
-          return new this.tone.ToneAudioBuffer(cachedData);
+          logger.debug('Creating ToneBuffer from cache:', { sampleIdOrUrl });
+          return new this.tone.ToneAudioBuffer(
+            cachedData as unknown as AudioBuffer,
+          );
         }
       }
 
       // Load sample
       const result = await this.loadSample(sampleIdOrUrl, undefined, options);
-      
+
       if (result.success && result.data) {
         if (result.data instanceof ArrayBuffer) {
-          return new this.tone.ToneAudioBuffer(result.data);
+          return new this.tone.ToneAudioBuffer(
+            result.data as unknown as AudioBuffer,
+          );
         } else if (result.data instanceof AudioBuffer) {
           return new this.tone.ToneAudioBuffer(result.data);
         }
       }
-      
+
       return null;
     } catch (error) {
-      logger.error('Failed to create ToneBuffer:', error);
+      logger.error('Failed to create ToneBuffer:', error as Error);
       throw error;
     }
   }
@@ -206,7 +208,7 @@ export class SampleLoader {
    */
   async createToneSampler(
     samples: Record<string, string>,
-    options: LoadOptions = {}
+    options: LoadOptions = {},
   ): Promise<Tone.Sampler | null> {
     if (!this.tone) {
       throw new Error('Tone.js not initialized');
@@ -214,7 +216,7 @@ export class SampleLoader {
 
     try {
       const buffers: Record<string, Tone.ToneAudioBuffer> = {};
-      
+
       // Load all samples
       const entries = Object.entries(samples);
       for (const [note, url] of entries) {
@@ -225,11 +227,11 @@ export class SampleLoader {
           logger.warn(`Failed to load sample for note ${note}`);
         }
       }
-      
+
       // Create sampler
       return new this.tone.Sampler(buffers);
     } catch (error) {
-      logger.error('Failed to create ToneSampler:', error);
+      logger.error('Failed to create ToneSampler:', error as Error);
       throw error;
     }
   }
@@ -240,7 +242,7 @@ export class SampleLoader {
   private async performLoad(
     sampleIdOrUrl: string,
     metadata?: AudioSampleMetadata,
-    options: LoadOptions = {}
+    options: LoadOptions = {},
   ): Promise<LoadResult> {
     // Try cache first
     if (this.cache && options.useCache !== false) {
@@ -249,7 +251,7 @@ export class SampleLoader {
         return cachedResult;
       }
     }
-    
+
     // Load from network
     return this.loadFromNetwork(sampleIdOrUrl, metadata, options);
   }
@@ -270,17 +272,17 @@ export class SampleLoader {
 
     const startTime = performance.now();
     const data = this.cache.getData(sampleId);
-    
+
     if (data) {
       const loadTime = performance.now() - startTime;
-      
+
       this.eventBus?.emit('sample:loaded', {
         sampleId,
         fromCache: true,
         loadTime,
         size: data.byteLength,
       });
-      
+
       return {
         success: true,
         data,
@@ -290,7 +292,7 @@ export class SampleLoader {
         quality: 'cached',
       };
     }
-    
+
     return {
       success: false,
       fromCache: false,
@@ -306,38 +308,41 @@ export class SampleLoader {
   private async loadFromNetwork(
     url: string,
     metadata?: AudioSampleMetadata,
-    options: LoadOptions = {}
+    options: LoadOptions = {},
   ): Promise<LoadResult> {
     const startTime = performance.now();
     const maxRetries = options.retryCount ?? this.config.maxRetries;
     let lastError: Error | undefined;
-    
+
     // Build full URL
-    const fullUrl = this.buildUrl(url, options.quality || this.config.defaultQuality);
-    
+    const fullUrl = this.buildUrl(
+      url,
+      options.quality || this.config.defaultQuality,
+    );
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         if (attempt > 0) {
           await this.delay(this.config.retryDelay * attempt);
           logger.debug(`Retry attempt ${attempt} for ${url}`);
         }
-        
+
         // Fetch with timeout
         const response = await this.fetchWithTimeout(fullUrl, options.timeout);
-        
+
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         // Get data
         const data = await response.arrayBuffer();
         const loadTime = performance.now() - startTime;
-        
+
         // Cache if enabled
         if (this.cache && metadata) {
-          await this.cache.set(url, data, metadata);
+          this.cache.set(url, data, metadata);
         }
-        
+
         this.eventBus?.emit('sample:loaded', {
           sampleId: url,
           fromCache: false,
@@ -345,7 +350,7 @@ export class SampleLoader {
           size: data.byteLength,
           quality: options.quality || this.config.defaultQuality,
         });
-        
+
         return {
           success: true,
           data,
@@ -357,20 +362,22 @@ export class SampleLoader {
         };
       } catch (error) {
         lastError = error as Error;
-        logger.warn(`Failed to load ${url} (attempt ${attempt + 1}):`, error);
+        logger.warn(`Failed to load ${url} (attempt ${attempt + 1}):`, {
+          error,
+        });
       }
     }
-    
+
     // All attempts failed
     const loadTime = performance.now() - startTime;
-    
+
     this.eventBus?.emit('sample:loadFailed', {
       sampleId: url,
       error: lastError,
       attempts: maxRetries + 1,
       loadTime,
     });
-    
+
     return {
       success: false,
       fromCache: false,
@@ -386,30 +393,30 @@ export class SampleLoader {
    */
   private async fetchWithTimeout(
     url: string,
-    timeout?: number
+    timeout?: number,
   ): Promise<Response> {
     const controller = new AbortController();
     const timeoutMs = timeout || this.config.timeout;
-    
+
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    
+
     try {
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          'Accept': 'audio/*',
+          Accept: 'audio/*',
         },
       });
-      
+
       clearTimeout(timeoutId);
       return response;
     } catch (error) {
       clearTimeout(timeoutId);
-      
+
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error(`Request timeout after ${timeoutMs}ms`);
       }
-      
+
       throw error;
     }
   }
@@ -422,18 +429,18 @@ export class SampleLoader {
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
-    
+
     // Build with base URL
     const baseUrl = this.config.baseUrl || '';
     let fullUrl = baseUrl + url;
-    
+
     // Add quality suffix if not original
     if (quality !== 'original' && this.config.enableQualityAdaptation) {
       const extension = fullUrl.substring(fullUrl.lastIndexOf('.'));
       const baseName = fullUrl.substring(0, fullUrl.lastIndexOf('.'));
       fullUrl = `${baseName}_${quality}${extension}`;
     }
-    
+
     return fullUrl;
   }
 
@@ -458,7 +465,7 @@ export class SampleLoader {
   private updateStats(result: LoadResult, loadTime: number): void {
     this.loadStats.totalLoads++;
     this.loadStats.totalLoadTime += loadTime;
-    
+
     if (result.success) {
       if (result.fromCache) {
         this.loadStats.cacheHits++;
@@ -475,7 +482,7 @@ export class SampleLoader {
    * Delay helper
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -487,7 +494,7 @@ export class SampleLoader {
     failureRate: number;
   } {
     const total = this.loadStats.totalLoads || 1;
-    
+
     return {
       ...this.loadStats,
       averageLoadTime: this.loadStats.totalLoadTime / total,

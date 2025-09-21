@@ -8,19 +8,31 @@
  * Part of Story 2.1: Task 14, Subtask 14.4
  */
 
-import { getTone } from '../../../../utils/tone.js';
-// Epic 3.18: BaseAudioPlugin removed - now using plugin types directly
-// import { BaseAudioPlugin } from '../BaseAudioPlugin';
-import type { AudioPlugin, PluginState } from '../../../types/plugin.js';
+import * as Tone from 'tone';
+import {
+  createStructuredLogger,
+  PluginMetadata,
+  PluginConfig,
+  PluginCategory,
+  PluginPriority,
+  PluginAudioContext,
+  PluginProcessingResult,
+  ProcessingResultStatus,
+  PluginParameterType,
+  PluginState,
+  AudioPlugin,
+} from '../../../shared/index.js';
 
 // BaseAudioPlugin stub implementation
 abstract class BaseAudioPlugin implements AudioPlugin {
   id: string;
   type: string;
-  state: PluginState = 'unloaded';
+  state: PluginState = PluginState.UNLOADED;
   metadata: PluginMetadata;
-  config?: PluginConfig;
-  capabilities?: any;
+  config: PluginConfig;
+  capabilities: any;
+  parameters = new Map<string, any>();
+  protected _parameters = this.parameters; // Alias for compatibility
 
   constructor(id: string, type: string) {
     this.id = id;
@@ -32,31 +44,96 @@ abstract class BaseAudioPlugin implements AudioPlugin {
       author: 'BassNotion',
       description: 'Audio plugin',
       category: 'effect' as PluginCategory,
-      thumbnailUrl: '',
+      license: 'MIT',
+      tags: [],
+      capabilities: {
+        supportsRealtimeProcessing: true,
+        supportsOfflineProcessing: true,
+        supportsAudioWorklet: false,
+        supportsMIDI: false,
+        supportsAutomation: false,
+        supportsPresets: true,
+        supportsSidechain: false,
+        supportsMultiChannel: false,
+        maxLatency: 0,
+        cpuUsage: 0.1,
+        memoryUsage: 10,
+        minSampleRate: 44100,
+        maxSampleRate: 48000,
+        supportedBufferSizes: [256, 512, 1024],
+        supportsN8nPayload: false,
+        supportsAssetLoading: false,
+        supportsMobileOptimization: false,
+      },
+      dependencies: [],
+    };
+    this.config = {
+      id,
+      name: id,
+      version: '1.0.0',
+      category: 'effect' as PluginCategory,
+      enabled: true,
+      priority: PluginPriority.NORMAL,
+      settings: {},
+      autoStart: false,
+      inputChannels: 2,
+      outputChannels: 2,
     };
   }
 
   abstract initialize(context: PluginAudioContext): Promise<void>;
-  abstract process(input: Float32Array, output: Float32Array): void;
-  abstract dispose(): void;
+  abstract process(
+    inputBuffer: AudioBuffer,
+    outputBuffer: AudioBuffer,
+    context: PluginAudioContext,
+  ): Promise<PluginProcessingResult>;
+  abstract dispose(): Promise<void>;
 
   async load(): Promise<void> {
-    this.state = 'loaded';
+    this.state = PluginState.LOADED;
   }
   async activate(): Promise<void> {
-    this.state = 'active';
+    this.state = PluginState.ACTIVE;
   }
   async deactivate(): Promise<void> {
-    this.state = 'inactive';
+    this.state = PluginState.INACTIVE;
   }
-  on(event: string, handler: Function): void {}
-  off(event: string, handler: Function): void {}
-  emit(event: string, ...args: any[]): void {}
+  on(_event: any, _handler: any): () => void {
+    // Event handling stub
+    return () => {
+      // Unsubscribe handler
+    };
+  }
+  off(_event: string, _handler: (...args: any[]) => void): void {
+    // Event handling stub
+  }
+  emit(_event: string, ..._args: any[]): void {
+    // Event emitting stub
+  }
   getParameters(): Record<string, any> {
-    return {};
+    const params: Record<string, any> = {};
+    this.parameters.forEach((value, key) => {
+      params[key] = value;
+    });
+    return params;
   }
-  protected addParameter(param: any): void {}
-  setParameter(name: string, value: any): void {}
+  protected addParameter(_param: any): void {
+    if (_param && _param.id) {
+      this.parameters.set(_param.id, _param);
+    }
+  }
+  async setParameter(_name: string, _value: any): Promise<void> {
+    if (this.parameters.has(_name)) {
+      const param = this.parameters.get(_name);
+      if (param) {
+        param.value = _value;
+      }
+    }
+  }
+  getParameter(name: string): any {
+    const param = this.parameters.get(name);
+    return param?.value ?? param?.defaultValue;
+  }
   getState(): PluginState {
     return this.state;
   }
@@ -66,19 +143,40 @@ abstract class BaseAudioPlugin implements AudioPlugin {
   getMetadata(): PluginMetadata {
     return this.metadata;
   }
+  async loadPreset(preset: Record<string, unknown>): Promise<void> {
+    if (preset.parameters && typeof preset.parameters === 'object') {
+      for (const [key, value] of Object.entries(preset.parameters)) {
+        await this.setParameter(key, value);
+      }
+    }
+  }
+
+  async resetParameters(): Promise<void> {
+    // Reset to default values
+    this.parameters.forEach((param) => {
+      if (param && param.defaultValue !== undefined) {
+        param.value = param.defaultValue;
+      }
+    });
+  }
+
+  async savePreset(name: string): Promise<Record<string, unknown>> {
+    const preset: Record<string, unknown> = {
+      name,
+      pluginId: this.metadata.id,
+      version: this.metadata.version,
+      parameters: {},
+    };
+
+    this.parameters.forEach((param, key) => {
+      if (param && param.value !== undefined) {
+        (preset.parameters as Record<string, unknown>)[key] = param.value;
+      }
+    });
+
+    return preset;
+  }
 }
-import { createStructuredLogger } from '@bassnotion/contracts';
-import {
-  PluginMetadata,
-  PluginConfig,
-  PluginCategory,
-  PluginPriority,
-  PluginAudioContext,
-  PluginProcessingResult,
-  ProcessingResultStatus,
-  PluginParameterType,
-  PluginState,
-} from '../../types/plugin';
 
 const logger = createStructuredLogger('DrumProcessor');
 
@@ -142,6 +240,23 @@ interface RhythmAnalysisResult {
 }
 
 export class DrumProcessor extends BaseAudioPlugin {
+  // Override abstract methods
+  async initialize(context: PluginAudioContext): Promise<void> {
+    return this.onInitialize(context);
+  }
+
+  async dispose(): Promise<void> {
+    return this.onDispose();
+  }
+
+  async process(
+    inputBuffer: AudioBuffer,
+    outputBuffer: AudioBuffer,
+    context: PluginAudioContext,
+  ): Promise<PluginProcessingResult> {
+    // Delegate to the more specific method
+    return this.processAudioBuffer(inputBuffer, outputBuffer, context);
+  }
   // Plugin metadata
   public readonly metadata: PluginMetadata = {
     id: 'bassnotion.drum-processor',
@@ -212,7 +327,7 @@ export class DrumProcessor extends BaseAudioPlugin {
   // TODO: Review non-null assertion - consider null safety
   private frequencyData!: Float32Array;
   // TODO: Review non-null assertion - consider null safety
-  private timeDomainData!: Float32Array;
+  private _timeDomainData!: Float32Array;
 
   // Tone.js components
   private inputGain: Tone.Gain | null = null;
@@ -328,7 +443,7 @@ export class DrumProcessor extends BaseAudioPlugin {
   }
 
   constructor() {
-    super();
+    super('bassnotion.drum-processor', 'processor');
     this.initializeParameters();
     this.initializeProfessionalPatterns();
   }
@@ -353,7 +468,10 @@ export class DrumProcessor extends BaseAudioPlugin {
 
       logger.info('DrumProcessor initialized successfully');
     } catch (error) {
-      logger.error('Failed to initialize DrumProcessor:', error);
+      logger.error(
+        'Failed to initialize DrumProcessor:',
+        error instanceof Error ? error : new Error(String(error)),
+      );
       throw error;
     }
   }
@@ -409,7 +527,10 @@ export class DrumProcessor extends BaseAudioPlugin {
         try {
           component.dispose();
         } catch (error) {
-          logger.warn('Error disposing component:', error);
+          logger.warn(
+            'Error disposing component:',
+            error as Record<string, unknown>,
+          );
         }
       }
     });
@@ -519,11 +640,14 @@ export class DrumProcessor extends BaseAudioPlugin {
           logger.warn(`Unknown parameter: ${parameterId}`);
       }
     } catch (error) {
-      logger.error(`Error setting parameter ${parameterId}:`, error);
+      logger.error(
+        `Error setting parameter ${parameterId}:`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
     }
   }
 
-  public async process(
+  public async processAudioBuffer(
     inputBuffer: AudioBuffer,
     outputBuffer: AudioBuffer,
     context: PluginAudioContext,
@@ -652,7 +776,10 @@ export class DrumProcessor extends BaseAudioPlugin {
         if (threshold) await this.setParameter('beatThreshold', threshold);
       }
     } catch (error) {
-      logger.error('Error processing n8n payload:', error);
+      logger.error(
+        'Error processing n8n payload:',
+        error instanceof Error ? error : new Error(String(error)),
+      );
     }
   }
 
@@ -674,7 +801,10 @@ export class DrumProcessor extends BaseAudioPlugin {
         logger.info(`Loaded drum asset: ${assetId}`);
       }
     } catch (error) {
-      logger.error(`Error loading asset ${assetId}:`, error);
+      logger.error(
+        `Error loading asset ${assetId}:`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
     }
   }
 
@@ -695,7 +825,10 @@ export class DrumProcessor extends BaseAudioPlugin {
         Tone.setContext(context.audioContext);
       }
     } catch (error) {
-      logger.warn('Could not start Tone.js context:', error);
+      logger.warn(
+        'Could not start Tone.js context:',
+        error as Record<string, unknown>,
+      );
       // Continue with regular Web Audio API nodes only
     }
 
@@ -706,14 +839,17 @@ export class DrumProcessor extends BaseAudioPlugin {
 
     // Initialize analysis arrays
     this.frequencyData = new Float32Array(this.analyser.frequencyBinCount);
-    this.timeDomainData = new Float32Array(this.analyser.fftSize);
+    this._timeDomainData = new Float32Array(this.analyser.fftSize);
 
     // Create input/output gains - use Web Audio API directly in tests
     try {
       this.inputGain = new Tone.Gain({ gain: 1 });
       this.outputGain = new Tone.Gain({ gain: 1 });
     } catch (error) {
-      logger.warn('Tone.js Gain creation failed, using Web Audio API:', error);
+      logger.warn(
+        'Tone.js Gain creation failed, using Web Audio API:',
+        error as Record<string, unknown>,
+      );
       // Fallback to Web Audio API nodes for tests
       try {
         const inputGainNode = context.audioContext.createGain();
@@ -736,7 +872,7 @@ export class DrumProcessor extends BaseAudioPlugin {
       } catch (webAudioError) {
         logger.warn(
           'Web Audio API createGain failed, using mock nodes:',
-          webAudioError,
+          webAudioError as Record<string, unknown>,
         );
         // Final fallback for test environments
         this.inputGain = {
@@ -766,7 +902,10 @@ export class DrumProcessor extends BaseAudioPlugin {
       try {
         this.inputGain.connect(this.analyser as any);
       } catch (error) {
-        logger.warn('Could not connect input to analyser:', error);
+        logger.warn(
+          'Could not connect input to analyser:',
+          error as Record<string, unknown>,
+        );
       }
     }
   }
@@ -838,7 +977,10 @@ export class DrumProcessor extends BaseAudioPlugin {
         throw error;
       }
 
-      logger.warn('Tone.js node creation failed, creating mock nodes:', error);
+      logger.warn(
+        'Tone.js node creation failed, creating mock nodes:',
+        error as Record<string, unknown>,
+      );
 
       // Create mock nodes for testing
       this.metronome = {
@@ -968,7 +1110,7 @@ export class DrumProcessor extends BaseAudioPlugin {
   }
 
   private performBeatDetection(
-    buffer: AudioBuffer,
+    _buffer: AudioBuffer,
     currentTime: number,
   ): BeatDetectionResult {
     // Get frequency data and calculate energy in low frequencies (kick drum range)

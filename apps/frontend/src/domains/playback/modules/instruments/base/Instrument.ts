@@ -1,11 +1,11 @@
 /**
  * Base Instrument Interface
- * 
+ *
  * Defines the contract that all instrument implementations must follow.
  * This interface ensures compatibility with the track system and AudioEventRouter.
  */
 
-import type { InstrumentType } from '../../../services/plugins/TrackManagerProcessor.js';
+import type { InstrumentType } from '../../shared/index.js';
 
 export interface InstrumentConfig {
   /** Unique identifier for the instrument instance */
@@ -58,7 +58,7 @@ export interface InstrumentState {
   /** Whether the instrument is loading samples */
   isLoading: boolean;
   /** Current error state if any */
-  error?: string;
+  error: string | null;
 }
 
 /**
@@ -143,9 +143,9 @@ export abstract class BaseInstrument implements Instrument {
   public readonly type: InstrumentType;
   public name: string;
   protected _state: InstrumentState;
-  protected _volume: number = 0.75;
-  protected _pan: number = 0;
-  protected _muted: boolean = false;
+  protected _volume = 0.75;
+  protected _pan = 0;
+  protected _muted = false;
   protected _destination: any = null;
 
   constructor(config: InstrumentConfig) {
@@ -155,11 +155,12 @@ export abstract class BaseInstrument implements Instrument {
     this._volume = config.volume ?? 0.75;
     this._pan = config.pan ?? 0;
     this._muted = config.muted ?? false;
-    
+
     this._state = {
       isInitialized: false,
       isPlaying: false,
       isLoading: false,
+      error: null,
     };
   }
 
@@ -204,6 +205,6 @@ export abstract class BaseInstrument implements Instrument {
   protected abstract applyMute(): void;
 
   private generateId(): string {
-    return `${this.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `${this.type}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
 }

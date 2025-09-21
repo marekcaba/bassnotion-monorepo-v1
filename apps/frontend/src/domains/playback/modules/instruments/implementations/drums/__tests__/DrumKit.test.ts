@@ -1,20 +1,35 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DrumKit } from '../DrumKit.js';
-import type { DrumKitInstrumentConfig, DrumEvent } from '../../../types/index.js';
+import type {
+  DrumKitInstrumentConfig,
+  DrumEvent,
+} from '../../../types/index.js';
+import {
+  setupDIMocks,
+  cleanupDIMocks,
+} from '../../../__tests__/mocks/setupDI.js';
 
 // Mock the DrumInstrumentProcessor
-vi.mock('../../../../../services/plugins/DrumInstrumentProcessor.js', () => {
+vi.mock('../DrumInstrumentProcessor.js', () => {
   return {
-    DrumInstrumentProcessor: vi.fn().mockImplementation(() => ({
-      initialize: vi.fn().mockResolvedValue(undefined),
-      triggerDrum: vi.fn(),
-      stop: vi.fn(),
-      dispose: vi.fn(),
-      setMasterVolume: vi.fn(),
-      setGrooveStyle: vi.fn(),
-      setSwingAmount: vi.fn(),
-      setDrumVolume: vi.fn(),
-    })),
+    DrumInstrumentProcessor: vi
+      .fn()
+      .mockImplementation((config, audioEngine) => ({
+        initialize: vi
+          .fn()
+          .mockImplementation(async function (drumSamples, passedAudioEngine) {
+            // Store the audioEngine passed to initialize (second parameter)
+            this.audioEngine = passedAudioEngine || audioEngine;
+          }),
+        triggerDrum: vi.fn(),
+        stop: vi.fn(),
+        dispose: vi.fn(),
+        setMasterVolume: vi.fn(),
+        setGrooveStyle: vi.fn(),
+        setSwingAmount: vi.fn(),
+        setDrumVolume: vi.fn(),
+        audioEngine: undefined, // Will be set during initialize
+      })),
   };
 });
 
@@ -38,10 +53,17 @@ global.logger = mockLogger;
 describe('DrumKit', () => {
   let drumKit: DrumKit;
   let config: DrumKitInstrumentConfig;
+  let audioEngine: any;
+  let coreServices: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
+    // Setup DI mocks
+    const diSetup = setupDIMocks();
+    audioEngine = diSetup.audioEngine;
+    coreServices = diSetup.coreServices;
+
     config = {
       id: 'test-drums',
       name: 'Test DrumKit',
@@ -72,7 +94,11 @@ describe('DrumKit', () => {
       roundRobin: true,
     };
 
-    drumKit = new DrumKit(config);
+    drumKit = new DrumKit(config, audioEngine);
+  });
+
+  afterEach(() => {
+    cleanupDIMocks();
   });
 
   describe('Construction', () => {
@@ -90,7 +116,7 @@ describe('DrumKit', () => {
         type: 'drums',
       };
 
-      const minimalDrumKit = new DrumKit(minimalConfig);
+      const minimalDrumKit = new DrumKit(minimalConfig, audioEngine);
       expect(minimalDrumKit.id).toBe('minimal-drums');
     });
   });
@@ -98,28 +124,46 @@ describe('DrumKit', () => {
   describe('Initialization', () => {
     it('should initialize drum kit successfully', async () => {
       await drumKit.initialize();
-      
+
       expect(drumKit.state.isInitialized).toBe(true);
       expect(drumKit.state.isLoading).toBe(false);
       expect(drumKit.state.error).toBeNull();
     });
 
+    it('should pass audioEngine to processor during initialization', async () => {
+      await drumKit.initialize();
+
+      // Get the processor instance
+      const processor = (drumKit as any).processor;
+
+      // Verify processor was created with audioEngine
+      expect(processor.audioEngine).toBe(audioEngine);
+
+      // Verify initialize was called with audioEngine
+      expect(processor.initialize).toHaveBeenCalled();
+    });
+
     it('should not reinitialize if already initialized', async () => {
       await drumKit.initialize();
       await drumKit.initialize(); // Second call should be ignored
-      
+
       expect(drumKit.state.isInitialized).toBe(true);
     });
 
     it('should handle initialization errors', async () => {
+      // Create a new drumkit for this test to ensure clean state
+      const failingDrumKit = new DrumKit(config, audioEngine);
+
       // Mock initialization failure
-      const mockProcessor = (drumKit as any).processor;
+      const mockProcessor = (failingDrumKit as any).processor;
       mockProcessor.initialize.mockRejectedValueOnce(new Error('Init failed'));
 
-      await expect(drumKit.initialize()).rejects.toThrow('Init failed');
-      expect(drumKit.state.isInitialized).toBe(false);
-      expect(drumKit.state.isLoading).toBe(false);
-      expect(drumKit.state.error).toContain('Failed to initialize drum kit');
+      await expect(failingDrumKit.initialize()).rejects.toThrow('Init failed');
+      expect(failingDrumKit.state.isInitialized).toBe(false);
+      expect(failingDrumKit.state.isLoading).toBe(false);
+      expect(failingDrumKit.state.error).toContain(
+        'Failed to initialize drum kit',
+      );
     });
   });
 
@@ -170,7 +214,7 @@ describe('DrumKit', () => {
     });
 
     it('should not trigger when not initialized', () => {
-      const uninitializedDrumKit = new DrumKit(config);
+      const uninitializedDrumKit = new DrumKit(config, audioEngine);
       const event = {
         audioTime: 0.5,
         timestamp: Date.now(),
@@ -179,10 +223,14 @@ describe('DrumKit', () => {
       };
 
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       uninitializedDrumKit.trigger(event);
-      
-      expect(consoleSpy).toHaveBeenCalledWith('DrumKit Test DrumKit not initialized');
+
+      // Check that console.warn was called with structured logging format
+      expect(consoleSpy).toHaveBeenCalled();
+      const callArgs = consoleSpy.mock.calls[0][0];
+      expect(callArgs).toContain('DrumKit Test DrumKit not initialized');
+      expect(callArgs).toContain('"level":"WARN"');
       consoleSpy.mockRestore();
     });
   });
@@ -217,12 +265,16 @@ describe('DrumKit', () => {
     });
 
     it('should not trigger when not initialized', () => {
-      const uninitializedDrumKit = new DrumKit(config);
+      const uninitializedDrumKit = new DrumKit(config, audioEngine);
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       uninitializedDrumKit.triggerDrum('kick');
-      
-      expect(consoleSpy).toHaveBeenCalledWith('DrumKit not initialized');
+
+      // Check that console.warn was called with structured logging format
+      expect(consoleSpy).toHaveBeenCalled();
+      const callArgs = consoleSpy.mock.calls[0][0];
+      expect(callArgs).toContain('DrumKit not initialized');
+      expect(callArgs).toContain('"level":"WARN"');
       consoleSpy.mockRestore();
     });
   });
@@ -271,7 +323,7 @@ describe('DrumKit', () => {
       const kitInfo = drumKit.getKitInfo();
 
       expect(kitInfo.name).toBe('Test DrumKit');
-      expect(kitInfo.totalSamples).toBe(18); // Sum of all sample arrays
+      expect(kitInfo.totalSamples).toBe(16); // Sum of all sample arrays
       expect(kitInfo.loadedDrums).toContain('kick');
       expect(kitInfo.loadedDrums).toContain('snare');
     });

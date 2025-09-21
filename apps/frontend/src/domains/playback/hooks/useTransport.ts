@@ -177,29 +177,33 @@ export function useTransport(registry?: ServiceRegistry): UseTransportResult {
     setTempo(data.tempo);
   }, []);
 
-  const handleTimeSignatureChange = useCallback((data: {
-    timeSignature: TimeSignature;
-  }) => {
-    setTimeSignature(data.timeSignature);
-  }, []);
+  const handleTimeSignatureChange = useCallback(
+    (data: { timeSignature: TimeSignature }) => {
+      setTimeSignature(data.timeSignature);
+    },
+    [],
+  );
 
-  const handlePositionUpdate = useCallback((data: { position: TransportPosition }) => {
-    // Throttle position updates to max 30fps (33ms) to prevent excessive re-renders
-    const now = Date.now();
-    if (now - lastPositionUpdateRef.current < 33) {
-      return;
-    }
-    lastPositionUpdateRef.current = now;
+  const handlePositionUpdate = useCallback(
+    (data: { position: TransportPosition }) => {
+      // Throttle position updates to max 30fps (33ms) to prevent excessive re-renders
+      const now = Date.now();
+      if (now - lastPositionUpdateRef.current < 33) {
+        return;
+      }
+      lastPositionUpdateRef.current = now;
 
-    // Only log every 10th update to reduce console spam
-    if (Math.random() < 0.1) {
-      logger.debug(
-        'useTransport: Received transport:position-updated event:',
-        data.position,
-      );
-    }
-    setPosition(data.position);
-  }, []);
+      // Only log every 10th update to reduce console spam
+      if (Math.random() < 0.1) {
+        logger.debug(
+          'useTransport: Received transport:position-updated event:',
+          data.position,
+        );
+      }
+      setPosition(data.position);
+    },
+    [],
+  );
 
   const handleLoopToggle = useCallback((data: { enabled: boolean }) => {
     setIsLoopEnabled(data.enabled);
@@ -259,7 +263,17 @@ export function useTransport(registry?: ServiceRegistry): UseTransportResult {
       unsubscribePosition();
       unsubscribeLoop();
     };
-  }, [servicesReady, handleStart, handleStop, handlePause, handleResume, handleTempoChange, handleTimeSignatureChange, handlePositionUpdate, handleLoopToggle]); // Re-run when services are ready or handlers change
+  }, [
+    servicesReady,
+    handleStart,
+    handleStop,
+    handlePause,
+    handleResume,
+    handleTempoChange,
+    handleTimeSignatureChange,
+    handlePositionUpdate,
+    handleLoopToggle,
+  ]); // Re-run when services are ready or handlers change
 
   // Transport control callbacks
   const start = useCallback(async () => {

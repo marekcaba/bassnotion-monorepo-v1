@@ -1,8 +1,10 @@
 /**
  * Instruments Module Types
- * 
+ *
  * Type definitions for the instruments module.
  */
+
+import type { Instrument } from '../base/Instrument.js';
 
 export * from '../base/Instrument.js';
 export * from '../base/Sampler.js';
@@ -11,7 +13,17 @@ export * from '../base/Sampler.js';
  * Drum-specific types
  */
 export interface DrumEvent {
-  drum: 'kick' | 'snare' | 'hihat' | 'openHihat' | 'crash' | 'ride' | 'tom1' | 'tom2' | 'tom3' | string;
+  drum:
+    | 'kick'
+    | 'snare'
+    | 'hihat'
+    | 'openHihat'
+    | 'crash'
+    | 'ride'
+    | 'tom1'
+    | 'tom2'
+    | 'tom3'
+    | string;
   velocity?: number;
   time: number;
   duration?: string;
@@ -161,6 +173,20 @@ export interface InstrumentRegistry {
 /**
  * Re-export base types
  */
-export type { Instrument, InstrumentConfig, InstrumentEvent, InstrumentMetrics, InstrumentState } from '../base/Instrument.js';
-export type { Sampler, SamplerConfig, SampleMap, LoadedSample } from '../base/Sampler.js';
-export type { InstrumentAdapter, LegacyProcessor } from '../base/InstrumentAdapter.js';
+export type {
+  Instrument,
+  InstrumentConfig,
+  InstrumentEvent,
+  InstrumentMetrics,
+  InstrumentState,
+} from '../base/Instrument.js';
+export type {
+  Sampler,
+  SamplerConfig,
+  SampleMap,
+  LoadedSample,
+} from '../base/Sampler.js';
+export type {
+  InstrumentAdapter,
+  LegacyProcessor,
+} from '../base/InstrumentAdapter.js';

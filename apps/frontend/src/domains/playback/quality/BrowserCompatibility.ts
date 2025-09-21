@@ -254,24 +254,28 @@ export class BrowserCompatibility {
 
     if (ua.includes('chrome') && !ua.includes('edg')) {
       const match = ua.match(/chrome\/(\d+\.\d+)/);
-      this.browserInfo = match
-        ? { name: 'Chrome', version: match[1] }
-        : { name: 'Chrome', version: 'unknown' };
+      this.browserInfo = {
+        name: 'Chrome',
+        version: match?.[1] || 'unknown',
+      };
     } else if (ua.includes('firefox')) {
       const match = ua.match(/firefox\/(\d+\.\d+)/);
-      this.browserInfo = match
-        ? { name: 'Firefox', version: match[1] }
-        : { name: 'Firefox', version: 'unknown' };
+      this.browserInfo = {
+        name: 'Firefox',
+        version: match?.[1] || 'unknown',
+      };
     } else if (ua.includes('safari') && !ua.includes('chrome')) {
       const match = ua.match(/version\/(\d+\.\d+)/);
-      this.browserInfo = match
-        ? { name: 'Safari', version: match[1] }
-        : { name: 'Safari', version: 'unknown' };
+      this.browserInfo = {
+        name: 'Safari',
+        version: match?.[1] || 'unknown',
+      };
     } else if (ua.includes('edg')) {
       const match = ua.match(/edg\/(\d+\.\d+)/);
-      this.browserInfo = match
-        ? { name: 'Edge', version: match[1] }
-        : { name: 'Edge', version: 'unknown' };
+      this.browserInfo = {
+        name: 'Edge',
+        version: match?.[1] || 'unknown',
+      };
     } else {
       this.browserInfo = { name: 'Unknown', version: 'unknown' };
     }
@@ -301,7 +305,10 @@ export class BrowserCompatibility {
         name: this.browserInfo?.name || 'Unknown',
         version: this.browserInfo?.version || 'unknown',
         userAgent: navigator.userAgent,
-        platform: navigator.platform,
+        platform:
+          (navigator as any).userAgentData?.platform ||
+          navigator.platform ||
+          'unknown',
       },
       capabilities: this.capabilities,
       overallSupport,

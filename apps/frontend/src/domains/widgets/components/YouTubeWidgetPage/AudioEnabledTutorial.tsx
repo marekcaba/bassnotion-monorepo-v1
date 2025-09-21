@@ -47,15 +47,17 @@ function AudioEnabledTutorialContent({
   tutorialSlug,
   exercises,
 }: AudioEnabledTutorialProps) {
-  const { correlationId, logger } = useCorrelation('AudioEnabledTutorialContent');
-  
+  const { correlationId, logger } = useCorrelation(
+    'AudioEnabledTutorialContent',
+  );
+
   // Log component mount
   useEffect(() => {
     // Log instead of alert to avoid blocking
     setTimeout(() => {
       logger.info(
         'AudioEnabledTutorial useEffect completed - page should be interactive now',
-        { correlationId }
+        { correlationId },
       );
     }, 1000);
   }, []);
@@ -158,7 +160,7 @@ function AudioEnabledTutorialContent({
         } else {
           logger.warn(
             '⚠️ CoreServices not found after 30 attempts, proceeding anyway',
-            { correlationId }
+            { correlationId },
           );
           if (mountedRef.current) {
             setAudioInitialized(true);

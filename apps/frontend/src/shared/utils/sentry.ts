@@ -6,15 +6,15 @@ import * as Sentry from '@sentry/nextjs';
 export function captureError(
   error: Error | string,
   context?: Record<string, any>,
-  level: Sentry.SeverityLevel = 'error'
+  level: Sentry.SeverityLevel = 'error',
 ) {
   Sentry.withScope((scope) => {
     scope.setLevel(level);
-    
+
     if (context) {
       scope.setContext('additional', context);
     }
-    
+
     if (typeof error === 'string') {
       Sentry.captureMessage(error, level);
     } else {
@@ -29,7 +29,7 @@ export function captureError(
 export function trackEvent(
   message: string,
   category: string,
-  data?: Record<string, any>
+  data?: Record<string, any>,
 ) {
   Sentry.addBreadcrumb({
     message,
@@ -75,7 +75,7 @@ export function addBreadcrumb(
   message: string,
   category: string,
   data?: Record<string, any>,
-  level: Sentry.SeverityLevel = 'info'
+  level: Sentry.SeverityLevel = 'info',
 ) {
   Sentry.addBreadcrumb({
     message,
@@ -91,12 +91,12 @@ export function addBreadcrumb(
  */
 export function startTransaction(
   name: string,
-  op: string = 'navigation'
+  op: string = 'navigation',
 ): ReturnType<typeof Sentry.startTransaction> | null {
   if (typeof window === 'undefined') {
     return null;
   }
-  
+
   return Sentry.startTransaction({
     name,
     op,
@@ -109,10 +109,10 @@ export function startTransaction(
 export async function measureAsyncOperation<T>(
   name: string,
   operation: () => Promise<T>,
-  op: string = 'async'
+  op: string = 'async',
 ): Promise<T> {
   const transaction = startTransaction(name, op);
-  
+
   try {
     const result = await operation();
     transaction?.setStatus('ok');
@@ -135,7 +135,7 @@ export function captureAudioError(
     widget?: string;
     action?: string;
     [key: string]: any;
-  }
+  },
 ) {
   captureError(error, {
     subsystem: 'audio',
@@ -149,7 +149,7 @@ export function captureAudioError(
 export function captureWidgetError(
   error: Error,
   widgetName: string,
-  additionalContext?: Record<string, any>
+  additionalContext?: Record<string, any>,
 ) {
   captureError(error, {
     subsystem: 'widget',
@@ -164,7 +164,7 @@ export function captureWidgetError(
 export function reportPerformanceMetric(
   name: string,
   value: number,
-  unit: string = 'ms'
+  unit: string = 'ms',
 ) {
   Sentry.addBreadcrumb({
     category: 'performance',

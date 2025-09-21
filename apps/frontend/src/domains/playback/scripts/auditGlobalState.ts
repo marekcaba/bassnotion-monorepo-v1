@@ -9,7 +9,7 @@
 
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, extname } from 'path';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { createStructuredLogger } from '../modules/shared/index.js';
 
 // Patterns to search for
 const GLOBAL_STATE_PATTERNS = [
@@ -159,7 +159,10 @@ function runAudit(baseDir: string): void {
         if (!acc[result.file]) {
           acc[result.file] = [];
         }
-        acc[result.file].push(result);
+        const fileResults = acc[result.file];
+        if (fileResults) {
+          fileResults.push(result);
+        }
         return acc;
       },
       {} as Record<string, AuditResult[]>,

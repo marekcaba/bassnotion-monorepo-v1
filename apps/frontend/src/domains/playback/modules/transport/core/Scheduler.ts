@@ -1,6 +1,6 @@
 /**
  * Scheduler - Event scheduling and timing management
- * 
+ *
  * Responsibilities:
  * - Event queue management
  * - Look-ahead scheduling
@@ -10,7 +10,7 @@
 
 import { TimingEvent, ScheduleOptions } from '../types/index.js';
 import { SchedulingError } from '../types/errors.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { createStructuredLogger } from '../../shared/index.js';
 import * as Tone from 'tone';
 
 const logger = createStructuredLogger('TransportScheduler');
@@ -35,7 +35,7 @@ export class Scheduler {
       maxQueueSize: 10000,
       ...config,
     };
-    logger.debug('Scheduler instance created', config);
+    logger.debug('Scheduler instance created', { config });
   }
 
   /**
@@ -70,8 +70,13 @@ export class Scheduler {
    * Schedule a single event
    */
   scheduleEvent(event: Omit<TimingEvent, 'id'>): string {
-    if (this.eventQueue.length >= this.config.maxQueueSize!) {
-      throw new SchedulingError(`Event queue full (max: ${this.config.maxQueueSize})`);
+    if (
+      this.config.maxQueueSize &&
+      this.eventQueue.length >= this.config.maxQueueSize
+    ) {
+      throw new SchedulingError(
+        `Event queue full (max: ${this.config.maxQueueSize})`,
+      );
     }
 
     const id = this.generateEventId();
@@ -88,7 +93,11 @@ export class Scheduler {
       }
     }
 
-    logger.debug('Event scheduled', { id, time: event.time, priority: event.priority });
+    logger.debug('Event scheduled', {
+      id,
+      time: event.time,
+      priority: event.priority,
+    });
     return id;
   }
 
@@ -99,7 +108,7 @@ export class Scheduler {
     callback: (time: number) => void,
     interval: string | number,
     startTime?: number,
-    priority: 'high' | 'normal' | 'low' = 'normal'
+    _priority: 'high' | 'normal' | 'low' = 'normal',
   ): string {
     const id = this.generateEventId('repeat');
 
@@ -109,11 +118,11 @@ export class Scheduler {
           try {
             callback(time);
           } catch (error) {
-            logger.error('Repeat callback error', error);
+            logger.error('Repeat callback error', error as Error);
           }
         },
         interval,
-        startTime
+        startTime,
       );
 
       this.scheduledEvents.set(id, scheduleId);
@@ -145,15 +154,15 @@ export class Scheduler {
    */
   clearAllScheduledEvents(): void {
     // Clear Tone.js scheduled events
-    for (const [eventId, scheduleId] of this.scheduledEvents) {
+    for (const [_eventId, scheduleId] of this.scheduledEvents) {
       Tone.Transport.clear(scheduleId);
     }
     this.scheduledEvents.clear();
-    
+
     // Clear event queue
     this.eventQueue = [];
     this.scheduledUntil = 0;
-    
+
     logger.info('All events cleared');
   }
 
@@ -183,7 +192,7 @@ export class Scheduler {
         (event) =>
           event.time > currentTime &&
           event.time <= scheduleUntil &&
-          !this.scheduledEvents.has(event.id)
+          !this.scheduledEvents.has(event.id),
       )
       .sort((a, b) => {
         // Sort by priority first, then by time
@@ -200,26 +209,34 @@ export class Scheduler {
         const scheduleId = Tone.Transport.schedule((time) => {
           try {
             event.callback(time);
-            
+
             // Remove from queue after execution
             this.eventQueue = this.eventQueue.filter((e) => e.id !== event.id);
             this.scheduledEvents.delete(event.id);
           } catch (error) {
-            logger.error('Event callback error', { eventId: event.id, error });
+            logger.error('Event callback error', error as Error, {
+              eventId: event.id,
+            });
           }
         }, event.time);
 
         this.scheduledEvents.set(event.id, scheduleId);
       } catch (error) {
-        logger.error('Failed to schedule event', { eventId: event.id, error });
+        logger.error('Failed to schedule event', error as Error, {
+          eventId: event.id,
+        });
       }
     }
 
     // Clean up past events
-    const pastEvents = this.eventQueue.filter((event) => event.time <= currentTime);
+    const pastEvents = this.eventQueue.filter(
+      (event) => event.time <= currentTime,
+    );
     if (pastEvents.length > 0) {
       logger.warn('Removing past events', { count: pastEvents.length });
-      this.eventQueue = this.eventQueue.filter((event) => event.time > currentTime);
+      this.eventQueue = this.eventQueue.filter(
+        (event) => event.time > currentTime,
+      );
     }
 
     this.scheduledUntil = scheduleUntil;
@@ -246,7 +263,10 @@ export class Scheduler {
     update();
 
     // Set up periodic updates
-    this.updateTimer = window.setInterval(update, this.config.scheduleInterval * 1000);
+    this.updateTimer = window.setInterval(
+      update,
+      this.config.scheduleInterval * 1000,
+    );
   }
 
   /**
@@ -269,7 +289,8 @@ export class Scheduler {
 
     while (left < right) {
       const mid = Math.floor((left + right) / 2);
-      if (this.eventQueue[mid].time <= event.time) {
+      const midEvent = this.eventQueue[mid];
+      if (midEvent && midEvent.time <= event.time) {
         left = mid + 1;
       } else {
         right = mid;
@@ -289,7 +310,11 @@ export class Scheduler {
   /**
    * Schedule a single callback at a specific time
    */
-  scheduleOnce(callback: (time: number) => void, time: number, options?: ScheduleOptions): string {
+  scheduleOnce(
+    callback: (time: number) => void,
+    time: number,
+    options?: ScheduleOptions,
+  ): string {
     return this.scheduleEvent({
       time,
       callback,

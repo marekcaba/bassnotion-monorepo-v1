@@ -1,0 +1,90 @@
+{
+  "name": "Salamander Grand Piano",
+  "version": "1.0.0",
+  "author": "Alexander Holm",
+  "description": "Professional 16-velocity Salamander Grand Piano sampler",
+  
+  "storage": {
+    "baseUrl": "https://htuztkrbuewheehjspcz.supabase.co/storage/v1/object/public/audio-samples",
+    "localPath": "/samples/salamander-mp3",
+    "bucketPath": "Keyboards/salamander"
+  },
+  
+  "velocityRanges": [
+    { "min": 0, "max": 8, "layer": "v1" },
+    { "min": 9, "max": 16, "layer": "v2" },
+    { "min": 17, "max": 24, "layer": "v3" },
+    { "min": 25, "max": 32, "layer": "v4" },
+    { "min": 33, "max": 40, "layer": "v5" },
+    { "min": 41, "max": 48, "layer": "v6" },
+    { "min": 49, "max": 56, "layer": "v7" },
+    { "min": 57, "max": 64, "layer": "v8" },
+    { "min": 65, "max": 72, "layer": "v9" },
+    { "min": 73, "max": 80, "layer": "v10" },
+    { "min": 81, "max": 88, "layer": "v11" },
+    { "min": 89, "max": 96, "layer": "v12" },
+    { "min": 97, "max": 104, "layer": "v13" },
+    { "min": 105, "max": 112, "layer": "v14" },
+    { "min": 113, "max": 120, "layer": "v15" },
+    { "min": 121, "max": 127, "layer": "v16" }
+  ],
+  
+  "sampleMapping": {
+    "A0": "A0.mp3",
+    "C1": "C1.mp3",
+    "Eb1": "Ds1.mp3",
+    "Gb1": "Fs1.mp3",
+    "A1": "A1.mp3",
+    "C2": "C2.mp3",
+    "Eb2": "Ds2.mp3",
+    "Gb2": "Fs2.mp3",
+    "A2": "A2.mp3",
+    "C3": "C3.mp3",
+    "Eb3": "Ds3.mp3",
+    "Gb3": "Fs3.mp3",
+    "A3": "A3.mp3",
+    "C4": "C4.mp3",
+    "Eb4": "Ds4.mp3",
+    "Gb4": "Fs4.mp3",
+    "A4": "A4.mp3",
+    "C5": "C5.mp3",
+    "Eb5": "Ds5.mp3",
+    "Gb5": "Fs5.mp3",
+    "A5": "A5.mp3",
+    "C6": "C6.mp3",
+    "Eb6": "Ds6.mp3",
+    "Gb6": "Fs6.mp3",
+    "A6": "A6.mp3",
+    "C7": "C7.mp3",
+    "Eb7": "Ds7.mp3",
+    "Gb7": "Fs7.mp3",
+    "A7": "A7.mp3",
+    "C8": "C8.mp3"
+  },
+  
+  "defaultLayers": ["v1", "v6", "v10", "v14", "v16"],
+  
+  "samplerConfig": {
+    "attack": 0,
+    "release": 0.05,
+    "curve": "exponential",
+    "volume": 0
+  },
+  
+  "mechanicalSounds": {
+    "damperRelease": {
+      "samples": {
+        "D4": "OOG_DAMP_REL_113_D4_1.mp3"
+      },
+      "volume": -10,
+      "offset": 0
+    }
+  },
+  
+  "optimization": {
+    "preloadPriority": ["v10", "v1", "v16"],
+    "memoryLimit": 200,
+    "streamingEnabled": false,
+    "compressionFormat": "mp3"
+  }
+}

@@ -21,7 +21,11 @@ export function getPersistentAudioContext(): AudioContext | null {
 
   // Fallback: Check AudioEngine's global context
   const AudioEngine = (window as any).__AudioEngine;
-  if (AudioEngine && AudioEngine.globalContext && AudioEngine.globalContext.state !== 'closed') {
+  if (
+    AudioEngine &&
+    AudioEngine.globalContext &&
+    AudioEngine.globalContext.state !== 'closed'
+  ) {
     return AudioEngine.globalContext;
   }
 
@@ -29,9 +33,10 @@ export function getPersistentAudioContext(): AudioContext | null {
   const Tone = (window as any).Tone;
   if (Tone && Tone.context) {
     // Get the native AudioContext from Tone's wrapper
-    const toneContext = Tone.context._context || 
-                       Tone.context._nativeAudioContext || 
-                       Tone.context.rawContext;
+    const toneContext =
+      Tone.context._context ||
+      Tone.context._nativeAudioContext ||
+      Tone.context.rawContext;
     if (toneContext && toneContext.state !== 'closed') {
       return toneContext;
     }
@@ -56,12 +61,15 @@ export async function getOrCreatePersistentAudioContext(): Promise<AudioContext>
   }
 
   // If we must create a new context, store it as persistent
-  logger.warn('⚠️ Creating new AudioContext - this should only happen once during app initialization');
-  
-  const AudioContextConstructor = window.AudioContext || (window as any).webkitAudioContext;
+  logger.warn(
+    '⚠️ Creating new AudioContext - this should only happen once during app initialization',
+  );
+
+  const AudioContextConstructor =
+    window.AudioContext || (window as any).webkitAudioContext;
   const context = new AudioContextConstructor({
     latencyHint: 'balanced',
-    sampleRate: 48000
+    sampleRate: 48000,
   });
 
   // Store as persistent context
@@ -95,7 +103,7 @@ export function getAudioContextInfo(): {
   currentTime?: number;
 } {
   const context = getPersistentAudioContext();
-  
+
   if (!context) {
     return { hasPersistent: false };
   }
@@ -106,7 +114,7 @@ export function getAudioContextInfo(): {
     sampleRate: context.sampleRate,
     baseLatency: context.baseLatency,
     outputLatency: context.outputLatency,
-    currentTime: context.currentTime
+    currentTime: context.currentTime,
   };
 }
 
@@ -121,9 +129,10 @@ export function ensureToneUsesPersistentContext(): void {
   if (!persistentContext) return;
 
   // Get Tone's current context
-  const toneContext = Tone.context?._context || 
-                     Tone.context?._nativeAudioContext || 
-                     Tone.context?.rawContext;
+  const toneContext =
+    Tone.context?._context ||
+    Tone.context?._nativeAudioContext ||
+    Tone.context?.rawContext;
 
   // Only set context if they're different
   if (toneContext !== persistentContext) {

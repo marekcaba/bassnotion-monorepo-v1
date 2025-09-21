@@ -1,12 +1,17 @@
 /**
  * Benchmark Suite
- * 
+ *
  * Comprehensive performance benchmarking and regression testing.
  * Extracted from PerformanceOptimizer for modular testing architecture.
  */
 
-import type { DeviceCapabilities, QualitySettings, BenchmarkResult, PerformanceMetrics } from './types';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import type {
+  DeviceCapabilities,
+  QualitySettings,
+  BenchmarkResult,
+  PerformanceMetrics,
+} from './types';
+import { createStructuredLogger } from '../shared/index.js';
 
 const logger = createStructuredLogger('BenchmarkSuite');
 
@@ -16,10 +21,10 @@ export class BenchmarkSuite {
    */
   async runAllBenchmarks(
     capabilities: DeviceCapabilities,
-    settings: QualitySettings
+    settings: QualitySettings,
   ): Promise<BenchmarkResult[]> {
     logger.info('🏁 Starting comprehensive benchmark suite...');
-    
+
     const benchmarks = [
       'Audio Latency Test',
       'CPU Performance Test',
@@ -30,18 +35,27 @@ export class BenchmarkSuite {
       'Initialization Speed Test',
       'Throughput Test',
     ];
-    
+
     const results: BenchmarkResult[] = [];
-    
+
     for (const benchmark of benchmarks) {
       try {
-        const result = await this.runBenchmark(benchmark, capabilities, settings);
+        const result = await this.runBenchmark(
+          benchmark,
+          capabilities,
+          settings,
+        );
         results.push(result);
-        
-        logger.info(`✅ ${benchmark}: ${result.passed ? 'PASSED' : 'FAILED'} (${result.score.toFixed(1)}/100)`);
+
+        logger.info(
+          `✅ ${benchmark}: ${result.passed ? 'PASSED' : 'FAILED'} (${result.score.toFixed(1)}/100)`,
+        );
       } catch (error) {
-        logger.error(`❌ ${benchmark} failed:`, error);
-        
+        logger.error(
+          `❌ ${benchmark} failed:`,
+          error instanceof Error ? error : new Error(String(error)),
+        );
+
         // Create failed result
         results.push({
           testName: benchmark,
@@ -53,22 +67,24 @@ export class BenchmarkSuite {
         });
       }
     }
-    
-    const passedTests = results.filter(r => r.passed).length;
-    logger.info(`🏁 Benchmark suite completed: ${passedTests}/${results.length} passed`);
-    
+
+    const passedTests = results.filter((r) => r.passed).length;
+    logger.info(
+      `🏁 Benchmark suite completed: ${passedTests}/${results.length} passed`,
+    );
+
     return results;
   }
-  
+
   /**
    * Run regression tests specifically
    */
   async runRegressionTests(
     capabilities: DeviceCapabilities,
-    settings: QualitySettings
+    settings: QualitySettings,
   ): Promise<BenchmarkResult[]> {
     logger.info('🧪 Starting regression test suite...');
-    
+
     const regressionTests = [
       'Initialization Regression Test',
       'Audio Quality Regression Test',
@@ -76,18 +92,27 @@ export class BenchmarkSuite {
       'Memory Leak Test',
       'Stability Test',
     ];
-    
+
     const results: BenchmarkResult[] = [];
-    
+
     for (const test of regressionTests) {
       try {
-        const result = await this.runRegressionTest(test, capabilities, settings);
+        const result = await this.runRegressionTest(
+          test,
+          capabilities,
+          settings,
+        );
         results.push(result);
-        
-        logger.info(`✅ ${test}: ${result.passed ? 'PASSED' : 'FAILED'} (${result.score.toFixed(1)}/100)`);
+
+        logger.info(
+          `✅ ${test}: ${result.passed ? 'PASSED' : 'FAILED'} (${result.score.toFixed(1)}/100)`,
+        );
       } catch (error) {
-        logger.error(`❌ ${test} failed:`, error);
-        
+        logger.error(
+          `❌ ${test} failed:`,
+          error instanceof Error ? error : new Error(String(error)),
+        );
+
         results.push({
           testName: test,
           duration: 0,
@@ -98,31 +123,37 @@ export class BenchmarkSuite {
         });
       }
     }
-    
-    const passedTests = results.filter(r => r.passed).length;
-    logger.info(`🧪 Regression tests completed: ${passedTests}/${results.length} passed`);
-    
+
+    const passedTests = results.filter((r) => r.passed).length;
+    logger.info(
+      `🧪 Regression tests completed: ${passedTests}/${results.length} passed`,
+    );
+
     return results;
   }
-  
+
   /**
    * Run individual benchmark
    */
   private async runBenchmark(
     testName: string,
     capabilities: DeviceCapabilities,
-    settings: QualitySettings
+    settings: QualitySettings,
   ): Promise<BenchmarkResult> {
     const startTime = performance.now();
-    
+
     // Simulate benchmark execution based on test type
     const testDuration = this.getTestDuration(testName);
-    await new Promise(resolve => setTimeout(resolve, testDuration));
-    
+    await new Promise((resolve) => setTimeout(resolve, testDuration));
+
     const duration = performance.now() - startTime;
-    const score = this.calculateBenchmarkScore(testName, capabilities, settings);
+    const score = this.calculateBenchmarkScore(
+      testName,
+      capabilities,
+      settings,
+    );
     const metrics = this.generateBenchmarkMetrics(testName, capabilities);
-    
+
     return {
       testName,
       duration,
@@ -132,25 +163,29 @@ export class BenchmarkSuite {
       details: `${testName} completed with score ${score.toFixed(1)}`,
     };
   }
-  
+
   /**
    * Run individual regression test
    */
   private async runRegressionTest(
     testName: string,
     capabilities: DeviceCapabilities,
-    settings: QualitySettings
+    settings: QualitySettings,
   ): Promise<BenchmarkResult> {
     const startTime = performance.now();
-    
+
     // Regression tests tend to be more thorough
     const testDuration = this.getTestDuration(testName) * 1.5;
-    await new Promise(resolve => setTimeout(resolve, testDuration));
-    
+    await new Promise((resolve) => setTimeout(resolve, testDuration));
+
     const duration = performance.now() - startTime;
-    const score = this.calculateRegressionScore(testName, capabilities, settings);
+    const score = this.calculateRegressionScore(
+      testName,
+      capabilities,
+      settings,
+    );
     const metrics = this.generateBenchmarkMetrics(testName, capabilities);
-    
+
     return {
       testName,
       duration,
@@ -160,7 +195,7 @@ export class BenchmarkSuite {
       details: `${testName} ${score >= 85 ? 'passed' : 'failed'} with score ${score.toFixed(1)}`,
     };
   }
-  
+
   /**
    * Get test duration based on test type
    */
@@ -180,20 +215,20 @@ export class BenchmarkSuite {
       'Memory Leak Test': 300,
       'Stability Test': 250,
     };
-    
+
     return baseDurations[testName as keyof typeof baseDurations] || 100;
   }
-  
+
   /**
    * Calculate benchmark score based on device capabilities
    */
   private calculateBenchmarkScore(
     testName: string,
     capabilities: DeviceCapabilities,
-    settings: QualitySettings
+    settings: QualitySettings,
   ): number {
     let baseScore = 80; // Base score
-    
+
     // Adjust score based on device capabilities
     switch (capabilities.cpu.performance) {
       case 'ultra':
@@ -209,12 +244,12 @@ export class BenchmarkSuite {
         baseScore -= 5;
         break;
     }
-    
+
     // Platform adjustments
     if (capabilities.platform === 'mobile') {
       baseScore -= 5; // Mobile devices generally score lower
     }
-    
+
     // Test-specific scoring
     switch (testName) {
       case 'Audio Latency Test':
@@ -236,67 +271,76 @@ export class BenchmarkSuite {
         else if (capabilities.network.speed === 'slow') baseScore -= 10;
         break;
     }
-    
+
     // Quality settings impact
     if (settings.instruments.polyphony > 16) baseScore += 5;
     if (settings.processing.advancedArticulation) baseScore += 5;
-    
+
     // Add some randomness for realistic variation
     baseScore += (Math.random() - 0.5) * 10;
-    
+
     return Math.max(0, Math.min(100, baseScore));
   }
-  
+
   /**
    * Calculate regression test score (more stringent)
    */
   private calculateRegressionScore(
     testName: string,
     capabilities: DeviceCapabilities,
-    settings: QualitySettings
+    settings: QualitySettings,
   ): number {
     // Regression tests are more stringent
     let score = this.calculateBenchmarkScore(testName, capabilities, settings);
-    
+
     // Higher standards for regression tests
     score *= 0.9; // 10% more stringent
-    
+
     // Memory leak test specific scoring
     if (testName === 'Memory Leak Test') {
       score = Math.random() * 15 + 85; // 85-100 range for memory leak tests
     }
-    
+
     // Stability test specific scoring
     if (testName === 'Stability Test') {
       score = Math.random() * 10 + 90; // 90-100 range for stability
     }
-    
+
     return Math.max(0, Math.min(100, score));
   }
-  
+
   /**
    * Generate benchmark metrics for test
    */
   private generateBenchmarkMetrics(
     testName: string,
-    capabilities: DeviceCapabilities
+    capabilities: DeviceCapabilities,
   ): PerformanceMetrics {
     // Generate realistic metrics based on test type and device
     const baseMetrics = this.createDefaultMetrics();
-    
+
     // Adjust metrics based on device capabilities
-    const cpuMultiplier = capabilities.cpu.performance === 'low' ? 1.5 :
-                         capabilities.cpu.performance === 'medium' ? 1.2 :
-                         capabilities.cpu.performance === 'high' ? 0.8 : 0.6;
-    
+    const cpuMultiplier =
+      capabilities.cpu.performance === 'low'
+        ? 1.5
+        : capabilities.cpu.performance === 'medium'
+          ? 1.2
+          : capabilities.cpu.performance === 'high'
+            ? 0.8
+            : 0.6;
+
     baseMetrics.audio.cpuUsage *= cpuMultiplier;
-    baseMetrics.audio.memoryUsage = Math.min(baseMetrics.audio.memoryUsage * 
-      (capabilities.memory.total < 4096 ? 1.3 : 1.0), 100);
-    
+    baseMetrics.audio.memoryUsage = Math.min(
+      baseMetrics.audio.memoryUsage *
+        (capabilities.memory.total < 4096 ? 1.3 : 1.0),
+      100,
+    );
+
     // Test-specific adjustments
     switch (testName) {
       case 'Audio Latency Test':
-        baseMetrics.audio.latency = capabilities.audio.latency + Math.random() * 5;
+        baseMetrics.audio.latency =
+          capabilities.audio.latency + Math.random() * 5;
         break;
       case 'CPU Performance Test':
         baseMetrics.audio.cpuUsage = Math.random() * 30 + 20;
@@ -310,10 +354,10 @@ export class BenchmarkSuite {
         }
         break;
     }
-    
+
     return baseMetrics;
   }
-  
+
   /**
    * Create default metrics template
    */
@@ -344,7 +388,7 @@ export class BenchmarkSuite {
       },
     };
   }
-  
+
   /**
    * Get passing score threshold for test
    */
@@ -359,10 +403,10 @@ export class BenchmarkSuite {
       'Initialization Speed Test': 75,
       'Throughput Test': 70,
     };
-    
+
     return passingScores[testName as keyof typeof passingScores] || 70;
   }
-  
+
   /**
    * Dispose of benchmark suite
    */

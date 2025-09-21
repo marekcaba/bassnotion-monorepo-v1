@@ -370,10 +370,7 @@ async function preHeatTransitions(): Promise<void> {
 
         isPreHeated = true;
       } catch (_error) {
-        logger.warn(
-          'Pre-heating failed, transitions will still work:',
-          _error,
-        );
+        logger.warn('Pre-heating failed, transitions will still work:', _error);
         isPreHeated = true; // Mark as done to avoid retrying
       }
 

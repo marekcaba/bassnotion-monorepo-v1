@@ -15,7 +15,7 @@ import { TransportClock } from './components/TransportClock';
 import { TimingDebugWindow } from './components/TimingDebugWindow';
 import { useWidgetPageState } from '@/domains/widgets/hooks/useWidgetPageState';
 import { useAudioFretboard } from '@/domains/widgets/hooks/useAudioFretboard';
-import { useCorePlaybackEngine } from '@/domains/playback/hooks/useCorePlaybackEngine';
+import { useTransport } from '@/domains/playback/hooks/useTransport';
 // REMOVED: useExerciseSelection import - not needed for tutorial pages
 import { Button } from '@/shared/components/ui/button';
 import { Play, Pause, Volume2, Settings } from 'lucide-react';
@@ -174,11 +174,8 @@ function YouTubeWidgetPageContent({
   // REMOVED: globalExerciseSelection - causes circular updates
   // Tutorial pages should use local state only, not global exercise selection
 
-  // Get playback controls for seek functionality
-  const { controls: playbackControls } = useCorePlaybackEngine({
-    debugMode: false,
-    enablePerformanceMonitoring: false, // CRITICAL: Disable to prevent 1s re-renders
-  });
+  // Get transport for seek functionality
+  const transport = useTransport();
   const [is3DMode, setIs3DMode] = React.useState(false);
   const [selectedDots, setSelectedDots] = React.useState<Map<string, number[]>>(
     new Map(),
@@ -197,37 +194,37 @@ function YouTubeWidgetPageContent({
     syncState,
     profile,
     emitGlobalEvent,
-    playbackControls,
+    transport,
   });
 
-  // Track playbackControls object specifically
-  const prevPlaybackControlsRef = useRef<any>(null);
+  // Track transport object specifically
+  const prevTransportRef = useRef<any>(null);
   useEffect(() => {
     if (
       youTubeWidgetPageContentRenderCount % 10 === 0 ||
-      prevPlaybackControlsRef.current !== playbackControls
+      prevTransportRef.current !== transport
     ) {
       logger.info(
-        `🎮 PlaybackControls check #${youTubeWidgetPageContentRenderCount}:`,
+        `🎮 Transport check #${youTubeWidgetPageContentRenderCount}:`,
         {
-          sameReference: prevPlaybackControlsRef.current === playbackControls,
-          hadPrevious: !!prevPlaybackControlsRef.current,
-          controlsKeys: playbackControls ? Object.keys(playbackControls) : [],
+          sameReference: prevTransportRef.current === transport,
+          hadPrevious: !!prevTransportRef.current,
+          transportKeys: transport ? Object.keys(transport) : [],
           timestamp: Date.now(),
         },
       );
 
-      if (prevPlaybackControlsRef.current && playbackControls) {
+      if (prevTransportRef.current && transport) {
         // Check individual method references
         const methodChecks: Record<string, boolean> = {};
-        Object.keys(playbackControls).forEach((key) => {
+        Object.keys(transport).forEach((key) => {
           methodChecks[key] =
-            prevPlaybackControlsRef.current[key] === playbackControls[key];
+            prevTransportRef.current[key] === transport[key];
         });
         logger.info(`🎮 Method reference checks:`, methodChecks);
       }
 
-      prevPlaybackControlsRef.current = playbackControls;
+      prevTransportRef.current = transport;
     }
   });
 
@@ -562,8 +559,8 @@ function YouTubeWidgetPageContent({
             currentTime={widgetState.currentTime || 0}
             onSeek={(position) => {
               // Handle seek through playback controls
-              if (playbackControls && playbackControls.seek) {
-                playbackControls.seek(position);
+              if (transport && transport.seekTo) {
+                transport.seekTo(position);
                 logger.info(`🎵 Seeking to position: ${position}s`);
               }
             }}

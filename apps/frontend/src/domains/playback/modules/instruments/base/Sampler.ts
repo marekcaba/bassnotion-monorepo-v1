@@ -1,12 +1,11 @@
 /**
  * Base Sampler Class
- * 
+ *
  * Provides common functionality for sample-based instruments.
  * Handles sample loading, caching, and playback.
  */
 
-import { BaseInstrument, type InstrumentConfig, type InstrumentEvent } from './Instrument.js';
-import type { InstrumentType } from '../../../services/plugins/TrackManagerProcessor.js';
+import { BaseInstrument, type InstrumentConfig } from './Instrument.js';
 
 export interface SampleMap {
   [note: string]: string | string[]; // URL or array of URLs for round-robin
@@ -69,19 +68,19 @@ export abstract class Sampler extends BaseInstrument {
    */
   async loadSamples(sampleMap: SampleMap): Promise<void> {
     this._state.isLoading = true;
-    
+
     try {
       // Implementation depends on the audio library (Tone.js)
       // This is a placeholder for the actual loading logic
       await this.performSampleLoading(sampleMap);
-      
+
       // Initialize round-robin counters
       if (this.roundRobin) {
         for (const note of this.samples.keys()) {
           this.roundRobinCounters.set(note, 0);
         }
       }
-      
+
       this._state.isLoading = false;
     } catch (error) {
       this._state.isLoading = false;
@@ -93,17 +92,23 @@ export abstract class Sampler extends BaseInstrument {
   /**
    * Get the next sample for round-robin playback
    */
-  protected getNextSample(note: string, velocity: number = 64): LoadedSample | undefined {
+  protected getNextSample(
+    note: string,
+    velocity = 64,
+  ): LoadedSample | undefined {
     const samples = this.samples.get(note);
     if (!samples || samples.length === 0) return undefined;
 
     // Find samples matching velocity range
-    const velocitySamples = this.velocityLayers > 1
-      ? samples.filter(s => {
-          if (!s.velocityRange) return true;
-          return velocity >= s.velocityRange[0] && velocity <= s.velocityRange[1];
-        })
-      : samples;
+    const velocitySamples =
+      this.velocityLayers > 1
+        ? samples.filter((s) => {
+            if (!s.velocityRange) return true;
+            return (
+              velocity >= s.velocityRange[0] && velocity <= s.velocityRange[1]
+            );
+          })
+        : samples;
 
     if (velocitySamples.length === 0) return samples[0]; // Fallback to first sample
 
@@ -141,7 +146,7 @@ export abstract class Sampler extends BaseInstrument {
       loadedNotes.push(note);
       totalSamples += samples.length;
       // Estimate memory size (simplified)
-      samples.forEach(s => {
+      samples.forEach((s) => {
         if (s.buffer && typeof s.buffer === 'object') {
           // Rough estimate: 4 bytes per sample * sample rate * duration * channels
           memorySize += 4 * 48000 * 2 * 2; // Assume 2 seconds, stereo
@@ -164,7 +169,7 @@ export abstract class Sampler extends BaseInstrument {
   getMetrics() {
     const baseMetrics = super.getMetrics();
     const stats = this.getSampleStats();
-    
+
     return {
       ...baseMetrics,
       memoryUsage: stats.memorySizeMB,

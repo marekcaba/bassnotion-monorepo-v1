@@ -8,15 +8,15 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   // Basic protection - check for admin header or localhost
   const headersList = headers();
   const host = headersList.get('host') || '';
-  
+
   // Allow access from localhost for development
   const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
-  
+
   // In production, you would check for admin authentication here
   // For now, we'll allow localhost access for monitoring
   if (!isLocalhost && process.env.NODE_ENV === 'production') {
     // TODO: Check for admin authentication
-    // redirect('/'); 
+    // redirect('/');
   }
 
   return (
@@ -42,9 +42,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
         </nav>
-        <main className="mx-auto max-w-7xl">
-          {children}
-        </main>
+        <main className="mx-auto max-w-7xl">{children}</main>
       </div>
     </>
   );

@@ -34,7 +34,13 @@
       "@/domains/*": ["./src/domains/*"],
       "@/shared/*": ["./src/shared/*"],
       "@/infrastructure/*": ["./src/infrastructure/*"],
-      "@bassnotion/contracts": ["../../libs/contracts/dist/src"]
+      "@bassnotion/contracts": ["../../libs/contracts/dist/src"],
+      "@playback/shared": ["./src/domains/playback/modules/shared/index.js"],
+      "@playback/audio-engine": ["./src/domains/playback/modules/audio-engine/index.js"],
+      "@playback/transport": ["./src/domains/playback/modules/transport/index.js"],
+      "@playback/instruments": ["./src/domains/playback/modules/instruments/index.js"],
+      "@playback/tracks": ["./src/domains/playback/modules/tracks/index.js"],
+      "@playback/storage": ["./src/domains/playback/modules/storage/index.js"]
     }
   },
   "include": [

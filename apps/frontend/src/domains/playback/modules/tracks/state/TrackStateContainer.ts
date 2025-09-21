@@ -1,6 +1,6 @@
 /**
  * TrackStateContainer - Legacy state container wrapper
- * 
+ *
  * This wraps the new TrackState to provide backward compatibility
  * with the existing API while using the new modular state management
  */
@@ -11,8 +11,7 @@ import type {
   TrackStateContainer as ITrackStateContainer,
   TrackStateSnapshot as ITrackStateSnapshot,
 } from '../../../types/track.js';
-import { EventBus } from '../../../services/core/EventBus.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { EventBus, createStructuredLogger } from '../../shared/index.js';
 
 const logger = createStructuredLogger('TrackStateContainer');
 
@@ -33,6 +32,17 @@ export class TrackStateContainer implements ITrackStateContainer {
     this.track = track;
     this.maxHistorySize = maxHistorySize;
 
+    // Try to get EventBus from service registry
+    try {
+      // Try global window first
+      if (typeof window !== 'undefined' && (window as any).__serviceRegistry) {
+        this.eventBus = (window as any).__serviceRegistry.get('eventBus');
+      }
+    } catch (error) {
+      // EventBus is optional - continue without it
+      logger.info('EventBus not available, events will not be emitted');
+    }
+
     // Create new TrackState
     this.trackState = new TrackState(
       this.convertTrackToState(track),
@@ -40,7 +50,7 @@ export class TrackStateContainer implements ITrackStateContainer {
         trackId: track.id,
         maxHistorySize,
       },
-      this.eventBus
+      this.eventBus,
     );
 
     // Subscribe to state changes
@@ -57,10 +67,24 @@ export class TrackStateContainer implements ITrackStateContainer {
    * Update track state and record in history
    */
   updateState(updates: Partial<Track>, description: string): void {
+    // Capture previous state for event emission
+    const previousState = { ...this.track };
+    
     // Convert track updates to state updates
     const stateUpdates = this.convertTrackToState(updates);
     this.trackState.updateState(stateUpdates, description);
     this.syncHistory();
+    
+    // Emit state update event if EventBus is available
+    if (this.eventBus) {
+      const changedProperties = Object.keys(updates);
+      this.eventBus.emit('track:stateUpdated', {
+        trackId: this.track.id,
+        changedProperties,
+        previousState,
+        currentState: this.track,
+      });
+    }
   }
 
   /**
@@ -78,6 +102,14 @@ export class TrackStateContainer implements ITrackStateContainer {
     const result = this.trackState.undo();
     if (result) {
       this.syncHistory();
+      
+      // Emit undo event if EventBus is available
+      if (this.eventBus && this.history[this.historyIndex]) {
+        this.eventBus.emit('track:undone', {
+          trackId: this.track.id,
+          description: this.history[this.historyIndex].description,
+        });
+      }
     }
     return result;
   }
@@ -89,6 +121,14 @@ export class TrackStateContainer implements ITrackStateContainer {
     const result = this.trackState.redo();
     if (result) {
       this.syncHistory();
+      
+      // Emit redo event if EventBus is available
+      if (this.eventBus && this.history[this.historyIndex]) {
+        this.eventBus.emit('track:redone', {
+          trackId: this.track.id,
+          description: this.history[this.historyIndex].description,
+        });
+      }
     }
     return result;
   }
@@ -166,16 +206,15 @@ export class TrackStateContainer implements ITrackStateContainer {
       if (parsed.history && parsed.historyIndex !== undefined) {
         // Jump to the correct history position
         const historyInfo = container.trackState.getHistoryInfo();
-        if (historyInfo.snapshots[parsed.historyIndex]) {
-          container.trackState.jumpToSnapshot(
-            historyInfo.snapshots[parsed.historyIndex].id
-          );
+        const targetSnapshot = historyInfo.snapshots[parsed.historyIndex];
+        if (targetSnapshot) {
+          container.trackState.jumpToSnapshot(targetSnapshot.id);
         }
       }
 
       return container;
     } catch (error) {
-      logger.error('Failed to deserialize track state', { error });
+      logger.error('Failed to deserialize track state', error as Error);
       throw error;
     }
   }
@@ -214,7 +253,8 @@ export class TrackStateContainer implements ITrackStateContainer {
     if (state.mixing !== undefined) this.track.mixing = state.mixing;
     if (state.routing !== undefined) this.track.routing = state.routing;
     if (state.sync !== undefined) this.track.sync = state.sync;
-    if (state.automation !== undefined) this.track.automation = state.automation;
+    if (state.automation !== undefined)
+      this.track.automation = state.automation;
     if (state.metadata !== undefined) this.track.metadata = state.metadata;
   }
 
@@ -226,7 +266,7 @@ export class TrackStateContainer implements ITrackStateContainer {
     this.historyIndex = historyInfo.current;
 
     // Convert snapshots to old format
-    this.history = historyInfo.snapshots.map((snapshot, index) => ({
+    this.history = historyInfo.snapshots.map((snapshot, _index) => ({
       timestamp: snapshot.timestamp,
       description: snapshot.description,
       state: this.track, // Simplified - would need proper conversion
@@ -242,7 +282,7 @@ export class TrackStateContainer implements ITrackStateContainer {
       try {
         listener(this.track);
       } catch (error) {
-        logger.error('Error in track state listener:', error);
+        logger.error('Error in track state listener:', error as Error);
       }
     });
   }

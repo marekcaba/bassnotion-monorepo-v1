@@ -45,7 +45,11 @@ vi.mock('@/domains/playback/utils/ensureAudioContext', () => ({
 vi.mock('../VolumeKnob', () => ({
   VolumeKnob: ({ value, onChange }: any) => (
     <div data-testid="volume-knob" data-value={value}>
-      <input type="range" value={value} onChange={(e) => onChange(Number(e.target.value))} />
+      <input
+        type="range"
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
     </div>
   ),
 }));
@@ -98,14 +102,14 @@ describe('MetronomeWidget', () => {
 
   it('should render when visible', () => {
     render(<MetronomeWidget {...defaultProps} />);
-    
+
     // Check for metronome-specific elements
     expect(screen.getByTestId('volume-knob')).toBeInTheDocument();
   });
 
   it('should not render when not visible', () => {
     render(<MetronomeWidget {...defaultProps} isVisible={false} />);
-    
+
     // The component should still mount but be hidden
     const container = document.querySelector('[data-visible="false"]');
     expect(container).toBeInTheDocument();
@@ -114,13 +118,9 @@ describe('MetronomeWidget', () => {
   it('should handle BPM changes', () => {
     const onBpmChange = vi.fn();
     render(
-      <MetronomeWidget 
-        {...defaultProps} 
-        onBpmChange={onBpmChange}
-        bpm={120}
-      />
+      <MetronomeWidget {...defaultProps} onBpmChange={onBpmChange} bpm={120} />,
     );
-    
+
     // BPM is controlled by parent
     expect(onBpmChange).not.toHaveBeenCalled();
     expect(defaultProps.bpm).toBe(120);
@@ -128,83 +128,67 @@ describe('MetronomeWidget', () => {
 
   it('should handle different BPM values', () => {
     const { rerender } = render(<MetronomeWidget {...defaultProps} bpm={60} />);
-    
+
     // Test various BPM values
     const bpmValues = [60, 90, 120, 140, 180];
-    bpmValues.forEach(bpm => {
+    bpmValues.forEach((bpm) => {
       rerender(<MetronomeWidget {...defaultProps} bpm={bpm} />);
     });
   });
 
   it('should handle play/pause state', () => {
     const { rerender } = render(
-      <MetronomeWidget 
-        {...defaultProps} 
-        isPlaying={false}
-      />
+      <MetronomeWidget {...defaultProps} isPlaying={false} />,
     );
-    
+
     // Component should respond to playing state
-    rerender(
-      <MetronomeWidget 
-        {...defaultProps} 
-        isPlaying={true}
-      />
-    );
+    rerender(<MetronomeWidget {...defaultProps} isPlaying={true} />);
   });
 
   it('should handle visibility toggle', () => {
     const onToggleVisibility = vi.fn();
     const { rerender } = render(
-      <MetronomeWidget 
-        {...defaultProps} 
+      <MetronomeWidget
+        {...defaultProps}
         onToggleVisibility={onToggleVisibility}
         isVisible={true}
-      />
+      />,
     );
-    
+
     // Component should be visible
     expect(document.querySelector('[data-visible="true"]')).toBeTruthy();
-    
+
     // Change visibility
     rerender(
-      <MetronomeWidget 
-        {...defaultProps} 
+      <MetronomeWidget
+        {...defaultProps}
         onToggleVisibility={onToggleVisibility}
         isVisible={false}
-      />
+      />,
     );
-    
+
     // Component should be hidden
     expect(document.querySelector('[data-visible="false"]')).toBeTruthy();
   });
 
   it('should initialize with correct number of dots', () => {
     render(<MetronomeWidget {...defaultProps} />);
-    
+
     // Metronome typically shows 4 or 8 beat indicators
     // This would be internal to the component
   });
 
   it('should handle tempo range limits', () => {
     const onBpmChange = vi.fn();
-    
+
     // Test minimum BPM
     const { rerender } = render(
-      <MetronomeWidget 
-        {...defaultProps} 
-        bpm={40}
-        onBpmChange={onBpmChange}
-      />
+      <MetronomeWidget {...defaultProps} bpm={40} onBpmChange={onBpmChange} />,
     );
-    
+
     // Test maximum BPM
     rerender(
-      <MetronomeWidget 
-        {...defaultProps} 
-        bpm={240}
-        onBpmChange={onBpmChange}
-      />
+      <MetronomeWidget {...defaultProps} bpm={240} onBpmChange={onBpmChange} />,
     );
   });
 });

@@ -26,8 +26,8 @@ import type {
   WamMidiEvent,
   WamAutomationEvent,
 } from '../../../../types/wam.js';
-import { GlobalSampleCache } from '../../../../services/storage/GlobalSampleCache.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { GlobalSampleCache } from '../../../storage/cache/GlobalSampleCache.js';
+import { createStructuredLogger } from '../../../shared/index.js';
 
 // MIDI note mapping for 16 pads (following MPC-style layout)
 const PAD_MIDI_NOTES = {
@@ -74,7 +74,7 @@ interface PadSample {
 /**
  * WAM Drummer AudioWorkletProcessor for sample-accurate playback
  */
-const WORKLET_PROCESSOR_CODE = `
+const _WORKLET_PROCESSOR_CODE = `
 class WamDrummerProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
@@ -106,19 +106,21 @@ registerProcessor('wam-drummer-processor', WamDrummerProcessor);
 /**
  * WAM Drummer Node - handles audio processing and parameter automation
  */
+const logger = createStructuredLogger('WamDrummer');
+
 export class WamDrummerNode extends GainNode implements WamNode {
-  private workletNode?: AudioWorkletNode;
+  private _workletNode?: AudioWorkletNode;
   private pads: Map<number, PadSample> = new Map();
   private samplers: Map<number, AudioBufferSourceNode[]> = new Map();
   private padGains: Map<number, GainNode> = new Map();
   private padPanners: Map<number, StereoPannerNode> = new Map();
-  private eventQueue: WamEvent[] = [];
+  private _eventQueue: WamEvent[] = [];
 
-  constructor(
-    private module: WebAudioModule,
-    options?: AudioNodeOptions,
-  ) {
+  module: WebAudioModule;
+
+  constructor(module: WebAudioModule, options?: AudioNodeOptions) {
     super(module.audioContext, options);
+    this.module = module;
     this.initialize();
   }
 
@@ -189,7 +191,8 @@ export class WamDrummerNode extends GainNode implements WamNode {
     const values: WamParameterDataMap = {};
 
     for (let i = 1; i <= 16; i++) {
-      const pad = this.pads.get(i)!;
+      const pad = this.pads.get(i);
+      if (!pad) continue;
       values[`pad${i}_volume`] = pad.volume;
       values[`pad${i}_pan`] = pad.pan;
       values[`pad${i}_pitch`] = pad.pitch;
@@ -201,23 +204,25 @@ export class WamDrummerNode extends GainNode implements WamNode {
   async setParameterValues(values: WamParameterDataMap): Promise<void> {
     for (const [key, value] of Object.entries(values)) {
       const match = key.match(/^pad(\d+)_(\w+)$/);
-      if (match) {
+      if (match && match[1] && match[2]) {
         const padNumber = parseInt(match[1]);
         const param = match[2];
         const pad = this.pads.get(padNumber);
 
         if (pad) {
           switch (param) {
-            case 'volume':
+            case 'volume': {
               pad.volume = value;
               const gain = this.padGains.get(padNumber);
               if (gain) gain.gain.value = value;
               break;
-            case 'pan':
+            }
+            case 'pan': {
               pad.pan = value;
               const panner = this.padPanners.get(padNumber);
               if (panner) panner.pan.value = value;
               break;
+            }
             case 'pitch':
               pad.pitch = value;
               break;
@@ -258,14 +263,12 @@ export class WamDrummerNode extends GainNode implements WamNode {
     }
   }
 
-  getCompensationDelay(): number {
+  async getCompensationDelay(): Promise<number> {
     // No inherent latency in sample playback
     return 0;
   }
 
   scheduleEvents(...events: WamEvent[]): void {
-    const now = this.context.currentTime;
-
     for (const event of events) {
       if (event.type === 'wam-midi') {
         this.handleMidiEvent(event as WamMidiEvent);
@@ -276,24 +279,19 @@ export class WamDrummerNode extends GainNode implements WamNode {
   }
 
   clearEvents(): void {
-    this.eventQueue = [];
+    this._eventQueue = [];
 
     // Stop all playing samples
     for (const [padNum, sources] of this.samplers.entries()) {
       for (const source of sources) {
         try {
           source.stop();
-        } catch (e) {
+        } catch {
           // Already stopped
         }
       }
       this.samplers.set(padNum, []);
     }
-  }
-
-  async destroy(): Promise<void> {
-    this.clearEvents();
-    this.disconnect();
   }
 
   // Drummer-specific methods
@@ -344,7 +342,10 @@ export class WamDrummerNode extends GainNode implements WamNode {
 
       logger.info(`✅ WamDrummer: Loaded sample for pad ${padNumber}`);
     } catch (error) {
-      logger.error(`Failed to load sample for pad ${padNumber}:`, error);
+      logger.error(
+        `Failed to load sample for pad ${padNumber}:`,
+        error as Error,
+      );
       pad.loaded = false;
     }
   }
@@ -407,9 +408,9 @@ export class WamDrummerNode extends GainNode implements WamNode {
     const bytes = event.data.bytes;
     if (!bytes || bytes.length < 3) return;
 
-    const status = bytes[0] & 0xf0;
-    const note = bytes[1];
-    const velocity = bytes[2];
+    const status = (bytes[0] || 0) & 0xf0;
+    const note = bytes[1] || 0;
+    const velocity = bytes[2] || 0;
 
     // Note On
     if (status === 0x90 && velocity > 0) {
@@ -427,12 +428,28 @@ export class WamDrummerNode extends GainNode implements WamNode {
     const { id, value } = event.data;
     this.setParameterValues({ [id]: value });
   }
+
+  // Additional WamNode interface methods
+  clearScheduledEvents(): void {
+    this.clearEvents();
+  }
+
+  async destroy(): Promise<void> {
+    this.clearEvents();
+    for (const gain of this.padGains.values()) {
+      gain.disconnect();
+    }
+    for (const panner of this.padPanners.values()) {
+      panner.disconnect();
+    }
+    this.disconnect();
+  }
 }
 
 /**
  * WAM Drummer Module - main plugin class
  */
-export default class WamDrummer implements WebAudioModule {
+export default class WamDrummer implements Partial<WebAudioModule> {
   readonly isWebAudioModuleConstructor = true;
   readonly descriptor: WamDescriptor = {
     name: 'BassNotion Drummer',
@@ -451,10 +468,15 @@ export default class WamDrummer implements WebAudioModule {
   };
 
   readonly audioContext: BaseAudioContext;
+  audioNode?: WamDrummerNode;
+  initialized = false;
+  readonly instanceId: string;
+  readonly moduleId = 'com.bassnotion.drummer';
   private drummerNode?: WamDrummerNode;
 
   constructor(audioContext: BaseAudioContext) {
     this.audioContext = audioContext;
+    this.instanceId = `${this.moduleId}-${Date.now()}`;
   }
 
   /**
@@ -473,16 +495,17 @@ export default class WamDrummer implements WebAudioModule {
     return instance;
   }
 
-  async createAudioNode(initialState?: any): Promise<WamDrummerNode> {
+  async createAudioNode(initialState?: any): Promise<WamNode> {
     if (!this.drummerNode) {
-      this.drummerNode = new WamDrummerNode(this);
+      this.drummerNode = new WamDrummerNode(this as unknown as WebAudioModule);
 
       if (initialState) {
         await this.drummerNode.setState(initialState);
       }
     }
 
-    return this.drummerNode;
+    this.audioNode = this.drummerNode;
+    return this.drummerNode as unknown as WamNode;
   }
 
   async createGui(): Promise<Element> {
@@ -506,6 +529,17 @@ export default class WamDrummer implements WebAudioModule {
     }
   }
 
+  async initialize(state?: any): Promise<WebAudioModule> {
+    if (!this.initialized) {
+      this.audioNode = (await this.createAudioNode(
+        state,
+      )) as unknown as WamDrummerNode;
+      this.drummerNode = this.audioNode;
+      this.initialized = true;
+    }
+    return this as unknown as WebAudioModule;
+  }
+
   // Helper method to load default drum kit
   async loadDefaultKit(): Promise<void> {
     if (!this.drummerNode) return;
@@ -526,13 +560,17 @@ export default class WamDrummer implements WebAudioModule {
         const kitPath = 'drums/hydrogen-kits/mp3/electronic/boss-dr110';
         const fullPath = `${kitPath}/${sample.file}`;
 
-        url = supabase.storage.from('audio-samples').getPublicUrl(fullPath)
-          .data.publicUrl;
+        const urlResult = supabase.storage
+          .from('audio-samples')
+          .getPublicUrl(fullPath).data.publicUrl;
+        url = urlResult;
       } else {
         logger.info(`♻️ Using cached URL for pad ${sample.pad}`);
       }
 
-      await this.drummerNode.loadSample(sample.pad, url);
+      if (url) {
+        await this.drummerNode.loadSample(sample.pad, url);
+      }
     }
 
     logger.info('✅ WamDrummer: Default kit loaded');

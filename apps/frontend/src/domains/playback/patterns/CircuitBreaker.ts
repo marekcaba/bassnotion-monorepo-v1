@@ -9,12 +9,12 @@
  * - Monitoring and alerting hooks
  */
 
-import {
-  CircuitBreaker as BaseCircuitBreaker,
+import { CircuitBreaker as BaseCircuitBreaker } from '../modules/storage/resilience/CircuitBreaker.js';
+import type {
   CircuitBreakerConfig as BaseConfig,
-  CircuitState,
+  CircuitBreakerState as CircuitState,
   CircuitBreakerMetrics,
-} from '../services/errors/CircuitBreaker.js';
+} from '../modules/storage/resilience/types.js';
 import { EventBus } from '../services/core/EventBus.js';
 
 export interface EnhancedCircuitBreakerConfig extends Partial<BaseConfig> {
@@ -45,9 +45,11 @@ export interface CircuitBreakerEvent {
   reason?: string;
 }
 
-export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
+export class EnhancedCircuitBreaker {
+  private circuitBreaker: BaseCircuitBreaker;
   private eventBus: EventBus;
   private config: EnhancedCircuitBreakerConfig;
+  private name: string;
   private healthCheckTimer?: NodeJS.Timeout;
   private metricsTimer?: NodeJS.Timeout;
   private chainedBreakers: Map<string, EnhancedCircuitBreaker> = new Map();
@@ -62,9 +64,18 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
     eventBus: EventBus,
     config: EnhancedCircuitBreakerConfig = {},
   ) {
-    super(name, config);
+    const baseConfig = {
+      failureThreshold: config.failureThreshold ?? 5,
+      recoveryTimeout: config.recoveryTimeout ?? 60000,
+      successThreshold: config.successThreshold ?? 3,
+      failureWindow: config.failureWindow ?? 60000,
+      errorFilter: config.errorFilter,
+      fallback: config.fallbackOperation,
+    };
+    this.circuitBreaker = new BaseCircuitBreaker(baseConfig);
     this.eventBus = eventBus;
     this.config = config;
+    this.name = name;
     this.fallbackOperation = config.fallbackOperation;
 
     // Initialize adaptive threshold
@@ -81,23 +92,36 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
     }
   }
 
+  // Delegation methods
+  getState(): CircuitState {
+    return this.circuitBreaker.getState();
+  }
+
+  getMetrics(): CircuitBreakerMetrics {
+    return this.circuitBreaker.getMetrics();
+  }
+
+  reset(): void {
+    this.circuitBreaker.reset();
+  }
+
   /**
    * Execute operation with enhanced circuit breaker protection
    */
   async execute<T>(
     operation: () => Promise<T>,
-    operationId?: string,
+    _operationId?: string,
   ): Promise<T> {
     try {
       // Check chained breakers first
       for (const [name, breaker] of this.chainedBreakers) {
-        if (breaker.getState() === CircuitState.OPEN) {
+        if (breaker.getState() === 'open') {
           throw new Error(`Chained circuit breaker '${name}' is OPEN`);
         }
       }
 
       // Execute with base circuit breaker
-      const result = await super.execute(operation, operationId);
+      const result = await this.circuitBreaker.execute(operation);
 
       // Update adaptive threshold on success
       if (this.config.adaptiveThreshold?.enabled) {
@@ -113,7 +137,7 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
 
       // Emit state change event if circuit opened
       const currentState = this.getState();
-      if (currentState === CircuitState.OPEN) {
+      if (currentState === 'open') {
         this.emitStateChange(
           'opened',
           error instanceof Error ? error.message : 'Unknown error',
@@ -121,7 +145,7 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
       }
 
       // Try fallback operation if available and circuit is open
-      if (this.fallbackOperation && currentState === CircuitState.OPEN) {
+      if (this.fallbackOperation && currentState === 'open') {
         try {
           const fallbackResult = await this.fallbackOperation();
           this.eventBus?.emit('circuitbreaker:fallback-used', {
@@ -167,7 +191,7 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
     if (!this.config.healthCheckOperation) return;
 
     this.healthCheckTimer = setInterval(async () => {
-      if (this.getState() === CircuitState.OPEN) {
+      if (this.getState() === 'open') {
         try {
           const isHealthy = await this.config.healthCheckOperation!();
           if (isHealthy) {
@@ -290,7 +314,7 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
    * Force circuit to half-open state (for health check recovery)
    */
   private forceHalfOpen(): void {
-    (this as any).state = CircuitState.HALF_OPEN;
+    (this as any).state = 'half-open';
     (this as any).successCount = 0;
   }
 
@@ -306,7 +330,7 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
       reason,
     };
 
-    this.eventBus?.emit('circuitbreaker:state-changed', event);
+    this.eventBus?.emit('circuitbreaker:state-changed', { ...event });
 
     if (details) {
       this.eventBus?.emit('circuitbreaker:details', {
@@ -366,12 +390,28 @@ export class EnhancedCircuitBreaker extends BaseCircuitBreaker {
  * Factory for creating circuit breakers with common configurations
  */
 export class CircuitBreakerFactory {
+  private static instance: CircuitBreakerFactory | null = null;
   private eventBus: EventBus;
   private defaultConfigs: Map<string, EnhancedCircuitBreakerConfig> = new Map();
 
   constructor(eventBus: EventBus) {
     this.eventBus = eventBus;
     this.setupDefaultConfigs();
+  }
+
+  /**
+   * Get singleton instance
+   */
+  public static getInstance(eventBus?: EventBus): CircuitBreakerFactory {
+    if (!CircuitBreakerFactory.instance) {
+      if (!eventBus) {
+        throw new Error(
+          'EventBus required for first CircuitBreakerFactory initialization',
+        );
+      }
+      CircuitBreakerFactory.instance = new CircuitBreakerFactory(eventBus);
+    }
+    return CircuitBreakerFactory.instance;
   }
 
   /**
@@ -462,9 +502,18 @@ export class CircuitBreakerFactory {
 
     // Chain breakers together
     for (let i = 1; i < breakers.length; i++) {
-      breakers[0].chain(configs[i].name, breakers[i]);
+      const firstBreaker = breakers[0];
+      const currentBreaker = breakers[i];
+      const currentConfig = configs[i];
+      if (firstBreaker && currentBreaker && currentConfig?.name) {
+        firstBreaker.chain(currentConfig.name, currentBreaker);
+      }
     }
 
-    return breakers[0];
+    const firstBreaker = breakers[0];
+    if (!firstBreaker) {
+      throw new Error('Failed to create circuit breaker');
+    }
+    return firstBreaker;
   }
 }

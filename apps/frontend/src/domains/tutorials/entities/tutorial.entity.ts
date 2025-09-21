@@ -1,12 +1,15 @@
 import { TutorialId } from '../value-objects/tutorial-id.vo';
 import { TutorialSlug } from '../value-objects/tutorial-slug.vo';
-import { TutorialLevel, TutorialLevelType } from '../value-objects/tutorial-level.vo';
+import {
+  TutorialLevel,
+  TutorialLevelType,
+} from '../value-objects/tutorial-level.vo';
 
 export interface TutorialSection {
   id: string;
   title: string;
   startTime: number; // in seconds
-  endTime: number;   // in seconds
+  endTime: number; // in seconds
   exerciseIds?: string[];
 }
 
@@ -43,7 +46,7 @@ export class Tutorial {
       tags?: string[];
       sections?: TutorialSection[];
       viewCount?: number;
-    }
+    },
   ): Tutorial {
     const now = new Date();
     return new Tutorial({
@@ -174,14 +177,15 @@ export class Tutorial {
     if (!this._props.sections) return 0;
     return this._props.sections.reduce(
       (total, section) => total + (section.exerciseIds?.length || 0),
-      0
+      0,
     );
   }
 
   getSectionAtTime(timeInSeconds: number): TutorialSection | undefined {
     if (!this._props.sections) return undefined;
     return this._props.sections.find(
-      section => timeInSeconds >= section.startTime && timeInSeconds < section.endTime
+      (section) =>
+        timeInSeconds >= section.startTime && timeInSeconds < section.endTime,
     );
   }
 

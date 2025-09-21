@@ -21,7 +21,7 @@ import {
 import { serviceRegistry } from '../services/core/ServiceRegistry.js';
 import { EventBus } from '../services/core/EventBus.js';
 import type { Track } from '../types/track.js';
-import type { MusicalPosition } from '../services/core/UnifiedTransport.js';
+import type { MusicalPosition } from '../modules/transport/types/index.js';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 export interface UseTrackTimingOptions {

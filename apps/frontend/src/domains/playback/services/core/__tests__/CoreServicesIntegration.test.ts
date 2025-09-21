@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import '../../../__mocks__/webAudioApi';
 import { CoreServices, createCoreServices } from '../CoreServices.js';
-import { BaseAudioPlugin } from '../../BaseAudioPlugin.js';
+import { BaseAudioPlugin } from '../../../modules/plugins/base/BaseAudioPlugin.js';
 import {
   PluginState,
   PluginMetadata,
@@ -21,37 +22,58 @@ const PluginStateEnum = {
 (global as any).PluginState = PluginStateEnum;
 
 // Mock Tone.js
-const mockTone = {
-  Transport: {
+vi.mock('tone', () => {
+  const mockTone = {
+    Transport: {
+      start: vi.fn(),
+      stop: vi.fn(),
+      pause: vi.fn(),
+      position: '0:0:0',
+      seconds: 0,
+      bpm: { value: 120 },
+      timeSignature: [4, 4],
+      schedule: vi.fn(),
+      clear: vi.fn(),
+      cancel: vi.fn(),
+      state: 'stopped',
+    },
+    Sampler: vi.fn(() => ({
+      toDestination: vi.fn(),
+      dispose: vi.fn(),
+    })),
     start: vi.fn(),
-    stop: vi.fn(),
-    pause: vi.fn(),
-    position: '0:0:0',
-    seconds: 0,
-    bpm: { value: 120 },
-    timeSignature: [4, 4],
-  },
-  Sampler: vi.fn(() => ({
-    toDestination: vi.fn(),
-    dispose: vi.fn(),
-  })),
-  setContext: vi.fn(),
-  context: {
-    sampleRate: 48000,
-    currentTime: 0,
-    state: 'running',
-    latencyHint: 'interactive',
-  },
-};
+    setContext: vi.fn(),
+    context: {
+      sampleRate: 48000,
+      currentTime: 0,
+      state: 'running',
+      latencyHint: 'interactive',
+    },
+    now: vi.fn(() => 0),
+    immediate: vi.fn(() => 0),
+    Time: vi.fn((time) => ({
+      toSeconds: vi.fn(() => (typeof time === 'number' ? time : 0)),
+    })),
+    Gain: vi.fn(() => ({
+      connect: vi.fn().mockReturnThis(),
+      disconnect: vi.fn(),
+      dispose: vi.fn(),
+      gain: { value: 1 },
+    })),
+    getDestination: vi.fn(() => ({
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    })),
+  };
 
-vi.mock('tone', () => ({
-  default: mockTone,
-  setContext: mockTone.setContext,
-  Transport: mockTone.Transport,
-  Sampler: mockTone.Sampler,
-  context: mockTone.context,
-  now: vi.fn(() => 0),
-}));
+  // Store globally for test access
+  (global as any).mockTone = mockTone;
+
+  return {
+    default: mockTone,
+    ...mockTone,
+  };
+});
 
 // Mock dependencies
 vi.mock('../../MusicalTimeEngine.js', () => ({
@@ -209,6 +231,67 @@ vi.mock('../PluginManager.js', async (importOriginal) => {
   };
 });
 
+// Mock Transport
+vi.mock('../../modules/transport/core/Transport.js', () => ({
+  Transport: vi.fn().mockImplementation(() => ({
+    initialize: vi.fn().mockResolvedValue(undefined),
+    start: vi.fn().mockResolvedValue(undefined),
+    stop: vi.fn().mockResolvedValue(undefined),
+    pause: vi.fn().mockResolvedValue(undefined),
+    resume: vi.fn().mockResolvedValue(undefined),
+    dispose: vi.fn().mockResolvedValue(undefined),
+    getState: vi.fn().mockReturnValue('stopped'),
+    getPosition: vi.fn().mockReturnValue(0),
+    setPosition: vi.fn(),
+    getTempo: vi.fn().mockReturnValue(120),
+    setTempo: vi.fn(),
+    scheduleEvent: vi.fn(),
+    cancelEvent: vi.fn(),
+    onPositionUpdate: vi.fn(),
+    onStateChange: vi.fn(),
+    onTempoChange: vi.fn(),
+    offPositionUpdate: vi.fn(),
+    offStateChange: vi.fn(),
+    offTempoChange: vi.fn(),
+  })),
+}));
+
+// Mock UnifiedTransport/TransportController
+vi.mock('../../modules/transport/core/TransportController.js', () => ({
+  TransportController: vi.fn().mockImplementation(() => {
+    const mockTransport = {
+      initialize: vi.fn().mockResolvedValue(undefined),
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: vi.fn().mockResolvedValue(undefined),
+      pause: vi.fn().mockResolvedValue(undefined),
+      resume: vi.fn().mockResolvedValue(undefined),
+      getState: vi.fn().mockReturnValue('stopped'),
+      dispose: vi.fn().mockResolvedValue(undefined),
+      onPositionUpdate: vi.fn(),
+      onStateChange: vi.fn(),
+      onTempoChange: vi.fn(),
+      removeListener: vi.fn(),
+      getPosition: vi.fn().mockReturnValue({ bar: 0, beat: 0, sixteenth: 0 }),
+      setPosition: vi.fn(),
+      getTempo: vi.fn().mockReturnValue(120),
+      setTempo: vi.fn(),
+    };
+
+    // Track state changes for proper testing
+    let state = 'stopped';
+    mockTransport.start.mockImplementation(async () => {
+      state = 'playing';
+      mockTransport.getState.mockReturnValue(state);
+    });
+    mockTransport.stop.mockImplementation(async () => {
+      state = 'stopped';
+      mockTransport.getState.mockReturnValue(state);
+    });
+
+    return mockTransport;
+  }),
+}));
+
 describe('CoreServices Integration', () => {
   let coreServices: CoreServices;
 
@@ -290,7 +373,8 @@ describe('CoreServices Integration', () => {
           services: [
             'eventBus',
             'audioEngine',
-            'transportController',
+            'unifiedTransport',
+            'transportSyncManager',
             'pluginManager',
           ],
         }),
@@ -390,11 +474,11 @@ describe('CoreServices Integration', () => {
       const eventBus = coreServices.getEventBus();
       const eventHandler = vi.fn();
 
-      eventBus.on('transport:started', eventHandler);
+      eventBus.on('transport:start', eventHandler);
 
       await transport.start();
 
-      expect(mockTone.Transport.start).toHaveBeenCalled();
+      expect((global as any).mockTone.Transport.start).toHaveBeenCalled();
       expect(eventHandler).toHaveBeenCalled();
     });
 
@@ -430,7 +514,7 @@ describe('CoreServices Integration', () => {
         baseUrl: '/samples/',
       });
 
-      expect(mockTone.Sampler).toHaveBeenCalledWith(
+      expect((global as any).mockTone.Sampler).toHaveBeenCalledWith(
         expect.objectContaining({
           urls: { C4: 'sample.mp3' },
           baseUrl: '/samples/',
@@ -458,7 +542,7 @@ describe('CoreServices Integration', () => {
       await pluginManager.activatePlugin('test-plugin');
 
       // Listen for transport events
-      eventBus.on('transport:started', transportHandler);
+      eventBus.on('transport:start', transportHandler);
 
       // Start transport
       await transport.start();
@@ -507,10 +591,13 @@ describe('CoreServices Integration', () => {
             ready: true,
             sampleRate: expect.any(Number),
           },
-          transportController: {
+          unifiedTransport: {
             ready: true,
             state: 'stopped',
             tempo: 120,
+          },
+          transportSyncManager: {
+            ready: true,
           },
           pluginManager: {
             ready: true,
@@ -537,7 +624,7 @@ describe('CoreServices Integration', () => {
       await transport.start();
 
       const status = coreServices.getStatus();
-      expect(status.services.transportController.state).toBe('playing');
+      expect(status.services.unifiedTransport.state).toBe('playing');
     });
   });
 

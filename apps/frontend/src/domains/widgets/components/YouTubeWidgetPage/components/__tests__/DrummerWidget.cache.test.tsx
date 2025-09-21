@@ -2,45 +2,48 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { GlobalSampleCache } from '@/domains/playback/services/storage/GlobalSampleCache';
+import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache';
 import * as Tone from 'tone';
 
 // Mock dependencies
-vi.mock('@/domains/playback/services/storage/GlobalSampleCache');
+vi.mock('@/domains/playback/modules/storage/cache/GlobalSampleCache');
 vi.mock('tone');
 
 describe('DrummerWidget - Cache Integration Tests', () => {
   const mockDrumPads = {
-    1: { // Kick
+    1: {
+      // Kick
       start: vi.fn(),
       stop: vi.fn(),
       volume: { value: -10 },
       toDestination: vi.fn().mockReturnThis(),
-      dispose: vi.fn()
+      dispose: vi.fn(),
     },
-    3: { // Snare
+    3: {
+      // Snare
       start: vi.fn(),
       stop: vi.fn(),
       volume: { value: -10 },
       toDestination: vi.fn().mockReturnThis(),
-      dispose: vi.fn()
+      dispose: vi.fn(),
     },
-    5: { // Hi-hat
+    5: {
+      // Hi-hat
       start: vi.fn(),
       stop: vi.fn(),
       volume: { value: -10 },
       toDestination: vi.fn().mockReturnThis(),
-      dispose: vi.fn()
-    }
+      dispose: vi.fn(),
+    },
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Setup Tone.js mocks
     vi.mocked(Tone.start).mockResolvedValue();
     vi.mocked(Tone.loaded).mockResolvedValue();
-    
+
     // Setup GlobalSampleCache mock
     vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(null);
   });
@@ -52,8 +55,9 @@ describe('DrummerWidget - Cache Integration Tests', () => {
   describe('Drum Triggering with Cached Samples', () => {
     it('should trigger cached drum samples correctly', async () => {
       // Return cached drums
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(mockDrumPads);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        mockDrumPads,
+      );
 
       // Mock DrummerWidget behavior
       const MockDrummerWidget = () => {
@@ -62,7 +66,8 @@ describe('DrummerWidget - Cache Integration Tests', () => {
 
         React.useEffect(() => {
           const loadSamples = async () => {
-            const preloadedDrums = GlobalSampleCache.getCachedInstrument('drums-preloaded');
+            const preloadedDrums =
+              GlobalSampleCache.getCachedInstrument('drums-preloaded');
             if (preloadedDrums) {
               drumPadsRef.current = preloadedDrums;
               setSamplesLoaded(true);
@@ -101,26 +106,27 @@ describe('DrummerWidget - Cache Integration Tests', () => {
 
       // Test triggering each drum
       const user = userEvent.setup();
-      
+
       // Trigger kick
       await user.click(screen.getByText('Kick'));
       expect(mockDrumPads[1].start).toHaveBeenCalledTimes(1);
-      
+
       // Trigger snare
       await user.click(screen.getByText('Snare'));
       expect(mockDrumPads[3].start).toHaveBeenCalledTimes(1);
-      
+
       // Trigger hi-hat
       await user.click(screen.getByText('Hi-hat'));
       expect(mockDrumPads[5].start).toHaveBeenCalledTimes(1);
     });
 
     it('should maintain proper timing when triggering cached samples', async () => {
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(mockDrumPads);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        mockDrumPads,
+      );
 
       const triggerTimes: number[] = [];
-      
+
       // Track when each drum is triggered
       mockDrumPads[1].start.mockImplementation(() => {
         triggerTimes.push(performance.now());
@@ -128,11 +134,11 @@ describe('DrummerWidget - Cache Integration Tests', () => {
 
       const MockDrummerWidget = () => {
         const drumPadsRef = React.useRef<any>(mockDrumPads);
-        
+
         const playRhythm = async () => {
           // Play a simple rhythm: kick, wait 100ms, kick
           drumPadsRef.current[1].start();
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
           drumPadsRef.current[1].start();
         };
 
@@ -140,7 +146,7 @@ describe('DrummerWidget - Cache Integration Tests', () => {
       };
 
       render(<MockDrummerWidget />);
-      
+
       const user = userEvent.setup();
       await user.click(screen.getByText('Play Rhythm'));
 
@@ -156,12 +162,13 @@ describe('DrummerWidget - Cache Integration Tests', () => {
 
   describe('Volume and Effects with Cached Drums', () => {
     it('should apply volume changes to cached drum samples', async () => {
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(mockDrumPads);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        mockDrumPads,
+      );
 
       const MockDrummerWidget = () => {
         const drumPadsRef = React.useRef<any>(mockDrumPads);
-        
+
         const changeVolume = (padNumber: number, volume: number) => {
           if (drumPadsRef.current && drumPadsRef.current[padNumber]) {
             drumPadsRef.current[padNumber].volume.value = volume;
@@ -178,28 +185,29 @@ describe('DrummerWidget - Cache Integration Tests', () => {
       };
 
       render(<MockDrummerWidget />);
-      
+
       const user = userEvent.setup();
-      
+
       // Make kick quiet
       await user.click(screen.getByText('Quiet Kick'));
       expect(mockDrumPads[1].volume.value).toBe(-20);
-      
+
       // Make kick loud
       await user.click(screen.getByText('Loud Kick'));
       expect(mockDrumPads[1].volume.value).toBe(0);
     });
 
     it('should maintain individual volume settings per pad', async () => {
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(mockDrumPads);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        mockDrumPads,
+      );
 
       const MockDrummerWidget = () => {
         const drumPadsRef = React.useRef<any>(mockDrumPads);
-        
+
         const setDrumMix = () => {
           // Set individual volumes for a drum mix
-          drumPadsRef.current[1].volume.value = -5;  // Kick prominent
+          drumPadsRef.current[1].volume.value = -5; // Kick prominent
           drumPadsRef.current[3].volume.value = -10; // Snare medium
           drumPadsRef.current[5].volume.value = -15; // Hi-hat quiet
         };
@@ -207,18 +215,24 @@ describe('DrummerWidget - Cache Integration Tests', () => {
         return (
           <div>
             <button onClick={setDrumMix}>Set Mix</button>
-            <div data-testid="kick-vol">{drumPadsRef.current[1].volume.value}</div>
-            <div data-testid="snare-vol">{drumPadsRef.current[3].volume.value}</div>
-            <div data-testid="hihat-vol">{drumPadsRef.current[5].volume.value}</div>
+            <div data-testid="kick-vol">
+              {drumPadsRef.current[1].volume.value}
+            </div>
+            <div data-testid="snare-vol">
+              {drumPadsRef.current[3].volume.value}
+            </div>
+            <div data-testid="hihat-vol">
+              {drumPadsRef.current[5].volume.value}
+            </div>
           </div>
         );
       };
 
       render(<MockDrummerWidget />);
-      
+
       const user = userEvent.setup();
       await user.click(screen.getByText('Set Mix'));
-      
+
       // Verify each drum has its own volume
       await waitFor(() => {
         expect(mockDrumPads[1].volume.value).toBe(-5);
@@ -238,7 +252,8 @@ describe('DrummerWidget - Cache Integration Tests', () => {
 
         React.useEffect(() => {
           loadStartTime = performance.now();
-          const drums = GlobalSampleCache.getCachedInstrument('drums-preloaded');
+          const drums =
+            GlobalSampleCache.getCachedInstrument('drums-preloaded');
           if (drums) {
             loadEndTime = performance.now();
             setLoaded(true);
@@ -254,9 +269,11 @@ describe('DrummerWidget - Cache Integration Tests', () => {
       expect(screen.getByText('Loading')).toBeInTheDocument();
 
       // Second render with cache - prop change will trigger useEffect
-      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(mockDrumPads);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        mockDrumPads,
+      );
       rerender(<MockDrummerWidget cacheHit={true} />);
-      
+
       await waitFor(() => {
         expect(screen.getByText('Ready')).toBeInTheDocument();
         const loadTime = loadEndTime - loadStartTime;
@@ -266,14 +283,16 @@ describe('DrummerWidget - Cache Integration Tests', () => {
     });
 
     it('should handle multiple widgets using same cached drums', async () => {
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(mockDrumPads);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        mockDrumPads,
+      );
 
       const MockWidget = ({ id }: { id: number }) => {
         const drumPadsRef = React.useRef<any>(null);
 
         React.useEffect(() => {
-          drumPadsRef.current = GlobalSampleCache.getCachedInstrument('drums-preloaded');
+          drumPadsRef.current =
+            GlobalSampleCache.getCachedInstrument('drums-preloaded');
         }, []);
 
         const triggerKick = () => {
@@ -288,16 +307,16 @@ describe('DrummerWidget - Cache Integration Tests', () => {
           <MockWidget id={1} />
           <MockWidget id={2} />
           <MockWidget id={3} />
-        </>
+        </>,
       );
 
       const user = userEvent.setup();
-      
+
       // Each widget should trigger the same cached drum
       await user.click(screen.getByText('Widget 1 Kick'));
       await user.click(screen.getByText('Widget 2 Kick'));
       await user.click(screen.getByText('Widget 3 Kick'));
-      
+
       // Same drum pad triggered 3 times
       expect(mockDrumPads[1].start).toHaveBeenCalledTimes(3);
     });
@@ -307,15 +326,17 @@ describe('DrummerWidget - Cache Integration Tests', () => {
     it('should handle missing drum pads gracefully', async () => {
       // Return incomplete drum set
       const incompleteDrums = { 1: mockDrumPads[1] }; // Only kick
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(incompleteDrums);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        incompleteDrums,
+      );
 
       const MockDrummerWidget = () => {
         const drumPadsRef = React.useRef<any>(null);
         const [error, setError] = React.useState<string | null>(null);
 
         React.useEffect(() => {
-          drumPadsRef.current = GlobalSampleCache.getCachedInstrument('drums-preloaded');
+          drumPadsRef.current =
+            GlobalSampleCache.getCachedInstrument('drums-preloaded');
         }, []);
 
         const triggerDrum = (padNumber: number) => {
@@ -340,16 +361,18 @@ describe('DrummerWidget - Cache Integration Tests', () => {
       };
 
       render(<MockDrummerWidget />);
-      
+
       const user = userEvent.setup();
-      
+
       // Kick should work
       await user.click(screen.getByText('Kick'));
       expect(incompleteDrums[1].start).toHaveBeenCalled();
-      
+
       // Snare should show error
       await user.click(screen.getByText('Snare'));
-      expect(screen.getByRole('alert')).toHaveTextContent('Drum pad 3 not loaded');
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Drum pad 3 not loaded',
+      );
     });
   });
 });

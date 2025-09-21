@@ -1,6 +1,6 @@
 /**
  * AudioEventRouter Migration Example
- * 
+ *
  * This example shows how the AudioEventRouter can be updated to use
  * the new instruments module while maintaining backward compatibility.
  */
@@ -12,7 +12,9 @@ import { Metronome } from '../implementations/metronome/Metronome.js';
 // Legacy processors
 import { BassInstrumentProcessor } from '../implementations/bass/BassInstrumentProcessor.js';
 import { DrumInstrumentProcessor } from '../implementations/drums/DrumInstrumentProcessor.js';
-import { MetronomeInstrumentProcessor } from '../../../services/plugins/MetronomeInstrumentProcessor.js';
+import { createStructuredLogger } from '../../shared/index.js';
+
+const logger = createStructuredLogger('AudioEventRouterMigration');
 
 /**
  * Example of how to update AudioEventRouter to support both
@@ -21,7 +23,7 @@ import { MetronomeInstrumentProcessor } from '../../../services/plugins/Metronom
 export class ModernAudioEventRouter {
   // Store instruments using the new interface
   private instruments: Map<string, Instrument> = new Map();
-  
+
   /**
    * Initialize instruments with gradual migration approach
    */
@@ -45,7 +47,7 @@ export class ModernAudioEventRouter {
     this.instruments.set('bass', bassInstrument);
 
     // Option 3: Gradual migration - check feature flag
-    if (useNewDrumImplementation()) {
+    if (this.useNewDrumImplementation()) {
       // Use new implementation when ready
       // const drums = new DrumKit({ ... });
     } else {
@@ -60,11 +62,11 @@ export class ModernAudioEventRouter {
   /**
    * Handle trigger events using unified interface
    */
-  private handleTrigger(instrumentType: string, event: any): void {
+  public handleTrigger(instrumentType: string, event: any): void {
     const instrument = this.instruments.get(instrumentType);
-    
+
     if (!instrument) {
-      console.warn(`Instrument ${instrumentType} not found`);
+      logger.warn(`Instrument ${instrumentType} not found`);
       return;
     }
 
@@ -80,27 +82,28 @@ export class ModernAudioEventRouter {
 
   /**
    * Example event handlers that work with both old and new
+   * These would be used like: this.handleMetronomeTrigger(data)
    */
-  private handleMetronomeTrigger(data: any): void {
-    this.handleTrigger('metronome', {
-      ...data,
-      data: { type: data.type }, // Extract metronome-specific data
-    });
-  }
+  // private handleMetronomeTrigger(data: any): void {
+  //   this.handleTrigger('metronome', {
+  //     ...data,
+  //     data: { type: data.type }, // Extract metronome-specific data
+  //   });
+  // }
 
-  private handleBassTrigger(data: any): void {
-    this.handleTrigger('bass', {
-      ...data,
-      data: { note: data.note, technique: data.technique },
-    });
-  }
+  // private handleBassTrigger(data: any): void {
+  //   this.handleTrigger('bass', {
+  //     ...data,
+  //     data: { note: data.note, technique: data.technique },
+  //   });
+  // }
 
-  private handleDrumTrigger(data: any): void {
-    this.handleTrigger('drums', {
-      ...data,
-      data: { drum: data.drum },
-    });
-  }
+  // private handleDrumTrigger(data: any): void {
+  //   this.handleTrigger('drums', {
+  //     ...data,
+  //     data: { drum: data.drum },
+  //   });
+  // }
 
   /**
    * Dispose all instruments
@@ -111,19 +114,19 @@ export class ModernAudioEventRouter {
     }
     this.instruments.clear();
   }
-}
 
-/**
- * Feature flag example
- */
-function useNewDrumImplementation(): boolean {
-  // Check feature flag or environment variable
-  return process.env.USE_NEW_DRUM_IMPLEMENTATION === 'true';
+  /**
+   * Feature flag example
+   */
+  private useNewDrumImplementation(): boolean {
+    // Check feature flag or environment variable
+    return process.env.USE_NEW_DRUM_IMPLEMENTATION === 'true';
+  }
 }
 
 /**
  * Migration benefits:
- * 
+ *
  * 1. Unified Interface: All instruments follow the same pattern
  * 2. Backward Compatible: Existing processors work through adapters
  * 3. Gradual Migration: Can migrate one instrument at a time

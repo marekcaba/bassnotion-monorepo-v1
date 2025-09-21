@@ -1,22 +1,26 @@
 /**
  * MemoryManager - Intelligent memory monitoring and management
- * 
+ *
  * Monitors system memory usage, provides pressure-aware caching decisions,
  * and implements adaptive memory management strategies to prevent
  * out-of-memory situations while maximizing cache efficiency.
  */
 
-import { EventBus } from '../../../services/core/EventBus.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { EventBus, createStructuredLogger } from '../../shared/index.js';
 
 const logger = createStructuredLogger('MemoryManager');
 
-export type MemoryPressureLevel = 'none' | 'low' | 'medium' | 'high' | 'critical';
+export type MemoryPressureLevel =
+  | 'none'
+  | 'low'
+  | 'medium'
+  | 'high'
+  | 'critical';
 
 export interface MemoryThresholds {
-  lowPressure: number;      // e.g., 0.7 (70% memory used)
-  mediumPressure: number;   // e.g., 0.8 (80% memory used)
-  highPressure: number;     // e.g., 0.9 (90% memory used)
+  lowPressure: number; // e.g., 0.7 (70% memory used)
+  mediumPressure: number; // e.g., 0.8 (80% memory used)
+  highPressure: number; // e.g., 0.9 (90% memory used)
   criticalPressure: number; // e.g., 0.95 (95% memory used)
 }
 
@@ -63,16 +67,16 @@ export class MemoryManager {
   private eventBus?: EventBus;
   private monitoringInterval?: number;
   private isMonitoring = false;
-  
+
   // Memory tracking
   private currentPressureLevel: MemoryPressureLevel = 'none';
   private memoryHistory: MemorySnapshot[] = [];
   private readonly HISTORY_SIZE = 60; // Keep 1 minute of history at 1s intervals
-  
+
   // Performance tracking
   private lastGC?: number;
   private gcCount = 0;
-  
+
   // Cache size tracking
   private currentCacheSize = 0;
   private peakCacheSize = 0;
@@ -80,7 +84,7 @@ export class MemoryManager {
   constructor(config: MemoryManagerConfig, eventBus?: EventBus) {
     this.config = config;
     this.eventBus = eventBus;
-    
+
     if (this.config.enabled) {
       this.startMonitoring();
     }
@@ -91,15 +95,15 @@ export class MemoryManager {
    */
   startMonitoring(): void {
     if (this.isMonitoring) return;
-    
+
     this.isMonitoring = true;
     this.performMemoryCheck();
-    
+
     // Set up periodic monitoring
     this.monitoringInterval = window.setInterval(() => {
       this.performMemoryCheck();
     }, this.config.monitoringInterval);
-    
+
     logger.info('Memory monitoring started');
   }
 
@@ -111,7 +115,7 @@ export class MemoryManager {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = undefined;
     }
-    
+
     this.isMonitoring = false;
     logger.info('Memory monitoring stopped');
   }
@@ -125,33 +129,33 @@ export class MemoryManager {
       timestamp: Date.now(),
       usage,
     };
-    
+
     // Add Node.js memory info if available
     if (typeof process !== 'undefined' && process.memoryUsage) {
       snapshot.processMemory = process.memoryUsage();
     }
-    
+
     // Update history
     this.memoryHistory.push(snapshot);
     if (this.memoryHistory.length > this.HISTORY_SIZE) {
       this.memoryHistory.shift();
     }
-    
+
     // Check for pressure level changes
     const previousLevel = this.currentPressureLevel;
     this.currentPressureLevel = usage.pressureLevel;
-    
+
     if (previousLevel !== this.currentPressureLevel) {
       this.handlePressureLevelChange(previousLevel, this.currentPressureLevel);
     }
-    
+
     // Auto-optimization if enabled
     if (this.config.autoOptimization && usage.pressureLevel !== 'none') {
       this.performAutoOptimization(usage);
     }
-    
+
     // Emit usage update
-    this.eventBus?.emit('memory:usage', usage);
+    this.eventBus?.emit('memory:usage', { usage });
   }
 
   /**
@@ -160,20 +164,20 @@ export class MemoryManager {
   private calculateMemoryUsage(): MemoryUsageInfo {
     // Get memory info based on environment
     const memoryInfo = this.getSystemMemoryInfo();
-    
+
     const usagePercentage = memoryInfo.usedMemory / memoryInfo.totalMemory;
     const cachePercentage = this.currentCacheSize / memoryInfo.totalMemory;
-    
+
     // Determine pressure level
     const pressureLevel = this.calculatePressureLevel(usagePercentage);
-    
+
     // Generate recommendation
     const recommendation = this.generateRecommendation(
       pressureLevel,
       usagePercentage,
-      cachePercentage
+      cachePercentage,
     );
-    
+
     return {
       totalMemory: memoryInfo.totalMemory,
       usedMemory: memoryInfo.usedMemory,
@@ -202,30 +206,31 @@ export class MemoryManager {
         return {
           totalMemory: perfMemory.jsHeapSizeLimit || 2 * 1024 * 1024 * 1024, // 2GB default
           usedMemory: perfMemory.usedJSHeapSize || 0,
-          availableMemory: (perfMemory.jsHeapSizeLimit || 2 * 1024 * 1024 * 1024) - 
-                          (perfMemory.usedJSHeapSize || 0),
+          availableMemory:
+            (perfMemory.jsHeapSizeLimit || 2 * 1024 * 1024 * 1024) -
+            (perfMemory.usedJSHeapSize || 0),
         };
       }
     }
-    
+
     // Node.js environment
     if (typeof process !== 'undefined' && process.memoryUsage) {
-      const usage = process.memoryUsage();
+      const _usage = process.memoryUsage();
       const totalMemory = require('os').totalmem();
       const freeMemory = require('os').freemem();
-      
+
       return {
         totalMemory,
         usedMemory: totalMemory - freeMemory,
         availableMemory: freeMemory,
       };
     }
-    
+
     // Fallback - estimate based on typical constraints
     return {
       totalMemory: 2 * 1024 * 1024 * 1024, // 2GB
       usedMemory: this.currentCacheSize * 2, // Rough estimate
-      availableMemory: 2 * 1024 * 1024 * 1024 - (this.currentCacheSize * 2),
+      availableMemory: 2 * 1024 * 1024 * 1024 - this.currentCacheSize * 2,
     };
   }
 
@@ -234,7 +239,7 @@ export class MemoryManager {
    */
   private calculatePressureLevel(usagePercentage: number): MemoryPressureLevel {
     const { thresholds } = this.config;
-    
+
     if (usagePercentage >= thresholds.criticalPressure) {
       return 'critical';
     } else if (usagePercentage >= thresholds.highPressure) {
@@ -253,8 +258,8 @@ export class MemoryManager {
    */
   private generateRecommendation(
     pressureLevel: MemoryPressureLevel,
-    usagePercentage: number,
-    cachePercentage: number
+    _usagePercentage: number,
+    cachePercentage: number,
   ): MemoryRecommendation {
     // Check if cache is using too much memory
     if (cachePercentage > this.config.maxCacheMemoryRatio) {
@@ -264,7 +269,7 @@ export class MemoryManager {
         reason: 'Cache exceeds maximum memory ratio',
       };
     }
-    
+
     switch (pressureLevel) {
       case 'critical':
         return {
@@ -272,27 +277,27 @@ export class MemoryManager {
           targetReduction: this.currentCacheSize * 0.5, // Reduce by 50%
           reason: 'Critical memory pressure detected',
         };
-        
+
       case 'high':
         return {
           action: 'evict',
           targetReduction: this.currentCacheSize * 0.3, // Reduce by 30%
           reason: 'High memory pressure detected',
         };
-        
+
       case 'medium':
         return {
           action: 'compress',
           reason: 'Medium memory pressure - consider compression',
         };
-        
+
       case 'low':
         return {
           action: 'reduce',
           targetReduction: this.currentCacheSize * 0.1, // Reduce by 10%
           reason: 'Low memory pressure - optimize cache size',
         };
-        
+
       default:
         return {
           action: 'none',
@@ -306,16 +311,16 @@ export class MemoryManager {
    */
   private handlePressureLevelChange(
     oldLevel: MemoryPressureLevel,
-    newLevel: MemoryPressureLevel
+    newLevel: MemoryPressureLevel,
   ): void {
     logger.warn(`Memory pressure changed from ${oldLevel} to ${newLevel}`);
-    
+
     this.eventBus?.emit('memory:pressureChanged', {
       oldLevel,
       newLevel,
       timestamp: Date.now(),
     });
-    
+
     // Trigger garbage collection if available and pressure increased
     if (this.shouldTriggerGC(oldLevel, newLevel)) {
       this.triggerGarbageCollection();
@@ -327,11 +332,13 @@ export class MemoryManager {
    */
   private performAutoOptimization(usage: MemoryUsageInfo): void {
     const { recommendation } = usage;
-    
+
     if (recommendation.action === 'none') return;
-    
-    logger.info(`Auto-optimization: ${recommendation.action} - ${recommendation.reason}`);
-    
+
+    logger.info(
+      `Auto-optimization: ${recommendation.action} - ${recommendation.reason}`,
+    );
+
     this.eventBus?.emit('memory:optimize', {
       action: recommendation.action,
       targetReduction: recommendation.targetReduction,
@@ -344,7 +351,7 @@ export class MemoryManager {
    */
   private shouldTriggerGC(
     oldLevel: MemoryPressureLevel,
-    newLevel: MemoryPressureLevel
+    newLevel: MemoryPressureLevel,
   ): boolean {
     const levelValues = {
       none: 0,
@@ -353,9 +360,11 @@ export class MemoryManager {
       high: 3,
       critical: 4,
     };
-    
-    return levelValues[newLevel] > levelValues[oldLevel] && 
-           levelValues[newLevel] >= levelValues.medium;
+
+    return (
+      levelValues[newLevel] > levelValues[oldLevel] &&
+      levelValues[newLevel] >= levelValues.medium
+    );
   }
 
   /**
@@ -369,7 +378,9 @@ export class MemoryManager {
         this.gcCount++;
         logger.info('Garbage collection triggered');
       } catch (error) {
-        logger.warn('Failed to trigger garbage collection:', error);
+        logger.warn('Failed to trigger garbage collection:', {
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
   }
@@ -416,26 +427,30 @@ export class MemoryManager {
   } {
     // Calculate average usage
     const recentHistory = this.memoryHistory.slice(-10);
-    const averageUsage = recentHistory.length > 0
-      ? recentHistory.reduce((sum, s) => sum + s.usage.usagePercentage, 0) / recentHistory.length
-      : 0;
-    
+    const averageUsage =
+      recentHistory.length > 0
+        ? recentHistory.reduce((sum, s) => sum + s.usage.usagePercentage, 0) /
+          recentHistory.length
+        : 0;
+
     // Calculate trend
     let trend: 'increasing' | 'decreasing' | 'stable' = 'stable';
     if (recentHistory.length >= 3) {
       const firstThird = recentHistory.slice(0, 3);
       const lastThird = recentHistory.slice(-3);
-      
-      const firstAvg = firstThird.reduce((sum, s) => sum + s.usage.usagePercentage, 0) / 3;
-      const lastAvg = lastThird.reduce((sum, s) => sum + s.usage.usagePercentage, 0) / 3;
-      
+
+      const firstAvg =
+        firstThird.reduce((sum, s) => sum + s.usage.usagePercentage, 0) / 3;
+      const lastAvg =
+        lastThird.reduce((sum, s) => sum + s.usage.usagePercentage, 0) / 3;
+
       if (lastAvg > firstAvg + 0.05) {
         trend = 'increasing';
       } else if (lastAvg < firstAvg - 0.05) {
         trend = 'decreasing';
       }
     }
-    
+
     return {
       currentCacheSize: this.currentCacheSize,
       peakCacheSize: this.peakCacheSize,
@@ -452,7 +467,7 @@ export class MemoryManager {
   canAllocate(size: number): boolean {
     const usage = this.calculateMemoryUsage();
     const afterAllocation = (usage.usedMemory + size) / usage.totalMemory;
-    
+
     // Don't allocate if it would push us into high pressure
     return afterAllocation < this.config.thresholds.highPressure;
   }
@@ -462,8 +477,9 @@ export class MemoryManager {
    */
   getRecommendedCacheSize(): number {
     const usage = this.calculateMemoryUsage();
-    const availableForCache = usage.totalMemory * this.config.maxCacheMemoryRatio;
-    
+    const availableForCache =
+      usage.totalMemory * this.config.maxCacheMemoryRatio;
+
     // Adjust based on pressure
     switch (usage.pressureLevel) {
       case 'critical':
@@ -484,7 +500,7 @@ export class MemoryManager {
    */
   updateConfig(newConfig: Partial<MemoryManagerConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    
+
     // Restart monitoring if interval changed
     if (newConfig.monitoringInterval !== undefined) {
       this.stopMonitoring();

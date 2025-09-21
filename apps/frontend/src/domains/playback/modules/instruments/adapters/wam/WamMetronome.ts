@@ -26,30 +26,47 @@ import type {
   WamMidiEvent,
   WamTransportEvent,
 } from '../../../../types/wam.js';
-import { GlobalSampleCache } from '../../../../services/storage/GlobalSampleCache.js';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { GlobalSampleCache } from '../../../storage/cache/GlobalSampleCache.js';
+import { createStructuredLogger } from '../../../shared/index.js';
 
 // Base WebAudioModule class - minimal implementation for compatibility
-abstract class WebAudioModuleBase implements WebAudioModule {
+abstract class WebAudioModuleBase implements Partial<WebAudioModule> {
   abstract audioContext: BaseAudioContext;
-  abstract audioNode: AudioNode | null;
+  abstract audioNode: WamNode | undefined;
   abstract initialized: boolean;
   abstract moduleId: string;
   abstract instanceId: string;
+  abstract descriptor: WamDescriptor;
 
-  abstract createAudioNode(options?: any): Promise<AudioNode>;
+  abstract createAudioNode(options?: any): Promise<WamNode>;
 
   async initialize(state?: any): Promise<WebAudioModule> {
     if (!this.initialized) {
       this.audioNode = await this.createAudioNode(state);
       (this as any).initialized = true;
     }
-    return this;
+    return this as any;
   }
 
-  createGui?(): Promise<HTMLElement>;
-  destroyGui?(gui: Element): void;
+  async getState(): Promise<any> {
+    return this.audioNode?.getState?.() || {};
+  }
+
+  async setState(state: any): Promise<void> {
+    if (this.audioNode?.setState) {
+      await this.audioNode.setState(state);
+    }
+  }
+
+  async createGui(): Promise<Element> {
+    const container = document.createElement('div');
+    container.innerHTML = '<div>No GUI available</div>';
+    return container;
+  }
+
+  destroyGui(gui: Element): void {
+    gui.remove();
+  }
 }
 
 /**
@@ -82,9 +99,18 @@ export interface TimeSignature {
 }
 
 /**
+ * Extended GainNode to implement AudioNode interface
+ */
+class ExtendedGainNode extends GainNode {
+  constructor(context: BaseAudioContext, options?: GainOptions) {
+    super(context, options);
+  }
+}
+
+/**
  * WAM Metronome Node - handles click generation and timing
  */
-export class WamMetronomeNode implements WamNode {
+export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
   private gainNode: GainNode | null = null;
   private clickBuffer: AudioBuffer | null = null;
   private accentBuffer: AudioBuffer | null = null;
@@ -94,12 +120,15 @@ export class WamMetronomeNode implements WamNode {
   private tempo = 120;
   private subdivisions = 1; // 1 = quarter notes, 2 = 8th notes, 3 = triplets
   private accentPattern: boolean[] = [true, false, false, false]; // Accent pattern
-  private currentBeat = 0;
-  private scheduledEvents: Set<number> = new Set(); // Track scheduled timeouts
+  private _currentBeat = 0;
+  private scheduledEvents: Set<NodeJS.Timeout> = new Set(); // Track scheduled timeouts
   private sampleCache = GlobalSampleCache;
+  private clickSynth: any = null;
+  private accentSynth: any = null;
+  private logger = createStructuredLogger('WamMetronomeNode');
 
-  get gain(): AudioParam | undefined {
-    return this.gainNode?.gain;
+  get gain(): AudioParam {
+    return this.gainNode?.gain || super.gain;
   }
 
   get context(): BaseAudioContext {
@@ -107,9 +136,10 @@ export class WamMetronomeNode implements WamNode {
   }
 
   constructor(
-    private module: WebAudioModule,
-    options?: AudioNodeOptions,
+    public module: WebAudioModule,
+    _options?: AudioNodeOptions,
   ) {
+    super(module.audioContext);
     // Don't initialize here to avoid SSR issues
   }
 
@@ -141,7 +171,7 @@ export class WamMetronomeNode implements WamNode {
     if (typeof window !== 'undefined' && this.context) {
       // DON'T switch Tone.js context - use the shared context
       // This was causing multiple context switches and buffer errors
-      logger.info(
+      this.logger.info(
         '🎵 WamMetronomeNode: Using shared AudioContext, not switching Tone.js',
       );
 
@@ -162,10 +192,10 @@ export class WamMetronomeNode implements WamNode {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const samplePath = 'metronome/Clicks_01.mp3';
       const fullUrl = `${supabaseUrl}/storage/v1/object/public/audio-samples/${samplePath}`;
-  const { correlationId, logger } = useCorrelation('supabaseUrl');
-
-      logger.info(`🎵 Loading metronome sample from Supabase: ${samplePath}`);
-      logger.info(`🎵 Full URL: ${fullUrl}`);
+      this.logger.info(
+        `🎵 Loading metronome sample from Supabase: ${samplePath}`,
+      );
+      this.logger.info(`🎵 Full URL: ${fullUrl}`);
 
       // Check cache first (exactly like WamDrummer does)
       const cachedBuffer =
@@ -173,12 +203,12 @@ export class WamMetronomeNode implements WamNode {
         this.sampleCache.getCachedBuffer('metronome-click');
 
       if (cachedBuffer) {
-        logger.info(`♻️ Using cached buffer for metronome`);
+        this.logger.info(`♻️ Using cached buffer for metronome`);
         this.clickBuffer = cachedBuffer;
         this.accentBuffer = cachedBuffer;
       } else {
         // Load from URL (exactly like WamDrummer does)
-        logger.info(`📥 Loading metronome sample from URL: ${fullUrl}`);
+        this.logger.info(`📥 Loading metronome sample from URL: ${fullUrl}`);
         const response = await fetch(fullUrl);
 
         if (!response.ok) {
@@ -186,10 +216,12 @@ export class WamMetronomeNode implements WamNode {
         }
 
         const arrayBuffer = await response.arrayBuffer();
-        logger.info(`🎵 Received audio data: ${arrayBuffer.byteLength} bytes`);
+        this.logger.info(
+          `🎵 Received audio data: ${arrayBuffer.byteLength} bytes`,
+        );
 
         const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
-        logger.info(
+        this.logger.info(
           `🎵 Decoded audio buffer: duration=${audioBuffer.duration}s, sampleRate=${audioBuffer.sampleRate}Hz`,
         );
 
@@ -202,11 +234,11 @@ export class WamMetronomeNode implements WamNode {
       }
 
       this.currentSound = sound;
-      logger.info(`✅ Metronome ready with Supabase sample`);
+      this.logger.info(`✅ Metronome ready with Supabase sample`);
     } catch (error) {
-      logger.error(`Failed to load ${sound} sound:`, error);
+      this.logger.error(`Failed to load ${sound} sound:`, error as Error);
       // Fallback to oscillators if samples fail to load
-      logger.warn('Falling back to oscillator-based clicks');
+      this.logger.warn('Falling back to oscillator-based clicks');
       this.useFallbackOscillators();
     }
   }
@@ -214,7 +246,7 @@ export class WamMetronomeNode implements WamNode {
   /**
    * Get Tone.js instance
    */
-  private async getToneJS(): Promise<any> {
+  private async _getToneJS(): Promise<any> {
     // Try to get from window first
     if ((window as any).Tone) {
       return (window as any).Tone;
@@ -241,7 +273,7 @@ export class WamMetronomeNode implements WamNode {
     this.clickSynth = {
       triggerAttackRelease: (
         pitch: string,
-        duration: string,
+        _duration: string,
         time: number,
         velocity: number,
       ) => {
@@ -249,7 +281,9 @@ export class WamMetronomeNode implements WamNode {
         const env = this.context.createGain();
 
         osc.connect(env);
-        env.connect(this.gainNode!);
+        if (this.gainNode) {
+          env.connect(this.gainNode);
+        }
 
         // Simple click envelope
         env.gain.setValueAtTime(0, time);
@@ -260,21 +294,25 @@ export class WamMetronomeNode implements WamNode {
         osc.start(time);
         osc.stop(time + 0.05);
       },
-      dispose: () => {}, // No-op for fallback
+      dispose: () => {
+        // No-op for fallback - add empty body to satisfy ESLint
+      },
     } as any;
 
     // Use same synth for accent (could be customized)
     this.accentSynth = this.clickSynth;
 
     this.currentSound = MetronomeSound.CLASSIC;
-    logger.info('✅ Using fallback Web Audio API oscillators for metronome');
+    this.logger.info(
+      '✅ Using fallback Web Audio API oscillators for metronome',
+    );
   }
 
   /**
    * Trigger a metronome click
    */
   triggerClick(isAccent = false, velocity = 80, time?: number): void {
-    logger.info('🎵 WamMetronomeNode.triggerClick() called', {
+    this.logger.info('🎵 WamMetronomeNode.triggerClick() called', {
       hasClickBuffer: !!this.clickBuffer,
       hasAccentBuffer: !!this.accentBuffer,
       isAccent,
@@ -286,7 +324,7 @@ export class WamMetronomeNode implements WamNode {
 
     // If no buffer loaded, try fallback
     if (!buffer) {
-      logger.info(
+      this.logger.info(
         '❌ No buffer available for metronome click - using fallback oscillator',
       );
       if (this.clickSynth) {
@@ -294,21 +332,21 @@ export class WamMetronomeNode implements WamNode {
         const actualTime = time || this.context.currentTime;
         const volume = (velocity / 127) * 0.8;
         const pitch = isAccent ? 'C5' : 'C4';
-        logger.info('🎵 Using fallback oscillator:', {
+        this.logger.info('🎵 Using fallback oscillator:', {
           pitch,
           volume,
           actualTime,
         });
         synth.triggerAttackRelease(pitch, '32n', actualTime, volume);
       } else {
-        logger.error('❌ No fallback synth available either!');
+        this.logger.error('❌ No fallback synth available either!');
       }
       return;
     }
 
     const triggerTime = time || this.context.currentTime;
 
-    logger.info('🎵 Playing metronome click with buffer', {
+    this.logger.info('🎵 Playing metronome click with buffer', {
       bufferDuration: buffer.duration,
       bufferSampleRate: buffer.sampleRate,
       triggerTime,
@@ -329,11 +367,13 @@ export class WamMetronomeNode implements WamNode {
 
       // Connect nodes
       source.connect(velocityGain);
-      velocityGain.connect(this.gainNode!);
+      if (this.gainNode) {
+        velocityGain.connect(this.gainNode);
+      }
 
       // Start playback
       source.start(triggerTime);
-      logger.info('✅ Metronome click scheduled');
+      this.logger.info('✅ Metronome click scheduled');
 
       // Cleanup after playback
       source.onended = () => {
@@ -341,7 +381,7 @@ export class WamMetronomeNode implements WamNode {
         velocityGain.disconnect();
       };
     } catch (error) {
-      logger.error('Failed to trigger click:', error);
+      this.logger.error('Failed to trigger click:', error as Error);
     }
   }
 
@@ -366,10 +406,10 @@ export class WamMetronomeNode implements WamNode {
           const timeoutId = setTimeout(
             () => {
               this.triggerClick(isAccent, isAccent ? 100 : 70);
-              this.scheduledEvents.delete(timeoutId);
+              this.scheduledEvents.delete(timeoutId as any);
             },
             (time - this.context.currentTime) * 1000,
-          );
+          ) as unknown as NodeJS.Timeout;
 
           this.scheduledEvents.add(timeoutId);
         }
@@ -383,7 +423,7 @@ export class WamMetronomeNode implements WamNode {
   start(): void {
     if (this.isPlaying) return;
     this.isPlaying = true;
-    this.currentBeat = 0;
+    this._currentBeat = 0;
     this.scheduleNextMeasure();
   }
 
@@ -415,7 +455,7 @@ export class WamMetronomeNode implements WamNode {
    * Clear all scheduled events
    */
   private clearScheduledEvents(): void {
-    this.scheduledEvents.forEach((id) => clearTimeout(id));
+    this.scheduledEvents.forEach((id) => clearTimeout(id as any));
     this.scheduledEvents.clear();
   }
 
@@ -423,15 +463,16 @@ export class WamMetronomeNode implements WamNode {
    * Handle transport events (start/stop/tempo)
    */
   handleTransportEvent(event: WamTransportEvent): void {
-    switch (event.data.type) {
+    const data = event.data as any;
+    switch (data.type) {
       case 'start':
-        this.currentBeat = 0;
+        this._currentBeat = 0;
         break;
       case 'stop':
         this.clearScheduledEvents();
         break;
       case 'tempo':
-        this.tempo = event.data.tempo;
+        this.tempo = data.tempo;
         break;
     }
   }
@@ -523,7 +564,7 @@ export class WamMetronomeNode implements WamNode {
     } else if (event.type === 'wam-midi') {
       // Handle MIDI sync if needed
       const midiEvent = event as WamMidiEvent;
-      const [status, data1, data2] = Array.from(midiEvent.data.bytes);
+      const [status, _data1, _data2] = Array.from(midiEvent.data.bytes);
 
       // MIDI clock (0xF8)
       if (status === 0xf8) {
@@ -536,7 +577,7 @@ export class WamMetronomeNode implements WamNode {
     this.clearScheduledEvents();
   }
 
-  destroy(): void {
+  async destroy(): Promise<void> {
     this.stop();
     this.clearEvents();
     if (this.clickSynth) {
@@ -547,6 +588,43 @@ export class WamMetronomeNode implements WamNode {
     }
     this.disconnect();
   }
+
+  // WamNode interface methods
+  async getState(): Promise<any> {
+    return {
+      sound: this.currentSound,
+      tempo: this.tempo,
+      subdivisions: this.subdivisions,
+      timeSignature: this.timeSignature,
+      accentPattern: this.accentPattern,
+    };
+  }
+
+  async setState(state: any): Promise<void> {
+    if (state.sound !== undefined) {
+      await this.loadSound(state.sound);
+    }
+    if (state.tempo !== undefined) {
+      this.tempo = state.tempo;
+    }
+    if (state.subdivisions !== undefined) {
+      this.subdivisions = state.subdivisions;
+    }
+    if (state.timeSignature !== undefined) {
+      this.timeSignature = state.timeSignature;
+    }
+    if (state.accentPattern !== undefined) {
+      this.accentPattern = state.accentPattern;
+    }
+  }
+
+  async getCompensationDelay(): Promise<number> {
+    return 0;
+  }
+
+  scheduleEvents(..._events: WamEvent[]): void {
+    // Implementation for scheduling multiple events
+  }
 }
 
 /**
@@ -554,10 +632,12 @@ export class WamMetronomeNode implements WamNode {
  */
 export class WamMetronome extends WebAudioModuleBase {
   readonly audioContext: BaseAudioContext;
-  audioNode: WamMetronomeNode | null = null;
+  audioNode: WamMetronomeNode | undefined = undefined;
   initialized = false;
   readonly moduleId = 'com.bassnotion.metronome';
   readonly instanceId: string;
+  private logger = createStructuredLogger('WamMetronome');
+  readonly descriptor: WamDescriptor;
 
   static descriptor: WamDescriptor = {
     name: 'BassNotion Metronome',
@@ -579,36 +659,37 @@ export class WamMetronome extends WebAudioModuleBase {
     super();
     this.audioContext = audioContext;
     this.instanceId = `${this.moduleId}-${Date.now()}`;
+    this.descriptor = WamMetronome.descriptor;
   }
 
   /**
    * Create the audio node - follows WAM 2.0 standard
    */
-  async createAudioNode(initialState?: any): Promise<AudioNode> {
-    this.audioNode = new WamMetronomeNode(this, initialState);
+  async createAudioNode(initialState?: any): Promise<WamNode> {
+    this.audioNode = new WamMetronomeNode(this as any, initialState);
     await this.audioNode.initialize();
-    return this.audioNode;
+    return this.audioNode as WamNode;
   }
 
   /**
    * Trigger a click sound (used by widgets)
    */
   click(isAccent = false): void {
-    logger.info('🎵 WamMetronome.click() called', {
+    this.logger.info('🎵 WamMetronome.click() called', {
       hasAudioNode: !!this.audioNode,
       isAccent,
     });
     if (this.audioNode) {
       this.audioNode.triggerClick(isAccent);
     } else {
-      logger.info('❌ No audio node available');
+      this.logger.info('❌ No audio node available');
     }
   }
 
   /**
    * Set time signature
    */
-  setTimeSignature(numerator: number, denominator: number): void {
+  setTimeSignature(numerator: number, _denominator: number): void {
     if (this.audioNode) {
       this.audioNode.setParameterValues({
         accentBeats: numerator,

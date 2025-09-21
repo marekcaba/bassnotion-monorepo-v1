@@ -16,9 +16,14 @@ const audioEvents: AudioEvent[] = [];
 const MAX_EVENTS = 100;
 
 // Export function to log audio events
-export function logAudioEvent(service: string, action: string, data?: any, correlationId?: string) {
+export function logAudioEvent(
+  service: string,
+  action: string,
+  data?: any,
+  correlationId?: string,
+) {
   if (process.env.NEXT_PUBLIC_DEBUG_AUDIO !== 'true') return;
-  
+
   const event: AudioEvent = {
     timestamp: new Date().toISOString(),
     service,
@@ -26,16 +31,16 @@ export function logAudioEvent(service: string, action: string, data?: any, corre
     data,
     correlationId,
   };
-  
+
   audioEvents.unshift(event);
   if (audioEvents.length > MAX_EVENTS) {
     audioEvents.length = MAX_EVENTS;
   }
-  
+
   // Also log to console with structured logger
   const logger = createStructuredLogger(`audio:${service}`);
   logger.debug(action, { ...data, correlationId });
-  
+
   // Emit custom event for React component
   window.dispatchEvent(new CustomEvent('audio-debug-event', { detail: event }));
 }
@@ -44,35 +49,36 @@ export function AudioDebugPanel() {
   const [events, setEvents] = useState<AudioEvent[]>([]);
   const [isMinimized, setIsMinimized] = useState(true);
   const [filter, setFilter] = useState('');
-  
+
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_DEBUG_AUDIO !== 'true') return;
-    
+
     // Initialize with existing events
     setEvents([...audioEvents]);
-    
+
     // Listen for new events
     const handleEvent = (e: Event) => {
       const customEvent = e as CustomEvent;
-      setEvents(prev => [customEvent.detail, ...prev].slice(0, MAX_EVENTS));
+      setEvents((prev) => [customEvent.detail, ...prev].slice(0, MAX_EVENTS));
     };
-    
+
     window.addEventListener('audio-debug-event', handleEvent);
     return () => window.removeEventListener('audio-debug-event', handleEvent);
   }, []);
-  
+
   if (process.env.NEXT_PUBLIC_DEBUG_AUDIO !== 'true') {
     return null;
   }
-  
+
   const filteredEvents = filter
-    ? events.filter(e => 
-        e.service.includes(filter) || 
-        e.action.includes(filter) ||
-        JSON.stringify(e.data).includes(filter)
+    ? events.filter(
+        (e) =>
+          e.service.includes(filter) ||
+          e.action.includes(filter) ||
+          JSON.stringify(e.data).includes(filter),
       )
     : events;
-  
+
   return (
     <div
       style={{
@@ -105,7 +111,7 @@ export function AudioDebugPanel() {
         <span>🎵 Audio Debug ({events.length})</span>
         <span>{isMinimized ? '▲' : '▼'}</span>
       </div>
-      
+
       {!isMinimized && (
         <>
           <div style={{ padding: '10px' }}>
@@ -124,7 +130,7 @@ export function AudioDebugPanel() {
               }}
             />
           </div>
-          
+
           <div
             style={{
               maxHeight: '300px',
@@ -143,7 +149,8 @@ export function AudioDebugPanel() {
                 }}
               >
                 <div style={{ color: '#00ff00' }}>
-                  [{event.timestamp.split('T')[1].split('.')[0]}] {event.service} → {event.action}
+                  [{event.timestamp.split('T')[1].split('.')[0]}]{' '}
+                  {event.service} → {event.action}
                 </div>
                 {event.correlationId && (
                   <div style={{ color: '#888', fontSize: '10px' }}>
@@ -151,7 +158,13 @@ export function AudioDebugPanel() {
                   </div>
                 )}
                 {event.data && (
-                  <div style={{ color: '#0088ff', fontSize: '11px', marginTop: '2px' }}>
+                  <div
+                    style={{
+                      color: '#0088ff',
+                      fontSize: '11px',
+                      marginTop: '2px',
+                    }}
+                  >
                     {JSON.stringify(event.data, null, 2)}
                   </div>
                 )}

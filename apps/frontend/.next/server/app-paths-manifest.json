@@ -1,4 +1,4 @@
 {
-  "/debug/logs/page": "app/debug/logs/page.js",
-  "/library/[tutorialId]/page": "app/library/[tutorialId]/page.js"
+  "/page": "app/page.js",
+  "/library/page": "app/library/page.js"
 }

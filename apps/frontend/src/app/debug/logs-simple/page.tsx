@@ -23,7 +23,7 @@ export default function SimpleLogsDebugPage() {
             'Content-Type': 'application/json',
             'x-correlation-id': correlationId,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -42,7 +42,7 @@ export default function SimpleLogsDebugPage() {
   return (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       <h1>Simple Log Viewer</h1>
-      
+
       <div style={{ marginBottom: '20px' }}>
         <input
           type="text"
@@ -74,13 +74,15 @@ export default function SimpleLogsDebugPage() {
       </div>
 
       {error && (
-        <div style={{
-          padding: '10px',
-          backgroundColor: '#f8d7da',
-          color: '#721c24',
-          borderRadius: '4px',
-          marginBottom: '20px',
-        }}>
+        <div
+          style={{
+            padding: '10px',
+            backgroundColor: '#f8d7da',
+            color: '#721c24',
+            borderRadius: '4px',
+            marginBottom: '20px',
+          }}
+        >
           Error: {error}
         </div>
       )}
@@ -88,13 +90,15 @@ export default function SimpleLogsDebugPage() {
       {logs && (
         <div>
           <h2>Results</h2>
-          <pre style={{
-            backgroundColor: '#f5f5f5',
-            padding: '15px',
-            borderRadius: '4px',
-            overflow: 'auto',
-            maxHeight: '600px',
-          }}>
+          <pre
+            style={{
+              backgroundColor: '#f5f5f5',
+              padding: '15px',
+              borderRadius: '4px',
+              overflow: 'auto',
+              maxHeight: '600px',
+            }}
+          >
             {JSON.stringify(logs, null, 2)}
           </pre>
         </div>
@@ -103,9 +107,15 @@ export default function SimpleLogsDebugPage() {
       <div style={{ marginTop: '40px', fontSize: '14px', color: '#666' }}>
         <p>Debug Info:</p>
         <ul>
-          <li>API URL: {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}</li>
+          <li>
+            API URL:{' '}
+            {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}
+          </li>
           <li>Environment: {process.env.NODE_ENV}</li>
-          <li>Note: This endpoint may require authentication. Check the Network tab for 401 errors.</li>
+          <li>
+            Note: This endpoint may require authentication. Check the Network
+            tab for 401 errors.
+          </li>
         </ul>
       </div>
     </div>

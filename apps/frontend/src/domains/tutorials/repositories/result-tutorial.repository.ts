@@ -25,7 +25,7 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.findById(id);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching tutorial'
+        error.message || 'An unexpected error occurred while fetching tutorial',
       );
     }
   }
@@ -35,17 +35,21 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.findBySlug(slug);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching tutorial by slug'
+        error.message ||
+          'An unexpected error occurred while fetching tutorial by slug',
       );
     }
   }
 
-  async findAll(options?: PaginationOptions): Promise<Result<PaginatedResult<Tutorial>>> {
+  async findAll(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Tutorial>>> {
     try {
       return await this.repository.findAll(options);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching tutorials'
+        error.message ||
+          'An unexpected error occurred while fetching tutorials',
       );
     }
   }
@@ -55,7 +59,8 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.findByLevel(level);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching tutorials by level'
+        error.message ||
+          'An unexpected error occurred while fetching tutorials by level',
       );
     }
   }
@@ -65,7 +70,8 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.findByTag(tag);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching tutorials by tag'
+        error.message ||
+          'An unexpected error occurred while fetching tutorials by tag',
       );
     }
   }
@@ -75,17 +81,22 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.findByAuthor(authorName);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching tutorials by author'
+        error.message ||
+          'An unexpected error occurred while fetching tutorials by author',
       );
     }
   }
 
-  async search(query: string, filters?: TutorialFilters): Promise<Result<Tutorial[]>> {
+  async search(
+    query: string,
+    filters?: TutorialFilters,
+  ): Promise<Result<Tutorial[]>> {
     try {
       return await this.repository.search(query, filters);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while searching tutorials'
+        error.message ||
+          'An unexpected error occurred while searching tutorials',
       );
     }
   }
@@ -95,27 +106,35 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.findByIds(ids);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching tutorials by ids'
+        error.message ||
+          'An unexpected error occurred while fetching tutorials by ids',
       );
     }
   }
 
-  async findPublished(options?: PaginationOptions): Promise<Result<PaginatedResult<Tutorial>>> {
+  async findPublished(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Tutorial>>> {
     try {
       return await this.repository.findPublished(options);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching published tutorials'
+        error.message ||
+          'An unexpected error occurred while fetching published tutorials',
       );
     }
   }
 
-  async findRelated(tutorialId: TutorialId, limit?: number): Promise<Result<Tutorial[]>> {
+  async findRelated(
+    tutorialId: TutorialId,
+    limit?: number,
+  ): Promise<Result<Tutorial[]>> {
     try {
       return await this.repository.findRelated(tutorialId, limit);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching related tutorials'
+        error.message ||
+          'An unexpected error occurred while fetching related tutorials',
       );
     }
   }
@@ -125,7 +144,7 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.save(tutorial);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while saving tutorial'
+        error.message || 'An unexpected error occurred while saving tutorial',
       );
     }
   }
@@ -135,7 +154,7 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.update(tutorial);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while updating tutorial'
+        error.message || 'An unexpected error occurred while updating tutorial',
       );
     }
   }
@@ -145,7 +164,7 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.delete(id);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while deleting tutorial'
+        error.message || 'An unexpected error occurred while deleting tutorial',
       );
     }
   }
@@ -155,7 +174,7 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.saveMany(tutorials);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while saving tutorials'
+        error.message || 'An unexpected error occurred while saving tutorials',
       );
     }
   }
@@ -165,7 +184,8 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.deleteMany(ids);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while deleting tutorials'
+        error.message ||
+          'An unexpected error occurred while deleting tutorials',
       );
     }
   }
@@ -175,7 +195,8 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.exists(id);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while checking tutorial existence'
+        error.message ||
+          'An unexpected error occurred while checking tutorial existence',
       );
     }
   }
@@ -185,7 +206,8 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.existsBySlug(slug);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while checking tutorial existence by slug'
+        error.message ||
+          'An unexpected error occurred while checking tutorial existence by slug',
       );
     }
   }
@@ -195,7 +217,8 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.count();
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while counting tutorials'
+        error.message ||
+          'An unexpected error occurred while counting tutorials',
       );
     }
   }
@@ -205,7 +228,8 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.countByLevel(level);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while counting tutorials by level'
+        error.message ||
+          'An unexpected error occurred while counting tutorials by level',
       );
     }
   }
@@ -215,7 +239,8 @@ export class ResultTutorialRepository implements ITutorialRepository {
       return await this.repository.incrementViewCount(id);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while incrementing view count'
+        error.message ||
+          'An unexpected error occurred while incrementing view count',
       );
     }
   }

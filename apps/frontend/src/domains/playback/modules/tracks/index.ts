@@ -1,6 +1,6 @@
 /**
  * Tracks Module
- * 
+ *
  * Professional track-based DAW architecture with:
  * - Track management and lifecycle
  * - Regions and content organization
@@ -44,6 +44,10 @@ export type {
   ITrackTimingSynchronizer,
 } from './timing/index.js';
 
+// Track management
+export type { InstrumentType } from './management/TrackManagerProcessor.js';
+export { TrackManagerProcessor } from './management/TrackManagerProcessor.js';
+
 // Types
 export type {
   TrackConfig,
@@ -56,14 +60,9 @@ export type {
   TrackSend,
 } from '../../types/track.js';
 
-export type {
-  RegionConfig,
-} from './core/Region.js';
+export type { RegionConfig } from './core/Region.js';
 
-export type {
-  TrackGroup,
-  TrackTemplate,
-} from './core/TrackManager.js';
+export type { TrackGroup, TrackTemplate } from './core/TrackManager.js';
 
 export type {
   ChannelConfig,

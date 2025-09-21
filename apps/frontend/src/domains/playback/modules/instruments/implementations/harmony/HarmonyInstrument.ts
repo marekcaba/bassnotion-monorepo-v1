@@ -1,18 +1,25 @@
 /**
  * Harmony Instrument
- * 
+ *
  * A modular harmony/chord instrument implementation that follows the Instrument interface.
  * This implementation wraps the existing WamHarmonyProcessor for backward compatibility
  * while providing a cleaner interface for the track system.
  */
 
 import { BaseInstrument } from '../../base/Instrument.js';
-import type { InstrumentConfig, InstrumentEvent, InstrumentMetrics } from '../../types/index.js';
-import type { ChordEvent, HarmonyConfig } from '../../types/index.js';
-import { WamHarmonyProcessor } from '../../../../services/plugins/WamHarmonyProcessor.js';
+import type {
+  InstrumentConfig,
+  InstrumentEvent,
+  InstrumentMetrics,
+} from '../../types/index.js';
+import type { ChordEvent } from '../../types/index.js';
+import { WamHarmonyProcessor } from '../../adapters/wam/WamHarmonyProcessor.js';
+import { createStructuredLogger } from '../../../shared/index.js';
+
+const logger = createStructuredLogger('HarmonyInstrument');
 
 export interface HarmonyInstrumentConfig extends InstrumentConfig {
-  type: 'harmony';
+  type: 'chords';
   instrument?: 'piano' | 'rhodes' | 'wurlitzer' | 'organ';
   samples?: Record<string, string>;
   useWAM?: boolean;
@@ -30,30 +37,41 @@ export class HarmonyInstrument extends BaseInstrument {
   private instrument: string;
   private voicing: string;
   private samples: Record<string, string>;
-  private useWAM: boolean;
+  private _useWAM: boolean;
+  private audioEngine?: any;
 
-  constructor(config: HarmonyInstrumentConfig) {
+  constructor(config: HarmonyInstrumentConfig, audioEngine?: any) {
     super(config);
-    
+    this.audioEngine = audioEngine;
+
     this.instrument = config.instrument || 'piano';
     this.voicing = config.voicing || 'close';
     this.samples = config.samples || {};
-    this.useWAM = config.useWAM ?? true;
+    this._useWAM = config.useWAM ?? true;
 
     // Create processor
     this.processor = new WamHarmonyProcessor();
   }
 
-  async initialize(context?: any): Promise<void> {
+  async initialize(context?: any, audioEngine?: any): Promise<void> {
     if (this._state.isInitialized) return;
 
     this._state.isLoading = true;
 
+    // Support both context and audioEngine parameters
+    if (audioEngine) {
+      this.audioEngine = audioEngine;
+    }
+
     try {
       // Initialize processor with audio context
-      const audioContext = context || (window as any).AudioContext || (window as any).webkitAudioContext;
-      await this.processor.initialize(audioContext);
-      
+      const audioContext =
+        context ||
+        (window as any).AudioContext ||
+        (window as any).webkitAudioContext;
+      // Pass audioEngine to processor if it supports it
+      await this.processor.initialize(audioContext, this.audioEngine);
+
       this._state.isInitialized = true;
       this._state.isLoading = false;
     } catch (error) {
@@ -65,20 +83,22 @@ export class HarmonyInstrument extends BaseInstrument {
 
   trigger(event: InstrumentEvent): void {
     if (!this._state.isInitialized) {
-      console.warn(`Harmony ${this.name} not initialized`);
+      logger.warn(`Harmony ${this.name} not initialized`);
       return;
     }
 
     // Extract chord-specific data
     const chordEvent = event.data as ChordEvent;
-    
+
     // Call processor's trigger method
     this.processor.triggerChord({
       chord: chordEvent?.chord || 'C',
       notes: chordEvent?.notes || ['C4', 'E4', 'G4'],
       velocity: event.velocity || 0.8,
       time: event.audioTime,
-      duration: event.duration || '4n',
+      duration:
+        (typeof event.duration === 'string' ? event.duration : undefined) ||
+        '4n',
     });
 
     this._state.isPlaying = true;
@@ -87,12 +107,18 @@ export class HarmonyInstrument extends BaseInstrument {
   /**
    * Trigger specific chord
    */
-  playChord(chord: string, notes: string[], velocity: number = 0.8, duration: string = '4n', time?: number): void {
+  playChord(
+    chord: string,
+    notes: string[],
+    velocity = 0.8,
+    duration = '4n',
+    time?: number,
+  ): void {
     if (!this._state.isInitialized) {
-      console.warn('Harmony not initialized');
+      logger.warn('Harmony not initialized');
       return;
     }
-    
+
     this.processor.triggerChord({
       chord,
       notes,
@@ -105,7 +131,7 @@ export class HarmonyInstrument extends BaseInstrument {
   /**
    * Play single note
    */
-  playNote(note: string, velocity: number = 0.8, duration: string = '4n', time?: number): void {
+  playNote(note: string, velocity = 0.8, duration = '4n', time?: number): void {
     this.playChord(note, [note], velocity, duration, time);
   }
 
@@ -119,7 +145,7 @@ export class HarmonyInstrument extends BaseInstrument {
     if ((this.processor as any).stopChord) {
       (this.processor as any).stopChord(notes, time);
     }
-    
+
     this._state.isPlaying = false;
   }
 
@@ -155,20 +181,29 @@ export class HarmonyInstrument extends BaseInstrument {
   }
 
   updateParams(params: Partial<HarmonyInstrumentConfig>): void {
-    super.updateParams(params);
-    
+    // Update base parameters
+    if (params.volume !== undefined) {
+      this.setVolume(params.volume);
+    }
+    if (params.pan !== undefined) {
+      this.setPan(params.pan);
+    }
+    if (params.muted !== undefined) {
+      this.setMuted(params.muted);
+    }
+
     if (params.instrument !== undefined) {
       this.setInstrument(params.instrument);
     }
-    
+
     if (params.voicing !== undefined) {
       this.setVoicing(params.voicing);
     }
-    
+
     if (params.sustainPedal !== undefined) {
       this.setSustainPedal(params.sustainPedal);
     }
-    
+
     if (params.samples) {
       this.samples = params.samples;
       // Would need to reinitialize with new samples
@@ -177,7 +212,8 @@ export class HarmonyInstrument extends BaseInstrument {
 
   async dispose(): Promise<void> {
     this.processor.dispose();
-    this.clearSamples();
+    // Clear samples
+    this.samples = {};
     this._state.isInitialized = false;
     this._state.isPlaying = false;
   }
@@ -218,18 +254,15 @@ export class HarmonyInstrument extends BaseInstrument {
     // This method is a placeholder for future sample-based harmony instruments
     for (const [note, url] of Object.entries(sampleMap)) {
       if (typeof url === 'string') {
-        const loadedSample = {
-          buffer: url, // In real implementation, this would be the loaded AudioBuffer
-          note,
-        };
-        this.samples.set(note, [loadedSample]);
+        // Store the sample URL for this note
+        this.samples[note] = url;
       }
     }
   }
 
   getMetrics(): InstrumentMetrics {
     const baseMetrics = super.getMetrics();
-    
+
     return {
       ...baseMetrics,
       cpuUsage: this._state.isPlaying ? 8 : 0, // Higher CPU for polyphonic harmony
@@ -254,49 +287,56 @@ export class HarmonyInstrument extends BaseInstrument {
   }
 
   /**
+   * Check if WAM is enabled
+   */
+  get useWAM(): boolean {
+    return this._useWAM;
+  }
+
+  /**
    * Get chord suggestions for a given root note
    */
   getChordSuggestions(root: string): string[] {
     return [
-      `${root}`,        // Major
-      `${root}m`,       // Minor
-      `${root}7`,       // Dominant 7
-      `${root}maj7`,    // Major 7
-      `${root}m7`,      // Minor 7
-      `${root}sus2`,    // Suspended 2
-      `${root}sus4`,    // Suspended 4
-      `${root}dim`,     // Diminished
-      `${root}aug`,     // Augmented
+      `${root}`, // Major
+      `${root}m`, // Minor
+      `${root}7`, // Dominant 7
+      `${root}maj7`, // Major 7
+      `${root}m7`, // Minor 7
+      `${root}sus2`, // Suspended 2
+      `${root}sus4`, // Suspended 4
+      `${root}dim`, // Diminished
+      `${root}aug`, // Augmented
     ];
   }
 
   /**
    * Convert chord symbol to notes
    */
-  chordToNotes(chord: string, octave: number = 4): string[] {
+  chordToNotes(chord: string, octave = 4): string[] {
     // Simplified chord parsing - would be more comprehensive in real implementation
     const root = chord.replace(/[^A-G#b].*/, '');
     const chordType = chord.replace(root, '');
-    
+
     // Basic chord mapping (simplified)
     const baseNotes = {
-      'C': ['C', 'E', 'G'],
-      'D': ['D', 'F#', 'A'],
-      'E': ['E', 'G#', 'B'],
-      'F': ['F', 'A', 'C'],
-      'G': ['G', 'B', 'D'],
-      'A': ['A', 'C#', 'E'],
-      'B': ['B', 'D#', 'F#'],
+      C: ['C', 'E', 'G'],
+      D: ['D', 'F#', 'A'],
+      E: ['E', 'G#', 'B'],
+      F: ['F', 'A', 'C'],
+      G: ['G', 'B', 'D'],
+      A: ['A', 'C#', 'E'],
+      B: ['B', 'D#', 'F#'],
     };
-    
+
     const notes = baseNotes[root as keyof typeof baseNotes] || ['C', 'E', 'G'];
-    
+
     // Apply chord modifications based on type
     if (chordType.includes('m') && !chordType.includes('maj')) {
       // Minor chord - flatten the third
       // This is a simplified implementation
     }
-    
-    return notes.map(note => `${note}${octave}`);
+
+    return notes.map((note) => `${note}${octave}`);
   }
 }

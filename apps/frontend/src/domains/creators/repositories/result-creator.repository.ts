@@ -25,7 +25,7 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.findById(id);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching creator'
+        error.message || 'An unexpected error occurred while fetching creator',
       );
     }
   }
@@ -35,7 +35,8 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.findByChannelUrl(channelUrl);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching creator by channel URL'
+        error.message ||
+          'An unexpected error occurred while fetching creator by channel URL',
       );
     }
   }
@@ -45,17 +46,20 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.findByChannelId(channelId);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching creator by channel ID'
+        error.message ||
+          'An unexpected error occurred while fetching creator by channel ID',
       );
     }
   }
 
-  async findAll(options?: PaginationOptions): Promise<Result<PaginatedResult<Creator>>> {
+  async findAll(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Creator>>> {
     try {
       return await this.repository.findAll(options);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching creators'
+        error.message || 'An unexpected error occurred while fetching creators',
       );
     }
   }
@@ -65,47 +69,63 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.findByIds(ids);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching creators by ids'
+        error.message ||
+          'An unexpected error occurred while fetching creators by ids',
       );
     }
   }
 
-  async search(query: string, filters?: CreatorFilters): Promise<Result<Creator[]>> {
+  async search(
+    query: string,
+    filters?: CreatorFilters,
+  ): Promise<Result<Creator[]>> {
     try {
       return await this.repository.search(query, filters);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while searching creators'
+        error.message ||
+          'An unexpected error occurred while searching creators',
       );
     }
   }
 
-  async findStale(hoursThreshold?: number, limit?: number): Promise<Result<Creator[]>> {
+  async findStale(
+    hoursThreshold?: number,
+    limit?: number,
+  ): Promise<Result<Creator[]>> {
     try {
       return await this.repository.findStale(hoursThreshold, limit);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching stale creators'
+        error.message ||
+          'An unexpected error occurred while fetching stale creators',
       );
     }
   }
 
-  async findVerified(options?: PaginationOptions): Promise<Result<PaginatedResult<Creator>>> {
+  async findVerified(
+    options?: PaginationOptions,
+  ): Promise<Result<PaginatedResult<Creator>>> {
     try {
       return await this.repository.findVerified(options);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching verified creators'
+        error.message ||
+          'An unexpected error occurred while fetching verified creators',
       );
     }
   }
 
-  async findTop(sortBy: CreatorSortOptions, limit?: number): Promise<Result<Creator[]>> {
+  async findTop(
+    sortBy: CreatorSortOptions,
+    limit?: number,
+  ): Promise<Result<Creator[]>> {
     try {
       return await this.repository.findTop(sortBy, limit);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while fetching top creators'
+        error.message ||
+          'An unexpected error occurred while fetching top creators',
       );
     }
   }
@@ -115,7 +135,7 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.save(creator);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while saving creator'
+        error.message || 'An unexpected error occurred while saving creator',
       );
     }
   }
@@ -125,7 +145,7 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.update(creator);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while updating creator'
+        error.message || 'An unexpected error occurred while updating creator',
       );
     }
   }
@@ -135,7 +155,7 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.delete(id);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while deleting creator'
+        error.message || 'An unexpected error occurred while deleting creator',
       );
     }
   }
@@ -145,7 +165,7 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.saveMany(creators);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while saving creators'
+        error.message || 'An unexpected error occurred while saving creators',
       );
     }
   }
@@ -155,7 +175,7 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.updateMany(creators);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while updating creators'
+        error.message || 'An unexpected error occurred while updating creators',
       );
     }
   }
@@ -165,21 +185,25 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.deleteMany(ids);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while deleting creators'
+        error.message || 'An unexpected error occurred while deleting creators',
       );
     }
   }
 
-  async updateStats(id: CreatorId, stats: {
-    subscriberCount?: number;
-    videoCount?: number;
-    viewCount?: number;
-  }): Promise<Result<Creator>> {
+  async updateStats(
+    id: CreatorId,
+    stats: {
+      subscriberCount?: number;
+      videoCount?: number;
+      viewCount?: number;
+    },
+  ): Promise<Result<Creator>> {
     try {
       return await this.repository.updateStats(id, stats);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while updating creator stats'
+        error.message ||
+          'An unexpected error occurred while updating creator stats',
       );
     }
   }
@@ -189,7 +213,8 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.markAsFetched(id);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while marking creator as fetched'
+        error.message ||
+          'An unexpected error occurred while marking creator as fetched',
       );
     }
   }
@@ -199,7 +224,8 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.exists(id);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while checking creator existence'
+        error.message ||
+          'An unexpected error occurred while checking creator existence',
       );
     }
   }
@@ -209,7 +235,8 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.existsByChannelUrl(channelUrl);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while checking creator existence by channel URL'
+        error.message ||
+          'An unexpected error occurred while checking creator existence by channel URL',
       );
     }
   }
@@ -219,7 +246,7 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.count();
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while counting creators'
+        error.message || 'An unexpected error occurred while counting creators',
       );
     }
   }
@@ -229,7 +256,8 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.countByCountry(country);
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while counting creators by country'
+        error.message ||
+          'An unexpected error occurred while counting creators by country',
       );
     }
   }
@@ -239,7 +267,8 @@ export class ResultCreatorRepository implements ICreatorRepository {
       return await this.repository.countVerified();
     } catch (error: any) {
       return Result.fail(
-        error.message || 'An unexpected error occurred while counting verified creators'
+        error.message ||
+          'An unexpected error occurred while counting verified creators',
       );
     }
   }

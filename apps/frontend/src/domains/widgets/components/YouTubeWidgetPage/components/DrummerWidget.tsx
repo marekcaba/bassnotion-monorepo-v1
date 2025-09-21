@@ -78,7 +78,8 @@ export function DrummerWidget({
   onTogglePlay,
   tempo = 120,
 }: DrummerWidgetProps) {
-  const { correlationId, logger: componentLogger } = useCorrelation('DrummerWidget');
+  const { correlationId, logger: componentLogger } =
+    useCorrelation('DrummerWidget');
   const [currentBeat, setCurrentBeat] = useState(0);
   const [isTransportPlaying, setIsTransportPlaying] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -757,4 +758,3 @@ export function DrummerWidget({
     </div>
   );
 }
-

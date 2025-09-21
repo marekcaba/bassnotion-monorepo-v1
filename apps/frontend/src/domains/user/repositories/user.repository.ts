@@ -1,9 +1,9 @@
 import { apiClient } from '@/shared/api/client';
 import { supabase } from '@/infrastructure/supabase/client';
-import { 
-  IUserRepository, 
-  PaginatedResult, 
-  PaginationOptions 
+import {
+  IUserRepository,
+  PaginatedResult,
+  PaginationOptions,
 } from './user.repository.interface';
 import { User } from '../entities/user.entity';
 import { Email } from '../value-objects/email.vo';
@@ -37,7 +37,9 @@ export class UserRepository implements IUserRepository {
 
   async findByEmail(email: Email): Promise<User | null> {
     try {
-      const response = await apiClient.get<UserDTO>(`/api/users/by-email/${email.value}`);
+      const response = await apiClient.get<UserDTO>(
+        `/api/users/by-email/${email.value}`,
+      );
       return this.mapToEntity(response);
     } catch (error) {
       this.logger.error('Failed to find user by email', error as Error);
@@ -60,7 +62,7 @@ export class UserRepository implements IUserRepository {
       });
 
       return {
-        items: response.items.map(dto => this.mapToEntity(dto)),
+        items: response.items.map((dto) => this.mapToEntity(dto)),
         total: response.total,
         page: response.page,
         limit: response.limit,
@@ -73,8 +75,10 @@ export class UserRepository implements IUserRepository {
 
   async findByRole(role: UserRole): Promise<User[]> {
     try {
-      const response = await apiClient.get<UserDTO[]>(`/api/users/by-role/${role.value}`);
-      return response.map(dto => this.mapToEntity(dto));
+      const response = await apiClient.get<UserDTO[]>(
+        `/api/users/by-role/${role.value}`,
+      );
+      return response.map((dto) => this.mapToEntity(dto));
     } catch (error) {
       this.logger.error('Failed to find users by role', error as Error);
       return [];
@@ -86,7 +90,7 @@ export class UserRepository implements IUserRepository {
       const response = await apiClient.get<UserDTO[]>('/api/users/search', {
         headers: { 'x-query': query },
       });
-      return response.map(dto => this.mapToEntity(dto));
+      return response.map((dto) => this.mapToEntity(dto));
     } catch (error) {
       this.logger.error('Failed to search users', error as Error);
       return [];
@@ -96,7 +100,9 @@ export class UserRepository implements IUserRepository {
   async getCurrentUser(): Promise<User | null> {
     try {
       // First check Supabase auth
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
       if (!authUser) return null;
 
       // Then fetch full user profile from API
@@ -156,9 +162,9 @@ export class UserRepository implements IUserRepository {
   async findByIds(ids: UserId[]): Promise<User[]> {
     try {
       const response = await apiClient.post<UserDTO[]>('/api/users/batch', {
-        ids: ids.map(id => id.value),
+        ids: ids.map((id) => id.value),
       });
-      return response.map(dto => this.mapToEntity(dto));
+      return response.map((dto) => this.mapToEntity(dto));
     } catch (error) {
       this.logger.error('Failed to find users by ids', error as Error);
       return [];
@@ -168,7 +174,7 @@ export class UserRepository implements IUserRepository {
   async saveMany(users: User[]): Promise<void> {
     try {
       await apiClient.post('/api/users/batch', {
-        users: users.map(user => user.toJSON()),
+        users: users.map((user) => user.toJSON()),
       });
     } catch (error) {
       this.logger.error('Failed to save many users', error as Error);
@@ -179,7 +185,7 @@ export class UserRepository implements IUserRepository {
   async updateMany(users: User[]): Promise<void> {
     try {
       await apiClient.put('/api/users/batch', {
-        users: users.map(user => user.toJSON()),
+        users: users.map((user) => user.toJSON()),
       });
     } catch (error) {
       this.logger.error('Failed to update many users', error as Error);
@@ -194,7 +200,7 @@ export class UserRepository implements IUserRepository {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ids: ids.map(id => id.value),
+          ids: ids.map((id) => id.value),
         }),
       });
     } catch (error) {
@@ -205,7 +211,9 @@ export class UserRepository implements IUserRepository {
 
   async refreshCurrentUser(): Promise<User | null> {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
       if (!authUser) return null;
 
       // Force refresh from API

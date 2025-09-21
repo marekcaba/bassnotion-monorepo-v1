@@ -8,7 +8,6 @@
 import { EventBus } from '../core/EventBus.js';
 import { AudioEngine } from '../core/AudioEngine.js';
 import { ProductionLogger } from '../logging/ProductionLogger.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
 
 export type HealthStatus = 'healthy' | 'degraded' | 'unhealthy' | 'critical';
 
@@ -211,7 +210,8 @@ export class HealthMonitor {
             };
           }
 
-          const dropouts = metrics.audioDropouts || 0;
+          const dropouts =
+            (metrics as any).audioDropouts || metrics.dropouts || 0;
           const bufferUnderruns = metrics.bufferUnderruns || 0;
 
           let status: HealthStatus;
@@ -529,7 +529,7 @@ export class HealthMonitor {
     }
 
     // Emit to event bus
-    this.eventBus.emit('health:report', report);
+    this.eventBus.emit('health:report', { report });
   }
 
   /**
@@ -565,7 +565,7 @@ export class HealthMonitor {
     for (const channel of this.alertConfig.channels) {
       switch (channel) {
         case 'console':
-          logger.error('🚨 HEALTH ALERT:', report);
+          this.logger.error('health', '🚨 HEALTH ALERT', undefined, report);
           break;
 
         case 'logger':
@@ -599,7 +599,11 @@ export class HealthMonitor {
    */
   private async sendWebhookAlert(report: HealthReport): Promise<void> {
     try {
-      await fetch(this.alertConfig.webhookUrl!, {
+      const webhookUrl = this.alertConfig.webhookUrl;
+      if (!webhookUrl) {
+        throw new Error('Webhook URL not configured');
+      }
+      await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

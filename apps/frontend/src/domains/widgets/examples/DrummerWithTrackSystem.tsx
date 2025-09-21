@@ -186,7 +186,9 @@ export function DrummerWithTrackSystem() {
           isVisible={true}
           isPlaying={true}
           exercise={exercise}
-          onPatternChange={(pattern) => logger.info('Pattern changed:', pattern)}
+          onPatternChange={(pattern) =>
+            logger.info('Pattern changed:', pattern)
+          }
           onToggleVisibility={() => logger.info('Visibility toggled')}
           onTogglePlay={() => logger.info('Play toggled')}
           tempo={120}

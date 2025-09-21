@@ -13,10 +13,10 @@ interface UserRepositoryState {
   currentUser: User | null;
   isLoading: boolean;
   error: string | null;
-  
+
   // Repository instance
   repository: IUserRepository;
-  
+
   // Actions
   loadCurrentUser: () => Promise<void>;
   refreshCurrentUser: () => Promise<void>;
@@ -25,7 +25,7 @@ interface UserRepositoryState {
   setCurrentUser: (user: User | null) => void;
   setError: (error: string | null) => void;
   setLoading: (loading: boolean) => void;
-  
+
   // Repository access for components
   getRepository: () => IUserRepository;
 }
@@ -60,10 +60,10 @@ export const useUserRepositoryStore = create<UserRepositoryState>()(
         } catch (error) {
           const errorMessage = (error as Error).message;
           logger.error('Failed to load current user', error as Error);
-          set({ 
-            currentUser: null, 
-            error: errorMessage, 
-            isLoading: false 
+          set({
+            currentUser: null,
+            error: errorMessage,
+            isLoading: false,
           });
         }
       },
@@ -78,9 +78,9 @@ export const useUserRepositoryStore = create<UserRepositoryState>()(
         } catch (error) {
           const errorMessage = (error as Error).message;
           logger.error('Failed to refresh current user', error as Error);
-          set({ 
-            error: errorMessage, 
-            isLoading: false 
+          set({
+            error: errorMessage,
+            isLoading: false,
           });
         }
       },
@@ -95,9 +95,9 @@ export const useUserRepositoryStore = create<UserRepositoryState>()(
         } catch (error) {
           const errorMessage = (error as Error).message;
           logger.error('Failed to update current user', error as Error);
-          set({ 
-            error: errorMessage, 
-            isLoading: false 
+          set({
+            error: errorMessage,
+            isLoading: false,
           });
           throw error;
         }
@@ -109,17 +109,17 @@ export const useUserRepositoryStore = create<UserRepositoryState>()(
 
         try {
           await repository.logout();
-          set({ 
-            currentUser: null, 
+          set({
+            currentUser: null,
             isLoading: false,
-            error: null 
+            error: null,
           });
         } catch (error) {
           const errorMessage = (error as Error).message;
           logger.error('Failed to logout', error as Error);
-          set({ 
-            error: errorMessage, 
-            isLoading: false 
+          set({
+            error: errorMessage,
+            isLoading: false,
           });
           throw error;
         }
@@ -143,12 +143,16 @@ export const useUserRepositoryStore = create<UserRepositoryState>()(
     }),
     {
       name: 'user-repository-store',
-    }
-  )
+    },
+  ),
 );
 
 // Convenience hooks
-export const useCurrentUser = () => useUserRepositoryStore(state => state.currentUser);
-export const useUserRepository = () => useUserRepositoryStore(state => state.repository);
-export const useUserLoading = () => useUserRepositoryStore(state => state.isLoading);
-export const useUserError = () => useUserRepositoryStore(state => state.error);
+export const useCurrentUser = () =>
+  useUserRepositoryStore((state) => state.currentUser);
+export const useUserRepository = () =>
+  useUserRepositoryStore((state) => state.repository);
+export const useUserLoading = () =>
+  useUserRepositoryStore((state) => state.isLoading);
+export const useUserError = () =>
+  useUserRepositoryStore((state) => state.error);

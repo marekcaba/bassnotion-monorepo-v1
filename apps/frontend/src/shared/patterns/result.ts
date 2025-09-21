@@ -68,6 +68,6 @@ export class Result<T> {
         return result;
       }
     }
-    return Result.ok(results.map(r => r.value));
+    return Result.ok(results.map((r) => r.value));
   }
 }

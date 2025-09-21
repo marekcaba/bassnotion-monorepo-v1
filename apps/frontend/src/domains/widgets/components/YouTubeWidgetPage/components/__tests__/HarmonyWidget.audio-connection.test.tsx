@@ -19,26 +19,30 @@ vi.mock('../VolumeKnob', () => ({
 }));
 
 vi.mock('../ChordSlotSelector', () => ({
-  ChordSlotSelector: () => <div data-testid="chord-slot-selector">Chord Slot Selector</div>,
+  ChordSlotSelector: () => (
+    <div data-testid="chord-slot-selector">Chord Slot Selector</div>
+  ),
 }));
 
 vi.mock('../ProfessionalKeyboardSelector', () => ({
-  ProfessionalKeyboardSelector: () => <div data-testid="keyboard-selector">Keyboard Selector</div>,
+  ProfessionalKeyboardSelector: () => (
+    <div data-testid="keyboard-selector">Keyboard Selector</div>
+  ),
 }));
 
-// Mock dependencies  
+// Mock dependencies
 vi.mock('@/domains/playback/hooks/useTrack');
 vi.mock('@/domains/playback/utils/ensureAudioContext');
 
 // Mock wamPluginSingleton to not check GlobalSampleCache
 vi.mock('@/domains/widgets/utils/wamPluginSingleton', () => ({
   wamPluginSingleton: {
-    getOrCreateKeyboardPlugin: vi.fn()
-  }
+    getOrCreateKeyboardPlugin: vi.fn(),
+  },
 }));
 
 // Mock dynamic imports - GlobalSampleCache
-vi.mock('@/domains/playback/services/storage/GlobalSampleCache', () => ({
+vi.mock('@/domains/playback/modules/storage/cache/GlobalSampleCache', () => ({
   GlobalSampleCache: {
     getCachedInstrument: vi.fn(),
     getCachedInstrumentNames: vi.fn().mockReturnValue([]),
@@ -46,29 +50,37 @@ vi.mock('@/domains/playback/services/storage/GlobalSampleCache', () => ({
     setCachedInstrument: vi.fn(),
     getCachedUrl: vi.fn().mockReturnValue(null),
     getCachedBuffer: vi.fn().mockReturnValue(null),
-  }
+    getStats: vi.fn().mockReturnValue({
+      samplesCount: 0,
+      instrumentsCount: 0,
+      totalSize: 0,
+    }),
+  },
 }));
 
 // Mock WamKeyboard module
-vi.mock('@/domains/playback/modules/instruments/adapters/wam/WamKeyboard', () => ({
-  default: class MockWamKeyboard {
-    static async createInstance(context: AudioContext) {
-      return new MockWamKeyboard(context);
-    }
-    
-    audioContext: AudioContext;
-    audioNode: any;
-    
-    constructor(audioContext: AudioContext) {
-      this.audioContext = audioContext;
-    }
-    
-    async createAudioNode() {
-      // Return our mock node
-      return mockWamKeyboardNode;
-    }
-  }
-}));
+vi.mock(
+  '@/domains/playback/modules/instruments/adapters/wam/WamKeyboard',
+  () => ({
+    default: class MockWamKeyboard {
+      static async createInstance(context: AudioContext) {
+        return new MockWamKeyboard(context);
+      }
+
+      audioContext: AudioContext;
+      audioNode: any;
+
+      constructor(audioContext: AudioContext) {
+        this.audioContext = audioContext;
+      }
+
+      async createAudioNode() {
+        // Return our mock node
+        return mockWamKeyboardNode;
+      }
+    },
+  }),
+);
 
 // Mock AudioContext constructor if not in browser environment
 if (typeof AudioContext === 'undefined') {
@@ -77,9 +89,15 @@ if (typeof AudioContext === 'undefined') {
     currentTime = 0;
     sampleRate = 44100;
     destination = {};
-    createGain() { return {}; }
-    createOscillator() { return {}; }
-    resume() { return Promise.resolve(); }
+    createGain() {
+      return {};
+    }
+    createOscillator() {
+      return {};
+    }
+    resume() {
+      return Promise.resolve();
+    }
   } as any;
 }
 
@@ -118,7 +136,7 @@ const createMockAudioContext = () => {
     })),
     resume: vi.fn().mockResolvedValue(undefined),
   };
-  
+
   // Make mockContext appear to be an AudioContext instance
   Object.setPrototypeOf(mockContext, AudioContext.prototype);
 
@@ -131,30 +149,30 @@ const mockWamKeyboardNode = {
   context: null as any,
   _isConnected: false,
   activeSampler: null as any,
-  
-  connect: vi.fn(function(this: any, destination: AudioNode) {
+
+  connect: vi.fn(function (this: any, destination: AudioNode) {
     this._isConnected = true;
     if (this.gainNode) {
       this.gainNode.connect(destination);
     }
     return this;
   }),
-  
-  disconnect: vi.fn(function(this: any) {
+
+  disconnect: vi.fn(function (this: any) {
     this._isConnected = false;
     if (this.gainNode) {
       this.gainNode.disconnect();
     }
   }),
-  
-  initialize: vi.fn(async function(this: any) {
+
+  initialize: vi.fn(async function (this: any) {
     if (this.context) {
       this.gainNode = this.context.createGain();
       this.gainNode.gain.value = 0.8;
     }
   }),
-  
-  loadInstrument: vi.fn(async function(this: any) {
+
+  loadInstrument: vi.fn(async function (this: any) {
     // Mock sampler
     this.activeSampler = {
       triggerAttackRelease: vi.fn(),
@@ -165,14 +183,27 @@ const mockWamKeyboardNode = {
     };
     return Promise.resolve();
   }),
-  
+
   setParameterValues: vi.fn().mockResolvedValue(undefined),
   clearEvents: vi.fn(),
-  triggerNote: vi.fn(function(this: any, note: number, velocity: number, time?: number) {
+  triggerNote: vi.fn(function (
+    this: any,
+    note: number,
+    velocity: number,
+    time?: number,
+  ) {
     console.log('Mock triggerNote called:', { note, velocity, time });
     if (this.activeSampler) {
-      const noteName = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][note % 12] + Math.floor(note / 12 - 1);
-      this.activeSampler.triggerAttackRelease(noteName, 2, time, velocity / 127);
+      const noteName =
+        ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][
+          note % 12
+        ] + Math.floor(note / 12 - 1);
+      this.activeSampler.triggerAttackRelease(
+        noteName,
+        2,
+        time,
+        velocity / 127,
+      );
     }
   }),
   releaseNote: vi.fn(),
@@ -200,11 +231,12 @@ const mockTone = {
 };
 
 describe('HarmonyWidget - Audio Connection Tests', () => {
-  const { mockContext, mockGainNode, mockDestination } = createMockAudioContext();
+  const { mockContext, mockGainNode, mockDestination } =
+    createMockAudioContext();
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    
+
     // Set up window mocks
     (window as any).Tone = mockTone;
     (window as any).__globalCoreServices = {
@@ -214,45 +246,51 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
         getTone: () => mockTone,
       }),
     };
-    
+
     // Set up mock implementations
     // Import the mocks and clear them
-    const { GlobalSampleCache } = await import('@/domains/playback/services/storage/GlobalSampleCache');
+    const { GlobalSampleCache } = await import(
+      '@/domains/playback/modules/storage/cache/GlobalSampleCache'
+    );
     vi.mocked(GlobalSampleCache.getCachedInstrument).mockClear();
     vi.mocked(GlobalSampleCache.getCachedInstrumentNames).mockClear();
     vi.mocked(GlobalSampleCache.hasInstrument).mockClear();
     vi.mocked(wamPluginSingleton.getOrCreateKeyboardPlugin).mockClear();
-    
+
     // By default, no pre-loaded instrument - ensure mock returns null
     vi.mocked(GlobalSampleCache.getCachedInstrument).mockImplementation(() => {
-      console.log('Mock GlobalSampleCache.getCachedInstrument called - returning null');
+      console.log(
+        'Mock GlobalSampleCache.getCachedInstrument called - returning null',
+      );
       return null;
     });
     vi.mocked(GlobalSampleCache.getCachedInstrumentNames).mockReturnValue([]);
     vi.mocked(GlobalSampleCache.hasInstrument).mockReturnValue(false);
-    
+
     // Mock the plugin creation to be properly async
-    vi.mocked(wamPluginSingleton.getOrCreateKeyboardPlugin).mockImplementation(async (context) => {
-      // Store the context on the node
-      mockWamKeyboardNode.context = context;
-      
-      // Simulate async plugin creation
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
-      // Return the mock plugin
-      return {
-        audioNode: mockWamKeyboardNode,
-        createAudioNode: async () => {
-          await mockWamKeyboardNode.initialize();
-          return mockWamKeyboardNode;
-        }
-      } as any;
-    });
-    
+    vi.mocked(wamPluginSingleton.getOrCreateKeyboardPlugin).mockImplementation(
+      async (context) => {
+        // Store the context on the node
+        mockWamKeyboardNode.context = context;
+
+        // Simulate async plugin creation
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        // Return the mock plugin
+        return {
+          audioNode: mockWamKeyboardNode,
+          createAudioNode: async () => {
+            await mockWamKeyboardNode.initialize();
+            return mockWamKeyboardNode;
+          },
+        } as any;
+      },
+    );
+
     // Mock useTrack hook
     vi.mocked(useTrack).mockReturnValue({
-      track: { 
-        id: 'harmony-widget-track', 
+      track: {
+        id: 'harmony-widget-track',
         state: 'ready',
         audioContext: mockContext,
         isPlaying: false,
@@ -262,12 +300,10 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
       stop: vi.fn(),
       pause: vi.fn(),
     } as any);
-    
+
     // Mock ensureAudioContext
-    vi.mocked(withAudioContext).mockImplementation(
-      (fn: Function) => fn
-    );
-    
+    vi.mocked(withAudioContext).mockImplementation((fn: Function) => fn);
+
     // Connect mock nodes properly
     mockWamKeyboardNode.context = mockContext;
     mockTone.context._context = mockContext;
@@ -296,30 +332,48 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
       render(<HarmonyWidget {...props} />);
 
       // Component first checks for pre-loaded instrument
-      const { GlobalSampleCache } = await import('@/domains/playback/services/storage/GlobalSampleCache');
-      
+      const { GlobalSampleCache } = await import(
+        '@/domains/playback/modules/storage/cache/GlobalSampleCache'
+      );
+
       // Log mock call information
-      console.log('Test: Waiting for GlobalSampleCache.getCachedInstrument to be called...');
-      
-      await waitFor(() => {
-        const calls = vi.mocked(GlobalSampleCache.getCachedInstrument).mock.calls;
-        console.log('Test: GlobalSampleCache.getCachedInstrument calls:', calls);
-        expect(GlobalSampleCache.getCachedInstrument).toHaveBeenCalledWith('harmony-preloaded');
-      }, { timeout: 3000 });
+      console.log(
+        'Test: Waiting for GlobalSampleCache.getCachedInstrument to be called...',
+      );
+
+      await waitFor(
+        () => {
+          const calls = vi.mocked(GlobalSampleCache.getCachedInstrument).mock
+            .calls;
+          console.log(
+            'Test: GlobalSampleCache.getCachedInstrument calls:',
+            calls,
+          );
+          expect(GlobalSampleCache.getCachedInstrument).toHaveBeenCalledWith(
+            'harmony-preloaded',
+          );
+        },
+        { timeout: 3000 },
+      );
 
       // Since no pre-loaded instrument, component should create plugin directly
       // The component uses WamKeyboard.createInstance directly, not wamPluginSingleton
-      await waitFor(() => {
-        // Check if mock was used
-        expect(mockContext.createGain).toHaveBeenCalled();
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          // Check if mock was used
+          expect(mockContext.createGain).toHaveBeenCalled();
+        },
+        { timeout: 2000 },
+      );
 
       // Since we mocked the plugin creation, simulate the initialization
       await mockWamKeyboardNode.initialize();
 
       // Now wait for the connection to happen
       await waitFor(() => {
-        expect(mockWamKeyboardNode.connect).toHaveBeenCalledWith(mockContext.destination);
+        expect(mockWamKeyboardNode.connect).toHaveBeenCalledWith(
+          mockContext.destination,
+        );
       });
 
       // Verify the gain node was created and connected
@@ -371,7 +425,7 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
       });
 
       // Wait for initialization
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Find the button that shows the chord progression (to expand the widget)
       // The button contains chord dots for the progression
@@ -389,17 +443,14 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
         expect(mockWamKeyboardNode.triggerNote).toHaveBeenCalledWith(
           60, // C3
           80, // velocity
-          expect.any(Number) // time
+          expect.any(Number), // time
         );
       });
 
       // 2. Sampler receives triggerAttackRelease
-      expect(mockWamKeyboardNode.activeSampler.triggerAttackRelease).toHaveBeenCalledWith(
-        'C3',
-        2,
-        expect.any(Number),
-        expect.any(Number)
-      );
+      expect(
+        mockWamKeyboardNode.activeSampler.triggerAttackRelease,
+      ).toHaveBeenCalledWith('C3', 2, expect.any(Number), expect.any(Number));
 
       // 3. Audio nodes are connected: Sampler → GainNode → Destination
       expect(mockWamKeyboardNode.activeSampler.destination).toBe(mockGainNode);
@@ -423,8 +474,12 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
         onToggleVisibility: vi.fn(),
       };
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
 
       render(<HarmonyWidget {...props} />);
 
@@ -441,8 +496,10 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
 
       // Should detect context mismatch
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('CRITICAL: Tone.js is using a different AudioContext!'),
-        expect.any(Object)
+        expect.stringContaining(
+          'CRITICAL: Tone.js is using a different AudioContext!',
+        ),
+        expect.any(Object),
       );
 
       consoleSpy.mockRestore();
@@ -485,14 +542,17 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
 
   describe('WAM Plugin Initialization', () => {
     it('should use pre-loaded harmony instrument when available', async () => {
-      const { GlobalSampleCache } = await import('@/domains/playback/services/storage/GlobalSampleCache');
-      
+      const { GlobalSampleCache } = await import(
+        '@/domains/playback/modules/storage/cache/GlobalSampleCache'
+      );
+
       const preloadedInstrument = {
         audioNode: mockWamKeyboardNode,
       };
 
-      vi.mocked(GlobalSampleCache.getCachedInstrument)
-        .mockReturnValue(preloadedInstrument);
+      vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(
+        preloadedInstrument,
+      );
 
       const props = {
         progression: ['C'],
@@ -508,15 +568,21 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
 
       // Should check for cached instrument
       await waitFor(() => {
-        expect(GlobalSampleCache.getCachedInstrument).toHaveBeenCalledWith('harmony-preloaded');
+        expect(GlobalSampleCache.getCachedInstrument).toHaveBeenCalledWith(
+          'harmony-preloaded',
+        );
       });
 
       // Should not create new plugin
-      expect(wamPluginSingleton.getOrCreateKeyboardPlugin).not.toHaveBeenCalled();
+      expect(
+        wamPluginSingleton.getOrCreateKeyboardPlugin,
+      ).not.toHaveBeenCalled();
     });
 
     it('should create new plugin when no pre-loaded instrument exists', async () => {
-      const { GlobalSampleCache } = await import('@/domains/playback/services/storage/GlobalSampleCache');
+      const { GlobalSampleCache } = await import(
+        '@/domains/playback/modules/storage/cache/GlobalSampleCache'
+      );
       vi.mocked(GlobalSampleCache.getCachedInstrument).mockReturnValue(null);
 
       const props = {
@@ -533,12 +599,16 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
 
       // Should check cache first
       await waitFor(() => {
-        expect(GlobalSampleCache.getCachedInstrument).toHaveBeenCalledWith('harmony-preloaded');
+        expect(GlobalSampleCache.getCachedInstrument).toHaveBeenCalledWith(
+          'harmony-preloaded',
+        );
       });
 
       // Then create new plugin since cache returned null
       await waitFor(() => {
-        expect(wamPluginSingleton.getOrCreateKeyboardPlugin).toHaveBeenCalledWith(mockContext);
+        expect(
+          wamPluginSingleton.getOrCreateKeyboardPlugin,
+        ).toHaveBeenCalledWith(mockContext);
       });
 
       expect(mockWamKeyboardNode.initialize).toHaveBeenCalled();
@@ -627,10 +697,13 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
     });
 
     it('should handle plugin creation failure', async () => {
-      vi.mocked(wamPluginSingleton.getOrCreateKeyboardPlugin)
-        .mockRejectedValue(new Error('Plugin creation failed'));
+      vi.mocked(wamPluginSingleton.getOrCreateKeyboardPlugin).mockRejectedValue(
+        new Error('Plugin creation failed'),
+      );
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       const props = {
         progression: ['C'],
@@ -647,7 +720,7 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith(
           expect.stringContaining('Failed to create WAM Keyboard plugin'),
-          expect.any(Error)
+          expect.any(Error),
         );
       });
 
@@ -678,7 +751,7 @@ describe('HarmonyWidget - Audio Connection Tests', () => {
       });
 
       // Wait a bit for initialization to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Now unmount the component
       unmount();

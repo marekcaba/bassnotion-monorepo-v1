@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { CacheAnalyticsEngine } from '../CacheAnalyticsEngine';
+import { CacheAnalyticsEngine } from '../../../../modules/storage/analytics/CacheAnalyticsEngine.js';
 import type { CacheAnalyticsConfig, CacheLayer } from '@bassnotion/contracts';
 import { setupCacheMocks, teardownCacheMocks } from './cache-mocks';
 

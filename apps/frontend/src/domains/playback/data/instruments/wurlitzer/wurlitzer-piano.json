@@ -1,0 +1,82 @@
+{
+  "name": "Wurlitzer Electric Piano",
+  "version": "1.0.0",
+  "author": "BassNotion Team",
+  "description": "Classic Wurlitzer 200A electric piano with variable velocity layers per note",
+  
+  "storage": {
+    "baseUrl": "https://htuztkrbuewheehjspcz.supabase.co/storage/v1/object/public/audio-samples",
+    "bucketPath": "Keyboards/wurlitzer"
+  },
+  
+  "velocityRanges": [
+    { "min": 0, "max": 25, "layer": "v1" },
+    { "min": 26, "max": 51, "layer": "v2" },
+    { "min": 52, "max": 77, "layer": "v3" },
+    { "min": 78, "max": 102, "layer": "v4" },
+    { "min": 103, "max": 127, "layer": "v5" }
+  ],
+  
+  "noteVelocityLayers": {
+    "3": ["C6", "B5", "As5", "A5", "Gs5", "G5", "Fs5", "F5", "E5", "Ds5", "D5", "Cs5", "C5", "B4", "As4", "Gs4", "G4", "F4", "D4", "C3"],
+    "4": ["A4", "Fs4", "E4", "Cs4", "C4", "B3", "As3", "Gs3", "G3", "Fs3", "E3", "Ds3", "Fs2", "F2", "E2", "Ds2", "D2", "Cs2", "As1", "A1", "Ds1"],
+    "5": ["Ds4", "A3", "F3", "D3", "Cs3", "B2", "As2", "A2", "Gs2", "C2", "B1", "Gs1", "G1", "F1", "E1", "D1", "B0", "As0", "A0", "G2", "Fs1", "C1", "Cs1"]
+  },
+  
+  "sampleMapping": {
+    "C6": "c6.mp3", "B5": "b5.mp3", "As5": "as5.mp3", "A5": "a5.mp3", "Gs5": "gs5.mp3",
+    "G5": "g5.mp3", "Fs5": "fs5.mp3", "F5": "f5.mp3", "E5": "e5.mp3", "Ds5": "ds5.mp3",
+    "D5": "d5.mp3", "Cs5": "cs5.mp3", "C5": "c5.mp3", "B4": "b4.mp3", "As4": "as4.mp3",
+    "A4": "a4.mp3", "Gs4": "gs4.mp3", "G4": "g4.mp3", "Fs4": "fs4.mp3", "F4": "f4.mp3",
+    "E4": "e4.mp3", "Ds4": "ds4.mp3", "D4": "d4.mp3", "Cs4": "cs4.mp3", "C4": "c4.mp3",
+    "B3": "b3.mp3", "As3": "as3.mp3", "A3": "a3.mp3", "Gs3": "gs3.mp3", "G3": "g3.mp3",
+    "Fs3": "fs3.mp3", "F3": "f3.mp3", "E3": "e3.mp3", "Ds3": "ds3.mp3", "D3": "d3.mp3",
+    "Cs3": "cs3.mp3", "C3": "c3.mp3", "B2": "b2.mp3", "As2": "as2.mp3", "A2": "a2.mp3",
+    "Gs2": "gs2.mp3", "G2": "g2.mp3", "Fs2": "fs2.mp3", "F2": "f2.mp3", "E2": "e2.mp3",
+    "Ds2": "ds2.mp3", "D2": "d2.mp3", "Cs2": "cs2.mp3", "C2": "c2.mp3", "B1": "b1.mp3",
+    "As1": "as1.mp3", "A1": "a1.mp3", "Gs1": "gs1.mp3", "G1": "g1.mp3", "Fs1": "fs1.mp3",
+    "F1": "f1.mp3", "E1": "e1.mp3", "Ds1": "ds1.mp3", "D1": "d1.mp3", "Cs1": "cs1.mp3",
+    "C1": "c1.mp3", "B0": "b0.mp3", "As0": "as0.mp3", "A0": "a0.mp3"
+  },
+  
+  "defaultLayers": ["v2", "v3"],
+  
+  "samplerConfig": {
+    "attack": 0.001,
+    "release": 0.4,
+    "curve": "exponential",
+    "volume": 0
+  },
+  
+  "mechanicalSounds": {
+    "pedalPress": {
+      "samples": {
+        "pedal": "pedal/pedal-press.mp3"
+      },
+      "volume": -5
+    },
+    "pedalRelease": {
+      "samples": {
+        "pedal": "pedal/pedal-release.mp3"
+      },
+      "volume": -5
+    },
+    "keyPress": {
+      "samples": {},
+      "volume": -15,
+      "basePath": "key-press/"
+    },
+    "keyRelease": {
+      "samples": {},
+      "volume": -20,
+      "basePath": "key-release/"
+    }
+  },
+  
+  "optimization": {
+    "preloadPriority": ["v2", "v3"],
+    "memoryLimit": 100,
+    "streamingEnabled": false,
+    "compressionFormat": "mp3"
+  }
+}

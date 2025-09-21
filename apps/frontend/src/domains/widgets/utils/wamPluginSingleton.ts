@@ -1,13 +1,13 @@
 /**
  * WAM Plugin Singleton Manager
- * 
+ *
  * Ensures only one instance of each WAM plugin type exists globally
  * to prevent duplicate sample loading and memory waste
  */
 
 import { WamKeyboard } from '@/domains/playback/modules/instruments/adapters/wam/WamKeyboard';
 import { getLogger } from '@/utils/logger';
-import { GlobalSampleCache } from '@/domains/playback/services/storage/GlobalSampleCache';
+import { GlobalSampleCache } from '@/domains/playback/modules/storage';
 
 const logger = getLogger('wam-plugin-singleton');
 
@@ -20,53 +20,60 @@ interface PluginInfo {
 class WamPluginSingletonManager {
   private static instance: WamPluginSingletonManager;
   private plugins = new Map<string, PluginInfo>();
-  
+
   private constructor() {}
-  
+
   static getInstance(): WamPluginSingletonManager {
     if (!WamPluginSingletonManager.instance) {
       WamPluginSingletonManager.instance = new WamPluginSingletonManager();
     }
     return WamPluginSingletonManager.instance;
   }
-  
+
   /**
    * Get or create a WamKeyboard plugin instance
    */
   async getOrCreateKeyboardPlugin(context: AudioContext): Promise<any> {
     const key = 'wam-keyboard';
     const globalCacheKey = 'wam-keyboard-singleton';
-    
+
     // First check for pre-loaded instrument from InitialSamplePreloader
-    const preloadedPlugin = GlobalSampleCache.getCachedInstrument('harmony-preloaded');
+    const preloadedPlugin =
+      GlobalSampleCache.getCachedInstrument('harmony-preloaded');
     if (preloadedPlugin && preloadedPlugin.audioNode) {
       logger.debug('♻️ Found pre-loaded harmony instrument!', {
         hasAudioNode: !!preloadedPlugin.audioNode,
-        contextState: preloadedPlugin.audioNode.context?.state
+        contextState: preloadedPlugin.audioNode.context?.state,
       });
-      
+
       // Check if the pre-loaded plugin's context is still valid
-      if (preloadedPlugin.audioNode.context && preloadedPlugin.audioNode.context.state === 'running') {
+      if (
+        preloadedPlugin.audioNode.context &&
+        preloadedPlugin.audioNode.context.state === 'running'
+      ) {
         // Store in local map for reference counting
         this.plugins.set(key, {
           plugin: preloadedPlugin,
           refCount: 1,
-          context: preloadedPlugin.audioNode.context
+          context: preloadedPlugin.audioNode.context,
         });
         return preloadedPlugin;
       }
     }
-    
+
     // Then check global cache for any existing plugin
     const cachedPlugin = GlobalSampleCache.getCachedInstrument(globalCacheKey);
     if (cachedPlugin && cachedPlugin.audioNode) {
       logger.debug('♻️ Found WamKeyboard plugin in GlobalSampleCache', {
         hasAudioNode: !!cachedPlugin.audioNode,
-        contextState: cachedPlugin.audioNode.context?.state
+        contextState: cachedPlugin.audioNode.context?.state,
       });
-      
+
       // Check if the cached plugin's context is still valid
-      if (cachedPlugin.audioNode.context && cachedPlugin.audioNode.context.state === 'running') {
+      if (
+        cachedPlugin.audioNode.context &&
+        cachedPlugin.audioNode.context.state === 'running'
+      ) {
         // Increment ref count in local map
         const existing = this.plugins.get(key);
         if (existing) {
@@ -75,7 +82,7 @@ class WamPluginSingletonManager {
           this.plugins.set(key, {
             plugin: cachedPlugin,
             refCount: 1,
-            context: cachedPlugin.audioNode.context
+            context: cachedPlugin.audioNode.context,
           });
         }
         return cachedPlugin;
@@ -83,7 +90,7 @@ class WamPluginSingletonManager {
         logger.warn('Cached plugin has invalid context, will create new one');
       }
     }
-    
+
     // Then check local map
     const existing = this.plugins.get(key);
     if (existing) {
@@ -94,44 +101,46 @@ class WamPluginSingletonManager {
           refCount: existing.refCount,
           existingContextId: existing.context,
           newContextId: context,
-          sameContext: existing.context === context
+          sameContext: existing.context === context,
         });
         return existing.plugin;
       } else {
         logger.warn('⚠️ Context state mismatch for WamKeyboard plugin', {
           existingState: existing.context.state,
-          newState: context.state
+          newState: context.state,
         });
       }
     }
-    
+
     logger.debug('🔨 Creating new WamKeyboard plugin instance');
-    
+
     try {
       const plugin = await WamKeyboard.createInstance(context);
-      
+
       // Create audio node but DON'T connect to destination yet
       // Let the consumer decide where to connect it
       const audioNode = await plugin.createAudioNode();
       plugin.audioNode = audioNode;
-      
+
       this.plugins.set(key, {
         plugin,
         refCount: 1,
-        context
+        context,
       });
-      
+
       // Also cache globally for persistence across re-initializations
       GlobalSampleCache.cacheInstrument(globalCacheKey, plugin);
-      
-      logger.debug('✅ Created and cached new WamKeyboard plugin (locally and globally)');
+
+      logger.debug(
+        '✅ Created and cached new WamKeyboard plugin (locally and globally)',
+      );
       return plugin;
     } catch (error) {
       logger.error('Failed to create WamKeyboard plugin:', error);
       throw error;
     }
   }
-  
+
   /**
    * Release a reference to a plugin
    */
@@ -140,9 +149,9 @@ class WamPluginSingletonManager {
     if (info) {
       info.refCount--;
       logger.debug(`Released ${key} plugin reference`, {
-        refCount: info.refCount
+        refCount: info.refCount,
       });
-      
+
       if (info.refCount <= 0) {
         // Clean up the plugin
         try {
@@ -150,11 +159,11 @@ class WamPluginSingletonManager {
             info.plugin.audioNode.clearEvents();
             info.plugin.audioNode.disconnect();
           }
-          
+
           if (info.plugin.destroy) {
             info.plugin.destroy();
           }
-          
+
           this.plugins.delete(key);
           logger.debug(`🧹 Cleaned up ${key} plugin (no more references)`);
         } catch (error) {
@@ -163,23 +172,23 @@ class WamPluginSingletonManager {
       }
     }
   }
-  
+
   /**
    * Get plugin info for debugging
    */
   getPluginInfo(): Map<string, { refCount: number; contextState: string }> {
     const info = new Map<string, { refCount: number; contextState: string }>();
-    
+
     this.plugins.forEach((value, key) => {
       info.set(key, {
         refCount: value.refCount,
-        contextState: value.context.state
+        contextState: value.context.state,
       });
     });
-    
+
     return info;
   }
-  
+
   /**
    * Force clear all plugins (for cleanup)
    */
@@ -190,7 +199,7 @@ class WamPluginSingletonManager {
           info.plugin.audioNode.clearEvents();
           info.plugin.audioNode.disconnect();
         }
-        
+
         if (info.plugin.destroy) {
           info.plugin.destroy();
         }
@@ -198,7 +207,7 @@ class WamPluginSingletonManager {
         logger.error(`Error cleaning up ${key} plugin:`, error);
       }
     });
-    
+
     this.plugins.clear();
     logger.debug('🧹 Cleared all WAM plugin instances');
   }

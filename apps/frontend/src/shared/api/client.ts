@@ -1,4 +1,7 @@
-import { CORRELATION_HEADER, generateCorrelationId } from '@bassnotion/contracts';
+import {
+  CORRELATION_HEADER,
+  generateCorrelationId,
+} from '@bassnotion/contracts';
 
 export interface ApiClientOptions {
   correlationId?: string;
@@ -13,7 +16,8 @@ export class ApiClient {
   private defaultHeaders: Record<string, string>;
 
   constructor(baseUrl: string = '') {
-    this.baseUrl = baseUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    this.baseUrl =
+      baseUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
     this.defaultHeaders = {
       'Content-Type': 'application/json',
     };
@@ -21,13 +25,13 @@ export class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit & ApiClientOptions = {}
+    options: RequestInit & ApiClientOptions = {},
   ): Promise<T> {
     const { correlationId, headers: customHeaders, ...fetchOptions } = options;
-    
+
     // Generate or use provided correlation ID
     const requestCorrelationId = correlationId || generateCorrelationId();
-    
+
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...fetchOptions,
       headers: {
@@ -39,7 +43,9 @@ export class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: response.statusText }));
+      const error = await response
+        .json()
+        .catch(() => ({ message: response.statusText }));
       throw new Error(error.message || `Request failed: ${response.status}`);
     }
 
@@ -50,7 +56,11 @@ export class ApiClient {
     return this.request<T>(endpoint, { ...options, method: 'GET' });
   }
 
-  async post<T>(endpoint: string, data?: unknown, options?: ApiClientOptions): Promise<T> {
+  async post<T>(
+    endpoint: string,
+    data?: unknown,
+    options?: ApiClientOptions,
+  ): Promise<T> {
     return this.request<T>(endpoint, {
       ...options,
       method: 'POST',
@@ -58,7 +68,11 @@ export class ApiClient {
     });
   }
 
-  async put<T>(endpoint: string, data?: unknown, options?: ApiClientOptions): Promise<T> {
+  async put<T>(
+    endpoint: string,
+    data?: unknown,
+    options?: ApiClientOptions,
+  ): Promise<T> {
     return this.request<T>(endpoint, {
       ...options,
       method: 'PUT',

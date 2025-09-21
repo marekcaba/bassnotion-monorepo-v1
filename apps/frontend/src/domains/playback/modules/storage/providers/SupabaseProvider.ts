@@ -1,14 +1,13 @@
 /**
  * SupabaseProvider - Supabase storage provider for audio assets
- * 
+ *
  * Provides a simplified interface for storing and retrieving audio
  * assets using Supabase Storage. Extracted from the more complex
  * SupabaseAssetClient to focus on core storage operations.
  */
 
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
-import { EventBus } from '../../../services/core/EventBus.js';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { EventBus, createStructuredLogger } from '../../shared/index.js';
 
 const logger = createStructuredLogger('SupabaseProvider');
 
@@ -77,11 +76,11 @@ export class SupabaseProvider {
   private config: SupabaseProviderConfig;
   private client: SupabaseClient;
   private eventBus?: EventBus;
-  
+
   // Connection state
   private isConnected = false;
   private connectionRetries = 0;
-  
+
   // Metrics
   private metrics = {
     uploads: 0,
@@ -94,7 +93,7 @@ export class SupabaseProvider {
   constructor(config: SupabaseProviderConfig, eventBus?: EventBus) {
     this.config = config;
     this.eventBus = eventBus;
-    
+
     // Initialize Supabase client
     this.client = createClient(config.supabaseUrl, config.supabaseKey, {
       auth: {
@@ -102,7 +101,7 @@ export class SupabaseProvider {
         autoRefreshToken: true,
       },
     });
-    
+
     this.testConnection();
   }
 
@@ -111,18 +110,18 @@ export class SupabaseProvider {
    */
   private async testConnection(): Promise<void> {
     try {
-      const { data, error } = await this.client.storage
+      const { error } = await this.client.storage
         .from(this.config.bucketName)
         .list('', { limit: 1 });
-      
+
       if (error) {
         throw error;
       }
-      
+
       this.isConnected = true;
       this.connectionRetries = 0;
       logger.info('Connected to Supabase storage');
-      
+
       this.eventBus?.emit('storage:connected', {
         provider: 'supabase',
         bucket: this.config.bucketName,
@@ -130,11 +129,14 @@ export class SupabaseProvider {
     } catch (error) {
       this.isConnected = false;
       this.connectionRetries++;
-      logger.error('Failed to connect to Supabase:', error);
-      
+      logger.error('Failed to connect to Supabase:', error as Error);
+
       // Retry connection
       if (this.connectionRetries < this.config.maxRetries) {
-        setTimeout(() => this.testConnection(), this.config.retryDelay * this.connectionRetries);
+        setTimeout(
+          () => this.testConnection(),
+          this.config.retryDelay * this.connectionRetries,
+        );
       }
     }
   }
@@ -144,84 +146,89 @@ export class SupabaseProvider {
    */
   async upload(
     data: ArrayBuffer | Blob | File,
-    options: UploadOptions
+    options: UploadOptions,
   ): Promise<StorageResult> {
     const startTime = performance.now();
-    
+
     try {
       // Ensure connected
       if (!this.isConnected) {
         await this.waitForConnection();
       }
-      
+
       // Prepare upload options
       const uploadOptions: any = {
         cacheControl: options.cacheControl || '3600',
         upsert: options.upsert !== false,
       };
-      
+
       if (options.contentType) {
         uploadOptions.contentType = options.contentType;
       }
-      
+
       // Upload file
       const { data: uploadData, error } = await this.client.storage
         .from(this.config.bucketName)
         .upload(options.path, data, uploadOptions);
-      
+
       if (error) {
         throw error;
       }
-      
+
       // Get public URL
       const { data: urlData } = this.client.storage
         .from(this.config.bucketName)
         .getPublicUrl(options.path);
-      
-      const size = data instanceof ArrayBuffer 
-        ? data.byteLength 
-        : data instanceof Blob 
-          ? data.size 
-          : 0;
-      
+
+      const size =
+        data instanceof ArrayBuffer
+          ? data.byteLength
+          : data instanceof Blob
+            ? data.size
+            : 0;
+
       // Update metrics
       this.metrics.uploads++;
       this.metrics.totalUploadSize += size;
-      
+
       const result: StorageResult = {
         success: true,
-        url: this.config.enableCDN && this.config.cdnUrl
-          ? urlData.publicUrl.replace(this.config.supabaseUrl, this.config.cdnUrl)
-          : urlData.publicUrl,
+        url:
+          this.config.enableCDN && this.config.cdnUrl
+            ? urlData.publicUrl.replace(
+                this.config.supabaseUrl,
+                this.config.cdnUrl,
+              )
+            : urlData.publicUrl,
         path: uploadData.path,
         size,
         metadata: options.metadata,
       };
-      
+
       const duration = performance.now() - startTime;
-      
+
       this.eventBus?.emit('storage:uploaded', {
         path: options.path,
         size,
         duration,
         provider: 'supabase',
       });
-      
+
       return result;
     } catch (error) {
       this.metrics.errors++;
-      
+
       const result: StorageResult = {
         success: false,
         error: error as Error,
       };
-      
+
       this.eventBus?.emit('storage:uploadError', {
         path: options.path,
         error: (error as Error).message,
         provider: 'supabase',
       });
-      
+
       return result;
     }
   }
@@ -231,67 +238,67 @@ export class SupabaseProvider {
    */
   async download(
     path: string,
-    options: DownloadOptions = {}
+    _options: DownloadOptions = {},
   ): Promise<StorageResult & { data?: ArrayBuffer }> {
     const startTime = performance.now();
-    
+
     try {
       // Ensure connected
       if (!this.isConnected) {
         await this.waitForConnection();
       }
-      
+
       // Download file
       const { data, error } = await this.client.storage
         .from(this.config.bucketName)
-        .download(path, options.transform);
-      
+        .download(path);
+
       if (error) {
         throw error;
       }
-      
+
       if (!data) {
         throw new Error('No data received');
       }
-      
+
       // Convert to ArrayBuffer
       const arrayBuffer = await data.arrayBuffer();
-      
+
       // Update metrics
       this.metrics.downloads++;
       this.metrics.totalDownloadSize += arrayBuffer.byteLength;
-      
+
       const result: StorageResult & { data?: ArrayBuffer } = {
         success: true,
         data: arrayBuffer,
         path,
         size: arrayBuffer.byteLength,
       };
-      
+
       const duration = performance.now() - startTime;
-      
+
       this.eventBus?.emit('storage:downloaded', {
         path,
         size: arrayBuffer.byteLength,
         duration,
         provider: 'supabase',
       });
-      
+
       return result;
     } catch (error) {
       this.metrics.errors++;
-      
+
       const result: StorageResult & { data?: ArrayBuffer } = {
         success: false,
         error: error as Error,
       };
-      
+
       this.eventBus?.emit('storage:downloadError', {
         path,
         error: (error as Error).message,
         provider: 'supabase',
       });
-      
+
       return result;
     }
   }
@@ -305,35 +312,35 @@ export class SupabaseProvider {
       if (!this.isConnected) {
         await this.waitForConnection();
       }
-      
+
       const pathArray = Array.isArray(paths) ? paths : [paths];
-      
+
       const { error } = await this.client.storage
         .from(this.config.bucketName)
         .remove(pathArray);
-      
+
       if (error) {
         throw error;
       }
-      
+
       this.eventBus?.emit('storage:deleted', {
         paths: pathArray,
         provider: 'supabase',
       });
-      
+
       return {
         success: true,
         path: Array.isArray(paths) ? paths.join(',') : paths,
       };
     } catch (error) {
       this.metrics.errors++;
-      
+
       this.eventBus?.emit('storage:deleteError', {
         paths: Array.isArray(paths) ? paths : [paths],
         error: (error as Error).message,
         provider: 'supabase',
       });
-      
+
       return {
         success: false,
         error: error as Error,
@@ -345,15 +352,15 @@ export class SupabaseProvider {
    * List files in storage
    */
   async list(
-    path: string = '',
-    options: ListOptions = {}
+    path = '',
+    options: ListOptions = {},
   ): Promise<{ files: StorageObject[]; error?: Error }> {
     try {
       // Ensure connected
       if (!this.isConnected) {
         await this.waitForConnection();
       }
-      
+
       const { data, error } = await this.client.storage
         .from(this.config.bucketName)
         .list(path, {
@@ -361,11 +368,11 @@ export class SupabaseProvider {
           offset: options.offset || 0,
           sortBy: options.sortBy,
         });
-      
+
       if (error) {
         throw error;
       }
-      
+
       return {
         files: data || [],
       };
@@ -384,11 +391,14 @@ export class SupabaseProvider {
     const { data } = this.client.storage
       .from(this.config.bucketName)
       .getPublicUrl(path);
-    
+
     if (this.config.enableCDN && this.config.cdnUrl) {
-      return data.publicUrl.replace(this.config.supabaseUrl, this.config.cdnUrl);
+      return data.publicUrl.replace(
+        this.config.supabaseUrl,
+        this.config.cdnUrl,
+      );
     }
-    
+
     return data.publicUrl;
   }
 
@@ -397,17 +407,17 @@ export class SupabaseProvider {
    */
   async createSignedUrl(
     path: string,
-    expiresIn: number = 3600
+    expiresIn = 3600,
   ): Promise<{ url?: string; error?: Error }> {
     try {
       const { data, error } = await this.client.storage
         .from(this.config.bucketName)
         .createSignedUrl(path, expiresIn);
-      
+
       if (error) {
         throw error;
       }
-      
+
       return {
         url: data?.signedUrl,
       };
@@ -430,13 +440,15 @@ export class SupabaseProvider {
           offset: 0,
           search: path.substring(path.lastIndexOf('/') + 1),
         });
-      
+
       if (error) {
         return false;
       }
-      
-      return (data || []).some(file => file.name === path.substring(path.lastIndexOf('/') + 1));
-    } catch (error) {
+
+      return (data || []).some(
+        (file) => file.name === path.substring(path.lastIndexOf('/') + 1),
+      );
+    } catch {
       return false;
     }
   }
@@ -451,17 +463,17 @@ export class SupabaseProvider {
       if (!downloadResult.success || !downloadResult.data) {
         throw new Error('Failed to download file for move');
       }
-      
+
       // Upload to new location
       const uploadResult = await this.upload(downloadResult.data, {
         path: toPath,
         upsert: true,
       });
-      
+
       if (!uploadResult.success) {
         throw new Error('Failed to upload file to new location');
       }
-      
+
       // Delete original
       const deleteResult = await this.delete(fromPath);
       if (!deleteResult.success) {
@@ -469,7 +481,7 @@ export class SupabaseProvider {
         await this.delete(toPath);
         throw new Error('Failed to delete original file');
       }
-      
+
       return {
         success: true,
         path: toPath,
@@ -492,13 +504,13 @@ export class SupabaseProvider {
       if (!downloadResult.success || !downloadResult.data) {
         throw new Error('Failed to download file for copy');
       }
-      
+
       // Upload to new location
       const uploadResult = await this.upload(downloadResult.data, {
         path: toPath,
         upsert: true,
       });
-      
+
       return uploadResult;
     } catch (error) {
       return {
@@ -513,11 +525,11 @@ export class SupabaseProvider {
    */
   private async waitForConnection(timeout = 10000): Promise<void> {
     const startTime = Date.now();
-    
+
     while (!this.isConnected && Date.now() - startTime < timeout) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    
+
     if (!this.isConnected) {
       throw new Error('Failed to connect to Supabase storage');
     }
@@ -542,7 +554,7 @@ export class SupabaseProvider {
    */
   updateConfig(newConfig: Partial<SupabaseProviderConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    
+
     // Reconnect if URL or key changed
     if (newConfig.supabaseUrl || newConfig.supabaseKey) {
       this.isConnected = false;
@@ -554,7 +566,7 @@ export class SupabaseProvider {
             persistSession: true,
             autoRefreshToken: true,
           },
-        }
+        },
       );
       this.testConnection();
     }
@@ -572,21 +584,22 @@ export class SupabaseProvider {
     try {
       // Note: Supabase doesn't provide direct bucket info API
       // This is a simplified version
-      const { data } = await this.list('', { limit: 1000 });
-      
-      let totalSize = 0;
-      const fileCount = data.length;
-      
+      const result = await this.list('', { limit: 1000 });
+      const files = result.files;
+
+      const totalSize = 0;
+      const fileCount = files.length;
+
       // Note: Individual file sizes would need to be tracked separately
       // as Supabase list doesn't return file sizes
-      
+
       return {
         name: this.config.bucketName,
         public: true, // Assuming public bucket
         fileCount,
         size: totalSize,
       };
-    } catch (error) {
+    } catch {
       return {
         name: this.config.bucketName,
         public: true,

@@ -1,15 +1,22 @@
 /**
  * Bass Instrument
- * 
+ *
  * A modular bass instrument implementation that follows the Instrument interface.
  * This implementation wraps the existing BassInstrumentProcessor for backward compatibility
  * while providing a cleaner interface for the track system.
  */
 
 import { Sampler } from '../../base/Sampler.js';
-import type { InstrumentConfig, InstrumentEvent, InstrumentMetrics } from '../../types/index.js';
-import type { BassEvent, BassConfig } from '../../types/index.js';
+import type {
+  InstrumentConfig,
+  InstrumentEvent,
+  InstrumentMetrics,
+} from '../../types/index.js';
+import type { BassEvent } from '../../types/index.js';
 import { BassInstrumentProcessor } from './BassInstrumentProcessor.js';
+import { createStructuredLogger } from '../../../shared/index.js';
+
+const logger = createStructuredLogger('BassInstrument');
 
 export interface BassInstrumentConfig extends InstrumentConfig {
   type: 'bass';
@@ -33,19 +40,21 @@ export class BassInstrument extends Sampler {
   private processor: BassInstrumentProcessor;
   private noteRange: { lowest: string; highest: string };
   private useSynth: boolean;
-  private synthType: string;
+  // private _synthType: string; // Reserved for future use
+  private audioEngine?: any;
 
-  constructor(config: BassInstrumentConfig) {
+  constructor(config: BassInstrumentConfig, audioEngine?: any) {
     super({
       ...config,
       samples: config.samples,
       velocityLayers: config.velocityLayers || 6,
       roundRobin: true,
     });
-    
+    this.audioEngine = audioEngine;
+
     this.noteRange = config.noteRange || { lowest: 'B0', highest: 'G4' };
     this.useSynth = config.useSynth ?? true; // Default to synth if no samples
-    this.synthType = config.synthType || 'sawtooth';
+    // this._synthType = config.synthType || 'sawtooth'; // Reserved for future use
 
     // Create processor with configuration
     this.processor = new BassInstrumentProcessor({
@@ -62,7 +71,12 @@ export class BassInstrument extends Sampler {
         enabled: config.ampSimulation ?? true,
         preamp: { gain: 0.7, tone: 0.6, presence: 0.5 },
         eq: { bass: 0.6, mid: 0.5, treble: 0.4 },
-        compression: { threshold: -18, ratio: 3, attack: 0.003, release: 0.1 },
+        compression: {
+          threshold: -18,
+          ratio: 3,
+          attack: 0.003,
+          release: 0.1,
+        },
         cabinet: { model: 'vintage', micPosition: 'close' },
       },
       dynamicRange: {
@@ -73,30 +87,43 @@ export class BassInstrument extends Sampler {
     });
   }
 
-  async initialize(context?: any): Promise<void> {
+  async initialize(audioEngine?: any): Promise<void> {
     if (this._state.isInitialized) return;
+
+    // Store audioEngine if provided
+    if (audioEngine) {
+      this.audioEngine = audioEngine;
+    } else if (!this.audioEngine && typeof window !== 'undefined') {
+      // Try to get from global DI if no audioEngine provided
+      const globalServices =
+        (window as any)?.__coreServices ||
+        (window as any)?.__globalCoreServices;
+      if (globalServices && globalServices.getAudioEngine) {
+        this.audioEngine = globalServices.getAudioEngine();
+      }
+    }
 
     this._state.isLoading = true;
 
     try {
       // Convert kit samples to processor format
       const bassSamples: Record<string, string[]> = {};
-      
+
       if (this.samples.size > 0 || Object.keys(this.samples).length > 0) {
         // Use provided samples
         for (const [note, loadedSamples] of this.samples) {
-          bassSamples[note] = loadedSamples.map(s => s.buffer || '');
+          bassSamples[note] = loadedSamples.map((s) => s.buffer || '');
         }
       } else if (!this.useSynth) {
         // Generate empty sample map for bass notes
         const bassNotes = this.generateBassNotes();
-        bassNotes.forEach(note => {
+        bassNotes.forEach((note) => {
           bassSamples[note] = []; // Empty array will trigger synth fallback
         });
       }
 
-      await this.processor.initialize(bassSamples);
-      
+      await this.processor.initialize(bassSamples, this.audioEngine);
+
       this._state.isInitialized = true;
       this._state.isLoading = false;
     } catch (error) {
@@ -108,19 +135,19 @@ export class BassInstrument extends Sampler {
 
   trigger(event: InstrumentEvent): void {
     if (!this._state.isInitialized) {
-      console.warn(`Bass ${this.name} not initialized`);
+      logger.warn(`Bass ${this.name} not initialized`);
       return;
     }
 
     // Extract bass-specific data
     const bassEvent = event.data as BassEvent;
-    
+
     // Call processor's trigger method
     this.processor.triggerNote({
       note: bassEvent?.note || 'E2',
       velocity: event.velocity || 0.8,
-      time: event.audioTime,
-      duration: event.duration || '8n',
+      time: event.audioTime || Date.now() / 1000,
+      duration: typeof event.duration === 'string' ? event.duration : '8n',
     });
 
     this._state.isPlaying = true;
@@ -137,23 +164,23 @@ export class BassInstrument extends Sampler {
       const noteMatch = note.match(/([A-G]#?)(\d)/);
       if (noteMatch) {
         const [, noteName, octaveStr] = noteMatch;
-        const octave = parseInt(octaveStr, 10);
-        this.processor.stopNote(noteName, octave, time);
+        const octave = parseInt(octaveStr || '0', 10);
+        this.processor.stopNote(noteName || '', octave, time);
       }
     }
-    
+
     this._state.isPlaying = false;
   }
 
   /**
    * Trigger specific bass note
    */
-  playNote(note: string, velocity: number = 0.8, duration: string = '8n', time?: number): void {
+  playNote(note: string, velocity = 0.8, duration = '8n', time?: number): void {
     if (!this._state.isInitialized) {
-      console.warn('Bass not initialized');
+      logger.warn('Bass not initialized');
       return;
     }
-    
+
     this.processor.triggerNote({
       note,
       velocity,
@@ -183,13 +210,23 @@ export class BassInstrument extends Sampler {
   }
 
   updateParams(params: Partial<BassInstrumentConfig>): void {
-    super.updateParams(params);
-    
+    // Update base parameters
+    if (params.volume !== undefined) {
+      this.setVolume(params.volume);
+    }
+    if (params.pan !== undefined) {
+      this.setPan(params.pan);
+    }
+    if (params.muted !== undefined) {
+      this.setMuted(params.muted);
+    }
+
+    // Update bass-specific parameters
     if (params.synthType !== undefined) {
-      this.synthType = params.synthType;
+      // this._synthType = params.synthType; // Reserved for future use
       // Would need to reinitialize processor with new synth type
     }
-    
+
     if (params.samples) {
       // Would need to reload samples
       this.loadSamples(params.samples);
@@ -248,7 +285,7 @@ export class BassInstrument extends Sampler {
   getMetrics(): InstrumentMetrics {
     const baseMetrics = super.getMetrics();
     const status = this.processor.getStatus();
-    
+
     return {
       ...baseMetrics,
       cpuUsage: this._state.isPlaying ? 3 : 0, // Moderate CPU usage
@@ -274,12 +311,25 @@ export class BassInstrument extends Sampler {
 
   private generateBassNotes(): string[] {
     // Generate standard bass guitar notes from B0 to G4
-    const notes = ['B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#'];
+    const notes = [
+      'B',
+      'C',
+      'C#',
+      'D',
+      'D#',
+      'E',
+      'F',
+      'F#',
+      'G',
+      'G#',
+      'A',
+      'A#',
+    ];
     const bassNotes: string[] = [];
-    
+
     // B0
     bassNotes.push('B0');
-    
+
     // C1 to G4
     for (let octave = 1; octave <= 4; octave++) {
       for (const note of notes) {
@@ -287,7 +337,7 @@ export class BassInstrument extends Sampler {
         if (note === 'G' && octave === 4) break; // Stop at G4
       }
     }
-    
+
     return bassNotes;
   }
 }
