@@ -4,6 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Critical Rules
 
+### Tool Call Concurrency (PREVENTS API 400 ERRORS)
+
+**CRITICAL**: Limit parallel tool calls to avoid API rate limits and 400 errors:
+
+1. **Maximum 3 parallel tool calls per response** - NO EXCEPTIONS
+2. **For file operations**: Read max 2-3 files at once, then wait for next batch
+3. **For edits**: Do 1-2 edits at a time maximum
+4. **Complex operations** (Grep, Bash, Task): Do sequentially, ONE AT A TIME
+5. **Large refactorings**: Split into multiple conversation turns
+6. **When you get 400 error**: You tried to do too much - slow down dramatically
+
+**Examples**:
+
+```
+❌ BAD: Reading 10 files in parallel
+✅ GOOD: Read 2 files, get results, read 2 more
+
+❌ BAD: 5 parallel Bash commands
+✅ GOOD: Run 1-2 Bash commands, wait, then continue
+
+❌ BAD: Grep + 3 Reads + 2 Edits in one response
+✅ GOOD: Grep first, then in next response do reads, then edits
+```
+
 ### Package Manager
 
 **ALWAYS use pnpm** - This is a pnpm workspace project. NEVER use npm or yarn commands.
@@ -33,7 +57,7 @@ pnpm install
 
 # ❌ DO NOT USE THESE - We use PM2 instead:
 # pnpm dev              # DON'T USE
-# pnpm dev:frontend     # DON'T USE  
+# pnpm dev:frontend     # DON'T USE
 # pnpm dev:backend      # DON'T USE
 
 # ✅ CORRECT WAY - Using PM2:
@@ -228,6 +252,18 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_APP_URL=http://localhost:3001
 NEXT_PUBLIC_API_URL=http://localhost:3000
+
+# Logging Configuration (optional)
+# Log levels: ERROR, WARN, INFO, DEBUG, TRACE
+# Production defaults to ERROR, Development defaults to INFO
+NEXT_PUBLIC_LOG_LEVEL=INFO
+
+# Suppress noisy contexts in development
+# Set to true to reduce log spam from high-frequency components
+NEXT_PUBLIC_SUPPRESS_NOISY_LOGS=false
+
+# Allow noisy logs in production (not recommended)
+NEXT_PUBLIC_ALLOW_NOISY_LOGS=false
 ```
 
 ### Backend (.env)
@@ -238,6 +274,7 @@ SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 DATABASE_URL=
 PORT=3000
+LOG_LEVEL=INFO  # Backend log level
 ```
 
 ## Development Workflow
@@ -272,10 +309,11 @@ PORT=3000
 4. **PM2 Logs**: Check `logs/` directory for application logs
 5. **TypeScript Paths**: Use `@/` for app-specific imports, `@bassnotion/` for workspace libs
 6. **React Fragment Wrapper**: ALWAYS wrap page component returns in `<>...</>` to prevent rendering issues:
+
    ```tsx
    // ❌ Can cause page freezing/click blocking
    return <ComplexComponent />;
-   
+
    // ✅ Fragment prevents rendering boundary issues
    return (
      <>
@@ -291,24 +329,26 @@ PORT=3000
 These issues can make pages completely unresponsive. Follow these rules to prevent them:
 
 1. **Always Memoize Event Handlers Passed as Props**:
+
    ```tsx
    // ❌ BAD: Creates new function every render
-   <Widget onUpdate={() => setState(value)} />
-   
+   <Widget onUpdate={() => setState(value)} />;
+
    // ✅ GOOD: Memoized with useCallback
    const handleUpdate = useCallback(() => {
      setState(value);
    }, [value]);
-   <Widget onUpdate={handleUpdate} />
+   <Widget onUpdate={handleUpdate} />;
    ```
 
 2. **Never Include State Setters in useEffect Dependencies**:
+
    ```tsx
    // ❌ BAD: Causes infinite re-renders
    useEffect(() => {
      // some logic
    }, [transport, setCurrentPosition, currentPosition]);
-   
+
    // ✅ GOOD: State setters are stable, exclude them
    useEffect(() => {
      // some logic
@@ -316,25 +356,27 @@ These issues can make pages completely unresponsive. Follow these rules to preve
    ```
 
 3. **Always Include Dependency Arrays in useEffect**:
+
    ```tsx
    // ❌ BAD: Runs on every render
    useEffect(() => {
-     setRenderCount(prev => prev + 1);
+     setRenderCount((prev) => prev + 1);
    });
-   
+
    // ✅ GOOD: Only runs once on mount
    useEffect(() => {
-     setRenderCount(prev => prev + 1);
+     setRenderCount((prev) => prev + 1);
    }, []);
    ```
 
 4. **Wrap Page Components in React Fragments**:
+
    ```tsx
    // ❌ BAD: Can cause rendering boundary issues
    export default function Page() {
      return <AudioEnabledTutorial {...props} />;
    }
-   
+
    // ✅ GOOD: Fragment ensures proper rendering
    export default function Page() {
      return (
@@ -346,12 +388,13 @@ These issues can make pages completely unresponsive. Follow these rules to preve
    ```
 
 5. **Avoid Circular State Updates**:
+
    ```tsx
    // ❌ BAD: Setting state based on same state in render
    if (selectedExercise !== widgetState.selectedExercise) {
      widgetState.setSelectedExercise(selectedExercise);
    }
-   
+
    // ✅ GOOD: Use effects with proper dependencies
    useEffect(() => {
      if (selectedExercise?.id !== widgetState.selectedExercise?.id) {
@@ -381,14 +424,16 @@ If a page becomes unresponsive:
 - Click Blocking Debug: `/docs/CLICK-BLOCKING-DEBUG-PROGRESS.md`
 
 # important-instruction-reminders
+
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
 ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+NEVER proactively create documentation files (\*.md) or README files. Only create documentation files if explicitly requested by the User.
 
 ## Documentation Rules (CRITICAL)
 
 ### Before Creating ANY Documentation
+
 1. **CHECK docs/INDEX.md FIRST** - Is there already a doc for this?
 2. **NEVER create docs in root directory** - Only README.md and CLAUDE.md belong there
 3. **Follow the structure**:
@@ -403,13 +448,15 @@ NEVER proactively create documentation files (*.md) or README files. Only create
    ```
 
 ### When You MUST Create Documentation
+
 - User explicitly asks for it
 - Completing a major implementation
 - Document goes in proper folder per structure above
 - UPDATE docs/INDEX.md immediately after creating
 
 ### Common Mistakes to AVOID
-- Creating test-*.md files in root
+
+- Creating test-\*.md files in root
 - Creating multiple docs for same topic
 - Not checking INDEX.md first
 - Creating temporary debugging docs
@@ -419,6 +466,7 @@ See `/docs/DOCUMENTATION_GUIDELINES.md` for full rules.
 ## Debugging & Development Tools
 
 ### Correlation IDs (ALWAYS USE)
+
 ```typescript
 // In React components
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
@@ -432,6 +480,7 @@ grep "correlation-id-here" logs/*.log
 ```
 
 ### Structured Logging (NEVER use console.log)
+
 ```typescript
 // ❌ NEVER DO THIS
 console.log('Something happened');
@@ -442,9 +491,10 @@ logger.error('Error description', error, { context });
 ```
 
 ### Audio Debugging
+
 ```typescript
 // Enable in .env.local
-NEXT_PUBLIC_DEBUG_AUDIO=true
+NEXT_PUBLIC_DEBUG_AUDIO = true;
 
 // Use in components
 import { useAudioDebug } from '@/shared/debug/AudioDebugger';
@@ -453,19 +503,23 @@ debug.log('event-name', { data });
 ```
 
 ### Health Checks
+
 - Backend: GET http://localhost:3000/health
 - Frontend: Check bottom-left indicator (🟢 healthy, 🟡 degraded, 🔴 unhealthy)
 
 ## Critical Coding Standards
 
 ### Golden Rules
-1. **Always use pnpm** (never npm or yarn)
-2. **Always add correlation IDs** to API calls
-3. **Always use structured logging** (never plain console.log)
-4. **Always wrap page components in fragments** `<>...</>`
-5. **Always memoize callbacks** passed as props
+
+1. **NEVER exceed 3 parallel tool calls** (prevents 400 errors)
+2. **Always use pnpm** (never npm or yarn)
+3. **Always add correlation IDs** to API calls
+4. **Always use structured logging** (never plain console.log)
+5. **Always wrap page components in fragments** `<>...</>`
+6. **Always memoize callbacks** passed as props
 
 ### Prevent Infinite Loops
+
 ```typescript
 // ❌ CAUSES FREEZE
 useEffect(() => {
@@ -486,6 +540,7 @@ const handleUpdate = useCallback(() => doSomething(), []);
 ```
 
 ### Import Rules
+
 ```typescript
 // ✅ CORRECT IMPORTS
 import { Something } from '@bassnotion/contracts'; // No extension for packages
@@ -496,6 +551,7 @@ import { Service } from './service.js'; // .js extension for relative imports
 ## Common Debugging Patterns
 
 ### When Something Breaks
+
 1. Get correlation ID from error
 2. Check health indicator (bottom-left)
 3. Check Audio Debug Panel (bottom-right) if audio-related
@@ -503,19 +559,23 @@ import { Service } from './service.js'; // .js extension for relative imports
 5. Add more logging before/after the problem area
 
 ### Page Frozen?
+
 Check for:
+
 - Missing useEffect dependencies
 - Unmemoized callbacks in props
 - setState during render
 - Circular state updates
 
 ### Audio Not Playing?
+
 1. Check Audio Debug Panel for events
 2. Common issue: AudioContext suspended (needs user interaction)
 3. Check Network tab for 404s on samples
 4. Verify Supabase bucket is public
 
 ### API Errors?
+
 1. Check health status indicator
 2. Verify correlation ID is passed
 3. Check pm2 logs: `pm2 logs bassnotion-backend`
@@ -524,11 +584,12 @@ Check for:
 ## Project-Specific Patterns
 
 ### Audio Component Pattern
+
 ```typescript
 export function AudioWidget() {
   const { correlationId, logger } = useCorrelation('AudioWidget');
   const debug = useAudioDebug('AudioWidget');
-  
+
   const play = useCallback(async () => {
     debug.log('play-start', { time: Date.now() });
     try {
@@ -539,16 +600,17 @@ export function AudioWidget() {
       logger.error('Playback failed', error);
     }
   }, []);
-  
+
   return <button onClick={play}>Play</button>;
 }
 ```
 
 ### API Call Pattern
+
 ```typescript
 async function fetchData() {
   const { correlationId, logger } = useCorrelation('DataFetcher');
-  
+
   try {
     logger.info('Fetching data');
     const result = await apiClient.get('/api/data', { correlationId });
@@ -589,6 +651,7 @@ lsof -i :3001  # Frontend
 ## References
 
 For detailed guides see `/docs/developer-handbook/`:
+
 - DEVELOPER_GUIDE.md - Complete platform guide
 - TROUBLESHOOTING_FLOWCHART.md - Step-by-step debugging
 - DEBUGGING_EXAMPLES.md - Real-world scenarios
