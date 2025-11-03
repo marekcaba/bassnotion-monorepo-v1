@@ -163,8 +163,29 @@ export class TransportController implements Service {
 
     logger.info('Starting playback...');
 
+    // FAANG FIX: ALWAYS reset Tone.Transport.position to 0 before starting playback
+    // This prevents position accumulation bugs from previous stop() calls.
+    // The position manager handles countdown offset display, so transport should
+    // always start from absolute zero. Do NOT set to exercise start position here
+    // as it creates a mismatch with the internal position manager.
+    if (this.config.enableLegacyCompatibility) {
+      Tone.Transport.position = 0;
+      logger.info('Reset Tone.Transport.position to 0 for clean playback start');
+    }
+
+    // FAANG FIX: Reset position to timeline start (0:0:0) before starting
+    // This ensures we always start from the beginning, including countdown
+    // The position manager's getDisplayPosition() handles showing countdown as negative bars
+    this.positionManager.resetToStart();
+
     // Start transport
     this.transport.start();
+
+    // Start Tone.Transport for legacy compatibility
+    if (this.config.enableLegacyCompatibility && Tone.Transport.state !== 'started') {
+      logger.info('Starting Tone.Transport for legacy compatibility');
+      Tone.Transport.start();
+    }
 
     // Update state
     this.state = 'playing';
@@ -185,18 +206,78 @@ export class TransportController implements Service {
     // Stop transport
     this.transport.stop();
 
+    // NOTE: No longer clearing position update callback here
+    // The callback needs to persist across start/stop cycles so position updates
+    // work on second and subsequent playback rounds. The interval timer is cleared
+    // in transport.stop() which is sufficient to stop position updates.
+
+    // Stop Tone.Transport for legacy compatibility
+    if (this.config.enableLegacyCompatibility && Tone.Transport.state !== 'stopped') {
+      logger.info('Stopping Tone.Transport for legacy compatibility');
+      Tone.Transport.stop();
+      // FAANG FIX: Reset to start of EXERCISE (after countdown), not start of countdown
+      // This ensures the clock shows 1:0:00 (exercise start) instead of -1:4:00 (countdown start)
+      const countdownBeats = this.positionManager.getCountdownBeats();
+      if (countdownBeats > 0) {
+        // Get time signature to format the position correctly
+        const _beatsPerBar = this.config.timeSignature?.numerator || 4;
+        const position = `0:${countdownBeats}:0`; // e.g., "0:4:0" for 4/4 time with 4-beat countdown
+        Tone.Transport.position = position;
+        logger.info('Reset Tone.Transport to exercise start', { position, countdownBeats });
+      } else {
+        // No countdown - reset to absolute zero
+        Tone.Transport.position = 0;
+      }
+    }
+
     // Clear scheduled events
     this.eventScheduler.clearAllEvents();
 
-    // Reset position
+    // Reset position (positionManager.reset() now respects countdown offset)
     this.positionManager.reset();
 
     // Update state
     this.state = 'stopped';
 
-    // Emit events
+    // Emit stop event
     this.eventBus.emit('transport:stop', {
       timestamp: Date.now(),
+    });
+
+
+    // CRITICAL FIX: Force position update to prevent race condition
+    // The position update interval may have queued a callback before we cleared it.
+    // We emit the correct position FIRST, then after a microtask cycle,
+    // we emit it AGAIN to ensure it's the last update the UI receives.
+    const resetPosition = this.positionManager.getDisplayPosition();
+    const positionPayload = {
+      position: {
+        bars: resetPosition.bars,
+        beats: resetPosition.beats,
+        sixteenths: resetPosition.sixteenths,
+        ticks: resetPosition.ticks,
+        seconds: 0,
+      },
+      timestamp: Date.now(),
+    };
+
+    // First emission
+    this.eventBus.emit('transport:position-updated', positionPayload);
+    logger.debug('Position reset after stop (first emission)', { displayPosition: resetPosition });
+
+    // Schedule second emission after event loop clears to override any stale callbacks
+    // This ensures that even if a stale interval callback fires, our correct position wins
+    Promise.resolve().then(() => {
+      // Check state again - if somehow we're playing again, don't override
+      if (this.state === 'stopped') {
+        this.eventBus.emit('transport:position-updated', {
+          ...positionPayload,
+          timestamp: Date.now(),
+        });
+        logger.debug('Position reset after stop (second emission - race condition guard)', {
+          displayPosition: resetPosition,
+        });
+      }
     });
   }
 
@@ -208,6 +289,12 @@ export class TransportController implements Service {
 
     // Pause transport
     this.transport.pause();
+
+    // Pause Tone.Transport for legacy compatibility
+    if (this.config.enableLegacyCompatibility && Tone.Transport.state === 'started') {
+      logger.info('Pausing Tone.Transport for legacy compatibility');
+      Tone.Transport.pause();
+    }
 
     // Update state
     this.state = 'paused';
@@ -279,7 +366,11 @@ export class TransportController implements Service {
       throw new Error(`Invalid tempo: ${bpm}`);
     }
 
-    logger.info('Setting tempo', { bpm });
+    logger.info('🎵 TransportController.setTempo START', {
+      bpm,
+      currentToneBpm: Tone.Transport.bpm.value,
+      transportState: this.state
+    });
 
     // Update transport
     this.transport.setTempo(bpm);
@@ -290,10 +381,34 @@ export class TransportController implements Service {
     // Sync with Tone.js
     if (this.config.enableLegacyCompatibility) {
       Tone.Transport.bpm.value = bpm;
+      logger.info('🎵 TransportController: Tone.js BPM updated', {
+        newToneBpm: Tone.Transport.bpm.value,
+        success: Tone.Transport.bpm.value === bpm
+      });
+
+      // FAANG FIX: Recalculate loop end if loop is enabled
+      // When tempo changes, the loop end time in seconds changes even though musical position stays same
+      if (Tone.Transport.loop) {
+        const loopRegion = this.positionManager.getLoop();
+        if (loopRegion.enabled) {
+          const startSeconds = this.positionManager.positionToSeconds(loopRegion.start);
+          const endSeconds = this.positionManager.positionToSeconds(loopRegion.end);
+          Tone.Transport.loopStart = startSeconds;
+          Tone.Transport.loopEnd = endSeconds;
+          logger.info('🔁 TransportController: Recalculated loop points for new tempo', {
+            bpm,
+            loopStart: startSeconds,
+            loopEnd: endSeconds,
+            loopStartBars: loopRegion.start.bars,
+            loopEndBars: loopRegion.end.bars
+          });
+        }
+      }
     }
 
-    // Emit event
-    this.eventBus.emit('transport:tempo-change', bpm);
+    // Emit event (both 'tempo' and 'bpm' properties for compatibility with different listeners)
+    this.eventBus.emit('transport:tempo-change', { tempo: bpm, bpm });
+    logger.info('🎵 TransportController: Event emitted', { event: 'transport:tempo-change', data: { tempo: bpm, bpm } });
   }
 
   /**
@@ -302,8 +417,9 @@ export class TransportController implements Service {
   async setTimeSignature(timeSignature: TimeSignature): Promise<void> {
     logger.info('Setting time signature', timeSignature);
 
-    // Update transport
-    this.transport.setTimeSignature(timeSignature);
+    // Update transport config - Transport doesn't have setTimeSignature method
+    // The timeSignature is set during initialization and through updateConfig
+    this.transport.updateConfig({ timeSignature });
 
     // Update position manager
     this.positionManager.setTimeSignature(timeSignature);
@@ -403,10 +519,26 @@ export class TransportController implements Service {
   }
 
   /**
-   * Get current position
+   * Get current position (raw, without countdown adjustment)
    */
   getPosition(): MusicalPosition {
     return this.positionManager.getPosition();
+  }
+
+  /**
+   * Set countdown offset for display adjustment
+   * @param beats Number of beats in countdown (e.g., 4 for one measure of 4/4)
+   */
+  setCountdownBeats(beats: number): void {
+    this.positionManager.setCountdownBeats(beats);
+  }
+
+  /**
+   * Get display position (adjusted for countdown offset)
+   * This is what should be shown in the UI
+   */
+  getDisplayPosition(): MusicalPosition {
+    return this.positionManager.getDisplayPosition();
   }
 
   /**
@@ -481,12 +613,28 @@ export class TransportController implements Service {
   private setupEventListeners(): void {
     // Listen to transport position updates
     this.transport.onPositionUpdate((seconds) => {
-      const position = this.positionManager.updatePosition(seconds);
+      // POSITION RESET BUG FIX: Ignore position updates when not playing
+      // This prevents stale callbacks from overwriting the reset position after stop()
+      // Race condition: timing worker fires final update AFTER stop() resets position
+      if (this.state !== 'playing') {
+        logger.debug('Ignoring position update - transport not playing', {
+          seconds,
+          state: this.state,
+        });
+        return;
+      }
 
-      // Emit position update
-      this.eventBus.emit('transport:position', {
+      // Update the raw position internally
+      this.positionManager.updatePosition(seconds);
+
+      // CRITICAL: Emit DISPLAY position (adjusted for countdown) to UI
+      // This ensures the clock shows -1:1:00 during countdown, 1:1:00 for exercise start
+      const displayPosition = this.positionManager.getDisplayPosition();
+
+      // Emit position update (using the correct event name that useTransport expects)
+      this.eventBus.emit('transport:position-updated', {
+        position: displayPosition,
         seconds,
-        position,
         timestamp: performance.now(),
       });
     });
