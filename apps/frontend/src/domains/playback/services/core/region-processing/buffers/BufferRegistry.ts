@@ -423,4 +423,15 @@ export class BufferRegistry {
   getAudioDestination() {
     return this.audioDestination;
   }
+
+  /**
+   * Public wrapper for loading Grand Piano keyboard map
+   * Called by RegionProcessor when instrument type is detected
+   * (BufferRegistry already loads this automatically in setHarmonyBuffers for grandpiano)
+   */
+  async ensureGrandPianoKeyboardMap(): Promise<void> {
+    if (!this.grandPianoKeyboardMap) {
+      await this.loadGrandPianoKeyboardMap();
+    }
+  }
 }
