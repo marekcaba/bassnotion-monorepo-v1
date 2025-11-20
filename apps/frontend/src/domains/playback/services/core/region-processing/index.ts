@@ -10,9 +10,8 @@
  * - cache/: Per-exercise schedule caching
  * - sustain/: CC64 sustain pedal system
  * - scheduling/: Instrument-specific audio schedulers
- * - core/: Track management and orchestration (TODO)
- * - countdown/: Countdown system (TODO)
- * - buffers/: Buffer registry and management (TODO)
+ * - buffers/: Buffer registry and management
+ * - countdown/: Countdown pre-roll system
  */
 
 // Type definitions
@@ -27,7 +26,10 @@ export type {
 } from './types/index.js';
 
 // Timing modules
-export { MusicalTimeConverter, TimingMetricsCollector } from './timing/index.js';
+export {
+  MusicalTimeConverter,
+  TimingMetricsCollector,
+} from './timing/index.js';
 
 // Cache
 export { ScheduleCache } from './cache/index.js';
@@ -36,4 +38,18 @@ export { ScheduleCache } from './cache/index.js';
 export { CC64TimelineBuilder, SustainPedalAnalyzer } from './sustain/index.js';
 
 // Schedulers
-export { VoiceCueScheduler } from './scheduling/index.js';
+export {
+  VoiceCueScheduler,
+  MetronomeScheduler,
+  DrumScheduler,
+  BassScheduler,
+  HarmonyScheduler,
+  GrandPianoKeyboardMapper,
+} from './scheduling/index.js';
+export type { NoteMapping } from './scheduling/index.js';
+
+// Buffer management
+export { BufferRegistry } from './buffers/index.js';
+
+// Countdown system
+export { CountdownManager } from './countdown/index.js';
