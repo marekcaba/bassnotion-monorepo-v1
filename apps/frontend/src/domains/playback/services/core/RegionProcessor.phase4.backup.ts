@@ -28,14 +28,6 @@ import { TimingMetricsCollector } from './region-processing/timing/TimingMetrics
 import { CC64TimelineBuilder } from './region-processing/sustain/CC64TimelineBuilder.js';
 import { SustainPedalAnalyzer } from './region-processing/sustain/SustainPedalAnalyzer.js';
 
-// Import extracted modules (Phase 4: Schedulers)
-import { VoiceCueScheduler } from './region-processing/scheduling/VoiceCueScheduler.js';
-import { MetronomeScheduler } from './region-processing/scheduling/MetronomeScheduler.js';
-import { DrumScheduler } from './region-processing/scheduling/DrumScheduler.js';
-import { BassScheduler } from './region-processing/scheduling/BassScheduler.js';
-import { HarmonyScheduler } from './region-processing/scheduling/HarmonyScheduler.js';
-import { GrandPianoKeyboardMapper } from './region-processing/scheduling/GrandPianoKeyboardMapper.js';
-
 const logger = getLogger('RegionProcessor');
 
 interface PatternEvent {
@@ -158,14 +150,6 @@ export class RegionProcessor {
   private cc64TimelineBuilder!: CC64TimelineBuilder; // Initialized in constructor
   private sustainPedalAnalyzer!: SustainPedalAnalyzer; // Initialized in constructor
 
-  // Phase 4: Schedulers delegated to specialized scheduler modules
-  private voiceCueScheduler!: VoiceCueScheduler; // Initialized in constructor
-  private metronomeScheduler!: MetronomeScheduler; // Initialized in constructor
-  private drumScheduler!: DrumScheduler; // Initialized in constructor
-  private bassScheduler!: BassScheduler; // Initialized in constructor
-  private harmonyScheduler!: HarmonyScheduler; // Initialized in constructor
-  private grandPianoKeyboardMapper!: GrandPianoKeyboardMapper; // Initialized in constructor
-
   // Diagnostic: Count logged notes
   private _noteLogCount = 0;
 
@@ -213,20 +197,6 @@ export class RegionProcessor {
     this.cc64TimelineBuilder = new CC64TimelineBuilder();
     this.cc64TimelineBuilder.setTimeConverter(this.musicalTimeConverter); // Inject time converter
     this.sustainPedalAnalyzer = new SustainPedalAnalyzer();
-
-    // Phase 4: Instantiate scheduler modules
-    this.voiceCueScheduler = new VoiceCueScheduler(this._instanceId);
-    this.metronomeScheduler = new MetronomeScheduler(this._instanceId, this.tracks);
-    this.drumScheduler = new DrumScheduler(this._instanceId, this.tracks);
-    this.bassScheduler = new BassScheduler(this._instanceId, this.tracks);
-    this.grandPianoKeyboardMapper = new GrandPianoKeyboardMapper(this._instanceId);
-    this.harmonyScheduler = new HarmonyScheduler(
-      this._instanceId,
-      this.tracks,
-      this.grandPianoKeyboardMapper,
-      this.cc64TimelineBuilder,
-      this.sustainPedalAnalyzer,
-    );
 
     logger.info('🔧 RegionProcessor instance created', {
       instanceId: this._instanceId,
@@ -293,8 +263,6 @@ export class RegionProcessor {
 
     // Phase 3: Sync countdown configuration to CC64TimelineBuilder
     this.cc64TimelineBuilder.setCountdownConfig(this.countdownOffsetBeats, true);
-
-    // Phase 4: Schedulers don't need countdown config - events are already offset
   }
 
   /**
@@ -309,8 +277,6 @@ export class RegionProcessor {
 
     // Phase 3: Sync countdown configuration to CC64TimelineBuilder
     this.cc64TimelineBuilder.setCountdownConfig(0, false);
-
-    // Phase 4: Schedulers don't need countdown config - events are already offset
   }
 
   /**
@@ -349,14 +315,6 @@ export class RegionProcessor {
     // Phase 3: Sync audio context to CC64TimelineBuilder
     this.cc64TimelineBuilder.setAudioContext(context);
 
-    // Phase 4: Sync audio context to all schedulers
-    this.voiceCueScheduler.setAudioContext(context);
-    this.metronomeScheduler.setAudioContext(context);
-    this.drumScheduler.setAudioContext(context);
-    this.bassScheduler.setAudioContext(context);
-    // HarmonyScheduler gets transportStartTime in setAudioContext (will be set in start())
-    // GrandPianoKeyboardMapper doesn't need audio context
-
     logger.info('🔧 AudioContext set for RegionProcessor', {
       instanceId: this._instanceId,
       sampleRate: this.sampleRate,
@@ -374,9 +332,6 @@ export class RegionProcessor {
   ): void {
     this.bufferRegistry.setMetronomeBuffers(accent, click, destination);
     this.audioDestination = this.bufferRegistry.getAudioDestination(); // Sync for backward compat
-
-    // Phase 4: Sync buffers to MetronomeScheduler
-    this.metronomeScheduler.setBuffers(accent, click, destination);
   }
 
   setDrumBuffers(
@@ -387,9 +342,6 @@ export class RegionProcessor {
   ): void {
     this.bufferRegistry.setDrumBuffers(kick, snare, hihat, destination);
     this.audioDestination = this.bufferRegistry.getAudioDestination();
-
-    // Phase 4: Sync buffers to DrumScheduler
-    this.drumScheduler.setBuffers(kick, snare, hihat, destination);
   }
 
   setVoiceCueBuffers(
@@ -399,9 +351,6 @@ export class RegionProcessor {
     this.bufferRegistry.setVoiceCueBuffers(samples, destination);
     this.voiceCueBuffers = samples; // Sync for backward compat (used by scheduling logic)
     this.audioDestination = this.bufferRegistry.getAudioDestination();
-
-    // Phase 4: Sync buffers to VoiceCueScheduler
-    this.voiceCueScheduler.setBuffers(samples, destination);
   }
 
   async setHarmonyBuffers(
@@ -424,15 +373,6 @@ export class RegionProcessor {
       this.bufferRegistry.getCurrentHarmonyInstrument();
     this.grandPianoKeyboardMap = this.bufferRegistry.getGrandPianoKeyboardMap();
     this.audioDestination = this.bufferRegistry.getAudioDestination();
-
-    // Phase 4: Sync buffers to HarmonyScheduler
-    // HarmonyScheduler will load keyboard map internally if instrument is 'grandpiano'
-    await this.harmonyScheduler.setBuffers(
-      samples,
-      destination,
-      perNoteVelocityRanges,
-      instrument,
-    );
   }
 
   setBassBuffers(
@@ -442,9 +382,6 @@ export class RegionProcessor {
     this.bufferRegistry.setBassBuffers(samples, destination);
     this.bassBuffers = this.bufferRegistry.getBassBuffers(); // Sync for backward compat
     this.audioDestination = this.bufferRegistry.getAudioDestination();
-
-    // Phase 4: Sync buffers to BassScheduler
-    this.bassScheduler.setBuffers(samples, destination);
   }
 
   /**
@@ -706,10 +643,6 @@ export class RegionProcessor {
 
       // Phase 3: Sync transport start time to CC64TimelineBuilder
       this.cc64TimelineBuilder.setTransportStartTime(this.transportStartTime);
-
-      // Phase 4: Sync audio context with transport start time to HarmonyScheduler
-      // Other schedulers don't need transportStartTime (they receive pre-calculated audioTime)
-      this.harmonyScheduler.setAudioContext(this.audioContext, this.transportStartTime);
 
       logger.info(
         '🎯 Transport start anchor captured with FAANG startup lookahead',
@@ -1214,12 +1147,6 @@ export class RegionProcessor {
       this.lastBeatThreshold,
     );
 
-    // Phase 4: Sync exercise timing to HarmonyScheduler (needed for last-note ring-out)
-    this.harmonyScheduler.setExerciseTiming(
-      this.exerciseEndTime,
-      this.lastBeatThreshold,
-    );
-
     console.log(
       `[EXERCISE DURATION] Transport: ${maxEndTime.toFixed(3)}s, Countdown offset: ${countdownOffsetSeconds.toFixed(3)}s, Total (audio time): ${this.exerciseEndTime.toFixed(3)}s, Last beat starts: ${this.lastBeatThreshold.toFixed(3)}s (1 beat = ${lastBeatDuration.toFixed(3)}s @ ${currentBpm} BPM)`,
     );
@@ -1368,9 +1295,6 @@ export class RegionProcessor {
               `[CC64] 🔨 Built NEW timeline with ${this.currentCC64Timeline.size} pedal events`,
             );
           }
-
-          // Phase 4: Sync CC64 timeline to HarmonyScheduler
-          this.harmonyScheduler.setCurrentCC64Timeline(this.currentCC64Timeline);
 
           if (this.currentCC64Timeline.size > 0) {
             // Log the timeline for debugging
@@ -1849,52 +1773,599 @@ export class RegionProcessor {
     return false;
   }
 
-  /**
-   * Schedule metronome audio directly
-   * Phase 4: Delegated to MetronomeScheduler
-   */
   private scheduleMetronomeDirect(
     event: PatternEvent,
     audioTime: number,
     frame: number,
   ): boolean {
-    return this.metronomeScheduler.schedule(event, audioTime, frame);
+    // DEFENSIVE CHECK: Detect if multiple metronome tracks are trying to schedule
+    // This should never happen with our safeguards, but log a critical error if it does
+    const metronomeTrackCount = Array.from(this.tracks.values()).filter(
+      (t) => t.instrumentType === 'metronome',
+    ).length;
+
+    if (metronomeTrackCount > 1) {
+      logger.error('🚨 CRITICAL: Multiple metronome tracks detected!', {
+        trackCount: metronomeTrackCount,
+        trackIds: Array.from(this.tracks.entries())
+          .filter(([, t]) => t.instrumentType === 'metronome')
+          .map(([id]) => id),
+        instanceId: this._instanceId,
+      });
+      // Continue anyway, but this indicates a bug in track registration
+    }
+
+    // Check if we have the necessary buffers and destination
+    if (
+      !this.audioContext ||
+      !this.audioDestination ||
+      !this.metronomeBuffers.accent ||
+      !this.metronomeBuffers.click
+    ) {
+      logger.warn(
+        '❌ FAANG: Cannot use direct scheduling - missing metronome dependencies',
+        {
+          hasAudioContext: !!this.audioContext,
+          hasDestination: !!this.audioDestination,
+          hasAccentBuffer: !!this.metronomeBuffers.accent,
+          hasClickBuffer: !!this.metronomeBuffers.click,
+          instanceId: this._instanceId,
+        },
+      );
+      return false; // Fall back to event bus
+    }
+
+    // Select buffer based on event type
+    const buffer =
+      event.type === 'accent'
+        ? this.metronomeBuffers.accent
+        : this.metronomeBuffers.click;
+    const velocity = event.velocity || 0.8;
+
+    try {
+      // Capture scheduling time for accuracy measurement
+      const scheduleTime = this.audioContext.currentTime;
+      const scheduleFrame = Math.round(scheduleTime * this.sampleRate);
+
+      // DIAGNOSTIC: Analyze buffer for silence at start
+      let silentSamplesAtStart = 0;
+      let firstAudibleSampleTime = 0;
+      if (buffer.getChannelData(0)) {
+        const channelData = buffer.getChannelData(0);
+        // Metronome clicks have intentional attack envelope (gradual fade-in)
+        // Use higher threshold to only skip TRUE digital silence, not quiet audio
+        const threshold = 0.01; // Higher threshold for metronome to preserve attack envelope
+        for (let i = 0; i < Math.min(1000, channelData.length); i++) {
+          if (Math.abs(channelData[i]) > threshold) {
+            break;
+          }
+          silentSamplesAtStart++;
+        }
+        firstAudibleSampleTime =
+          (silentSamplesAtStart / buffer.sampleRate) * 1000; // ms
+      }
+
+      // Create audio source node
+      const source = this.audioContext.createBufferSource();
+      source.buffer = buffer;
+
+      // Create gain for velocity control
+      const velocityGain = this.audioContext.createGain();
+      const baseVolume = 0.8;
+      velocityGain.gain.value = velocity * baseVolume;
+
+      // Connect: source → gain → destination
+      source.connect(velocityGain);
+      velocityGain.connect(this.audioDestination);
+
+      // CRITICAL: Schedule start at EXACT audio time (sample-perfect)
+      // METRONOME FIX: DO NOT skip samples - metronome has intentional attack envelope
+      // The quiet samples at start are part of the sound design, not silence to be trimmed
+      const offsetSeconds = 0; // Always 0 for metronome to preserve attack envelope
+      const sourceStartCallTime = performance.now();
+      source.start(audioTime, offsetSeconds);
+      const sourceStartCallEnd = performance.now();
+
+      // Store for cleanup - metronome is a one-shot sample
+      this.scheduledAudioSources.set(source, {
+        type: 'one-shot',
+        hasStopScheduled: false,
+      });
+
+      // Log scheduling with timing details for debugging
+      const frameDelta = frame - scheduleFrame;
+      const timeDelta = (frameDelta / this.sampleRate) * 1000; // ms
+      logger.info(
+        `🎯 FAANG: Direct audio scheduled - metronome ${event.type}`,
+        {
+          targetFrame: frame,
+          targetTime: audioTime.toFixed(6),
+          scheduleFrame,
+          scheduleTime: scheduleTime.toFixed(6),
+          lookAhead: `${timeDelta.toFixed(2)}ms (${frameDelta} frames)`,
+          sourceStartCallDuration: `${(sourceStartCallEnd - sourceStartCallTime).toFixed(3)}ms`,
+          jsExecutionTime: performance.now(),
+          bufferAnalysis: {
+            silentSamplesAtStart,
+            firstAudibleSampleTime: `${firstAudibleSampleTime.toFixed(2)}ms`,
+            bufferDuration: `${(buffer.duration * 1000).toFixed(2)}ms`,
+            offsetApplied: `${(offsetSeconds * 1000).toFixed(2)}ms`,
+          },
+        },
+      );
+
+      // Auto-cleanup after playback
+      source.onended = () => {
+        this.scheduledAudioSources.delete(source);
+        velocityGain.disconnect();
+      };
+
+      return true; // Successfully scheduled directly
+    } catch (error) {
+      logger.error('Failed to schedule metronome audio directly', error);
+      return false; // Fall back to event bus
+    }
   }
 
-  /**
-   * Schedule drum audio directly
-   * Phase 4: Delegated to DrumScheduler
-   */
   private scheduleDrumDirect(
     event: PatternEvent,
     audioTime: number,
     frame: number,
   ): boolean {
-    return this.drumScheduler.schedule(event, audioTime, frame);
+    // DEFENSIVE CHECK: Detect if multiple drum tracks are trying to schedule
+    const drumTrackCount = Array.from(this.tracks.values()).filter(
+      (t) => t.instrumentType === 'drums',
+    ).length;
+
+    if (drumTrackCount > 1) {
+      logger.error('🚨 CRITICAL: Multiple drum tracks detected!', {
+        trackCount: drumTrackCount,
+        trackIds: Array.from(this.tracks.entries())
+          .filter(([, t]) => t.instrumentType === 'drums')
+          .map(([id]) => id),
+        instanceId: this._instanceId,
+      });
+    }
+
+    // Check if we have the necessary buffers and destination
+    if (!this.audioContext || !this.audioDestination) {
+      logger.warn(
+        '❌ FAANG: Cannot use direct scheduling - missing drum dependencies',
+        {
+          hasAudioContext: !!this.audioContext,
+          hasDestination: !!this.audioDestination,
+          instanceId: this._instanceId,
+        },
+      );
+      return false;
+    }
+
+    // Map drum type to buffer
+    // Check multiple possible locations: type, drum field (DrumPatternEvent), or data.drum
+    const drumType = event.type || (event as any).drum || event.data?.drum;
+
+    logger.info(`🥁 Processing drum event`, {
+      drumType,
+      hasType: !!event.type,
+      hasDrumField: !!(event as any).drum,
+      hasDataDrum: !!event.data?.drum,
+      eventKeys: Object.keys(event),
+    });
+
+    let buffer: AudioBuffer | null = null;
+
+    switch (drumType) {
+      case 'kick':
+        buffer = this.drumBuffers.kick;
+        break;
+      case 'snare':
+        buffer = this.drumBuffers.snare;
+        break;
+      case 'hihat':
+        buffer = this.drumBuffers.hihat;
+        break;
+      default:
+        logger.debug(`❌ FAANG: Unknown drum type: ${drumType}`);
+        return false;
+    }
+
+    if (!buffer) {
+      logger.warn(`❌ FAANG: No buffer for drum type: ${drumType}`, {
+        drumType,
+        hasKick: !!this.drumBuffers.kick,
+        hasSnare: !!this.drumBuffers.snare,
+        hasHihat: !!this.drumBuffers.hihat,
+      });
+      return false;
+    }
+
+    const velocity = event.velocity || 0.8;
+
+    try {
+      // Capture scheduling time for accuracy measurement
+      const scheduleTime = this.audioContext.currentTime;
+      const scheduleFrame = Math.round(scheduleTime * this.sampleRate);
+
+      // DIAGNOSTIC: Analyze buffer for silence at start
+      let silentSamplesAtStart = 0;
+      let firstAudibleSampleTime = 0;
+      if (buffer.getChannelData(0)) {
+        const channelData = buffer.getChannelData(0);
+        const threshold = 0.001; // Consider anything below this as silence
+        for (let i = 0; i < Math.min(1000, channelData.length); i++) {
+          if (Math.abs(channelData[i]) > threshold) {
+            break;
+          }
+          silentSamplesAtStart++;
+        }
+        firstAudibleSampleTime =
+          (silentSamplesAtStart / buffer.sampleRate) * 1000; // ms
+      }
+
+      // Create audio source node
+      const source = this.audioContext.createBufferSource();
+      source.buffer = buffer;
+
+      // Create gain for velocity control
+      const velocityGain = this.audioContext.createGain();
+      const baseVolume = 0.7; // Slightly quieter for drums
+      velocityGain.gain.value = velocity * baseVolume;
+
+      // Connect: source → gain → destination
+      source.connect(velocityGain);
+      velocityGain.connect(this.audioDestination);
+
+      // CRITICAL: Schedule start at EXACT audio time (sample-perfect)
+      // FAANG FIX: Skip silent samples at the beginning for perfect sync with metronome
+      const offsetSeconds = silentSamplesAtStart / buffer.sampleRate;
+      const sourceStartCallTime = performance.now();
+      source.start(audioTime, offsetSeconds);
+      const sourceStartCallEnd = performance.now();
+
+      // Store for cleanup - drums are one-shot samples
+      this.scheduledAudioSources.set(source, {
+        type: 'one-shot',
+        hasStopScheduled: false,
+      });
+
+      // Log scheduling with timing details
+      const frameDelta = frame - scheduleFrame;
+      const timeDelta = (frameDelta / this.sampleRate) * 1000; // ms
+      logger.info(`🎯 FAANG: Direct audio scheduled - drum ${drumType}`, {
+        targetFrame: frame,
+        targetTime: audioTime.toFixed(6),
+        scheduleFrame,
+        scheduleTime: scheduleTime.toFixed(6),
+        lookAhead: `${timeDelta.toFixed(2)}ms (${frameDelta} frames)`,
+        sourceStartCallDuration: `${(sourceStartCallEnd - sourceStartCallTime).toFixed(3)}ms`,
+        jsExecutionTime: performance.now(),
+        bufferAnalysis: {
+          silentSamplesAtStart,
+          firstAudibleSampleTime: `${firstAudibleSampleTime.toFixed(2)}ms`,
+          bufferDuration: `${(buffer.duration * 1000).toFixed(2)}ms`,
+          offsetApplied: `${(offsetSeconds * 1000).toFixed(2)}ms`,
+        },
+      });
+
+      // Auto-cleanup after playback
+      source.onended = () => {
+        this.scheduledAudioSources.delete(source);
+        velocityGain.disconnect();
+      };
+
+      return true; // Successfully scheduled directly
+    } catch (error) {
+      logger.error(
+        `Failed to schedule drum audio directly (${drumType})`,
+        error,
+      );
+      return false; // Fall back to event bus
+    }
   }
 
-  /**
-   * Schedule voice cue audio directly
-   * Phase 4: Delegated to VoiceCueScheduler
-   */
   private scheduleVoiceCueDirect(
     event: PatternEvent,
     audioTime: number,
     frame: number,
   ): boolean {
-    return this.voiceCueScheduler.schedule(event, audioTime, frame);
+    // Check if we have the necessary buffers and destination
+    if (!this.audioContext || !this.audioDestination) {
+      logger.warn(
+        '❌ FAANG: Cannot use direct scheduling - missing voice cue dependencies',
+        {
+          hasAudioContext: !!this.audioContext,
+          hasDestination: !!this.audioDestination,
+          instanceId: this._instanceId,
+        },
+      );
+      return false;
+    }
+
+    // Get the cue name from event data (e.g., "one", "two", "three", "four")
+    const cueName = event.data?.cue;
+
+    if (!cueName) {
+      logger.warn('❌ FAANG: Voice cue event missing cue name', {
+        eventData: event.data,
+        eventType: event.type,
+      });
+      return false;
+    }
+
+    // Get the buffer for this cue
+    const buffer = this.voiceCueBuffers.get(cueName);
+
+    if (!buffer) {
+      logger.warn(`❌ FAANG: No buffer for voice cue: ${cueName}`, {
+        cueName,
+        availableCues: Array.from(this.voiceCueBuffers.keys()),
+      });
+      return false;
+    }
+
+    const velocity = event.velocity || 1.0;
+
+    try {
+      // Capture scheduling time for accuracy measurement
+      const scheduleTime = this.audioContext.currentTime;
+      const scheduleFrame = Math.round(scheduleTime * this.sampleRate);
+
+      // Analyze buffer for silence at start
+      let silentSamplesAtStart = 0;
+      let firstAudibleSampleTime = 0;
+      if (buffer.getChannelData(0)) {
+        const channelData = buffer.getChannelData(0);
+        const threshold = 0.001;
+        for (let i = 0; i < Math.min(1000, channelData.length); i++) {
+          if (Math.abs(channelData[i]) > threshold) {
+            break;
+          }
+          silentSamplesAtStart++;
+        }
+        firstAudibleSampleTime =
+          (silentSamplesAtStart / buffer.sampleRate) * 1000;
+      }
+
+      // Create audio source node
+      const source = this.audioContext.createBufferSource();
+      source.buffer = buffer;
+
+      // Create gain for velocity control
+      const velocityGain = this.audioContext.createGain();
+      const baseVolume = 0.45; // Voice cues at moderate volume (5dB quieter than metronome)
+      velocityGain.gain.value = velocity * baseVolume;
+
+      // Connect: source → gain → destination
+      source.connect(velocityGain);
+      velocityGain.connect(this.audioDestination);
+
+      // Schedule start at EXACT audio time (sample-perfect)
+      // Skip silent samples at the beginning for perfect sync
+      const offsetSeconds = silentSamplesAtStart / buffer.sampleRate;
+      const sourceStartCallTime = performance.now();
+      source.start(audioTime, offsetSeconds);
+      const sourceStartCallEnd = performance.now();
+
+      // Store for cleanup - voice cues are one-shot samples
+      this.scheduledAudioSources.set(source, {
+        type: 'one-shot',
+        hasStopScheduled: false,
+      });
+
+      // Log scheduling with timing details
+      const frameDelta = frame - scheduleFrame;
+      const timeDelta = (frameDelta / this.sampleRate) * 1000;
+      logger.info(`🎯 FAANG: Direct audio scheduled - voice cue "${cueName}"`, {
+        cueName,
+        targetFrame: frame,
+        targetTime: audioTime.toFixed(6),
+        scheduleFrame,
+        scheduleTime: scheduleTime.toFixed(6),
+        lookAhead: `${timeDelta.toFixed(2)}ms (${frameDelta} frames)`,
+        sourceStartCallDuration: `${(sourceStartCallEnd - sourceStartCallTime).toFixed(3)}ms`,
+        jsExecutionTime: performance.now(),
+        bufferAnalysis: {
+          silentSamplesAtStart,
+          firstAudibleSampleTime: `${firstAudibleSampleTime.toFixed(2)}ms`,
+          bufferDuration: `${(buffer.duration * 1000).toFixed(2)}ms`,
+          offsetApplied: `${(offsetSeconds * 1000).toFixed(2)}ms`,
+        },
+      });
+
+      // Auto-cleanup after playback
+      source.onended = () => {
+        this.scheduledAudioSources.delete(source);
+        velocityGain.disconnect();
+      };
+
+      return true; // Successfully scheduled directly
+    } catch (error) {
+      logger.error(
+        `Failed to schedule voice cue audio directly (${cueName})`,
+        error,
+      );
+      return false; // Fall back to event bus
+    }
   }
 
-  /**
-   * Schedule harmony audio directly (CC64, MIDI notes, chords)
-   * Phase 4: Delegated to HarmonyScheduler
-   */
   private scheduleHarmonyDirect(
     event: PatternEvent,
     audioTime: number,
     frame: number,
   ): boolean {
-    return this.harmonyScheduler.schedule(event, audioTime, frame);
+    // 🚨 CRITICAL DIAGNOSTIC: This should ALWAYS log when harmony plays
+    console.log(
+      '🚨🚨🚨 scheduleHarmonyDirect() ENTRY - HARMONY AUDIO PATH ACTIVATED',
+      {
+        eventType: event.type,
+        hasData: !!event.data,
+        dataKeys: event.data ? Object.keys(event.data) : [],
+        audioTime: audioTime.toFixed(3),
+        frame,
+        timestamp: Date.now(),
+      },
+    );
+
+    // DEFENSIVE CHECK: Detect if multiple harmony tracks are trying to schedule
+    const harmonyTrackCount = Array.from(this.tracks.values()).filter(
+      (t) => t.instrumentType === 'harmony',
+    ).length;
+
+    if (harmonyTrackCount > 1) {
+      logger.error('🚨 CRITICAL: Multiple harmony tracks detected!', {
+        trackCount: harmonyTrackCount,
+        trackIds: Array.from(this.tracks.entries())
+          .filter(([, t]) => t.instrumentType === 'harmony')
+          .map(([id]) => id),
+        instanceId: this._instanceId,
+      });
+    }
+
+    // NEW: Check event type - control change, MIDI note, or chord symbol
+    const eventData = event.data as any;
+
+    console.log(
+      `[HARMONY EVENT DEBUG] Received event type: "${event.type}", has cc: ${eventData?.cc !== undefined}, cc value: ${eventData?.cc}`,
+    );
+
+    // Handle control change events (sustain pedal, expression, etc.)
+    if (
+      event.type === 'harmony-control-change' &&
+      eventData?.cc !== undefined
+    ) {
+      console.log(
+        `[HARMONY EVENT DEBUG] ✅ Matched harmony-control-change, CC = ${eventData.cc}`,
+      );
+      if (eventData.cc === 64) {
+        // CC64 = Sustain Pedal
+        // Using pre-calculated timeline approach - real-time events are logged but not processed
+        // Sustain duration is calculated upfront when notes are scheduled (see buildCC64Timeline)
+        console.log(
+          `[CC64 EVENT] Pedal ${eventData.value >= 64 ? 'DOWN' : 'UP'} @ ${audioTime.toFixed(3)}s (value=${eventData.value}) - Pre-calculated in timeline`,
+        );
+        return true; // Event acknowledged
+      } else {
+        logger.debug(`Unsupported CC${eventData.cc} - only CC64 implemented`);
+        return false;
+      }
+    }
+
+    if (eventData?.midiNote !== undefined) {
+      console.log(
+        '✅ Taking MIDI NOTE path - calling scheduleHarmonyMidiNoteDirect',
+        {
+          midiNote: eventData.midiNote,
+          eventType: event.type,
+        },
+      );
+      // CRITICAL FIX: Schedule MIDI notes directly (like drummer) instead using Tone.js
+      // This allows us to call source.stop(0) when stop button is clicked
+      // Previous implementation used WamKeyboard + Tone.js which hid the AudioBufferSourceNode handles
+      return this.scheduleHarmonyMidiNoteDirect(event, audioTime, frame);
+    }
+
+    // Original chord scheduling logic
+    console.log('⚠️ Taking OLD CHORD path (not MIDI notes)', {
+      eventType: event.type,
+      eventData,
+    });
+    if (!this.audioContext || !this.audioDestination) {
+      logger.warn(
+        '❌ FAANG: Cannot use direct scheduling - missing harmony dependencies',
+        {
+          hasAudioContext: !!this.audioContext,
+          hasDestination: !!this.audioDestination,
+          instanceId: this._instanceId,
+        },
+      );
+      return false;
+    }
+
+    // Parse chord into individual notes
+    const {
+      parseChord,
+      mapVelocityToLayer,
+      parseDuration,
+    } = require('@/domains/playback/utils/chordParser.js');
+
+    const chordData = event.data as any;
+    const chordSymbol = event.type || chordData?.chord;
+
+    if (!chordSymbol) {
+      logger.warn('❌ FAANG: No chord symbol in harmony event');
+      return false;
+    }
+
+    const notes = parseChord(chordSymbol, 4); // Base octave 4
+    const layer = mapVelocityToLayer(event.velocity || 0.7);
+    const duration = parseDuration(event.duration, 120); // TODO: Get BPM from transport
+
+    const sources: AudioBufferSourceNode[] = [];
+    let successCount = 0;
+
+    for (const note of notes) {
+      const buffer = this.harmonyBuffers.get(layer)?.get(note);
+
+      if (!buffer) {
+        logger.debug(`❌ FAANG: Missing buffer for ${layer}/${note}`);
+        continue; // Try remaining notes
+      }
+
+      try {
+        const source = this.audioContext.createBufferSource();
+        source.buffer = buffer;
+
+        const gain = this.audioContext.createGain();
+        gain.gain.value = (event.velocity || 0.7) * 0.5;
+
+        source.connect(gain);
+        gain.connect(this.audioDestination);
+
+        source.start(audioTime);
+        if (duration > 0) {
+          source.stop(audioTime + duration);
+        }
+
+        sources.push(source);
+        successCount++;
+
+        // Auto-cleanup
+        source.onended = () => {
+          gain.disconnect();
+        };
+      } catch (error) {
+        logger.error(`Failed to schedule harmony note ${note}`, error);
+      }
+    }
+
+    if (successCount === 0) {
+      logger.warn(
+        `❌ FAANG: No harmony notes scheduled for chord ${chordSymbol}`,
+      );
+      return false; // Fall back to event bus
+    }
+
+    // Track active sources for cleanup
+    const chordId = `chord-${frame}`;
+    this.activeHarmonySources.set(chordId, sources);
+
+    const scheduleTime = this.audioContext.currentTime;
+    const scheduleFrame = Math.round(scheduleTime * this.sampleRate);
+    const frameDelta = frame - scheduleFrame;
+    const timeDelta = (frameDelta / this.sampleRate) * 1000;
+
+    logger.info(`🎯 FAANG: Harmony chord scheduled - ${chordSymbol}`, {
+      notes: notes.length,
+      scheduled: successCount,
+      layer,
+      duration: `${duration.toFixed(3)}s`,
+      targetFrame: frame,
+      targetTime: audioTime.toFixed(6),
+      scheduleFrame,
+      lookAhead: `${timeDelta.toFixed(2)}ms`,
+    });
+
+    return true;
   }
 
   // ============================================================================
@@ -2090,8 +2561,8 @@ export class RegionProcessor {
 
   /**
    * Schedule individual MIDI note for harmony directly using AudioBufferSourceNode
-   * Phase 4: REMOVED - This method has been integrated into HarmonyScheduler.schedule()
-   * HarmonyScheduler now handles CC64, MIDI notes, and chord symbols in a single method
+   * CRITICAL FIX: Same architecture as drummer - bypasses Tone.js for instant stop capability
+   * This method schedules harmony samples the same way drummer samples are scheduled
    */
   private scheduleHarmonyMidiNoteDirect(
     event: PatternEvent,
@@ -2834,16 +3305,104 @@ export class RegionProcessor {
     }
   }
 
-  /**
-   * Schedule bass audio directly
-   * Phase 4: Delegated to BassScheduler
-   */
   private scheduleBassDirect(
     event: PatternEvent,
     audioTime: number,
     frame: number,
   ): boolean {
-    return this.bassScheduler.schedule(event, audioTime, frame);
+    // DEFENSIVE CHECK: Detect if multiple bass tracks are trying to schedule
+    const bassTrackCount = Array.from(this.tracks.values()).filter(
+      (t) => t.instrumentType === 'bass',
+    ).length;
+
+    if (bassTrackCount > 1) {
+      logger.error('🚨 CRITICAL: Multiple bass tracks detected!', {
+        trackCount: bassTrackCount,
+        trackIds: Array.from(this.tracks.entries())
+          .filter(([, t]) => t.instrumentType === 'bass')
+          .map(([id]) => id),
+        instanceId: this._instanceId,
+      });
+    }
+
+    if (!this.audioContext || !this.audioDestination) {
+      logger.warn(
+        '❌ FAANG: Cannot use direct scheduling - missing bass dependencies',
+        {
+          hasAudioContext: !!this.audioContext,
+          hasDestination: !!this.audioDestination,
+          instanceId: this._instanceId,
+        },
+      );
+      return false;
+    }
+
+    // Get note and articulation
+    const bassData = event.data as any;
+    const note = event.type || bassData?.note;
+    const articulation = bassData?.technique || 'normal';
+
+    if (!note) {
+      logger.warn('❌ FAANG: No note in bass event');
+      return false;
+    }
+
+    const buffer = this.bassBuffers.get(articulation)?.get(note);
+
+    if (!buffer) {
+      logger.debug(`❌ FAANG: No buffer for bass ${articulation}/${note}`);
+      return false;
+    }
+
+    const {
+      parseDuration,
+    } = require('@/domains/playback/utils/chordParser.js');
+    const duration = parseDuration(event.duration, 120); // TODO: Get BPM from transport
+
+    try {
+      const source = this.audioContext.createBufferSource();
+      source.buffer = buffer;
+
+      const gain = this.audioContext.createGain();
+      gain.gain.value = (event.velocity || 0.8) * 0.7;
+
+      source.connect(gain);
+      gain.connect(this.audioDestination);
+
+      source.start(audioTime);
+      if (duration > 0) {
+        source.stop(audioTime + duration);
+      }
+
+      // Track for cleanup
+      const noteId = `bass-${frame}`;
+      this.activeBassSources.set(noteId, source);
+
+      const scheduleTime = this.audioContext.currentTime;
+      const scheduleFrame = Math.round(scheduleTime * this.sampleRate);
+      const frameDelta = frame - scheduleFrame;
+      const timeDelta = (frameDelta / this.sampleRate) * 1000;
+
+      logger.info(`🎯 FAANG: Bass note scheduled - ${note}`, {
+        articulation,
+        duration: `${duration.toFixed(3)}s`,
+        targetFrame: frame,
+        targetTime: audioTime.toFixed(6),
+        scheduleFrame,
+        lookAhead: `${timeDelta.toFixed(2)}ms`,
+      });
+
+      // Auto-cleanup
+      source.onended = () => {
+        this.activeBassSources.delete(noteId);
+        gain.disconnect();
+      };
+
+      return true;
+    } catch (error) {
+      logger.error(`Failed to schedule bass note ${note}`, error);
+      return false;
+    }
   }
 
   /**
