@@ -20,6 +20,10 @@ import { CountdownManager } from './region-processing/countdown/CountdownManager
 import { BufferRegistry } from './region-processing/buffers/BufferRegistry.js';
 import { MusicalTimeConverter } from './region-processing/timing/MusicalTimeConverter.js';
 
+// Import extracted modules (Phase 2: Caching + Timing)
+import { ScheduleCache } from './region-processing/cache/ScheduleCache.js';
+import { TimingMetricsCollector } from './region-processing/timing/TimingMetricsCollector.js';
+
 const logger = getLogger('RegionProcessor');
 
 interface PatternEvent {
@@ -132,27 +136,14 @@ export class RegionProcessor {
   // CC64 timeline for pre-calculated sustain durations (Map of audioTime -> pedalDown)
   private currentCC64Timeline = new Map<number, boolean>();
 
-  // Per-exercise schedule cache for performance optimization
-  // Cache key format: `${exerciseId}_${bpm}_${countdownBeats}`
-  // Caches CC64 timeline and calculated event schedule to avoid recalculating on every load
-  // Different BPMs create different cache entries - allows fast switching between tempos
-  private exerciseScheduleCache = new Map<string, CachedSchedule>();
-  private readonly MAX_CACHE_ENTRIES = 50; // LRU eviction threshold
+  // Phase 2: Schedule cache delegated to ScheduleCache
+  private scheduleCache!: ScheduleCache; // Initialized in constructor
+
+  // Phase 2: Timing metrics delegated to TimingMetricsCollector
+  private timingMetricsCollector!: TimingMetricsCollector; // Initialized in constructor
 
   // Diagnostic: Count logged notes
   private _noteLogCount = 0;
-
-  // Timing accuracy metrics
-  private timingMetrics = {
-    totalEvents: 0,
-    frameDeltas: [] as number[],
-    maxJitter: 0,
-    avgJitter: 0,
-    perfectFrames: 0,
-    lastBeatTime: 0,
-    expectedFrameInterval: 24000, // 0.5s at 48kHz
-  };
-  private metricsInterval: any = null;
 
   // Instance tracking for debugging
   private _instanceId = Math.random().toString(36).substring(2, 11);
@@ -189,6 +180,10 @@ export class RegionProcessor {
     this.countdownManager = new CountdownManager(this._instanceId);
     this.bufferRegistry = new BufferRegistry(this._instanceId);
     this.musicalTimeConverter = new MusicalTimeConverter(this._instanceId);
+
+    // Phase 2: Instantiate caching and timing modules
+    this.scheduleCache = new ScheduleCache();
+    this.timingMetricsCollector = new TimingMetricsCollector();
 
     logger.info('🔧 RegionProcessor instance created', {
       instanceId: this._instanceId,
@@ -249,6 +244,9 @@ export class RegionProcessor {
   }): void {
     this.countdownManager.enableCountdown(timeSignature);
     this.countdownOffsetBeats = this.countdownManager.getCountdownOffsetBeats(); // Sync for backward compat
+
+    // Phase 2: Sync countdown offset to ScheduleCache for cache key generation
+    this.scheduleCache.setCountdownOffsetBeats(this.countdownOffsetBeats);
   }
 
   /**
@@ -257,6 +255,9 @@ export class RegionProcessor {
   disableCountdown(): void {
     this.countdownManager.disableCountdown();
     this.countdownOffsetBeats = 0; // Sync for backward compat
+
+    // Phase 2: Sync countdown offset to ScheduleCache
+    this.scheduleCache.setCountdownOffsetBeats(0);
   }
 
   /**
@@ -288,6 +289,10 @@ export class RegionProcessor {
   setAudioContext(context: AudioContext): void {
     this.audioContext = context;
     this.sampleRate = context.sampleRate;
+
+    // Phase 2: Sync sample rate to TimingMetricsCollector
+    this.timingMetricsCollector.setSampleRate(this.sampleRate);
+
     logger.info('🔧 AudioContext set for RegionProcessor', {
       instanceId: this._instanceId,
       sampleRate: this.sampleRate,
@@ -611,6 +616,9 @@ export class RegionProcessor {
       this.transportStartTime =
         this.audioContext.currentTime + startupLookahead;
 
+      // Phase 2: Sync transport start time to TimingMetricsCollector
+      this.timingMetricsCollector.setTransportStartTime(this.transportStartTime);
+
       logger.info(
         '🎯 Transport start anchor captured with FAANG startup lookahead',
         {
@@ -724,10 +732,11 @@ export class RegionProcessor {
     logger.info('Stopping RegionProcessor', { graceful });
 
     // Stop metrics reporting and log final stats (only if we have events)
+    // Phase 2: Get metrics from TimingMetricsCollector before stopping
+    const metricsBeforeStop = this.getTimingMetrics();
     this.stopMetricsReporting();
-    if (this.timingMetrics.totalEvents > 0) {
-      const finalMetrics = this.getTimingMetrics();
-      logger.info('📊 Final Timing Report', finalMetrics);
+    if (metricsBeforeStop.totalEvents > 0) {
+      logger.info('📊 Final Timing Report', metricsBeforeStop);
     }
 
     // CRITICAL FIX: Clear interval BEFORE setting isRunning = false
@@ -1027,6 +1036,9 @@ export class RegionProcessor {
 
       // New anchor: where we are NOW in hardware time minus musical time
       this.transportStartTime = currentHardwareTime - currentTonePosition;
+
+      // Phase 2: Sync updated transport start time to TimingMetricsCollector
+      this.timingMetricsCollector.setTransportStartTime(this.transportStartTime);
 
       logger.info(
         '🎯 Recalculated transportStartTime anchor for tempo change',
@@ -3632,57 +3644,19 @@ export class RegionProcessor {
   }
 
   /**
-   * Generate cache key for exercise schedule
-   * Key includes exerciseId, BPM, and countdown settings to ensure correct cached data
-   *
-   * @param exerciseId - Unique exercise identifier
-   * @param bpm - BPM used for timing calculations
-   * @param countdownBeats - Countdown offset in beats
-   * @returns Cache key string
-   */
-  private generateCacheKey(
-    exerciseId: string,
-    bpm: number,
-    countdownBeats: number,
-  ): string {
-    return `${exerciseId}_${bpm}_${countdownBeats}`;
-  }
-
-  /**
    * Get cached schedule for an exercise if available
-   * Returns null if not cached or if cache parameters don't match
+   * Phase 2: Delegates to ScheduleCache module
    *
    * @param exerciseId - Unique exercise identifier
    * @returns Cached schedule or null
    */
   private getCachedSchedule(exerciseId: string): CachedSchedule | null {
-    const currentBpm = Tone.Transport.bpm.value;
-    const cacheKey = this.generateCacheKey(
-      exerciseId,
-      currentBpm,
-      this.countdownOffsetBeats,
-    );
-
-    const cached = this.exerciseScheduleCache.get(cacheKey);
-
-    if (cached) {
-      logger.info(`♻️ CACHE HIT for exercise ${exerciseId}`, {
-        cacheKey,
-        cachedAt: new Date(cached.cachedAt).toISOString(),
-        eventCount: cached.calculatedEvents.length,
-        cc64EventCount: cached.cc64Timeline.size,
-      });
-      return cached;
-    }
-
-    logger.info(`❌ CACHE MISS for exercise ${exerciseId}`, { cacheKey });
-    return null;
+    return this.scheduleCache.get(exerciseId);
   }
 
   /**
    * Cache schedule for an exercise
-   * Stores CC64 timeline and calculated event schedule for fast retrieval
-   * Implements LRU eviction if cache grows too large
+   * Phase 2: Delegates to ScheduleCache module
    *
    * @param exerciseId - Unique exercise identifier
    * @param schedule - Schedule data to cache
@@ -3691,52 +3665,17 @@ export class RegionProcessor {
     exerciseId: string,
     schedule: CachedSchedule,
   ): void {
-    const cacheKey = this.generateCacheKey(
-      exerciseId,
-      schedule.bpm,
-      schedule.countdownBeats,
-    );
-
-    // LRU eviction: If cache is full, remove oldest entry
-    if (this.exerciseScheduleCache.size >= this.MAX_CACHE_ENTRIES) {
-      const oldestKey = this.exerciseScheduleCache.keys().next().value;
-      this.exerciseScheduleCache.delete(oldestKey);
-      logger.info(`🗑️ LRU eviction: Removed oldest cache entry ${oldestKey}`);
-    }
-
-    this.exerciseScheduleCache.set(cacheKey, schedule);
-
-    logger.info(`💾 CACHED schedule for exercise ${exerciseId}`, {
-      cacheKey,
-      eventCount: schedule.calculatedEvents.length,
-      cc64EventCount: schedule.cc64Timeline.size,
-      estimatedSizeKB: Math.round(JSON.stringify(schedule).length / 1024),
-      totalCacheEntries: this.exerciseScheduleCache.size,
-    });
+    this.scheduleCache.set(exerciseId, schedule);
   }
 
   /**
    * Clear cache for a specific exercise (e.g., when BPM changes)
+   * Phase 2: Delegates to ScheduleCache module
    *
    * @param exerciseId - Exercise to clear cache for
    */
   private clearExerciseCache(exerciseId: string): void {
-    // Clear all cache entries for this exercise (across different BPM/countdown settings)
-    const keysToDelete: string[] = [];
-
-    this.exerciseScheduleCache.forEach((_, key) => {
-      if (key.startsWith(`${exerciseId}_`)) {
-        keysToDelete.push(key);
-      }
-    });
-
-    keysToDelete.forEach((key) => this.exerciseScheduleCache.delete(key));
-
-    if (keysToDelete.length > 0) {
-      logger.info(
-        `🗑️ Cleared ${keysToDelete.length} cache entries for exercise ${exerciseId}`,
-      );
-    }
+    this.scheduleCache.clear(exerciseId);
   }
 
   /**
@@ -3894,136 +3833,55 @@ export class RegionProcessor {
 
   /**
    * Track timing accuracy for each event
+   * Phase 2: Delegates to TimingMetricsCollector
    */
   private trackTimingAccuracy(frame: number, transportTime: number): void {
-    this.timingMetrics.totalEvents++;
-
-    // Calculate expected frame based on beat number (0, 0.5, 1, 1.5...)
-    // Assuming 120 BPM = 2 beats/sec = 0.5sec/beat = 24000 frames/beat at 48kHz
-    const expectedBeatNumber = Math.round(transportTime * 2); // 0→0, 0.5→1, 1.0→2, etc
-    const expectedFrame = Math.round(
-      expectedBeatNumber * this.timingMetrics.expectedFrameInterval,
-    );
-
-    // Calculate actual frame offset from first beat
-    const firstBeatFrame = Math.round(
-      this.transportStartTime * this.sampleRate,
-    );
-    const frameFromStart = frame - firstBeatFrame;
-
-    // Calculate jitter (deviation from expected grid)
-    const jitterFrames = Math.abs(frameFromStart - expectedFrame);
-    const jitterMs = (jitterFrames / this.sampleRate) * 1000;
-
-    // Track perfect frames (within 1 frame tolerance)
-    if (jitterFrames <= 1) {
-      this.timingMetrics.perfectFrames++;
-    }
-
-    // Update max jitter
-    if (jitterMs > this.timingMetrics.maxJitter) {
-      this.timingMetrics.maxJitter = jitterMs;
-    }
-
-    // Keep last 100 frame deltas for rolling average
-    this.timingMetrics.frameDeltas.push(jitterFrames);
-    if (this.timingMetrics.frameDeltas.length > 100) {
-      this.timingMetrics.frameDeltas.shift();
-    }
-
-    // Calculate average jitter
-    const avgFrames =
-      this.timingMetrics.frameDeltas.reduce((a, b) => a + b, 0) /
-      this.timingMetrics.frameDeltas.length;
-    this.timingMetrics.avgJitter = (avgFrames / this.sampleRate) * 1000;
+    this.timingMetricsCollector.track(frame, transportTime);
   }
 
   /**
    * Start periodic metrics reporting
+   * Phase 2: Delegates to TimingMetricsCollector
    */
   private startMetricsReporting(): void {
-    // Report metrics every 10 events or every 5 seconds, whichever comes first
-    // This ensures we get feedback even on short 1-2 bar exercises
-    let lastReportedCount = 0;
-
-    this.metricsInterval = setInterval(() => {
-      // Only report if we have new events (at least 8 new events, or any events after 5 seconds)
-      const newEvents = this.timingMetrics.totalEvents - lastReportedCount;
-      if (
-        newEvents >= 8 ||
-        (newEvents > 0 && this.timingMetrics.totalEvents > 0)
-      ) {
-        const accuracy =
-          (this.timingMetrics.perfectFrames / this.timingMetrics.totalEvents) *
-          100;
-
-        logger.info('⏱️  Timing Metrics', {
-          totalEvents: this.timingMetrics.totalEvents,
-          perfectFrames: this.timingMetrics.perfectFrames,
-          accuracy: `${accuracy.toFixed(2)}%`,
-          avgJitter: `${this.timingMetrics.avgJitter.toFixed(4)}ms`,
-          maxJitter: `${this.timingMetrics.maxJitter.toFixed(4)}ms`,
-          grade:
-            accuracy >= 99
-              ? '🟢 EXCELLENT'
-              : accuracy >= 95
-                ? '🟡 GOOD'
-                : '🔴 NEEDS IMPROVEMENT',
-        });
-
-        lastReportedCount = this.timingMetrics.totalEvents;
-      }
-    }, 2000); // Check every 2 seconds instead of 5
+    this.timingMetricsCollector.startReporting();
   }
 
   /**
    * Stop metrics reporting
+   * Phase 2: Delegates to TimingMetricsCollector
    */
   private stopMetricsReporting(): void {
-    if (this.metricsInterval) {
-      clearInterval(this.metricsInterval);
-      this.metricsInterval = null;
-    }
+    this.timingMetricsCollector.stopReporting();
   }
 
   /**
    * Reset timing metrics
+   * Phase 2: Delegates to TimingMetricsCollector
    */
   private resetMetrics(): void {
-    this.timingMetrics = {
-      totalEvents: 0,
-      frameDeltas: [],
-      maxJitter: 0,
-      avgJitter: 0,
-      perfectFrames: 0,
-      lastBeatTime: 0,
-      expectedFrameInterval: 24000,
-    };
+    this.timingMetricsCollector.reset();
   }
 
   /**
    * Get current timing metrics (public API)
+   * Phase 2: Delegates to TimingMetricsCollector
    */
   getTimingMetrics() {
-    const accuracy =
-      this.timingMetrics.totalEvents > 0
-        ? (this.timingMetrics.perfectFrames / this.timingMetrics.totalEvents) *
-          100
-        : 0;
-
+    const metrics = this.timingMetricsCollector.getMetrics();
     return {
-      totalEvents: this.timingMetrics.totalEvents,
-      perfectFrames: this.timingMetrics.perfectFrames,
-      accuracy,
-      avgJitterMs: this.timingMetrics.avgJitter,
-      maxJitterMs: this.timingMetrics.maxJitter,
+      totalEvents: metrics.totalEvents,
+      perfectFrames: metrics.perfectFrames,
+      accuracy: metrics.accuracy,
+      avgJitterMs: metrics.avgJitter,
+      maxJitterMs: metrics.maxJitter,
       grade:
-        accuracy >= 99
+        metrics.accuracy >= 99
           ? 'EXCELLENT'
-          : accuracy >= 95
+          : metrics.accuracy >= 95
             ? 'GOOD'
             : 'NEEDS_IMPROVEMENT',
-      isStable: accuracy >= 99 && this.timingMetrics.maxJitter < 0.1,
+      isStable: metrics.accuracy >= 99 && metrics.maxJitter < 0.1,
     };
   }
 
