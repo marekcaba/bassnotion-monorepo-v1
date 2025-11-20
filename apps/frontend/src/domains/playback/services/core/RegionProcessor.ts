@@ -24,6 +24,10 @@ import { MusicalTimeConverter } from './region-processing/timing/MusicalTimeConv
 import { ScheduleCache } from './region-processing/cache/ScheduleCache.js';
 import { TimingMetricsCollector } from './region-processing/timing/TimingMetricsCollector.js';
 
+// Import extracted modules (Phase 3: CC64 Sustain System)
+import { CC64TimelineBuilder } from './region-processing/sustain/CC64TimelineBuilder.js';
+import { SustainPedalAnalyzer } from './region-processing/sustain/SustainPedalAnalyzer.js';
+
 const logger = getLogger('RegionProcessor');
 
 interface PatternEvent {
@@ -142,6 +146,10 @@ export class RegionProcessor {
   // Phase 2: Timing metrics delegated to TimingMetricsCollector
   private timingMetricsCollector!: TimingMetricsCollector; // Initialized in constructor
 
+  // Phase 3: CC64 sustain system delegated to CC64TimelineBuilder and SustainPedalAnalyzer
+  private cc64TimelineBuilder!: CC64TimelineBuilder; // Initialized in constructor
+  private sustainPedalAnalyzer!: SustainPedalAnalyzer; // Initialized in constructor
+
   // Diagnostic: Count logged notes
   private _noteLogCount = 0;
 
@@ -184,6 +192,11 @@ export class RegionProcessor {
     // Phase 2: Instantiate caching and timing modules
     this.scheduleCache = new ScheduleCache();
     this.timingMetricsCollector = new TimingMetricsCollector();
+
+    // Phase 3: Instantiate CC64 sustain system modules
+    this.cc64TimelineBuilder = new CC64TimelineBuilder();
+    this.cc64TimelineBuilder.setTimeConverter(this.musicalTimeConverter); // Inject time converter
+    this.sustainPedalAnalyzer = new SustainPedalAnalyzer();
 
     logger.info('🔧 RegionProcessor instance created', {
       instanceId: this._instanceId,
@@ -247,6 +260,9 @@ export class RegionProcessor {
 
     // Phase 2: Sync countdown offset to ScheduleCache for cache key generation
     this.scheduleCache.setCountdownOffsetBeats(this.countdownOffsetBeats);
+
+    // Phase 3: Sync countdown configuration to CC64TimelineBuilder
+    this.cc64TimelineBuilder.setCountdownConfig(this.countdownOffsetBeats, true);
   }
 
   /**
@@ -258,6 +274,9 @@ export class RegionProcessor {
 
     // Phase 2: Sync countdown offset to ScheduleCache
     this.scheduleCache.setCountdownOffsetBeats(0);
+
+    // Phase 3: Sync countdown configuration to CC64TimelineBuilder
+    this.cc64TimelineBuilder.setCountdownConfig(0, false);
   }
 
   /**
@@ -292,6 +311,9 @@ export class RegionProcessor {
 
     // Phase 2: Sync sample rate to TimingMetricsCollector
     this.timingMetricsCollector.setSampleRate(this.sampleRate);
+
+    // Phase 3: Sync audio context to CC64TimelineBuilder
+    this.cc64TimelineBuilder.setAudioContext(context);
 
     logger.info('🔧 AudioContext set for RegionProcessor', {
       instanceId: this._instanceId,
@@ -618,6 +640,9 @@ export class RegionProcessor {
 
       // Phase 2: Sync transport start time to TimingMetricsCollector
       this.timingMetricsCollector.setTransportStartTime(this.transportStartTime);
+
+      // Phase 3: Sync transport start time to CC64TimelineBuilder
+      this.cc64TimelineBuilder.setTransportStartTime(this.transportStartTime);
 
       logger.info(
         '🎯 Transport start anchor captured with FAANG startup lookahead',
@@ -1040,6 +1065,9 @@ export class RegionProcessor {
       // Phase 2: Sync updated transport start time to TimingMetricsCollector
       this.timingMetricsCollector.setTransportStartTime(this.transportStartTime);
 
+      // Phase 3: Sync updated transport start time to CC64TimelineBuilder
+      this.cc64TimelineBuilder.setTransportStartTime(this.transportStartTime);
+
       logger.info(
         '🎯 Recalculated transportStartTime anchor for tempo change',
         {
@@ -1111,6 +1139,12 @@ export class RegionProcessor {
     this.lastBeatThreshold = Math.max(
       0,
       this.exerciseEndTime - lastBeatDuration,
+    );
+
+    // Phase 3: Sync exercise timing to SustainPedalAnalyzer
+    this.sustainPedalAnalyzer.setExerciseTiming(
+      this.exerciseEndTime,
+      this.lastBeatThreshold,
     );
 
     console.log(
@@ -2466,206 +2500,61 @@ export class RegionProcessor {
    * Build CC64 timeline from sorted events
    * Returns Map of audioTime -> pedalDown (true=DOWN, false=UP)
    */
+  /**
+   * Build CC64 timeline from harmony events
+   * Phase 3: Delegated to CC64TimelineBuilder
+   */
   private buildCC64Timeline(
     events: any[],
     region: Region,
   ): Map<number, boolean> {
-    const cc64Timeline = new Map<number, boolean>();
-
-    let eventIndex = 0;
-    events.forEach((event) => {
-      if (event.type === 'harmony-control-change' && event.data?.cc === 64) {
-        // 🚨 BUG FIX: Use absolute ticks for CC64 timing (not relative position.tick)
-        // CC64 events have event.data.ticks (absolute) which must be used for accurate timing
-
-        const absoluteTicks = (event.data as any).ticks;
-
-        // DIAGNOSTIC: Show tick calculation for first 3 events
-        if (eventIndex < 3) {
-          const currentBpm = Tone.Transport.bpm.value;
-          const secondsPerBeat = 60 / currentBpm;
-          const ticksPerBeat = 480; // PPQ standard
-          const beatsFromTicks = absoluteTicks / ticksPerBeat;
-          const secondsFromTicks = beatsFromTicks * secondsPerBeat;
-
-          console.log(`[CC64 TICK DIAGNOSTIC #${eventIndex}]`, {
-            absoluteTicks,
-            'position.tick (relative)': (event.position as any).tick,
-            'position.beat': (event.position as any).beat,
-            'position.measure': (event.position as any).measure,
-            calculation: {
-              ticksPerBeat,
-              beatsFromTicks: beatsFromTicks.toFixed(4),
-              currentBpm,
-              secondsFromTicks: secondsFromTicks.toFixed(6),
-            },
-          });
-        }
-
-        // Calculate event time from ABSOLUTE ticks (not relative position)
-        // 🚨 CRITICAL FIX: Use original MIDI file BPM, not current transport BPM
-        const originalBpm =
-          (event.data as any)?.originalBpm || Tone.Transport.bpm.value;
-        const secondsPerBeat = 60 / originalBpm;
-        const ticksPerBeat = 480; // PPQ standard
-        const eventTime = (absoluteTicks / ticksPerBeat) * secondsPerBeat;
-
-        // Apply countdown offset
-        const offsetTime =
-          this.countdownEnabled && !region.skipCountdownOffset
-            ? this.parsePosition(`0:${this.countdownOffsetBeats}:0`)
-            : 0;
-
-        let absoluteTime = region.startTime + eventTime + offsetTime;
-
-        // 🚨 CRITICAL FIX: Add transportStartTime to match note scheduling
-        // Notes use: audioTime = transportStartTime + absoluteTime
-        // CC64 timeline MUST use the same calculation for lookup to work
-        const audioTime = this.transportStartTime + absoluteTime;
-
-        // PRECISION FIX: Round to sample-accurate frames (matches note scheduling)
-        // This ensures timeline keys EXACTLY match note audioTime values
-        // Without this, floating-point precision differences cause lookup failures
-        let timelineKey = audioTime;
-        if (this.audioContext) {
-          const frame = Math.round(audioTime * this.sampleRate);
-          timelineKey = frame / this.sampleRate;
-        }
-
-        const pedalDown = event.data.value >= 64;
-        cc64Timeline.set(timelineKey, pedalDown);
-
-        // Enhanced diagnostic: show position data for first 5 CC64 events
-        if (eventIndex < 5) {
-          console.log(
-            `[CC64 TIMELINE #${eventIndex}] timelineKey=${timelineKey.toFixed(6)}s (with transportStartTime + sample precision), pedal=${pedalDown ? 'DOWN' : 'UP'}, value=${event.data.value}, absoluteTime=${absoluteTime.toFixed(6)}s, audioTime=${audioTime.toFixed(6)}s`,
-          );
-        }
-        eventIndex++;
-      }
-    });
-
-    return cc64Timeline;
+    return this.cc64TimelineBuilder.buildTimeline(events, region);
   }
 
   /**
    * Check if sustain pedal is down at a specific time
-   * Returns the most recent pedal state before or at the given time
+   * Phase 3: Delegated to SustainPedalAnalyzer
    */
   private isPedalDownAtTime(
     time: number,
     cc64Timeline: Map<number, boolean>,
   ): boolean {
-    const sortedTimes = Array.from(cc64Timeline.keys()).sort((a, b) => a - b);
-
-    let lastPedalState = false; // Default to UP
-    let lastEventTime = -1;
-    let eventsFound = 0;
-
-    for (const eventTime of sortedTimes) {
-      if (eventTime > time) break;
-      lastPedalState = cc64Timeline.get(eventTime)!;
-      lastEventTime = eventTime;
-      eventsFound++;
-    }
-
-    // Enhanced diagnostic with precision info
-    console.log(
-      `[CC64 CHECK] isPedalDownAtTime(${time.toFixed(6)}s): lastEvent=${lastEventTime.toFixed(6)}s (${eventsFound} events scanned), state=${lastPedalState ? 'DOWN' : 'UP'}, timelineSize=${cc64Timeline.size}, precision=${time === lastEventTime ? 'EXACT' : 'APPROXIMATE'}`,
-    );
-
-    return lastPedalState;
+    return this.sustainPedalAnalyzer.isPedalDownAtTime(time, cc64Timeline);
   }
 
   /**
    * Find the next CC64 UP event after a given time
-   * Returns the audioTime of the next pedal UP, or null if none found
+   * Phase 3: Delegated to SustainPedalAnalyzer
    */
   private findNextCC64Up(
     noteStartTime: number,
     cc64Timeline: Map<number, boolean>,
   ): number | null {
-    const sortedTimes = Array.from(cc64Timeline.keys()).sort((a, b) => a - b);
-
-    for (const time of sortedTimes) {
-      if (time > noteStartTime && cc64Timeline.get(time) === false) {
-        return time; // Found next pedal UP
-      }
-    }
-
-    return null; // No pedal UP found
+    return this.sustainPedalAnalyzer.findNextCC64Up(noteStartTime, cc64Timeline);
   }
 
   /**
    * Check if MIDI note-off happens at/near exercise end (held by hand)
-   * Uses 250ms threshold to account for MIDI timing imperfections
-   *
-   * @param midiNoteEndTime - Original MIDI note-off time (before CC64 extension)
-   * @returns true if note is held until exercise end
+   * Phase 3: Delegated to SustainPedalAnalyzer
    */
   private isNoteHeldUntilExerciseEnd(midiNoteEndTime: number): boolean {
-    if (this.exerciseEndTime === 0) {
-      console.log(
-        '[HELD BY HAND CHECK] Exercise end time not set, returning false',
-      );
-      return false; // Exercise end time not set
-    }
-
-    const THRESHOLD_MS = 0.25; // 250 milliseconds
-    const timeDifference = this.exerciseEndTime - midiNoteEndTime;
-    const heldUntilEnd = timeDifference >= 0 && timeDifference <= THRESHOLD_MS;
-
-    console.log(
-      `[HELD BY HAND CHECK] midiNoteEnd=${midiNoteEndTime.toFixed(3)}s, exerciseEnd=${this.exerciseEndTime.toFixed(3)}s, diff=${timeDifference.toFixed(3)}s, threshold=${THRESHOLD_MS}s, result=${heldUntilEnd}`,
-    );
-
-    return heldUntilEnd;
+    return this.sustainPedalAnalyzer.isNoteHeldUntilExerciseEnd(midiNoteEndTime);
   }
 
   /**
    * Check if CC64 pedal is DOWN when note starts OR goes DOWN during note's MIDI duration
-   * This is critical for syncopated pedaling where pedal goes DOWN after note starts
-   * Returns the time when pedal went/goes DOWN, or null if pedal stays UP
+   * Phase 3: Delegated to SustainPedalAnalyzer
    */
   private findCC64DownDuringNote(
     noteStart: number,
     noteEnd: number,
     timeline: Map<number, boolean>,
   ): number | null {
-    const sortedTimes = Array.from(timeline.keys()).sort((a, b) => a - b);
-
-    // 🚨 CRITICAL FIX: Handle complex pedaling with multiple DOWN/UP cycles
-    // For overlapping chords with legato pedaling:
-    // - Old chord plays with pedal DOWN
-    // - Pedal goes UP briefly to separate chords
-    // - New chord starts BEFORE pedal goes back DOWN
-    // - Pedal goes DOWN again to sustain new chord
-    //
-    // Strategy: Always use the LATEST pedal DOWN that affects this note
-    // This ensures we find the pedal UP that actually releases THIS chord
-
-    let latestPedalDown: number | null = null;
-
-    // Check if pedal is already DOWN before note starts
-    const isPedalDownAtStart = this.isPedalDownAtTime(noteStart, timeline);
-    if (isPedalDownAtStart) {
-      latestPedalDown = noteStart; // Pedal already DOWN when note starts
-    }
-
-    // Check if pedal goes DOWN during the note's MIDI duration
-    // This overrides the pedal-down-at-start if found
-    for (const eventTime of sortedTimes) {
-      if (eventTime > noteStart && eventTime < noteEnd) {
-        if (timeline.get(eventTime) === true) {
-          console.log(
-            `[CC64 MID-NOTE] Pedal goes DOWN at ${eventTime.toFixed(3)}s during note playing ${noteStart.toFixed(3)}s-${noteEnd.toFixed(3)}s`,
-          );
-          latestPedalDown = eventTime; // Use this pedal DOWN (overrides earlier one)
-        }
-      }
-    }
-
-    return latestPedalDown;
+    return this.sustainPedalAnalyzer.findCC64DownDuringNote(
+      noteStart,
+      noteEnd,
+      timeline,
+    );
   }
 
   // ============================================================================
