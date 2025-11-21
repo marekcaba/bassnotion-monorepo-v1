@@ -37,6 +37,7 @@ import { GrandPianoKeyboardMapper } from './region-processing/scheduling/GrandPi
 // Import extracted modules (Phase 5: Utilities + Routing)
 import { DiagnosticLogger } from './region-processing/diagnostics/DiagnosticLogger.js';
 import { VelocityLayerSelector } from './region-processing/harmony/VelocityLayerSelector.js';
+import { ExerciseDurationCalculator } from './region-processing/duration/ExerciseDurationCalculator.js';
 
 const logger = getLogger('RegionProcessor');
 
@@ -167,6 +168,9 @@ export class RegionProcessor {
   // Phase 5: Velocity layer selection delegated to VelocityLayerSelector
   private velocityLayerSelector!: VelocityLayerSelector; // Initialized in constructor
 
+  // Phase 5: Exercise duration calculation delegated to ExerciseDurationCalculator
+  private exerciseDurationCalculator!: ExerciseDurationCalculator; // Initialized in constructor
+
   // Diagnostic: Count logged notes
   private _noteLogCount = 0;
 
@@ -240,6 +244,11 @@ export class RegionProcessor {
 
     // Phase 5: Instantiate velocity layer selector
     this.velocityLayerSelector = new VelocityLayerSelector(this._instanceId);
+
+    // Phase 5: Instantiate exercise duration calculator
+    this.exerciseDurationCalculator = new ExerciseDurationCalculator(
+      this._instanceId,
+    );
 
     logger.info('🔧 RegionProcessor instance created', {
       instanceId: this._instanceId,
@@ -1203,32 +1212,14 @@ export class RegionProcessor {
    * Used to detect which notes should have extended ring-out
    */
   private calculateExerciseDuration(): void {
-    const currentBpm = Tone.Transport.bpm.value;
-    const secondsPerBeat = 60 / currentBpm;
-    let maxEndTime = 0;
-
-    // Find the latest end time across all regions
-    this.tracks.forEach((track) => {
-      track.regions.forEach((region) => {
-        const regionDurationInSeconds = region.duration * secondsPerBeat;
-        const regionEndTime = region.startTime + regionDurationInSeconds;
-        maxEndTime = Math.max(maxEndTime, regionEndTime);
-      });
-    });
-
-    // CRITICAL: Add countdown offset to exercise end time (audio time includes offset)
-    const countdownOffsetSeconds = this.countdownEnabled
-      ? this.countdownOffsetBeats * secondsPerBeat
-      : 0;
-
-    this.exerciseEndTime = maxEndTime + countdownOffsetSeconds;
-
-    // Define "last beat" as the final 1 beat before exercise end (time-signature aware)
-    const lastBeatDuration = secondsPerBeat; // 1 beat
-    this.lastBeatThreshold = Math.max(
-      0,
-      this.exerciseEndTime - lastBeatDuration,
+    const result = this.exerciseDurationCalculator.calculateDuration(
+      this.tracks,
+      this.countdownEnabled,
+      this.countdownOffsetBeats,
     );
+
+    this.exerciseEndTime = result.exerciseEndTime;
+    this.lastBeatThreshold = result.lastBeatThreshold;
 
     // Phase 3: Sync exercise timing to SustainPedalAnalyzer
     this.sustainPedalAnalyzer.setExerciseTiming(
@@ -1240,10 +1231,6 @@ export class RegionProcessor {
     this.harmonyScheduler.setExerciseTiming(
       this.exerciseEndTime,
       this.lastBeatThreshold,
-    );
-
-    console.log(
-      `[EXERCISE DURATION] Transport: ${maxEndTime.toFixed(3)}s, Countdown offset: ${countdownOffsetSeconds.toFixed(3)}s, Total (audio time): ${this.exerciseEndTime.toFixed(3)}s, Last beat starts: ${this.lastBeatThreshold.toFixed(3)}s (1 beat = ${lastBeatDuration.toFixed(3)}s @ ${currentBpm} BPM)`,
     );
   }
 
