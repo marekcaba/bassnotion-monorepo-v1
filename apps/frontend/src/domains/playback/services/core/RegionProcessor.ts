@@ -41,6 +41,9 @@ import { ExerciseDurationCalculator } from './region-processing/duration/Exercis
 import { BackupScheduler } from './region-processing/backup/BackupScheduler.js';
 import { EventRouter } from './region-processing/event-routing/EventRouter.js';
 
+// Import extracted modules (Phase 6: Region Scheduling Orchestration)
+import { RegionScheduler } from './region-processing/scheduling-orchestrator/RegionScheduler.js';
+
 const logger = getLogger('RegionProcessor');
 
 interface PatternEvent {
@@ -179,6 +182,9 @@ export class RegionProcessor {
   // Phase 5: Event routing and audio scheduling delegated to EventRouter
   private eventRouter!: EventRouter; // Initialized in constructor
 
+  // Phase 6: Region scheduling orchestration delegated to RegionScheduler
+  private regionScheduler!: RegionScheduler; // Initialized in constructor
+
   // Diagnostic: Count logged notes
   private _noteLogCount = 0;
 
@@ -274,6 +280,9 @@ export class RegionProcessor {
       this.voiceCueScheduler,
       this.trackTimingAccuracy.bind(this),
     );
+
+    // Phase 6: Instantiate region scheduler
+    this.regionScheduler = new RegionScheduler(this._instanceId);
 
     logger.info('🔧 RegionProcessor instance created', {
       instanceId: this._instanceId,
@@ -1293,356 +1302,34 @@ export class RegionProcessor {
         trackCount: this.tracks.size,
       });
 
-      // LAST NOTE RING-OUT: Calculate exercise duration to identify last beat
-      this.calculateExerciseDuration();
-
-      // Log track processing order
-      const trackOrder = Array.from(this.tracks.keys());
-      logger.info(`🔄 Track processing order: ${trackOrder.join(' → ')}`);
-
-      // PERFORMANCE OPTIMIZATION: Check for cached schedule
-      // If this exercise has been played before with same BPM/countdown, reuse calculations
-      const harmonyTrack = Array.from(this.tracks.values()).find(
-        (t) => t.instrumentType === 'harmony',
+      // Phase 6: Delegate to RegionScheduler
+      const result = this.regionScheduler.scheduleAll(
+        this.tracks,
+        this.scheduledEvents,
+        this.countdownManager.isCountdownEnabled(),
+        this.countdownOffsetBeats,
+        this.transportStartTime,
+        this.audioContext,
+        // Dependencies
+        this.getInstrumentType.bind(this),
+        this.parsePositionToObject.bind(this),
+        this.parsePosition.bind(this),
+        this.buildCC64Timeline.bind(this),
+        this.logCC64DiagnosticTable.bind(this),
+        this.getCachedSchedule.bind(this),
+        this.setCachedSchedule.bind(this),
+        this.emitEvent.bind(this),
+        this.setCurrentCC64Timeline.bind(this),
+        this.calculateExerciseDuration.bind(this),
       );
-      const exerciseId = harmonyTrack?.exerciseId;
-      const cachedSchedule = exerciseId
-        ? this.getCachedSchedule(exerciseId)
-        : null;
 
-      // CRITICAL FIX: Batch events by time to prevent sequential callback delays
-      // Group all events by their absolute time to schedule them together
-      const eventsByTime = new Map<
-        number,
-        Array<{
-          instrumentType: string;
-          event: PatternEvent;
-          eventKey: string;
-          regionId: string;
-        }>
-      >();
+      // Update current CC64 timeline
+      this.currentCC64Timeline = result.currentCC64Timeline;
 
-      // First pass: collect all events organized by time
-      this.tracks.forEach((track, trackId) => {
-        const instrumentType = this.getInstrumentType(track);
-        logger.info(`🎵 Processing track: ${trackId} (${instrumentType})`);
-
-        track.regions.forEach((region) => {
-          if (!region.pattern?.events) {
-            this.debugger.log('RegionProcessor', 'no-pattern-events', {
-              trackId,
-              region: region.id,
-            });
-            return;
-          }
-
-          this.debugger.log('RegionProcessor', 'scheduling-region', {
-            trackId,
-            regionId: region.id,
-            eventCount: region.pattern.events.length,
-            instrumentType,
-          });
-
-          // CRITICAL: Sort events so control changes (sustain pedal) are processed BEFORE notes
-          // This ensures sustain pedal state is set before notes check it
-          const sortedEvents = [...region.pattern.events].sort((a, b) => {
-            // CRITICAL FIX: Parse positions into comparable objects
-            // Position can be string ("0:0:0") or object ({measure, beat, subdivision, tick})
-            const aPos = this.parsePositionToObject(a.position);
-            const bPos = this.parsePositionToObject(b.position);
-
-            // Compare positions (measure, beat, subdivision, tick)
-            if (aPos.measure !== bPos.measure)
-              return aPos.measure - bPos.measure;
-            if (aPos.beat !== bPos.beat) return aPos.beat - bPos.beat;
-            if (aPos.subdivision !== bPos.subdivision) {
-              return aPos.subdivision - bPos.subdivision;
-            }
-            if (aPos.tick !== bPos.tick) {
-              return aPos.tick - bPos.tick;
-            }
-
-            // At same time: control changes BEFORE notes
-            const aIsCC = a.type === 'harmony-control-change';
-            const bIsCC = b.type === 'harmony-control-change';
-            if (aIsCC && !bIsCC) return -1; // CC first
-            if (!aIsCC && bIsCC) return 1; // Note second
-
-            return 0; // Same priority
-          });
-
-          // DIAGNOSTIC: Verify ticks field survives the sort operation
-          const firstThreeNotes = sortedEvents
-            .filter((e) => e.type === 'harmony-note')
-            .slice(0, 3);
-          console.log(
-            '[REGIONPROCESSOR] First 3 harmony notes after sort:',
-            firstThreeNotes.map((e, i) => ({
-              index: i + 1,
-              type: e.type,
-              noteName: (e as any).data?.noteName,
-              ticks: (e as any).data?.ticks,
-              ticksUndefined: (e as any).data?.ticks === undefined,
-              position: e.position,
-            })),
-          );
-
-          // [CC64 DIAGNOSTIC] Log first 10 events to verify sort order
-          console.log(
-            `[CC64 DIAGNOSTIC] First 10 events after sorting (region: ${region.id}):`,
-          );
-          sortedEvents.slice(0, 10).forEach((event, i) => {
-            const parsedPos = this.parsePositionToObject(event.position);
-            const isCC64 =
-              event.type === 'harmony-control-change' &&
-              (event as any).data?.cc === 64;
-            console.log(
-              `  ${i}: ${event.type}${isCC64 ? ' (CC64)' : ''} @ ${parsedPos.measure}:${parsedPos.beat}:${parsedPos.subdivision}:${parsedPos.tick}`,
-              isCC64 ? `value=${(event as any).data?.value}` : '',
-            );
-          });
-
-          // CC64: Build timeline for pre-calculated sustain durations
-          // PERFORMANCE OPTIMIZATION: Use cached CC64 timeline if available
-          if (cachedSchedule && instrumentType === 'harmony') {
-            this.currentCC64Timeline = cachedSchedule.cc64Timeline;
-            console.log(
-              `[CC64] ♻️ Using CACHED timeline with ${this.currentCC64Timeline.size} pedal events`,
-            );
-          } else {
-            this.currentCC64Timeline = this.buildCC64Timeline(
-              sortedEvents,
-              region,
-            );
-            console.log(
-              `[CC64] 🔨 Built NEW timeline with ${this.currentCC64Timeline.size} pedal events`,
-            );
-          }
-
-          // Phase 4: Sync CC64 timeline to HarmonyScheduler
-          this.harmonyScheduler.setCurrentCC64Timeline(this.currentCC64Timeline);
-
-          if (this.currentCC64Timeline.size > 0) {
-            // Log the timeline for debugging
-            const timeline = Array.from(this.currentCC64Timeline.entries())
-              .sort((a, b) => a[0] - b[0])
-              .map(
-                ([time, down]) => `${time.toFixed(3)}s=${down ? 'DOWN' : 'UP'}`,
-              )
-              .join(', ');
-            console.log(`[CC64] Timeline: ${timeline}`);
-
-            // ============================================================================
-            // CC64 COMPREHENSIVE DIAGNOSTIC TABLE
-            // ============================================================================
-            this.logCC64DiagnosticTable(sortedEvents, region);
-          }
-
-          // Track harmony notes separately from all events for diagnostic
-          let harmonyNoteCount = 0;
-
-          sortedEvents.forEach((event, eventIndex) => {
-            const eventKey = `${region.id}_${eventIndex}`;
-
-            // Skip if already scheduled
-            const trackEvents = this.scheduledEvents.get(trackId);
-            if (trackEvents && trackEvents.has(eventKey)) return;
-
-            // Calculate absolute time for this event
-            // 🚨 CRITICAL FIX: Use absolute ticks if available (for consistent timing)
-            // 🚨 CRITICAL FIX: Use original MIDI file BPM, not current transport BPM
-            // Absolute ticks are always relative to the original recording tempo
-            const eventData = (event as any).data;
-            const originalBpm =
-              eventData?.originalBpm || Tone.Transport.bpm.value; // Fallback to transport BPM if not provided
-            let eventTime: number;
-
-            if (eventData?.ticks !== undefined) {
-              // Use absolute ticks (new method - consistent with CC64)
-              const secondsPerBeat = 60 / originalBpm;
-              const ticksPerBeat = 480; // PPQ standard
-              const absoluteTicks = eventData.ticks;
-              eventTime = (absoluteTicks / ticksPerBeat) * secondsPerBeat;
-
-              // DIAGNOSTIC: Log first 3 harmony notes AND note 9 (using separate harmony note counter)
-              if (event.type === 'harmony-note') {
-                if (harmonyNoteCount < 3 || harmonyNoteCount === 8) {
-                  console.log(
-                    `[ABSOLUTE TICK SCHEDULING] Harmony Note ${harmonyNoteCount + 1} (eventIndex ${eventIndex}):`,
-                    {
-                      absoluteTicks,
-                      originalBpm,
-                      secondsPerBeat,
-                      ticksPerBeat,
-                      calculation: `(${absoluteTicks} / ${ticksPerBeat}) * ${secondsPerBeat}`,
-                      eventTime,
-                      calculatedTime: eventTime.toFixed(6),
-                      position: event.position,
-                      usingAbsoluteTicks: true,
-                      usingOriginalBpm: eventData?.originalBpm !== undefined,
-                      noteName: eventData?.noteName,
-                    },
-                  );
-                }
-                harmonyNoteCount++;
-              }
-            } else {
-              // Fallback to position parsing (old method)
-              eventTime = this.parsePosition(event.position);
-
-              // DIAGNOSTIC: Log if falling back to position parsing
-              if (event.type === 'harmony-note') {
-                if (harmonyNoteCount < 3 || harmonyNoteCount === 8) {
-                  console.log(
-                    `[RELATIVE TICK SCHEDULING] Harmony Note ${harmonyNoteCount + 1} (eventIndex ${eventIndex}):`,
-                    {
-                      position: event.position,
-                      calculatedTime: eventTime.toFixed(6),
-                      usingAbsoluteTicks: false,
-                      noteName: (event as any).data?.noteName,
-                      WARNING:
-                        'event.data.ticks is undefined - using relative position',
-                    },
-                  );
-                }
-                harmonyNoteCount++;
-              }
-            }
-
-            // COUNTDOWN SOLUTION: Selective audio offset based on skipCountdownOffset flag
-            // - Countdown region has skipCountdownOffset: true → NO offset → plays at beat 0-3
-            // - Exercise regions have skipCountdownOffset: false → WITH offset → plays at beat 4+
-            // - Display layer subtracts 4 beats to show countdown as -1:00:00 and exercise as 1:00:00
-            // FAANG FIX: Use parsePosition() which respects current BPM (Tone.Time() doesn't!)
-            const offsetTime =
-              this.countdownEnabled && !region.skipCountdownOffset
-                ? this.parsePosition(`0:${this.countdownOffsetBeats}:0`)
-                : 0;
-
-            const absoluteTime = region.startTime + eventTime + offsetTime;
-
-            // DIAGNOSTIC: Log absolute time calculation for first few events
-            if (eventIndex < 3) {
-              logger.info(`🎯 Absolute time calculation`, {
-                'region.startTime': region.startTime,
-                eventTime,
-                offsetTime,
-                absoluteTime,
-                position: event.position,
-                instrumentType,
-              });
-            }
-
-            // Round to 3 decimals to group events at the same musical time
-            const timeKey = Math.round(absoluteTime * 1000) / 1000;
-
-            if (!eventsByTime.has(timeKey)) {
-              eventsByTime.set(timeKey, []);
-            }
-
-            eventsByTime.get(timeKey)!.push({
-              instrumentType,
-              event,
-              eventKey,
-              regionId: region.id,
-            });
-
-            // CRITICAL: Mark as scheduled NOW to prevent duplicates if scheduleAllRegions() is called again
-            if (!this.scheduledEvents.has(trackId)) {
-              this.scheduledEvents.set(trackId, new Set());
-            }
-            this.scheduledEvents.get(trackId)!.add(eventKey);
-
-            logger.info(
-              `📅 Collected ${instrumentType} event at ${absoluteTime}s: ${event.type}`,
-            );
-          });
-        });
-      });
-
-      // Log batching stats
-      const batchedEventCount = Array.from(
-        this.scheduledEvents.values(),
-      ).reduce((sum, set) => sum + set.size, 0);
       logger.info(
-        `📦 Batched ${eventsByTime.size} unique time points with ${batchedEventCount} total events`,
+        `✅ Scheduled ${result.totalEvents} audio events total in ${result.batchCount} batches (via RegionScheduler)`,
       );
 
-      // AUDIO DOUBLING FIX: Schedule audio DIRECTLY here, not inside Tone callbacks
-      // Second pass: schedule audio for all events immediately (upfront scheduling)
-      // This prevents doubling because audio is scheduled once during initialization, not when callbacks fire
-      eventsByTime.forEach((events, timeKey) => {
-        // TEMPO CHANGE OPTIMIZATION: Skip events that already played
-        // This saves 30-40% processing time when tempo changes mid-exercise
-        const currentAudioTime = this.audioContext?.currentTime || 0;
-        const absoluteAudioTime = this.transportStartTime + timeKey;
-
-        if (absoluteAudioTime < currentAudioTime) {
-          logger.debug(
-            `⏭️  Skipping past event batch at ${timeKey}s (already played)`,
-            {
-              absoluteAudioTime: absoluteAudioTime.toFixed(6),
-              currentAudioTime: currentAudioTime.toFixed(6),
-              eventCount: events.length,
-            },
-          );
-          return; // Skip this entire batch
-        }
-
-        try {
-          const batchStartTime = performance.now();
-
-          // Schedule all events at this time point together
-          events.forEach(({ instrumentType, event, eventKey }, index) => {
-            const eventStartTime = performance.now();
-
-            // CRITICAL: Schedule audio directly NOW, not later in a callback
-            this.emitEvent(instrumentType, event, timeKey);
-
-            const eventEndTime = performance.now();
-
-            logger.info(
-              `⏱️ Event ${index + 1}/${events.length} in batch: ${instrumentType}`,
-              {
-                eventProcessingTime: `${(eventEndTime - eventStartTime).toFixed(3)}ms`,
-                timeSinceBatchStart: `${(eventStartTime - batchStartTime).toFixed(3)}ms`,
-                audioContextTime: this.audioContext?.currentTime.toFixed(6),
-                scheduledAt: timeKey.toFixed(6),
-              },
-            );
-          });
-
-          const batchTotalTime = performance.now() - batchStartTime;
-          logger.info(
-            `✅ Batch completed: ${events.length} events in ${batchTotalTime.toFixed(3)}ms`,
-          );
-        } catch (error) {
-          logger.error(
-            `Failed to schedule events at time ${timeKey}: ${error}`,
-          );
-        }
-      });
-
-      const totalScheduledEvents = Array.from(
-        this.scheduledEvents.values(),
-      ).reduce((sum, set) => sum + set.size, 0);
-      logger.info(
-        `✅ Scheduled ${totalScheduledEvents} audio events total in ${eventsByTime.size} batches (upfront scheduling)`,
-      );
-
-      // PERFORMANCE OPTIMIZATION: Cache CC64 timeline for future use
-      // Only cache if we have an exerciseId and we calculated a new timeline (not from cache)
-      if (exerciseId && !cachedSchedule && this.currentCC64Timeline.size > 0) {
-        const schedule: CachedSchedule = {
-          cc64Timeline: new Map(this.currentCC64Timeline), // Clone the Map
-          calculatedEvents: [], // Not caching full events yet (future optimization)
-          cachedAt: Date.now(),
-          bpm: Tone.Transport.bpm.value,
-          countdownBeats: this.countdownOffsetBeats,
-        };
-
-        this.setCachedSchedule(exerciseId, schedule);
-      }
     } finally {
       // TEMPO CHANGE FIX: Always release scheduling lock, even if error occurs
       this.isScheduling = false;
@@ -1953,6 +1640,15 @@ export class RegionProcessor {
     schedule: CachedSchedule,
   ): void {
     this.scheduleCache.set(exerciseId, schedule);
+  }
+
+  /**
+   * Update current CC64 timeline and sync to HarmonyScheduler
+   * Phase 6: Helper for RegionScheduler
+   */
+  private setCurrentCC64Timeline(timeline: Map<number, boolean>): void {
+    this.currentCC64Timeline = timeline;
+    this.harmonyScheduler.setCurrentCC64Timeline(timeline);
   }
 
   /**
