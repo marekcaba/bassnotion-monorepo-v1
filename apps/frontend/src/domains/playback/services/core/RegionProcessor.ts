@@ -39,6 +39,7 @@ import { DiagnosticLogger } from './region-processing/diagnostics/DiagnosticLogg
 import { VelocityLayerSelector } from './region-processing/harmony/VelocityLayerSelector.js';
 import { ExerciseDurationCalculator } from './region-processing/duration/ExerciseDurationCalculator.js';
 import { BackupScheduler } from './region-processing/backup/BackupScheduler.js';
+import { EventRouter } from './region-processing/event-routing/EventRouter.js';
 
 const logger = getLogger('RegionProcessor');
 
@@ -175,6 +176,9 @@ export class RegionProcessor {
   // Phase 5: Backup scheduling delegated to BackupScheduler
   private backupScheduler!: BackupScheduler; // Initialized in constructor
 
+  // Phase 5: Event routing and audio scheduling delegated to EventRouter
+  private eventRouter!: EventRouter; // Initialized in constructor
+
   // Diagnostic: Count logged notes
   private _noteLogCount = 0;
 
@@ -256,6 +260,20 @@ export class RegionProcessor {
 
     // Phase 5: Instantiate backup scheduler
     this.backupScheduler = new BackupScheduler(this._instanceId);
+
+    // Phase 5: Instantiate event router
+    this.eventRouter = new EventRouter(this._instanceId);
+    this.eventRouter.initialize(
+      null, // Will be set in setAudioContext
+      this.sampleRate,
+      this.eventBus,
+      this.metronomeScheduler,
+      this.drumScheduler,
+      this.harmonyScheduler,
+      this.bassScheduler,
+      this.voiceCueScheduler,
+      this.trackTimingAccuracy.bind(this),
+    );
 
     logger.info('🔧 RegionProcessor instance created', {
       instanceId: this._instanceId,
@@ -385,6 +403,19 @@ export class RegionProcessor {
     this.bassScheduler.setAudioContext(context);
     // HarmonyScheduler gets transportStartTime in setAudioContext (will be set in start())
     // GrandPianoKeyboardMapper doesn't need audio context
+
+    // Phase 5: Sync audio context to EventRouter
+    this.eventRouter.initialize(
+      context,
+      this.sampleRate,
+      this.eventBus,
+      this.metronomeScheduler,
+      this.drumScheduler,
+      this.harmonyScheduler,
+      this.bassScheduler,
+      this.voiceCueScheduler,
+      this.trackTimingAccuracy.bind(this),
+    );
 
     logger.info('🔧 AudioContext set for RegionProcessor', {
       instanceId: this._instanceId,
@@ -748,6 +779,9 @@ export class RegionProcessor {
       // Phase 4: Sync audio context with transport start time to HarmonyScheduler
       // Other schedulers don't need transportStartTime (they receive pre-calculated audioTime)
       this.harmonyScheduler.setAudioContext(this.audioContext, this.transportStartTime);
+
+      // Phase 5: Sync transport start time to EventRouter
+      this.eventRouter.setTransportStartTime(this.transportStartTime);
 
       logger.info(
         '🎯 Transport start anchor captured with FAANG startup lookahead',
@@ -1761,96 +1795,6 @@ export class RegionProcessor {
     return 'unknown';
   }
 
-  /**
-   * FAANG SOLUTION: Schedule audio directly in Web Audio graph
-   * Bypasses JavaScript callback timing for sample-perfect playback
-   */
-  private scheduleAudioDirect(
-    instrumentType: string,
-    event: PatternEvent,
-    audioTime: number,
-    frame: number,
-  ): boolean {
-    // Handle metronome
-    if (instrumentType === 'metronome') {
-      return this.scheduleMetronomeDirect(event, audioTime, frame);
-    }
-
-    // Handle drums
-    if (instrumentType === 'drums') {
-      return this.scheduleDrumDirect(event, audioTime, frame);
-    }
-
-    // Handle harmony
-    if (instrumentType === 'harmony') {
-      return this.scheduleHarmonyDirect(event, audioTime, frame);
-    }
-
-    // Handle bass
-    if (instrumentType === 'bass') {
-      return this.scheduleBassDirect(event, audioTime, frame);
-    }
-
-    // Handle voice cues
-    if (instrumentType === 'voice-cue') {
-      return this.scheduleVoiceCueDirect(event, audioTime, frame);
-    }
-
-    // Not supported yet - fall back to event bus
-    logger.debug(
-      `❌ FAANG: Direct scheduling not yet implemented for: ${instrumentType}`,
-    );
-    return false;
-  }
-
-  /**
-   * Schedule metronome audio directly
-   * Phase 4: Delegated to MetronomeScheduler
-   */
-  private scheduleMetronomeDirect(
-    event: PatternEvent,
-    audioTime: number,
-    frame: number,
-  ): boolean {
-    return this.metronomeScheduler.schedule(event, audioTime, frame);
-  }
-
-  /**
-   * Schedule drum audio directly
-   * Phase 4: Delegated to DrumScheduler
-   */
-  private scheduleDrumDirect(
-    event: PatternEvent,
-    audioTime: number,
-    frame: number,
-  ): boolean {
-    return this.drumScheduler.schedule(event, audioTime, frame);
-  }
-
-  /**
-   * Schedule voice cue audio directly
-   * Phase 4: Delegated to VoiceCueScheduler
-   */
-  private scheduleVoiceCueDirect(
-    event: PatternEvent,
-    audioTime: number,
-    frame: number,
-  ): boolean {
-    return this.voiceCueScheduler.schedule(event, audioTime, frame);
-  }
-
-  /**
-   * Schedule harmony audio directly (CC64, MIDI notes, chords)
-   * Phase 4: Delegated to HarmonyScheduler
-   */
-  private scheduleHarmonyDirect(
-    event: PatternEvent,
-    audioTime: number,
-    frame: number,
-  ): boolean {
-    return this.harmonyScheduler.schedule(event, audioTime, frame);
-  }
-
   // ============================================================================
   // HARMONY VELOCITY LAYER SELECTION
   // ============================================================================
@@ -1948,119 +1892,19 @@ export class RegionProcessor {
 
 
   /**
-   * Schedule bass audio directly
-   * Phase 4: Delegated to BassScheduler
-   */
-  private scheduleBassDirect(
-    event: PatternEvent,
-    audioTime: number,
-    frame: number,
-  ): boolean {
-    return this.bassScheduler.schedule(event, audioTime, frame);
-  }
-
-  /**
    * Emit the appropriate event based on instrument type
+   * Phase 5: Delegated to EventRouter
    *
    * CRITICAL TIME DOMAIN CONVERSION:
    * 'time' parameter is in TRANSPORT TIME (musical beats: 0, 0.5, 1, 1.5...)
-   * We must convert to AUDIO CONTEXT TIME (hardware clock) before emitting
+   * EventRouter handles conversion to AUDIO CONTEXT TIME (hardware clock)
    */
   private emitEvent(
     instrumentType: string,
     event: PatternEvent,
     time: number,
   ): void {
-    // CRITICAL FIX: Convert transport time → AudioContext time
-    // transportTime (beats) + transportStartTime (anchor) = audioContextTime (hardware)
-    let audioTime = this.transportStartTime + time;
-
-    // FAANG SOLUTION: Sample-accurate rounding for sub-millisecond precision
-    // Round to exact audio frame to eliminate sub-sample jitter
-    let frame = 0;
-    if (this.audioContext) {
-      frame = Math.round(audioTime * this.sampleRate);
-      audioTime = frame / this.sampleRate;
-
-      // Track timing accuracy metrics
-      this.trackTimingAccuracy(frame, time);
-    }
-
-    const timestamp = Date.now();
-
-    // DEBUG: Log harmony-control-change events
-    if (event.type === 'harmony-control-change') {
-      console.log(
-        `[EMIT EVENT] ⚠️ harmony-control-change detected: cc=${(event.data as any)?.cc}, value=${(event.data as any)?.value}, audioTime=${audioTime.toFixed(3)}`,
-      );
-    }
-
-    // FAANG SOLUTION: Try direct audio scheduling first (sample-perfect)
-    if (this.scheduleAudioDirect(instrumentType, event, audioTime, frame)) {
-      // Successfully scheduled directly - skip event bus
-      logger.debug(`Direct audio scheduling used for ${instrumentType}`);
-      return;
-    }
-
-    // Fall back to event bus for instruments without direct scheduling
-    switch (instrumentType) {
-      case 'metronome':
-        this.eventBus.emit('metronome-trigger', {
-          beat: event.type === 'accent' ? 1 : 2, // Simple beat numbering
-          isDownbeat: event.type === 'accent',
-          audioTime,
-          timestamp,
-          velocity: event.velocity || 0.8,
-        });
-        logger.debug(
-          `Emitted metronome-trigger: ${event.type} at ${audioTime.toFixed(3)}`,
-        );
-        break;
-
-      case 'drums':
-        // Map event types to drum names
-        const drumMap: Record<string, string> = {
-          kick: 'kick',
-          snare: 'snare',
-          hihat: 'hihat',
-          openhat: 'openHihat',
-          crash: 'crash',
-          ride: 'ride',
-          accent: 'kick',
-          click: 'hihat',
-        };
-
-        const drum = drumMap[event.type] || event.type;
-        this.eventBus.emit('drum-trigger', {
-          drum,
-          audioTime,
-          timestamp,
-          velocity: event.velocity || 0.8,
-        });
-        logger.debug(
-          `Emitted drum-trigger: ${drum} at ${audioTime.toFixed(3)}`,
-        );
-        break;
-
-      case 'bass':
-        this.eventBus.emit('bass-trigger', {
-          note: event.type,
-          audioTime,
-          timestamp,
-          velocity: event.velocity || 0.8,
-        });
-        break;
-
-      case 'harmony':
-        this.eventBus.emit('chord-trigger', {
-          chord: event.type,
-          notes: [], // Would need to parse from event
-          audioTime,
-          timestamp,
-          velocity: event.velocity || 0.8,
-        });
-        break;
-    }
+    this.eventRouter.emitEvent(instrumentType, event, time);
   }
 
   /**
