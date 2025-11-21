@@ -372,147 +372,8 @@ describe('RegionProcessor - Phase 4 Integration', () => {
   // ============================================================================
   // SCHEDULER DELEGATION TESTS
   // ============================================================================
-
-  describe('Scheduler delegation', () => {
-    it('should delegate scheduleVoiceCueDirect to VoiceCueScheduler', () => {
-      regionProcessor.setAudioContext(mockAudioContext);
-
-      const event = {
-        type: 'voice-cue',
-        position: '0:0:0',
-        data: { cue: 'one' },
-        velocity: 0.8,
-      };
-
-      // Mock VoiceCueScheduler.schedule to return true
-      const voiceCueScheduler = (regionProcessor as any).voiceCueScheduler;
-      const scheduleSpy = vi
-        .spyOn(voiceCueScheduler, 'schedule')
-        .mockReturnValue(true);
-
-      // Call private method
-      const result = (regionProcessor as any).scheduleVoiceCueDirect(
-        event,
-        1.0,
-        48000,
-      );
-
-      expect(scheduleSpy).toHaveBeenCalledWith(event, 1.0, 48000);
-      expect(result).toBe(true);
-    });
-
-    it('should delegate scheduleMetronomeDirect to MetronomeScheduler', () => {
-      regionProcessor.setAudioContext(mockAudioContext);
-
-      const event = {
-        type: 'accent',
-        position: '0:0:0',
-        velocity: 0.8,
-      };
-
-      // Mock MetronomeScheduler.schedule to return true
-      const metronomeScheduler = (regionProcessor as any).metronomeScheduler;
-      const scheduleSpy = vi
-        .spyOn(metronomeScheduler, 'schedule')
-        .mockReturnValue(true);
-
-      // Call private method
-      const result = (regionProcessor as any).scheduleMetronomeDirect(
-        event,
-        1.0,
-        48000,
-      );
-
-      expect(scheduleSpy).toHaveBeenCalledWith(event, 1.0, 48000);
-      expect(result).toBe(true);
-    });
-
-    it('should delegate scheduleDrumDirect to DrumScheduler', () => {
-      regionProcessor.setAudioContext(mockAudioContext);
-
-      const event = {
-        type: 'kick',
-        position: '0:0:0',
-        velocity: 0.8,
-      };
-
-      // Mock DrumScheduler.schedule to return true
-      const drumScheduler = (regionProcessor as any).drumScheduler;
-      const scheduleSpy = vi
-        .spyOn(drumScheduler, 'schedule')
-        .mockReturnValue(true);
-
-      // Call private method
-      const result = (regionProcessor as any).scheduleDrumDirect(
-        event,
-        1.0,
-        48000,
-      );
-
-      expect(scheduleSpy).toHaveBeenCalledWith(
-        event,
-        1.0,
-        48000,
-      );
-      expect(result).toBe(true);
-    });
-
-    it('should delegate scheduleBassDirect to BassScheduler', () => {
-      regionProcessor.setAudioContext(mockAudioContext);
-
-      const event = {
-        type: 'D2',
-        position: '0:0:0',
-        velocity: 0.8,
-        duration: '4n',
-        data: { note: 'D2', technique: 'normal' },
-      };
-
-      // Mock BassScheduler.schedule to return true
-      const bassScheduler = (regionProcessor as any).bassScheduler;
-      const scheduleSpy = vi
-        .spyOn(bassScheduler, 'schedule')
-        .mockReturnValue(true);
-
-      // Call private method
-      const result = (regionProcessor as any).scheduleBassDirect(
-        event,
-        1.0,
-        48000,
-      );
-
-      expect(scheduleSpy).toHaveBeenCalledWith(event, 1.0, 48000);
-      expect(result).toBe(true);
-    });
-
-    it('should delegate scheduleHarmonyDirect to HarmonyScheduler', () => {
-      regionProcessor.setAudioContext(mockAudioContext);
-
-      const event = {
-        type: 'harmony-note',
-        position: '0:0:0',
-        velocity: 80,
-        duration: 2,
-        data: { midiNote: 60, velocity: 80 },
-      };
-
-      // Mock HarmonyScheduler.schedule to return true
-      const harmonyScheduler = (regionProcessor as any).harmonyScheduler;
-      const scheduleSpy = vi
-        .spyOn(harmonyScheduler, 'schedule')
-        .mockReturnValue(true);
-
-      // Call private method
-      const result = (regionProcessor as any).scheduleHarmonyDirect(
-        event,
-        1.0,
-        48000,
-      );
-
-      expect(scheduleSpy).toHaveBeenCalledWith(event, 1.0, 48000);
-      expect(result).toBe(true);
-    });
-  });
+  // NOTE: Phase 5.5 removed scheduleXxxDirect methods - they're now encapsulated
+  // in EventRouter. Delegation is tested in EventRouter.test.ts instead.
 
   // ============================================================================
   // INTEGRATION SMOKE TESTS
@@ -587,26 +448,8 @@ describe('RegionProcessor - Phase 4 Integration', () => {
   // ============================================================================
 
   describe('Backward compatibility', () => {
-    it('should maintain scheduler delegation API', () => {
-      regionProcessor.setAudioContext(mockAudioContext);
-
-      // Verify all delegation methods exist and are callable
-      expect(
-        typeof (regionProcessor as any).scheduleVoiceCueDirect,
-      ).toBe('function');
-      expect(
-        typeof (regionProcessor as any).scheduleMetronomeDirect,
-      ).toBe('function');
-      expect(typeof (regionProcessor as any).scheduleDrumDirect).toBe(
-        'function',
-      );
-      expect(typeof (regionProcessor as any).scheduleBassDirect).toBe(
-        'function',
-      );
-      expect(
-        typeof (regionProcessor as any).scheduleHarmonyDirect,
-      ).toBe('function');
-    });
+    // NOTE: Phase 5.5 removed scheduleXxxDirect methods - they're now private
+    // to EventRouter. The public API remains unchanged (setters, start/stop).
 
     it('should maintain buffer setter API', () => {
       // Verify all buffer setter methods exist and work correctly
