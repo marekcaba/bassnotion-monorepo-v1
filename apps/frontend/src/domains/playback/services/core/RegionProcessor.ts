@@ -34,6 +34,9 @@ import { BassScheduler } from './region-processing/scheduling/BassScheduler.js';
 import { HarmonyScheduler } from './region-processing/scheduling/HarmonyScheduler.js';
 import { GrandPianoKeyboardMapper } from './region-processing/scheduling/GrandPianoKeyboardMapper.js';
 
+// Import extracted modules (Phase 5: Utilities + Routing)
+import { DiagnosticLogger } from './region-processing/diagnostics/DiagnosticLogger.js';
+
 const logger = getLogger('RegionProcessor');
 
 interface PatternEvent {
@@ -157,6 +160,9 @@ export class RegionProcessor {
   private harmonyScheduler!: HarmonyScheduler; // Initialized in constructor
   private grandPianoKeyboardMapper!: GrandPianoKeyboardMapper; // Initialized in constructor
 
+  // Phase 5: Diagnostic logging delegated to DiagnosticLogger
+  private diagnosticLogger!: DiagnosticLogger; // Initialized in constructor
+
   // Diagnostic: Count logged notes
   private _noteLogCount = 0;
 
@@ -217,6 +223,15 @@ export class RegionProcessor {
       this.grandPianoKeyboardMapper,
       this.cc64TimelineBuilder,
       this.sustainPedalAnalyzer,
+    );
+
+    // Phase 5: Instantiate diagnostic logger
+    this.diagnosticLogger = new DiagnosticLogger(
+      this._instanceId,
+      this.currentCC64Timeline,
+      this.parsePosition.bind(this),
+      this.findCC64DownDuringNote.bind(this),
+      this.findNextCC64Up.bind(this),
     );
 
     logger.info('🔧 RegionProcessor instance created', {
@@ -2462,192 +2477,25 @@ export class RegionProcessor {
   }
 
   /**
-   * Convert MIDI note number to note name (e.g., 60 -> "C4")
+   * Convert MIDI note number to note name (e.g., 60 → "C4")
+   * Phase 5: Delegated to DiagnosticLogger
    */
   private midiNoteToName(midiNote: number): string {
-    const noteNames = [
-      'C',
-      'Cs',
-      'D',
-      'Ds',
-      'E',
-      'F',
-      'Fs',
-      'G',
-      'Gs',
-      'A',
-      'As',
-      'B',
-    ];
-    const octave = Math.floor(midiNote / 12) - 1;
-    const noteIndex = midiNote % 12;
-    return noteNames[noteIndex] + octave;
+    return this.diagnosticLogger.midiNoteToName(midiNote);
   }
 
   /**
    * CC64 COMPREHENSIVE DIAGNOSTIC TABLE
    * Shows exact numbers from database and how CC64 extends each note
+   * Phase 5: Delegated to DiagnosticLogger
    */
   private logCC64DiagnosticTable(sortedEvents: any[], region: Region): void {
-    console.log('\n' + '='.repeat(120));
-    console.log('CC64 SUSTAIN PEDAL DIAGNOSTIC - SHOWING EXACT CALCULATIONS');
-    console.log('='.repeat(120));
-
-    // Extract harmony notes with their MIDI durations
-    const harmonyNotes: Array<{
-      noteName: string;
-      audioTime: number;
-      midiDuration: number;
-      midiEndTime: number;
-    }> = [];
-
-    let noteIndex = 0;
-    sortedEvents.forEach((event) => {
-      if (event.data?.midiNote !== undefined) {
-        // 🚨 CRITICAL FIX: Use absolute ticks for note timing (same as CC64 events)
-        let eventTime: number;
-        if (event.data?.ticks !== undefined) {
-          // Use absolute ticks if available (new method)
-          // 🚨 CRITICAL FIX: Use original MIDI file BPM, not current transport BPM
-          const originalBpm =
-            event.data?.originalBpm || Tone.Transport.bpm.value;
-          const secondsPerBeat = 60 / originalBpm;
-          const ticksPerBeat = 480; // PPQ standard
-          eventTime = (event.data.ticks / ticksPerBeat) * secondsPerBeat;
-        } else {
-          // Fallback to position parsing (old method)
-          eventTime = this.parsePosition(event.position);
-        }
-
-        const offsetTime =
-          this.countdownEnabled && !region.skipCountdownOffset
-            ? this.countdownOffsetBeats * (60 / Tone.Transport.bpm.value)
-            : 0;
-        const absoluteTime = region.startTime + eventTime + offsetTime;
-        const audioTime = this.transportStartTime + absoluteTime;
-
-        // DIAGNOSTIC: Log note 9 calculation in CC64 table
-        if (noteIndex === 8) {
-          console.log('[CC64 TABLE] Note 9 calculation:', {
-            ticks: event.data.ticks,
-            eventTime,
-            offsetTime,
-            'region.startTime': region.startTime,
-            absoluteTime,
-            'this.transportStartTime': this.transportStartTime,
-            audioTime,
-            noteName: this.midiNoteToName(event.data.midiNote - 12),
-          });
-        }
-        noteIndex++;
-
-        // Parse MIDI note to note name (apply same -12 octave shift as in playback)
-        const midiNote = event.data.midiNote - 12;
-        const noteName = this.midiNoteToName(midiNote);
-
-        // Duration is already in seconds (not Tone.js position format)
-        const duration =
-          typeof event.duration === 'number' ? event.duration : 0.5;
-
-        harmonyNotes.push({
-          noteName,
-          audioTime,
-          midiDuration: duration,
-          midiEndTime: audioTime + duration,
-        });
-      }
-    });
-
-    if (harmonyNotes.length === 0) {
-      console.log('⚠️  No harmony notes found in region');
-      return;
-    }
-
-    // CC64 SUSTAIN PEDAL DIAGNOSTIC - SHOWING EXACT CALCULATIONS
-    console.log('='.repeat(120));
-    console.log(
-      `\n📊 Analyzing ${harmonyNotes.length} harmony notes with CC64 timeline\n`,
+    // Sync state before logging
+    this.diagnosticLogger.setTransportStartTime(this.transportStartTime);
+    this.diagnosticLogger.setCountdown(
+      this.countdownEnabled,
+      this.countdownOffsetBeats,
     );
-
-    // Table header
-    console.log(
-      '┌─────┬──────────┬───────────┬──────────────┬──────────────┬────────────────┬─────────────────┬──────────────┬──────────────┐',
-    );
-    console.log(
-      '│ #   │ Note     │ Start (s) │ MIDI Dur (s) │ MIDI End (s) │ Pedal Down (s) │ Pedal Up (s)    │ Final Dur(s) │ Extension(s) │',
-    );
-    console.log(
-      '├─────┼──────────┼───────────┼──────────────┼──────────────┼────────────────┼─────────────────┼──────────────┼──────────────┤',
-    );
-
-    let extendedCount = 0;
-    let totalExtension = 0;
-
-    harmonyNotes.forEach((note, index) => {
-      // Apply CC64 logic (same as in scheduleHarmonyMidiNoteDirect)
-      let actualDuration = note.midiDuration;
-      let pedalDownTime: number | null = null;
-      let pedalUpTime: number | null = null;
-      let extension = 0;
-
-      if (this.currentCC64Timeline.size > 0) {
-        pedalDownTime = this.findCC64DownDuringNote(
-          note.audioTime,
-          note.midiEndTime,
-          this.currentCC64Timeline,
-        );
-
-        if (pedalDownTime !== null) {
-          pedalUpTime = this.findNextCC64Up(
-            pedalDownTime,
-            this.currentCC64Timeline,
-          );
-
-          if (pedalUpTime !== null && pedalUpTime > note.midiEndTime) {
-            // Pedal extends the note
-            actualDuration = pedalUpTime - note.audioTime;
-            extension = actualDuration - note.midiDuration;
-            extendedCount++;
-            totalExtension += extension;
-          }
-        }
-      }
-
-      // Format table row
-      const num = String(index + 1).padStart(3);
-      const noteName = note.noteName.padEnd(8);
-      const start = note.audioTime.toFixed(3).padStart(9);
-      const midiDur = note.midiDuration.toFixed(3).padStart(12);
-      const midiEnd = note.midiEndTime.toFixed(3).padStart(12);
-      const pedalDown = (
-        pedalDownTime !== null ? pedalDownTime.toFixed(3) : 'N/A'
-      ).padStart(14);
-      const pedalUp = (
-        pedalUpTime !== null ? pedalUpTime.toFixed(3) : 'N/A'
-      ).padStart(15);
-      const finalDur = actualDuration.toFixed(3).padStart(12);
-      const ext = (extension > 0 ? `+${extension.toFixed(3)}` : '-').padStart(
-        12,
-      );
-
-      console.log(
-        `│ ${num} │ ${noteName} │ ${start} │ ${midiDur} │ ${midiEnd} │ ${pedalDown} │ ${pedalUp} │ ${finalDur} │ ${ext} │`,
-      );
-    });
-
-    console.log(
-      '└─────┴──────────┴───────────┴──────────────┴──────────────┴────────────────┴─────────────────┴──────────────┴──────────────┘',
-    );
-
-    // Summary statistics
-    console.log(
-      `\n📈 SUMMARY: ${extendedCount}/${harmonyNotes.length} notes extended by CC64 (${((extendedCount / harmonyNotes.length) * 100).toFixed(1)}%)`,
-    );
-    if (extendedCount > 0) {
-      console.log(
-        `   Average extension: ${(totalExtension / extendedCount).toFixed(3)}s | Total added: ${totalExtension.toFixed(3)}s`,
-      );
-    }
-    console.log('\n' + '='.repeat(120) + '\n');
+    this.diagnosticLogger.logCC64DiagnosticTable(sortedEvents, region);
   }
 }
