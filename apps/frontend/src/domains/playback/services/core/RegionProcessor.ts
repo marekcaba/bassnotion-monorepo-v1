@@ -38,6 +38,7 @@ import { GrandPianoKeyboardMapper } from './region-processing/scheduling/GrandPi
 import { DiagnosticLogger } from './region-processing/diagnostics/DiagnosticLogger.js';
 import { VelocityLayerSelector } from './region-processing/harmony/VelocityLayerSelector.js';
 import { ExerciseDurationCalculator } from './region-processing/duration/ExerciseDurationCalculator.js';
+import { BackupScheduler } from './region-processing/backup/BackupScheduler.js';
 
 const logger = getLogger('RegionProcessor');
 
@@ -171,6 +172,9 @@ export class RegionProcessor {
   // Phase 5: Exercise duration calculation delegated to ExerciseDurationCalculator
   private exerciseDurationCalculator!: ExerciseDurationCalculator; // Initialized in constructor
 
+  // Phase 5: Backup scheduling delegated to BackupScheduler
+  private backupScheduler!: BackupScheduler; // Initialized in constructor
+
   // Diagnostic: Count logged notes
   private _noteLogCount = 0;
 
@@ -249,6 +253,9 @@ export class RegionProcessor {
     this.exerciseDurationCalculator = new ExerciseDurationCalculator(
       this._instanceId,
     );
+
+    // Phase 5: Instantiate backup scheduler
+    this.backupScheduler = new BackupScheduler(this._instanceId);
 
     logger.info('🔧 RegionProcessor instance created', {
       instanceId: this._instanceId,
@@ -1612,79 +1619,17 @@ export class RegionProcessor {
    * Process current transport position (backup method)
    */
   private processCurrentPosition(): void {
-    // CRITICAL: Defense in depth - don't schedule if stopping
-    if (!this.isRunning) {
-      logger.debug('⏰ Interval fired but isRunning=false, skipping');
-      return;
-    }
-
-    const currentTime = Tone.Transport.seconds;
-
-    // Process events within lookahead window
-    const lookAheadEnd = currentTime + this.lookAheadTime;
-
-    this.tracks.forEach((track, trackId) => {
-      const instrumentType = this.getInstrumentType(track);
-
-      track.regions.forEach((region) => {
-        if (!region.pattern?.events) return;
-
-        // Check if we're within this region's time range
-        // FAANG FIX: region.duration is in BEATS, must convert to seconds using current BPM!
-        const currentBpm = Tone.Transport.bpm.value;
-        const secondsPerBeat = 60 / currentBpm;
-        const regionDurationInSeconds = region.duration * secondsPerBeat;
-
-        if (
-          currentTime < region.startTime ||
-          currentTime > region.startTime + regionDurationInSeconds
-        ) {
-          return;
-        }
-
-        region.pattern.events.forEach((event, eventIndex) => {
-          const eventTime = this.parsePosition(event.position);
-          // COUNTDOWN SOLUTION: Same offset logic as main scheduler - convert beats to seconds
-          // FAANG FIX: Use parsePosition() which respects current BPM (Tone.Time() doesn't!)
-          const offsetTime =
-            this.countdownEnabled && !region.skipCountdownOffset
-              ? this.parsePosition(`0:${this.countdownOffsetBeats}:0`)
-              : 0;
-          const absoluteTime = region.startTime + eventTime + offsetTime;
-
-          // Check if this event should be triggered soon
-          if (absoluteTime >= currentTime && absoluteTime <= lookAheadEnd) {
-            // CRITICAL FIX: Check the MAIN event key to avoid double-scheduling
-            // The backup scheduler should NOT reschedule events that are already scheduled
-            const mainEventKey = `${region.id}_${eventIndex}`;
-            const backupEventKey = `backup_${region.id}_${event.position}_${Math.floor(absoluteTime)}`;
-
-            // Skip if already scheduled by main scheduler OR backup scheduler
-            const trackEvents = this.scheduledEvents.get(trackId);
-            const hasMainKey = trackEvents && trackEvents.has(mainEventKey);
-            const hasBackupKey = trackEvents && trackEvents.has(backupEventKey);
-
-            if (!hasMainKey && !hasBackupKey) {
-              // Schedule it immediately - absoluteTime is in seconds
-              const toneId = Tone.Transport.schedule((time) => {
-                if (!this.isRunning) return;
-                // CRITICAL FIX: Use absoluteTime (intended time in seconds) not time (Tone's lookahead time)
-                // Must match the main scheduling method to avoid timing drift
-                this.emitEvent(instrumentType, event, absoluteTime);
-              }, absoluteTime);
-
-              // Mark BOTH keys as scheduled to prevent duplicate scheduling
-              if (!this.scheduledEvents.has(trackId)) {
-                this.scheduledEvents.set(trackId, new Set());
-              }
-              this.scheduledEvents.get(trackId)!.add(mainEventKey);
-              this.scheduledEvents.get(trackId)!.add(backupEventKey);
-              this.scheduledIds.add(toneId);
-            }
-          }
-        });
-      });
-    });
+    this.backupScheduler.processPosition(
+      this.isRunning,
+      this.tracks,
+      this.scheduledEvents,
+      this.scheduledIds,
+      this.countdownEnabled,
+      this.countdownOffsetBeats,
+      this.parsePosition.bind(this),
+      this.getInstrumentType.bind(this),
+      this.emitEvent.bind(this),
+    );
   }
 
   /**
