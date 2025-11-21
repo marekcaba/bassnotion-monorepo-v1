@@ -16,6 +16,51 @@ import { EventBus, createStructuredLogger } from '../../shared/index.js';
 const logger = createStructuredLogger('TrackStateContainer');
 
 /**
+ * Deep clone utility for track state objects
+ */
+function deepClone<T>(obj: T): T {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+
+  // Handle Date objects
+  if (obj instanceof Date) {
+    return new Date(obj.getTime()) as T;
+  }
+
+  // Handle Arrays
+  if (Array.isArray(obj)) {
+    return obj.map(item => deepClone(item)) as T;
+  }
+
+  // Handle plain objects
+  if (obj.constructor === Object) {
+    const cloned = {} as T;
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        cloned[key] = deepClone(obj[key]);
+      }
+    }
+    return cloned;
+  }
+
+  // For other object types (class instances, etc.), attempt shallow copy
+  // This preserves the prototype chain while copying enumerable properties
+  try {
+    const cloned = Object.create(Object.getPrototypeOf(obj));
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        cloned[key] = deepClone(obj[key]);
+      }
+    }
+    return cloned;
+  } catch (error) {
+    logger.warn('Failed to deep clone object, falling back to shallow copy', { error });
+    return { ...obj } as T;
+  }
+}
+
+/**
  * Adapter to make new TrackState compatible with old interface
  */
 export class TrackStateContainer implements ITrackStateContainer {
@@ -67,8 +112,8 @@ export class TrackStateContainer implements ITrackStateContainer {
    * Update track state and record in history
    */
   updateState(updates: Partial<Track>, description: string): void {
-    // Capture previous state for event emission
-    const previousState = { ...this.track };
+    // Capture previous state for event emission using deep clone
+    const previousState = deepClone(this.track);
     
     // Convert track updates to state updates
     const stateUpdates = this.convertTrackToState(updates);
@@ -82,7 +127,7 @@ export class TrackStateContainer implements ITrackStateContainer {
         trackId: this.track.id,
         changedProperties,
         previousState,
-        currentState: this.track,
+        currentState: deepClone(this.track),
       });
     }
   }
@@ -244,18 +289,18 @@ export class TrackStateContainer implements ITrackStateContainer {
    * Update track from state
    */
   private updateTrackFromState(state: any): void {
-    // Update track properties
+    // Update track properties with deep cloning for object properties
     if (state.name !== undefined) this.track.name = state.name;
     if (state.color !== undefined) this.track.color = state.color;
     if (state.index !== undefined) this.track.index = state.index;
     if (state.lifecycle !== undefined) this.track.state = state.lifecycle;
-    if (state.musical !== undefined) this.track.musical = state.musical;
-    if (state.mixing !== undefined) this.track.mixing = state.mixing;
-    if (state.routing !== undefined) this.track.routing = state.routing;
-    if (state.sync !== undefined) this.track.sync = state.sync;
+    if (state.musical !== undefined) this.track.musical = deepClone(state.musical);
+    if (state.mixing !== undefined) this.track.mixing = deepClone(state.mixing);
+    if (state.routing !== undefined) this.track.routing = deepClone(state.routing);
+    if (state.sync !== undefined) this.track.sync = deepClone(state.sync);
     if (state.automation !== undefined)
-      this.track.automation = state.automation;
-    if (state.metadata !== undefined) this.track.metadata = state.metadata;
+      this.track.automation = deepClone(state.automation);
+    if (state.metadata !== undefined) this.track.metadata = deepClone(state.metadata);
   }
 
   /**
@@ -265,11 +310,11 @@ export class TrackStateContainer implements ITrackStateContainer {
     const historyInfo = this.trackState.getHistoryInfo();
     this.historyIndex = historyInfo.current;
 
-    // Convert snapshots to old format
+    // Convert snapshots to old format with deep cloning
     this.history = historyInfo.snapshots.map((snapshot, _index) => ({
       timestamp: snapshot.timestamp,
       description: snapshot.description,
-      state: this.track, // Simplified - would need proper conversion
+      state: deepClone(this.track), // Deep clone to prevent shared references
       changedProperties: [],
     }));
   }

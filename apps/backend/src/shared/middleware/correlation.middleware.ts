@@ -16,8 +16,9 @@ export class CorrelationMiddleware implements NestMiddleware {
     (req as any).correlationId = correlationId;
 
     // Add to response headers for tracing
-    if (!res.sent) {
-      res.header(CORRELATION_HEADER, correlationId);
+    // In Fastify middleware, we need to use raw.setHeader
+    if (res && res.raw && res.raw.setHeader) {
+      res.raw.setHeader(CORRELATION_HEADER, correlationId);
     }
 
     // Create logger instance for this request

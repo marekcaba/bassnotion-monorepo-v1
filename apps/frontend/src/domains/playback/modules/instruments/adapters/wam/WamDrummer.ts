@@ -108,23 +108,39 @@ registerProcessor('wam-drummer-processor', WamDrummerProcessor);
  */
 const logger = createStructuredLogger('WamDrummer');
 
-export class WamDrummerNode extends GainNode implements WamNode {
+// Check if we're in browser environment
+const isBrowser = typeof window !== 'undefined' && typeof AudioContext !== 'undefined';
+
+// Create a base class that works in both environments
+const BaseNode = isBrowser ? GainNode : class FakeGainNode {};
+
+export class WamDrummerNode extends BaseNode implements WamNode {
   private _workletNode?: AudioWorkletNode;
   private pads: Map<number, PadSample> = new Map();
   private samplers: Map<number, AudioBufferSourceNode[]> = new Map();
   private padGains: Map<number, GainNode> = new Map();
   private padPanners: Map<number, StereoPannerNode> = new Map();
   private _eventQueue: WamEvent[] = [];
+  private _isActive: boolean = true; // Start active by default
+  private _activeSources: Set<AudioBufferSourceNode> = new Set();
 
   module: WebAudioModule;
 
   constructor(module: WebAudioModule, options?: AudioNodeOptions) {
-    super(module.audioContext, options);
+    if (isBrowser) {
+      super(module.audioContext, options);
+    } else {
+      super();
+    }
     this.module = module;
-    this.initialize();
+    if (isBrowser) {
+      this.initialize();
+    }
   }
 
   private initialize(): void {
+    if (!isBrowser) return;
+
     // Initialize 16 pads with default samples
     for (let i = 1; i <= 16; i++) {
       this.pads.set(i, {
@@ -281,15 +297,23 @@ export class WamDrummerNode extends GainNode implements WamNode {
   clearEvents(): void {
     this._eventQueue = [];
 
-    // Stop all playing samples
-    for (const [padNum, sources] of this.samplers.entries()) {
-      for (const source of sources) {
+    // STOP FIX: When deactivating (stopping), we DO want to stop all sources immediately
+    // But during regular clearEvents (e.g., seeking), let them finish naturally
+    // The _isActive flag differentiates between these two cases
+    if (!this._isActive) {
+      // Plugin is being stopped - stop all active sources immediately
+      for (const source of this._activeSources) {
         try {
-          source.stop();
-        } catch {
-          // Already stopped
+          source.stop(0);
+        } catch (e) {
+          // Source may have already ended
         }
       }
+      this._activeSources.clear();
+    }
+
+    // Clear the tracking arrays
+    for (const [padNum, sources] of this.samplers.entries()) {
       this.samplers.set(padNum, []);
     }
   }
@@ -309,9 +333,27 @@ export class WamDrummerNode extends GainNode implements WamNode {
     try {
       if (typeof urlOrBuffer === 'string') {
         // First check if we have a cached buffer (from preloading)
-        const cachedBuffer =
-          GlobalSampleCache.getCachedBuffer(urlOrBuffer) ||
-          GlobalSampleCache.getCachedBuffer(`drum-pad-${padNumber}`);
+        // Try multiple cache keys for maximum compatibility
+        let cachedBuffer = GlobalSampleCache.getCachedBuffer(urlOrBuffer);
+
+        if (!cachedBuffer) {
+          cachedBuffer = GlobalSampleCache.getCachedBuffer(`drum-pad-${padNumber}`);
+        }
+
+        // Check for specific drum names based on pad number
+        if (!cachedBuffer) {
+          // Map pad numbers to drum names (standard mapping)
+          const drumNameMap: Record<number, string> = {
+            1: 'kick',
+            3: 'snare',
+            5: 'hihat',
+          };
+
+          const drumName = drumNameMap[padNumber];
+          if (drumName) {
+            cachedBuffer = GlobalSampleCache.getCachedBuffer(`drum-${drumName}`);
+          }
+        }
 
         if (cachedBuffer) {
           logger.info(`♻️ Using cached buffer for pad ${padNumber}`);
@@ -357,7 +399,7 @@ export class WamDrummerNode extends GainNode implements WamNode {
     const pad = this.pads.get(padNumber);
     if (!pad || !pad.loaded || !pad.buffer) return;
 
-    const triggerTime = time || this.context.currentTime;
+    const triggerTime = time !== undefined ? time : this.context.currentTime;
 
     // Create source node
     const source = this.context.createBufferSource();
@@ -381,12 +423,17 @@ export class WamDrummerNode extends GainNode implements WamNode {
     const sources = this.samplers.get(padNumber) || [];
     sources.push(source);
 
+    // Track source globally for stop functionality
+    this._activeSources.add(source);
+
     // Clean up finished sources
     source.onended = () => {
       const index = sources.indexOf(source);
       if (index >= 0) {
         sources.splice(index, 1);
       }
+      // Remove from active sources tracking
+      this._activeSources.delete(source);
     };
 
     this.samplers.set(padNumber, sources);
@@ -399,6 +446,41 @@ export class WamDrummerNode extends GainNode implements WamNode {
     // Convert MIDI velocity (0-127) to normalized velocity (0-1)
     const normalizedVelocity = velocity / 127;
     this.triggerPad(padNumber, normalizedVelocity, time);
+  }
+
+  /**
+   * Trigger method for AudioEventRouter compatibility
+   */
+  trigger(event: {
+    audioTime?: number;
+    velocity?: number;
+    data?: {
+      drum?: string;
+    };
+  }): void {
+    // Map drum names to pad numbers
+    const drumToPad: Record<string, number> = {
+      'kick': 1,
+      'snare': 3,
+      'hihat': 5,
+      'openhat': 6,
+      'crash': 9,
+      'ride': 10,
+      'tom1': 11,
+      'tom2': 12,
+      'tom3': 13,
+      'clap': 3,  // Same as snare
+      'rimshot': 4,
+      'cowbell': 14,
+      'tambourine': 15,
+      'shaker': 16,
+    };
+
+    const drumName = event.data?.drum || 'kick';
+    const padNumber = drumToPad[drumName] || 1;
+    const velocity = Math.round((event.velocity || 0.8) * 127);
+
+    this.triggerDrum(padNumber, velocity, event.audioTime);
   }
 
   /**
@@ -540,14 +622,56 @@ export default class WamDrummer implements Partial<WebAudioModule> {
     return this as unknown as WebAudioModule;
   }
 
+  /**
+   * Trigger method for AudioEventRouter compatibility
+   * Delegates to the drummerNode's trigger method
+   */
+  trigger(event: {
+    audioTime?: number;
+    velocity?: number;
+    data?: {
+      drum?: string;
+    };
+  }): void {
+    if (this.drummerNode) {
+      this.drummerNode.trigger(event);
+    } else {
+      logger.error('WamDrummer: No drummer node available for trigger');
+    }
+  }
+
+  /**
+   * Activate plugin - enable audio processing
+   * Called by PluginManager when transport starts
+   */
+  async activate(): Promise<void> {
+    if (this.drummerNode) {
+      this.drummerNode['_isActive'] = true;
+      logger.info('WamDrummer activated - ready for audio processing');
+    }
+  }
+
+  /**
+   * Deactivate plugin - stop all active audio sources immediately
+   * Called by PluginManager when transport stops
+   */
+  async deactivate(): Promise<void> {
+    if (this.drummerNode) {
+      this.drummerNode['_isActive'] = false;
+      // This will trigger clearEvents() to stop all active sources
+      this.drummerNode.clearEvents();
+      logger.info('WamDrummer deactivated - all audio sources stopped');
+    }
+  }
+
   // Helper method to load default drum kit
   async loadDefaultKit(): Promise<void> {
     if (!this.drummerNode) return;
 
     const samples = [
-      { pad: 1, file: 'dr110kik.mp3' }, // Kick
-      { pad: 3, file: 'dr110clp.mp3' }, // Snare/Clap
-      { pad: 5, file: 'dr110cht.mp3' }, // Closed HH
+      { pad: 1, file: 'kick-v1.wav' }, // Kick
+      { pad: 3, file: 'snare-v1.wav' }, // Snare
+      { pad: 5, file: 'hihat-v1.wav' }, // Closed HH
     ];
 
     for (const sample of samples) {
@@ -557,7 +681,7 @@ export default class WamDrummer implements Partial<WebAudioModule> {
       if (!url) {
         // Fallback to Supabase if not cached
         const { supabase } = await import('@/infrastructure/supabase/client');
-        const kitPath = 'drums/hydrogen-kits/mp3/electronic/boss-dr110';
+        const kitPath = 'drums/hydrogen-kits/colombo-acoustic';
         const fullPath = `${kitPath}/${sample.file}`;
 
         const urlResult = supabase.storage

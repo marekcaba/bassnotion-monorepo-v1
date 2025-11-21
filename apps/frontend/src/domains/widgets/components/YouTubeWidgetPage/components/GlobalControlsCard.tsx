@@ -24,6 +24,8 @@ interface GlobalControlsCardProps {
     endBeat?: number;
   } | null;
   isLoopEnabled?: boolean;
+  // Play state callback
+  onPlayStateChange?: (isPlaying: boolean) => void;
 }
 
 export function GlobalControlsCard({
@@ -38,6 +40,7 @@ export function GlobalControlsCard({
   onCameraModeChange,
   loopRegion,
   isLoopEnabled,
+  onPlayStateChange,
 }: GlobalControlsCardProps) {
   // Calculate duration from exercise data
   const calculateDuration = (exercise: any): number => {
@@ -80,7 +83,7 @@ export function GlobalControlsCard({
   const duration = calculateDuration(selectedExercise);
 
   return (
-    <Card className="bg-transparent border-transparent shadow-none overflow-visible">
+    <Card className="overflow-visible border-0 shadow-none bg-transparent">
       <CardContent className="p-0 overflow-visible">
         <GlobalControls
           selectedExercise={selectedExercise}
@@ -94,6 +97,7 @@ export function GlobalControlsCard({
           onCameraModeChange={onCameraModeChange}
           loopRegion={loopRegion}
           isLoopEnabled={isLoopEnabled}
+          onPlayStateChange={onPlayStateChange}
         />
       </CardContent>
     </Card>

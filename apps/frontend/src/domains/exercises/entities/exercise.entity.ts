@@ -1,34 +1,57 @@
-import { ExerciseId } from '../value-objects/exercise-id';
-import { Difficulty } from '../value-objects/difficulty';
+import { ExerciseId } from '../value-objects/exercise-id.vo';
+import { Difficulty } from '../value-objects/difficulty.vo';
+import type { DrumHit, GeneratedHarmonyNote, HarmonyInstrumentType, HarmonyControlChange } from '@bassnotion/contracts';
 
 // Note type for frontend usage
 export interface ExerciseNote {
   id: string;
-  timestamp: number;
+  // Fretboard position
   string: number;
   fret: number;
-  duration: number;
   note: string;
   color: string;
   techniques?: string[];
-  position?: number;
+
+  // Musical timing
+  position?: {
+    measure: number;
+    beat: number;
+    subdivision: number;
+  };
+  noteDuration?: string;  // 'quarter', 'eighth', etc.
+  durationTicks?: number;  // Duration in ticks at 480 PPQ
 }
 
 export interface ExerciseProps {
   id: ExerciseId;
+  tutorialId?: string; // UUID reference to tutorial
   title: string;
   description: string;
   difficulty: Difficulty;
-  duration: number; // in seconds
+  duration: number; // DEPRECATED: in seconds - use duration_beats
+  duration_beats?: number; // Musical duration in beats
+  total_bars?: number; // Total measures/bars
   bpm: number;
   key: string;
+  timeSignature?: { numerator: number; denominator: number };
   notes: ExerciseNote[];
   tags: string[];
   isActive: boolean;
+  // Legacy single MIDI file
   midiFilePath?: string;
   originalFilename?: string;
   fileSize?: number;
   uploadedAt?: Date;
+  // New separate MIDI files for each widget
+  drummerMidiUrl?: string;
+  basslineMidiUrl?: string;
+  harmonyMidiUrl?: string;
+  metronomeMidiUrl?: string;
+  // Pre-converted patterns (avoids re-parsing MIDI on client)
+  drumPattern?: DrumHit[];
+  harmonyNotes?: GeneratedHarmonyNote[]; // Pre-converted harmony notes
+  harmonyControlChanges?: HarmonyControlChange[]; // MIDI control events (sustain, expression)
+  harmonyInstrument?: HarmonyInstrumentType; // Default harmony instrument
   createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -59,6 +82,10 @@ export class Exercise {
     return this._props.id;
   }
 
+  get tutorialId(): string | undefined {
+    return this._props.tutorialId;
+  }
+
   get title(): string {
     return this._props.title;
   }
@@ -75,12 +102,24 @@ export class Exercise {
     return this._props.duration;
   }
 
+  get duration_beats(): number | undefined {
+    return this._props.duration_beats;
+  }
+
+  get total_bars(): number | undefined {
+    return this._props.total_bars;
+  }
+
   get bpm(): number {
     return this._props.bpm;
   }
 
   get key(): string {
     return this._props.key;
+  }
+
+  get timeSignature(): { numerator: number; denominator: number } | undefined {
+    return this._props.timeSignature;
   }
 
   get notes(): ExerciseNote[] {
@@ -109,6 +148,38 @@ export class Exercise {
 
   get uploadedAt(): Date | undefined {
     return this._props.uploadedAt;
+  }
+
+  get drummerMidiUrl(): string | undefined {
+    return this._props.drummerMidiUrl;
+  }
+
+  get basslineMidiUrl(): string | undefined {
+    return this._props.basslineMidiUrl;
+  }
+
+  get harmonyMidiUrl(): string | undefined {
+    return this._props.harmonyMidiUrl;
+  }
+
+  get metronomeMidiUrl(): string | undefined {
+    return this._props.metronomeMidiUrl;
+  }
+
+  get drumPattern(): DrumHit[] | undefined {
+    return this._props.drumPattern;
+  }
+
+  get harmonyNotes(): GeneratedHarmonyNote[] | undefined {
+    return this._props.harmonyNotes;
+  }
+
+  get harmonyControlChanges(): HarmonyControlChange[] | undefined {
+    return this._props.harmonyControlChanges;
+  }
+
+  get harmonyInstrument(): HarmonyInstrumentType | undefined {
+    return this._props.harmonyInstrument;
   }
 
   get createdBy(): string | undefined {
@@ -154,6 +225,28 @@ export class Exercise {
     return !!this._props.midiFilePath;
   }
 
+  hasDrummerMidi(): boolean {
+    return !!this._props.drummerMidiUrl;
+  }
+
+  hasBasslineMidi(): boolean {
+    return !!this._props.basslineMidiUrl;
+  }
+
+  hasHarmonyMidi(): boolean {
+    return !!this._props.harmonyMidiUrl;
+  }
+
+  hasMetronomeMidi(): boolean {
+    return !!this._props.metronomeMidiUrl;
+  }
+
+  hasAnyMidiFile(): boolean {
+    return this.hasMidiFile() || this.hasDrummerMidi() ||
+           this.hasBasslineMidi() || this.hasHarmonyMidi() ||
+           this.hasMetronomeMidi();
+  }
+
   hasNotes(): boolean {
     return this._props.notes.length > 0;
   }
@@ -181,14 +274,45 @@ export class Exercise {
 
   // Factory method for creating from API response
   static fromDTO(dto: any): Exercise {
-    return Exercise.reconstitute({
+    // CRITICAL DEBUG: Log the entire DTO to see what backend is sending
+    console.log('🔍 [EXERCISE-DTO] Received DTO from backend:', {
+      title: dto.title,
+      id: dto.id,
+      harmony_instrument: dto.harmony_instrument,
+      harmonyInstrument: dto.harmonyInstrument, // Check if camelCase version exists
+      hasHarmonyMidiUrl: !!dto.harmony_midi_url,
+      hasHarmonyNotes: !!dto.harmony_notes,
+      harmonyNotesCount: dto.harmony_notes?.length || 0,
+      allKeys: Object.keys(dto),
+    });
+
+    // TEMPORARY DEBUG: Log harmony_notes mapping
+    if (dto.harmony_midi_url || dto.harmony_notes || dto.harmony_control_changes) {
+      console.log('🔍 Exercise.fromDTO - Harmony data:', {
+        title: dto.title,
+        hasHarmonyMidiUrl: !!dto.harmony_midi_url,
+        hasHarmonyNotes: !!dto.harmony_notes,
+        harmonyNotesCount: dto.harmony_notes?.length || 0,
+        hasHarmonyControlChanges: !!dto.harmony_control_changes,
+        harmonyControlChangesCount: dto.harmony_control_changes?.length || 0,
+        harmonyInstrument: dto.harmony_instrument,
+        firstHarmonyNote: dto.harmony_notes?.[0],
+        firstControlChange: dto.harmony_control_changes?.[0],
+      });
+    }
+
+    const exercise = Exercise.reconstitute({
       id: ExerciseId.create(dto.id),
+      tutorialId: dto.tutorial_id,
       title: dto.title,
       description: dto.description,
-      difficulty: Difficulty.create(dto.difficulty),
+      difficulty: Difficulty.fromString(dto.difficulty),
       duration: dto.duration,
+      duration_beats: dto.duration_beats || dto.durationBeats, // Support both snake_case and camelCase
+      total_bars: dto.total_bars || dto.totalBars, // Support both snake_case and camelCase
       bpm: dto.bpm,
       key: dto.key,
+      timeSignature: dto.time_signature || dto.timeSignature, // Support both snake_case and camelCase
       notes: dto.notes || [],
       tags: dto.tags || [],
       isActive: dto.is_active ?? true,
@@ -196,20 +320,42 @@ export class Exercise {
       originalFilename: dto.original_filename,
       fileSize: dto.file_size,
       uploadedAt: dto.uploaded_at ? new Date(dto.uploaded_at) : undefined,
+      drummerMidiUrl: dto.drummer_midi_url,
+      basslineMidiUrl: dto.bassline_midi_url,
+      harmonyMidiUrl: dto.harmony_midi_url,
+      metronomeMidiUrl: dto.metronome_midi_url,
+      drumPattern: dto.drum_pattern,
+      harmonyNotes: dto.harmony_notes,
+      harmonyControlChanges: dto.harmony_control_changes,
+      harmonyInstrument: dto.harmony_instrument,
       createdBy: dto.created_by,
       createdAt: new Date(dto.created_at),
       updatedAt: new Date(dto.updated_at),
     });
+
+    // CRITICAL DEBUG: Verify the exercise entity has the field after creation
+    console.log('🔍 [EXERCISE-ENTITY] Created entity:', {
+      title: exercise.title,
+      harmonyInstrument: exercise.harmonyInstrument,
+      harmonyInstrumentFromProps: exercise._props?.harmonyInstrument,
+      propsKeys: Object.keys(exercise._props || {}),
+    });
+
+    return exercise;
   }
 
   // Method to convert to API request format
   toDTO(): any {
     return {
       id: this._props.id.value,
+      tutorial_id: this._props.tutorialId,
       title: this._props.title,
       description: this._props.description,
       difficulty: this._props.difficulty.value,
       duration: this._props.duration,
+      duration_beats: this._props.duration_beats,
+      total_bars: this._props.total_bars,
+      time_signature: this._props.timeSignature,
       bpm: this._props.bpm,
       key: this._props.key,
       notes: this._props.notes,
@@ -219,6 +365,14 @@ export class Exercise {
       original_filename: this._props.originalFilename,
       file_size: this._props.fileSize,
       uploaded_at: this._props.uploadedAt?.toISOString(),
+      drummer_midi_url: this._props.drummerMidiUrl,
+      bassline_midi_url: this._props.basslineMidiUrl,
+      harmony_midi_url: this._props.harmonyMidiUrl,
+      metronome_midi_url: this._props.metronomeMidiUrl,
+      drum_pattern: this._props.drumPattern,
+      harmony_notes: this._props.harmonyNotes,
+      harmony_control_changes: this._props.harmonyControlChanges,
+      harmony_instrument: this._props.harmonyInstrument,
       created_by: this._props.createdBy,
       created_at: this._props.createdAt.toISOString(),
       updated_at: this._props.updatedAt.toISOString(),

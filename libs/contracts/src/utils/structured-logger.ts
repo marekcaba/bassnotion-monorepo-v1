@@ -11,7 +11,25 @@ export function setGlobalLogTransporter(transporter: (entry: LogEntry) => void):
   globalLogTransporter = transporter;
 }
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = 'error' | 'warn' | 'info' | 'debug' | 'trace';
+
+// Numeric log levels for comparison
+export enum LogLevelValue {
+  ERROR = 0,
+  WARN = 1,
+  INFO = 2,
+  DEBUG = 3,
+  TRACE = 4,
+}
+
+// Map string levels to numeric values
+const LOG_LEVEL_MAP: Record<LogLevel, number> = {
+  error: LogLevelValue.ERROR,
+  warn: LogLevelValue.WARN,
+  info: LogLevelValue.INFO,
+  debug: LogLevelValue.DEBUG,
+  trace: LogLevelValue.TRACE,
+};
 
 export interface LogEntry {
   level: LogLevel;
@@ -28,6 +46,106 @@ export interface StructuredLogger {
   error(message: string, error?: Error, data?: Record<string, unknown>): void;
 }
 
+// Get current log level from environment
+function getCurrentLogLevel(): LogLevelValue {
+  // Temporarily allow INFO level for debugging
+  const envLevel = process.env.NEXT_PUBLIC_LOG_LEVEL?.toUpperCase();
+
+  switch (envLevel) {
+    case 'ERROR':
+      return LogLevelValue.ERROR;
+    case 'WARN':
+      return LogLevelValue.WARN;
+    case 'INFO':
+      return LogLevelValue.INFO;
+    case 'DEBUG':
+      return LogLevelValue.DEBUG;
+    case 'TRACE':
+      return LogLevelValue.TRACE;
+    default:
+      // Default to ERROR in production, INFO in development
+      return process.env.NODE_ENV === 'production'
+        ? LogLevelValue.ERROR
+        : LogLevelValue.INFO;
+  }
+}
+
+// Contexts that generate excessive logs
+const NOISY_CONTEXTS = [
+  'useWidgetPageState',
+  'AudioProvider',
+  'TransportController',
+  'SchedulerService',
+  'MetronomeService',
+  'usePlaybackControls',
+  'useFretboardAnimation',
+  'PositionManager',
+  'TimingEngine',
+  'EventScheduler',
+  'SyncManager',
+  'standardized-audio-context-mock',
+  'useFretboard',
+  'FretboardCard',
+  // 'youtube-widget', // Temporarily enabled for debugging
+  'global-controls',
+  'useAudioContext',
+  'useAudioEngine',
+  'TrackStateContainer',
+  'AudioContextCompatibility',
+  'WamKeyboard',
+  'HarmonyWidgetV2',
+  'CorrelationProvider',
+  'AudioSession',
+  'UnifiedTransport',
+  'TransportAdapter',
+  'WidgetSyncService',
+  'CoreServices',
+  'EventBus',
+  'CircuitBreaker',
+  'AudioEngine',
+  'Transport',
+  'TransportTimeline',
+  'MusicalPositionManager',
+  'ToneWrapper',
+  'TrackManager',
+  'Track',
+  'SyncedWidget',
+  'SyncProvider',
+  'DebugUtils',
+  'FeatureFlags',
+  'HealthStatus',
+  'TransportClock',
+  'useFretboardExercise',
+  'AudioContextManager',
+  'CacheMonitor',
+  'GlobalSampleCache',
+  'InitialSamplePreloader',
+];
+
+// Check if a context should be suppressed
+function shouldSuppressContext(context: string): boolean {
+  const env = process.env.NODE_ENV;
+
+  // Never suppress in test environment
+  if (env === 'test') return false;
+
+  // In production, suppress noisy contexts unless explicitly enabled
+  if (env === 'production') {
+    const allowNoisy = process.env.NEXT_PUBLIC_ALLOW_NOISY_LOGS === 'true';
+    if (!allowNoisy) {
+      return NOISY_CONTEXTS.some(noisy => context.includes(noisy));
+    }
+  }
+
+  // In development, suppress noisy contexts by default unless explicitly enabled
+  const allowNoisy = process.env.NEXT_PUBLIC_ALLOW_NOISY_LOGS === 'true';
+  if (!allowNoisy) {
+    return NOISY_CONTEXTS.some(noisy => context.includes(noisy));
+  }
+
+  return false;
+}
+
 /**
  * Create a structured logger instance
  */
@@ -36,6 +154,19 @@ export function createStructuredLogger(
   defaultContext?: Partial<CorrelationContext>
 ): StructuredLogger {
   const log = (level: LogLevel, message: string, data?: Record<string, unknown>, error?: Error) => {
+    // Get current log level at runtime (not cached)
+    const currentLogLevel = getCurrentLogLevel();
+    const isSuppressed = shouldSuppressContext(service);
+
+    // Check if this log level should be shown
+    const levelValue = LOG_LEVEL_MAP[level];
+
+    // Skip if below current threshold (CRITICAL FIX: Check this FIRST)
+    if (levelValue > currentLogLevel) return;
+
+    // In production/development, suppress ALL non-error logs from noisy contexts
+    if (isSuppressed && level !== 'error') return;
+
     const entry: LogEntry = {
       level,
       message,
@@ -74,24 +205,49 @@ export function createStructuredLogger(
       }),
     };
 
-    // Only log to console if not in production or if explicitly enabled
-    const shouldLogToConsole = 
-      process.env.NODE_ENV !== 'production' || 
-      process.env.LOG_TO_CONSOLE === 'true';
+    // In production, use structured JSON logging
+    // In development, use simpler format for readability
+    const isDev = process.env.NODE_ENV === 'development';
 
-    if (shouldLogToConsole) {
+    if (isDev) {
+      // Simple, readable format for development
+      const prefix = `[${level.toUpperCase()}] [${service}]`;
+      const logMessage = `${prefix} ${message}`;
+
       switch (level) {
-        case 'debug':
-          console.debug(JSON.stringify(logData));
+        case 'error':
+          console.error(logMessage, error || '', data || '');
+          break;
+        case 'warn':
+          console.warn(logMessage, data || '');
           break;
         case 'info':
-          console.info(JSON.stringify(logData));
+          console.info(logMessage, data || '');
+          break;
+        case 'debug':
+          console.debug(logMessage, data || '');
+          break;
+        case 'trace':
+          console.log(logMessage, data || '');
+          break;
+      }
+    } else {
+      // Structured JSON for production/test
+      switch (level) {
+        case 'error':
+          console.error(JSON.stringify(logData));
           break;
         case 'warn':
           console.warn(JSON.stringify(logData));
           break;
-        case 'error':
-          console.error(JSON.stringify(logData));
+        case 'info':
+          console.info(JSON.stringify(logData));
+          break;
+        case 'debug':
+          console.debug(JSON.stringify(logData));
+          break;
+        case 'trace':
+          console.log(JSON.stringify(logData));
           break;
       }
     }

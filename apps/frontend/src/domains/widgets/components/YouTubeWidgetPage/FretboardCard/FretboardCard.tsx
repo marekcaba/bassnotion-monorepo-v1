@@ -8,6 +8,9 @@ import {
   CardTitle,
 } from '@/shared/components/ui/card';
 import { Target } from 'lucide-react';
+import { createStructuredLogger } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('FretboardCard');
 // Removed useExerciseSelection - parent manages exercise selection now
 import { SyncedWidget } from '../../base';
 import type { SyncedWidgetRenderProps } from '../../base';
@@ -501,7 +504,8 @@ const FretboardCardContent = React.memo(
       ((dots: Map<string, number[]>) => {
         logger.info('No setSelectedDots3D provided, dots:', dots);
       });
-    const sharedStringCount = stringCount3D || 4;
+    // CRITICAL: Use ?? instead of || to properly handle 0 values and only default when undefined/null
+    const sharedStringCount = stringCount3D ?? 4;
 
     // DEBUG: Track fretboard hook dependencies
     // CRITICAL FIX: Don't include currentTime in dependencies to prevent re-renders

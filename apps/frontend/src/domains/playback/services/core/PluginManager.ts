@@ -451,8 +451,10 @@ export class PluginManager implements Service {
       this.notifyActivePlugins('transport-stopped');
     });
 
-    this.eventBus.on('transport:tempo-changed', (data) => {
+    this.eventBus.on('transport:tempo-change', (data) => {
+      logger.info('🎵 PluginManager: Received tempo-change event', { data });
       this.notifyActivePlugins('tempo-changed', data);
+      logger.info('🎵 PluginManager: Notified plugins', { pluginCount: this.plugins.size });
     });
   }
 
@@ -555,6 +557,23 @@ export class PluginManager implements Service {
 export async function registerExistingPlugins(
   pluginManager: PluginManager,
 ): Promise<void> {
+  // CRITICAL: Register WamKeyboardPlugin FIRST so it's available immediately
+  // This unifies the dual singleton systems (wamPluginSingleton + PluginManager)
+  logger.info('🎹 Registering WamKeyboardPlugin for harmony...');
+  try {
+    const { WamKeyboardPlugin } = await import(
+      '../../modules/instruments/adapters/wam/WamKeyboardPlugin.js'
+    );
+    const keyboardPlugin = new WamKeyboardPlugin();
+    await pluginManager.register(keyboardPlugin as AudioPlugin);
+    logger.info('✅ WamKeyboardPlugin registered successfully (id: wam-keyboard)');
+  } catch (error) {
+    logger.error('Failed to register WamKeyboardPlugin:', {
+      error,
+      correlationId: 'system',
+    });
+  }
+
   // Dynamically import all existing plugins
   const pluginModules = [
     import('../../modules/instruments/implementations/bass/BassProcessor.js'),

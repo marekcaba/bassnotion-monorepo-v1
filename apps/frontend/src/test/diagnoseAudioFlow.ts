@@ -49,7 +49,7 @@ export function diagnoseAudioFlow() {
   console.log('\n4. GLOBAL SAMPLE CACHE:');
   const GlobalSampleCache =
     (window as any).GlobalSampleCache ||
-    require('@/domains/playback/services/storage/GlobalSampleCache')
+    require('@/domains/playback/modules/storage/cache/GlobalSampleCache')
       .GlobalSampleCache;
   if (GlobalSampleCache) {
     const stats = GlobalSampleCache.getStats();

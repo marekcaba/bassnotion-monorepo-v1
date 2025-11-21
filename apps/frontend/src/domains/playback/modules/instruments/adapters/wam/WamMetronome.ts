@@ -98,12 +98,20 @@ export interface TimeSignature {
   denominator: number; // Note value (4 = quarter, 8 = eighth)
 }
 
+// Check if we're in browser environment
+const isBrowser = typeof window !== 'undefined' && typeof AudioContext !== 'undefined';
+
 /**
  * Extended GainNode to implement AudioNode interface
  */
-class ExtendedGainNode extends GainNode {
-  constructor(context: BaseAudioContext, options?: GainOptions) {
-    super(context, options);
+const BaseNode = isBrowser ? GainNode : class FakeGainNode {};
+class ExtendedGainNode extends BaseNode {
+  constructor(context?: BaseAudioContext, options?: GainOptions) {
+    if (isBrowser && context) {
+      super(context, options);
+    } else {
+      super();
+    }
   }
 }
 
@@ -126,6 +134,8 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
   private clickSynth: any = null;
   private accentSynth: any = null;
   private logger = createStructuredLogger('WamMetronomeNode');
+  private _isActive: boolean = true; // Start active by default
+  private _activeSources: Set<AudioBufferSourceNode> = new Set();
 
   get gain(): AudioParam {
     return this.gainNode?.gain || super.gain;
@@ -188,48 +198,79 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
    */
   async loadSound(sound: MetronomeSound): Promise<void> {
     try {
-      // We only have one sample in Supabase for now
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const samplePath = 'metronome/Clicks_01.mp3';
-      const fullUrl = `${supabaseUrl}/storage/v1/object/public/audio-samples/${samplePath}`;
-      this.logger.info(
-        `🎵 Loading metronome sample from Supabase: ${samplePath}`,
-      );
-      this.logger.info(`🎵 Full URL: ${fullUrl}`);
+      // FIRST: Try to get preloaded samples from GlobalSampleCache
+      const cachedHighBuffer = this.sampleCache.getCachedBuffer('metronome-high');
+      const cachedLowBuffer = this.sampleCache.getCachedBuffer('metronome-low');
 
-      // Check cache first (exactly like WamDrummer does)
-      const cachedBuffer =
-        this.sampleCache.getCachedBuffer(fullUrl) ||
+      if (cachedHighBuffer && cachedLowBuffer) {
+        this.logger.info('✅ Using preloaded metronome samples from cache!');
+        this.accentBuffer = cachedHighBuffer;
+        this.clickBuffer = cachedLowBuffer;
+        this.currentSound = sound;
+        return;
+      }
+
+      // If preloaded samples not found, load from Supabase
+      this.logger.info('⚠️ Preloaded samples not found, loading from Supabase...');
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+      // Load TWO different samples for low and high clicks
+      const clickSamplePath = 'metronome/Click_low2_fixed.mp3';  // Low pitched click
+      const accentSamplePath = 'metronome/Click_high2_fixed.mp3'; // High pitched accent
+
+      const clickUrl = `${supabaseUrl}/storage/v1/object/public/audio-samples/${clickSamplePath}`;
+      const accentUrl = `${supabaseUrl}/storage/v1/object/public/audio-samples/${accentSamplePath}`;
+
+      this.logger.info(`🎵 Loading metronome samples from Supabase:`);
+      this.logger.info(`  Regular click: ${clickSamplePath}`);
+      this.logger.info(`  Accent click: ${accentSamplePath}`);
+
+      // Load regular click buffer
+      const cachedClickBuffer =
+        this.sampleCache.getCachedBuffer(clickUrl) ||
         this.sampleCache.getCachedBuffer('metronome-click');
 
-      if (cachedBuffer) {
-        this.logger.info(`♻️ Using cached buffer for metronome`);
-        this.clickBuffer = cachedBuffer;
-        this.accentBuffer = cachedBuffer;
+      if (cachedClickBuffer) {
+        this.logger.info(`♻️ Using cached buffer for regular click`);
+        this.clickBuffer = cachedClickBuffer;
       } else {
-        // Load from URL (exactly like WamDrummer does)
-        this.logger.info(`📥 Loading metronome sample from URL: ${fullUrl}`);
-        const response = await fetch(fullUrl);
-
+        this.logger.info(`📥 Loading regular click from: ${clickUrl}`);
+        const response = await fetch(clickUrl);
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(`HTTP error loading click! status: ${response.status}`);
         }
-
         const arrayBuffer = await response.arrayBuffer();
-        this.logger.info(
-          `🎵 Received audio data: ${arrayBuffer.byteLength} bytes`,
-        );
-
         const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
-        this.logger.info(
-          `🎵 Decoded audio buffer: duration=${audioBuffer.duration}s, sampleRate=${audioBuffer.sampleRate}Hz`,
-        );
+        this.logger.info(`🎵 Regular click loaded: ${audioBuffer.duration}s`);
 
-        // Cache the buffer
-        this.sampleCache.cacheBuffer(fullUrl, audioBuffer);
+        this.sampleCache.cacheBuffer(clickUrl, audioBuffer);
         this.sampleCache.cacheBuffer('metronome-click', audioBuffer);
-
+        this.sampleCache.cacheBuffer('metronome-low', audioBuffer); // Also cache with preload key
         this.clickBuffer = audioBuffer;
+      }
+
+      // Load accent click buffer
+      const cachedAccentBuffer =
+        this.sampleCache.getCachedBuffer(accentUrl) ||
+        this.sampleCache.getCachedBuffer('metronome-accent');
+
+      if (cachedAccentBuffer) {
+        this.logger.info(`♻️ Using cached buffer for accent click`);
+        this.accentBuffer = cachedAccentBuffer;
+      } else {
+        this.logger.info(`📥 Loading accent click from: ${accentUrl}`);
+        const response = await fetch(accentUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP error loading accent! status: ${response.status}`);
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
+        this.logger.info(`🎵 Accent click loaded: ${audioBuffer.duration}s`);
+
+        this.sampleCache.cacheBuffer(accentUrl, audioBuffer);
+        this.sampleCache.cacheBuffer('metronome-accent', audioBuffer);
+        this.sampleCache.cacheBuffer('metronome-high', audioBuffer); // Also cache with preload key
         this.accentBuffer = audioBuffer;
       }
 
@@ -329,7 +370,7 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
       );
       if (this.clickSynth) {
         const synth = isAccent ? this.accentSynth : this.clickSynth;
-        const actualTime = time || this.context.currentTime;
+        const actualTime = time !== undefined ? time : this.context.currentTime;
         const volume = (velocity / 127) * 0.8;
         const pitch = isAccent ? 'C5' : 'C4';
         this.logger.info('🎵 Using fallback oscillator:', {
@@ -344,7 +385,7 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
       return;
     }
 
-    const triggerTime = time || this.context.currentTime;
+    const triggerTime = time !== undefined ? time : this.context.currentTime;
 
     this.logger.info('🎵 Playing metronome click with buffer', {
       bufferDuration: buffer.duration,
@@ -361,8 +402,8 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
 
       // Create gain for velocity
       const velocityGain = this.context.createGain();
-      // Make accent louder
-      const baseVolume = isAccent ? 1.0 : 0.7;
+      // Same volume for all beats (no accent boost)
+      const baseVolume = 0.8;
       velocityGain.gain.value = (velocity / 127) * baseVolume;
 
       // Connect nodes
@@ -373,12 +414,24 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
 
       // Start playback
       source.start(triggerTime);
-      this.logger.info('✅ Metronome click scheduled');
+
+      // Track source for stop functionality
+      this._activeSources.add(source);
+
+      // Log audio output scheduling with frame-accurate timing
+      const frame = Math.round(triggerTime * this.context.sampleRate);
+      this.logger.info('✅ Metronome click scheduled', {
+        triggerTime: triggerTime.toFixed(6),
+        frame,
+        sampleRate: this.context.sampleRate,
+      });
 
       // Cleanup after playback
       source.onended = () => {
         source.disconnect();
         velocityGain.disconnect();
+        // Remove from active sources tracking
+        this._activeSources.delete(source);
       };
     } catch (error) {
       this.logger.error('Failed to trigger click:', error as Error);
@@ -687,6 +740,31 @@ export class WamMetronome extends WebAudioModuleBase {
   }
 
   /**
+   * Trigger method for AudioEventRouter compatibility
+   */
+  trigger(event: {
+    audioTime?: number;
+    velocity?: number;
+    data?: {
+      beat?: number;
+      isDownbeat?: boolean;
+    };
+  }): void {
+    this.logger.info('🎵 WamMetronome.trigger() called', {
+      hasAudioNode: !!this.audioNode,
+      event,
+    });
+
+    if (this.audioNode) {
+      const isAccent = event.data?.isDownbeat || event.data?.beat === 1;
+      const velocity = Math.round((event.velocity || 0.8) * 127);
+      this.audioNode.triggerClick(isAccent, velocity, event.audioTime);
+    } else {
+      this.logger.error('❌ No audio node available for trigger');
+    }
+  }
+
+  /**
    * Set time signature
    */
   setTimeSignature(numerator: number, _denominator: number): void {
@@ -719,6 +797,37 @@ export class WamMetronome extends WebAudioModuleBase {
   async loadDefaultSamples(): Promise<void> {
     if (this.audioNode) {
       await this.audioNode.loadSound(MetronomeSound.CLASSIC);
+    }
+  }
+
+  /**
+   * Activate plugin - enable audio processing
+   * Called by PluginManager when transport starts
+   */
+  async activate(): Promise<void> {
+    if (this.audioNode) {
+      this.audioNode['_isActive'] = true;
+      this.logger.info('WamMetronome activated - ready for audio processing');
+    }
+  }
+
+  /**
+   * Deactivate plugin - stop all active audio sources immediately
+   * Called by PluginManager when transport stops
+   */
+  async deactivate(): Promise<void> {
+    if (this.audioNode) {
+      this.audioNode['_isActive'] = false;
+      // Stop all active click sources
+      for (const source of this.audioNode['_activeSources']) {
+        try {
+          source.stop(0);
+        } catch (e) {
+          // Source may have already ended
+        }
+      }
+      this.audioNode['_activeSources'].clear();
+      this.logger.info('WamMetronome deactivated - all audio sources stopped');
     }
   }
 

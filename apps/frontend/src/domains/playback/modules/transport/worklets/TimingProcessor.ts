@@ -97,12 +97,13 @@ class TimingProcessor extends AudioWorkletProcessor {
     // Debug tracking
     this.processStarted = false;
 
-    console.log(`TimingProcessor[${this.processorId}] initialized`, {
-      sampleRate,
-      updateInterval: this.updateInterval,
-      samplesPerUpdate: this.samplesPerUpdate,
-      theoreticalLatency: `${((128 / sampleRate) * 1000).toFixed(2)}ms`,
-    });
+    // SUPPRESSED: TimingProcessor logging disabled to reduce console noise
+    // console.log(`TimingProcessor[${this.processorId}] initialized`, {
+    //   sampleRate,
+    //   updateInterval: this.updateInterval,
+    //   samplesPerUpdate: this.samplesPerUpdate,
+    //   theoreticalLatency: `${((128 / sampleRate) * 1000).toFixed(2)}ms`,
+    // });
 
     // Set up message handler
     this.port.onmessage = this.handleMessage.bind(this);
@@ -120,9 +121,10 @@ class TimingProcessor extends AudioWorkletProcessor {
     // Debug log only the very first process call
     if (!this.processStarted) {
       this.processStarted = true;
-      console.log(
-        `TimingProcessor[${this.processorId}].process() started, isPlaying: ${this.isPlaying}, updateCount: ${this.updateCount}`,
-      );
+      // SUPPRESSED: Process logging disabled
+      // console.log(
+      //   `TimingProcessor[${this.processorId}].process() started, isPlaying: ${this.isPlaying}, updateCount: ${this.updateCount}`,
+      // );
     }
 
     // Fill output with silence to avoid audio artifacts
@@ -137,9 +139,10 @@ class TimingProcessor extends AudioWorkletProcessor {
 
       // Debug log for first few increments
       if (this.totalFrames <= 1024) {
-        console.log(
-          `TimingProcessor[${this.processorId}] INCREMENTED totalFrames to ${this.totalFrames} (${(this.totalFrames / sampleRate).toFixed(6)}s)`,
-        );
+        // SUPPRESSED: Frame increment logging disabled
+        // console.log(
+        //   `TimingProcessor[${this.processorId}] INCREMENTED totalFrames to ${this.totalFrames} (${(this.totalFrames / sampleRate).toFixed(6)}s)`,
+        // );
       }
     }
 
@@ -159,9 +162,10 @@ class TimingProcessor extends AudioWorkletProcessor {
 
         // Debug timing for first updates
         if (this.updateCount < 20) {
-          console.log(
-            `TimingProcessor[${this.processorId}] TIMING UPDATE ${this.updateCount + 1}: playbackFrames=${playbackFrames}, totalFrames=${this.totalFrames}, contextTime=${contextTime.toFixed(6)}, playbackTime=${playbackTime.toFixed(6)}`,
-          );
+          // SUPPRESSED: Timing update logging disabled
+          // console.log(
+          //   `TimingProcessor[${this.processorId}] TIMING UPDATE ${this.updateCount + 1}: playbackFrames=${playbackFrames}, totalFrames=${this.totalFrames}, contextTime=${contextTime.toFixed(6)}, playbackTime=${playbackTime.toFixed(6)}`,
+          // );
         }
 
         const message: TimingMessage = {
@@ -189,9 +193,11 @@ class TimingProcessor extends AudioWorkletProcessor {
         const expectedInterval = this.updateInterval;
         const drift = Math.abs(actualInterval - expectedInterval);
 
-        // Warn if drift is too high
-        if (drift > 0.005) {
-          // 5ms threshold
+        // Warn if drift is too high (increased threshold to reduce false positives)
+        // NOTE: With FAANG direct scheduling, these warnings don't affect audio timing
+        // which is scheduled directly to AudioContext bypassing JavaScript timing
+        if (drift > 0.010) {
+          // 10ms threshold (increased from 5ms)
           this.missedUpdates++;
           const warningMessage: TimingMessage = {
             type: 'timing-warning',
@@ -213,10 +219,11 @@ class TimingProcessor extends AudioWorkletProcessor {
    * Handle messages from main thread
    */
   handleMessage(event: MessageEvent<ControlMessage>): void {
-    console.log(
-      `TimingProcessor[${this.processorId}] received message:`,
-      event.data,
-    );
+    // SUPPRESSED: Message handling logging disabled
+    // console.log(
+    //   `TimingProcessor[${this.processorId}] received message:`,
+    //   event.data,
+    // );
 
     switch (event.data.type) {
       case 'start':
@@ -226,9 +233,10 @@ class TimingProcessor extends AudioWorkletProcessor {
           this.totalFrames = event.data.fromFrame;
           this.pauseFrame = event.data.fromFrame;
         }
-        console.log(
-          `TimingProcessor[${this.processorId}] STARTED: isPlaying=${this.isPlaying}, totalFrames=${this.totalFrames}, updateCount=${this.updateCount}, currentFrame=${currentFrame}`,
-        );
+        // SUPPRESSED: Start logging disabled
+        // console.log(
+        //   `TimingProcessor[${this.processorId}] STARTED: isPlaying=${this.isPlaying}, totalFrames=${this.totalFrames}, updateCount=${this.updateCount}, currentFrame=${currentFrame}`,
+        // );
         break;
 
       case 'pause':
@@ -244,9 +252,10 @@ class TimingProcessor extends AudioWorkletProcessor {
         this.updateCount = 0;
         this.sessionId++;
         this.messageSequence = 0;
-        console.log(
-          `TimingProcessor[${this.processorId}] STOPPED: totalFrames=${this.totalFrames}, isPlaying=${this.isPlaying}, sessionId=${this.sessionId}`,
-        );
+        // SUPPRESSED: Stop logging disabled
+        // console.log(
+        //   `TimingProcessor[${this.processorId}] STOPPED: totalFrames=${this.totalFrames}, isPlaying=${this.isPlaying}, sessionId=${this.sessionId}`,
+        // );
         break;
 
       case 'seek':

@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useCallback, useMemo, useRef } from 'react';
+import { createStructuredLogger } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('useWidgetPageState');
 
 // Global State Interface as specified in the story
 export interface WidgetPageState {
@@ -18,6 +21,7 @@ export interface WidgetPageState {
   // Exercise Data
   selectedExercise?: Exercise;
   playbackMode: 'practice' | 'performance';
+  harmonyInstrument?: 'grandpiano' | 'rhodes' | 'wurlitzer' | 'pad';
 
   // Widget States
   widgets: {
@@ -115,46 +119,35 @@ const initialState: WidgetPageState = {
   isLoopEnabled: false,
 };
 
-// Render counter for debugging infinite re-renders
+// Render counter for debugging infinite re-renders (only in development with debug enabled)
 let renderCount = 0;
 let prevStateRef: WidgetPageState | null = null;
 
 export function useWidgetPageState() {
   renderCount++;
-  // Only log every 10th render to reduce noise
-  if (renderCount % 10 === 0) {
-    logger.info(`🔄 useWidgetPageState RENDER #${renderCount}`, {
-      timestamp: Date.now(),
-      stack: new Error().stack?.split('\n').slice(1, 4).join(' <- '),
-    });
+  // Only log in development with debug mode enabled
+  if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_LOG_LEVEL === 'DEBUG') {
+    if (renderCount % 100 === 0) { // Reduced frequency
+      logger.debug(`useWidgetPageState render count: ${renderCount}`);
+    }
   }
 
   const [state, setState] = useState<WidgetPageState>(initialState);
 
-  // Track what changed in state
-  if (renderCount % 10 === 0 && prevStateRef) {
-    const changes: string[] = [];
-    if (prevStateRef.isPlaying !== state.isPlaying)
-      changes.push(
-        `isPlaying: ${prevStateRef.isPlaying} -> ${state.isPlaying}`,
-      );
-    if (prevStateRef.currentTime !== state.currentTime)
-      changes.push(
-        `currentTime: ${prevStateRef.currentTime} -> ${state.currentTime}`,
-      );
-    if (prevStateRef.tempo !== state.tempo)
-      changes.push(`tempo: ${prevStateRef.tempo} -> ${state.tempo}`);
-    if (prevStateRef.selectedExercise?.id !== state.selectedExercise?.id)
-      changes.push(
-        `selectedExercise: ${prevStateRef.selectedExercise?.id} -> ${state.selectedExercise?.id}`,
-      );
-    if (JSON.stringify(prevStateRef.volume) !== JSON.stringify(state.volume))
-      changes.push('volume changed');
-    if (JSON.stringify(prevStateRef.widgets) !== JSON.stringify(state.widgets))
-      changes.push('widgets changed');
+  // Only track state changes in debug mode
+  if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_LOG_LEVEL === 'DEBUG') {
+    if (renderCount % 100 === 0 && prevStateRef) {
+      const changes: string[] = [];
+      if (prevStateRef.isPlaying !== state.isPlaying)
+        changes.push(`isPlaying: ${prevStateRef.isPlaying} -> ${state.isPlaying}`);
+      if (prevStateRef.tempo !== state.tempo)
+        changes.push(`tempo: ${prevStateRef.tempo} -> ${state.tempo}`);
+      if (prevStateRef.selectedExercise?.id !== state.selectedExercise?.id)
+        changes.push(`exercise: ${prevStateRef.selectedExercise?.id} -> ${state.selectedExercise?.id}`);
 
-    if (changes.length > 0) {
-      logger.info('🔄 State changes detected:', changes);
+      if (changes.length > 0) {
+        logger.debug('State changes:', changes);
+      }
     }
   }
   prevStateRef = state;
@@ -210,9 +203,23 @@ export function useWidgetPageState() {
       // Clear exercise if undefined
       if (!exercise) {
         await exerciseTimelineIntegrator.clearExercise();
-        setState((prev) => ({ ...prev, selectedExercise: undefined }));
+        setState((prev) => ({
+          ...prev,
+          selectedExercise: undefined,
+          harmonyInstrument: undefined,
+        }));
         return;
       }
+
+      // CRITICAL DEBUG: Log exercise entity to trace harmonyInstrument
+      console.log('🔍 [STATE-FLOW-1] setSelectedExercise called with:', {
+        exerciseId: exercise.id?.value,
+        title: exercise.title,
+        harmonyInstrument: exercise.harmonyInstrument,
+        hasHarmonyInstrumentGetter: typeof exercise.harmonyInstrument !== 'undefined',
+        exerciseType: typeof exercise,
+        exerciseConstructor: exercise.constructor?.name,
+      });
 
       // Convert Exercise to ExerciseData format for timeline integration
       const exerciseData = {
@@ -276,11 +283,34 @@ export function useWidgetPageState() {
         logger.error('Failed to load exercise into timeline:', error);
       }
 
+      // CRITICAL DEBUG: Extract harmonyInstrument BEFORE setting state
+      // No default instrument - use exercise's harmonyInstrument or undefined
+      const extractedHarmonyInstrument = exercise.harmonyInstrument;
+
+      console.log('🔍 [STATE-FLOW-2] Extracting harmonyInstrument:', {
+        exerciseId: exercise.id.value,
+        title: exercise.title,
+        rawHarmonyInstrument: exercise.harmonyInstrument,
+        extractedHarmonyInstrument,
+        typeOf: typeof exercise.harmonyInstrument,
+        isUndefined: exercise.harmonyInstrument === undefined,
+        isNull: exercise.harmonyInstrument === null,
+      });
+
       setState((prev) => {
         const newState = {
           ...prev,
           selectedExercise: exercise,
+          harmonyInstrument: extractedHarmonyInstrument,
         };
+
+        console.log('🔍 [STATE-FLOW-3] New state object created:', {
+          selectedExerciseId: newState.selectedExercise?.id.value,
+          selectedExerciseTitle: newState.selectedExercise?.title,
+          stateHarmonyInstrument: newState.harmonyInstrument,
+          exerciseHarmonyInstrument: newState.selectedExercise?.harmonyInstrument,
+          prevHarmonyInstrument: prev.harmonyInstrument,
+        });
 
         // Update widget states based on exercise data
         if (exercise) {
@@ -338,17 +368,8 @@ export function useWidgetPageState() {
             };
           }
 
-          // Debug log (disabled to reduce console noise)
-          // logger.info(
-          //   '🎯 useWidgetPageState: Exercise selected, updating widgets:',
-          //   {
-          //     exerciseId: exercise.id,
-          //     title: exercise.title,
-          //     bpm: exercise.bpm,
-          //     key: exercise.key,
-          //     chords: exercise.chord_progression,
-          //   },
-          // );
+          // Log only significant events
+          logger.debug('Exercise selected', { exerciseId: exercise.id });
         }
 
         return newState;
@@ -428,87 +449,39 @@ export function useWidgetPageState() {
     setState(initialState);
   }, []);
 
-  // CRITICAL FIX: Create a stable return object that doesn't change unless necessary
-  // Use refs to maintain stability while still providing access to current values
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  // CRITICAL FIX: Return state directly with stable callbacks
+  // Components need to re-render when state changes, so we can't use the getter pattern
+  // that hides state changes from React's reactivity system
+  return {
+    // State - direct exposure so React can track changes
+    state,
 
-  // Create getters that access current state through ref
-  const stableReturn = useMemo(
-    () => {
-      if (renderCount % 10 === 0) {
-        logger.info('🔄 useWidgetPageState: Creating new return object');
-      }
+    // Actions (these are already stable due to useCallback)
+    togglePlayback,
+    setCurrentTime,
+    setTempo,
+    setVolume,
+    setSelectedExercise,
+    toggleWidgetVisibility,
+    nextChord,
+    toggleSync,
+    toggleFretboardAnimation,
+    setLoopRegion,
+    toggleLoopEnabled,
+    resetState,
 
-      return {
-        // State - expose through getter to maintain reference stability
-        get state() {
-          return stateRef.current;
-        },
-
-        // Actions (these are already stable due to useCallback)
-        togglePlayback,
-        setCurrentTime,
-        setTempo,
-        setVolume,
-        setSelectedExercise,
-        toggleWidgetVisibility,
-        nextChord,
-        toggleSync,
-        toggleFretboardAnimation,
-        setLoopRegion,
-        toggleLoopEnabled,
-        resetState,
-
-        // Computed values - use getters to always return current values
-        get isPlaying() {
-          return stateRef.current.isPlaying;
-        },
-        get currentTime() {
-          return stateRef.current.currentTime;
-        },
-        get tempo() {
-          return stateRef.current.tempo;
-        },
-        get selectedExercise() {
-          return stateRef.current.selectedExercise;
-        },
-        get widgets() {
-          return stateRef.current.widgets;
-        },
-        get syncEnabled() {
-          return stateRef.current.syncEnabled;
-        },
-        get fretboardAnimation() {
-          return stateRef.current.fretboardAnimation;
-        },
-        get loopRegion() {
-          return stateRef.current.loopRegion;
-        },
-        get isLoopEnabled() {
-          return stateRef.current.isLoopEnabled;
-        },
-      };
-    },
-    // Only depend on the stable callback functions
-    // State changes won't trigger object recreation
-    [
-      togglePlayback,
-      setCurrentTime,
-      setTempo,
-      setVolume,
-      setSelectedExercise,
-      toggleWidgetVisibility,
-      nextChord,
-      toggleSync,
-      toggleFretboardAnimation,
-      setLoopRegion,
-      toggleLoopEnabled,
-      resetState,
-    ],
-  );
-
-  return stableReturn;
+    // Computed values - expose directly from state so React can track changes
+    isPlaying: state.isPlaying,
+    currentTime: state.currentTime,
+    tempo: state.tempo,
+    selectedExercise: state.selectedExercise,
+    widgets: state.widgets,
+    syncEnabled: state.syncEnabled,
+    fretboardAnimation: state.fretboardAnimation,
+    loopRegion: state.loopRegion,
+    isLoopEnabled: state.isLoopEnabled,
+    harmonyInstrument: state.harmonyInstrument,
+  };
 }
 
 export type UseWidgetPageStateReturn = ReturnType<typeof useWidgetPageState>;

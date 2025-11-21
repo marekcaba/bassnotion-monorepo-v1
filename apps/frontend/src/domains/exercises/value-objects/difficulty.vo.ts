@@ -1,37 +1,40 @@
-export type DifficultyLevel =
-  | 'beginner'
-  | 'intermediate'
-  | 'advanced'
-  | 'expert';
+export enum DifficultyLevel {
+  BEGINNER = 'beginner',
+  INTERMEDIATE = 'intermediate',
+  ADVANCED = 'advanced',
+  EXPERT = 'expert',
+}
 
 export class Difficulty {
-  private static readonly VALID_LEVELS: DifficultyLevel[] = [
-    'beginner',
-    'intermediate',
-    'advanced',
-    'expert',
-  ];
-
-  private static readonly LEVEL_VALUES: Record<DifficultyLevel, number> = {
-    beginner: 1,
-    intermediate: 2,
-    advanced: 3,
-    expert: 4,
-  };
-
   constructor(public readonly value: DifficultyLevel) {
-    if (!Difficulty.isValid(value)) {
+    if (!Object.values(DifficultyLevel).includes(value)) {
       throw new Error(`Invalid difficulty level: ${value}`);
     }
     Object.freeze(this);
   }
 
-  static create(value: string): Difficulty {
-    return new Difficulty(value as DifficultyLevel);
+  static fromString(value: string): Difficulty {
+    const normalizedValue = value.toLowerCase();
+    if (!Object.values(DifficultyLevel).includes(normalizedValue as DifficultyLevel)) {
+      throw new Error(`Invalid difficulty level: ${value}`);
+    }
+    return new Difficulty(normalizedValue as DifficultyLevel);
   }
 
-  static isValid(value: string): boolean {
-    return Difficulty.VALID_LEVELS.includes(value as DifficultyLevel);
+  static beginner(): Difficulty {
+    return new Difficulty(DifficultyLevel.BEGINNER);
+  }
+
+  static intermediate(): Difficulty {
+    return new Difficulty(DifficultyLevel.INTERMEDIATE);
+  }
+
+  static advanced(): Difficulty {
+    return new Difficulty(DifficultyLevel.ADVANCED);
+  }
+
+  static expert(): Difficulty {
+    return new Difficulty(DifficultyLevel.EXPERT);
   }
 
   equals(other: Difficulty): boolean {
@@ -42,41 +45,30 @@ export class Difficulty {
     return this.value;
   }
 
-  // Business logic methods
-  isBeginnerFriendly(): boolean {
-    return this.value === 'beginner' || this.value === 'intermediate';
-  }
-
-  isAdvanced(): boolean {
-    return this.value === 'advanced' || this.value === 'expert';
+  toDisplayString(): string {
+    return this.value.charAt(0).toUpperCase() + this.value.slice(1);
   }
 
   getNumericValue(): number {
-    return Difficulty.LEVEL_VALUES[this.value];
+    switch (this.value) {
+      case DifficultyLevel.BEGINNER:
+        return 1;
+      case DifficultyLevel.INTERMEDIATE:
+        return 2;
+      case DifficultyLevel.ADVANCED:
+        return 3;
+      case DifficultyLevel.EXPERT:
+        return 4;
+      default:
+        return 0;
+    }
   }
 
-  isHigherThan(other: Difficulty): boolean {
-    return this.getNumericValue() > other.getNumericValue();
-  }
-
-  isLowerThan(other: Difficulty): boolean {
+  isEasierThan(other: Difficulty): boolean {
     return this.getNumericValue() < other.getNumericValue();
   }
 
-  // Factory methods for common difficulties
-  static beginner(): Difficulty {
-    return new Difficulty('beginner');
-  }
-
-  static intermediate(): Difficulty {
-    return new Difficulty('intermediate');
-  }
-
-  static advanced(): Difficulty {
-    return new Difficulty('advanced');
-  }
-
-  static expert(): Difficulty {
-    return new Difficulty('expert');
+  isHarderThan(other: Difficulty): boolean {
+    return this.getNumericValue() > other.getNumericValue();
   }
 }

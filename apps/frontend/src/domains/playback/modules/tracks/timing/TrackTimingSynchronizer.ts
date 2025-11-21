@@ -457,8 +457,8 @@ export class TrackTimingSynchronizer implements ITrackTimingSynchronizer {
       position.bars * 4 + position.beats + position.sixteenths / 4;
     const totalSeconds = totalBeats * beatDuration;
 
-    // Add tick precision (960 PPQ)
-    const tickDuration = beatDuration / 960;
+    // Add tick precision (480 PPQ - MIDI standard)
+    const tickDuration = beatDuration / 480;
     return totalSeconds + position.ticks * tickDuration;
   }
 

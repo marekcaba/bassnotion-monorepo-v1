@@ -11,6 +11,7 @@ export default function V100Page({
 }: {
   params: Promise<{ tutorialId: string }>;
 }) {
+  const { logger } = useCorrelation('V100Page');
   logger.info('🎯 V100 - FretboardCard with real tutorial data');
 
   const [renderCount, setRenderCount] = useState(0);

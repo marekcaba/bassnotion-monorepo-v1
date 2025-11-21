@@ -5,7 +5,7 @@
   "description": "Classic Rhodes electric piano with 4 velocity layers",
   
   "storage": {
-    "baseUrl": "https://htuztkrbuewheehjspcz.supabase.co/storage/v1/object/public/audio-samples",
+    "baseUrl": "https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples",
     "bucketPath": "Keyboards/rhodes"
   },
   

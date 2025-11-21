@@ -1,9 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { createStructuredLogger } from '@bassnotion/contracts';
 import { DatabaseService } from './database.service.js';
 import { DatabaseCoreService } from './database-core.service.js';
 
+@Global()
 @Module({
   imports: [ConfigModule],
   providers: [DatabaseService, DatabaseCoreService],

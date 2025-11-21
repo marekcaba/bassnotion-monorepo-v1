@@ -9,7 +9,8 @@
  * Extracted from services/core with all functionality preserved.
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from '@/infrastructure/supabase/client.js';
 import type { EventBus } from '../../shared/index.js';
 import {
   SessionManager,
@@ -19,15 +20,15 @@ import {
 import type { Exercise } from '@bassnotion/contracts';
 import type { MusicalPosition } from '@bassnotion/contracts';
 import { createStructuredLogger } from '../../shared/index.js';
-import { MidiParserProcessor } from '../../midi/MidiParserProcessor.js';
+import { MidiFileParser, type ParsedMidiFile, type MidiEvent as MidiFileEvent } from '../../midi/parser/MidiFileParser.js';
 import type { MidiEvent } from '../../midi/types.js';
 import type { Track } from '../../tracks/core/Track.js';
 
 export interface ExerciseLoaderConfig {
-  supabaseUrl?: string;
-  supabaseAnonKey?: string;
+  // supabaseUrl and supabaseAnonKey no longer needed - we use the singleton
   autoLoadSamples?: boolean;
   cacheEnabled?: boolean;
+  midiBucketName?: string; // Name of the Supabase storage bucket for MIDI files
 }
 
 export interface LoadResult {
@@ -44,18 +45,17 @@ export class ExerciseLoader {
   private supabase: SupabaseClient | null = null;
   private eventBus: EventBus | null = null;
   private sessionManager: SessionManager;
-  private midiParser: MidiParserProcessor;
+  private midiParser: MidiFileParser;
   private isInitialized = false;
   private loadingCache = new Map<string, Promise<SessionModel>>();
 
   constructor(private config: ExerciseLoaderConfig = {}) {
     this.sessionManager = new SessionManager();
-    this.midiParser = new MidiParserProcessor();
+    this.midiParser = new MidiFileParser();
 
-    // Initialize Supabase client if credentials provided
-    if (config.supabaseUrl && config.supabaseAnonKey) {
-      this.supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
-    }
+    // Use the Supabase singleton instead of creating a new client
+    // This prevents "Multiple GoTrueClient instances" warning
+    this.supabase = supabase;
   }
 
   /**
@@ -205,22 +205,59 @@ export class ExerciseLoader {
    */
   private async parseMidiFile(midiData: ArrayBuffer): Promise<MidiEvent[]> {
     try {
-      const result = await this.midiParser.process({
-        file: new Blob([midiData]),
-        options: {
-          quantize: true,
-          detectTempo: true,
-          detectTimeSignature: true,
-        },
-      });
+      const parsedMidiFile: ParsedMidiFile = await this.midiParser.parseMidiFile(midiData);
+
+      // Convert MidiFileParser events to MidiEvent format
+      const midiEvents: MidiEvent[] = [];
+      let currentTime = 0;
+      const ticksPerQuarterNote = parsedMidiFile.header.ticksPerQuarterNote;
+
+      for (const track of parsedMidiFile.tracks) {
+        for (const event of track.events) {
+          // Update current time based on delta time
+          currentTime += event.deltaTime / ticksPerQuarterNote;
+
+          // Convert to MidiEvent format
+          // MidiFileParser uses 'channelNoteOn' and 'channelNoteOff' event types
+          if (event.type === 'channelNoteOn' && event.channel !== undefined) {
+            const velocity = event.data?.[1] || 127;
+            // Note On with velocity 0 is actually Note Off
+            if (velocity === 0) {
+              midiEvents.push({
+                type: 'noteOff',
+                time: currentTime,
+                channel: event.channel,
+                note: event.data?.[0] || 0,
+                velocity: 0,
+              } as MidiEvent);
+            } else {
+              midiEvents.push({
+                type: 'noteOn',
+                time: currentTime,
+                channel: event.channel,
+                note: event.data?.[0] || 0,
+                velocity,
+              } as MidiEvent);
+            }
+          } else if (event.type === 'channelNoteOff' && event.channel !== undefined) {
+            midiEvents.push({
+              type: 'noteOff',
+              time: currentTime,
+              channel: event.channel,
+              note: event.data?.[0] || 0,
+              velocity: event.data?.[1] || 0,
+            } as MidiEvent);
+          }
+        }
+      }
 
       logger.info('MIDI file parsed', {
-        eventCount: result.events.length,
-        tempo: result.metadata?.tempo,
-        timeSignature: result.metadata?.timeSignature,
+        trackCount: parsedMidiFile.tracks.length,
+        ticksPerQuarterNote: parsedMidiFile.header.ticksPerQuarterNote,
+        eventCount: midiEvents.length,
       });
 
-      return result.events;
+      return midiEvents;
     } catch (error) {
       logger.error('Failed to parse MIDI file', { error });
       throw new Error(
@@ -247,26 +284,44 @@ export class ExerciseLoader {
       trackMap.get(trackId)!.push(event);
     }
 
-    // Create regions for each track
-    const regions: RegionModel[] = [];
+    // Create tracks with regions
+    const tracks: import('@/domains/playback/models/SessionModel').TrackModel[] =
+      [];
 
     for (const [trackId, events] of trackMap.entries()) {
       const region = this.createRegionFromEvents(trackId, events, exercise);
-      regions.push(region);
+
+      // Create track with region
+      const track: import('@/domains/playback/models/SessionModel').TrackModel =
+        {
+          id: trackId,
+          name: trackId,
+          type: trackId === 'drums' ? 'drums' : 'bass',
+          regions: [region],
+          muted: false,
+          solo: false,
+          volume: 0.7,
+          pan: 0,
+          order: tracks.length,
+          color: this.getColorForTrack(trackId),
+        };
+
+      tracks.push(track);
     }
 
-    // Create session
+    // Create session with tracks
     const session = this.sessionManager.createSession({
       name: exercise.title,
       tempo: exercise.bpm,
       timeSignature: exercise.timeSignature,
-      regions,
+      tracks,
     });
 
     logger.info('Session created', {
       sessionId: session.id,
       name: session.name,
-      regionCount: regions.length,
+      trackCount: tracks.length,
+      regionCount: tracks.reduce((sum, t) => sum + t.regions.length, 0),
     });
 
     return session;
@@ -277,11 +332,15 @@ export class ExerciseLoader {
    */
   private getTrackIdForEvent(event: MidiEvent, exercise: Exercise): string {
     // Map MIDI channels to track types
+    // Channel 1 (index 0) = metronome
+    // Channel 2 (index 1) = drums
+    // Channel 3 (index 2) = bass
+    // Channel 4 (index 3) = harmony
     const channelMapping: Record<number, string> = {
-      0: 'bass',
-      1: 'drums',
-      2: 'harmony',
-      3: 'metronome',
+      0: 'metronome',  // Channel 1
+      1: 'drums',      // Channel 2
+      2: 'bass',       // Channel 3
+      3: 'harmony',    // Channel 4
     };
 
     const trackType = channelMapping[event.channel] || 'unknown';
@@ -296,6 +355,20 @@ export class ExerciseLoader {
     events: MidiEvent[],
     exercise: Exercise,
   ): RegionModel {
+    // Defensive check for empty events array
+    if (!events || events.length === 0) {
+      logger.warn('Creating region with no events', { trackId, exerciseTitle: exercise.title });
+      return {
+        id: `region-${trackId}-${Date.now()}`,
+        trackId,
+        name: `${exercise.title} - ${trackId}`,
+        startPosition: { bars: 0, beats: 0, sixteenths: 0, ticks: 0 },
+        length: { bars: 0, beats: 0, sixteenths: 0, ticks: 0 },
+        events: [],
+        color: this.getColorForTrack(trackId),
+      };
+    }
+
     // Find start and end times
     let startTime = Infinity;
     let endTime = 0;
@@ -319,6 +392,7 @@ export class ExerciseLoader {
       trackId,
       name: `${exercise.title} - ${trackId}`,
       startPosition,
+      startTime: 0, // Start at beat 0 - display offset handles countdown timing
       length,
       events: events.map((e) => ({
         ...e,
@@ -355,15 +429,238 @@ export class ExerciseLoader {
    */
   private getColorForTrack(trackId: string): string {
     const colors: Record<string, string> = {
-      bass: '#FF6B6B',
-      drums: '#4ECDC4',
-      harmony: '#45B7D1',
-      metronome: '#FFA07A',
+      metronome: '#FFA07A',  // Orange for metronome
+      drums: '#4ECDC4',      // Teal for drums
+      bass: '#FF6B6B',       // Red for bass
+      harmony: '#45B7D1',    // Blue for harmony
       unknown: '#95A5A6',
     };
 
     const trackType = trackId.split('-')[0];
     return colors[trackType] || colors.unknown;
+  }
+
+  /**
+   * Get Supabase storage URL for a MIDI file
+   */
+  public getMidiFileUrl(midiFilePath: string): string {
+    if (!this.config.supabaseUrl) {
+      throw new Error('Supabase URL not configured');
+    }
+
+    const bucketName = this.config.midiBucketName || 'midi-files';
+
+    // If the path already includes the bucket name, use it as-is
+    if (midiFilePath.includes(bucketName)) {
+      return `${this.config.supabaseUrl}/storage/v1/object/public/${midiFilePath}`;
+    }
+
+    // Otherwise, construct the full URL
+    return `${this.config.supabaseUrl}/storage/v1/object/public/${bucketName}/${midiFilePath}`;
+  }
+
+  /**
+   * Load MIDI from Supabase storage using exercise's midi_file_path
+   */
+  public async loadMidiFromSupabase(
+    exercise: Exercise & { midi_file_path?: string },
+  ): Promise<LoadResult | null> {
+    if (!exercise.midi_file_path) {
+      logger.info('No MIDI file path in exercise', { exerciseId: exercise.id });
+      return null;
+    }
+
+    try {
+      const midiUrl = this.getMidiFileUrl(exercise.midi_file_path);
+      logger.info('Loading MIDI from Supabase', {
+        exerciseId: exercise.id,
+        path: exercise.midi_file_path,
+        url: midiUrl
+      });
+
+      const midiData = await this.downloadMidiFile(midiUrl);
+      const midiEvents = await this.parseMidiFile(midiData);
+      const session = this.createSession(exercise, midiEvents);
+
+      logger.info('MIDI loaded from Supabase successfully', {
+        exerciseId: exercise.id,
+        eventCount: midiEvents.length,
+        regionCount: session.regions.length,
+      });
+
+      return {
+        session,
+        regions: session.regions,
+        midiEvents,
+      };
+    } catch (error) {
+      logger.error('Failed to load MIDI from Supabase', {
+        exerciseId: exercise.id,
+        path: exercise.midi_file_path,
+        error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Load MIDI from URL or raw data directly (without Supabase)
+   * Useful when MIDI data is already available in the exercise object
+   */
+  public async loadMidiDirect(
+    exercise: Exercise & { midiFileUrl?: string; midi_data?: ArrayBuffer; midi_file_path?: string },
+  ): Promise<LoadResult> {
+    try {
+      let midiData: ArrayBuffer;
+
+      // Get MIDI data from various sources
+      if (exercise.midiFileUrl) {
+        midiData = await this.downloadMidiFile(exercise.midiFileUrl);
+      } else if (exercise.midi_file_path) {
+        // Load from Supabase storage
+        const midiUrl = this.getMidiFileUrl(exercise.midi_file_path);
+        midiData = await this.downloadMidiFile(midiUrl);
+      } else if (exercise.midi_data) {
+        midiData = exercise.midi_data;
+      } else {
+        throw new Error('No MIDI data available');
+      }
+
+      // Parse MIDI file
+      const midiEvents = await this.parseMidiFile(midiData);
+
+      // Create session and regions
+      const session = this.createSession(exercise, midiEvents);
+
+      // Extract all regions from all tracks
+      const allRegions: RegionModel[] = [];
+      for (const track of session.tracks) {
+        allRegions.push(...track.regions);
+      }
+
+      logger.info('MIDI loaded directly', {
+        exerciseId: exercise.id,
+        eventCount: midiEvents.length,
+        regionCount: allRegions.length,
+      });
+
+      return {
+        session,
+        regions: allRegions,
+        midiEvents,
+      };
+    } catch (error) {
+      logger.error('Failed to load MIDI directly', {
+        exerciseId: exercise.id,
+        exerciseTitle: exercise.title,
+        midiFileUrl: exercise.midiFileUrl,
+        midi_file_path: exercise.midi_file_path,
+        hasMidiData: !!exercise.midi_data,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorStack: error instanceof Error ? error.stack : undefined,
+        error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Load from pre-converted drum pattern (avoids downloading and parsing MIDI)
+   *
+   * @param drumPattern - Pre-converted drum hits from the API
+   * @param exercise - Exercise metadata for context
+   * @returns LoadResult with session, regions, and MIDI events
+   */
+  public async loadFromDrumPattern(
+    drumPattern: import('@bassnotion/contracts').DrumHit[],
+    exercise: Exercise,
+  ): Promise<LoadResult> {
+    try {
+      logger.info('Loading from pre-converted drum pattern', {
+        exerciseId: exercise.id,
+        exerciseTitle: exercise.title,
+        hitCount: drumPattern.length,
+      });
+
+      // Convert DrumHit[] to MidiEvent[]
+      const midiEvents: MidiEvent[] = drumPattern.map((hit) => {
+        // Calculate absolute time from musical position
+        // CRITICAL FIX: Drum patterns use 1-based measure numbering, convert to 0-based for timing
+        const beatsPerBar = exercise.timeSignature?.numerator || 4;
+        const totalBeats =
+          (hit.position.measure - 1) * beatsPerBar +  // Convert 1-based to 0-based measure
+          hit.position.beat +
+          hit.position.subdivision / 4;
+        const timeInSeconds = (totalBeats / exercise.bpm) * 60;
+
+        // General MIDI drum channel is 9 (index 9)
+        return {
+          type: 'noteOn',
+          time: timeInSeconds,
+          channel: 9, // MIDI drum channel
+          note: hit.midiNote,
+          velocity: hit.velocity,
+          duration: (hit.durationTicks / 480) * (60 / exercise.bpm), // Convert ticks to seconds (480 PPQ)
+        };
+      });
+
+      // Create region from events
+      const trackId = 'drums';
+      const region = this.createRegionFromEvents(trackId, midiEvents, exercise);
+
+      // Create track with region
+      const track: import('@/domains/playback/models/SessionModel').TrackModel =
+        {
+          id: trackId,
+          name: 'Drums',
+          type: 'drums',
+          regions: [region],
+          muted: false,
+          solo: false,
+          volume: 0.7,
+          pan: 0,
+          order: 0,
+          color: this.getColorForTrack(trackId),
+        };
+
+      // Create session with track
+      const session = this.sessionManager.createSession({
+        id: `session-${exercise.id}-${Date.now()}`,
+        name: exercise.title,
+        tempo: exercise.bpm,
+        timeSignature: exercise.timeSignature || { numerator: 4, denominator: 4 },
+        tracks: [track],
+        metadata: {
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+
+      // Extract regions from session tracks
+      const allRegions: RegionModel[] = [];
+      for (const sessionTrack of session.tracks) {
+        allRegions.push(...sessionTrack.regions);
+      }
+
+      logger.info('Loaded from drum pattern successfully', {
+        exerciseId: exercise.id,
+        midiEventCount: midiEvents.length,
+        trackCount: session.tracks.length,
+        regionCount: allRegions.length,
+      });
+
+      return { session, regions: allRegions, midiEvents };
+    } catch (error) {
+      logger.error('Failed to load from drum pattern', {
+        exerciseId: exercise.id,
+        exerciseTitle: exercise.title,
+        patternLength: drumPattern.length,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorStack: error instanceof Error ? error.stack : undefined,
+        error,
+      });
+      throw error;
+    }
   }
 
   /**

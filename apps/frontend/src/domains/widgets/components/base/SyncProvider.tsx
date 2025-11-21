@@ -20,6 +20,9 @@ import React, {
 } from 'react';
 import { widgetSyncService } from '../../services/WidgetSyncService';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { createStructuredLogger } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('SyncProvider');
 import type {
   SyncState,
   SyncPerformanceMetrics,

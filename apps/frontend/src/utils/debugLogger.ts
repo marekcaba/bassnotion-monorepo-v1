@@ -28,14 +28,8 @@ class DebugLogger {
       this.logs.shift();
     }
 
-    // Also try to use console if available
-    try {
-      if (typeof console !== 'undefined' && console.log) {
-        logger.info(`[DebugLogger] ${message}`, data || '');
-      }
-    } catch (e) {
-      // Ignore console errors
-    }
+    // REMOVED: No longer output to console to prevent INFO logs
+    // This logger is for internal storage only
   }
 
   getLogs() {

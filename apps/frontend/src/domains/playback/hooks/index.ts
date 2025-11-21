@@ -39,6 +39,4 @@ export type {
 
 // Legacy hooks (will be deprecated)
 export { useAssetLoading } from './useAssetLoading.js';
-export { useCorePlaybackEngine } from './useCorePlaybackEngine.js';
 export { usePlaybackState } from './usePlaybackState.js';
-export { useToneInit } from './useToneInit.js';

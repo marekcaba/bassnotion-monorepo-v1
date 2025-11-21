@@ -115,12 +115,25 @@ export class Transport {
    * Start transport playback
    */
   async start(): Promise<void> {
+    const startDebug = {
+      isInitialized: this.isInitialized,
+      currentState: this.state,
+      timestamp: Date.now(),
+    };
+    console.log('🚀 [TRANSPORT DEBUG] Transport.start() called', startDebug);
+    logger.info('🚀 [TRANSPORT DEBUG] Transport.start() called', startDebug);
+
     if (!this.isInitialized) {
       throw new TransportError('Transport not initialized');
     }
 
     if (this.state === 'playing') {
-      logger.warn('Transport already playing');
+      console.warn('🚀 [TRANSPORT DEBUG] Transport already playing, early return!', {
+        state: this.state,
+      });
+      logger.warn('🚀 [TRANSPORT DEBUG] Transport already playing, early return!', {
+        state: this.state,
+      });
       return;
     }
 
@@ -135,12 +148,27 @@ export class Transport {
 
     // Update state
     this.state = 'playing';
+    console.log('🚀 [TRANSPORT DEBUG] Transport state set to playing', {
+      state: this.state,
+    });
+    logger.info('🚀 [TRANSPORT DEBUG] Transport state set to playing', {
+      state: this.state,
+    });
 
     // Start position updates
+    console.log('🚀 [TRANSPORT DEBUG] About to call startPositionUpdates()');
+    logger.info('🚀 [TRANSPORT DEBUG] About to call startPositionUpdates()', {
+      timestamp: Date.now(),
+    });
     this.startPositionUpdates();
 
-    logger.info('Transport started', {
+    console.log('🚀 [TRANSPORT DEBUG] Transport started', {
       audioWorkletMode: this.clock.isUsingAudioWorklet(),
+      state: this.state,
+    });
+    logger.info('🚀 [TRANSPORT DEBUG] Transport started', {
+      audioWorkletMode: this.clock.isUsingAudioWorklet(),
+      state: this.state,
     });
   }
 
@@ -148,13 +176,31 @@ export class Transport {
    * Stop transport playback
    */
   async stop(): Promise<void> {
+    logger.info('Transport.stop() called', {
+      currentState: this.state,
+    });
+
+    // CRITICAL FIX: Always stop position updates even if already stopped
+    // This prevents position update interval leaks on redundant stop() calls
+    // The stopPositionUpdates() method is idempotent and safe to call multiple times
+    this.stopPositionUpdates();
+
     if (this.state === 'stopped') {
-      logger.warn('Transport already stopped');
       return;
     }
 
     // Stop Tone.js transport
     Tone.Transport.stop();
+
+    // CRITICAL FIX: Cancel all scheduled events on Tone.Transport
+    // Tone.Transport.stop() only pauses time advancement but does NOT cancel scheduled events
+    // Without cancel(), events scheduled on the timeline will continue to fire
+    try {
+      Tone.Transport.cancel(0); // Cancel all events from time 0 onwards
+      logger.info('🎵 Cancelled all Tone.Transport scheduled events');
+    } catch (e) {
+      logger.error('🎵 Failed to cancel Tone.Transport events', e);
+    }
 
     // Stop scheduler
     this.scheduler.stop();
@@ -162,7 +208,7 @@ export class Transport {
     // Stop clock timing (for AudioWorklet mode)
     this.clock.stop();
 
-    // Reset timeline position
+    // Reset timeline position (internal only)
     this.timeline.setPosition({
       bars: 0,
       beats: 0,
@@ -170,16 +216,17 @@ export class Transport {
       ticks: 0,
     });
 
-    // Reset Tone position
-    Tone.Transport.position = '0:0:0';
+    // FAANG FIX: DO NOT reset Tone.Transport.position here!
+    // TransportController.stop() handles this with countdown-aware logic.
+    // Setting it to '0:0:0' here creates a race condition with TransportController's
+    // reset to '0:4:0' (exercise start position), causing the clock to show '3:1:00'
+    // on the 3rd playback when timing is unlucky.
 
     // Update state
     this.state = 'stopped';
-
-    // Stop position updates
-    this.stopPositionUpdates();
-
-    logger.info('Transport stopped');
+    logger.info('Transport stopped', {
+      state: this.state,
+    });
   }
 
   /**
@@ -258,10 +305,20 @@ export class Transport {
    * Set tempo
    */
   setTempo(bpm: number): void {
+    const oldBpm = this.config.tempo;
+    const oldToneBpm = Tone.Transport.bpm.value;
     this.config.tempo = bpm;
     this.timeline.setTempo(bpm);
     Tone.Transport.bpm.value = bpm;
-    logger.info('Tempo set', { bpm });
+    const newToneBpm = Tone.Transport.bpm.value;
+    logger.info('🎵 Transport.setTempo called', {
+      requestedBpm: bpm,
+      oldBpm,
+      oldToneBpm,
+      newToneBpm,
+      success: newToneBpm === bpm,
+      stack: new Error().stack?.split('\n').slice(2, 4).join(' <- ')
+    });
   }
 
   /**
@@ -269,6 +326,18 @@ export class Transport {
    */
   getState(): TransportState {
     return this.state;
+  }
+
+  /**
+   * Get current time in seconds
+   */
+  getCurrentTime(): number {
+    // If we're using Tone.js in compatibility mode, use its time
+    if (this.config.enableLegacyCompatibility && typeof Tone !== 'undefined') {
+      return Tone.Transport.seconds;
+    }
+    // Otherwise use our clock
+    return this.clock.getCurrentTime();
   }
 
   /**
@@ -283,6 +352,13 @@ export class Transport {
    */
   getTransportPosition(): TransportPosition {
     return this.timeline.getTransportPosition();
+  }
+
+  /**
+   * Get timeline instance
+   */
+  getTimeline(): Timeline {
+    return this.timeline;
   }
 
   /**
@@ -376,6 +452,15 @@ export class Transport {
   }
 
   /**
+   * Clear position update callback
+   * RACE CONDITION FIX: Allows explicit cleanup of callback to prevent stale updates
+   */
+  clearPositionUpdateCallback(): void {
+    this.positionUpdateCallback = undefined;
+    logger.debug('Position update callback explicitly cleared');
+  }
+
+  /**
    * Check if using AudioWorklet
    */
   isUsingAudioWorklet(): boolean {
@@ -410,12 +495,30 @@ export class Transport {
    * Start position update loop
    */
   private startPositionUpdates(): void {
+    const debugInfo = {
+      hasExistingInterval: this.positionUpdateInterval !== null,
+      currentState: this.state,
+      willCreateInterval: this.positionUpdateInterval === null,
+      timestamp: Date.now(),
+    };
+    console.log('🔄 [POSITION DEBUG] startPositionUpdates() called', debugInfo);
+    logger.info('🔄 [POSITION DEBUG] startPositionUpdates() called', debugInfo);
+
     if (this.positionUpdateInterval !== null) {
+      console.warn('🔄 [POSITION DEBUG] Interval already exists, early return!', {
+        existingIntervalId: this.positionUpdateInterval,
+      });
+      logger.warn('🔄 [POSITION DEBUG] Interval already exists, early return!', {
+        existingIntervalId: this.positionUpdateInterval,
+      });
       return;
     }
 
     const update = () => {
       if (this.state !== 'playing') {
+        logger.debug('🔄 [POSITION DEBUG] Update callback fired but state not playing', {
+          state: this.state,
+        });
         return;
       }
 
@@ -441,6 +544,14 @@ export class Transport {
       update,
       this.config.scheduleInterval * 1000,
     );
+
+    const createdInfo = {
+      intervalId: this.positionUpdateInterval,
+      scheduleIntervalMs: this.config.scheduleInterval * 1000,
+      timestamp: Date.now(),
+    };
+    console.log('🔄 [POSITION DEBUG] Position update interval CREATED', createdInfo);
+    logger.info('🔄 [POSITION DEBUG] Position update interval CREATED', createdInfo);
   }
 
   /**
@@ -448,8 +559,26 @@ export class Transport {
    */
   private stopPositionUpdates(): void {
     if (this.positionUpdateInterval !== null) {
+      const intervalId = this.positionUpdateInterval;
       window.clearInterval(this.positionUpdateInterval);
       this.positionUpdateInterval = null;
+
+      const clearedInfo = {
+        clearedIntervalId: intervalId,
+        nowNull: this.positionUpdateInterval === null,
+        timestamp: Date.now(),
+      };
+      console.log('🛑 [POSITION DEBUG] Position update interval CLEARED', clearedInfo);
+      logger.info('🛑 [POSITION DEBUG] Position update interval CLEARED', clearedInfo);
+
+      // NOTE: We don't clear positionUpdateCallback here anymore
+      // The callback is registered once in TransportController constructor and should persist
+      // across start/stop cycles. Clearing it breaks position updates on second playback.
+      // Only the interval timer needs to be cleared to stop position updates.
+      logger.debug('Position update interval stopped (callback preserved for restart)');
+    } else {
+      console.warn('🛑 [POSITION DEBUG] No interval to clear');
+      logger.warn('🛑 [POSITION DEBUG] No interval to clear');
     }
   }
 

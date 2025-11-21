@@ -7,7 +7,7 @@
  * Story 3.15: Professional Musical Time System
  */
 
-import type { TimeSignature } from './musical-timing.js';
+import type { TimeSignature, MusicalPosition } from './musical-timing.js';
 
 // Re-export musical timing types for convenience
 export type { TimeSignature } from './musical-timing.js';
@@ -176,7 +176,7 @@ export type DrumType =
   | 'bell';
 
 /**
- * Note durations with triplet support
+ * Note durations with triplet and dotted support
  */
 export type NoteDuration =
   | 'whole'
@@ -186,6 +186,11 @@ export type NoteDuration =
   | 'sixteenth'
   | 'thirty-second'
   | 'sixty-fourth'
+  | 'whole-dotted'
+  | 'half-dotted'
+  | 'quarter-dotted'
+  | 'eighth-dotted'
+  | 'sixteenth-dotted'
   | 'quarter-triplet'
   | 'eighth-triplet'
   | 'sixteenth-triplet';
@@ -236,7 +241,12 @@ export interface TimingFeatures {
  * Musical time utilities
  */
 export class MusicalTimeConstants {
-  /** Industry standard ticks per quarter note */
+  /**
+   * Industry standard ticks per quarter note
+   * Standard MIDI resolution: 480 PPQ
+   * Divisible by 2, 3, 4, 5, 6, 8 for triplets/tuplets
+   */
+  public static readonly PPQ = 480;
   public static readonly TICKS_PER_QUARTER = 480;
 
   /** Common time signatures */
@@ -261,10 +271,148 @@ export class MusicalTimeConstants {
     PRESTISSIMO: 200,
   } as const;
 
-  /** Triplet tick values for common note durations */
-  public static readonly TRIPLET_TICKS = {
-    QUARTER: (this.TICKS_PER_QUARTER * 2) / 3, // 320 ticks
-    EIGHTH: this.TICKS_PER_QUARTER / 3, // 160 ticks
-    SIXTEENTH: this.TICKS_PER_QUARTER / 6, // 80 ticks
+  /** Tick values for common note durations at 480 PPQ */
+  public static readonly DURATION_TICKS = {
+    'whole': 1920,           // 480 * 4
+    'half': 960,             // 480 * 2
+    'quarter': 480,          // 480 * 1
+    'eighth': 240,           // 480 / 2
+    'sixteenth': 120,        // 480 / 4
+    'thirty-second': 60,     // 480 / 8
+    'sixty-fourth': 30,      // 480 / 16
+    'whole-dotted': 2880,    // 480 * 4 * 1.5
+    'half-dotted': 1440,     // 480 * 2 * 1.5
+    'quarter-dotted': 720,   // 480 * 1 * 1.5
+    'eighth-dotted': 360,    // 480 / 2 * 1.5
+    'sixteenth-dotted': 180, // 480 / 4 * 1.5
+    'quarter-triplet': 320,  // (480 * 2) / 3
+    'eighth-triplet': 160,   // (480 * 1) / 3
+    'sixteenth-triplet': 80  // (480 / 2) / 3
   } as const;
+
+  /** Triplet tick values (for backward compatibility) */
+  public static readonly TRIPLET_TICKS = {
+    QUARTER: 320,  // (480 * 2) / 3
+    EIGHTH: 160,   // 480 / 3
+    SIXTEENTH: 80, // (480 / 2) / 3
+  } as const;
+}
+
+/**
+ * Convert ticks to milliseconds
+ * @param ticks Number of ticks
+ * @param bpm Tempo in beats per minute
+ * @returns Duration in milliseconds
+ */
+export function ticksToMs(ticks: number, bpm: number): number {
+  const msPerQuarter = 60000 / bpm;
+  return (ticks / MusicalTimeConstants.PPQ) * msPerQuarter;
+}
+
+/**
+ * Convert milliseconds to ticks
+ * @param ms Duration in milliseconds
+ * @param bpm Tempo in beats per minute
+ * @returns Number of ticks (rounded)
+ */
+export function msToTicks(ms: number, bpm: number): number {
+  const msPerQuarter = 60000 / bpm;
+  return Math.round((ms / msPerQuarter) * MusicalTimeConstants.PPQ);
+}
+
+/**
+ * Convert musical position to absolute tick
+ * @param position Musical position (measure, beat, tick)
+ * @param timeSignature Time signature
+ * @returns Absolute tick from start
+ */
+export function positionToAbsoluteTick(
+  position: MusicalPosition,
+  timeSignature: TimeSignature
+): number {
+  const ticksPerBeat = MusicalTimeConstants.TICKS_PER_QUARTER;
+  const ticksPerMeasure = ticksPerBeat * timeSignature.numerator;
+  const ticksPer16th = ticksPerBeat / 4; // 240 ticks per 16th note
+
+  // Position uses 0-based indexing for measures and beats
+  // Subdivision is in 16th notes (0-3), convert to ticks
+  return (
+    position.measure * ticksPerMeasure +
+    position.beat * ticksPerBeat +
+    position.subdivision * ticksPer16th
+  );
+}
+
+/**
+ * Convert absolute tick to musical position
+ * @param tick Absolute tick from start
+ * @param timeSignature Time signature
+ * @returns Musical position (measure, beat, subdivision)
+ */
+export function absoluteTickToPosition(
+  tick: number,
+  timeSignature: TimeSignature
+): MusicalPosition {
+  const ticksPerBeat = MusicalTimeConstants.TICKS_PER_QUARTER;
+  const ticksPerMeasure = ticksPerBeat * timeSignature.numerator;
+
+  // Use 0-based indexing for measures and beats (not 1-based)
+  const measure = Math.floor(tick / ticksPerMeasure);
+  const remainingTicks = tick % ticksPerMeasure;
+  const beat = Math.floor(remainingTicks / ticksPerBeat);
+
+  // Convert tick subdivision to 16th note subdivision (0-3)
+  // ticksPerBeat = 480 (PPQ), so 480/4 = 120 ticks per 16th note
+  const ticksWithinBeat = remainingTicks % ticksPerBeat;
+  const ticksPer16th = ticksPerBeat / 4; // 120 ticks per 16th note
+  const subdivision = Math.floor(ticksWithinBeat / ticksPer16th);
+
+  return {
+    measure,
+    beat,
+    subdivision,
+    tick: ticksWithinBeat  // FIX: Preserve precise tick position within beat (0-479)
+  };
+}
+
+/**
+ * Infer NoteDuration from tick count
+ * @param ticks Duration in ticks
+ * @returns Closest NoteDuration
+ */
+export function inferNoteDurationFromTicks(ticks: number): NoteDuration {
+  const tickMap = MusicalTimeConstants.DURATION_TICKS;
+
+  // Find closest match with 5% tolerance
+  const tolerance = 0.05;
+
+  for (const [duration, expectedTicks] of Object.entries(tickMap)) {
+    const diff = Math.abs(ticks - expectedTicks);
+    if (diff / expectedTicks < tolerance) {
+      return duration as NoteDuration;
+    }
+  }
+
+  // Default to closest match (check dotted notes before regular notes)
+  if (ticks >= 2880) return 'whole-dotted';
+  if (ticks >= 1920) return 'whole';
+  if (ticks >= 1440) return 'half-dotted';
+  if (ticks >= 960) return 'half';
+  if (ticks >= 720) return 'quarter-dotted';
+  if (ticks >= 480) return 'quarter';
+  if (ticks >= 360) return 'eighth-dotted';
+  if (ticks >= 240) return 'eighth';
+  if (ticks >= 180) return 'sixteenth-dotted';
+  if (ticks >= 120) return 'sixteenth';
+  if (ticks >= 60) return 'thirty-second';
+  return 'sixty-fourth';
+}
+
+/**
+ * Get tick duration for a NoteDuration
+ * @param duration Musical note duration
+ * @returns Duration in ticks
+ */
+export function noteDurationToTicks(duration: NoteDuration): number {
+  return MusicalTimeConstants.DURATION_TICKS[duration] ?? MusicalTimeConstants.TICKS_PER_QUARTER;
 }

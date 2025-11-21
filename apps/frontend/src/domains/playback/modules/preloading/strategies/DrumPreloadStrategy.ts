@@ -6,7 +6,7 @@
 
 import { PreloadStrategy } from './PreloadStrategy.js';
 import { PreloadConfig, PreloadResult } from '../types/index.js';
-import { GlobalSampleCache } from '../../../services/storage/GlobalSampleCache.js';
+import { GlobalSampleCache } from '../../storage/cache/GlobalSampleCache.js';
 import { wamPluginSingleton } from '@/domains/widgets/utils/wamPluginSingleton.js';
 import { getLogger } from '@/utils/logger.js';
 
@@ -131,39 +131,60 @@ export class DrumPreloadStrategy implements PreloadStrategy {
   }
 
   private async fallbackToUrlCaching(): Promise<PreloadResult> {
-    logger.info('Falling back to URL caching for drum samples');
+    const startTime = performance.now();
+    logger.info('📥 Falling back to buffer preloading for drum samples (AudioEngine not ready)');
 
     try {
-      const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-      const { supabase } = await import('@/infrastructure/supabase/client');
-
-      // Cache drum samples
-      const drumPads: Record<string, any> = {};
-
-      for (const drum of this.drumConfig) {
-        const url = supabase.storage
-          .from('samples')
-          .getPublicUrl(`drums/${drum.file}.mp3`).data.publicUrl;
-
-        drumPads[`pad${drum.pad}`] = {
-          url,
-          name: drum.name,
-        };
-
-        await GlobalSampleCache.getInstance().cacheUrl(
-          `drum-${drum.file}`,
-          url,
-        );
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('NEXT_PUBLIC_SUPABASE_URL not configured');
       }
 
-      // Cache the drum pads configuration
-      GlobalSampleCache.getInstance().cacheInstrument(
-        'drums-preloaded',
-        drumPads,
-      );
+      // Create offline context for decoding
+      const offlineContext = new OfflineAudioContext(2, 44100, 44100);
 
-      this.loaded = this.drumConfig.length;
-      this.total = this.drumConfig.length;
+      // Load only the 3 essential drum samples (kick, snare, hihat)
+      const essentialDrums = [
+        { key: 'kick', pad: 1, file: 'kick-v1.wav' },
+        { key: 'snare', pad: 3, file: 'snare-v1.wav' },
+        { key: 'hihat', pad: 5, file: 'hihat-v1.wav' },
+      ];
+
+      logger.info('📥 Loading essential drum samples:', {
+        count: essentialDrums.length,
+        drums: essentialDrums.map(d => d.key),
+      });
+
+      for (const drum of essentialDrums) {
+        const kitPath = 'drums/hydrogen-kits/colombo-acoustic';
+        const url = `${supabaseUrl}/storage/v1/object/public/audio-samples/${kitPath}/${drum.file}`;
+
+        logger.info(`📥 Fetching ${drum.key}...`);
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ${drum.key}: ${response.status}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await offlineContext.decodeAudioData(arrayBuffer);
+
+        // Cache with multiple keys for compatibility
+        GlobalSampleCache.getInstance().cacheBuffer(`drum-${drum.key}`, audioBuffer);
+        GlobalSampleCache.getInstance().cacheBuffer(`drum-pad-${drum.pad}`, audioBuffer);
+
+        logger.info(`✅ ${drum.key} cached`);
+      }
+
+      this.loaded = essentialDrums.length;
+      this.total = essentialDrums.length;
+
+      const duration = performance.now() - startTime;
+      logger.info('✅ Essential drum samples preloaded as AudioBuffers', {
+        duration: `${duration.toFixed(2)}ms`,
+        samplesLoaded: essentialDrums.length,
+        averagePerSample: `${(duration / essentialDrums.length).toFixed(2)}ms`,
+        drums: essentialDrums.map(d => d.key),
+      });
 
       return {
         success: true,
@@ -171,6 +192,7 @@ export class DrumPreloadStrategy implements PreloadStrategy {
         total: this.total,
       };
     } catch (error) {
+      logger.error('Failed to preload drum samples:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),

@@ -73,18 +73,18 @@ export function useDirectTransport(): UseDirectTransportResult {
               const handleTempo = (data: { tempo: number }) =>
                 setTempo(data.tempo);
 
-              eventBusRef.current.on('transport:started', handleStart);
-              eventBusRef.current.on('transport:stopped', handleStop);
-              eventBusRef.current.on('transport:paused', handlePause);
-              eventBusRef.current.on('transport:tempo-changed', handleTempo);
+              eventBusRef.current.on('transport:start', handleStart);
+              eventBusRef.current.on('transport:stop', handleStop);
+              eventBusRef.current.on('transport:pause', handlePause);
+              eventBusRef.current.on('transport:tempo-change', handleTempo);
 
               // Cleanup
               return () => {
-                eventBusRef.current?.off('transport:started', handleStart);
-                eventBusRef.current?.off('transport:stopped', handleStop);
-                eventBusRef.current?.off('transport:paused', handlePause);
+                eventBusRef.current?.off('transport:start', handleStart);
+                eventBusRef.current?.off('transport:stop', handleStop);
+                eventBusRef.current?.off('transport:pause', handlePause);
                 eventBusRef.current?.off(
-                  'transport:tempo-changed',
+                  'transport:tempo-change',
                   handleTempo,
                 );
               };

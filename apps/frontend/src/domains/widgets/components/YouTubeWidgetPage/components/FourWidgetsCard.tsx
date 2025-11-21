@@ -10,18 +10,41 @@ import { UseWidgetPageStateReturn } from '@/domains/widgets/hooks/useWidgetPageS
 
 interface FourWidgetsCardProps {
   widgetState: UseWidgetPageStateReturn;
+  tutorialId?: string;
+  isAdminMode?: boolean;
 }
 
-export function FourWidgetsCard({ widgetState }: FourWidgetsCardProps) {
-  const { state, setTempo, toggleWidgetVisibility, selectedExercise } =
-    widgetState;
+export function FourWidgetsCard({ widgetState, tutorialId, isAdminMode = false }: FourWidgetsCardProps) {
+  const { state, selectedExercise, setState, harmonyInstrument } = widgetState;
+
+  // CRITICAL DEBUG: Log every render
+  console.log('🔍 [STATE-FLOW-3.5] FourWidgetsCard render:', {
+    harmonyInstrument,
+    harmonyInstrumentType: typeof harmonyInstrument,
+    selectedExerciseId: selectedExercise?.id?.value,
+    stateHarmonyInstrument: state.harmonyInstrument,
+  });
+
+  // Memoize exercise by ID to prevent object reference changes
+  const memoizedExercise = React.useMemo(
+    () => selectedExercise,
+    [selectedExercise?.id?.value]
+  );
+
+  // Debug logs disabled - too noisy
+  // console.log('🔍 FourWidgetsCard RENDER:', {
+  //   harmonyInstrument: state.harmonyInstrument,
+  //   isPlaying: state.isPlaying,
+  //   selectedExerciseId: selectedExercise?.id?.value,
+  // });
 
   // Use useCallback to prevent recreating handlers on every render
+  // Use stable setState instead of whole widgetState to prevent recreation
   const handlePatternChange = React.useCallback(
     (widget: 'drummer' | 'bassLine', pattern: string) => {
       // Update the widget state
       if (widget === 'drummer') {
-        widgetState.setState((prev) => ({
+        setState((prev) => ({
           ...prev,
           widgets: {
             ...prev.widgets,
@@ -29,7 +52,7 @@ export function FourWidgetsCard({ widgetState }: FourWidgetsCardProps) {
           },
         }));
       } else if (widget === 'bassLine') {
-        widgetState.setState((prev) => ({
+        setState((prev) => ({
           ...prev,
           widgets: {
             ...prev.widgets,
@@ -38,13 +61,13 @@ export function FourWidgetsCard({ widgetState }: FourWidgetsCardProps) {
         }));
       }
     },
-    [widgetState],
+    [setState],
   );
 
   const handleProgressionChange = React.useCallback(
     (progression: string[]) => {
       // Update harmony widget progression
-      widgetState.setState((prev) => ({
+      setState((prev) => ({
         ...prev,
         widgets: {
           ...prev.widgets,
@@ -52,13 +75,13 @@ export function FourWidgetsCard({ widgetState }: FourWidgetsCardProps) {
         },
       }));
     },
-    [widgetState],
+    [setState],
   );
 
   // Memoize the onNextChord handler to prevent infinite re-renders
   const handleNextChord = React.useCallback(() => {
     // Update current chord index
-    widgetState.setState((prev) => ({
+    setState((prev) => ({
       ...prev,
       widgets: {
         ...prev.widgets,
@@ -70,7 +93,7 @@ export function FourWidgetsCard({ widgetState }: FourWidgetsCardProps) {
         },
       },
     }));
-  }, [widgetState]);
+  }, [setState]);
 
   return (
     <Card className="bg-transparent border-transparent shadow-none">
@@ -79,11 +102,9 @@ export function FourWidgetsCard({ widgetState }: FourWidgetsCardProps) {
         <div className="space-y-2">
           {/* 1. Metronome Widget */}
           <MetronomeWidget
-            bpm={state.widgets.metronome.bpm}
             isVisible={state.widgets.metronome.isVisible}
             isPlaying={state.isPlaying}
-            onBpmChange={setTempo}
-            onToggleVisibility={() => toggleWidgetVisibility('metronome')}
+            timeSignature={selectedExercise?.timeSignature}
           />
 
           {/* 2. Drummer Widget */}
@@ -92,11 +113,11 @@ export function FourWidgetsCard({ widgetState }: FourWidgetsCardProps) {
             isVisible={state.widgets.drummer.isVisible}
             isPlaying={state.isPlaying}
             exercise={selectedExercise}
-            tempo={state.widgets.metronome.bpm}
+            tutorialId={tutorialId}
             onPatternChange={(pattern) =>
               handlePatternChange('drummer', pattern)
             }
-            onToggleVisibility={() => toggleWidgetVisibility('drummer')}
+            isAdminMode={isAdminMode}
           />
 
           {/* 3. Bass Line Widget */}
@@ -105,11 +126,10 @@ export function FourWidgetsCard({ widgetState }: FourWidgetsCardProps) {
             isVisible={state.widgets.bassLine.isVisible}
             isPlaying={state.isPlaying}
             exercise={selectedExercise}
-            tempo={state.widgets.metronome.bpm}
             onPatternChange={(pattern) =>
               handlePatternChange('bassLine', pattern)
             }
-            onToggleVisibility={() => toggleWidgetVisibility('bassLine')}
+            isAdminMode={isAdminMode}
           />
 
           {/* 4. Harmony Widget */}
@@ -118,9 +138,12 @@ export function FourWidgetsCard({ widgetState }: FourWidgetsCardProps) {
             currentChord={state.widgets.harmony.currentChord || 0}
             isVisible={state.widgets.harmony.isVisible}
             isPlaying={state.isPlaying}
+            tutorialId={tutorialId}
+            harmonyInstrument={harmonyInstrument}
+            exercise={memoizedExercise}
             onNextChord={handleNextChord}
             onProgressionChange={handleProgressionChange}
-            onToggleVisibility={() => toggleWidgetVisibility('harmony')}
+            isAdminMode={isAdminMode}
           />
         </div>
 

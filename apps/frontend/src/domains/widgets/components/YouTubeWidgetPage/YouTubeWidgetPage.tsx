@@ -18,15 +18,19 @@ import { useAudioFretboard } from '@/domains/widgets/hooks/useAudioFretboard';
 import { useTransport } from '@/domains/playback/hooks/useTransport';
 // REMOVED: useExerciseSelection import - not needed for tutorial pages
 import { Button } from '@/shared/components/ui/button';
-import { Play, Pause, Volume2, Settings } from 'lucide-react';
+import { Play, Pause, Volume2, Settings, Edit2, ArrowLeft } from 'lucide-react';
 import { SyncProvider, useSyncContext } from '../base/SyncProvider';
 import { UserIndicator } from '@/domains/user/components/UserIndicator';
 import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
+import { useAuth } from '@/domains/user/hooks/use-auth';
+import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { beatTimingAnalyzer } from '@/domains/playback/utils/BeatTimingAnalyzer';
 import { getLogger } from '@/utils/logger.js';
 import { useObjectChangeTracker, useWhyDidYouUpdate } from '@/utils/debugUtils';
 import type { Tutorial } from '@bassnotion/contracts';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { getSamplePreloader } from '@/domains/playback/services/InitialSamplePreloader.js';
+import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache.js';
 
 const logger = getLogger('youtube-widget');
 
@@ -97,11 +101,26 @@ function YouTubeWidgetPageContent({
     });
   }
 
-  const { profile } = useUserProfile();
+  const { profile, isLoading: isProfileLoading } = useUserProfile();
+  const { isAuthenticated } = useAuth();
+  const { navigateWithTransition } = useViewTransitionRouter();
+  const isAdmin = profile?.role === 'admin';
+
+  // FAANG Solution: Clear state management for preview mode
+  // Only check sessionStorage, don't rely on referrer (unreliable)
+  const [isPreviewingFromEdit, setIsPreviewingFromEdit] = React.useState(false);
+
+  useEffect(() => {
+    // Check if this specific tutorial is being previewed from edit mode
+    const previewingSlug = sessionStorage.getItem('previewingFromEdit');
+    setIsPreviewingFromEdit(previewingSlug === tutorialSlug);
+  }, [tutorialSlug]);
+
   if (youTubeWidgetPageContentRenderCount % 10 === 0) {
     logger.info('🔍 profile returned:', {
       hasProfile: !!profile,
       profileId: profile?.id,
+      isAdmin,
     });
   }
 
@@ -180,9 +199,17 @@ function YouTubeWidgetPageContent({
   const [selectedDots, setSelectedDots] = React.useState<Map<string, number[]>>(
     new Map(),
   );
-  const [stringCount, setStringCount] = React.useState<4 | 5 | 6>(4);
+  const [stringCount, setStringCountInternal] = React.useState<4 | 5 | 6>(4);
   const [maxFrets, setMaxFrets] = React.useState(25);
   const [showTimingDebug, setShowTimingDebug] = React.useState(false);
+
+  // Wrapped setStringCount to log every change
+  const setStringCount = React.useCallback((value: 4 | 5 | 6 | ((prev: 4 | 5 | 6) => 4 | 5 | 6)) => {
+    setStringCountInternal((prevStringCount) => {
+      const newValue = typeof value === 'function' ? value(prevStringCount) : value;
+      return newValue;
+    });
+  }, []); // Fixed: Empty dependency array - function is stable
 
   // Track why this component is re-rendering (only every 10th render)
   // Moved after playbackControls is defined
@@ -229,12 +256,16 @@ function YouTubeWidgetPageContent({
   });
 
   // Load bass settings from user profile
+  // OPTIMIZATION: Extract actual values to avoid re-running when profile object reference changes
+  const bassStringCount = profile?.preferences?.bassConfiguration?.stringCount;
+  const bassMaxFrets = profile?.preferences?.bassConfiguration?.maxFrets;
+
   useEffect(() => {
-    if (profile?.preferences?.bassConfiguration) {
-      setStringCount(profile.preferences.bassConfiguration.stringCount);
-      setMaxFrets(profile.preferences.bassConfiguration.maxFrets);
+    if (!isProfileLoading && bassStringCount !== undefined && bassMaxFrets !== undefined) {
+      setStringCount(bassStringCount);
+      setMaxFrets(bassMaxFrets);
     }
-  }, [profile]);
+  }, [bassStringCount, bassMaxFrets, isProfileLoading]); // Depend on primitive values, not objects
 
   // Listen for bass settings changes from dashboard (still useful for real-time updates)
   useEffect(() => {
@@ -258,7 +289,7 @@ function YouTubeWidgetPageContent({
         handleBassSettingsChange as EventListener,
       );
     };
-  }, []);
+  }, []); // FIXED: Empty dependency array - listener should only be set up once
   const [tiltAngle, setTiltAngle] = React.useState(35);
   const [cameraDistance, _setCameraDistance] = React.useState(7);
   const [cameraMode, setCameraMode] = React.useState<'overview' | 'action'>(
@@ -288,20 +319,40 @@ function YouTubeWidgetPageContent({
 
   // FAANG Solution: Auto-select first exercise when exercises load (parent controls selection)
   useEffect(() => {
+    console.log('🔍 [YOUTUBE-WIDGET] Auto-selection effect triggered:', {
+      hasExercises: !!exercises,
+      exerciseCount: exercises?.length || 0,
+      selectedExerciseId,
+      shouldAutoSelect: exercises && exercises.length > 0 && !selectedExerciseId,
+    });
+
     if (exercises && exercises.length > 0 && !selectedExerciseId) {
       // CRITICAL FIX: Defer auto-selection with longer delay to avoid race condition
       const timeoutId = setTimeout(() => {
         const firstExercise = exercises[0];
         if (firstExercise?.id && !selectedExerciseId) {
-          logger.debug(
-            'Auto-selecting first exercise in parent (deferred 150ms):',
-            firstExercise.id,
+          console.log(
+            '🎯 [YOUTUBE-WIDGET] Auto-selecting first exercise in parent (deferred 150ms):',
+            {
+              exerciseId: firstExercise.id,
+              exerciseTitle: firstExercise.title,
+              hasHarmonyNotes: !!firstExercise.harmonyNotes,
+            },
           );
           // Update state gradually
           setSelectedExerciseId(firstExercise.id);
           // Update widget state after a frame
           requestAnimationFrame(() => {
+            console.log('🔍 [STATE-FLOW-0] Calling setSelectedExercise with:', {
+              exerciseId: firstExercise.id,
+              exerciseTitle: firstExercise.title,
+              harmonyInstrument: firstExercise.harmonyInstrument,
+              harmony_instrument: firstExercise.harmony_instrument,
+              hasHarmonyInstrument: !!firstExercise.harmonyInstrument,
+              allKeys: Object.keys(firstExercise),
+            });
             widgetStateRef.current.setSelectedExercise(firstExercise);
+            console.log('✅ [YOUTUBE-WIDGET] Exercise set in widgetState');
             // REMOVED: globalExerciseSelection update - not needed
           });
         }
@@ -323,8 +374,8 @@ function YouTubeWidgetPageContent({
   }, []);
 
   const handleSetStringCount3D = useCallback((count: number) => {
-    setStringCount(count);
-  }, []);
+    setStringCount(count as 4 | 5 | 6);
+  }, [setStringCount]);
 
   const handleSetCameraMode = useCallback((mode: CameraMode) => {
     setCameraMode(mode);
@@ -335,16 +386,38 @@ function YouTubeWidgetPageContent({
   }, []);
 
   const handleExerciseSelect = useCallback(
-    (exerciseId: string) => {
+    async (exerciseId: string) => {
       // Find the exercise from the exercises array using ref
       const exercise = exercisesRef.current?.find((ex) => ex.id === exerciseId);
+
+      console.log('🔍🔍🔍 [EXERCISE-SELECT-DEBUG] Raw exercise data:', {
+        exerciseId,
+        foundExercise: !!exercise,
+        exerciseTitle: exercise?.title,
+        harmonyInstrument: exercise?.harmonyInstrument,
+        hasHarmonyInstrument: !!exercise?.harmonyInstrument,
+        harmonyNotes: exercise?.harmonyNotes,
+        hasHarmonyNotes: !!exercise?.harmonyNotes,
+        harmonyNotesLength: exercise?.harmonyNotes?.length,
+        harmonyNotesIsArray: Array.isArray(exercise?.harmonyNotes),
+        condition1: !!exercise?.harmonyInstrument,
+        condition2: !!exercise?.harmonyNotes,
+        condition3: exercise?.harmonyNotes?.length > 0,
+        allConditionsMet: !!(exercise?.harmonyInstrument && exercise?.harmonyNotes && exercise.harmonyNotes.length > 0),
+      });
+
       if (exercise) {
-        logger.debug('Exercise selected:', {
+        logger.info('🎯 Exercise selected:', {
           id: exercise.id,
           title: exercise.title,
+          bpm: exercise.bpm,
+          duration: exercise.duration,
+          duration_beats: exercise.duration_beats,
+          timeSignature: exercise.timeSignature,
           hasDrumPattern: !!exercise.drum_pattern,
           drumPatternEnabled: exercise.drum_pattern?.enabled,
           drumPatternLength: exercise.drum_pattern?.pattern?.length,
+          harmonyInstrument: exercise.harmonyInstrument,
         });
 
         // Update parent state (single source of truth)
@@ -356,6 +429,54 @@ function YouTubeWidgetPageContent({
         // REMOVED: globalExerciseSelection update - causes circular updates
         // Only emit to sync context for widget synchronization
         emitGlobalEvent('exercise:selected', { exerciseId, exercise });
+
+        // 🆕 CRITICAL FIX: Load samples for new instrument on-demand
+        // This ensures samples are available when switching between exercises with different instruments
+        if (exercise.harmonyInstrument && exercise.harmonyNotes && exercise.harmonyNotes.length > 0) {
+          console.log('🔍 [EXERCISE-SELECT] Checking if samples need loading:', {
+            exerciseId: exercise.id,
+            instrument: exercise.harmonyInstrument,
+            harmonyNotesCount: exercise.harmonyNotes.length,
+          });
+
+          // Check if samples already cached for this instrument
+          const sampleCache = GlobalSampleCache.getInstance();
+          const testCacheKey = `${exercise.harmonyInstrument}-v3-C4`; // Representative sample
+          const alreadyCached = sampleCache.getCachedBuffer(testCacheKey);
+
+          if (!alreadyCached) {
+            console.log('📥 [EXERCISE-SELECT] Samples not cached, loading:', exercise.harmonyInstrument);
+            logger.info('Loading samples for new instrument:', {
+              instrument: exercise.harmonyInstrument,
+              exerciseId: exercise.id,
+            });
+
+            // Load samples in background (non-blocking)
+            getSamplePreloader()
+              .loadFullSamples(exercise)
+              .then((result) => {
+                console.log('✅ [EXERCISE-SELECT] Samples loaded:', {
+                  instrument: exercise.harmonyInstrument,
+                  loaded: result.loaded,
+                  total: result.total,
+                  success: result.success,
+                });
+                logger.info('Samples loaded successfully for exercise:', {
+                  instrument: exercise.harmonyInstrument,
+                  result,
+                });
+              })
+              .catch((error) => {
+                console.error('❌ [EXERCISE-SELECT] Failed to load samples:', error);
+                logger.error('Failed to load samples for exercise:', error);
+              });
+          } else {
+            console.log('✅ [EXERCISE-SELECT] Samples already cached for:', exercise.harmonyInstrument);
+            logger.info('Samples already cached, skipping load:', {
+              instrument: exercise.harmonyInstrument,
+            });
+          }
+        }
       }
     },
     [emitGlobalEvent], // Only depend on emitGlobalEvent
@@ -386,6 +507,26 @@ function YouTubeWidgetPageContent({
 
   const handleTiltAngleChange = useCallback((newTiltAngle: number) => {
     setTiltAngle(newTiltAngle);
+  }, []);
+
+  // Handle play state changes from GlobalControls
+  const handlePlayStateChange = useCallback((isPlaying: boolean) => {
+    console.log('🎵 [YOUTUBE-WIDGET] handlePlayStateChange called:', { isPlaying });
+
+    // Update widget state to match transport state
+    if (isPlaying) {
+      // Only toggle if currently not playing
+      if (!widgetStateRef.current.state.isPlaying) {
+        widgetStateRef.current.togglePlayback();
+        console.log('🎵 [YOUTUBE-WIDGET] Called widgetState.togglePlayback() to set isPlaying=true');
+      }
+    } else {
+      // Only toggle if currently playing
+      if (widgetStateRef.current.state.isPlaying) {
+        widgetStateRef.current.togglePlayback();
+        console.log('🎵 [YOUTUBE-WIDGET] Called widgetState.togglePlayback() to set isPlaying=false');
+      }
+    }
   }, []);
 
   // Extract specific values from syncState to prevent excessive re-renders
@@ -533,9 +674,53 @@ function YouTubeWidgetPageContent({
       {/* Mobile-first central container */}
       <div className="mx-auto px-4 py-6 max-w-[600px]">
         <div className="space-y-4">
-          {/* User Indicator - Show login status and role */}
-          <div className="flex justify-end">
-            <UserIndicator />
+          {/* User Indicator and Admin Controls */}
+          <div className="flex justify-between items-center gap-3">
+            {/* Back to Library button on the left */}
+            <Button
+              onClick={() => navigateWithTransition('/library')}
+              variant="ghost"
+              size="sm"
+              className="text-white/70 hover:text-white p-2"
+              title="Back to Library"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+
+            {/* Admin controls and user indicator on the right */}
+            <div className="flex items-center gap-3">
+              {isAdmin && (
+                isPreviewingFromEdit ? (
+                  // Only show "Back to Edit" when actually previewing from edit mode
+                  <Button
+                    onClick={() => {
+                      navigateWithTransition(`/admin/tutorials/${tutorialSlug}/edit`);
+                      // Don't remove from sessionStorage here - let the edit page handle it
+                    }}
+                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                    size="sm"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-1" />
+                    Back to Edit
+                  </Button>
+                ) : (
+                  // Normal view mode - show Edit button only
+                  <Button
+                    onClick={() => {
+                      // Clear any stale preview state when starting a new edit
+                      sessionStorage.removeItem('previewingFromEdit');
+                      navigateWithTransition(`/admin/tutorials/${tutorialSlug}/edit`);
+                    }}
+                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                    size="sm"
+                  >
+                    <Edit2 className="w-4 h-4 mr-1" />
+                    Edit
+                  </Button>
+                )
+              )}
+              <UserIndicator />
+            </div>
           </div>
 
           {/* 1. YouTube Video Section - Standalone at the top */}
@@ -599,10 +784,14 @@ function YouTubeWidgetPageContent({
             onCameraModeChange={handleSetCameraMode}
             loopRegion={widgetState.loopRegion}
             isLoopEnabled={widgetState.isLoopEnabled}
+            onPlayStateChange={handlePlayStateChange}
           />
 
           {/* 7. Four Widgets Card - 4 essential widgets */}
-          <FourWidgetsCard widgetState={widgetState} />
+          <FourWidgetsCard
+            widgetState={widgetState}
+            tutorialId={tutorialData?.id}
+          />
 
           {/* 8. Teaching Takeaway Card - Lesson summaries */}
           <TeachingTakeawayCard tutorialData={tutorialData} />

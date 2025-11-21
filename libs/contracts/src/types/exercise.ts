@@ -124,6 +124,35 @@ export interface HarmonyVoicing {
   }>;
 }
 
+// Generated harmony note (from MIDI conversion)
+export interface GeneratedHarmonyNote {
+  id: string;
+  pitch: number; // MIDI note number (0-127)
+  velocity: number; // MIDI velocity (0-127)
+  noteName: string; // e.g., "C4", "D#3"
+  position: MusicalPosition; // {measure, beat, subdivision, tick}
+  noteDuration: NoteDuration; // 'whole', 'half', 'quarter', etc.
+  durationTicks: number; // Duration in MIDI ticks (480 PPQ)
+  measureNumber: number; // 1-based measure number
+  voiceIndex?: number; // For polyphonic tracking (0 = bass, 1 = tenor, etc.)
+}
+
+// MIDI control change event (sustain pedal, expression, etc.)
+export interface HarmonyControlChange {
+  cc: number; // Control change number (64 = sustain, 11 = expression, etc.)
+  value: number; // Control value (0-127)
+  position: MusicalPosition; // {measure, beat, subdivision, tick}
+  ticks: number; // Absolute tick position (480 PPQ)
+  measureNumber: number; // 1-based measure number
+}
+
+// Harmony instrument types
+export type HarmonyInstrumentType =
+  | 'grandpiano' // Grand Piano (7 velocity layers)
+  | 'rhodes' // Fender Rhodes Electric Piano
+  | 'wurlitzer' // Wurlitzer Electric Piano
+  | 'pad'; // Synth Pad
+
 // Epic 4 Compatible Exercise Schema (with multi-track support)
 export interface Exercise {
   id: string;
@@ -131,11 +160,12 @@ export interface Exercise {
   description?: string;
   difficulty: ExerciseDifficulty;
 
-  // Musical duration (tempo-independent)
-  duration_beats: number; // Total number of beats in the exercise
+  // Musical duration - simple and clear
+  total_bars?: number; // Total number of measures/bars (e.g., 2, 4, 8) - optional for backward compatibility
 
-  // Legacy duration field (deprecated but kept for backward compatibility)
-  duration?: number; // DEPRECATED: milliseconds - use duration_beats with BPM to calculate runtime
+  // Legacy fields (deprecated but kept for backward compatibility)
+  duration_beats?: number; // DEPRECATED: Use total_bars instead
+  duration?: number; // DEPRECATED: milliseconds - use total_bars with BPM to calculate runtime
 
   bpm: number;
   key: string;
@@ -151,8 +181,17 @@ export interface Exercise {
 
   // Multi-track data (unified exercise-centric architecture)
   drum_pattern?: DrumPattern; // Drum track data
-  harmony_voicing?: HarmonyVoicing; // Harmony track data
+  harmony_voicing?: HarmonyVoicing; // Harmony track data (legacy/manual entry)
+  harmony_notes?: GeneratedHarmonyNote[]; // Harmony track data (converted from MIDI)
+  harmony_control_changes?: HarmonyControlChange[]; // MIDI control events (sustain, expression)
+  harmony_instrument?: HarmonyInstrumentType; // Default harmony instrument
   track_configuration?: TrackConfiguration; // Multi-track configuration
+
+  // MIDI Files (uploaded to Supabase storage)
+  harmony_midi_url?: string; // URL to uploaded MIDI file for harmony/keys track
+  bassline_midi_url?: string; // URL to uploaded MIDI file for bass track
+  drummer_midi_url?: string; // URL to uploaded MIDI file for drum track
+  metronome_midi_url?: string; // URL to uploaded MIDI file for metronome track
 
   is_active: boolean;
   created_by?: string;

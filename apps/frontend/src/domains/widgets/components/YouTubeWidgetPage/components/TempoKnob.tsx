@@ -221,8 +221,9 @@ export function TempoKnob({
       </div>
 
       {/* BPM Display Below Knob */}
-      <div className="text-sm font-semibold text-slate-200 mt-3">
-        {value} BPM
+      <div className="flex flex-col items-center mt-3">
+        <div className="text-lg font-mono-display font-medium text-slate-200 tabular-nums">{value}</div>
+        <div className="text-xs font-medium text-slate-400">BPM</div>
       </div>
     </div>
   );

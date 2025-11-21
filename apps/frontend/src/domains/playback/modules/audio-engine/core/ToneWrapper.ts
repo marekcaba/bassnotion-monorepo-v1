@@ -234,10 +234,11 @@ export class ToneWrapper {
 
   /**
    * Get Tone.js instance
+   * Returns null if not loaded (instead of throwing) to allow InstrumentDependencyManager fallback
    */
-  getTone(): ToneModule {
+  getTone(): ToneModule | null {
     if (!this.isLoaded || !this.tone) {
-      throw new Error('Tone.js not loaded. Call load() first.');
+      return null; // Let caller handle missing Tone.js
     }
     return this.tone;
   }

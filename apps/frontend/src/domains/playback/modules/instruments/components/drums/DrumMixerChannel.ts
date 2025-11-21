@@ -83,7 +83,7 @@ export class DrumMixerChannel {
     this.name = config.name;
 
     // Create audio chain
-    this.input = new Tone.Gain(1);
+    this.input = new Tone.Gain({ gain: 1 });
     this.compressor = new Tone.Compressor({
       threshold: config.compressor?.threshold || -12,
       ratio: config.compressor?.ratio || 4,
@@ -98,10 +98,10 @@ export class DrumMixerChannel {
       lowFrequency: config.eq?.low?.frequency || 400,
     });
     this.volume = new Tone.Volume(config.volume || 0);
-    this.panner = new Tone.Panner(config.pan || 0);
+    this.panner = new Tone.Panner({ pan: config.pan || 0 });
     this.meter = new Tone.Meter({ normalRange: true });
-    this.mute = new Tone.Gain(config.mute ? 0 : 1);
-    this.output = new Tone.Gain(1);
+    this.mute = new Tone.Gain({ gain: config.mute ? 0 : 1 });
+    this.output = new Tone.Gain({ gain: 1 });
 
     // Connect chain
     this.input.connect(this.compressor);
@@ -317,7 +317,7 @@ export class DrumMixerChannel {
       return;
     }
 
-    const send = new Tone.Gain(amount);
+    const send = new Tone.Gain({ gain: amount });
     this.panner.connect(send);
     this.sendNodes.set(sendName, send);
     this.state.sends.set(sendName, amount);

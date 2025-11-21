@@ -1,6 +1,8 @@
 import { TutorialId } from '../value-objects/tutorial-id.vo.js';
 import { TutorialSlug } from '../value-objects/tutorial-slug.vo.js';
 
+export type TutorialStatus = 'draft' | 'published' | 'archived';
+
 export interface TutorialProps {
   id: TutorialId;
   title: string;
@@ -16,6 +18,19 @@ export interface TutorialProps {
   publishedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  // New fields for draft and MIDI support
+  status?: TutorialStatus;
+  lastModified?: Date;
+  autoSaveVersion?: number;
+  drummerMidiUrl?: string;
+  basslineMidiUrl?: string;
+  harmonyMidiUrl?: string;
+  deletedAt?: Date;
+  // Creator fields for YouTube attribution
+  creatorName?: string;
+  creatorChannelUrl?: string;
+  creatorAvatarUrl?: string;
+  creatorSubscriberCount?: number;
 }
 
 export class Tutorial {
@@ -102,6 +117,51 @@ export class Tutorial {
     return this.props.updatedAt;
   }
 
+  // New getters for draft and MIDI support
+  get status(): TutorialStatus {
+    return this.props.status || 'draft';
+  }
+
+  get lastModified(): Date | undefined {
+    return this.props.lastModified;
+  }
+
+  get autoSaveVersion(): number {
+    return this.props.autoSaveVersion || 0;
+  }
+
+  get drummerMidiUrl(): string | undefined {
+    return this.props.drummerMidiUrl;
+  }
+
+  get basslineMidiUrl(): string | undefined {
+    return this.props.basslineMidiUrl;
+  }
+
+  get harmonyMidiUrl(): string | undefined {
+    return this.props.harmonyMidiUrl;
+  }
+
+  get deletedAt(): Date | undefined {
+    return this.props.deletedAt;
+  }
+
+  get creatorName(): string | undefined {
+    return this.props.creatorName;
+  }
+
+  get creatorChannelUrl(): string | undefined {
+    return this.props.creatorChannelUrl;
+  }
+
+  get creatorAvatarUrl(): string | undefined {
+    return this.props.creatorAvatarUrl;
+  }
+
+  get creatorSubscriberCount(): number | undefined {
+    return this.props.creatorSubscriberCount;
+  }
+
   // Business logic methods
   isBeginnerFriendly(): boolean {
     return this.props.level === 'beginner';
@@ -116,7 +176,15 @@ export class Tutorial {
   }
 
   isPublished(): boolean {
-    return this.props.isActive && !!this.props.publishedAt;
+    return this.status === 'published';
+  }
+
+  isDraft(): boolean {
+    return this.status === 'draft';
+  }
+
+  isArchived(): boolean {
+    return this.status === 'archived';
   }
 
   canBeAccessedByUser(
@@ -197,6 +265,15 @@ export class Tutorial {
       is_active: this.props.isActive,
       published_at: this.props.publishedAt?.toISOString(),
       created_at: this.props.createdAt.toISOString(),
-      updated_at: this.props.updatedAt.toISOString() };
+      updated_at: this.props.updatedAt.toISOString(),
+      // New fields for draft and MIDI support
+      status: this.props.status || 'draft',
+      last_modified: this.props.lastModified?.toISOString(),
+      auto_save_version: this.props.autoSaveVersion || 0,
+      drummer_midi_url: this.props.drummerMidiUrl,
+      bassline_midi_url: this.props.basslineMidiUrl,
+      harmony_midi_url: this.props.harmonyMidiUrl,
+      deleted_at: this.props.deletedAt?.toISOString(),
+    };
   }
 }

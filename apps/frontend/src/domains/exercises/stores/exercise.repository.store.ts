@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Result } from '@/shared/types/result';
 import { Exercise } from '../entities/exercise.entity';
-import { ExerciseId } from '../value-objects/exercise-id';
-import { Difficulty } from '../value-objects/difficulty';
+import { ExerciseId } from '../value-objects/exercise-id.vo';
+import { Difficulty } from '../value-objects/difficulty.vo';
 import { ResultExerciseRepository } from '../repositories/result-exercise.repository';
 import {
   PaginatedResult,

@@ -376,5 +376,7 @@ export class MidiPipelinePresets {
 }
 
 const logger = {
-  info: (message: string, data?: any) => console.log(`[INFO] ${message}`, data),
+  info: (message: string, data?: any) => {
+    // SUPPRESSED: MIDI pipeline logging disabled to reduce console noise
+  },
 };

@@ -5,8 +5,10 @@
  * Automatically cleans up incompatible buffers from cache.
  */
 
-import { GlobalSampleCache } from './GlobalSampleCache.js';
+import { GlobalSampleCache } from '../../modules/storage/cache/GlobalSampleCache.js';
 import { createStructuredLogger } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('AudioContextCompatibility');
 
 export class AudioContextCompatibility {
   private static hasCleanedUp = false;
@@ -32,12 +34,20 @@ export class AudioContextCompatibility {
     // Get all cached samples
     const samples = (GlobalSampleCache as any).samples as Map<string, any>;
     let cleanedCount = 0;
+    let skippedCount = 0;
 
     samples.forEach((sample, path) => {
       if (sample.buffer) {
-        // Since we can't check if buffers are from different contexts without Tone.js,
-        // and we know InitialSamplePreloader was using OfflineAudioContext,
-        // we'll clear all buffers on first run to be safe
+        // CRITICAL: Skip buffers marked as context-compatible (from HarmonyPreloadStrategy)
+        // These buffers were loaded with the real AudioContext, not OfflineAudioContext
+        if (sample.isContextCompatible === true) {
+          skippedCount++;
+          logger.debug(`⏭️ Skipping context-compatible buffer: ${path}`);
+          return;
+        }
+
+        // Clear buffers from InitialSamplePreloader (OfflineAudioContext)
+        // These are not marked as context-compatible and should be re-decoded
         GlobalSampleCache.clearBuffer(path);
         cleanedCount++;
       }
@@ -50,7 +60,15 @@ export class AudioContextCompatibility {
       logger.info(
         '✅ Samples will be re-decoded with correct AudioContext when needed',
       );
-    } else {
+    }
+
+    if (skippedCount > 0) {
+      logger.info(
+        `⏭️ Kept ${skippedCount} context-compatible buffers (from HarmonyPreloadStrategy)`,
+      );
+    }
+
+    if (cleanedCount === 0 && skippedCount === 0) {
       logger.info('✅ No incompatible buffers found');
     }
 

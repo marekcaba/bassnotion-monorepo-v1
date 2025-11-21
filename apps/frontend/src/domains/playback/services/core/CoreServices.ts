@@ -13,7 +13,12 @@ import { AudioEngine } from '../../modules/audio-engine/core/AudioEngine.js';
 import { TransportAdapter } from './TransportAdapter.js';
 import { TransportSyncManager } from './TransportSyncManager.js';
 import { PluginManager, registerExistingPlugins } from './PluginManager.js';
+import { AudioEventRouter } from './AudioEventRouter.js';
+import { InstrumentRegistry } from './InstrumentRegistry.js';
+import { RegionProcessor } from './RegionProcessor.js';
+import { AudioDebugger } from './AudioDebugger.js';
 import { getLogger } from '@/utils/logger.js';
+import { getPreloadableRegistry } from './PreloadableInstrumentRegistry.js';
 
 export interface CoreServicesConfig {
   enableHighPrecisionTiming?: boolean;
@@ -37,6 +42,9 @@ export class CoreServices {
   private unifiedTransport: TransportAdapter;
   private transportSyncManager: TransportSyncManager;
   private pluginManager: PluginManager;
+  private audioEventRouter: AudioEventRouter;
+  private instrumentRegistry: InstrumentRegistry;
+  private regionProcessor: RegionProcessor;
   private isInitialized = false;
   private isPreInitialized = false;
   private config: Required<CoreServicesConfig>;
@@ -72,9 +80,15 @@ export class CoreServices {
     );
     this.transportSyncManager = TransportSyncManager.getInstance();
     this.pluginManager = new PluginManager(this.audioEngine, this.eventBus);
+    this.audioEventRouter = new AudioEventRouter();
+    this.instrumentRegistry = new InstrumentRegistry(this.eventBus);
+    this.regionProcessor = new RegionProcessor(this.eventBus);
 
     // Register services with dependencies
     this.registerServices();
+
+    // Set up event listeners for transport state changes
+    this.setupEventListeners();
   }
 
   /**
@@ -125,6 +139,11 @@ export class CoreServices {
         await this.preInitialize();
       }
 
+      // Initialize PreloadableInstrumentRegistry early so configs can be registered
+      logger.info('CoreServices: Initializing PreloadableInstrumentRegistry...');
+      getPreloadableRegistry().initialize(this.eventBus, this.audioEngine);
+      logger.info('CoreServices: PreloadableInstrumentRegistry initialized');
+
       // Ensure AudioEngine is fully initialized first (must be called from user gesture)
       logger.info('CoreServices: Fully initializing AudioEngine...');
       await this.audioEngine.initialize();
@@ -150,6 +169,142 @@ export class CoreServices {
         logger.info('CoreServices: Plugins registered');
       }
 
+      // Initialize AudioEventRouter with EventBus and AudioEngine
+      logger.info('CoreServices: Initializing AudioEventRouter...');
+      AudioDebugger.getInstance().log('CoreServices', 'initializing-audio-event-router');
+      await this.audioEventRouter.initialize(this.eventBus, this.audioEngine);
+      logger.info('CoreServices: AudioEventRouter initialized');
+
+      // Start AudioEventRouter to begin listening for trigger events
+      logger.info('CoreServices: Starting AudioEventRouter...');
+      AudioDebugger.getInstance().log('CoreServices', 'starting-audio-event-router');
+      await this.audioEventRouter.start();
+      logger.info('CoreServices: AudioEventRouter started and listening for events');
+      AudioDebugger.getInstance().log('CoreServices', 'audio-event-router-started');
+
+      // CRITICAL: Set AudioContext on RegionProcessor for time domain conversion
+      logger.info('CoreServices: Setting AudioContext on RegionProcessor...');
+      const audioContext = await this.audioEngine.getContext();
+      this.regionProcessor.setAudioContext(audioContext);
+      logger.info('CoreServices: RegionProcessor configured with AudioContext for sample-accurate timing');
+
+      // Inject PluginManager for accessing WamKeyboard (sustain pedal routing)
+      this.regionProcessor.setPluginManager(this.pluginManager);
+      logger.info('CoreServices: PluginManager injected into RegionProcessor for CC event routing');
+
+      // FAANG SOLUTION: Inject audio buffers for direct scheduling
+      // This enables sample-perfect audio rendering by bypassing JavaScript callback timing
+      logger.info('CoreServices: Injecting audio buffers for direct scheduling...');
+      const { GlobalSampleCache } = await import('../../modules/storage/cache/GlobalSampleCache.js');
+      const sampleCache = GlobalSampleCache.getInstance();
+
+      // Inject metronome buffers
+      const accentBuffer = sampleCache.getCachedBuffer('metronome-high');
+      const clickBuffer = sampleCache.getCachedBuffer('metronome-low');
+
+      if (accentBuffer && clickBuffer) {
+        this.regionProcessor.setMetronomeBuffers(accentBuffer, clickBuffer, audioContext.destination);
+        logger.info('✅ CoreServices: Metronome buffers injected - direct audio scheduling enabled');
+      } else {
+        logger.warn('⚠️ CoreServices: Metronome buffers not found in cache - will fall back to event bus');
+        logger.debug('Metronome buffer status:', {
+          accentBuffer: accentBuffer ? 'found' : 'missing',
+          clickBuffer: clickBuffer ? 'found' : 'missing'
+        });
+      }
+
+      // Inject drum buffers
+      const kickBuffer = sampleCache.getCachedBuffer('drum-kick');
+      const snareBuffer = sampleCache.getCachedBuffer('drum-snare');
+      const hihatBuffer = sampleCache.getCachedBuffer('drum-hihat');
+
+      if (kickBuffer && snareBuffer && hihatBuffer) {
+        this.regionProcessor.setDrumBuffers(kickBuffer, snareBuffer, hihatBuffer, audioContext.destination);
+        logger.info('✅ CoreServices: Drum buffers injected - direct audio scheduling enabled');
+      } else {
+        logger.warn('⚠️ CoreServices: Drum buffers not found in cache - will fall back to event bus');
+        logger.warn('Drum buffer status:', {
+          kickBuffer: kickBuffer ? 'found' : 'missing',
+          snareBuffer: snareBuffer ? 'found' : 'missing',
+          hihatBuffer: hihatBuffer ? 'found' : 'missing'
+        });
+      }
+
+      // Inject voice cue buffers
+      const voiceCueBuffers = new Map<string, AudioBuffer>();
+      const cues = ['one', 'two', 'three', 'four'];
+      let voiceCuesFound = 0;
+
+      for (const cue of cues) {
+        const buffer = sampleCache.getCachedBuffer(`voice-cue-${cue}`);
+        if (buffer) {
+          voiceCueBuffers.set(cue, buffer);
+          voiceCuesFound++;
+        }
+      }
+
+      if (voiceCuesFound === cues.length) {
+        this.regionProcessor.setVoiceCueBuffers(voiceCueBuffers, audioContext.destination);
+        logger.info('✅ CoreServices: Voice cue buffers injected - countdown guidance enabled');
+      } else {
+        logger.warn('⚠️ CoreServices: Some voice cue buffers not found in cache - countdown may be silent');
+        logger.debug('Voice cue buffer status:', {
+          found: voiceCuesFound,
+          total: cues.length,
+          missing: cues.filter(cue => !sampleCache.getCachedBuffer(`voice-cue-${cue}`))
+        });
+      }
+
+      // Inject harmony buffers (Wurlitzer/Grand Piano samples)
+      // CRITICAL FIX: Use sharp notation (Cs, Ds, Fs, Gs, As) to match HarmonyPreloadStrategy
+      // Try multiple instrument prefixes since we don't know which instrument was preloaded
+      const harmonyBuffers = new Map<string, AudioBuffer>();
+      const layers = ['v2', 'v3', 'v4', 'v5', 'v6', 'v7']; // Velocity layers (wurlitzer uses v2-v5, grandpiano uses v4-v7)
+      const notes = ['C', 'Cs', 'D', 'Ds', 'E', 'F', 'Fs', 'G', 'Gs', 'A', 'As', 'B']; // Sharp notation
+      const octaves = [2, 3, 4, 5, 6]; // Typical piano range
+      const instrumentPrefixes = ['wurlitzer', 'grandpiano', 'rhodes', 'harmony']; // Try all possible prefixes
+      let harmonyBuffersFound = 0;
+
+      for (const layer of layers) {
+        for (const octave of octaves) {
+          for (const note of notes) {
+            const noteName = `${note}${octave}`;
+
+            // Try each instrument prefix until we find a cached buffer
+            let buffer: AudioBuffer | undefined;
+            let foundPrefix = '';
+            for (const prefix of instrumentPrefixes) {
+              const cacheKey = `${prefix}-${layer}-${noteName}`;
+              buffer = sampleCache.getCachedBuffer(cacheKey);
+              if (buffer) {
+                foundPrefix = prefix;
+                break; // Found it!
+              }
+            }
+
+            if (buffer) {
+              // RegionProcessor expects key format: 'v3-C4' (without instrument prefix)
+              harmonyBuffers.set(`${layer}-${noteName}`, buffer);
+              harmonyBuffersFound++;
+            }
+          }
+        }
+      }
+
+      if (harmonyBuffersFound > 0) {
+        this.regionProcessor.setHarmonyBuffers(harmonyBuffers, audioContext.destination);
+        logger.info('✅ CoreServices: Harmony buffers injected - direct harmony scheduling enabled', {
+          buffersFound: harmonyBuffersFound,
+          layers: layers.length
+        });
+      } else {
+        logger.warn('⚠️ CoreServices: No harmony buffers found in cache - will fall back to event bus');
+      }
+
+      // Note: RegionProcessor will be started when transport starts (via event listener)
+      logger.info('CoreServices: RegionProcessor initialized (will start with transport)');
+      AudioDebugger.getInstance().log('CoreServices', 'region-processor-ready');
+
       this.isInitialized = true;
       logger.info('CoreServices: Full initialization complete!');
 
@@ -160,6 +315,8 @@ export class CoreServices {
           'unifiedTransport',
           'transportSyncManager',
           'pluginManager',
+          'audioEventRouter',
+          'regionProcessor',
         ],
       });
     } catch (error) {
@@ -195,6 +352,10 @@ export class CoreServices {
    */
   async stop(): Promise<void> {
     try {
+      // Stop RegionProcessor first (it's generating events)
+      this.regionProcessor.stop();
+      // Stop AudioEventRouter (it depends on other services)
+      await this.audioEventRouter.stop();
       await this.registry.stop();
       this.eventBus.emit('core-services:stopped', {});
     } catch (error) {
@@ -230,8 +391,12 @@ export class CoreServices {
     return this.audioEngine;
   }
 
-  getUnifiedTransport(): UnifiedTransport {
+  getUnifiedTransport(): TransportAdapter {
     return this.unifiedTransport;
+  }
+
+  getRegionProcessor(): RegionProcessor {
+    return this.regionProcessor;
   }
 
   getTransportSyncManager(): TransportSyncManager {
@@ -242,8 +407,20 @@ export class CoreServices {
     return this.pluginManager;
   }
 
+  getAudioEventRouter(): AudioEventRouter {
+    return this.audioEventRouter;
+  }
+
   getServiceRegistry(): ServiceRegistry {
     return this.registry;
+  }
+
+  getInstrumentRegistry(): InstrumentRegistry {
+    return this.instrumentRegistry;
+  }
+
+  getRegionProcessor(): RegionProcessor {
+    return this.regionProcessor;
   }
 
   /**
@@ -287,6 +464,60 @@ export class CoreServices {
   }
 
   /**
+   * Set up event listeners
+   */
+  private setupEventListeners(): void {
+    // Listen for transport stop to stop all audio playback components
+    this.eventBus.on('transport:stop', async (data: { timestamp: number; graceful?: boolean }) => {
+      const graceful = data.graceful ?? false;
+      logger.info('Transport stopped, stopping all audio components', { graceful });
+
+      // Stop RegionProcessor with graceful flag
+      // graceful=true (auto-stop): Let one-shot drums/metronome finish naturally
+      // graceful=false (manual stop): Force-stop all audio immediately
+      this.regionProcessor.stop(graceful);
+
+      // CRITICAL FIX: Stop AudioEventRouter (prevents new triggers from being routed)
+      await this.audioEventRouter.stop();
+      logger.info('AudioEventRouter stopped');
+
+      // CRITICAL FIX: Stop PluginManager (stops all active WAM plugins)
+      // This stops WamDrummer, WamMetronome, WamKeyboard, WamHarmonyProcessor
+      await this.pluginManager.stop();
+      logger.info('PluginManager stopped - all WAM plugins cleared');
+    });
+
+    // Listen for transport start to restart audio components
+    // This ensures second/third/etc playback rounds work the same as first playback
+    this.eventBus.on('transport:start', async () => {
+      logger.info('Transport starting, restarting audio components');
+
+      // Restart AudioEventRouter if it was stopped
+      // This allows drum/metronome/harmony triggers to flow through again
+      const routerStatus = this.audioEventRouter.getStatus();
+      if (!routerStatus.isRunning) {
+        await this.audioEventRouter.start();
+        logger.info('AudioEventRouter restarted');
+      } else {
+        logger.debug('AudioEventRouter already running, no restart needed');
+      }
+
+      // Restart PluginManager to re-activate WAM plugins
+      try {
+        await this.pluginManager.start();
+        logger.info('PluginManager restarted - WAM plugins ready');
+      } catch (error) {
+        logger.error('Failed to restart PluginManager:', error);
+      }
+    });
+
+    // NOTE: RegionProcessor start is managed by GlobalControls, not by event listener
+    // This is because tracks are registered asynchronously by widgets (MetronomeWidget)
+    // AFTER transport starts, so we need to start RegionProcessor before transport.start()
+    // Keeping this event listener would cause double-scheduling of all events!
+  }
+
+  /**
    * Register services with proper dependencies
    */
   private registerServices(): void {
@@ -310,6 +541,16 @@ export class CoreServices {
       'audioEngine',
       'eventBus',
     ]);
+
+    // AudioEventRouter depends on EventBus and AudioEngine
+    // It listens to events and plays audio samples
+    this.registry.register('audioEventRouter', this.audioEventRouter, [
+      'eventBus',
+      'audioEngine',
+    ]);
+
+    // InstrumentRegistry depends only on EventBus
+    this.registry.register('instrumentRegistry', this.instrumentRegistry, ['eventBus']);
   }
 }
 
@@ -469,6 +710,7 @@ export { AudioEngine } from '../../modules/audio-engine/core/AudioEngine.js';
 export { TransportAdapter } from './TransportAdapter.js';
 export { TransportSyncManager } from './TransportSyncManager.js';
 export { PluginManager } from './PluginManager.js';
+export { InstrumentRegistry } from './InstrumentRegistry.js';
 
 // Export types
 export type { Service } from './ServiceRegistry.js';
@@ -486,3 +728,4 @@ export type {
   TimingMetrics,
 } from '../../modules/transport/types/index.js';
 export type { PluginRegistration } from './PluginManager.js';
+export type { InstrumentType } from './InstrumentRegistry.js';

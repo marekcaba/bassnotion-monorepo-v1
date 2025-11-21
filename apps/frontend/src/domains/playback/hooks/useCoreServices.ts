@@ -225,7 +225,7 @@ export function useCoreServices(
       );
 
       const unsubscribeTempoChange = eventBus.on(
-        'transport:tempo-changed',
+        'transport:tempo-change',
         ({ bpm }: { bpm: number }) => {
           if (!isUpdatingRef.current) {
             isUpdatingRef.current = true;

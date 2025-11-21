@@ -9,6 +9,10 @@
 import { GlobalSampleCache } from '../modules/storage/cache/GlobalSampleCache.js';
 import { getLogger } from '@/utils/logger.js';
 import { wamPluginSingleton } from '@/domains/widgets/utils/wamPluginSingleton.js';
+import {
+  getPreloadableRegistry,
+  type InstrumentConfig,
+} from './core/PreloadableInstrumentRegistry.js';
 
 const logger = getLogger('InitialSamplePreloader');
 
@@ -28,6 +32,10 @@ export class InitialSamplePreloader {
   private preloadComplete = false;
   private harmonyInstrument: any = null; // WamKeyboard instance
   private _drumInstrument: any = null; // WamDrummer instance
+
+  // 🆕 DEDUPLICATION: Track in-flight loading requests per instrument
+  // Prevents duplicate loads when user rapidly switches exercises
+  private loadingPromises = new Map<string, Promise<any>>();
 
   private constructor() {
     // Private constructor for singleton
@@ -59,99 +67,287 @@ export class InitialSamplePreloader {
     }
 
     logger.info(
-      '🚀 Phase 2: Downloading essential samples (AudioContext not required)...',
+      '🚀 Phase 2: Registering instrument configurations (no AudioContext required)...',
     );
 
-    // Check if AudioEngine exists first
-    const coreServices =
-      (window as any).__globalCoreServices || (window as any).__coreServices;
-    const audioEngine = coreServices?.getAudioEngine?.();
-
-    // Check AudioEngine readiness but DON'T try to start it
-    // Scroll is not a valid user gesture for audio context
-    let _audioEngineReady = false;
-    if (audioEngine?.isReady()) {
-      _audioEngineReady = true;
-      logger.info('  → AudioEngine already ready');
-      try {
-        const contextState = audioEngine.getContext()?.state || 'unknown';
-        logger.info('  → AudioContext state:', contextState);
-      } catch (contextError) {
-        logger.warn('  → Could not get AudioContext state:', contextError);
-        _audioEngineReady = false;
-      }
-    } else {
-      logger.info('  → AudioEngine not ready, skipping context check');
-    }
-    logger.info('  → Creating instruments with preloaded samples...');
     this.isPreloading = true;
 
     try {
-      // Create OfflineAudioContext for decoding (no user gesture needed)
-      const _offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-
-      // Load essential samples AND create instruments
+      // Register instrument configurations that can be instantiated later
       await Promise.all([
-        this.loadEssentialHarmonyInstrument(), // Creates instrument with essential samples
-        this.loadEssentialDrumInstrument(), // Creates drum instruments with essential samples
-        this.loadEssentialMetronomeInstrument(), // Creates metronome instrument with samples
+        this.registerVoiceCueConfig(), // Register voice cue config (first for countdown)
+        this.registerHarmonyConfig(), // Register harmony instrument config
+        this.registerDrumConfig(), // Register drum instrument config
+        this.registerMetronomeConfig(), // Register metronome instrument config
       ]);
 
-      logger.info('✅ Essential samples loaded!');
+      // Also try to preload samples if AudioContext is available
+      const coreServices =
+        (window as any).__globalCoreServices || (window as any).__coreServices;
+      const audioEngine = coreServices?.getAudioEngine?.();
 
-      // Log cache stats
-      const stats = GlobalSampleCache.getInstance().getStats();
-      logger.info('📊 GlobalSampleCache stats:', {
-        instruments: stats.instrumentsCount,
-        samples: stats.samplesCount,
-        totalCached: stats.totalSize,
-      });
+      // Check if AudioEngine is ready WITHOUT calling getContext() which throws
+      if (audioEngine?.isReady?.()) {
+        try {
+          const context = audioEngine.getContext();
+          if (context?.state === 'running') {
+            logger.info(
+              'AudioContext is running, attempting to create instruments...',
+            );
+            await Promise.all([
+              this.loadEssentialHarmonyInstrument(),
+              this.loadEssentialDrumInstrument(),
+              this.loadEssentialMetronomeInstrument(),
+            ]);
+          } else {
+            logger.info(
+              `AudioContext state: ${context?.state || 'unavailable'}, instruments will be created on demand`,
+            );
+          }
+        } catch (error) {
+          logger.info(
+            'AudioContext not yet available, instruments will be created on demand',
+          );
+        }
+      } else {
+        logger.info(
+          'AudioEngine not ready, instruments will be created on demand',
+        );
+      }
+
+      logger.info('✅ Instrument configurations registered!');
+
+      // PHASE 2 ENHANCEMENT: Set up RegionProcessor with tracks
+      logger.info('🎯 Setting up RegionProcessor for instant playback...');
+      await this.setupRegionProcessorWithTracks();
+
+      // PHASE 2 ENHANCEMENT: Download and cache sample files
+      logger.info('📥 Pre-downloading sample files...');
+      await this.downloadAndCacheSampleFiles();
+
+      // Log registry status
+      const registry = getPreloadableRegistry();
+      logger.info(
+        '📊 PreloadableInstrumentRegistry status:',
+        registry.getStatus(),
+      );
 
       // Dispatch event to notify that essential samples are ready
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('essentialSamplesReady'));
       }
     } catch (error) {
-      logger.error('❌ Failed to load essential samples:', error);
+      logger.error('❌ Failed to register instrument configs:', error);
     } finally {
       this.isPreloading = false;
     }
   }
 
   /**
-   * Load all remaining samples for full quality
+   * Load exercise-specific samples using FAANG MIDI-based smart loading
    * Called when ExerciseSelector becomes visible
+   * @param exercise - Exercise to load samples for (uses MIDI files to determine required samples)
    */
-  async loadFullSamples(): Promise<void> {
-    // DISABLED - Using essential samples only for debugging
-    logger.info('🚀 Phase 3: DISABLED - Using essential samples only');
-    logger.info(
-      '  → Skipping full quality sample loading to debug audio chain issues',
-    );
-    logger.info(
-      '  → Essential samples should be sufficient for testing harmony output',
-    );
-    return;
+  async loadFullSamples(exercise?: any): Promise<any> {
+    logger.info('🚀 Phase 3: FAANG MIDI-based smart sample loading...', {
+      exerciseId: exercise?.id,
+      exerciseTitle: exercise?.title,
+      hasHarmonyMidi: !!exercise?.harmonyMidiUrl,
+      hasDrummerMidi: !!exercise?.drummerMidiUrl,
+      hasBasslineMidi: !!exercise?.basslineMidiUrl,
+      harmonyInstrument: exercise?.harmonyInstrument,
+    });
 
-    /* Commented out for debugging
+    // 🆕 DEDUPLICATION: Check if already loading this instrument
+    const instrument = exercise?.harmonyInstrument || 'grandpiano';
+    const loadingKey = `harmony-${instrument}`;
+
+    if (this.loadingPromises.has(loadingKey)) {
+      console.log('⏭️ [DEDUPLICATION] Already loading samples for:', instrument);
+      logger.info('Samples already loading for instrument, waiting for completion:', {
+        instrument,
+      });
+      // Return existing promise to avoid duplicate loads
+      return this.loadingPromises.get(loadingKey);
+    }
+
+    // Create loading promise and store it
+    const loadingPromise = this.executeLoadFullSamples(exercise, instrument, loadingKey);
+    this.loadingPromises.set(loadingKey, loadingPromise);
+
     try {
-      // Load remaining samples into existing instruments
-      await Promise.all([
-        this.loadFullHarmonyInstrument(), // Adds remaining layers to existing instrument
-        // TODO: Add loadFullDrumInstrument() when we need more drum samples
-        // TODO: Add loadFullBassInstrument() when bass is implemented
-      ]);
+      const result = await loadingPromise;
+      return result; // 🆕 CRITICAL: Return the result to caller
+    } finally {
+      // Clean up after loading completes (success or failure)
+      this.loadingPromises.delete(loadingKey);
+    }
+  }
+
+  /**
+   * Internal method that actually performs the sample loading
+   * Extracted to enable deduplication in loadFullSamples
+   */
+  private async executeLoadFullSamples(exercise: any, instrument: string, loadingKey: string): Promise<void> {
+    console.log('🎵 [LOADING-START] Starting sample load for:', {
+      instrument,
+      exerciseId: exercise?.id,
+      loadingKey,
+      hasHarmonyNotes: !!exercise?.harmonyNotes,
+      harmonyNotesCount: exercise?.harmonyNotes?.length || 0,
+      harmonyInstrument: exercise?.harmonyInstrument,
+      firstThreeNotes: exercise?.harmonyNotes?.slice(0, 3),
+    });
+
+    try {
+      // FAANG SOLUTION: Use HarmonyPreloadStrategy with exercise data
+      // This will extract notes from MIDI and load ONLY required samples
+      const { HarmonyPreloadStrategy } = await import(
+        '../modules/preloading/strategies/HarmonyPreloadStrategy.js'
+      );
+      const harmonyStrategy = new HarmonyPreloadStrategy();
+
+      // Load ONLY harmony samples required by exercise MIDI file
+      const harmonyResult = await harmonyStrategy.loadFullSamples(undefined, exercise);
+
+      console.log('🎵 [AFTER-HARMONY-LOAD] Harmony loading completed:', {
+        success: harmonyResult.success,
+        loaded: harmonyResult.loaded,
+        total: harmonyResult.total,
+      });
+
+      if (harmonyResult.success) {
+        logger.info('✅ Harmony FAANG smart loading complete', {
+          samplesLoaded: harmonyResult.loaded,
+          savingsVsFullLoad:
+            harmonyResult.loaded > 0
+              ? `${Math.round((1 - harmonyResult.loaded / 120) * 100)}%`
+              : 'N/A',
+        });
+
+        console.log('🔧 [BEFORE-REGIONPROCESSOR] About to inject buffers into RegionProcessor');
+
+        // CRITICAL: Inject harmony buffers into RegionProcessor immediately after loading
+        // This enables direct AudioBufferSourceNode scheduling for instant stop functionality
+        try {
+          // Access global CoreServices instance (created by useCoreServices hook)
+          const coreServices = (window as any).__globalCoreServices;
+
+          if (!coreServices) {
+            logger.warn('⚠️ CoreServices not initialized yet - harmony buffers will be injected later');
+          } else {
+            const regionProcessor = coreServices.getRegionProcessor();
+            const sampleCache = GlobalSampleCache.getInstance();
+
+            // Get the instrument that was just preloaded
+            const instrument = exercise?.harmonyInstrument || 'wurlitzer';
+
+            const harmonyBuffers = new Map<string, AudioBuffer>();
+            const layers = ['v2', 'v3', 'v4', 'v5']; // Harmony velocity layers
+            // CRITICAL FIX: Use sharp notation (Cs, Ds, Fs, Gs, As) to match HarmonyPreloadStrategy
+            // This ensures cache lookups succeed for preloaded samples
+            const notes = ['C', 'Cs', 'D', 'Ds', 'E', 'F', 'Fs', 'G', 'Gs', 'A', 'As', 'B'];
+            const octaves = [2, 3, 4, 5, 6];
+            let buffersFound = 0;
+
+            for (const layer of layers) {
+              for (const octave of octaves) {
+                for (const note of notes) {
+                  const noteName = `${note}${octave}`;
+                  // CRITICAL FIX: Use instrument-specific cache keys (e.g., 'wurlitzer-v3-C4')
+                  const cacheKey = `${instrument}-${layer}-${noteName}`;
+                  const buffer = sampleCache.getCachedBuffer(cacheKey);
+                  if (buffer) {
+                    // RegionProcessor expects format: 'v3-C4' (without instrument prefix)
+                    harmonyBuffers.set(`${layer}-${noteName}`, buffer);
+                    buffersFound++;
+                  }
+                }
+              }
+            }
+
+            if (buffersFound > 0 && regionProcessor) {
+              const audioContext = (await import('../../playback/utils/ensureAudioContext.js')).ensureAudioContext();
+              regionProcessor.setHarmonyBuffers(harmonyBuffers, audioContext.destination);
+              logger.info('✅ Harmony buffers injected into RegionProcessor', {
+                instrument,
+                buffersInjected: buffersFound,
+                layers: layers.length
+              });
+            } else {
+              logger.warn('⚠️ No harmony buffers available for injection', {
+                instrument,
+                buffersFound
+              });
+            }
+          }
+        } catch (error) {
+          console.error('❌ [REGIONPROCESSOR-ERROR] Failed to inject buffers:', error);
+          logger.error('Failed to inject harmony buffers into RegionProcessor', error as Error);
+        }
+
+        console.log('✅ [AFTER-REGIONPROCESSOR] RegionProcessor injection attempt completed');
+      } else {
+        logger.warn('⚠️ Harmony sample loading completed with warnings', {
+          error: harmonyResult.error,
+        });
+      }
+
+      console.log('🔍 [BEFORE-BASS-CHECK] Checking if bass loading needed:', {
+        hasBasslineMidiUrl: !!exercise?.basslineMidiUrl,
+        basslineMidiUrl: exercise?.basslineMidiUrl,
+      });
+
+      // 🆕 EARLY RETURN: For now, skip bass loading when called from handleExerciseSelect
+      // This avoids unnecessary loading and ensures fast harmony-only loading
+      if (!exercise?.basslineMidiUrl) {
+        console.log('⏭️ [SKIP-BASS] No bassline MIDI, returning harmony result only');
+
+        console.log('✅ [LOADING-COMPLETE] Sample load completed for:', {
+          instrument,
+          loadingKey,
+          harmonyResult,
+        });
+
+        return harmonyResult;
+      }
+
+      // FAANG SOLUTION: Use BassPreloadStrategy with exercise data
+      // This will extract notes from bassline MIDI and prepare metadata for widget
+      const { BassPreloadStrategy } = await import(
+        '../modules/preloading/strategies/BassPreloadStrategy.js'
+      );
+      const bassStrategy = new BassPreloadStrategy();
+
+      // Load ONLY bass samples required by exercise bassline MIDI file
+      const bassResult = await bassStrategy.loadFullSamples(undefined, exercise);
+
+      if (bassResult.success) {
+        logger.info('✅ Bass FAANG smart loading complete', {
+          samplesLoaded: bassResult.loaded,
+          savingsVsFullLoad:
+            bassResult.loaded > 0
+              ? `${Math.round((1 - bassResult.loaded / 24) * 100)}%`
+              : 'N/A',
+        });
+      } else {
+        logger.warn('⚠️ Bass sample loading completed with warnings', {
+          error: bassResult.error,
+        });
+      }
+
+      // LEGACY LOADING DISABLED - No longer load all 120 harmony samples or 24 bass samples
+      // await this.loadFullHarmonyInstrument();  // DISABLED
+      // await this.loadFullBassInstrument();  // DISABLED
 
       this.preloadComplete = true;
-      logger.info('✅ Full sample preloading complete!');
-      
+
       // Log final cache stats
       const stats = GlobalSampleCache.getInstance().getStats();
       logger.info('📊 Final GlobalSampleCache stats:', {
         instruments: stats.instrumentsCount,
         samples: stats.samplesCount,
         totalCached: stats.totalSize,
-        memoryInfo: GlobalSampleCache.getCacheStats()
       });
 
       // Dispatch event to notify that all samples are ready
@@ -159,10 +355,24 @@ export class InitialSamplePreloader {
         (window as any).__samplesPreloaded = true;
         window.dispatchEvent(new Event('samplesPreloaded'));
       }
+
+      console.log('✅ [LOADING-COMPLETE] Sample load completed for:', {
+        instrument,
+        loadingKey,
+        harmonyResult,
+      });
+
+      // Return the harmony result for caller
+      return harmonyResult;
     } catch (error) {
-      logger.error('❌ Failed to load full samples:', error);
+      console.error('❌ [LOADING-ERROR] Failed to load samples for:', {
+        instrument,
+        loadingKey,
+        error,
+      });
+      logger.error('❌ Failed to load exercise samples:', error);
+      throw error; // Re-throw to ensure promise rejects
     }
-    */
   }
 
   /**
@@ -455,13 +665,13 @@ export class InitialSamplePreloader {
       // Step 5: Create drum samplers
       logger.info('AudioContext is running! Creating drum samplers...');
       const { supabase } = await import('@/infrastructure/supabase/client');
-      const kitPath = 'drums/hydrogen-kits/mp3/electronic/boss-dr110';
+      const kitPath = 'drums/hydrogen-kits/colombo-acoustic';
 
       const drumPads: Record<number, any> = {};
       const essentialDrums = [
-        { pad: 1, file: 'dr110kik.mp3', name: 'kick' },
-        { pad: 3, file: 'dr110clp.mp3', name: 'snare' },
-        { pad: 5, file: 'dr110cht.mp3', name: 'hihat' },
+        { pad: 1, file: 'kick-v1.wav', name: 'kick' },
+        { pad: 3, file: 'snare-v1.wav', name: 'snare' },
+        { pad: 5, file: 'hihat-v1.wav', name: 'hihat' },
       ];
 
       // Create Players for each drum
@@ -478,7 +688,7 @@ export class InitialSamplePreloader {
         const loadPromise = new Promise<void>((resolve, reject) => {
           drumPads[drum.pad] = new ToneInstance.Player({
             url,
-            volume: -10, // Reasonable default volume
+            volume: -12, // Balanced volume for drum samples
             onload: () => {
               logger.info(`✅ Drum pad ${drum.pad} (${drum.name}) loaded`);
               resolve();
@@ -505,6 +715,36 @@ export class InitialSamplePreloader {
         // Continue anyway - some drums might have loaded
       }
 
+      // Add trigger method for AudioEventRouter compatibility
+      drumPads.trigger = function (event: any) {
+        const drumName = event.data?.drum || event.drum;
+        const drumToPad: Record<string, number> = {
+          kick: 1,
+          snare: 3,
+          hihat: 5,
+        };
+        const pad = drumToPad[drumName];
+
+        if (pad && this[pad]) {
+          try {
+            // Stop the previous sound if it's still playing to avoid conflicts
+            if (this[pad].state === 'started') {
+              this[pad].stop();
+            }
+
+            if (event.audioTime !== undefined && event.audioTime > 0) {
+              this[pad].start(event.audioTime);
+            } else {
+              this[pad].start();
+            }
+          } catch (error) {
+            logger.error(`Failed to trigger drum pad ${pad}:`, error);
+          }
+        } else {
+          logger.warn(`No drum pad found for ${drumName} (pad ${pad})`);
+        }
+      };
+
       // Store in global cache for widgets to access
       GlobalSampleCache.getInstance().cacheInstrument(
         'drums-preloaded',
@@ -525,17 +765,23 @@ export class InitialSamplePreloader {
   private async loadEssentialDrumSamples(
     offlineContext: OfflineAudioContext,
   ): Promise<void> {
+    const startTime = performance.now();
     logger.info('🥁 Loading essential drum samples...');
 
     try {
       const { supabase } = await import('@/infrastructure/supabase/client');
-      const kitPath = 'drums/hydrogen-kits/mp3/electronic/boss-dr110';
+      const kitPath = 'drums/hydrogen-kits/colombo-acoustic';
 
       const essentialDrums = [
-        { pad: 1, file: 'dr110kik.mp3', name: 'kick' },
-        { pad: 3, file: 'dr110clp.mp3', name: 'snare' },
-        { pad: 5, file: 'dr110cht.mp3', name: 'hihat' },
+        { pad: 1, file: 'kick-v1.wav', name: 'kick' },
+        { pad: 3, file: 'snare-v1.wav', name: 'snare' },
+        { pad: 5, file: 'hihat-v1.wav', name: 'hihat' },
       ];
+
+      logger.info('📥 Loading essential drum samples:', {
+        count: essentialDrums.length,
+        drums: essentialDrums.map((d) => d.name),
+      });
 
       const loadPromises = essentialDrums.map(async (sample) => {
         const fullPath = `${kitPath}/${sample.file}`;
@@ -547,19 +793,30 @@ export class InitialSamplePreloader {
         GlobalSampleCache.getInstance().cacheUrl(`drum-pad-${sample.pad}`, url);
 
         try {
+          logger.info(`📥 Fetching ${sample.name}...`);
           const response = await fetch(url, { mode: 'cors' });
-          if (!response.ok) throw new Error(`Failed to fetch ${sample.name}`);
+          if (!response.ok)
+            throw new Error(
+              `Failed to fetch ${sample.name}: ${response.status}`,
+            );
 
           const arrayBuffer = await response.arrayBuffer();
 
-          // Just verify we can decode it, but don't cache the buffer
+          // Decode AND cache the buffer - this is what WamDrummer needs!
           const audioBuffer = await offlineContext.decodeAudioData(
             arrayBuffer.slice(0),
           );
 
-          // DON'T cache the decoded buffer - it won't work with Tone.js!
-          // GlobalSampleCache.cacheBuffer(fullPath, audioBuffer);
-          // GlobalSampleCache.cacheBuffer(`drum-pad-${sample.pad}`, audioBuffer);
+          // Cache with multiple keys for WamDrummer compatibility
+          GlobalSampleCache.getInstance().cacheBuffer(
+            `drum-${sample.name}`,
+            audioBuffer,
+          );
+          GlobalSampleCache.getInstance().cacheBuffer(
+            `drum-pad-${sample.pad}`,
+            audioBuffer,
+          );
+          logger.info(`✅ ${sample.name} cached`);
 
           logger.info(
             `  ✓ Essential drum: ${sample.name} verified (${audioBuffer.duration.toFixed(2)}s)`,
@@ -570,7 +827,17 @@ export class InitialSamplePreloader {
       });
 
       await Promise.all(loadPromises);
-      logger.info('✅ Essential drum samples loaded');
+
+      const duration = performance.now() - startTime;
+      logger.info(
+        '✅ Essential drum samples loaded and cached as AudioBuffers',
+        {
+          duration: `${duration.toFixed(2)}ms`,
+          samplesLoaded: essentialDrums.length,
+          averagePerSample: `${(duration / essentialDrums.length).toFixed(2)}ms`,
+          drums: essentialDrums.map((d) => d.name),
+        },
+      );
     } catch (error) {
       logger.error('Failed to load essential drum samples:', error);
     }
@@ -651,19 +918,545 @@ export class InitialSamplePreloader {
   }
 
   /**
+   * Register metronome instrument configuration
+   */
+  private async registerMetronomeConfig(): Promise<void> {
+    logger.info('🔔 Registering metronome instrument configuration...');
+
+    const registry = getPreloadableRegistry();
+
+    const metronomeConfig: InstrumentConfig = {
+      type: 'metronome',
+      id: 'metronome-default',
+      priority: 10,
+      factory: async (context: AudioContext) => {
+        logger.info('Creating WamMetronome with AudioContext...');
+        const { default: WamMetronome } = await import(
+          '@/domains/playback/modules/instruments/adapters/wam/WamMetronome'
+        );
+
+        // Create the metronome plugin
+        const metronomePlugin = await WamMetronome.createInstance(context);
+
+        // Create audio node - this will load the default sample
+        await metronomePlugin.createAudioNode();
+
+        // Connect to destination
+        if (metronomePlugin.audioNode) {
+          metronomePlugin.audioNode.connect(context.destination);
+          logger.info('Connected metronome to destination');
+        }
+
+        return metronomePlugin;
+      },
+      metadata: {
+        name: 'Default Metronome',
+        category: 'timing',
+        samples: [
+          'metronome/Click_low2_fixed.mp3',
+          'metronome/Click_high2_fixed.mp3',
+        ],
+      },
+    };
+
+    registry.registerConfig(metronomeConfig);
+    logger.info('✅ Metronome config registered');
+  }
+
+  /**
+   * Register drum instrument configuration
+   */
+  private async registerDrumConfig(): Promise<void> {
+    logger.info('🥁 Registering drum instrument configuration...');
+
+    const registry = getPreloadableRegistry();
+
+    const drumConfig: InstrumentConfig = {
+      type: 'drums',
+      id: 'drums-default',
+      priority: 10,
+      factory: async (context: AudioContext, audioEngine: any) => {
+        logger.info('Creating drum samplers with AudioContext...');
+
+        // Get Tone.js from AudioEngine
+        const ToneInstance = audioEngine.getTone();
+        if (!ToneInstance) {
+          throw new Error('Tone.js not available from AudioEngine');
+        }
+
+        const { supabase } = await import('@/infrastructure/supabase/client');
+        const kitPath = 'drums/hydrogen-kits/colombo-acoustic';
+
+        const drumPads: Record<number, any> = {};
+        const essentialDrums = [
+          { pad: 1, file: 'kick-v1.wav', name: 'kick' },
+          { pad: 3, file: 'snare-v1.wav', name: 'snare' },
+          { pad: 5, file: 'hihat-v1.wav', name: 'hihat' },
+        ];
+
+        // Create Players for each drum
+        const loadPromises: Promise<void>[] = [];
+
+        for (const drum of essentialDrums) {
+          const url = supabase.storage
+            .from('audio-samples')
+            .getPublicUrl(`${kitPath}/${drum.file}`).data.publicUrl;
+
+          const loadPromise = new Promise<void>((resolve, reject) => {
+            drumPads[drum.pad] = new ToneInstance.Player({
+              url,
+              volume: -10,
+              onload: () => {
+                logger.info(`✅ Drum pad ${drum.pad} (${drum.name}) loaded`);
+                resolve();
+              },
+              onerror: (error: any) => {
+                logger.error(`❌ Failed to load drum pad ${drum.pad}:`, error);
+                reject(error);
+              },
+            }).toDestination();
+          });
+
+          loadPromises.push(loadPromise);
+        }
+
+        await Promise.all(loadPromises);
+        logger.info('✅ All drum samples loaded');
+
+        // Add trigger method for AudioEventRouter compatibility
+        drumPads.trigger = function (event: any) {
+          const drumName = event.data?.drum || event.drum;
+          const drumToPad: Record<string, number> = {
+            kick: 1,
+            snare: 3,
+            hihat: 5,
+          };
+          const pad = drumToPad[drumName];
+
+          logger.debug(
+            `🥁 Drum trigger: ${drumName} -> pad ${pad}, time: ${event.audioTime}`,
+          );
+
+          if (pad && this[pad]) {
+            try {
+              // Stop the previous sound if it's still playing to avoid conflicts
+              if (this[pad].state === 'started') {
+                this[pad].stop();
+              }
+
+              if (event.audioTime !== undefined && event.audioTime > 0) {
+                this[pad].start(event.audioTime);
+              } else {
+                this[pad].start();
+              }
+              logger.debug(`✅ Triggered drum pad ${pad} (${drumName})`);
+            } catch (error) {
+              logger.error(`Failed to trigger drum pad ${pad}:`, error);
+            }
+          } else {
+            logger.warn(`No drum pad found for ${drumName} (pad ${pad})`);
+          }
+        };
+
+        return drumPads;
+      },
+      metadata: {
+        name: 'Boss DR-110 Kit',
+        category: 'drums',
+        samples: ['dr110kik.mp3', 'dr110clp.mp3', 'dr110cht.mp3'],
+      },
+    };
+
+    registry.registerConfig(drumConfig);
+    logger.info('✅ Drums config registered');
+  }
+
+  /**
+   * Register harmony instrument configuration
+   */
+  private async registerHarmonyConfig(): Promise<void> {
+    logger.info('🎹 Registering harmony instrument configuration...');
+
+    const registry = getPreloadableRegistry();
+
+    const harmonyConfig: InstrumentConfig = {
+      type: 'harmony',
+      id: 'harmony-default',
+      priority: 10,
+      factory: async (context: AudioContext) => {
+        logger.info('Creating WamKeyboard with AudioContext...');
+        const harmonyInstrument =
+          await wamPluginSingleton.getOrCreateKeyboardPlugin(context);
+
+        // Connect to destination if needed
+        if (
+          harmonyInstrument.audioNode &&
+          !harmonyInstrument.audioNode.isConnected
+        ) {
+          harmonyInstrument.audioNode.connect(context.destination);
+          logger.info('Connected harmony instrument to destination');
+        }
+
+        return harmonyInstrument;
+      },
+      metadata: {
+        name: 'Salamander Piano',
+        category: 'harmony',
+        samples: [], // Will be loaded by WamKeyboard
+      },
+    };
+
+    registry.registerConfig(harmonyConfig);
+    logger.info('✅ Harmony config registered');
+  }
+
+  /**
+   * Register voice cue instrument configuration
+   */
+  private async registerVoiceCueConfig(): Promise<void> {
+    logger.info('🗣️ Registering voice cue instrument configuration...');
+
+    const registry = getPreloadableRegistry();
+
+    const voiceCueConfig: InstrumentConfig = {
+      type: 'voice-cue',
+      id: 'voice-cue-default',
+      priority: 100, // Highest priority - needed for countdown
+      factory: async (context: AudioContext, audioEngine: any) => {
+        logger.info('Creating VoiceCueInstrument with AudioContext...');
+
+        const { VoiceCueInstrument } = await import(
+          '../modules/instruments/implementations/voice-cue/VoiceCueInstrument.js'
+        );
+
+        // Get Supabase client to construct URLs
+        const { supabase } = await import('@/infrastructure/supabase/client');
+        const basePath = 'metronome/Cues';
+
+        // Build sample URLs from Supabase
+        const samples = new Map<string, string>();
+        const cues = ['one', 'two', 'three', 'four'];
+
+        for (const cue of cues) {
+          const url = supabase.storage
+            .from('audio-samples')
+            .getPublicUrl(`${basePath}/${cue}.ogg`).data.publicUrl;
+          samples.set(cue, url);
+          logger.info(`Voice cue URL: ${cue} -> ${url}`);
+        }
+
+        // Create the voice cue instrument
+        const voiceCueInstrument = new VoiceCueInstrument({
+          volume: 0.8,
+          enabled: true,
+        });
+
+        // Initialize with samples and connect to destination
+        await voiceCueInstrument.initialize(
+          samples,
+          context.destination,
+          audioEngine,
+        );
+
+        logger.info('✅ VoiceCueInstrument created and initialized');
+
+        return voiceCueInstrument;
+      },
+      metadata: {
+        name: 'Voice Countdown Cues',
+        category: 'timing',
+        samples: [
+          'voice-cues/one.mp3',
+          'voice-cues/two.mp3',
+          'voice-cues/three.mp3',
+          'voice-cues/four.mp3',
+        ],
+      },
+    };
+
+    registry.registerConfig(voiceCueConfig);
+    logger.info('✅ Voice cue config registered');
+  }
+
+  /**
+   * Set up RegionProcessor with tracks ready for instant playback
+   * This runs during Phase 2 (scroll trigger) without needing AudioContext
+   */
+  private async setupRegionProcessorWithTracks(): Promise<void> {
+    try {
+      const coreServices =
+        (window as any).__globalCoreServices || (window as any).__coreServices;
+      const eventBus = coreServices?.getEventBus?.();
+
+      if (!eventBus) {
+        logger.info(
+          'EventBus not available yet, RegionProcessor will be set up on play',
+        );
+        return;
+      }
+
+      // Create RegionProcessor if not exists
+      let regionProcessor = (window as any).__preConfiguredRegionProcessor;
+      if (!regionProcessor) {
+        const { RegionProcessor } = await import(
+          '../services/core/RegionProcessor.js'
+        );
+        regionProcessor = new RegionProcessor(eventBus);
+        (window as any).__preConfiguredRegionProcessor = regionProcessor;
+        logger.info('✅ Created RegionProcessor for preloading');
+      }
+
+      // REMOVED: Metronome track registration moved to MetronomeWidget
+      // The widget is responsible for managing its own track lifecycle
+      // This prevents duplicate track registration which was causing:
+      // - Doubled volume (two tracks playing same events)
+      // - Phase cancellation issues
+
+      logger.info(
+        '✅ RegionProcessor created (tracks will be registered by widgets)',
+      );
+
+      // Store configuration for play button to use
+      (window as any).__tracksPreConfigured = true;
+    } catch (error) {
+      logger.error('Failed to setup RegionProcessor:', error);
+    }
+  }
+
+  /**
+   * Generate standard metronome events in Tone.js format
+   */
+  private generateMetronomeEvents() {
+    const events = [];
+    const beatsPerMeasure = 4;
+    const totalBeats = 16; // 4 measures (matching typical exercise length)
+
+    for (let beat = 0; beat < totalBeats; beat++) {
+      const measure = Math.floor(beat / beatsPerMeasure);
+      const beatInMeasure = beat % beatsPerMeasure;
+      const isDownbeat = beatInMeasure === 0;
+
+      events.push({
+        position: `${measure}:${beatInMeasure}:0`, // Tone.js format: bar:beat:sixteenth
+        type: isDownbeat ? 'accent' : 'click',
+        velocity: isDownbeat ? 1.0 : 0.8,
+        data: {
+          beat: beatInMeasure + 1,
+          isDownbeat,
+        },
+      });
+    }
+
+    logger.info(
+      `Generated ${events.length} metronome events for preloading (4 measures)`,
+    );
+    return events;
+  }
+
+  /**
+   * Generate drum pattern events from exercise metadata
+   * @param regions - The drum regions from the selected exercise
+   */
+  private generateDrumEvents(regions?: any[]): any[] {
+    // If no regions provided, return empty array (no drum pattern)
+    if (!regions || regions.length === 0) {
+      logger.info('No drum regions provided, skipping drum event generation');
+      return [];
+    }
+
+    const events: any[] = [];
+
+    // Convert exercise regions to drum events
+    regions.forEach((region) => {
+      if (!region.pattern || !region.pattern.events) {
+        logger.warn('Drum region missing pattern or events:', region);
+        return;
+      }
+
+      region.pattern.events.forEach((event: any) => {
+        // Map event data from exercise to drum trigger format
+        const drumEvent = {
+          position:
+            event.position ||
+            event.time ||
+            `${event.measure || 0}:${event.beat || 0}:${event.subdivision || 0}`,
+          type: event.type || event.drum || 'kick',
+          velocity: event.velocity || 0.7,
+          data: {
+            drum: event.type || event.drum || event.data?.drum || 'kick',
+            ...event.data,
+          },
+        };
+        events.push(drumEvent);
+      });
+    });
+
+    logger.info(
+      `Generated ${events.length} drum events from ${regions.length} exercise regions`,
+    );
+    if (events.length > 0) {
+      logger.debug('Sample drum events:', events.slice(0, 3));
+    }
+
+    return events;
+  }
+
+  /**
+   * Download and cache sample files without creating AudioContext
+   */
+  private async downloadAndCacheSampleFiles(): Promise<void> {
+    const startTime = performance.now();
+    logger.info('📥 Pre-downloading sample files...');
+
+    try {
+      const { supabase } = await import('@/infrastructure/supabase/client');
+
+      const sampleFiles = [
+        // Voice cues (highest priority - needed for countdown)
+        {
+          path: 'metronome/Cues/one.ogg',
+          cacheKeys: ['voice-cue-one'],
+        },
+        {
+          path: 'metronome/Cues/two.ogg',
+          cacheKeys: ['voice-cue-two'],
+        },
+        {
+          path: 'metronome/Cues/three.ogg',
+          cacheKeys: ['voice-cue-three'],
+        },
+        {
+          path: 'metronome/Cues/four.ogg',
+          cacheKeys: ['voice-cue-four'],
+        },
+        // Metronome clicks
+        {
+          path: 'metronome/Click_low2_fixed.mp3',
+          cacheKeys: ['metronome-low'],
+        },
+        {
+          path: 'metronome/Click_high2_fixed.mp3',
+          cacheKeys: ['metronome-high'],
+        },
+        // Essential drum samples
+        {
+          path: 'drums/hydrogen-kits/colombo-acoustic/kick-v1.wav',
+          cacheKeys: ['drum-kick', 'drum-pad-1'],
+        },
+        {
+          path: 'drums/hydrogen-kits/colombo-acoustic/snare-v1.wav',
+          cacheKeys: ['drum-snare', 'drum-pad-3'],
+        },
+        {
+          path: 'drums/hydrogen-kits/colombo-acoustic/hihat-v1.wav',
+          cacheKeys: ['drum-hihat', 'drum-pad-5'],
+        },
+      ];
+
+      let successCount = 0;
+
+      // Download in parallel
+      const downloadPromises = sampleFiles.map(async (sample) => {
+        const sampleStartTime = performance.now();
+        try {
+          const url = supabase.storage
+            .from('audio-samples')
+            .getPublicUrl(sample.path).data.publicUrl;
+
+          // Cache the URL
+          GlobalSampleCache.getInstance().cacheUrl(sample.path, url);
+
+          // Download the file
+          logger.info(`📥 Fetching ${sample.path}...`);
+          const response = await fetch(url, { mode: 'cors' });
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch ${sample.path}: ${response.status}`,
+            );
+          }
+
+          const arrayBuffer = await response.arrayBuffer();
+
+          // Create OfflineAudioContext for decoding (no user gesture needed)
+          const offlineContext = new OfflineAudioContext(2, 44100, 44100);
+          const audioBuffer = await offlineContext.decodeAudioData(
+            arrayBuffer.slice(0),
+          );
+
+          // EVIDENCE: Log what we're caching
+          logger.debug(
+            `📦 PRELOADER: Decoded AudioBuffer for ${sample.path}:`,
+            {
+              isAudioBuffer: audioBuffer instanceof AudioBuffer,
+              duration: audioBuffer.duration,
+              sampleRate: audioBuffer.sampleRate,
+              channels: audioBuffer.numberOfChannels,
+              length: audioBuffer.length,
+              memorySizeKB: Math.round(
+                (audioBuffer.numberOfChannels * audioBuffer.length * 4) / 1024,
+              ),
+              willCacheWith: sample.cacheKeys,
+            },
+          );
+
+          // Cache with ALL the keys that instruments will look for
+          sample.cacheKeys.forEach((key) => {
+            logger.debug(
+              `📦 PRELOADER: Caching AudioBuffer with key: "${key}"`,
+            );
+            GlobalSampleCache.getInstance().cacheBuffer(key, audioBuffer);
+          });
+
+          const sampleDuration = performance.now() - sampleStartTime;
+          logger.debug(
+            `✅ Downloaded and cached: ${sample.path} (${sampleDuration.toFixed(2)}ms)`,
+          );
+          successCount++;
+        } catch (error) {
+          logger.warn(`⚠️ Failed to download ${sample.path}:`, error);
+        }
+      });
+
+      await Promise.all(downloadPromises);
+
+      const totalDuration = performance.now() - startTime;
+      logger.info('✅ Sample file downloading completed', {
+        duration: `${totalDuration.toFixed(2)}ms`,
+        samplesLoaded: successCount,
+        samplesTotal: sampleFiles.length,
+        averagePerSample: `${(totalDuration / successCount).toFixed(2)}ms`,
+      });
+
+      // Mark samples as downloaded
+      (window as any).__sampleFilesDownloaded = true;
+    } catch (error) {
+      logger.error('Failed to download sample files:', error);
+    }
+  }
+
+  /**
    * Load essential metronome samples (fallback)
    */
   private async loadEssentialMetronomeSamples(
     offlineContext: OfflineAudioContext,
   ): Promise<void> {
+    const startTime = performance.now();
     logger.info('🔔 Loading essential metronome samples...');
 
     try {
       const { supabase } = await import('@/infrastructure/supabase/client');
 
       const samples = [
-        { name: 'click_hi', file: 'metronome/Clicks_03.mp3' }, // High pitched
-        { name: 'click_lo', file: 'metronome/Clicks_01.mp3' }, // Low pitched
+        {
+          name: 'click_hi',
+          file: 'metronome/Click_high2_fixed.mp3',
+          cacheKey: 'metronome-high',
+        }, // High pitched
+        {
+          name: 'click_lo',
+          file: 'metronome/Click_low2_fixed.mp3',
+          cacheKey: 'metronome-low',
+        }, // Low pitched
       ];
 
       const loadPromises = samples.map(async (sample) => {
@@ -678,19 +1471,26 @@ export class InitialSamplePreloader {
         );
 
         try {
+          logger.info(`📥 Fetching ${sample.name}...`);
           const response = await fetch(url, { mode: 'cors' });
-          if (!response.ok) throw new Error(`Failed to fetch ${sample.name}`);
+          if (!response.ok)
+            throw new Error(
+              `Failed to fetch ${sample.name}: ${response.status}`,
+            );
 
           const arrayBuffer = await response.arrayBuffer();
 
-          // Just verify we can decode it, but don't cache the buffer
+          // Decode AND cache the buffer - this is what WamMetronome needs!
           const audioBuffer = await offlineContext.decodeAudioData(
             arrayBuffer.slice(0),
           );
 
-          // DON'T cache the decoded buffer - it won't work with Tone.js!
-          // GlobalSampleCache.cacheBuffer(sample.file, audioBuffer);
-          // GlobalSampleCache.cacheBuffer(`metronome-${sample.name}`, audioBuffer);
+          // Cache with the key that WamMetronome expects
+          GlobalSampleCache.getInstance().cacheBuffer(
+            sample.cacheKey,
+            audioBuffer,
+          );
+          logger.info(`✅ ${sample.name} cached as '${sample.cacheKey}'`);
 
           logger.info(
             `  ✓ Essential metronome: ${sample.name} verified (${audioBuffer.duration.toFixed(2)}s)`,
@@ -701,7 +1501,16 @@ export class InitialSamplePreloader {
       });
 
       await Promise.all(loadPromises);
-      logger.info('✅ Essential metronome samples loaded');
+
+      const duration = performance.now() - startTime;
+      logger.info(
+        '✅ Essential metronome samples loaded and cached as AudioBuffers',
+        {
+          duration: `${duration.toFixed(2)}ms`,
+          samplesLoaded: samples.length,
+          averagePerSample: `${(duration / samples.length).toFixed(2)}ms`,
+        },
+      );
     } catch (error) {
       logger.error('Failed to load essential metronome samples:', error);
     }
@@ -871,12 +1680,12 @@ export class InitialSamplePreloader {
 
     try {
       const { supabase } = await import('@/infrastructure/supabase/client');
-      const kitPath = 'drums/hydrogen-kits/mp3/electronic/boss-dr110';
+      const kitPath = 'drums/hydrogen-kits/colombo-acoustic';
 
       const samples = [
-        { pad: 1, file: 'dr110kik.mp3', name: 'kick' },
-        { pad: 3, file: 'dr110clp.mp3', name: 'snare' },
-        { pad: 5, file: 'dr110cht.mp3', name: 'hihat' },
+        { pad: 1, file: 'kick-v1.wav', name: 'kick' },
+        { pad: 3, file: 'snare-v1.wav', name: 'snare' },
+        { pad: 5, file: 'hihat-v1.wav', name: 'hihat' },
       ];
 
       const loadPromises = samples.map(async (sample) => {
@@ -1047,4 +1856,25 @@ export function getPreloadedHarmonyInstrument(): any {
   return GlobalSampleCache.getInstance().getCachedInstrument(
     'harmony-preloaded',
   );
+}
+
+/**
+ * Get pre-configured RegionProcessor if available
+ */
+export function getPreConfiguredRegionProcessor(): any {
+  return (window as any).__preConfiguredRegionProcessor;
+}
+
+/**
+ * Check if tracks are pre-configured
+ */
+export function areTracksPreConfigured(): boolean {
+  return !!(window as any).__tracksPreConfigured;
+}
+
+/**
+ * Check if sample files are downloaded
+ */
+export function areSampleFilesDownloaded(): boolean {
+  return !!(window as any).__sampleFilesDownloaded;
 }

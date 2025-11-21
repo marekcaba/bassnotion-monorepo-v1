@@ -103,10 +103,10 @@ export abstract class BaseInstrumentEffects implements IInstrumentEffects {
 
   constructor() {
     // Create signal flow
-    this.input = new Tone.Gain(1);
-    this.output = new Tone.Gain(1);
-    this.drySignal = new Tone.Gain(1);
-    this.wetSignal = new Tone.Gain(1);
+    this.input = new Tone.Gain({ gain: 1 });
+    this.output = new Tone.Gain({ gain: 1 });
+    this.drySignal = new Tone.Gain({ gain: 1 });
+    this.wetSignal = new Tone.Gain({ gain: 1 });
 
     // Connect dry path
     this.input.connect(this.drySignal);

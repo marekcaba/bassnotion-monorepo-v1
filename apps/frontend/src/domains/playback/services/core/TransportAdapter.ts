@@ -126,6 +126,9 @@ export class TransportAdapter {
    * Set tempo
    */
   setTempo(bpm: number): void {
+    // Update internal config so getTempo() returns the correct value
+    this.config.tempo = bpm;
+
     this.controller.setTempo(bpm).catch((error) => {
       logger.error('Failed to set tempo', error);
     });
@@ -135,6 +138,9 @@ export class TransportAdapter {
    * Set time signature
    */
   setTimeSignature(numerator: number, denominator: number): void {
+    // Update internal config so getTimeSignature() returns the correct value
+    this.config.timeSignature = { numerator, denominator };
+
     this.controller
       .setTimeSignature({ numerator, denominator })
       .catch((error) => {
@@ -216,6 +222,56 @@ export class TransportAdapter {
    */
   getTempo(): number {
     return this.config.tempo;
+  }
+
+  /**
+   * Get time signature
+   */
+  getTimeSignature(): TimeSignature {
+    return this.config.timeSignature;
+  }
+
+  /**
+   * Get current position as musical position (display position for UI)
+   * Returns position adjusted for countdown offset
+   */
+  getCurrentPosition(): MusicalPosition {
+    // Return display position so UI shows -1:1:00 during countdown, 1:1:00 for exercise
+    return this.getDisplayPosition();
+  }
+
+  /**
+   * Set countdown offset for display adjustment
+   * @param beats Number of beats in countdown (e.g., 4 for one measure of 4/4)
+   */
+  setCountdownBeats(beats: number): void {
+    this.controller.setCountdownBeats(beats);
+  }
+
+  /**
+   * Set exercise duration for auto-stop functionality
+   * @param totalBars - Total number of bars (including countdown)
+   * @param beatsPerBar - Beats per bar from time signature
+   */
+  setExerciseDuration(totalBars: number, beatsPerBar: number): void {
+    this.controller.setExerciseDuration(totalBars, beatsPerBar);
+  }
+
+  /**
+   * Get display position (adjusted for countdown offset)
+   * This is what should be shown in the UI
+   */
+  getDisplayPosition(): MusicalPosition {
+    return this.controller.getDisplayPosition();
+  }
+
+  /**
+   * Check if loop is enabled
+   */
+  isLoopEnabled(): boolean {
+    // Default to false since loop state is internal to controller
+    // This is a compatibility method for the UI
+    return false;
   }
 
   /**
@@ -318,7 +374,8 @@ export class TransportAdapter {
   }
 
   get position(): MusicalPosition {
-    return this.getMusicalPosition();
+    // Return display position for UI consistency
+    return this.getDisplayPosition();
   }
 
   // Additional backward compatibility methods

@@ -4,35 +4,129 @@ import { Tutorial } from '../entities/tutorial.entity';
 import { TutorialId } from '../value-objects/tutorial-id.vo';
 import { TutorialSlug } from '../value-objects/tutorial-slug.vo';
 import { TutorialLevel } from '../value-objects/tutorial-level.vo';
+import { supabase } from '@/infrastructure/supabase/client';
+import { createStructuredLogger } from '@bassnotion/contracts';
 import {
   ITutorialRepository,
   PaginatedResult,
   PaginationOptions,
   TutorialFilters,
 } from './tutorial.repository.interface';
+import { Exercise } from '@/domains/exercises/entities/exercise.entity';
+
+const logger = createStructuredLogger('TutorialRepository');
 
 export class TutorialRepository implements ITutorialRepository {
   private readonly baseUrl = '/api/v1/tutorials';
 
+  private async ensureAuth() {
+    logger.debug('Ensuring authentication...');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      logger.debug('Setting auth token', { hasToken: true });
+      apiClient.setAuthToken(session.access_token);
+    } else {
+      logger.warn('No auth session available');
+    }
+  }
+
   async findById(id: TutorialId): Promise<Result<Tutorial>> {
     try {
+      await this.ensureAuth();
       const response = await apiClient.get(`${this.baseUrl}/${id.value}`);
-      const tutorial = Tutorial.fromDTO(response.data);
-      return Result.ok(tutorial);
+
+      logger.debug('findById response', {
+        id: id.value,
+        hasResponse: !!response,
+        responseType: typeof response,
+        responseKeys: response ? Object.keys(response) : []
+      });
+
+      // The response IS the data (not response.data)
+      const data = response as any;
+
+      if (!data) {
+        logger.error('No data in findById response');
+        return Result.failure(new Error('Tutorial not found'));
+      }
+
+      const tutorial = Tutorial.fromDTO(data);
+      return Result.success(tutorial);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to fetch tutorial');
+      logger.error('Failed to fetch tutorial by id', {
+        error: error.message,
+        id: id.value
+      });
+      return Result.failure(new Error(error.message || 'Failed to fetch tutorial'));
     }
   }
 
   async findBySlug(slug: TutorialSlug): Promise<Result<Tutorial>> {
     try {
+      await this.ensureAuth();
       const response = await apiClient.get(
         `${this.baseUrl}/slug/${slug.value}`,
       );
-      const tutorial = Tutorial.fromDTO(response.data);
-      return Result.ok(tutorial);
+
+      logger.debug('findBySlug response', {
+        slug: slug.value,
+        hasResponse: !!response,
+        responseType: typeof response,
+        responseKeys: response ? Object.keys(response) : []
+      });
+
+      // The response IS the data (not response.data)
+      const data = response as any;
+
+      if (!data) {
+        logger.error('No data in findBySlug response');
+        return Result.failure(new Error('Tutorial not found'));
+      }
+
+      const tutorial = Tutorial.fromDTO(data);
+      return Result.success(tutorial);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to fetch tutorial by slug');
+      logger.error('Failed to fetch tutorial by slug', {
+        error: error.message,
+        slug: slug.value
+      });
+      return Result.failure(new Error(error.message || 'Failed to fetch tutorial by slug'));
+    }
+  }
+
+  // OPTIMIZATION: Batch fetch tutorial with exercises to reduce API calls
+  async findBySlugWithExercises(slug: TutorialSlug): Promise<Result<{ tutorial: Tutorial; exercises: Exercise[] }>> {
+    try {
+      await this.ensureAuth();
+      const response = await apiClient.get(
+        `${this.baseUrl}/slug/${slug.value}?includeExercises=true`,
+      );
+
+      logger.debug('findBySlugWithExercises response', {
+        slug: slug.value,
+        hasResponse: !!response,
+        hasTutorial: !!(response as any).tutorial,
+        hasExercises: !!(response as any).exercises,
+        exerciseCount: (response as any).exercises?.length || 0
+      });
+
+      const data = response as any;
+
+      if (!data || !data.tutorial) {
+        logger.error('No tutorial data in findBySlugWithExercises response');
+        return Result.failure(new Error('Tutorial not found'));
+      }
+
+      const tutorial = Tutorial.fromDTO(data.tutorial);
+      const exercises = (data.exercises || []).map((dto: any) => Exercise.fromDTO(dto));
+
+      return Result.success({ tutorial, exercises });
+    } catch (error: any) {
+      logger.error('Failed to fetch tutorial with exercises by slug', {
+        error: error.message,
+        slug: slug.value
+      });
+      return Result.failure(new Error(error.message || 'Failed to fetch tutorial with exercises by slug'));
     }
   }
 
@@ -40,21 +134,64 @@ export class TutorialRepository implements ITutorialRepository {
     options?: PaginationOptions,
   ): Promise<Result<PaginatedResult<Tutorial>>> {
     try {
+      await this.ensureAuth();
       const params = new URLSearchParams();
       if (options) {
         params.append('page', options.page.toString());
         params.append('limit', options.limit.toString());
       }
 
-      const response = await apiClient.get(
-        `${this.baseUrl}?${params.toString()}`,
-      );
-      const { items, total, page, limit } = response.data;
+      const url = `${this.baseUrl}?${params.toString()}`;
+      const { data: { session } } = await supabase.auth.getSession();
+      logger.info('Fetching tutorials', {
+        url,
+        options,
+        hasAuth: !!session?.access_token
+      });
 
-      const tutorials = items.map((dto: any) => Tutorial.fromDTO(dto));
+      const response = await apiClient.get(url);
+
+      logger.debug('API Response received', {
+        status: response?.status,
+        hasData: !!response,
+        dataType: typeof response,
+        responseKeys: response ? Object.keys(response) : []
+      });
+
+      // Check if response exists
+      if (!response) {
+        logger.error('No response from API');
+        return Result.failure(new Error('No response from API'));
+      }
+
+      // The response IS the data (not response.data)
+      const data = response as any;
+
+      logger.debug('Response structure', {
+        hasItems: 'items' in data,
+        hasTutorials: 'tutorials' in data,
+        keys: Object.keys(data),
+        itemsLength: data.items?.length || data.tutorials?.length || 0
+      });
+
+      // Handle both possible response formats
+      const tutorialDtos = data.items || data.tutorials || [];
+      const total = data.total || tutorialDtos.length;
+
+      const page = options?.page || 1;
+      const limit = options?.limit || 10;
+
+      logger.info('Processing tutorials', {
+        count: tutorialDtos.length,
+        total,
+        page,
+        limit
+      });
+
+      const tutorials = tutorialDtos.map((dto: any) => Tutorial.fromDTO(dto));
       const totalPages = Math.ceil(total / limit);
 
-      return Result.ok({
+      return Result.success({
         items: tutorials,
         total,
         page,
@@ -64,44 +201,52 @@ export class TutorialRepository implements ITutorialRepository {
         hasPrevious: page > 1,
       });
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to fetch tutorials');
+      logger.error('Failed to fetch tutorials', {
+        error: error.message,
+        stack: error.stack,
+        response: error.response
+      });
+      return Result.failure(new Error(error.message || 'Failed to fetch tutorials'));
     }
   }
 
   async findByLevel(level: TutorialLevel): Promise<Result<Tutorial[]>> {
     try {
+      await this.ensureAuth();
       const response = await apiClient.get(
         `${this.baseUrl}/level/${level.value}`,
       );
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
-      return Result.ok(tutorials);
+      return Result.success(tutorials);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to fetch tutorials by level');
+      return Result.failure(new Error(error.message || 'Failed to fetch tutorials by level'));
     }
   }
 
   async findByTag(tag: string): Promise<Result<Tutorial[]>> {
     try {
+      await this.ensureAuth();
       const response = await apiClient.get(
         `${this.baseUrl}/tag/${encodeURIComponent(tag)}`,
       );
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
-      return Result.ok(tutorials);
+      return Result.success(tutorials);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to fetch tutorials by tag');
+      return Result.failure(new Error(error.message || 'Failed to fetch tutorials by tag'));
     }
   }
 
   async findByAuthor(authorName: string): Promise<Result<Tutorial[]>> {
     try {
+      await this.ensureAuth();
       const response = await apiClient.get(
         `${this.baseUrl}/author/${encodeURIComponent(authorName)}`,
       );
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
-      return Result.ok(tutorials);
+      return Result.success(tutorials);
     } catch (error: any) {
-      return Result.fail(
-        error.message || 'Failed to fetch tutorials by author',
+      return Result.failure(
+        new Error(error.message || 'Failed to fetch tutorials by author')
       );
     }
   }
@@ -111,6 +256,7 @@ export class TutorialRepository implements ITutorialRepository {
     filters?: TutorialFilters,
   ): Promise<Result<Tutorial[]>> {
     try {
+      await this.ensureAuth();
       const params = new URLSearchParams();
       params.append('q', query);
 
@@ -145,21 +291,22 @@ export class TutorialRepository implements ITutorialRepository {
         `${this.baseUrl}/search?${params.toString()}`,
       );
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
-      return Result.ok(tutorials);
+      return Result.success(tutorials);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to search tutorials');
+      return Result.failure(new Error(error.message || 'Failed to search tutorials'));
     }
   }
 
   async findByIds(ids: TutorialId[]): Promise<Result<Tutorial[]>> {
     try {
+      await this.ensureAuth();
       const response = await apiClient.post(`${this.baseUrl}/batch`, {
         ids: ids.map((id) => id.value),
       });
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
-      return Result.ok(tutorials);
+      return Result.success(tutorials);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to fetch tutorials by ids');
+      return Result.failure(new Error(error.message || 'Failed to fetch tutorials by ids'));
     }
   }
 
@@ -167,6 +314,7 @@ export class TutorialRepository implements ITutorialRepository {
     options?: PaginationOptions,
   ): Promise<Result<PaginatedResult<Tutorial>>> {
     try {
+      await this.ensureAuth();
       const params = new URLSearchParams();
       if (options) {
         params.append('page', options.page.toString());
@@ -181,7 +329,7 @@ export class TutorialRepository implements ITutorialRepository {
       const tutorials = items.map((dto: any) => Tutorial.fromDTO(dto));
       const totalPages = Math.ceil(total / limit);
 
-      return Result.ok({
+      return Result.success({
         items: tutorials,
         total,
         page,
@@ -191,9 +339,9 @@ export class TutorialRepository implements ITutorialRepository {
         hasPrevious: page > 1,
       });
     } catch (error: any) {
-      return Result.fail(
-        error.message || 'Failed to fetch published tutorials',
-      );
+      return Result.failure(new Error(
+        error.message || 'Failed to fetch published tutorials'
+      ));
     }
   }
 
@@ -202,127 +350,301 @@ export class TutorialRepository implements ITutorialRepository {
     limit: number = 5,
   ): Promise<Result<Tutorial[]>> {
     try {
+      await this.ensureAuth();
       const response = await apiClient.get(
         `${this.baseUrl}/${tutorialId.value}/related?limit=${limit}`,
       );
       const tutorials = response.data.map((dto: any) => Tutorial.fromDTO(dto));
-      return Result.ok(tutorials);
+      return Result.success(tutorials);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to fetch related tutorials');
+      return Result.failure(new Error(error.message || 'Failed to fetch related tutorials'));
     }
   }
 
   async save(tutorial: Tutorial): Promise<Result<Tutorial>> {
     try {
-      const response = await apiClient.post(this.baseUrl, tutorial.toDTO());
-      const savedTutorial = Tutorial.fromDTO(response.data);
-      return Result.ok(savedTutorial);
+      await this.ensureAuth();
+      const tutorialData = tutorial.toDTO();
+
+      logger.info('Saving new tutorial', {
+        title: tutorialData.title,
+        status: tutorialData.status,
+        hasAuth: apiClient.hasAuthToken()
+      });
+
+      const response = await apiClient.post(this.baseUrl, tutorialData);
+
+      logger.debug('Save response', {
+        hasResponse: !!response,
+        responseType: typeof response,
+        responseKeys: response ? Object.keys(response) : []
+      });
+
+      if (!response) {
+        logger.error('No response from save API');
+        return Result.failure(new Error('No response from server'));
+      }
+
+      // The response IS the data (not response.data)
+      const savedTutorial = Tutorial.fromDTO(response);
+      logger.info('Tutorial saved successfully', {
+        id: savedTutorial.id.value,
+        slug: savedTutorial.slug.value
+      });
+
+      return Result.success(savedTutorial);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to save tutorial');
+      logger.error('Failed to save tutorial', {
+        error: error.message,
+        stack: error.stack,
+        status: error.status
+      });
+      return Result.failure(new Error(error.message || 'Failed to save tutorial'));
+    }
+  }
+
+  // Alias for save method to match common naming conventions
+  async create(tutorial: Tutorial): Promise<Result<Tutorial>> {
+    return this.save(tutorial);
+  }
+
+  /**
+   * FAANG-level batch save - atomically saves tutorial and exercises
+   * Uses optimistic updates pattern with server reconciliation
+   */
+  async saveWithExercises(
+    tutorial: Tutorial,
+    exercises: Array<{ exercise: any; isExisting: boolean }>,
+    tempMidiPathsMap?: WeakMap<Exercise, {
+      temp_bassline_midi_path?: string;
+      temp_drummer_midi_path?: string;
+      temp_harmony_midi_path?: string;
+      temp_metronome_midi_path?: string;
+    }>
+  ): Promise<Result<{ tutorial: Tutorial; exercises: any[] }>> {
+    try {
+      await this.ensureAuth();
+
+      logger.info('Batch saving tutorial with exercises', {
+        tutorialId: tutorial.id.value,
+        exerciseCount: exercises.length,
+        hasAuth: apiClient.hasAuthToken()
+      });
+
+      // Prepare payload - strip IDs from new exercises
+      const exerciseDtos = exercises.map(({ exercise, isExisting }) => {
+        const dto = exercise.toDTO();
+
+        // If not existing in DB, remove the client-generated ID
+        // Backend will create new exercise with server-assigned ID
+        if (!isExisting) {
+          delete dto.id;
+        }
+
+        // Preserve temp MIDI paths for backend migration (Story 4.4 - Task 4.2)
+        // Use WeakMap to retrieve paths since Exercise entities are frozen/non-extensible
+        const tempMidiPaths = tempMidiPathsMap?.get(exercise);
+        if (tempMidiPaths) {
+          dto.temp_bassline_midi_path = tempMidiPaths.temp_bassline_midi_path;
+          dto.temp_drummer_midi_path = tempMidiPaths.temp_drummer_midi_path;
+          dto.temp_harmony_midi_path = tempMidiPaths.temp_harmony_midi_path;
+          dto.temp_metronome_midi_path = tempMidiPaths.temp_metronome_midi_path;
+
+          logger.debug('Including temp MIDI paths in exercise DTO', {
+            exerciseId: dto.id || 'NEW',
+            hasBassline: !!tempMidiPaths.temp_bassline_midi_path,
+            hasDrummer: !!tempMidiPaths.temp_drummer_midi_path,
+            hasHarmony: !!tempMidiPaths.temp_harmony_midi_path,
+            hasMetronome: !!tempMidiPaths.temp_metronome_midi_path,
+          });
+        }
+
+        return dto;
+      });
+
+      const payload = {
+        id: tutorial.id.value,
+        ...tutorial.toDTO(),
+        exercises: exerciseDtos,
+      };
+
+      logger.debug('Batch save payload prepared', {
+        tutorialId: payload.id,
+        tutorialTitle: payload.title,
+        exerciseCount: payload.exercises.length,
+        exerciseIds: payload.exercises.map((e: any) => e.id || 'NEW'),
+        newExerciseCount: payload.exercises.filter((e: any) => !e.id).length,
+      });
+
+      const response = await apiClient.put(
+        `${this.baseUrl}/${tutorial.id.value}/save-with-exercises`,
+        payload,
+      );
+
+      if (!response) {
+        logger.error('No response from batch save API');
+        return Result.failure(new Error('Failed to save tutorial with exercises'));
+      }
+
+      const data = response as any;
+
+      // Reconstruct entities from server response
+      const savedTutorial = Tutorial.fromDTO(data.tutorial);
+      const savedExercises = data.exercises;
+
+      logger.info('Batch save successful', {
+        tutorialId: savedTutorial.id.value,
+        exerciseCount: savedExercises.length,
+      });
+
+      return Result.success({
+        tutorial: savedTutorial,
+        exercises: savedExercises,
+      });
+    } catch (error: any) {
+      logger.error('Failed to batch save tutorial with exercises', {
+        error: error.message,
+        errorStatus: error.status,
+        errorData: error.data,
+        tutorialId: tutorial.id.value,
+        stack: error.stack,
+      });
+      return Result.failure(new Error(error.message || 'Failed to save tutorial with exercises'));
     }
   }
 
   async update(tutorial: Tutorial): Promise<Result<Tutorial>> {
     try {
+      await this.ensureAuth();
+
+      logger.info('Updating tutorial', {
+        id: tutorial.id.value,
+        hasAuth: apiClient.hasAuthToken()
+      });
+
       const response = await apiClient.put(
         `${this.baseUrl}/${tutorial.id.value}`,
         tutorial.toDTO(),
       );
-      const updatedTutorial = Tutorial.fromDTO(response.data);
-      return Result.ok(updatedTutorial);
+
+      if (!response) {
+        logger.error('No response from update API');
+        return Result.failure(new Error('No response from server'));
+      }
+
+      // The response IS the data (not response.data)
+      const updatedTutorial = Tutorial.fromDTO(response);
+      logger.info('Tutorial updated successfully', {
+        id: updatedTutorial.id.value
+      });
+
+      return Result.success(updatedTutorial);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to update tutorial');
+      logger.error('Failed to update tutorial', {
+        error: error.message,
+        status: error.status
+      });
+      return Result.failure(new Error(error.message || 'Failed to update tutorial'));
     }
   }
 
   async delete(id: TutorialId): Promise<Result<void>> {
     try {
+      await this.ensureAuth();
       await apiClient.delete(`${this.baseUrl}/${id.value}`);
-      return Result.ok(undefined);
+      return Result.success(undefined);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to delete tutorial');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete tutorial';
+      return Result.failure(new Error(errorMessage));
     }
   }
 
   async saveMany(tutorials: Tutorial[]): Promise<Result<Tutorial[]>> {
     try {
+      await this.ensureAuth();
       const response = await apiClient.post(`${this.baseUrl}/batch/create`, {
         tutorials: tutorials.map((t) => t.toDTO()),
       });
       const savedTutorials = response.data.map((dto: any) =>
         Tutorial.fromDTO(dto),
       );
-      return Result.ok(savedTutorials);
+      return Result.success(savedTutorials);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to save tutorials');
+      return Result.failure(new Error(error.message || 'Failed to save tutorials'));
     }
   }
 
   async deleteMany(ids: TutorialId[]): Promise<Result<void>> {
     try {
+      await this.ensureAuth();
       await apiClient.post(`${this.baseUrl}/batch/delete`, {
         ids: ids.map((id) => id.value),
       });
-      return Result.ok(undefined);
+      return Result.success(undefined);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to delete tutorials');
+      return Result.failure(new Error(error.message || 'Failed to delete tutorials'));
     }
   }
 
   async exists(id: TutorialId): Promise<Result<boolean>> {
     try {
+      await this.ensureAuth();
       const response = await apiClient.head(`${this.baseUrl}/${id.value}`);
-      return Result.ok(response.status === 200);
+      return Result.success(response.status === 200);
     } catch (error: any) {
       if (error.response?.status === 404) {
-        return Result.ok(false);
+        return Result.success(false);
       }
-      return Result.fail(error.message || 'Failed to check if tutorial exists');
+      return Result.failure(new Error(error.message || 'Failed to check if tutorial exists'));
     }
   }
 
   async existsBySlug(slug: TutorialSlug): Promise<Result<boolean>> {
     try {
+      await this.ensureAuth();
       const response = await apiClient.head(
         `${this.baseUrl}/slug/${slug.value}`,
       );
-      return Result.ok(response.status === 200);
+      return Result.success(response.status === 200);
     } catch (error: any) {
       if (error.response?.status === 404) {
-        return Result.ok(false);
+        return Result.success(false);
       }
-      return Result.fail(
-        error.message || 'Failed to check if tutorial exists by slug',
-      );
+      return Result.failure(new Error(
+        error.message || 'Failed to check if tutorial exists by slug'
+      ));
     }
   }
 
   async count(): Promise<Result<number>> {
     try {
+      await this.ensureAuth();
       const response = await apiClient.get(`${this.baseUrl}/count`);
-      return Result.ok(response.data.count);
+      return Result.success(response.data.count);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to count tutorials');
+      return Result.failure(new Error(error.message || 'Failed to count tutorials'));
     }
   }
 
   async countByLevel(level: TutorialLevel): Promise<Result<number>> {
     try {
+      await this.ensureAuth();
       const response = await apiClient.get(
         `${this.baseUrl}/count/level/${level.value}`,
       );
-      return Result.ok(response.data.count);
+      return Result.success(response.data.count);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to count tutorials by level');
+      return Result.failure(new Error(error.message || 'Failed to count tutorials by level'));
     }
   }
 
   async incrementViewCount(id: TutorialId): Promise<Result<void>> {
     try {
+      await this.ensureAuth();
       await apiClient.post(`${this.baseUrl}/${id.value}/view`);
-      return Result.ok(undefined);
+      return Result.success(undefined);
     } catch (error: any) {
-      return Result.fail(error.message || 'Failed to increment view count');
+      return Result.failure(new Error(error.message || 'Failed to increment view count'));
     }
   }
 }

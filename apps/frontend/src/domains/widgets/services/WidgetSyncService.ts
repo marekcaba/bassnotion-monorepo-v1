@@ -11,7 +11,8 @@
 
 import { EventEmitter } from 'events';
 import { createStructuredLogger } from '@bassnotion/contracts';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
+
+const logger = createStructuredLogger('WidgetSyncService');
 
 // ============================================================================
 // SYNC EVENT INTERFACES
@@ -840,7 +841,7 @@ export class WidgetSyncService {
         });
       });
 
-      eventBus.on('transport:tempo-changed', (event: any) => {
+      eventBus.on('transport:tempo-change', (event: any) => {
         logger.info(
           '🔄 WidgetSyncService: Received tempo change from EventBus',
           event,

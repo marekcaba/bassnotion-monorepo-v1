@@ -86,9 +86,8 @@ export class ProfileService {
 
       const result = await response.json();
 
-      // TODO: Review non-null assertion - consider null safety
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || 'Failed to delete account');
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to delete account');
       }
 
       return result.data;

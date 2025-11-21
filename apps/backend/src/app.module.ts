@@ -12,6 +12,7 @@ import { AudioSamplesModule } from './domains/audio-samples/audio-samples.module
 import { DatabaseModule } from './infrastructure/database/database.module.js';
 import { SupabaseModule } from './infrastructure/supabase/supabase.module.js';
 import { CacheModule } from './infrastructure/cache/cache.module.js';
+import { StorageModule } from './infrastructure/storage/storage.module.js';
 import { HealthModule } from './health/health.module.js';
 import { PerformanceMiddleware } from './shared/middleware/performance.middleware.js';
 import { CorrelationMiddleware } from './shared/middleware/correlation.middleware.js';
@@ -27,6 +28,7 @@ import { LoggingModule } from './infrastructure/logging/logging.module.js';
     DatabaseModule,
     SupabaseModule,
     CacheModule,
+    StorageModule, // Story 4.4 - Temporary MIDI file storage
     AuthModule,
     UserModule,
     ExercisesModule,

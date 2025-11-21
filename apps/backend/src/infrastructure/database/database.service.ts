@@ -27,6 +27,14 @@ export class DatabaseService implements OnModuleInit {
       const supabaseUrl = process.env.SUPABASE_URL;
       const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+      logger.info('Checking Supabase environment variables', {
+        hasSupabaseUrl: !!supabaseUrl,
+        supabaseUrlLength: supabaseUrl?.length,
+        hasServiceRoleKey: !!supabaseServiceRoleKey,
+        serviceRoleKeyLength: supabaseServiceRoleKey?.length,
+        correlationId
+      });
+
       if (!supabaseUrl || !supabaseServiceRoleKey) {
         logger.warn('Supabase environment variables not found - creating mock client for tests', { correlationId });
         // Create a mock client for test environments

@@ -77,8 +77,8 @@ export type { HarmonyInstrumentConfig } from './implementations/harmony/HarmonyI
 export { WamPluginAdapter } from './adapters/wam/WamPluginAdapter.js';
 export { WamHostManager } from './adapters/wam/WamHostManager.js';
 export { WamDeviceOptimizer } from './adapters/wam/WamDeviceOptimizer.js';
-export { WamDrummer } from './adapters/wam/WamDrummer.js';
-export { WamBass } from './adapters/wam/WamBass.js';
-export { WamKeyboard } from './adapters/wam/WamKeyboard.js';
-export { WamMetronome } from './adapters/wam/WamMetronome.js';
+export { default as WamDrummer } from './adapters/wam/WamDrummer.js';
+export { default as WamBass } from './adapters/wam/WamBass.js';
+export { default as WamKeyboard } from './adapters/wam/WamKeyboard.js';
+export { default as WamMetronome } from './adapters/wam/WamMetronome.js';
 export { WamHarmonyProcessor } from './adapters/wam/WamHarmonyProcessor.js';

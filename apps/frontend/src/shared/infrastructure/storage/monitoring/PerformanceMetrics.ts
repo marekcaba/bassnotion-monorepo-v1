@@ -120,7 +120,7 @@ export class PerformanceMetricsCollector {
           const value = await collector.collect();
           this.recordMetric(name, value, collector.tags);
         } catch (error) {
-          logger.error('Collector failed', { name, error });
+          logger.error('Collector failed', error as Error, { name });
         }
       },
     );

@@ -1,0 +1,99 @@
+{
+  "name": "Grand Piano",
+  "version": "1.0.0",
+  "description": "Professional grand piano with 7 velocity layers and full 88-key range",
+  "storage": {
+    "baseUrl": "https://iuuplfrktnzsbzibpfjm.supabase.co/storage/v1/object/public/audio-samples",
+    "bucketPath": "Keyboards/grand-piano"
+  },
+  "globalVelocityRanges": [
+    {
+      "min": 0,
+      "max": 18,
+      "layer": "v1"
+    },
+    {
+      "min": 19,
+      "max": 36,
+      "layer": "v2"
+    },
+    {
+      "min": 37,
+      "max": 54,
+      "layer": "v3"
+    },
+    {
+      "min": 55,
+      "max": 72,
+      "layer": "v4"
+    },
+    {
+      "min": 73,
+      "max": 90,
+      "layer": "v5"
+    },
+    {
+      "min": 91,
+      "max": 108,
+      "layer": "v6"
+    },
+    {
+      "min": 109,
+      "max": 127,
+      "layer": "v7"
+    }
+  ],
+  "sampleMapping": {
+    "A0": "{layer}/A0_{layer}.ogg",
+    "C1": "{layer}/C1_{layer}.ogg",
+    "Ds1": "{layer}/Ds1_{layer}.ogg",
+    "Fs1": "{layer}/Fs1_{layer}.ogg",
+    "A1": "{layer}/A1_{layer}.ogg",
+    "C2": "{layer}/C2_{layer}.ogg",
+    "Ds2": "{layer}/Ds2_{layer}.ogg",
+    "Fs2": "{layer}/Fs2_{layer}.ogg",
+    "A2": "{layer}/A2_{layer}.ogg",
+    "C3": "{layer}/C3_{layer}.ogg",
+    "Ds3": "{layer}/Ds3_{layer}.ogg",
+    "Fs3": "{layer}/Fs3_{layer}.ogg",
+    "A3": "{layer}/A3_{layer}.ogg",
+    "C4": "{layer}/C4_{layer}.ogg",
+    "Ds4": "{layer}/Ds4_{layer}.ogg",
+    "Fs4": "{layer}/Fs4_{layer}.ogg",
+    "A4": "{layer}/A4_{layer}.ogg",
+    "C5": "{layer}/C5_{layer}.ogg",
+    "Ds5": "{layer}/Ds5_{layer}.ogg",
+    "Fs5": "{layer}/Fs5_{layer}.ogg",
+    "A5": "{layer}/A5_{layer}.ogg",
+    "C6": "{layer}/C6_{layer}.ogg",
+    "Ds6": "{layer}/Ds6_{layer}.ogg",
+    "Fs6": "{layer}/Fs6_{layer}.ogg",
+    "A6": "{layer}/A6_{layer}.ogg",
+    "C7": "{layer}/C7_{layer}.ogg",
+    "Ds7": "{layer}/Ds7_{layer}.ogg",
+    "Fs7": "{layer}/Fs7_{layer}.ogg",
+    "A7": "{layer}/A7_{layer}.ogg",
+    "C8": "{layer}/C8_{layer}.ogg"
+  },
+  "defaultLayers": [
+    "v3",
+    "v4",
+    "v5"
+  ],
+  "samplerConfig": {
+    "attack": 0.001,
+    "decay": 0.1,
+    "sustain": 0.7,
+    "release": 0.5,
+    "curve": "exponential"
+  },
+  "effects": {
+    "eq": {
+      "low": 0,
+      "mid": 0,
+      "high": 0,
+      "lowFrequency": 400,
+      "highFrequency": 2500
+    }
+  }
+}

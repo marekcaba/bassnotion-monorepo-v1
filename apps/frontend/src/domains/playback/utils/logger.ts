@@ -173,7 +173,7 @@ class Logger {
         console.warn(formattedMessage, ...args);
         break;
       case LogLevel.INFO:
-        console.info(formattedMessage, ...args);
+        // SUPPRESSED: INFO logs are disabled to reduce console noise
         break;
       case LogLevel.DEBUG:
       case LogLevel.VERBOSE:
@@ -234,11 +234,12 @@ class Logger {
   ): void {
     if (!this.shouldLog(LogLevel.INFO)) return;
 
-    console.group(title);
-    logs.forEach(({ prefix, message }) => {
-      console.info(`${prefix} ${message}`);
-    });
-    console.groupEnd();
+    // SUPPRESSED: Group logging disabled to reduce console noise
+    // console.group(title);
+    // logs.forEach(({ prefix, message }) => {
+    //   console.info(`${prefix} ${message}`);
+    // });
+    // console.groupEnd();
   }
 }
 

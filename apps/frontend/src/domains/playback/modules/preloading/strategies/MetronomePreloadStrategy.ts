@@ -6,7 +6,7 @@
 
 import { PreloadStrategy } from './PreloadStrategy.js';
 import { PreloadConfig, PreloadResult } from '../types/index.js';
-import { GlobalSampleCache } from '../../../services/storage/GlobalSampleCache.js';
+import { GlobalSampleCache } from '../../storage/cache/GlobalSampleCache.js';
 import { getLogger } from '@/utils/logger.js';
 
 const logger = getLogger('MetronomePreloadStrategy');
@@ -17,36 +17,60 @@ export class MetronomePreloadStrategy implements PreloadStrategy {
   private total = 0;
 
   async loadEssentialSamples(_config?: PreloadConfig): Promise<PreloadResult> {
-    logger.info('Loading essential metronome samples...');
+    const startTime = performance.now();
+    logger.info('📥 Loading essential metronome samples...');
 
     try {
-      const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-      const { supabase } = await import('@/infrastructure/supabase/client');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('NEXT_PUBLIC_SUPABASE_URL not configured');
+      }
 
-      // Metronome sample URLs
-      const clickHighUrl = supabase.storage
-        .from('samples')
-        .getPublicUrl('metronome/click-high.mp3').data.publicUrl;
+      // Use the exact same paths as WamMetronome to ensure compatibility
+      const clickHighUrl = `${supabaseUrl}/storage/v1/object/public/audio-samples/metronome/Click_high2_fixed.mp3`;
+      const clickLowUrl = `${supabaseUrl}/storage/v1/object/public/audio-samples/metronome/Click_low2_fixed.mp3`;
 
-      const clickLowUrl = supabase.storage
-        .from('samples')
-        .getPublicUrl('metronome/click-low.mp3').data.publicUrl;
+      logger.info('🎵 Preloading metronome samples:', {
+        highUrl: clickHighUrl,
+        lowUrl: clickLowUrl,
+      });
 
-      // Cache both metronome sounds
-      await GlobalSampleCache.getInstance().cacheUrl(
-        'metronome-high',
-        clickHighUrl,
-      );
+      // Create AudioContext for decoding (use OfflineAudioContext to avoid affecting user's context)
+      const offlineContext = new OfflineAudioContext(2, 44100, 44100);
 
-      await GlobalSampleCache.getInstance().cacheUrl(
-        'metronome-low',
-        clickLowUrl,
-      );
+      // Load and cache HIGH click
+      logger.info('📥 Fetching high click...');
+      const highResponse = await fetch(clickHighUrl);
+      if (!highResponse.ok) {
+        throw new Error(`Failed to fetch high click: ${highResponse.status}`);
+      }
+      const highArrayBuffer = await highResponse.arrayBuffer();
+      const highAudioBuffer = await offlineContext.decodeAudioData(highArrayBuffer);
+
+      GlobalSampleCache.getInstance().cacheBuffer('metronome-high', highAudioBuffer);
+      logger.info('✅ High click cached');
+
+      // Load and cache LOW click
+      logger.info('📥 Fetching low click...');
+      const lowResponse = await fetch(clickLowUrl);
+      if (!lowResponse.ok) {
+        throw new Error(`Failed to fetch low click: ${lowResponse.status}`);
+      }
+      const lowArrayBuffer = await lowResponse.arrayBuffer();
+      const lowAudioBuffer = await offlineContext.decodeAudioData(lowArrayBuffer);
+
+      GlobalSampleCache.getInstance().cacheBuffer('metronome-low', lowAudioBuffer);
+      logger.info('✅ Low click cached');
 
       this.loaded = 2;
       this.total = 2;
 
-      logger.info('Essential metronome samples loaded');
+      const duration = performance.now() - startTime;
+      logger.info('✅ Essential metronome samples preloaded and cached as AudioBuffers', {
+        duration: `${duration.toFixed(2)}ms`,
+        samplesLoaded: 2,
+        averagePerSample: `${(duration / 2).toFixed(2)}ms`,
+      });
 
       return {
         success: true,

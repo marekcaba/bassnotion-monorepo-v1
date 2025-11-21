@@ -28,12 +28,46 @@ class Logger {
   private categoryLoggers: Map<string, CategoryLogger> = new Map();
 
   private constructor() {
-    // Default configuration
+    // Default noisy categories to suppress
+    const defaultDisabledCategories = new Set([
+      'FretboardCard',
+      'useFretboard',
+      'useFretboardExercise',
+      // 'global-controls', // TEMPORARILY ENABLED to debug exercise MIDI loading
+      'youtube-widget',
+      'CoreServices',
+      'EventBus',
+      'CircuitBreaker',
+      'CacheMonitor',
+      'WidgetSyncService',
+      'TransportClock',
+      'SyncedWidget',
+      'DebugUtils',
+      // 'GlobalSampleCache', // TEMPORARILY ENABLED to see cache operations
+      // 'InitialSamplePreloader', // TEMPORARILY ENABLED to see performance timing logs
+    ]);
+
+    // Get log level from environment
+    const envLogLevel = process.env.NEXT_PUBLIC_LOG_LEVEL?.toUpperCase();
+    let defaultLevel = LogLevel.ERROR; // Default to ERROR
+
+    if (envLogLevel) {
+      // Map environment string to LogLevel enum
+      switch(envLogLevel) {
+        case 'ERROR': defaultLevel = LogLevel.ERROR; break;
+        case 'WARN': defaultLevel = LogLevel.WARN; break;
+        case 'INFO': defaultLevel = LogLevel.INFO; break;
+        case 'DEBUG': defaultLevel = LogLevel.DEBUG; break;
+        case 'VERBOSE': defaultLevel = LogLevel.VERBOSE; break;
+        default: defaultLevel = LogLevel.ERROR;
+      }
+    }
+
+    // Default configuration - ERROR level to reduce noise
     this.config = {
-      level:
-        process.env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.INFO,
+      level: defaultLevel, // Use environment or default to ERROR
       enabledCategories: new Set(['*']), // All categories enabled by default
-      disabledCategories: new Set(),
+      disabledCategories: defaultDisabledCategories,
       useEmojis: process.env.NODE_ENV !== 'production',
       useColors: true,
       showTimestamp: false,
@@ -195,11 +229,17 @@ class Logger {
       const stored = localStorage.getItem('bassnotion:logger:config');
       if (stored) {
         const parsed = JSON.parse(stored);
+        const disabledCats = new Set(parsed.disabledCategories || []);
+
+        // FORCE ENABLE these categories for debugging (override localStorage)
+        disabledCats.delete('GlobalSampleCache');
+        disabledCats.delete('InitialSamplePreloader');
+
         this.config = {
           ...this.config,
           ...parsed,
           enabledCategories: new Set(parsed.enabledCategories || ['*']),
-          disabledCategories: new Set(parsed.disabledCategories || []),
+          disabledCategories: disabledCats,
         };
       }
     } catch (e) {
@@ -282,17 +322,9 @@ export const logger = Logger.getInstance();
 // Export convenience functions
 export const getLogger = (category: string) => logger.getLogger(category);
 
-// Development helpers
+// Development helpers - make logger available on window but don't log about it
 if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
   (window as any).logger = logger;
   (window as any).LogLevel = LogLevel;
-
-  // Add console helpers
-  console.log(
-    '🎵 BassNotion Logger available. Use window.logger to configure.',
-  );
-  console.log('Examples:');
-  console.log('  logger.setLevel(LogLevel.WARN)');
-  console.log('  logger.disableCategories("timing", "transport")');
-  console.log('  logger.enableCategories("audio")');
+  // Removed console.log statements to reduce initial noise
 }

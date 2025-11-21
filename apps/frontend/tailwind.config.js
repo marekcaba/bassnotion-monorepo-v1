@@ -4,6 +4,10 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      // Custom font families
+      fontFamily: {
+        'mono-display': ['var(--font-courier-prime)', 'ui-monospace', 'monospace'],
+      },
       // Enhanced breakpoint system for better responsive design
       screens: {
         xs: '475px', // Extra small mobile landscape

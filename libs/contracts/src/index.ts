@@ -42,6 +42,15 @@ export type {
   TimingFeatures,
   SwingConfig as ProfessionalSwingConfig,
 } from './types/musical-time.js';
+export {
+  MusicalTimeConstants,
+  ticksToMs,
+  msToTicks,
+  positionToAbsoluteTick,
+  absoluteTickToPosition,
+  inferNoteDurationFromTicks,
+  noteDurationToTicks
+} from './types/musical-time.js';
 export { MusicalTimeConverter } from './services/MusicalTimeConverter.js';
 export { ProfessionalDrumProcessor } from './services/ProfessionalDrumProcessor.js';
 
@@ -84,3 +93,17 @@ export type { MetronomeSettings } from './types/common.js';
 
 // User types
 export type { BassConfiguration } from './types/user.js';
+
+// Drum Pattern types (Story 4.4 - Drummer MIDI Conversion)
+export type {
+  DrumHit,
+  MidiDrumType,
+  MusicalPosition as DrumMusicalPosition,
+  DrumPatternStats,
+  DrumPatternValidation,
+} from './types/drum-pattern.js';
+export {
+  DRUM_DISPLAY_NAMES,
+  DRUM_COLORS,
+  GENERAL_MIDI_DRUM_MAP,
+} from './types/drum-pattern.js';

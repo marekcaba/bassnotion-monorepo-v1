@@ -1,37 +1,30 @@
 'use client';
 
 import { Button } from '@/shared/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/shared/components/ui/card';
+import { Card, CardContent } from '@/shared/components/ui/card';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
-import {
-  Clock,
-  Star,
-  User,
-  ArrowLeft,
-  Loader2,
-  AlertCircle,
-} from 'lucide-react';
+import { Clock, User, ArrowLeft, Loader2, AlertCircle, Plus } from 'lucide-react';
 import { useTutorials } from '@/domains/widgets/hooks/useTutorials';
+import { UserIndicator } from '@/domains/user/components/UserIndicator';
+import { useAuth } from '@/domains/user/hooks/use-auth';
+import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
 import type { TutorialSummary } from '@bassnotion/contracts';
 
 // YouTube Thumbnail Component
 interface YouTubeThumbnailProps {
-  videoUrl: string;
+  videoId?: string;
+  videoUrl?: string;
   title: string;
   className?: string;
 }
 
 function YouTubeThumbnail({
+  videoId: propVideoId,
   videoUrl,
   title,
   className = '',
 }: YouTubeThumbnailProps) {
-  // Extract YouTube video ID from URL
+  // Extract YouTube video ID from URL if needed
   const getYouTubeVideoId = (url: string): string | null => {
     const regex =
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/;
@@ -39,10 +32,11 @@ function YouTubeThumbnail({
     return match?.[1] ?? null;
   };
 
-  const videoId = getYouTubeVideoId(videoUrl);
+  // Prefer direct videoId prop, otherwise extract from URL
+  const videoId = propVideoId || (videoUrl ? getYouTubeVideoId(videoUrl) : null);
 
   if (!videoId) {
-    // Fallback to music emoji if no valid YouTube URL
+    // Fallback to music emoji if no valid YouTube ID
     return (
       <div
         className={`bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl flex items-center justify-center ${className}`}
@@ -56,7 +50,7 @@ function YouTubeThumbnail({
   const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 
   return (
-    <div className={`rounded-xl overflow-hidden ${className}`}>
+    <div className={`overflow-hidden ${className}`}>
       <img
         src={thumbnailUrl}
         alt={`${title} thumbnail`}
@@ -80,8 +74,13 @@ function YouTubeThumbnail({
   );
 }
 
-const getDifficultyColor = (difficulty: string) => {
-  const normalizedDifficulty = difficulty.toLowerCase();
+const getDifficultyColor = (difficulty: any) => {
+  // Handle both string and Difficulty object with value property
+  const difficultyValue = typeof difficulty === 'object' ? difficulty?.value : difficulty;
+  if (!difficultyValue) {
+    return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+  }
+  const normalizedDifficulty = difficultyValue.toLowerCase();
   switch (normalizedDifficulty) {
     case 'beginner':
       return 'bg-green-500/20 text-green-400 border-green-500/30';
@@ -94,14 +93,23 @@ const getDifficultyColor = (difficulty: string) => {
   }
 };
 
-const capitalizeDifficulty = (difficulty: string) => {
-  return difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+const capitalizeDifficulty = (difficulty: any) => {
+  // Handle both string and Difficulty object with value property
+  const difficultyValue = typeof difficulty === 'object' ? difficulty?.value : difficulty;
+  if (!difficultyValue) {
+    return 'Unknown';
+  }
+  return difficultyValue.charAt(0).toUpperCase() + difficultyValue.slice(1);
 };
 
 export default function LibraryPage() {
   const { navigateWithTransition } = useViewTransitionRouter();
   const { tutorials, total, isLoading, error, isError, refetch } =
     useTutorials();
+  const { isAuthenticated } = useAuth();
+  const { profile } = useUserProfile();
+
+  const isAdmin = profile?.role === 'admin';
 
   if (isLoading) {
     return (
@@ -110,7 +118,7 @@ export default function LibraryPage() {
           <div className="space-y-6">
             {/* Header */}
             <div className="space-y-4">
-              <div className="flex items-center gap-3 text-slate-300">
+              <div className="flex items-center justify-between">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -120,6 +128,20 @@ export default function LibraryPage() {
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Home
                 </Button>
+
+                <div className="flex items-center gap-3">
+                  {isAdmin && (
+                    <Button
+                      onClick={() => navigateWithTransition('/admin/tutorials/new')}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      New Tutorial
+                    </Button>
+                  )}
+                  <UserIndicator />
+                </div>
               </div>
 
               <Card className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 shadow-2xl">
@@ -156,7 +178,7 @@ export default function LibraryPage() {
           <div className="space-y-6">
             {/* Header */}
             <div className="space-y-4">
-              <div className="flex items-center gap-3 text-slate-300">
+              <div className="flex items-center justify-between">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -166,6 +188,20 @@ export default function LibraryPage() {
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Home
                 </Button>
+
+                <div className="flex items-center gap-3">
+                  {isAdmin && (
+                    <Button
+                      onClick={() => navigateWithTransition('/admin/tutorials/new')}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      New Tutorial
+                    </Button>
+                  )}
+                  <UserIndicator />
+                </div>
               </div>
 
               <Card className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 shadow-2xl">
@@ -212,8 +248,8 @@ export default function LibraryPage() {
         <div className="space-y-6">
           {/* Header Card */}
           <div className="space-y-4">
-            {/* Back to Home Button */}
-            <div className="flex items-center gap-3 text-slate-300">
+            {/* Top Navigation Bar */}
+            <div className="flex items-center justify-between">
               <Button
                 variant="ghost"
                 size="sm"
@@ -223,6 +259,20 @@ export default function LibraryPage() {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Home
               </Button>
+
+              <div className="flex items-center gap-3">
+                {isAdmin && (
+                  <Button
+                    onClick={() => navigateWithTransition('/admin/tutorials/new')}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    New Tutorial
+                  </Button>
+                )}
+                <UserIndicator />
+              </div>
             </div>
 
             {/* Title Section */}
@@ -256,104 +306,77 @@ export default function LibraryPage() {
             </Card>
           ) : (
             tutorials.map((tutorial: TutorialSummary) => (
-              <Card
+              <div
                 key={tutorial.id}
-                className="bg-white/5 backdrop-blur-md border-white/10 hover:bg-white/10 transition-all duration-300 cursor-pointer group hover:scale-[1.02] hover:shadow-2xl"
-                onClick={() =>
-                  navigateWithTransition(`/library/${tutorial.slug}`)
-                }
+                className="relative overflow-hidden rounded-3xl cursor-pointer group"
+                onClick={() => navigateWithTransition(`/library/${tutorial.slug}`)}
               >
-                <CardHeader className="pb-4">
-                  {/* Thumbnail and Title Section */}
-                  <div className="flex items-start gap-4">
-                    {/* Thumbnail */}
-                    <div className="w-24 h-16 flex-shrink-0 group-hover:scale-105 transition-all duration-300">
-                      <YouTubeThumbnail
-                        videoUrl={tutorial.youtube_url || ''}
-                        title={tutorial.title}
-                        className="w-full h-full"
-                      />
-                    </div>
+                {/* Background gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-800/90 via-blue-900/80 to-blue-800/90 backdrop-blur-xl" />
 
-                    {/* Title and Artist */}
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-white text-xl font-bold leading-tight mb-2">
-                        {tutorial.title}
-                      </CardTitle>
-                      <div className="flex items-center gap-2 text-white/60 mb-3">
-                        <User className="w-4 h-4" />
-                        <span className="text-sm">{tutorial.artist}</span>
+                {/* Glow effect on hover */}
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-blue-500/0 to-purple-500/0 group-hover:from-cyan-500/20 group-hover:via-blue-500/20 group-hover:to-purple-500/20 transition-all duration-500" />
+
+                {/* Card border glow */}
+                <div className="absolute inset-0 rounded-3xl border border-white/10 group-hover:border-cyan-400/50 transition-all duration-500" />
+
+                {/* Container with no padding - full bleed layout - Fixed height 157.5px */}
+                <div className="relative flex items-stretch h-[157.5px]">
+                  {/* Left Side: Fixed 16:9 thumbnail with no padding */}
+                  <div className="relative flex-shrink-0 w-[280px] overflow-hidden rounded-l-3xl">
+                    <YouTubeThumbnail
+                      videoId={tutorial.youtube_id}
+                      videoUrl={tutorial.youtube_url}
+                      title={tutorial.title}
+                      className="w-full h-full object-cover rounded-l-3xl"
+                    />
+                    {/* Thumbnail overlay gradient - blends to transparent on the right edge only */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent from-70% via-slate-800/30 via-85% to-slate-800/90" />
+                  </div>
+
+                  {/* Right Side: Content with 18px padding */}
+                  <div className="flex-1 p-[18px] flex flex-col justify-between">
+                      {/* Top Content: Title, Description */}
+                      <div className="space-y-2">
+                        <h3 className="text-2xl font-bold text-white leading-tight group-hover:text-cyan-300 transition-colors duration-300">
+                          {tutorial.title}
+                        </h3>
+                        {tutorial.description && (
+                          <p className="text-white/70 text-sm leading-relaxed line-clamp-2">
+                            {tutorial.description}
+                          </p>
+                        )}
                       </div>
 
-                      {/* Badges using simple spans */}
-                      <div className="flex flex-wrap gap-2">
+                    {/* Bottom Content: Badges */}
+                    <div className="flex flex-wrap gap-2">
+                      {tutorial.difficulty && (
                         <span
-                          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getDifficultyColor(tutorial.difficulty)}`}
+                          className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${getDifficultyColor(tutorial.difficulty)}`}
                         >
                           {capitalizeDifficulty(tutorial.difficulty)}
                         </span>
-                        {tutorial.duration && (
-                          <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-white/10 text-white/80 border-white/20">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {tutorial.duration}
-                          </span>
-                        )}
-                        {tutorial.rating && (
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                            <span className="text-white/80 text-sm font-medium">
-                              {tutorial.rating}
-                            </span>
-                          </div>
-                        )}
-                        {tutorial.exercise_count > 0 && (
-                          <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-blue-500/20 text-blue-300 border-blue-500/30">
-                            {tutorial.exercise_count} exercise
-                            {tutorial.exercise_count !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                      </div>
+                      )}
+                      {tutorial.duration && (
+                        <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold bg-white/10 text-white/80 border-white/20">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {tutorial.duration}
+                        </span>
+                      )}
+                      {tutorial.exercise_count > 0 && (
+                        <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold bg-blue-500/20 text-blue-300 border-blue-500/30">
+                          {tutorial.exercise_count} exercise{tutorial.exercise_count !== 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
                   </div>
-                </CardHeader>
+                </div>
 
-                <CardContent className="space-y-4">
-                  {/* Description */}
-                  {tutorial.description && (
-                    <p className="text-white/70 text-sm leading-relaxed">
-                      {tutorial.description}
-                    </p>
-                  )}
-
-                  {/* Concepts */}
-                  {tutorial.concepts && tutorial.concepts.length > 0 && (
-                    <div className="space-y-2">
-                      <span className="text-white/80 text-sm font-medium">
-                        Key Concepts:
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {tutorial.concepts.map((concept) => (
-                          <span
-                            key={concept}
-                            className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold text-white/70 border-white/20 bg-white/5"
-                          >
-                            {concept}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Call to Action */}
-                  <div className="pt-2">
-                    <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg p-3 text-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-all duration-300">
-                      <span className="text-white/90 text-sm font-medium">
-                        Start Learning →
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                {/* CTA Button - Fixed to Bottom Right - Arrow Only */}
+                <button className="absolute bottom-[18px] right-[18px] w-10 h-7 rounded-lg border-2 border-white/20 bg-white/5 hover:bg-white/10 hover:border-cyan-400/50 text-white font-medium transition-all duration-300 group-hover:scale-110 flex items-center justify-center">
+                  →
+                </button>
+              </div>
             ))
           )}
         </div>

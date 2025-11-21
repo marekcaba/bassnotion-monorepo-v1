@@ -87,9 +87,46 @@ export async function fetchTutorialExercises(
     throw new TutorialsApiError('Tutorial slug is required');
   }
 
-  return fetchWithErrorHandling<TutorialExercisesResponse>(
+  const result = await fetchWithErrorHandling<TutorialExercisesResponse>(
     `${API_BASE_URL}/tutorials/${encodeURIComponent(slug)}/exercises`,
   );
+
+  // DEBUG: Log exercise notes and MIDI URLs to trace data flow
+  console.log('🔍 fetchTutorialExercises - API response:', {
+    slug,
+    exerciseCount: result.exercises?.length || 0,
+    exercises: result.exercises?.map((ex: any) => ({
+      id: ex.id,
+      title: ex.title,
+      notesCount: ex.notes?.length || 0,
+      hasNotes: !!ex.notes,
+      firstNote: ex.notes?.[0],
+      // DEBUG: Check MIDI URLs from API
+      drummerMidiUrl: ex.drummer_midi_url,
+      basslineMidiUrl: ex.bassline_midi_url,
+      harmonyMidiUrl: ex.harmony_midi_url,
+      metronomeMidiUrl: ex.metronome_midi_url,
+      // CRITICAL: Check if drum_pattern exists in API response
+      hasDrumPattern: !!ex.drum_pattern,
+      drumPatternLength: ex.drum_pattern?.length || 0,
+      drumPatternSample: ex.drum_pattern?.[0],
+      // CRITICAL: Check if harmony_notes exists in API response
+      hasHarmonyNotes: !!ex.harmony_notes,
+      harmonyNotesLength: ex.harmony_notes?.length || 0,
+      harmonyInstrument: ex.harmony_instrument,
+      harmonyNotesSample: ex.harmony_notes?.[0],
+    })),
+  });
+
+  // DEBUG: Log creator data
+  console.log('🔍 fetchTutorialExercises - Tutorial creator data:', {
+    hasCreatorName: !!result.tutorial?.creator_name,
+    creatorName: result.tutorial?.creator_name,
+    hasCreatorAvatar: !!result.tutorial?.creator_avatar_url,
+    creatorAvatar: result.tutorial?.creator_avatar_url?.substring(0, 60) + '...',
+  });
+
+  return result;
 }
 
 /**

@@ -1,550 +1,184 @@
 /**
- * AudioEventRouter - Connects EventBus triggers to audio instruments
- * Story 3.22: Professional DAW Sequencer
+ * AudioEventRouter - Routes audio events from EventBus to registered instruments
  *
- * This service listens for trigger events from the PatternScheduler/EventBus
- * and routes them to the appropriate instrument processors for audio playback.
+ * IMPORTANT: This service does NOT create instruments. It only uses instruments
+ * that have been registered through the InstrumentRegistry by widgets or other components.
  */
 
+import { getLogger, Logger } from '@/utils/logger.js';
 import { EventBus } from './EventBus.js';
-import { serviceRegistry } from './ServiceRegistry.js';
-import { MetronomeInstrumentProcessor } from '../../modules/instruments/implementations/metronome/MetronomeInstrumentProcessor.js';
-import { DrumInstrumentProcessor } from '../../modules/instruments/implementations/drums/DrumInstrumentProcessor.js';
-import type { DrumPiece } from '../../modules/instruments/implementations/drums/DrumInstrumentProcessor.js';
-// ChordInstrumentProcessor removed - unused code (37k lines)
-// TODO: Implement WAM-based harmony playback for track system
-import { BassInstrumentProcessor } from '../../modules/instruments/implementations/bass/BassInstrumentProcessor.js';
-import { WamHarmonyProcessor } from '../../modules/instruments/adapters/wam/WamHarmonyProcessor.js';
+import { AudioEngine } from '../../modules/audio-engine/core/AudioEngine.js';
+import { InstrumentRegistry } from './InstrumentRegistry.js';
+import { AudioDebugger } from './AudioDebugger.js';
 import { GlobalSampleCache } from '../../modules/storage/cache/GlobalSampleCache.js';
-import type {
-  Service,
-  ServiceConfig,
-  HealthCheckResult,
-} from './ServiceRegistry.js';
-import { getLogger } from '@/utils/logger.js';
-
-// New instruments module imports
-import type {
-  Instrument,
-  InstrumentEvent,
-} from '../../modules/instruments/index.js';
+import { getPreloadableRegistry } from './PreloadableInstrumentRegistry.js';
 import {
-  Metronome,
-  DrumKit,
-  BassInstrument,
-  HarmonyInstrument,
-} from '../../modules/instruments/index.js';
-import { featureFlags } from '../../config/featureFlags.js';
+  DrumTriggerEvent,
+  MetronomeTriggerEvent,
+  ChordTriggerEvent,
+  BassTriggerEvent,
+  MidiEvent,
+  DrumPiece,
+} from '../../types/audioEvents.js';
 
-// Import Tone dynamically
-let Tone: any = null;
-const loadTone = async () => {
-  if (!Tone) {
-    const module = await import('tone');
-    // Tone.js exports as default in ES modules
-    Tone = module;
-  }
-  return Tone;
-};
-
-interface TriggerEvent {
-  audioTime: number;
-  timestamp: number;
-  velocity?: number;
-  duration?: string;
-}
-
-interface DrumTriggerEvent extends TriggerEvent {
-  drum: string;
-}
-
-interface MetronomeTriggerEvent extends TriggerEvent {
-  type: 'click' | 'accent';
-  pitch?: string;
-}
-
-interface ChordTriggerEvent extends TriggerEvent {
-  chord: string;
-  notes: string[];
-  voicing?: string;
-}
-
-interface BassTriggerEvent extends TriggerEvent {
-  note: string;
-  technique?: string;
-}
-
-interface MidiEvent {
-  event: {
-    type: 'noteOn' | 'noteOff' | 'cc' | 'pitchBend' | 'programChange';
-    note?: number;
-    velocity?: number;
-    duration?: string;
-    controller?: number;
-    value?: number;
-    bendValue?: number;
-  };
-  audioTime: number;
-  timestamp: number;
-}
-
-export class AudioEventRouter implements Service {
+export class AudioEventRouter {
+  private logger: Logger;
   private eventBus: EventBus | null = null;
-  private isInitialized = false;
+  private audioEngine: AudioEngine | null = null;
+  private instrumentRegistry: InstrumentRegistry | null = null;
+
+  // References to registered instruments (populated from registry)
+  private drums: any = null;
+  private bass: any = null;
+  private harmony: any = null;
+  private metronome: any = null;
+  private voiceCue: any = null;
+
+  // Legacy references for backward compatibility
+  private legacyDrums: any = null;
+  private legacyBass: any = null;
+  private legacyHarmony: any = null;
+  private legacyMetronome: any = null;
+  private legacyVoiceCue: any = null;
+
   private isRunning = false;
-  private logger = getLogger('audio-router');
-
-  // Legacy instrument processors (for backward compatibility)
-  private legacyMetronome: MetronomeInstrumentProcessor | null = null;
-  private legacyDrums: DrumInstrumentProcessor | null = null;
-  private legacyHarmony: WamHarmonyProcessor | null = null;
-  private legacyBass: BassInstrumentProcessor | null = null;
-
-  // New modular instruments
-  private metronome: Instrument | null = null;
-  private drums: Instrument | null = null;
-  private harmony: Instrument | null = null;
-  private bass: Instrument | null = null;
-
-  // Track active instruments
   private activeInstruments = new Set<string>();
 
-  // Event handlers (stored for cleanup)
-  private eventHandlers = new Map<string, (data: any) => void>();
-  // Unsubscribe functions from EventBus
-  private unsubscribeFunctions = new Map<string, () => void>();
+  // Event handler management
+  private eventHandlers = new Map<string, Function>();
+  private unsubscribeFunctions = new Map<string, Function>();
 
-  async initialize(): Promise<void> {
-    if (this.isInitialized) return;
-
-    try {
-      // Load Tone.js
-      await loadTone();
-
-      // Get EventBus from registry
-      this.eventBus = serviceRegistry.get<EventBus>('eventBus');
-      if (!this.eventBus) {
-        throw new Error('EventBus not found in registry');
-      }
-
-      // Initialize instrument processors
-      await this.initializeInstruments();
-
-      this.isInitialized = true;
-      this.logger.info('AudioEventRouter initialized');
-    } catch (error) {
-      this.logger.error('Failed to initialize AudioEventRouter:', error);
-      throw error;
-    }
-  }
-
-  async start(): Promise<void> {
-    if (!this.isInitialized) {
-      throw new Error('AudioEventRouter not initialized');
-    }
-
-    if (this.isRunning) return;
-
-    // Subscribe to trigger events
-    this.subscribeToEvents();
-
-    this.isRunning = true;
-    this.logger.info('AudioEventRouter started');
-  }
-
-  async stop(): Promise<void> {
-    if (!this.isRunning) return;
-
-    // Unsubscribe from events
-    this.unsubscribeFromEvents();
-
-    this.isRunning = false;
-    this.logger.info('AudioEventRouter stopped');
-  }
-
-  async restart(): Promise<void> {
-    await this.stop();
-    await this.start();
-  }
-
-  async dispose(): Promise<void> {
-    await this.stop();
-
-    // Dispose modular instruments
-    if (this.metronome) {
-      await this.metronome.dispose();
-      this.metronome = null;
-    }
-    if (this.drums) {
-      await this.drums.dispose();
-      this.drums = null;
-    }
-    if (this.harmony) {
-      await this.harmony.dispose();
-      this.harmony = null;
-    }
-    if (this.bass) {
-      await this.bass.dispose();
-      this.bass = null;
-    }
-
-    // Dispose legacy processors
-    if (this.legacyMetronome) {
-      this.legacyMetronome.dispose();
-      this.legacyMetronome = null;
-    }
-    if (this.legacyDrums) {
-      this.legacyDrums.dispose();
-      this.legacyDrums = null;
-    }
-    if (this.legacyHarmony) {
-      this.legacyHarmony.dispose();
-      this.legacyHarmony = null;
-    }
-    if (this.legacyBass) {
-      this.legacyBass.dispose();
-      this.legacyBass = null;
-    }
-
-    this.activeInstruments.clear();
-    this.eventHandlers.clear();
-    this.unsubscribeFunctions.clear();
-    this.eventBus = null;
-    this.isInitialized = false;
-
-    this.logger.info('AudioEventRouter disposed');
-  }
-
-  async healthCheck(): Promise<HealthCheckResult> {
-    const useModularInstruments = featureFlags.modularInstruments;
-
-    const details: any = {
-      isInitialized: this.isInitialized,
-      isRunning: this.isRunning,
-      activeInstruments: Array.from(this.activeInstruments),
-      eventHandlers: this.eventHandlers.size,
-      usingModularInstruments: useModularInstruments,
-    };
-
-    // Check instrument health
-    if (useModularInstruments) {
-      if (this.metronome) details.metronome = 'ready (modular)';
-      if (this.drums) details.drums = 'ready (modular)';
-      if (this.harmony) details.harmony = 'ready (modular)';
-      if (this.bass) details.bass = 'ready (modular)';
-    } else {
-      if (this.legacyMetronome) details.metronome = 'ready (legacy)';
-      if (this.legacyDrums) details.drums = 'ready (legacy)';
-      if (this.legacyHarmony) details.harmony = 'ready (legacy)';
-      if (this.legacyBass) details.bass = 'ready (legacy)';
-    }
-
-    const healthy = this.isInitialized && this.eventBus !== null;
-
-    return {
-      status: healthy ? 'healthy' : 'unhealthy',
-      message: healthy
-        ? 'AudioEventRouter operating normally'
-        : 'AudioEventRouter has issues',
-      details,
-      timestamp: Date.now(),
-    };
-  }
-
-  getConfig(): ServiceConfig {
-    return {
-      isRunning: this.isRunning,
-      activeInstruments: Array.from(this.activeInstruments),
-    };
+  constructor() {
+    this.logger = getLogger('AudioEventRouter');
+    this.logger.info('AudioEventRouter constructed');
+    AudioDebugger.getInstance().log('AudioEventRouter', 'constructed');
   }
 
   /**
-   * Initialize instrument processors
+   * Initialize the router with dependencies
+   * Can be called with or without parameters for ServiceRegistry compatibility
    */
-  private async initializeInstruments(): Promise<void> {
-    // Load supabase client for generating URLs
-    const { supabase } = await import('@/infrastructure/supabase/client');
-
-    // Check if we should use modular instruments
-    const useModularInstruments = featureFlags.modularInstruments;
-
-    // Get AudioEngine from CoreServices if available
-    let audioEngine: any;
-    try {
-      const globalServices =
-        (window as any).__coreServices || (window as any).__globalCoreServices;
-      if (globalServices?.getAudioEngine) {
-        audioEngine = globalServices.getAudioEngine();
-        this.logger.info(
-          'Got AudioEngine from CoreServices for dependency injection',
-        );
-      }
-    } catch {
-      this.logger.warn(
-        'Could not get AudioEngine from CoreServices, instruments will fall back to global Tone access',
-      );
+  async initialize(eventBus?: EventBus, audioEngine?: AudioEngine): Promise<void> {
+    // If already initialized and no new parameters, just return
+    if (this.eventBus && this.audioEngine && !eventBus && !audioEngine) {
+      this.logger.info('AudioEventRouter already initialized');
+      return;
     }
 
-    // Initialize metronome
+    this.logger.info('Initializing AudioEventRouter');
+
+    // Use provided parameters or keep existing ones
+    if (eventBus) this.eventBus = eventBus;
+    if (audioEngine) this.audioEngine = audioEngine;
+
+    // Ensure we have both dependencies
+    if (!this.eventBus || !this.audioEngine) {
+      this.logger.warn('AudioEventRouter initialized without EventBus or AudioEngine - will need to be initialized again with dependencies');
+      return;
+    }
+
+    // Initialize PreloadableInstrumentRegistry with dependencies
+    const preloadableRegistry = getPreloadableRegistry();
+    preloadableRegistry.initialize(this.eventBus, this.audioEngine);
+    this.logger.info('Initialized PreloadableInstrumentRegistry');
+
+    // Get InstrumentRegistry from CoreServices if available
     try {
-      if (useModularInstruments) {
-        // Use new modular Metronome
-        this.metronome = new Metronome({
-          id: 'main-metronome',
-          name: 'Main Metronome',
-          type: 'metronome',
-          clickSounds: {
-            click: supabase.storage
-              .from('audio-samples')
-              .getPublicUrl('metronome/Clicks_01.mp3').data.publicUrl,
-            accent: supabase.storage
-              .from('audio-samples')
-              .getPublicUrl('metronome/Clicks_01.mp3').data.publicUrl,
-          },
-        });
-        await this.metronome.initialize(audioEngine);
-        this.logger.info('Modular Metronome instrument initialized');
-      } else {
-        // Use legacy processor
-        this.legacyMetronome = new MetronomeInstrumentProcessor();
-        const metronomeSamples = {
-          'acoustic-click': supabase.storage
-            .from('audio-samples')
-            .getPublicUrl('metronome/Clicks_01.mp3').data.publicUrl,
-          'wood-block': supabase.storage
-            .from('audio-samples')
-            .getPublicUrl('metronome/Clicks_01.mp3').data.publicUrl,
-          'side-stick': supabase.storage
-            .from('audio-samples')
-            .getPublicUrl('metronome/Clicks_01.mp3').data.publicUrl,
-        } as Record<string, string>;
-        await this.legacyMetronome.initialize(metronomeSamples, audioEngine);
-        this.logger.info('Legacy Metronome instrument initialized');
+      const globalServices = (window as any).__coreServices || (window as any).__globalCoreServices;
+      if (globalServices?.getInstrumentRegistry) {
+        this.instrumentRegistry = globalServices.getInstrumentRegistry();
+        this.logger.info('Got InstrumentRegistry from CoreServices');
+
+        // Check for any pre-registered instruments
+        this.checkRegisteredInstruments();
       }
-      this.activeInstruments.add('metronome');
     } catch (error) {
-      this.logger.error('Failed to initialize metronome:', error);
+      this.logger.warn('Could not get InstrumentRegistry from CoreServices:', error);
     }
 
-    // Initialize drums
-    try {
-      const kitPath = 'drums/hydrogen-kits/mp3/electronic/boss-dr110';
-      const drumSamples = {
-        kick: [
-          supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(`${kitPath}/dr110kik.mp3`).data.publicUrl,
-        ],
-        snare: [
-          supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(`${kitPath}/dr110clp.mp3`).data.publicUrl,
-        ],
-        hihat: [
-          supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(`${kitPath}/dr110cht.mp3`).data.publicUrl,
-        ],
-        openHihat: [
-          supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(`${kitPath}/dr110cht.mp3`).data.publicUrl,
-        ],
-        crash: [
-          supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(`${kitPath}/dr110cht.mp3`).data.publicUrl,
-        ],
-        ride: [
-          supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(`${kitPath}/dr110cht.mp3`).data.publicUrl,
-        ],
-        tom1: [
-          supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(`${kitPath}/dr110kik.mp3`).data.publicUrl,
-        ],
-        tom2: [
-          supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(`${kitPath}/dr110clp.mp3`).data.publicUrl,
-        ],
-        tom3: [
-          supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(`${kitPath}/dr110kik.mp3`).data.publicUrl,
-        ],
-        rimshot: [
-          supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(`${kitPath}/dr110clp.mp3`).data.publicUrl,
-        ],
-        clap: [
-          supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(`${kitPath}/dr110clp.mp3`).data.publicUrl,
-        ],
-        cowbell: [
-          supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(`${kitPath}/dr110cht.mp3`).data.publicUrl,
-        ],
-        tambourine: [
-          supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(`${kitPath}/dr110cht.mp3`).data.publicUrl,
-        ],
-        shaker: [
-          supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(`${kitPath}/dr110cht.mp3`).data.publicUrl,
-        ],
-      };
+    // Subscribe to events
+    this.subscribeToEvents();
 
-      if (useModularInstruments) {
-        // Use new modular DrumKit
-        this.drums = new DrumKit({
-          id: 'main-drums',
-          name: 'Boss DR-110',
-          type: 'drums',
-          kit: {
-            name: 'Boss DR-110',
-            samples: drumSamples,
-          },
-          grooveStyle: 'straight',
-          velocityLayers: 4,
-        });
-        await this.drums.initialize(audioEngine);
-        this.logger.info('Modular DrumKit initialized');
-      } else {
-        // Use legacy processor
-        this.legacyDrums = new DrumInstrumentProcessor();
-        await this.legacyDrums.initialize(drumSamples as any, audioEngine);
-        this.logger.info('Legacy drum instrument initialized');
-      }
+    this.logger.info('AudioEventRouter initialized with EventBus and AudioEngine');
+  }
+
+  /**
+   * Check InstrumentRegistry for registered instruments
+   */
+  private checkRegisteredInstruments(): void {
+    if (!this.instrumentRegistry) return;
+
+    // Check for drums
+    if (this.instrumentRegistry.hasActive('drums')) {
+      this.drums = this.instrumentRegistry.getActive('drums');
+      this.legacyDrums = this.drums; // Backward compatibility
       this.activeInstruments.add('drums');
-    } catch (error) {
-      this.logger.error('Failed to initialize drums:', error);
+      this.logger.info('Found pre-registered drums instrument');
+    } else {
+      // Check if there's a preloaded drum kit in GlobalSampleCache
+      try {
+        const preloadedDrums = GlobalSampleCache.getCachedInstrument('drums-preloaded');
+        if (preloadedDrums && preloadedDrums.trigger) {
+          // Register it with the InstrumentRegistry
+          this.instrumentRegistry.setActive('drums', preloadedDrums);
+          this.drums = preloadedDrums;
+          this.legacyDrums = preloadedDrums;
+          this.activeInstruments.add('drums');
+          this.logger.info('Found and registered preloaded drums from GlobalSampleCache');
+        }
+      } catch (error) {
+        this.logger.debug('Could not check GlobalSampleCache for preloaded drums');
+      }
     }
 
-    // Initialize harmony
-    try {
-      if (useModularInstruments) {
-        // Use new modular HarmonyInstrument
-        this.harmony = new HarmonyInstrument({
-          id: 'main-harmony',
-          name: 'Main Piano',
-          type: 'chords',
-          instrument: 'piano',
-          useWAM: true,
-          voicing: 'close',
-        }) as any;
-        // HarmonyInstrument doesn't need context parameter
-        if (this.harmony) {
-          await this.harmony.initialize(audioEngine);
-        }
-        this.logger.info('Modular HarmonyInstrument initialized');
-      } else {
-        // Use legacy processor
-        const preloadedHarmony = (
-          GlobalSampleCache as any
-        ).getCachedInstrument?.('harmony-preloaded');
-        if (preloadedHarmony) {
-          this.logger.info(
-            'Using preloaded harmony instrument from GlobalSampleCache',
-          );
-        }
-        this.legacyHarmony = new WamHarmonyProcessor();
-        await this.legacyHarmony.initialize(
-          (Tone.context as any).rawContext ||
-            (Tone.context as any)._context ||
-            Tone.context,
-          audioEngine,
-        );
-        this.logger.info('Legacy harmony instrument initialized');
-      }
-      this.activeInstruments.add('harmony');
-    } catch (error) {
-      this.logger.error('Failed to initialize harmony:', error);
-    }
-
-    // Initialize bass
-    try {
-      if (useModularInstruments) {
-        // Use new modular BassInstrument
-        this.bass = new BassInstrument({
-          id: 'main-bass',
-          name: 'Synth Bass',
-          type: 'bass',
-          noteRange: {
-            lowest: 'E1',
-            highest: 'G4',
-          },
-          useSynth: true,
-          synthType: 'sawtooth',
-          ampSimulation: true,
-          velocityLayers: 6,
-        });
-        await this.bass.initialize(audioEngine);
-        this.logger.info('Modular BassInstrument initialized');
-      } else {
-        // Use legacy processor
-        this.legacyBass = new BassInstrumentProcessor();
-        const bassSamples: Record<string, string[]> = {};
-        const bassNotes = [
-          'E1',
-          'F1',
-          'Fs1',
-          'G1',
-          'Gs1',
-          'A1',
-          'As1',
-          'B1',
-          'C2',
-          'Cs2',
-          'D2',
-          'Ds2',
-          'E2',
-          'F2',
-          'Fs2',
-          'G2',
-          'Gs2',
-          'A2',
-          'As2',
-          'B2',
-          'C3',
-          'Cs3',
-          'D3',
-          'Ds3',
-          'E3',
-          'F3',
-          'Fs3',
-          'G3',
-          'Gs3',
-          'A3',
-          'As3',
-          'B3',
-          'C4',
-          'Cs4',
-          'D4',
-          'Ds4',
-          'E4',
-          'F4',
-          'Fs4',
-          'G4',
-        ];
-
-        bassNotes.forEach((note) => {
-          bassSamples[note] = []; // Empty array will use synth fallback
-        });
-
-        await this.legacyBass.initialize(bassSamples);
-        this.logger.info('Legacy bass instrument initialized');
-      }
+    // Check for bass
+    if (this.instrumentRegistry.hasActive('bass')) {
+      this.bass = this.instrumentRegistry.getActive('bass');
+      this.legacyBass = this.bass; // Backward compatibility
       this.activeInstruments.add('bass');
-    } catch (error) {
-      this.logger.error('Failed to initialize bass:', error);
+      this.logger.info('Found pre-registered bass instrument');
+    }
+
+    // Check for harmony
+    if (this.instrumentRegistry.hasActive('harmony')) {
+      this.harmony = this.instrumentRegistry.getActive('harmony');
+      this.legacyHarmony = this.harmony; // Backward compatibility
+      this.activeInstruments.add('harmony');
+      this.logger.info('Found pre-registered harmony instrument');
+    }
+
+    // Check for metronome
+    if (this.instrumentRegistry.hasActive('metronome')) {
+      this.metronome = this.instrumentRegistry.getActive('metronome');
+      this.legacyMetronome = this.metronome; // Backward compatibility
+      this.activeInstruments.add('metronome');
+      this.logger.info('Found pre-registered metronome instrument');
+    } else {
+      // Check if there's a preloaded metronome in GlobalSampleCache
+      try {
+        const preloadedMetronome = GlobalSampleCache.getCachedInstrument('metronome-preloaded');
+        if (preloadedMetronome) {
+          // Add the trigger method if it doesn't exist
+          if (!preloadedMetronome.trigger && preloadedMetronome.click) {
+            // Add compatibility trigger method
+            preloadedMetronome.trigger = (event: any) => {
+              const isAccent = event.data?.isDownbeat || event.data?.beat === 1;
+              preloadedMetronome.click(isAccent);
+            };
+          }
+
+          if (preloadedMetronome.trigger) {
+            // Register it with the InstrumentRegistry
+            this.instrumentRegistry.setActive('metronome', preloadedMetronome);
+            this.metronome = preloadedMetronome;
+            this.legacyMetronome = preloadedMetronome;
+            this.activeInstruments.add('metronome');
+            this.logger.info('Found and registered preloaded metronome from GlobalSampleCache');
+          }
+        }
+      } catch (error) {
+        this.logger.debug('Could not check GlobalSampleCache for preloaded metronome:', error);
+      }
     }
   }
 
@@ -552,19 +186,102 @@ export class AudioEventRouter implements Service {
    * Subscribe to EventBus trigger events
    */
   private subscribeToEvents(): void {
-    if (!this.eventBus) return;
+    if (!this.eventBus) {
+      this.logger.error('Cannot subscribe to events - no EventBus!');
+      return;
+    }
 
-    // Drum trigger handler
-    const drumHandler = (data: DrumTriggerEvent) => {
-      this.handleDrumTrigger(data);
+    this.logger.info('AudioEventRouter subscribing to EventBus events...');
+
+    // Listen for instrument registrations from the registry
+    const instrumentRegisteredHandler = (data: any) => {
+      if (!data.type || !data.instrument) return;
+
+      this.logger.info(`Instrument registered: ${data.type}`);
+
+      // Update our references when instruments are registered
+      switch (data.type) {
+        case 'drums':
+          this.drums = data.instrument;
+          this.legacyDrums = data.instrument; // Backward compatibility
+          this.activeInstruments.add('drums');
+          this.logger.info('Updated drums instrument from registry');
+          break;
+        case 'harmony':
+          this.harmony = data.instrument;
+          this.legacyHarmony = data.instrument; // Backward compatibility
+          this.activeInstruments.add('harmony');
+          this.logger.info('Updated harmony instrument from registry');
+          break;
+        case 'bass':
+          this.bass = data.instrument;
+          this.legacyBass = data.instrument; // Backward compatibility
+          this.activeInstruments.add('bass');
+          this.logger.info('Updated bass instrument from registry');
+          break;
+        case 'metronome':
+          this.metronome = data.instrument;
+          this.legacyMetronome = data.instrument; // Backward compatibility
+          this.activeInstruments.add('metronome');
+          this.logger.info('Updated metronome instrument from registry');
+          break;
+      }
+    };
+    const instrumentRegisteredUnsubscribe = this.eventBus.on(
+      'instrument:registered',
+      instrumentRegisteredHandler
+    );
+    this.eventHandlers.set('instrument:registered', instrumentRegisteredHandler);
+    this.unsubscribeFunctions.set('instrument:registered', instrumentRegisteredUnsubscribe);
+
+    // Listen for instrument removals
+    const instrumentRemovedHandler = (data: any) => {
+      if (!data.type) return;
+
+      this.logger.info(`Instrument removed: ${data.type}`);
+
+      // Clear our references when instruments are removed
+      switch (data.type) {
+        case 'drums':
+          this.drums = null;
+          this.legacyDrums = null;
+          this.activeInstruments.delete('drums');
+          break;
+        case 'harmony':
+          this.harmony = null;
+          this.legacyHarmony = null;
+          this.activeInstruments.delete('harmony');
+          break;
+        case 'bass':
+          this.bass = null;
+          this.legacyBass = null;
+          this.activeInstruments.delete('bass');
+          break;
+        case 'metronome':
+          this.metronome = null;
+          this.legacyMetronome = null;
+          this.activeInstruments.delete('metronome');
+          break;
+      }
+    };
+    const instrumentRemovedUnsubscribe = this.eventBus.on(
+      'instrument:removed',
+      instrumentRemovedHandler
+    );
+    this.eventHandlers.set('instrument:removed', instrumentRemovedHandler);
+    this.unsubscribeFunctions.set('instrument:removed', instrumentRemovedUnsubscribe);
+
+    // Drum trigger handler (now async)
+    const drumHandler = async (data: DrumTriggerEvent) => {
+      await this.handleDrumTrigger(data);
     };
     const drumUnsubscribe = this.eventBus.on('drum-trigger', drumHandler);
     this.eventHandlers.set('drum-trigger', drumHandler);
     this.unsubscribeFunctions.set('drum-trigger', drumUnsubscribe);
 
-    // Metronome trigger handler
-    const metronomeHandler = (data: MetronomeTriggerEvent) => {
-      this.handleMetronomeTrigger(data);
+    // Metronome trigger handler (now async)
+    const metronomeHandler = async (data: MetronomeTriggerEvent) => {
+      await this.handleMetronomeTrigger(data);
     };
     const metronomeUnsubscribe = this.eventBus.on(
       'metronome-trigger',
@@ -589,6 +306,14 @@ export class AudioEventRouter implements Service {
     this.eventHandlers.set('bass-trigger', bassHandler);
     this.unsubscribeFunctions.set('bass-trigger', bassUnsubscribe);
 
+    // Voice cue trigger handler
+    const voiceCueHandler = async (data: any) => {
+      await this.handleVoiceCueTrigger(data);
+    };
+    const voiceCueUnsubscribe = this.eventBus.on('voice-cue-trigger', voiceCueHandler);
+    this.eventHandlers.set('voice-cue-trigger', voiceCueHandler);
+    this.unsubscribeFunctions.set('voice-cue-trigger', voiceCueUnsubscribe);
+
     // MIDI event handler
     const midiHandler = (data: MidiEvent) => {
       this.handleMidiEvent(data);
@@ -597,7 +322,12 @@ export class AudioEventRouter implements Service {
     this.eventHandlers.set('midi-event', midiHandler);
     this.unsubscribeFunctions.set('midi-event', midiUnsubscribe);
 
-    this.logger.info('Subscribed to trigger events');
+    this.logger.info('AudioEventRouter subscribed to EventBus trigger events', {
+      metronomeHandler: !!metronomeHandler,
+      drumHandler: !!drumHandler,
+      eventBusConnected: !!this.eventBus,
+      handlersCount: this.eventHandlers.size
+    });
   }
 
   /**
@@ -619,25 +349,53 @@ export class AudioEventRouter implements Service {
   /**
    * Handle drum trigger event
    */
-  private handleDrumTrigger(data: DrumTriggerEvent): void {
+  private async handleDrumTrigger(data: DrumTriggerEvent): Promise<void> {
     this.logger.info(
       `🥁 AudioEventRouter received drum trigger: drum=${data.drum}, time=${data.audioTime?.toFixed(3)}`,
     );
 
-    const useModularInstruments = featureFlags.modularInstruments;
-    const hasDrums = useModularInstruments ? !!this.drums : !!this.legacyDrums;
+    // Try multiple sources in order of preference
 
-    if (!this.isRunning || !hasDrums) {
+    // 1. Check registry for drums if we don't have them yet
+    if (!this.drums && this.instrumentRegistry) {
+      if (this.instrumentRegistry.hasActive('drums')) {
+        this.drums = this.instrumentRegistry.getActive('drums');
+        this.legacyDrums = this.drums;
+        this.activeInstruments.add('drums');
+        this.logger.info('Found drums in registry during trigger');
+      }
+    }
+
+    // 2. Try PreloadableInstrumentRegistry for lazy-loadable drums
+    if (!this.drums) {
+      const preloadableRegistry = getPreloadableRegistry();
+      if (preloadableRegistry.hasType('drums')) {
+        const drums = await preloadableRegistry.getOrCreateByType('drums');
+        if (drums) {
+          this.drums = drums;
+          this.legacyDrums = drums;
+          this.activeInstruments.add('drums');
+          this.logger.info('✅ Got drums from preloadable registry');
+
+          // Also register in InstrumentRegistry for other components
+          if (this.instrumentRegistry && !this.instrumentRegistry.hasActive('drums')) {
+            this.instrumentRegistry.setActive('drums', drums);
+          }
+        }
+      }
+    }
+
+    if (!this.isRunning || !this.drums) {
       this.logger.warn(
-        `Cannot trigger drum: isRunning=${this.isRunning}, drums=${hasDrums}`,
+        `Cannot trigger drum: isRunning=${this.isRunning}, drums available=${!!this.drums}`,
       );
       return;
     }
 
     try {
-      if (useModularInstruments && this.drums) {
-        // Use modular DrumKit
-        const event: InstrumentEvent = {
+      // Check if the drums instrument has a trigger method
+      if (typeof this.drums.trigger === 'function') {
+        this.drums.trigger({
           audioTime: data.audioTime,
           timestamp: data.timestamp,
           velocity: data.velocity || 0.8,
@@ -645,17 +403,51 @@ export class AudioEventRouter implements Service {
           data: {
             drum: data.drum as DrumPiece,
           },
-        };
-        this.drums.trigger(event);
-      } else if (this.legacyDrums) {
-        // Use legacy processor
-        this.legacyDrums.triggerDrum({
+        });
+      }
+      // Check for triggerDrum method (legacy)
+      else if (typeof this.drums.triggerDrum === 'function') {
+        this.drums.triggerDrum({
           drum: data.drum as DrumPiece,
           velocity: data.velocity || 0.8,
           time: data.audioTime,
           duration: data.duration || '16n',
         });
       }
+      // Check for WAM plugin play method
+      else if (typeof this.drums.play === 'function') {
+        // For WAM plugins, we need to trigger the appropriate note
+        const drumNoteMap: Record<string, number> = {
+          kick: 36,
+          snare: 38,
+          hihat: 42,
+          openhat: 46,
+          crash: 49,
+          ride: 51,
+          tom1: 48,
+          tom2: 45,
+          tom3: 43,
+          rimshot: 37,
+          clap: 39,
+          cowbell: 56,
+          tambourine: 54,
+          shaker: 70,
+        };
+
+        const noteNumber = drumNoteMap[data.drum] || 60;
+        this.drums.play(noteNumber, data.velocity || 0.8);
+
+        // Schedule note off
+        if (typeof this.drums.stop === 'function') {
+          setTimeout(() => {
+            this.drums.stop(noteNumber);
+          }, 100); // Short duration for drum hits
+        }
+      }
+      else {
+        this.logger.warn('Drums instrument does not have a recognized trigger method');
+      }
+
       this.logger.debug(`Triggered drum: ${data.drum} at ${data.audioTime}`);
     } catch (error) {
       this.logger.error('Error triggering drum:', error);
@@ -665,47 +457,94 @@ export class AudioEventRouter implements Service {
   /**
    * Handle metronome trigger event
    */
-  private handleMetronomeTrigger(data: MetronomeTriggerEvent): void {
+  private async handleMetronomeTrigger(data: MetronomeTriggerEvent): Promise<void> {
     this.logger.info(
-      `🔔 AudioEventRouter received metronome trigger: type=${data.type}, time=${data.audioTime?.toFixed(3)}`,
+      `🔔 AudioEventRouter received metronome trigger: beat=${data.beat}, time=${data.audioTime?.toFixed(3)}`,
     );
 
-    const useModularInstruments = featureFlags.modularInstruments;
-    const hasMetronome = useModularInstruments
-      ? !!this.metronome
-      : !!this.legacyMetronome;
+    // Try multiple sources in order of preference
 
-    if (!this.isRunning || !hasMetronome) {
+    // 1. Check registry for metronome if we don't have one yet
+    if (!this.metronome && this.instrumentRegistry) {
+      const hasMetronome = this.instrumentRegistry.hasActive('metronome');
+      this.logger.debug('Checking for metronome in registry', {
+        hasMetronome,
+        registeredTypes: this.instrumentRegistry.getRegisteredTypes()
+      });
+
+      if (hasMetronome) {
+        this.metronome = this.instrumentRegistry.getActive('metronome');
+        this.legacyMetronome = this.metronome;
+        this.activeInstruments.add('metronome');
+        this.logger.info('Found metronome in registry during trigger');
+      }
+    }
+
+    // 2. Try PreloadableInstrumentRegistry for lazy-loadable metronome
+    if (!this.metronome) {
+      const preloadableRegistry = getPreloadableRegistry();
+      if (preloadableRegistry.hasType('metronome')) {
+        // Only try to create if we haven't tried recently (avoid multiple concurrent attempts)
+        const metronome = await preloadableRegistry.getOrCreateByType('metronome');
+        if (metronome) {
+          this.metronome = metronome;
+          this.legacyMetronome = metronome;
+          this.activeInstruments.add('metronome');
+          this.logger.info('✅ Got metronome from preloadable registry');
+
+          // Also register in InstrumentRegistry for other components
+          if (this.instrumentRegistry && !this.instrumentRegistry.hasActive('metronome')) {
+            this.instrumentRegistry.setActive('metronome', metronome);
+          }
+        }
+      }
+    }
+
+    AudioDebugger.getInstance().log('AudioEventRouter', 'metronome-trigger-received', {
+      isRunning: this.isRunning,
+      hasMetronome: !!this.metronome,
+      hasInstrumentRegistry: !!this.instrumentRegistry,
+      beat: data.beat,
+      isDownbeat: data.isDownbeat
+    });
+
+    if (!this.isRunning || !this.metronome) {
       this.logger.warn(
-        `Cannot trigger metronome: isRunning=${this.isRunning}, metronome=${hasMetronome}`,
+        `Cannot trigger metronome: isRunning=${this.isRunning}, metronome available=${!!this.metronome}`,
       );
+      AudioDebugger.getInstance().log('AudioEventRouter', 'metronome-trigger-blocked', {
+        isRunning: this.isRunning,
+        hasMetronome: !!this.metronome
+      });
       return;
     }
 
     try {
-      if (useModularInstruments && this.metronome) {
-        // Use modular Metronome
-        const event: InstrumentEvent = {
+      // Check if metronome has appropriate method
+      if (typeof this.metronome.trigger === 'function') {
+        AudioDebugger.getInstance().log('AudioEventRouter', 'calling-metronome-trigger');
+        this.metronome.trigger({
           audioTime: data.audioTime,
           timestamp: data.timestamp,
-          velocity: data.velocity || (data.type === 'accent' ? 1.0 : 0.7),
+          velocity: data.velocity || 0.8,
           data: {
-            type: data.type,
-            pitch: data.pitch,
+            beat: data.beat,
+            isDownbeat: data.isDownbeat,
           },
-        };
-        this.metronome.trigger(event);
-      } else if (this.legacyMetronome) {
-        // Use legacy processor
-        this.legacyMetronome.triggerClick({
-          type: data.type,
-          time: data.audioTime,
-          velocity: data.velocity || (data.type === 'accent' ? 1.0 : 0.7),
         });
       }
-      this.logger.debug(
-        `Triggered metronome: ${data.type} at ${data.audioTime}`,
-      );
+      else if (typeof this.metronome.triggerClick === 'function') {
+        AudioDebugger.getInstance().log('AudioEventRouter', 'calling-metronome-triggerClick');
+        this.metronome.triggerClick({
+          beat: data.beat,
+          isDownbeat: data.isDownbeat,
+          velocity: data.velocity || 0.8,
+          time: data.audioTime,
+        });
+      }
+      else {
+        this.logger.warn('Metronome does not have a recognized trigger method');
+      }
     } catch (error) {
       this.logger.error('Error triggering metronome:', error);
     }
@@ -716,47 +555,60 @@ export class AudioEventRouter implements Service {
    */
   private handleChordTrigger(data: ChordTriggerEvent): void {
     this.logger.info(
-      `🎹 AudioEventRouter received chord trigger: chord=${data.chord}, time=${data.audioTime?.toFixed(3)}`,
+      `🎹 Chord trigger: chord=${data.chord}, root=${data.root}, time=${data.audioTime?.toFixed(3)}`,
     );
 
-    const useModularInstruments = featureFlags.modularInstruments;
-    const hasHarmony = useModularInstruments
-      ? !!this.harmony
-      : !!this.legacyHarmony;
+    // Check registry for harmony if we don't have it yet
+    if (!this.harmony && this.instrumentRegistry) {
+      if (this.instrumentRegistry.hasActive('harmony')) {
+        this.harmony = this.instrumentRegistry.getActive('harmony');
+        this.legacyHarmony = this.harmony;
+        this.activeInstruments.add('harmony');
+        this.logger.info('Found harmony in registry during trigger');
+      }
+    }
 
-    if (!this.isRunning || !hasHarmony) {
-      this.logger.warn(
-        `Cannot trigger chord: isRunning=${this.isRunning}, harmony=${hasHarmony}`,
-      );
+    if (!this.isRunning || !this.harmony) {
+      // Skip warning for MIDI-based harmony events (they use direct scheduling in RegionProcessor)
+      // Only warn for actual chord symbol events that need the legacy WamKeyboard path
+      if (data.chord !== 'harmony-note') {
+        this.logger.warn(
+          `Cannot trigger chord: isRunning=${this.isRunning}, harmony available=${!!this.harmony}`,
+        );
+      }
       return;
     }
 
     try {
-      if (useModularInstruments && this.harmony) {
-        // Use modular HarmonyInstrument
-        const event: InstrumentEvent = {
+      // Check if harmony has appropriate method
+      if (typeof this.harmony.trigger === 'function') {
+        this.harmony.trigger({
           audioTime: data.audioTime,
           timestamp: data.timestamp,
-          velocity: data.velocity || 0.8,
-          duration: data.duration || '4n',
+          velocity: data.velocity || 0.7,
+          duration: data.duration || '2n',
           data: {
             chord: data.chord,
-            notes: data.notes,
-            voicing: data.voicing,
+            root: data.root,
+            quality: data.quality,
+            inversion: data.inversion,
           },
-        };
-        this.harmony.trigger(event);
-      } else if (this.legacyHarmony) {
-        // Use legacy processor
-        this.legacyHarmony.triggerChord({
-          chord: data.chord,
-          notes: data.notes,
-          velocity: data.velocity || 0.8,
-          time: data.audioTime,
-          duration: data.duration || '4n',
         });
       }
-      this.logger.debug(`Triggered chord: ${data.chord} at ${data.audioTime}`);
+      else if (typeof this.harmony.playChord === 'function') {
+        this.harmony.playChord({
+          chord: data.chord,
+          root: data.root,
+          quality: data.quality,
+          inversion: data.inversion,
+          velocity: data.velocity || 0.7,
+          time: data.audioTime,
+          duration: data.duration || '2n',
+        });
+      }
+      else {
+        this.logger.warn('Harmony does not have a recognized trigger method');
+      }
     } catch (error) {
       this.logger.error('Error triggering chord:', error);
     }
@@ -766,43 +618,130 @@ export class AudioEventRouter implements Service {
    * Handle bass trigger event
    */
   private handleBassTrigger(data: BassTriggerEvent): void {
-    const useModularInstruments = featureFlags.modularInstruments;
-    const hasBass = useModularInstruments ? !!this.bass : !!this.legacyBass;
+    this.logger.info(
+      `🎸 Bass trigger: note=${data.note}, time=${data.audioTime?.toFixed(3)}`,
+    );
 
-    if (!this.isRunning || !hasBass) {
+    // Check registry for bass if we don't have it yet
+    if (!this.bass && this.instrumentRegistry) {
+      if (this.instrumentRegistry.hasActive('bass')) {
+        this.bass = this.instrumentRegistry.getActive('bass');
+        this.legacyBass = this.bass;
+        this.activeInstruments.add('bass');
+        this.logger.info('Found bass in registry during trigger');
+      }
+    }
+
+    if (!this.isRunning || !this.bass) {
       this.logger.warn(
-        `Cannot trigger bass: isRunning=${this.isRunning}, bass=${hasBass}`,
+        `Cannot trigger bass: isRunning=${this.isRunning}, bass available=${!!this.bass}`,
       );
       return;
     }
 
     try {
-      if (useModularInstruments && this.bass) {
-        // Use modular BassInstrument
-        const event: InstrumentEvent = {
+      // Check if bass has appropriate method
+      if (typeof this.bass.trigger === 'function') {
+        this.bass.trigger({
           audioTime: data.audioTime,
           timestamp: data.timestamp,
           velocity: data.velocity || 0.8,
           duration: data.duration || '8n',
           data: {
             note: data.note,
-            technique: data.technique,
+            octave: data.octave,
           },
-        };
-        this.bass.trigger(event);
-      } else if (this.legacyBass) {
-        // Use legacy processor
-        (this.legacyBass as any).triggerNote({
+        });
+      }
+      else if (typeof this.bass.triggerNote === 'function') {
+        this.bass.triggerNote({
           note: data.note,
+          octave: data.octave,
           velocity: data.velocity || 0.8,
           time: data.audioTime,
           duration: data.duration || '8n',
         });
       }
-
-      this.logger.debug(`Triggered bass: ${data.note} at ${data.audioTime}`);
+      else {
+        this.logger.warn('Bass does not have a recognized trigger method');
+      }
     } catch (error) {
       this.logger.error('Error triggering bass:', error);
+    }
+  }
+
+  /**
+   * Handle voice cue trigger event
+   */
+  private async handleVoiceCueTrigger(data: any): Promise<void> {
+    this.logger.info(
+      `🗣️ Voice cue trigger: cue=${data.cue}, time=${data.audioTime?.toFixed(3)}`,
+    );
+
+    // Check registry for voice cue if we don't have it yet
+    if (!this.voiceCue && this.instrumentRegistry) {
+      if (this.instrumentRegistry.hasActive('voice-cue')) {
+        this.voiceCue = this.instrumentRegistry.getActive('voice-cue');
+        this.legacyVoiceCue = this.voiceCue;
+        this.activeInstruments.add('voice-cue');
+        this.logger.info('Found voice cue in registry during trigger');
+      }
+    }
+
+    // Try PreloadableInstrumentRegistry if not found
+    if (!this.voiceCue) {
+      const preloadableRegistry = getPreloadableRegistry();
+      if (preloadableRegistry.hasConfig('voice-cue')) {
+        try {
+          const voiceCueInstrument = await preloadableRegistry.getOrCreateByType('voice-cue');
+          if (voiceCueInstrument) {
+            this.voiceCue = voiceCueInstrument;
+            this.legacyVoiceCue = voiceCueInstrument;
+            this.activeInstruments.add('voice-cue');
+            this.logger.info('✅ Got voice cue from preloadable registry');
+
+            // Also register in InstrumentRegistry for other components
+            if (this.instrumentRegistry && !this.instrumentRegistry.hasActive('voice-cue')) {
+              this.instrumentRegistry.setActive('voice-cue', voiceCueInstrument);
+            }
+          }
+        } catch (error) {
+          this.logger.error('Failed to get voice cue from preloadable registry:', error);
+        }
+      }
+    }
+
+    AudioDebugger.getInstance().log('AudioEventRouter', 'voice-cue-trigger-received', {
+      isRunning: this.isRunning,
+      hasVoiceCue: !!this.voiceCue,
+      cue: data.cue
+    });
+
+    if (!this.isRunning || !this.voiceCue) {
+      this.logger.warn(
+        `Cannot trigger voice cue: isRunning=${this.isRunning}, voiceCue available=${!!this.voiceCue}`,
+      );
+      AudioDebugger.getInstance().log('AudioEventRouter', 'voice-cue-trigger-blocked', {
+        isRunning: this.isRunning,
+        hasVoiceCue: !!this.voiceCue
+      });
+      return;
+    }
+
+    try {
+      // Check if voice cue has appropriate method
+      if (typeof this.voiceCue.trigger === 'function') {
+        AudioDebugger.getInstance().log('AudioEventRouter', 'calling-voice-cue-trigger');
+        this.voiceCue.trigger({
+          cue: data.cue,
+          time: data.audioTime,
+          velocity: data.velocity || 1.0,
+        });
+      } else {
+        this.logger.warn('VoiceCue does not have a recognized trigger method');
+      }
+    } catch (error) {
+      this.logger.error('Error triggering voice cue:', error);
     }
   }
 
@@ -810,86 +749,135 @@ export class AudioEventRouter implements Service {
    * Handle MIDI event
    */
   private handleMidiEvent(data: MidiEvent): void {
-    if (!this.isRunning) return;
+    this.logger.debug(`🎹 MIDI event: type=${data.type}, note=${data.note}`);
 
-    const { event, audioTime } = data;
+    if (!this.isRunning) {
+      this.logger.warn('Cannot handle MIDI event: router not running');
+      return;
+    }
 
-    this.logger.debug(
-      `🎹 AudioEventRouter received MIDI event: type=${event.type}, note=${event.note}, time=${audioTime?.toFixed(3)}`,
-    );
+    // Route MIDI to appropriate instrument based on channel or other logic
+    // This is a placeholder for MIDI routing logic
+    this.logger.debug('MIDI routing not yet implemented');
+  }
 
-    // Route MIDI events to appropriate instruments based on note range or channel
-    if (event.type === 'noteOn' && event.note !== undefined) {
-      const noteNumber = event.note;
+  /**
+   * Start the router
+   */
+  async start(): Promise<void> {
+    if (this.isRunning) {
+      this.logger.warn('AudioEventRouter already running');
+      return;
+    }
 
-      // Route by note range (simple example)
-      if (noteNumber >= 36 && noteNumber <= 51) {
-        // Bass range (C2 to D#3)
-        this.handleBassTrigger({
-          note: this.midiNoteToNoteName(noteNumber),
-          velocity: (event.velocity || 127) / 127,
-          audioTime,
-          timestamp: data.timestamp,
-          duration: event.duration || '8n',
-        });
-      } else if (noteNumber >= 60 && noteNumber <= 84) {
-        // Chord range (C4 to C6)
-        // For now, trigger single notes as chords
-        this.handleChordTrigger({
-          chord: this.midiNoteToNoteName(noteNumber),
-          notes: [this.midiNoteToNoteName(noteNumber)],
-          velocity: (event.velocity || 127) / 127,
-          audioTime,
-          timestamp: data.timestamp,
-          duration: event.duration || '4n',
-        });
+    // Try to get InstrumentRegistry if we don't have it yet
+    if (!this.instrumentRegistry) {
+      try {
+        const globalServices = (window as any).__coreServices || (window as any).__globalCoreServices;
+        if (globalServices?.getInstrumentRegistry) {
+          this.instrumentRegistry = globalServices.getInstrumentRegistry();
+          this.logger.info('Got InstrumentRegistry from CoreServices on start');
+        }
+      } catch (error) {
+        this.logger.warn('Could not get InstrumentRegistry on start:', error);
       }
-      // Add more routing logic as needed
     }
+
+    // Check registry again for any instruments registered before start
+    this.checkRegisteredInstruments();
+
+    this.isRunning = true;
+    this.logger.info('AudioEventRouter started');
+    AudioDebugger.getInstance().log('AudioEventRouter', 'started', {
+      hasMetronome: !!this.metronome,
+      hasDrums: !!this.drums,
+      hasBass: !!this.bass,
+      hasHarmony: !!this.harmony,
+      hasInstrumentRegistry: !!this.instrumentRegistry
+    });
   }
 
   /**
-   * Convert MIDI note number to note name
+   * Stop the router
    */
-  private midiNoteToNoteName(noteNumber: number): string {
-    const noteNames = [
-      'C',
-      'C#',
-      'D',
-      'D#',
-      'E',
-      'F',
-      'F#',
-      'G',
-      'G#',
-      'A',
-      'A#',
-      'B',
+  async stop(): Promise<void> {
+    if (!this.isRunning) {
+      this.logger.warn('AudioEventRouter not running');
+      return;
+    }
+
+    this.isRunning = false;
+
+    // CRITICAL FIX: Stop all active WAM plugin audio sources immediately
+    // Call deactivate() on each instrument to stop playing audio
+    const instrumentsToStop = [
+      { name: 'drums', ref: this.drums },
+      { name: 'bass', ref: this.bass },
+      { name: 'harmony', ref: this.harmony },
+      { name: 'metronome', ref: this.metronome },
+      { name: 'legacyDrums', ref: this.legacyDrums },
+      { name: 'legacyBass', ref: this.legacyBass },
+      { name: 'legacyHarmony', ref: this.legacyHarmony },
+      { name: 'legacyMetronome', ref: this.legacyMetronome },
     ];
-    const octave = Math.floor(noteNumber / 12) - 1;
-    const noteName = noteNames[noteNumber % 12];
-    return `${noteName}${octave}`;
-  }
 
-  /**
-   * Get active instruments
-   */
-  getActiveInstruments(): string[] {
-    return Array.from(this.activeInstruments);
-  }
-
-  /**
-   * Enable/disable specific instruments
-   */
-  setInstrumentEnabled(instrument: string, enabled: boolean): void {
-    if (enabled) {
-      this.activeInstruments.add(instrument);
-    } else {
-      this.activeInstruments.delete(instrument);
+    for (const { name, ref } of instrumentsToStop) {
+      if (ref && typeof ref.deactivate === 'function') {
+        try {
+          await ref.deactivate();
+          this.logger.info(`Deactivated ${name} instrument`);
+        } catch (error) {
+          this.logger.error(`Failed to deactivate ${name}:`, error);
+        }
+      }
     }
 
-    this.logger.info(
-      `Instrument ${instrument} ${enabled ? 'enabled' : 'disabled'}`,
-    );
+    this.logger.info('AudioEventRouter stopped - all instruments deactivated');
+  }
+
+  /**
+   * Clean up resources
+   */
+  async dispose(): Promise<void> {
+    this.logger.info('Disposing AudioEventRouter');
+
+    await this.stop();
+    this.unsubscribeFromEvents();
+
+    // Clear references
+    this.drums = null;
+    this.bass = null;
+    this.harmony = null;
+    this.metronome = null;
+    this.legacyDrums = null;
+    this.legacyBass = null;
+    this.legacyHarmony = null;
+    this.legacyMetronome = null;
+
+    this.activeInstruments.clear();
+    this.eventBus = null;
+    this.audioEngine = null;
+    this.instrumentRegistry = null;
+
+    this.logger.info('AudioEventRouter disposed');
+  }
+
+  /**
+   * Get status information
+   */
+  getStatus(): {
+    isRunning: boolean;
+    activeInstruments: string[];
+    hasEventBus: boolean;
+    hasAudioEngine: boolean;
+    hasInstrumentRegistry: boolean;
+  } {
+    return {
+      isRunning: this.isRunning,
+      activeInstruments: Array.from(this.activeInstruments),
+      hasEventBus: !!this.eventBus,
+      hasAudioEngine: !!this.audioEngine,
+      hasInstrumentRegistry: !!this.instrumentRegistry,
+    };
   }
 }

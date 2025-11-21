@@ -586,7 +586,7 @@ export class Bus {
 
   // Factory methods for DI support
   private createGain(gain?: number): any {
-    return this.audioEngine?.createGain?.(gain) || new Tone.Gain(gain);
+    return this.audioEngine?.createGain?.(gain) || new Tone.Gain({ gain });
   }
 
   private createMeter(options?: any): any {

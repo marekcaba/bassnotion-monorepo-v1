@@ -26,20 +26,28 @@ let Tone: any = null;
 // Configuration file path
 const CONFIG_PATH = 'instruments/piano/nice-keys-rhodes.json';
 
-// Helper to ensure Tone.js is loaded from global instance
+// FAANG-STYLE: Helper to ensure Tone.js is loaded independently
 async function ensureToneLoaded(
   preferredContext?: AudioContext,
   audioEngine?: any,
 ): Promise<void> {
-  const persistentContext = getPersistentAudioContext();
-  const contextToUse = preferredContext || persistentContext || undefined;
+  // Use InstrumentDependencyManager for independent loading
+  const { InstrumentDependencyManager } = await import('@/domains/playback/services/InstrumentDependencyManager.js');
 
-  if (!Tone || preferredContext || persistentContext) {
-    Tone = await loadGlobalTone(contextToUse, audioEngine);
-    if (!Tone || !Tone.context) {
-      logger.error('🎵 Failed to load global Tone.js instance');
-    } else {
+  if (!Tone || preferredContext) {
+    try {
+      logger.info('🎵 Rhodes: Loading Tone.js independently...');
+      Tone = await InstrumentDependencyManager.getTone();
+      logger.info('🎵 Rhodes: Tone.js loaded successfully');
+
+      if (!Tone || !Tone.context) {
+        throw new Error('Tone.js loaded but has no context');
+      }
+
       ensureToneUsesPersistentContext();
+    } catch (error) {
+      logger.error('🎵 Rhodes: Failed to load Tone.js', { error });
+      throw new Error(`Failed to load Tone.js for Rhodes: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }
@@ -133,9 +141,7 @@ export class RhodesVelocitySampler {
         this.audioEngine,
       );
 
-      if (!Tone || typeof Tone === 'undefined') {
-        throw new Error('Tone.js is not loaded');
-      }
+      // Tone.js validation removed - ensureToneLoaded() already handles loading and throws on failure
 
       this.audioContext =
         this.preferredContext ||
@@ -157,7 +163,14 @@ export class RhodesVelocitySampler {
 
       // Create destination node
       this.destination = new (Tone as any).Gain(1);
-      this.destination.toDestination();
+
+      // CRITICAL FIX: DO NOT connect directly to destination (speakers)!
+      // This was creating a ROGUE AUDIO PATH that bypassed gain control
+      // Audio should only flow through: WamKeyboard.gainNode → Channel/Bus → Destination
+      // Connection happens via connect() method when WamKeyboard initializes
+      // this.destination.toDestination(); // ← REMOVED - was causing dual instrument playback
+
+      logger.debug('🎹 Initializing without direct toDestination (proper routing)');
 
       // Check for InitialSamplePreloader usage
       const cachedBufferLoader = CachedToneBufferLoader.getInstance();
@@ -398,6 +411,14 @@ export class RhodesVelocitySampler {
     time?: any,
     velocity = 80,
   ): Promise<void> {
+    // DIAGNOSTIC: Log every Rhodes note trigger to identify dual playback source
+    console.log('[PLAYBACK-PATH] RhodesVelocitySampler.triggerAttack() called:', {
+      note,
+      velocity,
+      time: time?.toFixed(3) || 'immediate',
+      isInitialized: this.isInitialized
+    });
+
     if (!this.isInitialized || !this.config) return;
 
     const notes = Array.isArray(note) ? note : [note];

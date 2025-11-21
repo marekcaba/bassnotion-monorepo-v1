@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type {
   StringCount,
   SelectedDotsMap,
@@ -26,16 +26,11 @@ export const useFretboardState = (initialConfig?: {
   maxFrets?: number;
   tiltAngle?: number;
 }) => {
-  // Basic fretboard configuration - use provided values or defaults
-  const [stringCount, setStringCount] = useState<StringCount>(
-    initialConfig?.stringCount || 4,
-  );
-  const [tiltAngle, setTiltAngle] = useState<number>(
-    initialConfig?.tiltAngle || 35,
-  );
-  const [maxFrets, setMaxFrets] = useState<number>(
-    initialConfig?.maxFrets || 25,
-  );
+  // SINGLE SOURCE OF TRUTH: Use parent config values directly
+  // Parent is responsible for managing these values (from profile settings)
+  const stringCount = initialConfig?.stringCount || 4;
+  const tiltAngle = initialConfig?.tiltAngle || 35;
+  const maxFrets = initialConfig?.maxFrets || 25;
 
   // Selected dots state - stores position keys with order numbers
   // PERFORMANCE FIX: Combine selectedDots and selectionOrder into single state to avoid double renders
@@ -53,38 +48,9 @@ export const useFretboardState = (initialConfig?: {
     null,
   );
 
-  // Update state when initial config changes (from user profile)
-  // Use useMemo to stabilize the config values and avoid infinite loops
-  const stableStringCount = useMemo(
-    () => initialConfig?.stringCount,
-    [initialConfig?.stringCount],
-  );
-  const stableMaxFrets = useMemo(
-    () => initialConfig?.maxFrets,
-    [initialConfig?.maxFrets],
-  );
-  const stableTiltAngle = useMemo(
-    () => initialConfig?.tiltAngle,
-    [initialConfig?.tiltAngle],
-  );
-
-  useEffect(() => {
-    if (stableStringCount !== undefined) {
-      setStringCount(stableStringCount);
-    }
-  }, [stableStringCount]);
-
-  useEffect(() => {
-    if (stableMaxFrets !== undefined) {
-      setMaxFrets(stableMaxFrets);
-    }
-  }, [stableMaxFrets]);
-
-  useEffect(() => {
-    if (stableTiltAngle !== undefined) {
-      setTiltAngle(stableTiltAngle);
-    }
-  }, [stableTiltAngle]);
+  // REMOVED: Automatic syncing from parent config
+  // Parent config is the SINGLE SOURCE OF TRUTH - we just use initialConfig directly
+  // No useEffect needed - React will re-render with new initialConfig values
 
   // Generate frets array based on maxFrets setting
   const frets = useMemo(
@@ -151,38 +117,9 @@ export const useFretboardState = (initialConfig?: {
     [],
   );
 
-  // String count handlers with validation
-  const handleStringCountChange = useCallback(
-    (newStringCount: StringCount) => {
-      // Check if there are dots on strings that would be hidden
-      if (
-        hasDotsOnHiddenStrings(
-          stringCount,
-          newStringCount,
-          dotsState.selectedDots,
-        )
-      ) {
-        // Don't allow the change - the UI should handle showing an error message
-        return false;
-      }
-
-      // Simply update the string count - dots should already use consistent indices
-      // The rendering system handles showing/hiding strings based on string count
-      setStringCount(newStringCount);
-      return true;
-    },
-    [stringCount, dotsState.selectedDots, hasDotsOnHiddenStrings],
-  );
-
-  // Tilt angle handlers
-  const handleTiltAngleChange = useCallback((newTiltAngle: number) => {
-    setTiltAngle(newTiltAngle);
-  }, []);
-
-  // Max frets handlers
-  const handleMaxFretsChange = useCallback((newMaxFrets: number) => {
-    setMaxFrets(newMaxFrets);
-  }, []);
+  // REMOVED: Local state change handlers
+  // Config changes (stringCount, tiltAngle, maxFrets) are handled by PARENT only
+  // This component just receives and displays the config from parent (profile settings)
 
   // Selected dots handlers
   const handleDotClick = useCallback(
@@ -398,15 +335,8 @@ export const useFretboardState = (initialConfig?: {
     frets,
     fretboardState,
 
-    // String count handlers
-    handleStringCountChange,
+    // String count validation (for parent to use before changing)
     hasDotsOnHiddenStrings,
-
-    // Tilt angle handlers
-    handleTiltAngleChange,
-
-    // Max frets handlers
-    handleMaxFretsChange,
 
     // Selected dots handlers
     handleDotClick,

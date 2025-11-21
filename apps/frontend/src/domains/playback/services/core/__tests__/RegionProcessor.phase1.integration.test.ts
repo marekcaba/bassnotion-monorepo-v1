@@ -38,30 +38,13 @@ vi.mock('@/domains/playback/modules/storage/cache/GlobalSampleCache.js', () => (
 describe('RegionProcessor - Phase 1 Integration', () => {
   let regionProcessor: RegionProcessor;
   let eventBus: EventBus;
-  let mockAudioContext: AudioContext;
   let mockDestination: AudioNode;
 
   beforeEach(() => {
     eventBus = new EventBus();
     regionProcessor = new RegionProcessor(eventBus);
 
-    // Mock AudioContext and destination
-    mockAudioContext = {
-      createGain: vi.fn().mockReturnValue({
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-        gain: { value: 1 },
-      }),
-      createBufferSource: vi.fn().mockReturnValue({
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-        start: vi.fn(),
-        stop: vi.fn(),
-      }),
-      currentTime: 0,
-      sampleRate: 48000,
-    } as any;
-
+    // Mock destination node
     mockDestination = {
       connect: vi.fn(),
       disconnect: vi.fn(),

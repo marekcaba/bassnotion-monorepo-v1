@@ -3,10 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchTutorialExercises, TutorialsApiError } from '../api/tutorials';
 import type { Tutorial } from '@bassnotion/contracts';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { createStructuredLogger } from '@bassnotion/contracts';
+import { Exercise } from '@/domains/exercises/entities/exercise.entity';
+
+const logger = createStructuredLogger('useTutorialExercises');
 
 interface UseTutorialExercisesResult {
   tutorial: Tutorial | null;
-  exercises: any[]; // Using any[] to match backend service type
+  exercises: Exercise[]; // Return Exercise entities, not raw DTOs
   isLoading: boolean;
   error: Error | null;
   isError: boolean;
@@ -66,10 +70,11 @@ export function useTutorialExercises(
   });
 
   // Memoize the return object to prevent unnecessary re-renders
+  // Convert raw DTOs to Exercise entities
   return React.useMemo(
     () => ({
       tutorial: data?.tutorial || null,
-      exercises: data?.exercises || [],
+      exercises: data?.exercises ? data.exercises.map((dto: any) => Exercise.fromDTO(dto)) : [],
       isLoading,
       error,
       isError,

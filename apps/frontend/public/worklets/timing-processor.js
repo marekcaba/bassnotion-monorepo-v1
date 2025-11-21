@@ -72,10 +72,7 @@ class TimingProcessor extends AudioWorkletProcessor {
     if (this.isPlaying) {
       this.totalFrames += 128;
       
-      // Debug log totalFrames increments only for first few increments
-      if (this.totalFrames <= 1024) { // First 8 updates = 1024 frames
-        console.log(`TimingProcessor[${this.processorId}] INCREMENTED totalFrames to ${this.totalFrames} (${(this.totalFrames / sampleRate).toFixed(6)}s)`);
-      }
+      // Removed verbose frame increment logging - only log on errors
     }
     
     // Track samples for updates
@@ -93,8 +90,8 @@ class TimingProcessor extends AudioWorkletProcessor {
         // IMPORTANT: Send playback time (totalFrames), not AudioContext time
         const playbackTime = playbackFrames / sampleRate;
         
-        // Debug timing calculation for first 20 updates
-        if (this.updateCount < 20) {
+        // Reduced verbose logging - only log first 2 updates for verification
+        if (this.updateCount < 2) {
           console.log(`TimingProcessor[${this.processorId}] TIMING UPDATE ${this.updateCount + 1}: playbackFrames=${playbackFrames}, totalFrames=${this.totalFrames}, contextTime=${contextTime.toFixed(6)}, playbackTime=${playbackTime.toFixed(6)}`);
         }
         
@@ -143,7 +140,10 @@ class TimingProcessor extends AudioWorkletProcessor {
    * Handle messages from main thread
    */
   handleMessage(event) {
-    console.log(`TimingProcessor[${this.processorId}] received message:`, event.data);
+    // Reduced verbose logging - only log start/stop messages
+    if (event.data.type === 'start' || event.data.type === 'stop') {
+      console.log(`TimingProcessor[${this.processorId}] received message:`, event.data);
+    }
     
     switch (event.data.type) {
       case 'start':

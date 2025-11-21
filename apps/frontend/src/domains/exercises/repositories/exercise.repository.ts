@@ -1,8 +1,8 @@
 import { apiClient } from '@/lib/api-client';
 import { Result } from '@/shared/types/result';
 import { Exercise } from '../entities/exercise.entity';
-import { ExerciseId } from '../value-objects/exercise-id';
-import { Difficulty } from '../value-objects/difficulty';
+import { ExerciseId } from '../value-objects/exercise-id.vo';
+import { Difficulty } from '../value-objects/difficulty.vo';
 import {
   IExerciseRepository,
   PaginatedResult,
@@ -16,7 +16,8 @@ export class ExerciseRepository implements IExerciseRepository {
   async findById(id: ExerciseId): Promise<Result<Exercise>> {
     try {
       const response = await apiClient.get(`${this.baseUrl}/${id.value}`);
-      const exercise = Exercise.fromDTO(response.data);
+      // Backend wraps response in { exercise: {...} }, so unwrap it
+      const exercise = Exercise.fromDTO(response.exercise);
       return Result.ok(exercise);
     } catch (error: any) {
       return Result.fail(error.message || 'Failed to fetch exercise');
@@ -36,7 +37,7 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.get(
         `${this.baseUrl}?${params.toString()}`,
       );
-      const { items, total, page, limit } = response.data;
+      const { items, total, page, limit } = response;
 
       const exercises = items.map((dto: any) => Exercise.fromDTO(dto));
       const totalPages = Math.ceil(total / limit);
@@ -60,7 +61,7 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.get(
         `${this.baseUrl}/difficulty/${difficulty.value}`,
       );
-      const exercises = response.data.map((dto: any) => Exercise.fromDTO(dto));
+      const exercises = response.map((dto: any) => Exercise.fromDTO(dto));
       return Result.ok(exercises);
     } catch (error: any) {
       return Result.fail(
@@ -74,7 +75,7 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.get(
         `${this.baseUrl}/tag/${encodeURIComponent(tag)}`,
       );
-      const exercises = response.data.map((dto: any) => Exercise.fromDTO(dto));
+      const exercises = response.map((dto: any) => Exercise.fromDTO(dto));
       return Result.ok(exercises);
     } catch (error: any) {
       return Result.fail(error.message || 'Failed to fetch exercises by tag');
@@ -106,7 +107,7 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.get(
         `${this.baseUrl}/search?${params.toString()}`,
       );
-      const exercises = response.data.map((dto: any) => Exercise.fromDTO(dto));
+      const exercises = response.map((dto: any) => Exercise.fromDTO(dto));
       return Result.ok(exercises);
     } catch (error: any) {
       return Result.fail(error.message || 'Failed to search exercises');
@@ -118,7 +119,7 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.post(`${this.baseUrl}/batch`, {
         ids: ids.map((id) => id.value),
       });
-      const exercises = response.data.map((dto: any) => Exercise.fromDTO(dto));
+      const exercises = response.map((dto: any) => Exercise.fromDTO(dto));
       return Result.ok(exercises);
     } catch (error: any) {
       return Result.fail(error.message || 'Failed to fetch exercises by ids');
@@ -128,7 +129,7 @@ export class ExerciseRepository implements IExerciseRepository {
   async findActive(): Promise<Result<Exercise[]>> {
     try {
       const response = await apiClient.get(`${this.baseUrl}/active`);
-      const exercises = response.data.map((dto: any) => Exercise.fromDTO(dto));
+      const exercises = response.map((dto: any) => Exercise.fromDTO(dto));
       return Result.ok(exercises);
     } catch (error: any) {
       return Result.fail(error.message || 'Failed to fetch active exercises');
@@ -137,12 +138,37 @@ export class ExerciseRepository implements IExerciseRepository {
 
   async save(exercise: Exercise): Promise<Result<Exercise>> {
     try {
-      const response = await apiClient.post(this.baseUrl, exercise.toDTO());
-      const savedExercise = Exercise.fromDTO(response.data);
+      const dto = exercise.toDTO();
+      const response = await apiClient.post(this.baseUrl, dto);
+      // API client returns the data directly, not wrapped in { data: ... }
+      const savedExercise = Exercise.fromDTO(response);
       return Result.ok(savedExercise);
     } catch (error: any) {
       return Result.fail(error.message || 'Failed to save exercise');
     }
+  }
+
+  // Alias for save method to match common naming conventions
+  async create(exercise: Exercise): Promise<Result<Exercise>> {
+    return this.save(exercise);
+  }
+
+  // Find exercises by tutorial ID
+  async findByTutorialId(tutorialId: string): Promise<Result<Exercise[]>> {
+    try {
+      const response = await apiClient.get(
+        `${this.baseUrl}/tutorial/${tutorialId}`,
+      );
+      const exercises = response.map((dto: any) => Exercise.fromDTO(dto));
+      return Result.ok(exercises);
+    } catch (error: any) {
+      return Result.fail(error.message || 'Failed to fetch exercises by tutorial ID');
+    }
+  }
+
+  // Delete exercise by string ID (for convenience)
+  async deleteById(id: string): Promise<Result<void>> {
+    return this.delete(ExerciseId.create(id));
   }
 
   async update(exercise: Exercise): Promise<Result<Exercise>> {
@@ -151,7 +177,7 @@ export class ExerciseRepository implements IExerciseRepository {
         `${this.baseUrl}/${exercise.id.value}`,
         exercise.toDTO(),
       );
-      const updatedExercise = Exercise.fromDTO(response.data);
+      const updatedExercise = Exercise.fromDTO(response);
       return Result.ok(updatedExercise);
     } catch (error: any) {
       return Result.fail(error.message || 'Failed to update exercise');
@@ -172,7 +198,7 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.post(`${this.baseUrl}/batch/create`, {
         exercises: exercises.map((e) => e.toDTO()),
       });
-      const savedExercises = response.data.map((dto: any) =>
+      const savedExercises = response.map((dto: any) =>
         Exercise.fromDTO(dto),
       );
       return Result.ok(savedExercises);
@@ -207,7 +233,7 @@ export class ExerciseRepository implements IExerciseRepository {
   async count(): Promise<Result<number>> {
     try {
       const response = await apiClient.get(`${this.baseUrl}/count`);
-      return Result.ok(response.data.count);
+      return Result.ok(response.count);
     } catch (error: any) {
       return Result.fail(error.message || 'Failed to count exercises');
     }
@@ -218,7 +244,7 @@ export class ExerciseRepository implements IExerciseRepository {
       const response = await apiClient.get(
         `${this.baseUrl}/count/difficulty/${difficulty.value}`,
       );
-      return Result.ok(response.data.count);
+      return Result.ok(response.count);
     } catch (error: any) {
       return Result.fail(
         error.message || 'Failed to count exercises by difficulty',

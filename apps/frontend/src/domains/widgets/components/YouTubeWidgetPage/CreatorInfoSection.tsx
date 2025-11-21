@@ -26,11 +26,28 @@ export function CreatorInfoSection({ tutorialData }: CreatorInfoSectionProps) {
       }
     : defaultCreator;
 
-  // Fetch live YouTube subscriber data from cached backend
-  const { subscriberCount, isLoading } = useYouTubeChannelData(
-    creator.channelUrl,
+  // Use subscriber count from tutorial data if available, otherwise fetch from API
+  const hasSubscriberCount = tutorialData?.creator_subscriber_count && tutorialData.creator_subscriber_count > 0;
+
+  // Only fetch from API if we don't have subscriber count in tutorial data
+  const { subscriberCount: apiSubscriberCount, isLoading } = useYouTubeChannelData(
+    hasSubscriberCount ? undefined : creator.channelUrl,
     creator.name,
   );
+
+  // Format subscriber count
+  const formatSubscriberCount = (count: number): string => {
+    if (count >= 1000000) {
+      return `${(count / 1000000).toFixed(1)}M subscribers`;
+    } else if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}K subscribers`;
+    }
+    return `${count} subscribers`;
+  };
+
+  const subscriberCount = hasSubscriberCount
+    ? formatSubscriberCount(tutorialData.creator_subscriber_count!)
+    : apiSubscriberCount;
 
   // Don't render if no creator data
   if (!creator || !creator.name) {
@@ -84,13 +101,13 @@ export function CreatorInfoSection({ tutorialData }: CreatorInfoSectionProps) {
               <Check className="w-3 h-3 text-white" />
             </div> */}
           </div>
-          {/* Subscriber Count - Live YouTube API integration */}
+          {/* Subscriber Count - From tutorial data or YouTube API */}
           <p className="text-slate-400 text-xs">
-            {isLoading
-              ? 'Loading...'
-              : subscriberCount === 'Subscribe'
-                ? 'Subscribe to see subscriber count'
-                : subscriberCount}
+            {hasSubscriberCount
+              ? subscriberCount
+              : isLoading
+                ? 'Loading...'
+                : subscriberCount || 'Subscribe'}
           </p>
         </div>
 

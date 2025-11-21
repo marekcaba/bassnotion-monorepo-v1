@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, forwardRef, Inject, OnModuleInit } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject, OnModuleInit } from '@nestjs/common';
 import { AuthError as SupabaseAuthError } from '@supabase/supabase-js';
 
 import type { User } from '@bassnotion/contracts';
@@ -22,11 +22,8 @@ export class AuthService implements OnModuleInit {
   private readonly staticLogger = createStructuredLogger(AuthService.name);
 
   constructor(
-    @Inject(forwardRef(() => DatabaseService))
     private readonly db: DatabaseService,
-    @Inject(forwardRef(() => AuthSecurityService))
     private readonly authSecurityService: AuthSecurityService,
-    @Inject(forwardRef(() => PasswordSecurityService))
     private readonly passwordSecurityService: PasswordSecurityService,
     @Inject(RequestContextService)
     private readonly requestContext: RequestContextService,
@@ -242,14 +239,31 @@ export class AuthService implements OnModuleInit {
 
     try {
       // Check if database connection is available
-      if (!this.db.supabase) {
-        logger.error('Database connection is not available', new Error('Database unavailable'), { correlationId });
+      if (!this.db) {
+        logger.error('Database service is not injected', new Error('Database service missing'), { correlationId });
         return {
           success: false,
           message: 'An unexpected error occurred',
           error: {
             code: 'DATABASE_UNAVAILABLE',
             details: 'An unexpected error occurred' } };
+      }
+
+      if (!this.db.supabase) {
+        logger.error('Supabase client is not initialized', new Error('Supabase unavailable'), { correlationId });
+        // Try to initialize it
+        await this.db.initializeSupabaseClient();
+
+        // Check again
+        if (!this.db.supabase) {
+          logger.error('Failed to initialize Supabase client after retry', new Error('Supabase initialization failed'), { correlationId });
+          return {
+            success: false,
+            message: 'An unexpected error occurred',
+            error: {
+              code: 'DATABASE_UNAVAILABLE',
+              details: 'An unexpected error occurred' } };
+        }
       }
 
       // Check rate limiting and account lockout BEFORE attempting authentication
@@ -454,14 +468,52 @@ export class AuthService implements OnModuleInit {
   }
 
   async validateToken(token: string): Promise<User> {
+    // Create logger directly to avoid initialization issues
+    const logger = createStructuredLogger('AuthService.validateToken');
+
+    logger.debug('Validating token', {
+      tokenLength: token?.length,
+      tokenPrefix: token?.substring(0, 20),
+      hasDb: !!this.db,
+      hasSupabase: !!this.db?.supabase,
+      supabaseAuth: !!this.db?.supabase?.auth
+    });
+
+    // Check if database service is available
+    if (!this.db) {
+      logger.error('Database service not injected in validateToken');
+      throw new UnauthorizedException('Service temporarily unavailable');
+    }
+
+    // Check if supabase client is initialized
+    if (!this.db.supabase || !this.db.supabase.auth) {
+      logger.error('Supabase client not initialized');
+      // Try to initialize it
+      await this.db.initializeSupabaseClient();
+
+      // Check again
+      if (!this.db.supabase || !this.db.supabase.auth) {
+        logger.error('Failed to initialize Supabase client');
+        throw new UnauthorizedException('Service temporarily unavailable');
+      }
+    }
+
     try {
       const {
         data: { user },
         error } = await this.db.supabase.auth.getUser(token);
 
-      if (error || !user) {
-        throw new UnauthorizedException('Invalid token');
+      if (error) {
+        logger.error('Supabase auth.getUser error:', error);
+        throw new UnauthorizedException(`Token validation failed: ${error.message}`);
       }
+
+      if (!user) {
+        logger.error('No user returned from Supabase');
+        throw new UnauthorizedException('Invalid token - no user');
+      }
+
+      logger.debug('User found from token', { userId: user.id, email: user.email });
 
       const { data: profile, error: profileError } = await this.db.supabase
         .from('profiles')
@@ -469,9 +521,17 @@ export class AuthService implements OnModuleInit {
         .eq('id', user.id)
         .single();
 
-      if (profileError || !profile) {
+      if (profileError) {
+        logger.error('Profile fetch error:', profileError);
+        throw new UnauthorizedException(`Profile not found: ${profileError.message}`);
+      }
+
+      if (!profile) {
+        logger.error('No profile data returned');
         throw new UnauthorizedException('User profile not found');
       }
+
+      logger.debug('Profile found', { profileId: profile.id });
 
       return {
         id: profile.id,
@@ -479,7 +539,11 @@ export class AuthService implements OnModuleInit {
         displayName: profile.display_name,
         createdAt: profile.created_at,
         updatedAt: profile.updated_at };
-    } catch {
+    } catch (error) {
+      logger.error('Token validation error:', error as Error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       throw new UnauthorizedException('Invalid token');
     }
   }

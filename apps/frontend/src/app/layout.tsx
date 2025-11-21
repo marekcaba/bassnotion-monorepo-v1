@@ -18,7 +18,7 @@ const logger = getLogger('app');
 // Story 3.18.3: Replaced initializeAudio import with AudioProvider component
 // The AudioProvider handles all audio initialization with clean dependency injection
 
-import { inter, metadata } from './layout.constants';
+import { inter, courierPrime, metadata } from './layout.constants';
 
 export const generateMetadata = () => metadata;
 
@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} ${courierPrime.variable}`}>
         <ErrorBoundary>
           <AudioProvider>
             {/* Phase 1: PreloadInitializer removed - samples will load on user interaction */}

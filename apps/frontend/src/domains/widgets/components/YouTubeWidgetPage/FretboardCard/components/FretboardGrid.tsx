@@ -19,8 +19,6 @@ import {
   isDotSelected,
   getDotOrder,
   findAllConnections,
-  doesConnectionCrossAnyDot,
-  getSelectedPositionsByOrder,
 } from '../utils/connectionDetection';
 import { getDotPosition } from '../utils/fretboardGeometry';
 import { HorizontalLines } from './GridLines/HorizontalLines';
@@ -581,20 +579,8 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
               }}
             >
               {(() => {
-                // Get sorted positions once for all connections
-                const sortedPositions =
-                  getSelectedPositionsByOrder(selectedDots);
                 const connections = findAllConnections(selectedDots);
-
-                // Track drawn connections to detect overlaps
-                const drawnConnections: Array<{
-                  x1: number;
-                  y1: number;
-                  x2: number;
-                  y2: number;
-                }> = [];
                 const connectionElements: React.ReactElement[] = [];
-                let overlapCount = 0; // Track number of overlaps for alternating colors
 
                 connections.forEach(({ pos1, pos2 }, index) => {
                   // pos1.stringIndex and pos2.stringIndex are logical indices in the full 6-string config
@@ -624,72 +610,8 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
                   const lineX2 = x2 + DOT_RADIUS;
                   const lineY2 = y2 + DOT_RADIUS;
 
-                  // Check if this line overlaps with any previously drawn connection
-                  let offset = 0;
-                  let isOverlapping = false;
-                  let offsetDirection = 1; // 1 for positive offset, -1 for negative
-
-                  for (const drawn of drawnConnections) {
-                    // Check if lines overlap (same path or partial overlap)
-                    const isHorizontalOverlap =
-                      lineY1 === lineY2 &&
-                      drawn.y1 === drawn.y2 &&
-                      lineY1 === drawn.y1 &&
-                      ((lineX1 <= drawn.x1 && lineX2 >= drawn.x1) ||
-                        (lineX1 <= drawn.x2 && lineX2 >= drawn.x2) ||
-                        (drawn.x1 <= lineX1 && drawn.x2 >= lineX1) ||
-                        (drawn.x1 <= lineX2 && drawn.x2 >= lineX2));
-
-                    const isVerticalOverlap =
-                      lineX1 === lineX2 &&
-                      drawn.x1 === drawn.x2 &&
-                      lineX1 === drawn.x1 &&
-                      ((lineY1 <= drawn.y1 && lineY2 >= drawn.y1) ||
-                        (lineY1 <= drawn.y2 && lineY2 >= drawn.y2) ||
-                        (drawn.y1 <= lineY1 && drawn.y2 >= lineY1) ||
-                        (drawn.y1 <= lineY2 && drawn.y2 >= lineY2));
-
-                    if (isHorizontalOverlap || isVerticalOverlap) {
-                      isOverlapping = true;
-                      offset = 4; // Offset by 4 pixels for visibility
-                      // Alternate offset direction: first overlap up (+), second overlap down (-)
-                      offsetDirection = overlapCount % 2 === 0 ? 1 : -1;
-                      break;
-                    }
-                  }
-
-                  // Determine line color based on whether it crosses any dots and overlap status
-                  let lineColor = '#10b981'; // Default green
-                  if (ENABLE_CROSSING_LINE_COLORS) {
-                    if (isOverlapping) {
-                      // For overlapping lines: first overlap = blue, second = red, then cycle
-                      if (overlapCount === 0) {
-                        lineColor = '#3b82f6'; // First overlap: blue
-                      } else if (overlapCount === 1) {
-                        lineColor = '#ef4444'; // Second overlap: red
-                      } else {
-                        // Third and beyond: alternate between blue and red
-                        lineColor =
-                          overlapCount % 2 === 0 ? '#3b82f6' : '#ef4444';
-                      }
-                      overlapCount++;
-                    } else {
-                      // For non-overlapping lines, use crossing detection
-                      const crossesDot = doesConnectionCrossAnyDot(
-                        pos1,
-                        pos2,
-                        selectedDots,
-                        sortedPositions,
-                      );
-                      lineColor = crossesDot ? '#3b82f6' : '#10b981'; // blue : green
-                    }
-                  }
-
-                  // Apply offset for overlapping lines with direction
-                  const offsetY1 =
-                    lineY1 + (isOverlapping ? offset * offsetDirection : 0);
-                  const offsetY2 =
-                    lineY2 + (isOverlapping ? offset * offsetDirection : 0);
+                  // All lines are green, connecting notes in sequence
+                  const lineColor = '#10b981'; // Green
 
                   // Connection lines should not fade with dots to avoid visual chaos
                   // Only fade lines when the line itself extends into fade zones
@@ -745,23 +667,15 @@ export const FretboardGrid: React.FC<FretboardGridProps> = ({
                     <line
                       key={`connection-${index}`}
                       x1={lineX1}
-                      y1={offsetY1}
+                      y1={lineY1}
                       x2={lineX2}
-                      y2={offsetY2}
+                      y2={lineY2}
                       stroke={lineColor}
                       strokeWidth="3"
                       strokeLinecap="round"
                       opacity={lineFadeOpacity}
                     />,
                   );
-
-                  // Track this connection
-                  drawnConnections.push({
-                    x1: lineX1,
-                    y1: lineY1,
-                    x2: lineX2,
-                    y2: lineY2,
-                  });
                 });
 
                 return connectionElements;

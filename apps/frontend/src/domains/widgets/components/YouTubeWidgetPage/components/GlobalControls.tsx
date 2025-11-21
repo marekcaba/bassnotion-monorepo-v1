@@ -29,11 +29,18 @@ import { Button } from '@/shared/components/ui/button';
 import { useTransport, useTrack } from '@/domains/playback/hooks';
 import { serviceRegistry } from '@/domains/playback/services/core/ServiceRegistry.js';
 import type { CoreServices } from '@/domains/playback/services/core/CoreServices.js';
+import { RegionProcessor } from '@/domains/playback/services/core/RegionProcessor.js';
+import { ExerciseLoader } from '@/domains/playback/modules/exercises/core/ExerciseLoader.js';
 import { getLogger } from '@/utils/logger.js';
 
-// VexFlow imports for sheet music
-import * as VF from 'vexflow';
+// VexFlow imports for sheet music (DEPRECATED - keeping for reference)
+// import * as VF from 'vexflow';
+
+// OpenSheetMusicDisplay - Professional notation rendering
+import { SheetMusicDisplay } from '../../SheetMusic/index.js';
+
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { useCountdown } from '@/domains/widgets/hooks/useCountdown';
 
 const logger = getLogger('global-controls');
 
@@ -89,9 +96,11 @@ const convertNoteDurationToVexFlow = (
 };
 
 const convertNoteToVexFlow = (note: ExerciseNote): string => {
-  // Convert note name to VexFlow format (e.g., "A2" -> "a/2", "A#2" -> "a#/2")
+  // Convert note name to VexFlow format (e.g., "A2" -> "a/3", "A#2" -> "a#/3")
+  // Bass guitar notation: written one octave higher than sounding pitch
   const noteName = note.note;
-  const octave = getOctaveFromNote(noteName);
+  const soundingOctave = getOctaveFromNote(noteName);
+  const writtenOctave = soundingOctave + 1; // Transpose up one octave for notation
 
   // Handle sharps and flats
   let vexFlowNote = noteName.replace(/\d+$/, '').toLowerCase();
@@ -101,13 +110,48 @@ const convertNoteToVexFlow = (note: ExerciseNote): string => {
     vexFlowNote = vexFlowNote.replace('b', 'b');
   }
 
-  return `${vexFlowNote}/${octave}`;
+  return `${vexFlowNote}/${writtenOctave}`;
 };
 
 const getOctaveFromNote = (noteName: string): number => {
   // Extract octave from note name (e.g., "A2" -> 2)
   const match = noteName.match(/\d+/);
   return match ? parseInt(match[0]) : 2;
+};
+
+// Determine stem direction based on staff position (professional engraving standard)
+const getStemDirection = (noteKey: string): number => {
+  // Parse VexFlow note format (e.g., "c/3", "d#/4", "bb/3")
+  const [noteName, octaveStr] = noteKey.split('/');
+  const octave = parseInt(octaveStr);
+
+  // Extract just the note letter (first character), preserving 'b' as B natural
+  // Remove sharp (#) or flat (b/bb) symbols that come AFTER the note letter
+  const note = noteName.charAt(0).toLowerCase();
+
+  // Bass clef middle line is D/3
+  // Standard rule: above or on middle line = stem down, below = stem up
+  const noteValues: { [key: string]: number } = {
+    c: 0,
+    d: 1,
+    e: 2,
+    f: 3,
+    g: 4,
+    a: 5,
+    b: 6,
+  };
+
+  const noteValue = (octave - 3) * 7 + (noteValues[note] || 0);
+  const middleLineValue = 1; // D/3 in bass clef
+
+  const stemDirection = noteValue >= middleLineValue ? -1 : 1;
+
+  // Debug logging
+  console.log(`[STEM] ${noteKey} -> note:${note} octave:${octave} noteValue:${noteValue} middle:${middleLineValue} direction:${stemDirection === -1 ? 'DOWN' : 'UP'}`);
+
+  // Return VexFlow stem direction constants
+  // 1 = stem up, -1 = stem down
+  return stemDirection; // On or above middle = down, below = up
 };
 
 const getDurationInQuarterNotes = (duration: NoteDuration): number => {
@@ -214,6 +258,8 @@ interface GlobalControlsProps {
     endBeat?: number;
   } | null;
   isLoopEnabled?: boolean;
+  // Play state callback - called when transport starts/stops
+  onPlayStateChange?: (isPlaying: boolean) => void;
 }
 
 // Add a render counter for GlobalControls
@@ -231,6 +277,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   onCameraModeChange,
   loopRegion,
   isLoopEnabled = false,
+  onPlayStateChange,
 }) => {
   globalControlsRenderCount++;
 
@@ -328,7 +375,6 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
   // Use transport directly for playback control
   const transport = useTransport();
-
   // Create tracks using hooks
   const metronomeTrack = useTrack({
     trackId: 'metronome',
@@ -342,6 +388,19 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     name: 'Drums',
     type: 'instrument',
     debugMode: false, // Disable debug logging for cleaner console
+  });
+
+  // Countdown hook for metronome countdown before playback
+  const { countdownState, startCountdown, cancelCountdown, resetCountdown } = useCountdown({
+    timeSignature: selectedExercise?.timeSignature || { numerator: 4, denominator: 4 },
+    onCountdownComplete: useCallback(async () => {
+      logger.info('✅ Countdown complete, starting playback');
+      // This will be called after countdown finishes
+      // The actual transport.play() will be handled in the play button handler
+    }, []),
+    onBeatTick: useCallback((beat: number, isAccented: boolean) => {
+      logger.debug(`🎵 Countdown beat ${beat + 1} (accented: ${isAccented})`);
+    }, []),
   });
 
   // Initialize DAW system
@@ -432,6 +491,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   const lastUserTempo = useRef(transport.tempo || 120);
   const lastUserVolume = useRef(1.0); // Set default to 100%
   const ignoreNextSyncTempo = useRef(false);
+
+  // FAANG SOLUTION: Track if user manually modified tempo
+  // "Last explicit user action wins" - user tempo changes take priority over exercise defaults
+  const hasUserModifiedTempo = useRef(false);
+  const currentExerciseId = useRef<string | null>(null);
   // Sheet music state
   const [currentPosition, setCurrentPosition] = useState(2);
   const currentPositionRef = useRef(currentPosition);
@@ -459,14 +523,28 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
   // Get exercise data from imported exercise or selected exercise
   const activeExercise = importedExercise || selectedExercise;
-  const exerciseNotes: ExerciseNote[] = activeExercise?.notes || [];
+
+  // Normalize notes to handle field name variations (duration vs noteDuration)
+  // CRITICAL: Memoize to prevent SheetMusicDisplay from re-rendering on every render
+  const rawNotes = activeExercise?.notes || [];
+  const exerciseNotes: ExerciseNote[] = useMemo(() => {
+    return rawNotes.map((note: any) => ({
+      ...note,
+      // Handle both 'duration' and 'noteDuration' field names
+      duration: note.duration || note.noteDuration || 'quarter',
+    }));
+  }, [rawNotes]);
+
   const exerciseBpm = activeExercise?.bpm || 120;
   const exerciseKey = activeExercise?.key || 'C';
   const exerciseTitle = activeExercise?.title || 'No Exercise Selected';
-  const timeSignature = activeExercise?.timeSignature || {
-    numerator: 4,
-    denominator: 4,
-  };
+  // Memoize timeSignature to prevent SheetMusicDisplay re-renders
+  const timeSignature = useMemo(() => {
+    return activeExercise?.timeSignature || {
+      numerator: 4,
+      denominator: 4,
+    };
+  }, [activeExercise?.timeSignature]);
   const isImported = !!importedExercise;
 
   // Track if exerciseNotes reference is changing
@@ -585,208 +663,378 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   // Prevent multiple simultaneous playback toggles
   const [isTogglingPlayback, setIsTogglingPlayback] = useState(false);
 
+  // Region processor for audio playback
+  const regionProcessorRef = useRef<RegionProcessor | null>(null);
+
   // Global playback control handlers
   const handlePlayButtonClick = async () => {
-    logger.debug('🎵 PLAY BUTTON CLICKED - handlePlayButtonClick called');
+    logger.debug('🎵 PLAY BUTTON CLICKED - simplified handler');
+
+    // CRITICAL: Prevent playback when no exercise is selected
+    if (!selectedExercise) {
+      logger.warn('⚠️ Cannot start playback: No exercise selected');
+      // Show toast notification to user
+      const { toast } = await import('@/shared/hooks/use-toast');
+      toast({
+        title: 'No Exercise Selected',
+        description: 'Please select an exercise from the list above before starting playback.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     logger.debug('🎵 Transport state:', {
       isPlaying: transport.isPlaying,
       isPaused: transport.isPaused,
       isStopped: transport.isStopped,
       position: transport.position,
-      audioInitialized,
-      selectedExercise: selectedExercise?.title,
-      hasMetronomeRegions: metronomeTrack.regions.length,
-      hasDrumRegions: drumTrack.regions.length,
     });
 
-    if (isTogglingPlayback || !systemInitialized) {
-      logger.debug('System not ready or already toggling playback:', {
-        isTogglingPlayback,
-        systemInitialized,
-      });
+    // Log current track regions
+    logger.debug('🎵 Current track regions:', {
+      metronomeRegions: metronomeTrackRef.current?.regions?.length || 0,
+      drumRegions: drumTrackRef.current?.regions?.length || 0,
+      drumEnabled: selectedExercise?.drum_pattern?.enabled,
+      exerciseId: selectedExercise?.id,
+    });
+
+    // Allow stop even if toggling (emergency stop)
+    const isStopRequest = transport.isPlaying || countdownState.isCountingDown;
+
+    if (!isStopRequest && (isTogglingPlayback || !systemInitialized)) {
+      logger.debug('System not ready or already toggling playback');
       return;
-    }
-
-    // Check if we have an exercise and regions loaded
-    if (!transport.isPlaying) {
-      // Check if regions are loaded
-      const hasRegions =
-        metronomeTrack.regions.length > 0 || drumTrack.regions.length > 0;
-
-      if (!hasRegions) {
-        if (selectedExercise) {
-          logger.debug(
-            '🎵 No regions loaded yet, waiting for exercise to load...',
-          );
-          // The exercise loading effect should trigger and load regions
-          // Give it a moment and then try to start
-          const maxRetries = 5;
-          let retryCount = 0;
-
-          const checkAndStart = () => {
-            retryCount++;
-            if (
-              metronomeTrack.regions.length > 0 ||
-              drumTrack.regions.length > 0
-            ) {
-              logger.debug('🎵 Regions loaded, starting playback');
-              // Start transport directly instead of recursive call
-              transport.start();
-              setIsPlaying(true);
-            } else if (retryCount < maxRetries) {
-              logger.debug(
-                `🎵 Still no regions, retry ${retryCount}/${maxRetries}`,
-              );
-              setTimeout(checkAndStart, 100);
-            } else {
-              logger.warn('🎵 Still no regions after maximum retries');
-            }
-          };
-
-          setTimeout(checkAndStart, 100);
-          return;
-        } else {
-          // No exercise selected, create a default metronome pattern
-          logger.debug(
-            '🎵 No exercise selected, creating default metronome pattern',
-          );
-
-          const beats = 16; // 4 measures of 4/4
-          const events = [];
-          for (let i = 0; i < beats; i++) {
-            events.push({
-              id: `default-metronome-${i}`,
-              type: 'metronome-trigger' as const,
-              time: i,
-              data: { accent: i % 4 === 0 },
-            });
-          }
-
-          const metronomeRegion = {
-            id: 'default-metronome-region',
-            trackId: metronomeTrack.track?.id || 'metronome',
-            name: 'Default Metronome',
-            startTime: 0,
-            duration: beats,
-            pattern: {
-              id: 'default-metronome-pattern',
-              name: 'Click Track',
-              type: 'metronome',
-              timeSignature: { numerator: 4, denominator: 4 },
-              events: events.map((evt, idx) => ({
-                position: `0:${idx}:0`,
-                type: evt.data.accent ? 'accent' : 'click',
-                velocity: 0.8,
-              })),
-            },
-          };
-
-          metronomeTrack.clearRegions();
-          metronomeTrack.addRegion(metronomeRegion as any);
-          logger.debug('🎵 Added default metronome pattern');
-        }
-      }
     }
 
     try {
       setIsTogglingPlayback(true);
 
-      // Configure loop if enabled (only when starting fresh from stopped state)
-      if (
-        transport.isStopped &&
-        isLoopEnabled &&
-        loopRegion &&
-        selectedExercise
-      ) {
-        const timeSignature = selectedExercise.timeSignature || {
-          numerator: 4,
-          denominator: 4,
-        };
-        const beatsPerMeasure = timeSignature.numerator;
-
-        // Calculate loop points
-        const startMeasure = loopRegion.startMeasure - 1; // 0-indexed
-        const startBeat = (loopRegion.startBeat || 1) - 1; // 0-indexed
-        const endMeasure = loopRegion.endMeasure - 1; // 0-indexed
-        const endBeat = (loopRegion.endBeat || beatsPerMeasure) - 1; // 0-indexed
-
-        await transport.setLoop(
-          startMeasure * beatsPerMeasure + startBeat,
-          endMeasure * beatsPerMeasure + endBeat,
-        );
-        logger.debug('🎵 Loop configured');
-      }
-
       // Handle play/stop logic (no pause)
-      if (transport.isPlaying) {
-        // Currently playing -> stop
-        logger.debug('🎵 Stopping playback');
-        await transport.stop();
-      } else {
-        // Not playing -> start
-        logger.debug('🎵 Starting playback', {
-          isPaused: transport.isPaused,
-          isStopped: transport.isStopped,
+      if (isStopRequest) {
+        // Currently playing or counting down -> stop
+        logger.info('🎵 STOP BUTTON CLICKED', {
+          isPlaying: transport.isPlaying,
+          isCountingDown: countdownState.isCountingDown,
         });
 
-        // Get core services and ensure full initialization
-        const globalCoreServices = (window as any).__globalCoreServices;
-        if (globalCoreServices) {
-          // Full initialization (including starting audio context) - this is the user gesture
-          if (!globalCoreServices.isReady()) {
-            logger.debug('🎵 Initializing audio system...');
-            await globalCoreServices.initialize();
-            await globalCoreServices.start();
-            logger.debug('🎵 Audio system initialized');
-          }
-
-          // Ensure audio context is resumed (if it was already initialized but suspended)
-          const { ensureAudioContext } = await import(
-            '@/domains/playback/utils/ensureAudioContext'
-          );
-          await ensureAudioContext();
+        // Cancel any ongoing countdown
+        if (countdownState.isCountingDown) {
+          cancelCountdown();
+          logger.debug('🎵 Cancelled countdown');
         }
 
-        // Always start fresh (no resume)
-        await transport.start();
+        // Stop the region processor if available
+        if (regionProcessorRef.current) {
+          regionProcessorRef.current.stop();
+          logger.debug('🎵 Stopped RegionProcessor');
+        }
 
-        logger.debug('🎵 Transport command sent, waiting for state update...');
+        try {
+          await transport.stop();
+          logger.info('🎵 STOP: Transport stopped successfully');
 
-        // Give the transport a moment to update its state
-        await new Promise((resolve) => setTimeout(resolve, 50));
+          // Notify widget state that playback stopped
+          if (onPlayStateChange) {
+            onPlayStateChange(false);
+            logger.debug('🎵 Called onPlayStateChange(false)');
+          }
+        } catch (error) {
+          logger.error('🎵 STOP: Failed to stop transport', error);
+        }
+      } else {
+        // Not playing -> start
+        logger.debug('🎵 Starting playback with enhanced preloading');
 
-        logger.debug('🎵 Transport state after command:', {
-          isPlaying: transport.isPlaying,
-          isPaused: transport.isPaused,
-          isStopped: transport.isStopped,
+        // FAANG SOLUTION: Do NOT reset tempo on play button
+        // User's manual tempo changes take priority
+        // Tempo is only set when exercise loads (see loadExercise useEffect)
+        if (selectedExercise?.timeSignature) {
+          // CRITICAL FIX: setTimeSignature takes TWO parameters (numerator, denominator), not an object!
+          transport.setTimeSignature(selectedExercise.timeSignature.numerator, selectedExercise.timeSignature.denominator);
+        } else {
+          // CRITICAL FIX: setTimeSignature takes TWO parameters (numerator, denominator), not an object!
+          transport.setTimeSignature(4, 4);
+        }
+
+        // STEP 1: Resume AudioContext (main user gesture requirement)
+        logger.debug('🎵 Resuming AudioContext...');
+
+        // Import Tone to directly resume the AudioContext
+        const Tone = await import('tone');
+
+        // First ensure Tone.js AudioContext is started
+        if (Tone.context.state === 'suspended') {
+          logger.debug('🎵 Tone context is suspended, starting...');
+          await Tone.start();
+          logger.debug('✅ Tone.start() completed');
+        } else {
+          logger.debug('🎵 Tone context already running:', Tone.context.state);
+        }
+
+        // Also ensure our utility function works
+        const { ensureAudioContext } = await import(
+          '@/domains/playback/utils/ensureAudioContext'
+        );
+        await ensureAudioContext();
+        logger.debug('✅ AudioContext resumed');
+
+        // CRITICAL: Ensure CoreServices and AudioEventRouter are started
+        const globalCoreServices = (window as any).__globalCoreServices;
+        if (globalCoreServices) {
+          const isReady = globalCoreServices.isReady();
+          logger.info('🎵 CoreServices status check', {
+            isReady,
+            willInitialize: !isReady,
+            willStartOnly: isReady
+          });
+
+          if (!isReady) {
+            logger.debug('🎵 CoreServices not ready, initializing and starting...');
+            await globalCoreServices.initialize();
+            await globalCoreServices.start();
+            logger.debug('✅ CoreServices initialized and started');
+          } else {
+            logger.debug('🎵 CoreServices already ready, just calling start()');
+            // CoreServices is initialized, just start the services
+            await globalCoreServices.start();
+            logger.debug('✅ CoreServices started');
+          }
+        }
+
+        // STEP 2: CRITICAL - Get RegionProcessor from CoreServices (the one with buffers injected!)
+        const coreServicesRef = (window as any).__globalCoreServices;
+        let regionProcessor = null;
+
+        if (coreServicesRef && coreServicesRef.getRegionProcessor) {
+          regionProcessor = coreServicesRef.getRegionProcessor();
+          logger.info('✅ Using RegionProcessor from CoreServices (has FAANG buffers)');
+        } else {
+          logger.error('❌ CRITICAL: CoreServices.getRegionProcessor() not available!', {
+            hasCoreServices: !!coreServicesRef,
+            hasMethod: !!(coreServicesRef && coreServicesRef.getRegionProcessor)
+          });
+          // Don't create fallback instance - FAANG solution won't work without CoreServices instance
+          throw new Error('CoreServices RegionProcessor required for FAANG solution');
+        }
+
+        // CRITICAL FIX: If metronome regions are empty, create them NOW with correct tempo
+        // This handles the case where loadExercise didn't run (exercise selected before system init)
+        const currentMetronomeTrack = metronomeTrackRef.current;
+        const currentDrumTrack = drumTrackRef.current;
+
+        if (currentMetronomeTrack.regions.length === 0 && selectedExercise) {
+          logger.info('🎵 Metronome regions empty, creating them now with correct tempo:', selectedExercise.bpm);
+
+          // Clear any old regions first
+          currentMetronomeTrack.clearRegions();
+
+          // Calculate exercise parameters
+          const beatsPerBar = selectedExercise.timeSignature?.numerator || 4;
+          const totalBeats = selectedExercise.duration_beats || 16;
+
+          // Generate metronome events
+          const events = [];
+          for (let i = 0; i < totalBeats; i++) {
+            const isAccent = i % beatsPerBar === 0;
+            events.push({
+              position: `0:${i}:0`,
+              type: isAccent ? 'accent' : 'click',
+              velocity: isAccent ? 0.9 : 0.7,
+            });
+          }
+
+          // Create and add metronome region
+          const metronomeRegion = {
+            id: 'metronome-region',
+            trackId: currentMetronomeTrack.track?.id || 'metronome',
+            name: 'Metronome',
+            startTime: 0,
+            duration: totalBeats,
+            pattern: {
+              id: 'metronome-pattern',
+              name: 'Click Track',
+              type: 'metronome',
+              timeSignature: selectedExercise.timeSignature || { numerator: 4, denominator: 4 },
+              events,
+            },
+          };
+
+          currentMetronomeTrack.addRegion(metronomeRegion as any);
+          logger.info('🎵 Created metronome regions with', events.length, 'events at', selectedExercise.bpm, 'BPM');
+        }
+
+        // Register tracks with regions if we have a processor but need to set up tracks
+        // Use refs to get the latest track state with regions
+        logger.debug('🎵 Checking tracks for registration:', {
+          metronome: {
+            hasTrack: !!currentMetronomeTrack,
+            regionsCount: currentMetronomeTrack?.regions?.length || 0,
+            regions: currentMetronomeTrack?.regions?.map(r => ({ id: r.id, pattern: r.pattern?.name })),
+          },
+          drum: {
+            hasTrack: !!currentDrumTrack,
+            regionsCount: currentDrumTrack?.regions?.length || 0,
+            regions: currentDrumTrack?.regions?.map(r => ({ id: r.id, pattern: r.pattern?.name })),
+          },
         });
+
+        if (regionProcessor && (currentMetronomeTrack.regions.length > 0 || currentDrumTrack.regions.length > 0)) {
+            const tracksToRegister = [];
+            if (currentMetronomeTrack.regions.length > 0) {
+              tracksToRegister.push({
+                id: 'metronome',
+                name: 'Metronome',
+                regions: currentMetronomeTrack.regions,
+                instrumentType: 'metronome',
+              });
+              logger.debug(`🎵 Registering metronome track with ${currentMetronomeTrack.regions.length} regions`);
+            }
+            if (currentDrumTrack.regions.length > 0) {
+              tracksToRegister.push({
+                id: 'drums',
+                name: 'Drums',
+                regions: currentDrumTrack.regions,
+                instrumentType: 'drums',
+              });
+              logger.debug(`🎵 Registering drum track with ${currentDrumTrack.regions.length} regions`);
+            } else {
+              logger.warn('🎵 No drum regions found to register!', {
+                drumTrack: currentDrumTrack,
+                hasRegions: !!currentDrumTrack?.regions,
+                regionsArray: currentDrumTrack?.regions,
+              });
+            }
+
+            if (regionProcessor && tracksToRegister.length > 0) {
+              regionProcessor.registerTracks(tracksToRegister);
+              logger.debug(`🎵 Registered ${tracksToRegister.length} tracks with RegionProcessor`);
+            }
+        } else {
+          logger.warn('🎵 No tracks with regions to register or no RegionProcessor', {
+            hasProcessor: !!regionProcessor,
+            metronomeRegions: currentMetronomeTrack?.regions?.length || 0,
+            drumRegions: currentDrumTrack?.regions?.length || 0,
+          });
+        }
+
+        // STEP 3: Set time signature BEFORE starting playback
+        // FAANG SOLUTION: Do NOT reset tempo here - preserve user changes
+        if (selectedExercise?.timeSignature) {
+          transport.setTimeSignature(selectedExercise.timeSignature.numerator, selectedExercise.timeSignature.denominator);
+          logger.info('🎵 Set time signature from exercise:', selectedExercise.timeSignature);
+        }
+
+        // STEP 4: FAANG COUNTDOWN SOLUTION - Enable countdown offset BEFORE scheduling
+        const timeSignature = selectedExercise.timeSignature || { numerator: 4, denominator: 4 };
+        if (regionProcessor) {
+          logger.info('🎵 Enabling FAANG countdown system');
+
+          // Enable countdown offset (all events will be pushed forward by one measure)
+          regionProcessor.enableCountdown(timeSignature);
+
+          logger.info('✅ Countdown offset enabled', {
+            timeSignature,
+            offsetBeats: timeSignature.numerator,
+          });
+        }
+
+        // STEP 4.3: Set countdown offset in transport for display adjustment
+        // This makes the transport clock show negative bars during countdown
+        const coreServicesForCountdown = (window as any).__globalCoreServices;
+
+        if (coreServicesForCountdown) {
+          try {
+            const unifiedTransport = coreServicesForCountdown.getUnifiedTransport();
+
+            if (unifiedTransport && typeof unifiedTransport.setCountdownBeats === 'function') {
+              unifiedTransport.setCountdownBeats(timeSignature.numerator);
+            }
+          } catch (error) {
+            logger.error('Failed to set countdown beats', error);
+          }
+        }
+
+        // STEP 4.5: Add countdown region AFTER tracks are registered
+        if (regionProcessor) {
+          // Add countdown region (metronome clicks at beats 0-3)
+          // This REPLACES the normal metronome to avoid duplicates
+          regionProcessor.addCountdownRegion(timeSignature);
+
+          // Add voice cue countdown region (voice samples "one", "two", "three", "four")
+          // Plays alongside metronome countdown for verbal guidance
+          regionProcessor.addVoiceCountdownRegion(timeSignature);
+        }
+
+        // STEP 5: Start RegionProcessor BEFORE transport
+        // This must happen here because tracks are registered asynchronously by widgets (MetronomeWidget, etc.)
+        // If we wait for transport:start event, tracks won't be registered yet
+        if (regionProcessor) {
+          regionProcessor.start();
+          logger.debug('🎵 Started RegionProcessor');
+        }
+
+        // STEP 6: Start visual countdown BEFORE transport.start()
+        // This ensures isCountingDown is set to true before isPlaying
+        // Prevents the Stop icon from flashing briefly
+        logger.info('🎵 Starting visual countdown');
+        const audioContext = Tone.context;
+        // FAANG FIX: Use current transport BPM for countdown, not exercise's stored BPM
+        const currentBpm = transport?.getTempo?.() || Tone.Transport.bpm.value;
+        startCountdown(currentBpm, audioContext, null as any)
+          .catch((error) => {
+            logger.error('❌ Visual countdown failed:', error);
+            // Non-fatal, audio countdown is already scheduled
+          });
+
+        // STEP 7: Position reset handled by TransportController.start()
+        // FAANG FIX: DO NOT manually set Tone.Transport.position here!
+        // TransportController.start() calls positionManager.resetToStart() which manages position correctly.
+        // Manual manipulation here creates race conditions with TransportController's position management,
+        // causing the clock to show "3:1:00" on 2nd playback instead of "1:0:00".
+
+        // STEP 8: Configure exercise duration for auto-stop (moved from UI to domain layer)
+        const beatsPerBar = selectedExercise?.timeSignature?.numerator || 4;
+        const totalBars = (selectedExercise as any)?.total_bars || 4;
+        const countdownBars = 1; // One measure of countdown
+        transport.setExerciseDuration(totalBars + countdownBars, beatsPerBar);
+        logger.info('🎵 Configured exercise duration for auto-stop', {
+          totalBars,
+          countdownBars,
+          beatsPerBar,
+          totalBeats: (totalBars + countdownBars) * beatsPerBar,
+        });
+
+        // STEP 9: Start transport - everything should be ready!
+        // The countdown is now part of the timeline (beats 0-3), exercise starts at beat 4
+        logger.info('🎵 [FLOW] About to call transport.start()');
+        console.log('🎵 [FLOW] About to call transport.start()', { timestamp: Date.now() });
+
+        try {
+          await transport.start();
+          logger.info('🎵 [FLOW] transport.start() returned successfully');
+          console.log('🎵 [FLOW] transport.start() returned successfully', { timestamp: Date.now() });
+
+          // Notify widget state that playback started
+          if (onPlayStateChange) {
+            onPlayStateChange(true);
+            logger.info('🎵 Called onPlayStateChange(true) - widget state should update');
+            console.log('🎵 Called onPlayStateChange(true) - widget state should update');
+          }
+        } catch (error) {
+          logger.error('🎵 [FLOW] transport.start() threw error:', error);
+          console.error('🎵 [FLOW] transport.start() threw error:', error);
+          throw error;
+        }
+
+        logger.info('🎵 ✅ Transport started successfully');
       }
     } catch (error: any) {
       logger.error('Error toggling playback:', error);
-
-      // If this is an audio initialization error, try one more time
-      if (
-        error?.message?.includes('AudioContext not available') ||
-        error?.message?.includes('Transport not initialized')
-      ) {
-        logger.debug('🎵 Audio system needs initialization, retrying...');
-
-        // Give the system a moment to finish initialization
-        setTimeout(async () => {
-          try {
-            if (transport.isPlaying) {
-              await transport.stop();
-            } else {
-              await transport.start();
-            }
-            logger.debug('🎵 Playback started successfully on retry');
-          } catch (retryError) {
-            logger.error('Failed to start playback on retry:', retryError);
-          }
-        }, 100);
-      }
+      // Immediate unlock on error to prevent UI from getting stuck
+      setIsTogglingPlayback(false);
+      throw error;
     } finally {
-      // Add a small delay before allowing the next toggle to ensure state updates
+      // Ensure isTogglingPlayback is always reset with a small delay for state updates
       setTimeout(() => {
         setIsTogglingPlayback(false);
       }, 100);
@@ -802,6 +1050,9 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
         // Set flag to ignore the next sync update to prevent feedback
         ignoreNextSyncTempo.current = true;
+
+        // FAANG SOLUTION: Mark that user manually changed tempo
+        hasUserModifiedTempo.current = true;
 
         // Update tempo using transport
         await transport.setTempo(newTempo);
@@ -867,36 +1118,92 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
   // Load exercise data when selected
   useEffect(() => {
-    if (!selectedExercise || !systemInitialized) {
-      logger.debug('🎮 GlobalControls: Not ready to load exercise:', {
-        hasExercise: !!selectedExercise,
-        systemInitialized,
-      });
+    logger.debug('🔄 GlobalControls: useEffect TRIGGERED', {
+      selectedExerciseId: selectedExercise?.id,
+      selectedExerciseBpm: selectedExercise?.bpm,
+      systemInitialized,
+      metronomeInitialized: metronomeTrack.isInitialized,
+      drumInitialized: drumTrack.isInitialized,
+      lastLoadedId: lastLoadedExerciseRef.current,
+      isLoading: loadingRef.current,
+      transportTempo: transport?.tempo,
+    });
+
+    // DIAGNOSTIC: Log at the start of useEffect to see if it runs
+    if (!selectedExercise) {
+      logger.warn('🎮 GlobalControls: No exercise selected - useEffect returning early');
       return;
     }
 
-    // Also wait for tracks to be initialized
-    if (!metronomeTrack.isInitialized || !drumTrack.isInitialized) {
-      logger.debug('🎮 GlobalControls: Waiting for tracks to initialize:', {
-        metronomeTrack: {
-          isInitialized: metronomeTrack.isInitialized,
-          isReady: metronomeTrack.isReady,
-        },
-        drumTrack: {
-          isInitialized: drumTrack.isInitialized,
-          isReady: drumTrack.isReady,
-        },
-      });
-      return;
-    }
+    logger.info('🎮 GlobalControls: Exercise found, will proceed to load', {
+      exerciseId: selectedExercise.id,
+      hasDrumPattern: !!selectedExercise.drumPattern,
+      drumPatternLength: selectedExercise.drumPattern?.length || 0,
+      hasDrummerMidiUrl: !!selectedExercise.drummerMidiUrl,
+    });
+
+    // NOTE: Removed systemInitialized check - we can load MIDI data before audio system initializes
+    // The exercise data (MIDI files, regions) can be loaded independently of CoreServices
+
+    // NOTE: We no longer wait for tracks to be initialized
+    // Exercise MIDI data can be loaded before tracks initialize
+    // The regions will be added to tracks once they become available
+    logger.debug('🎮 GlobalControls: Track initialization status:', {
+      selectedExerciseId: selectedExercise.id,
+      metronomeTrack: {
+        isInitialized: metronomeTrack.isInitialized,
+        isReady: metronomeTrack.isReady,
+      },
+      drumTrack: {
+        isInitialized: drumTrack.isInitialized,
+        isReady: drumTrack.isReady,
+      },
+    });
 
     // Check if this is a new exercise or if we're already loading
+    logger.debug('🔍 GlobalControls: Checking if exercise already loaded:', {
+      selectedExerciseId: selectedExercise.id,
+      lastLoadedId: lastLoadedExerciseRef.current,
+      isLoading: loadingRef.current,
+      isAlreadyLoaded: lastLoadedExerciseRef.current === selectedExercise.id,
+    });
+
     if (
       lastLoadedExerciseRef.current === selectedExercise.id ||
       loadingRef.current
     ) {
+      logger.debug('🎮 GlobalControls: Exercise already loaded or loading:', {
+        selectedExerciseId: selectedExercise.id,
+        lastLoadedId: lastLoadedExerciseRef.current,
+        isLoading: loadingRef.current,
+      });
       return;
     }
+
+    logger.info('🎮 GlobalControls: Ready to load exercise:', {
+      selectedExerciseId: selectedExercise.id,
+      lastLoadedId: lastLoadedExerciseRef.current,
+      isFirstLoad: lastLoadedExerciseRef.current === null,
+    });
+
+    // Helper: Wait for track initialization with retry logic
+    const waitForTrackInit = async (
+      trackRef: React.MutableRefObject<any>,
+      trackName: string,
+      maxRetries = 20,
+      retryDelay = 100,
+    ): Promise<boolean> => {
+      for (let i = 0; i < maxRetries; i++) {
+        if (trackRef.current?.isInitialized && trackRef.current?.addRegion) {
+          logger.info(`🎮 GlobalControls: ${trackName} track initialized (attempt ${i + 1})`);
+          return true;
+        }
+        logger.debug(`🎮 GlobalControls: Waiting for ${trackName} track init (attempt ${i + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+      logger.warn(`🎮 GlobalControls: ${trackName} track failed to initialize after ${maxRetries} attempts`);
+      return false;
+    };
 
     // Load the exercise data
     const loadExercise = async () => {
@@ -904,19 +1211,208 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       setIsLoadingExercise(true);
       lastLoadedExerciseRef.current = selectedExercise.id;
 
+
       logger.debug(
         '🎮 GlobalControls: Loading exercise:',
         selectedExercise.title,
       );
 
+
+      // Log what MIDI data is available
+      logger.info('🎮 GlobalControls: Exercise MIDI data availability:', {
+        exerciseId: selectedExercise.id,
+        title: selectedExercise.title,
+        has_midi_file_path: !!selectedExercise.midi_file_path,
+        midi_file_path: selectedExercise.midi_file_path || 'none',
+        has_midiFileUrl: !!selectedExercise.midiFileUrl,
+        has_midi_url: !!selectedExercise.midi_url,
+        has_midi_data: !!selectedExercise.midi_data,
+        has_drum_pattern: !!selectedExercise.drum_pattern,
+        drum_pattern_enabled: selectedExercise.drum_pattern?.enabled,
+        // NEW: Per-widget MIDI URLs
+        has_drummerMidiUrl: !!(selectedExercise as any).drummerMidiUrl,
+        has_basslineMidiUrl: !!(selectedExercise as any).basslineMidiUrl,
+        has_harmonyMidiUrl: !!(selectedExercise as any).harmonyMidiUrl,
+        has_metronomeMidiUrl: !!(selectedExercise as any).metronomeMidiUrl,
+        drummerMidiUrl: (selectedExercise as any).drummerMidiUrl || 'none',
+      });
+
+
       try {
+
+        // FAANG SOLUTION: Only reset tempo on NEW exercise selection
+        // Preserve user tempo changes within the same exercise
+        const exerciseIdChanged = currentExerciseId.current !== selectedExercise.id;
+
+        if (exerciseIdChanged) {
+          // New exercise selected - reset tempo to exercise default
+          currentExerciseId.current = selectedExercise.id;
+          hasUserModifiedTempo.current = false;
+
+          if (selectedExercise.bpm) {
+            await transport.setTempo(selectedExercise.bpm);
+            logger.info('🎵 [loadExercise] NEW exercise - Set tempo to exercise default:', selectedExercise.bpm);
+          }
+        } else if (!hasUserModifiedTempo.current && selectedExercise.bpm) {
+          // Same exercise, no user modifications - use exercise tempo
+          await transport.setTempo(selectedExercise.bpm);
+          logger.info('🎵 [loadExercise] Same exercise - Set tempo to exercise default:', selectedExercise.bpm);
+        } else {
+          // Same exercise with user modifications - preserve user tempo
+          logger.info('🎵 [loadExercise] Preserving user tempo:', transport.tempo, '(exercise default:', selectedExercise.bpm, ')');
+        }
+        if (selectedExercise.timeSignature) {
+          transport.setTimeSignature(selectedExercise.timeSignature.numerator, selectedExercise.timeSignature.denominator);
+          logger.info('🎵 [loadExercise] Set time signature BEFORE creating regions:', selectedExercise.timeSignature);
+        }
+
+
         // Clear existing regions
         metronomeTrackRef.current.clearRegions();
         drumTrackRef.current.clearRegions();
 
-        // Load MIDI data if available
-        if (selectedExercise.midi_data) {
-          logger.debug('🎮 GlobalControls: Loading MIDI data...');
+        // Check if we have MIDI file from Supabase storage or other sources
+        let midiLoaded = false;
+
+
+        // Priority 1: Check for midi_file_path (Supabase storage)
+        if (selectedExercise.midi_file_path) {
+          logger.info('🎮 GlobalControls: Loading MIDI from Supabase storage:', selectedExercise.midi_file_path);
+
+          try {
+            // ExerciseLoader now uses the Supabase singleton - no need to pass credentials
+            const exerciseLoader = ExerciseLoader.getInstance({
+              midiBucketName: 'midi-files', // Configure the bucket name
+            });
+
+            // Initialize with EventBus from CoreServices
+            const coreServicesForSupabase = (window as any).__globalCoreServices;
+            if (coreServicesForSupabase) {
+              const eventBus = coreServicesForSupabase.getEventBus();
+              await exerciseLoader.initialize(eventBus);
+            }
+
+            // Load MIDI from Supabase storage
+            const result = await exerciseLoader.loadMidiFromSupabase(selectedExercise);
+
+            if (result) {
+              // Add regions to our tracks (only if tracks are initialized)
+              for (const region of result.regions) {
+                if (region.trackId.startsWith('metronome')) {
+                  if (metronomeTrackRef.current?.isInitialized && metronomeTrackRef.current?.addRegion) {
+                    metronomeTrackRef.current.addRegion(region as any);
+                    logger.info('🎮 GlobalControls: Added metronome region from MIDI');
+                  } else {
+                    logger.warn('🎮 GlobalControls: Metronome track not ready, skipping region');
+                  }
+                } else if (region.trackId.startsWith('drums')) {
+                  if (drumTrackRef.current?.isInitialized && drumTrackRef.current?.addRegion) {
+                    drumTrackRef.current.addRegion(region as any);
+                    logger.info('🎮 GlobalControls: Added drum region from MIDI');
+                  } else {
+                    logger.warn('🎮 GlobalControls: Drum track not ready, skipping region');
+                  }
+                }
+                // Bass and harmony will be added when those instruments are ready
+              }
+
+              // Register tracks with RegionProcessor
+              const regionProcessor = coreServices.getRegionProcessor();
+              const tracks = [];
+              if (metronomeTrackRef.current.regions?.length > 0) {
+                tracks.push(metronomeTrackRef.current.track);
+                logger.info('🎮 GlobalControls: Registering metronome track with RegionProcessor');
+              }
+              if (drumTrackRef.current.regions?.length > 0) {
+                tracks.push(drumTrackRef.current.track);
+                logger.info('🎮 GlobalControls: Registering drum track with RegionProcessor');
+              }
+
+              if (tracks.length > 0) {
+                regionProcessor.registerTracks(tracks);
+                logger.info('🎮 GlobalControls: Registered', tracks.length, 'tracks with RegionProcessor');
+              }
+
+              midiLoaded = true;
+              logger.info('🎮 GlobalControls: MIDI loaded from Supabase successfully, added', result.regions.length, 'regions');
+            }
+          } catch (error) {
+            logger.error('🎮 GlobalControls: Error loading MIDI from Supabase:', error);
+          }
+        }
+        // Priority 2: Check for direct MIDI URL
+        else if (selectedExercise.midiFileUrl || selectedExercise.midi_url) {
+          const midiUrl = selectedExercise.midiFileUrl || selectedExercise.midi_url;
+          logger.info('🎮 GlobalControls: Loading MIDI from URL:', midiUrl);
+
+          try {
+            // ExerciseLoader now uses the Supabase singleton
+            const exerciseLoader = ExerciseLoader.getInstance();
+
+            // Initialize with EventBus from CoreServices
+            const coreServicesForDirect = (window as any).__globalCoreServices;
+            if (coreServicesForDirect) {
+              const eventBus = coreServicesForDirect.getEventBus();
+              await exerciseLoader.initialize(eventBus);
+            }
+
+            // Use loadMidiDirect to load MIDI
+            const result = await exerciseLoader.loadMidiDirect({
+              ...selectedExercise,
+              midiFileUrl: midiUrl,
+            });
+
+            // Add regions to our tracks (only if tracks are initialized)
+            for (const region of result.regions) {
+              if (region.trackId.startsWith('metronome')) {
+                if (metronomeTrackRef.current?.isInitialized && metronomeTrackRef.current?.addRegion) {
+                  metronomeTrackRef.current.addRegion(region as any);
+                  logger.info('🎮 GlobalControls: Added metronome region from MIDI');
+                } else {
+                  logger.warn('🎮 GlobalControls: Metronome track not ready, skipping region');
+                }
+              } else if (region.trackId.startsWith('drums')) {
+                if (drumTrackRef.current?.isInitialized && drumTrackRef.current?.addRegion) {
+                  drumTrackRef.current.addRegion(region as any);
+                  logger.info('🎮 GlobalControls: Added drum region from MIDI');
+                } else {
+                  logger.warn('🎮 GlobalControls: Drum track not ready, skipping region');
+                }
+              }
+              // Bass and harmony will be added when those instruments are ready
+            }
+
+            // Register tracks with RegionProcessor
+            const coreServicesForRegion = (window as any).__globalCoreServices;
+            if (coreServicesForRegion) {
+              const regionProcessor = coreServices.getRegionProcessor();
+
+              // Build tracks array with regions
+              const tracks = [];
+              if (metronomeTrackRef.current.regions?.length > 0) {
+                tracks.push(metronomeTrackRef.current.track);
+                logger.info('🎮 GlobalControls: Registering metronome track with RegionProcessor');
+              }
+              if (drumTrackRef.current.regions?.length > 0) {
+                tracks.push(drumTrackRef.current.track);
+                logger.info('🎮 GlobalControls: Registering drum track with RegionProcessor');
+              }
+
+              if (tracks.length > 0) {
+                regionProcessor.registerTracks(tracks);
+                logger.info('🎮 GlobalControls: Registered', tracks.length, 'tracks with RegionProcessor');
+              }
+            }
+
+            midiLoaded = true;
+            logger.info('🎮 GlobalControls: MIDI loaded successfully, added', result.regions.length, 'regions');
+
+          } catch (error) {
+            logger.error('🎮 GlobalControls: Error loading MIDI from URL:', error);
+          }
+        } else if (selectedExercise.midi_data) {
+          // Try to parse raw MIDI data
+          logger.debug('🎮 GlobalControls: Loading raw MIDI data...');
 
           try {
             const { Midi } = await import('@tonejs/midi');
@@ -924,110 +1420,379 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
             logger.debug(
               `🎮 GlobalControls: Parsed MIDI: ${midi.tracks.length} tracks`,
             );
+            // TODO: Convert parsed MIDI to regions using ExerciseLoader's logic
           } catch (error) {
             logger.error('🎮 GlobalControls: Error parsing MIDI:', error);
           }
         }
+        // Priority 3: Check for per-widget MIDI URLs (drummerMidiUrl, basslineMidiUrl, etc.)
+        else if (selectedExercise.drummerMidiUrl || selectedExercise.basslineMidiUrl || selectedExercise.harmonyMidiUrl || selectedExercise.metronomeMidiUrl) {
+          logger.info('🎮 GlobalControls: Loading per-widget MIDI files from Supabase URLs');
 
-        // Create metronome pattern
-        const metronome = metronomeTrackRef.current;
-        logger.debug('🎮 GlobalControls: Metronome track state:', {
-          isInitialized: metronome.isInitialized,
-          hasTrack: !!metronome.track,
-          trackId: metronome.track?.id,
-          trackName: metronome.track?.name,
-        });
-        if (metronome.isInitialized && metronome.track) {
-          const beats = selectedExercise.duration_beats || 16;
-          const events = [];
-          for (let i = 0; i < beats; i++) {
-            events.push({
-              id: `metronome-${i}`,
-              type: 'metronome-trigger' as const,
-              time: i,
-              data: { accent: i % 4 === 0 },
+          try {
+            // ExerciseLoader now uses the Supabase singleton
+            const exerciseLoader = ExerciseLoader.getInstance();
+
+            // Initialize with EventBus from CoreServices
+            const coreServicesForSupabase = (window as any).__globalCoreServices;
+            if (coreServicesForSupabase) {
+              const eventBus = coreServicesForSupabase.getEventBus();
+              await exerciseLoader.initialize(eventBus);
+            }
+
+            // Load each widget's MIDI file separately
+            const allRegions: any[] = [];
+
+            // Load drummer data - prefer pre-converted pattern over MIDI download
+            if (selectedExercise.drumPattern && selectedExercise.drumPattern.length > 0) {
+              logger.info('🎮 GlobalControls: Loading drummer from pre-converted pattern', {
+                hitCount: selectedExercise.drumPattern.length,
+              });
+              try {
+                const drumResult = await exerciseLoader.loadFromDrumPattern(
+                  selectedExercise.drumPattern,
+                  {
+                    id: selectedExercise.id.value,
+                    title: selectedExercise.title,
+                    bpm: selectedExercise.bpm,
+                    timeSignature: selectedExercise.timeSignature || { numerator: 4, denominator: 4 },
+                  } as any,
+                );
+
+                // Wait for drum track initialization, then add regions
+                const drumTrackReady = await waitForTrackInit(drumTrackRef, 'Drummer');
+                if (drumTrackReady) {
+                  for (const region of drumResult.regions) {
+                    drumTrackRef.current.addRegion(region as any);
+                    allRegions.push(region);
+                    logger.info('🎮 GlobalControls: Added drum region from pre-converted pattern');
+                  }
+                } else {
+                  logger.error('🎮 GlobalControls: Drummer track failed to initialize, regions not added');
+                }
+              } catch (error) {
+                logger.error('🎮 GlobalControls: Error loading drummer from pattern:', error);
+              }
+            } else if (selectedExercise.drummerMidiUrl) {
+              // Fallback: Download and parse MIDI file (for backwards compatibility)
+              logger.info('🎮 GlobalControls: Loading drummer MIDI from URL (fallback):', selectedExercise.drummerMidiUrl);
+              try {
+                const drumResult = await exerciseLoader.loadMidiDirect({
+                  id: selectedExercise.id,
+                  title: selectedExercise.title,
+                  bpm: selectedExercise.bpm,
+                  timeSignature: selectedExercise.timeSignature,
+                  midiFileUrl: selectedExercise.drummerMidiUrl,
+                } as any);
+
+                // Wait for drum track initialization, then add regions
+                const drumTrackReady = await waitForTrackInit(drumTrackRef, 'Drummer');
+                if (drumTrackReady) {
+                  for (const region of drumResult.regions) {
+                    drumTrackRef.current.addRegion(region as any);
+                    allRegions.push(region);
+                    logger.info('🎮 GlobalControls: Added drum region from MIDI URL');
+                  }
+                } else {
+                  logger.error('🎮 GlobalControls: Drummer track failed to initialize, regions not added');
+                }
+              } catch (error) {
+                logger.error('🎮 GlobalControls: Error loading drummer MIDI:', error);
+              }
+            }
+
+            // Load bassline MIDI if available
+            if (selectedExercise.basslineMidiUrl) {
+              logger.info('🎮 GlobalControls: Bassline MIDI detected but bass track not yet implemented');
+              // TODO: Load bassline when bass track is ready
+            }
+
+            // Load harmony MIDI if available
+            if (selectedExercise.harmonyMidiUrl) {
+              logger.info('🎮 GlobalControls: Harmony MIDI detected but harmony track not yet implemented');
+              // TODO: Load harmony when harmony track is ready
+            }
+
+            // Load metronome MIDI if available (though metronome is usually generated)
+            if (selectedExercise.metronomeMidiUrl) {
+              logger.info('🎮 GlobalControls: Loading metronome MIDI from:', selectedExercise.metronomeMidiUrl);
+              try {
+                // CRITICAL FIX: Don't spread Exercise entity - pass properties explicitly
+                const metronomeResult = await exerciseLoader.loadMidiDirect({
+                  id: selectedExercise.id,
+                  title: selectedExercise.title,
+                  bpm: selectedExercise.bpm,
+                  timeSignature: selectedExercise.timeSignature,
+                  midiFileUrl: selectedExercise.metronomeMidiUrl,
+                } as any);
+
+                // Wait for metronome track initialization, then add regions
+                const metronomeTrackReady = await waitForTrackInit(metronomeTrackRef, 'Metronome');
+                if (metronomeTrackReady) {
+                  for (const region of metronomeResult.regions) {
+                    metronomeTrackRef.current.addRegion(region as any);
+                    allRegions.push(region);
+                    logger.info('🎮 GlobalControls: Added metronome region from metronomeMidiUrl');
+                  }
+                } else {
+                  logger.error('🎮 GlobalControls: Metronome track failed to initialize, regions not added');
+                }
+              } catch (error) {
+                logger.error('🎮 GlobalControls: Error loading metronome MIDI:', error);
+              }
+            }
+
+            // Register tracks with RegionProcessor if we loaded any regions
+            if (allRegions.length > 0) {
+              const regionProcessor = coreServices.getRegionProcessor();
+              const tracks = [];
+
+              if (metronomeTrackRef.current.regions?.length > 0) {
+                tracks.push(metronomeTrackRef.current.track);
+                logger.info('🎮 GlobalControls: Registering metronome track with RegionProcessor');
+              }
+
+              if (drumTrackRef.current.regions?.length > 0) {
+                tracks.push(drumTrackRef.current.track);
+                logger.info('🎮 GlobalControls: Registering drum track with RegionProcessor');
+              }
+
+              if (tracks.length > 0) {
+                regionProcessor.registerTracks(tracks);
+                logger.info('🎮 GlobalControls: Registered', tracks.length, 'tracks from per-widget MIDI files');
+              }
+
+              midiLoaded = true;
+              logger.info('🎮 GlobalControls: Per-widget MIDI files loaded successfully, added', allRegions.length, 'regions');
+            }
+          } catch (error) {
+            logger.error('🎮 GlobalControls: Error loading per-widget MIDI files:', error);
+          }
+        }
+
+        // If no MIDI was loaded, fall back to creating patterns from exercise data
+        if (!midiLoaded) {
+          logger.info('🎮 GlobalControls: No MIDI data, using structured patterns');
+
+          // Create metronome pattern
+          const metronome = metronomeTrackRef.current;
+          logger.debug('🎮 GlobalControls: Metronome track state:', {
+            isInitialized: metronome.isInitialized,
+            hasTrack: !!metronome.track,
+            trackId: metronome.track?.id,
+            trackName: metronome.track?.name,
+          });
+          if (metronome.isInitialized && metronome.track) {
+            // Get time signature from exercise or use default 4/4
+            const exerciseTimeSignature = selectedExercise.timeSignature || { numerator: 4, denominator: 4 };
+            const beatsPerBar = exerciseTimeSignature.numerator;
+
+            // Calculate total beats from total_bars and time signature
+            const totalBars = selectedExercise.total_bars || Math.ceil((selectedExercise.duration_beats || 16) / beatsPerBar);
+            const totalBeats = totalBars * beatsPerBar;
+
+            logger.info('🎮 GlobalControls: Creating metronome pattern:', {
+              timeSignature: exerciseTimeSignature,
+              totalBars,
+              beatsPerBar,
+              totalBeats,
+              exerciseBpm: selectedExercise.bpm,
             });
+
+            const events = [];
+            for (let i = 0; i < totalBeats; i++) {
+              // Accent on the first beat of each bar
+              const isAccent = i % beatsPerBar === 0;
+              events.push({
+                id: `metronome-${i}`,
+                type: 'metronome-trigger' as const,
+                time: i,
+                data: { accent: isAccent },
+              });
+            }
+
+            const metronomeRegion = {
+              id: 'metronome-region',
+              trackId: metronome.track?.id || 'metronome',
+              name: 'Metronome',
+              startTime: 0, // Start at beat 0 - display offset handles countdown timing
+              duration: totalBeats,
+              pattern: {
+                id: 'metronome-pattern',
+                name: 'Click Track',
+                type: 'metronome',
+                timeSignature: exerciseTimeSignature,
+                events: events.map((evt, idx) => ({
+                  position: `0:${idx}:0`,
+                  type: evt.data.accent ? 'accent' : 'click',
+                  velocity: evt.data.accent ? 0.9 : 0.7,
+                })),
+              },
+            };
+            metronome.addRegion(metronomeRegion as any);
+            logger.info('🎮 GlobalControls: Added metronome pattern with', events.length, 'clicks');
           }
 
-          const metronomeRegion = {
-            id: 'metronome-region',
-            trackId: metronome.track?.id || 'metronome',
-            name: 'Metronome',
-            startTime: 0,
-            duration: beats,
-            pattern: {
-              id: 'metronome-pattern',
-              name: 'Click Track',
-              type: 'metronome',
-              timeSignature: { numerator: 4, denominator: 4 },
-              events: events.map((evt, idx) => ({
-                position: `0:${idx}:0`,
-                type: evt.data.accent ? 'accent' : 'click',
-                velocity: 0.8,
-              })),
-            },
-          };
-          metronome.addRegion(metronomeRegion as any);
-          logger.debug('🎮 GlobalControls: Added metronome pattern');
-        }
+          // Create drum pattern if enabled
+          const drum = drumTrackRef.current;
+          logger.debug('🎮 GlobalControls: Drum track state:', {
+            isInitialized: drum.isInitialized,
+            hasTrack: !!drum.track,
+            trackId: drum.track?.id,
+            trackName: drum.track?.name,
+            drumEnabled: selectedExercise.drum_pattern?.enabled,
+            drumPatternData: selectedExercise.drum_pattern,
+            regionsBeforeAdd: drum.regions?.length || 0,
+          });
+          logger.info('🎮 GlobalControls: Checking drum pattern conditions:', {
+            drumInitialized: drum.isInitialized,
+            hasTrack: !!drum.track,
+            drumPatternEnabled: selectedExercise.drum_pattern?.enabled,
+            willLoadDrums: drum.isInitialized && drum.track && selectedExercise.drum_pattern?.enabled,
+          });
 
-        // Create drum pattern if enabled
-        const drum = drumTrackRef.current;
-        logger.debug('🎮 GlobalControls: Drum track state:', {
-          isInitialized: drum.isInitialized,
-          hasTrack: !!drum.track,
-          trackId: drum.track?.id,
-          trackName: drum.track?.name,
-          drumEnabled: selectedExercise.drum_pattern?.enabled,
-        });
-        if (
-          drum.isInitialized &&
-          drum.track &&
-          selectedExercise.drum_pattern?.enabled
-        ) {
+          // CRITICAL FIX: Only add pattern-based drum region if midiLoaded is true
+          // If ExerciseLoader already loaded MIDI (midiLoaded=true), skip this fallback code
+          // The issue: drumTrack.regions array doesn't reflect addRegion() calls immediately,
+          // so we check midiLoaded flag instead
+          const hasDrumPattern = !!(selectedExercise?.drumPattern && selectedExercise.drumPattern.length > 0);
+          const willSkip = midiLoaded; // If MIDI was loaded above, skip pattern fallback
+
+          console.error('🔍 DRUM REGIONS CHECK:', {
+            midiLoaded,
+            hasDrumPattern,
+            willSkip,
+            message: willSkip ? '✅ SKIPPING - MIDI already loaded by ExerciseLoader' : '⚠️ NO MIDI - will add pattern-based fallback',
+          });
+
+          if (
+            drum.isInitialized &&
+            drum.track &&
+            !midiLoaded && // ONLY add if MIDI wasn't already loaded!
+            hasDrumPattern // Use extracted variable
+          ) {
+          // Generate drum events from exercise drumPattern data (pre-converted DrumHit[])
+          const drumEvents = [];
+
+          // CRITICAL FIX: Use drumPattern (camelCase) which is DrumHit[], not drum_pattern.events
+          if (selectedExercise.drumPattern && Array.isArray(selectedExercise.drumPattern)) {
+            // Convert DrumHit[] to the event format expected by regions
+            const convertedEvents = selectedExercise.drumPattern.map((hit: any) => {
+              // CRITICAL: Convert measure:beat to region-relative format (0:totalBeats:subdivision)
+              // This prevents double-offset when region.startTime=4 is added to Tone.Time("measure:beat")
+              const timeSignature = selectedExercise.timeSignature || { numerator: 4, denominator: 4 };
+              const totalBeats = (hit.position.measure || 0) * timeSignature.numerator + (hit.position.beat || 0);
+
+              return {
+                position: `0:${totalBeats}:${hit.position.subdivision || 0}`,
+                type: hit.drum || 'kick',
+                drum: hit.drum || 'kick',
+                // CRITICAL: Velocity from MIDI is 0-127, normalize to 0-1 for audio playback
+                velocity: hit.velocity ? hit.velocity / 127 : 0.7,
+                midiNote: hit.midiNote,
+              };
+            });
+
+            drumEvents.push(...convertedEvents);
+            logger.info(`🎮 GlobalControls: Using ${drumEvents.length} drum hits from pre-converted drumPattern`);
+          } else if (selectedExercise.drum_pattern?.pattern) {
+            // Alternative format: pattern string like "kick-snare-kick-snare"
+            const pattern = selectedExercise.drum_pattern.pattern.split('-');
+            const beatsPerMeasure = 4;
+            const measures = Math.ceil((selectedExercise.duration_beats || 16) / beatsPerMeasure);
+
+            for (let measure = 0; measure < measures; measure++) {
+              for (let beat = 0; beat < beatsPerMeasure && beat < pattern.length; beat++) {
+                const drumType = pattern[beat % pattern.length];
+                if (drumType && drumType !== 'rest') {
+                  drumEvents.push({
+                    position: `${measure}:${beat}:0`,
+                    type: drumType,
+                    drum: drumType,
+                    velocity: drumType === 'kick' ? 0.8 : 0.7,
+                  });
+                }
+              }
+            }
+            logger.debug(`🎮 GlobalControls: Generated ${drumEvents.length} drum events from pattern string`);
+          } else {
+            // Fallback: Generate a basic pattern if no specific data provided
+            logger.warn('🎮 GlobalControls: No drum pattern data found, using default pattern');
+            const measures = Math.ceil((selectedExercise.duration_beats || 16) / 4);
+            for (let measure = 0; measure < measures; measure++) {
+              // Use region-relative format (0:totalBeats:subdivision) to prevent double offset
+              drumEvents.push(
+                { position: `0:${measure * 4 + 0}:0`, drum: 'kick', type: 'kick', velocity: 0.8 },
+                { position: `0:${measure * 4 + 1}:0`, drum: 'snare', type: 'snare', velocity: 0.7 },
+                { position: `0:${measure * 4 + 2}:0`, drum: 'kick', type: 'kick', velocity: 0.8 },
+                { position: `0:${measure * 4 + 3}:0`, drum: 'snare', type: 'snare', velocity: 0.7 }
+              );
+            }
+          }
+
           const drumRegion = {
-            id: 'drum-test-region',
+            id: `drum-region-${selectedExercise.id}`,
             trackId: drum.track?.id || 'drums',
-            name: 'Drum Pattern',
-            startTime: 0,
-            duration: 4,
+            name: selectedExercise.drum_pattern?.name || 'Drum Pattern',
+            startTime: 0, // Start at beat 0 - display offset handles countdown timing
+            duration: selectedExercise.duration || 8,
             pattern: {
-              id: 'drum-pattern-1',
-              name: 'Basic Beat',
-              type: 'drum',
-              events: [
-                {
-                  position: '0:0:0',
-                  drum: 'kick',
-                  velocity: 0.8,
-                },
-                {
-                  position: '0:1:0',
-                  drum: 'snare',
-                  velocity: 0.7,
-                },
-                {
-                  position: '0:2:0',
-                  drum: 'kick',
-                  velocity: 0.8,
-                },
-                {
-                  position: '0:3:0',
-                  drum: 'snare',
-                  velocity: 0.7,
-                },
-              ],
+              id: `drum-pattern-${selectedExercise.id}`,
+              name: selectedExercise.drum_pattern?.name || 'Exercise Drums',
+              type: 'drum' as const,
+              events: drumEvents,
             },
           };
+
           drum.addRegion(drumRegion as any);
-          logger.debug('🎮 GlobalControls: Added drum pattern');
+          logger.debug(`🎮 GlobalControls: Added drum pattern with ${drumEvents.length} events`);
+
+          // Verify the region was actually added
+          const regionsAfterAdd = drum.regions?.length || 0;
+          logger.debug(`🎮 GlobalControls: Drum track now has ${regionsAfterAdd} regions`);
+
+          // Double-check via the ref
+          const refRegions = drumTrackRef.current?.regions?.length || 0;
+          logger.debug(`🎮 GlobalControls: DrumTrackRef has ${refRegions} regions`);
+
+          if (regionsAfterAdd === 0) {
+            logger.error('🎮 GlobalControls: Failed to add drum region to track!');
+          }
         }
 
-        // Update tempo from exercise
-        if (selectedExercise.bpm) {
-          await transport.setTempo(selectedExercise.bpm);
-          setLocalTempo(selectedExercise.bpm);
-          lastUserTempo.current = selectedExercise.bpm;
+          // Register tracks with RegionProcessor for fallback patterns
+          const coreServicesRef = (window as any).__globalCoreServices;
+          if (coreServicesRef) {
+            const regionProcessor = coreServicesRef.getRegionProcessor();
+
+            // Build tracks array with regions
+            const tracks = [];
+            if (metronomeTrackRef.current.regions?.length > 0) {
+              tracks.push(metronomeTrackRef.current.track);
+              logger.info('🎮 GlobalControls: Registering metronome track (fallback)');
+            }
+            if (drumTrackRef.current.regions?.length > 0) {
+              tracks.push(drumTrackRef.current.track);
+              logger.info('🎮 GlobalControls: Registering drum track (fallback)');
+            }
+
+            if (tracks.length > 0) {
+              regionProcessor.registerTracks(tracks);
+              logger.info('🎮 GlobalControls: Registered', tracks.length, 'tracks with RegionProcessor (fallback)');
+            }
+          }
+        } // End of fallback pattern creation (if !midiLoaded)
+
+        // Update local UI state to match the tempo we set
+        // FAANG SOLUTION: Only update UI if we actually changed the tempo
+        if (exerciseIdChanged || !hasUserModifiedTempo.current) {
+          if (selectedExercise.bpm) {
+            setLocalTempo(selectedExercise.bpm);
+            lastUserTempo.current = selectedExercise.bpm;
+          }
+        } else {
+          // User modified tempo - keep UI showing current transport tempo
+          setLocalTempo(transport.tempo);
         }
 
         logger.debug('🎮 GlobalControls: Exercise loaded successfully');
@@ -1042,10 +1807,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     loadExercise();
   }, [
     selectedExercise?.id,
-    systemInitialized,
-    metronomeTrack.isInitialized,
-    drumTrack.isInitialized,
-    transport,
+    selectedExercise?.drumPattern,  // FIX: Re-run when drumPattern changes
+    selectedExercise?.drummerMidiUrl,  // FIX: Re-run when MIDI URLs change
+    // CRITICAL FIX: Do NOT include transport in dependencies!
+    // transport object reference changes on every render, causing infinite loops
+    // We check if it exists inside the effect, but don't track it
   ]);
 
   // Cleanup timeouts on unmount
@@ -1098,6 +1864,9 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   const beatsPerMeasure = timeSignature.numerator;
 
   // VexFlow rendering effect - Only render when notes change, not position
+  // DEPRECATED: VexFlow rendering - replaced with OpenSheetMusicDisplay
+  // Keeping this commented out as backup in case we need to revert
+  /*
   useEffect(() => {
     if (!containerRef.current || exerciseNotes.length === 0) return;
 
@@ -1146,10 +1915,14 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       logger.error('VexFlow rendering error:', error);
     }
   }, [exerciseNotes, timeSignature, beatsPerMeasure]); // Only re-render when notes or time signature changes
+  */
 
   // Track the last highlighted position to avoid unnecessary updates
   const lastHighlightedPosition = useRef<number>(-1);
 
+  // DEPRECATED: VexFlow highlighting - will be replaced with OSMD cursor API
+  // Keeping this commented out as backup
+  /*
   // Separate effect for highlighting only - doesn't re-render VexFlow
   useEffect(() => {
     if (!containerRef.current) return;
@@ -1300,6 +2073,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       observer.disconnect();
     };
   }, [currentPosition]); // Only depend on position changes
+  */
 
   // Optimized click handler for sheet music with proper debouncing
   const attachTimeoutRef = useRef<NodeJS.Timeout>();
@@ -1777,16 +2551,36 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     exerciseNotes: ExerciseNote[],
     currentPosition: number,
   ) => {
+    console.log('[RENDER] renderSimpleNotation called with:', {
+      measureCount: measures.length,
+      totalNotes: measures.flat().length,
+      timeSignature,
+    });
+
     try {
       // Get actual parent container width dynamically
       const containerWidth = container.parentElement?.clientWidth || 600;
 
       // Use EXACT same dimensions as working FretboardCard
       const svgHeight = 120; // Optimal height for staff display (from FretboardCard)
-      const baseMeasureWidth = 180; // Base width for regular measures
-      const firstMeasureWidth = 220; // Wider first measure for clef + time signature
-      const totalStaffWidth =
-        firstMeasureWidth + baseMeasureWidth * (measures.length - 1);
+
+      // Calculate dynamic measure widths based on note content
+      const calculateMeasureWidth = (measureIndex: number): number => {
+        const noteCount = measures[measureIndex]?.length || 0;
+        // Allocate sufficient space: ~40px per note (VexFlow needs more for proper spacing)
+        const notesWidth = Math.max(noteCount * 40, 150); // Minimum 150px for spacing
+        const clefSpace = measureIndex === 0 ? 100 : 30; // Extra space for clef + time signature
+        return notesWidth + clefSpace + 40; // Add 40px buffer for bar lines and padding
+      };
+
+      // Calculate total width needed
+      let totalStaffWidth = 0;
+      for (let i = 0; i < measures.length; i++) {
+        totalStaffWidth += calculateMeasureWidth(i);
+      }
+
+      const baseMeasureWidth = 180; // Base width for regular measures (fallback)
+      const firstMeasureWidth = calculateMeasureWidth(0); // Dynamic first measure width
 
       // Define consistent padding
       const leftPadding = 20;
@@ -1820,9 +2614,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         measureIndex < measures.length;
         measureIndex++
       ) {
-        // First measure is wider to accommodate clef and time signature
-        const currentMeasureWidth =
-          measureIndex === 0 ? firstMeasureWidth : baseMeasureWidth;
+        // Calculate width dynamically based on note content
+        const currentMeasureWidth = calculateMeasureWidth(measureIndex);
         measureWidths.push(currentMeasureWidth);
 
         const stave = new VF.Stave(currentX, rowY, currentMeasureWidth);
@@ -1870,10 +2663,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
         // Add all notes to timeline with their exact beat positions
         measureNotes.forEach((note) => {
-          const beatPosition =
-            (note.position?.beat || 1) -
-            1 +
-            (note.position?.subdivision || 0) / 16;
+          // Convert MIDI ticks to beat offset (480 ticks per quarter note)
+          const ticksPerQuarterNote = 480;
+          const subdivisionBeats = (note.position?.subdivision || 0) / ticksPerQuarterNote;
+          const beatPosition = (note.position?.beat || 1) - 1 + subdivisionBeats;
+
           const noteDuration = getDurationInQuarterNotes(
             note.duration || 'quarter',
           );
@@ -1965,6 +2759,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               clef: 'bass',
               keys: [noteKey],
               duration: duration,
+              stem_direction: -1, // Force stems UP (beams below) for bass clef low notes
             });
 
             // Add current note highlighting or default black color
@@ -2039,6 +2834,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
       // Create voices for all measures - EXACT same approach as FretboardCard
       const voices = [];
+      const beams = []; // Store beam objects for drawing
       const allVexFlowNotes = []; // Keep track of all notes/rests for later DOM mapping
 
       for (
@@ -2085,6 +2881,72 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         }
       }
 
+      // Use VexFlow's professional automatic beaming system
+      // IMPORTANT: Must beam AFTER adding notes to voices
+      // Get notes from the voices, not from vexFlowMeasures
+      for (let measureIdx = 0; measureIdx < voices.length; measureIdx++) {
+        const voice = voices[measureIdx];
+        if (!voice) continue;
+
+        // Get tickables (notes/rests) from the voice
+        const measureNotes = voice.getTickables();
+        if (!measureNotes || measureNotes.length === 0) continue;
+
+        try {
+          // For proper beaming that respects rests, we need to:
+          // 1. Keep the full array with rests
+          // 2. Let VexFlow know to break beams at rests
+          // This is different from filtering out rests - we need rests in the array
+          // so VexFlow knows where to break the beams
+
+          const beamableDurations = ['8', '16', '32', '64'];
+
+          // Check if any notes in this measure are beamable
+          const hasBeamableNotes = measureNotes.some((n: any) => {
+            const isRest = typeof n.isRest === 'function' && n.isRest();
+            return beamableDurations.includes(n.duration) && !isRest;
+          });
+
+          if (!hasBeamableNotes) continue;
+
+          // Generate beams - VexFlow will automatically break beams at rests
+          // when beam_rests is false
+          let autoBeams;
+
+          if (timeSignature.numerator === 4 && timeSignature.denominator === 4) {
+            // Define beat groups for 4/4: four quarter-note beats
+            const groups = [
+              new VF.Fraction(1, 4),
+              new VF.Fraction(1, 4),
+              new VF.Fraction(1, 4),
+              new VF.Fraction(1, 4),
+            ];
+
+            // Pass ALL notes (including rests) so VexFlow knows to break beams at rests
+            autoBeams = VF.Beam.generateBeams(measureNotes, {
+              groups: groups,
+              beam_rests: false,  // This tells VexFlow to break beams at rests
+              maintain_stem_directions: true,
+            });
+          } else {
+            autoBeams = VF.Beam.generateBeams(measureNotes, {
+              beam_rests: false,
+              maintain_stem_directions: true,
+            });
+          }
+
+          console.log(`[BEAM] Generated ${autoBeams.length} beam groups for measure ${measureIdx}`);
+          autoBeams.forEach((beam: any, idx: number) => {
+            console.log(`[BEAM] Beam ${idx} has ${beam.notes?.length || 0} notes`);
+          });
+
+          // Add all generated beams
+          beams.push(...autoBeams);
+        } catch (error) {
+          console.error(`[BEAM] Failed to auto-beam measure ${measureIdx}:`, error);
+        }
+      }
+
       // Format each voice individually - EXACT same approach as FretboardCard
       if (voices.length > 0) {
         for (let i = 0; i < voices.length; i++) {
@@ -2099,8 +2961,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           const measureWidth = measureWidths[i] || 0;
           const availableWidth =
             i === 0
-              ? measureWidth - 80 // First measure: subtract space for clef + time signature
-              : measureWidth - 20; // Other measures: just padding
+              ? measureWidth - 100 // First measure: subtract space for clef + time signature
+              : measureWidth - 30; // Other measures: subtract padding for bar lines
 
           // Use industry-standard proportional spacing
           formatter.format([voice], availableWidth);
@@ -2109,6 +2971,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
             voice.draw(context, stave);
           }
         }
+
+        // Draw all beams after all voices are drawn
+        beams.forEach((beam) => {
+          beam.setContext(context).draw();
+        });
       }
 
       // After all rendering is complete, map click data to DOM elements
@@ -2458,30 +3325,72 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
             </div>
 
             {/* Center - Playback Controls */}
-            <div className="flex items-center justify-center gap-4">
-              <button className="p-2 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200">
-                <Heart className="w-4 h-4 text-slate-400" />
-              </button>
-              <button className="p-2 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200">
-                <SkipBack className="w-4 h-4 text-slate-300" />
-              </button>
-              <button
-                onClick={handlePlayButtonClick}
-                className="rounded-full bg-blue-500 shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 flex items-center justify-center"
-                style={{ width: '78px', height: '78px' }}
-              >
-                {transport.isPlaying ? (
-                  <Square className="w-5 h-5 text-white" />
-                ) : (
-                  <Play className="w-5 h-5 ml-0.5 text-white" />
-                )}
-              </button>
-              <button className="p-2 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200">
-                <SkipForward className="w-4 h-4 text-slate-300" />
-              </button>
-              <button className="p-2 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200">
-                <Star className="w-4 h-4 text-slate-400" />
-              </button>
+            <div className="flex flex-col items-center justify-center gap-2">
+              {/* Countdown Dots - shown above play button */}
+              {selectedExercise && (
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  {Array.from({ length: countdownState.totalBeats }).map((_, index) => {
+                    const beatNumber = index + 1; // Convert 0-based index to 1-based beat number
+                    return (
+                      <div
+                        key={index}
+                        className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                          countdownState.isCountingDown && beatNumber === countdownState.currentBeat
+                            ? 'bg-red-400 shadow-lg shadow-red-400/50 scale-125'  // Current countdown beat - bright red with glow
+                            : countdownState.isCountingDown && beatNumber < countdownState.currentBeat
+                              ? 'bg-red-600'  // Past countdown beats - darker red
+                              : 'bg-red-500/30'  // Inactive/waiting beats - dim red
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="flex items-center justify-center gap-4">
+                <button className="p-2 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200">
+                  <Heart className="w-4 h-4 text-slate-400" />
+                </button>
+                <button className="p-2 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200">
+                  <SkipBack className="w-4 h-4 text-slate-300" />
+                </button>
+                <button
+                  onClick={handlePlayButtonClick}
+                  className={`rounded-full shadow-[4px_4px_8px_rgba(0,0,0,0.5),-4px_-4px_8px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200 flex items-center justify-center relative ${!selectedExercise ? 'bg-slate-600 opacity-50 cursor-not-allowed' : 'bg-blue-500'}`}
+                  style={{ width: '78px', height: '78px' }}
+                  title={
+                    !selectedExercise
+                      ? 'Please select an exercise first'
+                      : countdownState.isCountingDown
+                        ? 'Counting down...'
+                        : ''
+                  }
+                >
+                  {countdownState.isCountingDown && countdownState.currentBeat > 0 ? (
+                    <div className="text-3xl font-bold text-white">
+                      {countdownState.currentBeat}
+                    </div>
+                  ) : countdownState.isCountingDown ? (
+                    <Play className="w-5 h-5 ml-0.5 text-white" />
+                  ) : transport.isPlaying ? (
+                    <Square className="w-5 h-5 text-white" />
+                  ) : (
+                    <Play className="w-5 h-5 ml-0.5 text-white" />
+                  )}
+                </button>
+                <button className="p-2 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200">
+                  <SkipForward className="w-4 h-4 text-slate-300" />
+                </button>
+                <button className="p-2 rounded-full bg-slate-800 shadow-[3px_3px_6px_rgba(0,0,0,0.5),-3px_-3px_6px_rgba(255,255,255,0.1)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all duration-200">
+                  <Star className="w-4 h-4 text-slate-400" />
+                </button>
+              </div>
+              {/* Show message when no exercise selected */}
+              {!selectedExercise && (
+                <div className="text-xs text-amber-500 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30">
+                  Please select an exercise to start playback
+                </div>
+              )}
             </div>
 
             {/* Right Side - View Button */}
@@ -2523,13 +3432,13 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
         {/* Sheet Music Section - Integrated within the same panel */}
         <div className="mt-4 border-t border-slate-700/30 pt-4">
-          {/* VexFlow Sheet Music */}
+          {/* OpenSheetMusicDisplay - Professional Notation */}
           {exerciseNotes.length > 0 ? (
             <div
               ref={scrollContainerRef}
-              className="w-full overflow-x-auto scrollbar-hide"
+              className="w-full scrollbar-hide"
               style={{
-                maxHeight: '250px',
+                height: '150px', // Match SheetMusicDisplay height
                 borderRadius: '28px',
                 background: 'linear-gradient(135deg, #bfbfbf 0%, #d1d1d1 100%)',
                 boxShadow:
@@ -2537,6 +3446,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                 position: 'relative',
                 zIndex: 1,
                 isolation: 'isolate',
+                overflowX: 'auto',
+                overflowY: 'hidden',
               }}
               onScroll={(e) => {
                 // Save scroll position only when not playing
@@ -2546,17 +3457,29 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               }}
             >
               <div
-                ref={containerRef}
                 className="min-w-full"
                 style={{
-                  minHeight: '120px',
-                  padding: '16px 16px 16px 16px',
+                  height: '100%',
                   position: 'relative',
                   pointerEvents: 'auto',
-                  // Ensure clicks are properly handled
                   cursor: 'default',
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
-              />
+              >
+                <SheetMusicDisplay
+                  notes={exerciseNotes}
+                  bpm={exerciseBpm}
+                  timeSignature={timeSignature}
+                  title={activeExercise?.title}
+                  width={undefined}
+                  height={150}
+                  maxMeasuresPerSystem={2}
+                  onReady={() => {
+                    logger.debug('Sheet music rendered successfully');
+                  }}
+                />
+              </div>
             </div>
           ) : (
             <div
@@ -2616,6 +3539,15 @@ const arePropsEqual = (
 
   const allEqual = Object.values(checks).every((check) => check);
 
+  // ALWAYS log props comparison for debugging
+  logger.info('🔍 GlobalControls arePropsEqual check:', {
+    allEqual,
+    selectedExerciseChanged: !checks.selectedExercise,
+    prevExerciseId: prevProps.selectedExercise?.id,
+    nextExerciseId: nextProps.selectedExercise?.id,
+    renderCount: globalControlsRenderCount,
+  });
+
   // Log what changed every 10th check
   if (!allEqual && globalControlsRenderCount % 10 === 0) {
     const changedProps = Object.entries(checks)
@@ -2631,7 +3563,9 @@ const arePropsEqual = (
 };
 
 // Export the memoized component
-export const GlobalControls = React.memo(
-  GlobalControlsComponent,
-  arePropsEqual,
-);
+// TEMPORARILY DISABLED React.memo to debug rendering issue
+// export const GlobalControls = React.memo(
+//   GlobalControlsComponent,
+//   arePropsEqual,
+// );
+export const GlobalControls = GlobalControlsComponent;

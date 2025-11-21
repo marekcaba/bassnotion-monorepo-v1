@@ -13,6 +13,8 @@ export interface TutorialSection {
   exerciseIds?: string[];
 }
 
+export type TutorialStatus = 'draft' | 'published' | 'archived';
+
 export interface TutorialProps {
   id: TutorialId;
   title: string;
@@ -30,6 +32,23 @@ export interface TutorialProps {
   updatedAt: Date;
   sections?: TutorialSection[];
   viewCount?: number;
+  // New fields for draft and MIDI support
+  status?: TutorialStatus;
+  lastModified?: Date;
+  autoSaveVersion?: number;
+  drummerMidiUrl?: string;
+  basslineMidiUrl?: string;
+  harmonyMidiUrl?: string;
+  deletedAt?: Date;
+  // Core Concept fields
+  coreConceptDescription?: string;
+  coreConceptPoints?: string[];
+  teachingTakeaway?: any; // JSON object for teaching takeaway data
+  // Creator fields for YouTube attribution
+  creatorName?: string;
+  creatorChannelUrl?: string;
+  creatorAvatarUrl?: string;
+  creatorSubscriberCount?: number;
 }
 
 export class Tutorial {
@@ -148,8 +167,73 @@ export class Tutorial {
     return this._props.tags.includes(tag.toLowerCase());
   }
 
+  // New getters for draft and MIDI support
+  get status(): TutorialStatus {
+    return this._props.status || 'draft';
+  }
+
+  get lastModified(): Date | undefined {
+    return this._props.lastModified;
+  }
+
+  get autoSaveVersion(): number {
+    return this._props.autoSaveVersion || 0;
+  }
+
+  get drummerMidiUrl(): string | undefined {
+    return this._props.drummerMidiUrl;
+  }
+
+  get basslineMidiUrl(): string | undefined {
+    return this._props.basslineMidiUrl;
+  }
+
+  get harmonyMidiUrl(): string | undefined {
+    return this._props.harmonyMidiUrl;
+  }
+
+  get deletedAt(): Date | undefined {
+    return this._props.deletedAt;
+  }
+
+  get coreConceptDescription(): string | undefined {
+    return this._props.coreConceptDescription;
+  }
+
+  get coreConceptPoints(): string[] {
+    return this._props.coreConceptPoints || [];
+  }
+
+  get teachingTakeaway(): any {
+    return this._props.teachingTakeaway || {};
+  }
+
+  get creatorName(): string | undefined {
+    return this._props.creatorName;
+  }
+
+  get creatorChannelUrl(): string | undefined {
+    return this._props.creatorChannelUrl;
+  }
+
+  get creatorAvatarUrl(): string | undefined {
+    return this._props.creatorAvatarUrl;
+  }
+
+  get creatorSubscriberCount(): number | undefined {
+    return this._props.creatorSubscriberCount;
+  }
+
   isPublished(): boolean {
-    return this._props.isActive && !!this._props.publishedAt;
+    return this.status === 'published';
+  }
+
+  isDraft(): boolean {
+    return this.status === 'draft';
+  }
+
+  isArchived(): boolean {
+    return this.status === 'archived';
   }
 
   canBeAccessedByUser(userLevel: TutorialLevelType): boolean {
@@ -195,23 +279,51 @@ export class Tutorial {
 
   // Factory method for creating from API response
   static fromDTO(dto: any): Tutorial {
+    // Handle missing or invalid level by defaulting to 'beginner'
+    let level: TutorialLevel;
+    if (dto.level && TutorialLevel.isValid(dto.level)) {
+      level = TutorialLevel.create(dto.level);
+    } else if (dto.difficulty && TutorialLevel.isValid(dto.difficulty)) {
+      // Fallback to 'difficulty' field if 'level' is missing
+      level = TutorialLevel.create(dto.difficulty);
+    } else {
+      // Default to beginner if no valid level is provided
+      level = TutorialLevel.beginner();
+    }
+
     return Tutorial.reconstitute({
       id: TutorialId.create(dto.id),
       title: dto.title,
       slug: TutorialSlug.create(dto.slug),
       description: dto.description,
-      youtubeId: dto.youtube_id,
+      youtubeId: dto.youtube_id || dto.youtubeId || '',
       duration: dto.duration,
-      authorName: dto.author_name,
-      thumbnailUrl: dto.thumbnail_url,
-      level: TutorialLevel.create(dto.level),
+      authorName: dto.author_name || dto.authorName || 'Unknown',
+      thumbnailUrl: dto.thumbnail_url || dto.thumbnailUrl,
+      level,
       tags: dto.tags || [],
       isActive: dto.is_active ?? true,
       publishedAt: dto.published_at ? new Date(dto.published_at) : undefined,
       createdAt: new Date(dto.created_at),
       updatedAt: new Date(dto.updated_at),
       sections: dto.sections,
-      viewCount: dto.view_count,
+      viewCount: dto.view_count || 0,
+      // New fields for draft and MIDI support
+      status: dto.status || 'draft',
+      lastModified: dto.last_modified ? new Date(dto.last_modified) : undefined,
+      autoSaveVersion: dto.auto_save_version || 0,
+      drummerMidiUrl: dto.drummer_midi_url,
+      basslineMidiUrl: dto.bassline_midi_url,
+      harmonyMidiUrl: dto.harmony_midi_url,
+      deletedAt: dto.deleted_at ? new Date(dto.deleted_at) : undefined,
+      coreConceptDescription: dto.core_concept_description,
+      coreConceptPoints: dto.core_concept_points || [],
+      teachingTakeaway: dto.teaching_takeaway || {},
+      // Creator fields for YouTube attribution
+      creatorName: dto.creator_name,
+      creatorChannelUrl: dto.creator_channel_url,
+      creatorAvatarUrl: dto.creator_avatar_url,
+      creatorSubscriberCount: dto.creator_subscriber_count,
     });
   }
 
@@ -234,6 +346,22 @@ export class Tutorial {
       updated_at: this._props.updatedAt.toISOString(),
       sections: this._props.sections,
       view_count: this._props.viewCount,
+      // New fields for draft and MIDI support
+      status: this._props.status || 'draft',
+      last_modified: this._props.lastModified?.toISOString(),
+      auto_save_version: this._props.autoSaveVersion || 0,
+      drummer_midi_url: this._props.drummerMidiUrl,
+      bassline_midi_url: this._props.basslineMidiUrl,
+      harmony_midi_url: this._props.harmonyMidiUrl,
+      deleted_at: this._props.deletedAt?.toISOString(),
+      core_concept_description: this._props.coreConceptDescription,
+      core_concept_points: this._props.coreConceptPoints || [],
+      teaching_takeaway: this._props.teachingTakeaway || {},
+      // Creator fields for YouTube attribution
+      creator_name: this._props.creatorName,
+      creator_channel_url: this._props.creatorChannelUrl,
+      creator_avatar_url: this._props.creatorAvatarUrl,
+      creator_subscriber_count: this._props.creatorSubscriberCount,
     };
   }
 }

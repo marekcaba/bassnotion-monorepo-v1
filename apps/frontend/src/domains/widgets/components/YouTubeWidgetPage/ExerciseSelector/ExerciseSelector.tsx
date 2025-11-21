@@ -41,7 +41,7 @@ export function ExerciseSelector({
   const containerRef = useRef<HTMLDivElement>(null);
   const hasTriggeredFullLoadRef = useRef(false);
 
-  // Phase 3: Load full samples when ExerciseSelector becomes visible
+  // Phase 3: Load full samples for ALL exercises when ExerciseSelector becomes visible
   useEffect(() => {
     const loadFullSamplesWhenVisible = async (
       entries: IntersectionObserverEntry[],
@@ -52,14 +52,38 @@ export function ExerciseSelector({
         hasTriggeredFullLoadRef.current = true;
 
         logger.info(
-          '🎯 ExerciseSelector visible - loading full quality samples',
+          '🎯 ExerciseSelector visible - loading samples for ALL exercises (silent background)',
+          {
+            exerciseCount: exercises.length,
+            exerciseTitles: exercises.map(e => e.title),
+          }
         );
 
         try {
           const preloader = getSamplePreloader();
-          await preloader.loadFullSamples();
 
-          logger.info('✅ Full quality samples loaded successfully');
+          // Preload ALL exercises sequentially (silent background operation)
+          for (let i = 0; i < exercises.length; i++) {
+            const exercise = exercises[i];
+
+            if (!exercise?.id) continue;
+
+            logger.info(`📥 Preloading exercise ${i + 1}/${exercises.length}: ${exercise.title}`, {
+              exerciseId: exercise.id,
+              harmonyInstrument: exercise.harmonyInstrument,
+              hasHarmonyNotes: !!exercise?.harmonyNotes && exercise.harmonyNotes.length > 0,
+            });
+
+            // Load samples for this exercise
+            await preloader.loadFullSamples(exercise);
+
+            // Small delay between exercises to avoid overwhelming the system
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+
+          logger.info('✅ All exercise samples preloaded successfully', {
+            totalExercises: exercises.length,
+          });
 
           // Mark that all samples are ready
           if (typeof window !== 'undefined') {
@@ -67,7 +91,7 @@ export function ExerciseSelector({
             window.dispatchEvent(new Event('allSamplesLoaded'));
           }
         } catch (error) {
-          logger.error('❌ Failed to load full samples:', error);
+          logger.error('❌ Failed to load exercise samples:', error);
         }
       }
     };
@@ -87,17 +111,27 @@ export function ExerciseSelector({
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [exercises]);
 
-  // Format duration helper
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  // Format duration as bars helper - uses total_bars directly
+  const formatDurationInBars = (exercise: any) => {
+    // Use total_bars directly (primary field)
+    if (exercise.total_bars) {
+      return `${exercise.total_bars} bars`;
+    }
+
+    // Fallback: calculate from duration_beats if available
+    if (exercise.duration_beats) {
+      const timeSignature = exercise.timeSignature?.numerator || 4;
+      const bars = Math.round(exercise.duration_beats / timeSignature);
+      return `${bars} bars`;
+    }
+
+    return '--';
   };
 
   // Get difficulty config with enhanced styling
-  const getDifficultyConfig = (difficulty: string) => {
+  const getDifficultyConfig = (difficulty: any) => {
     const configs = {
       beginner: {
         label: 'Beginner',
@@ -142,10 +176,12 @@ export function ExerciseSelector({
         borderColor: 'border-rose-500/30',
       },
     };
-    const normalizedDifficulty = difficulty?.toLowerCase();
+    // Handle both string and Difficulty object with value property
+    const difficultyValue = typeof difficulty === 'object' ? difficulty?.value : difficulty;
+    const normalizedDifficulty = difficultyValue?.toLowerCase();
     return (
       configs[normalizedDifficulty as keyof typeof configs] || {
-        label: difficulty || 'Unknown',
+        label: difficultyValue || 'Unknown',
         gradient: 'from-gray-500/30 to-gray-600/20',
         icon: '❓',
         shadowColor: 'rgba(107, 114, 128, 0.3)',
@@ -310,7 +346,7 @@ export function ExerciseSelector({
                                 <Clock className="w-3.5 h-3.5 text-slate-400" />
                               </div>
                               <span className="text-slate-300 font-medium">
-                                {formatDuration(exercise.duration)}
+                                {formatDurationInBars(exercise)}
                               </span>
                             </div>
 
@@ -319,7 +355,7 @@ export function ExerciseSelector({
                                 <Music className="w-3.5 h-3.5 text-slate-400" />
                               </div>
                               <span className="text-slate-300 font-medium">
-                                {exercise.bpm} BPM
+                                {exercise.bpm || '--'} BPM
                               </span>
                             </div>
 
@@ -328,7 +364,7 @@ export function ExerciseSelector({
                                 <TrendingUp className="w-3.5 h-3.5 text-slate-400" />
                               </div>
                               <span className="text-slate-300 font-medium">
-                                Key: {exercise.key}
+                                Key: {exercise.key || '--'}
                               </span>
                             </div>
                           </div>

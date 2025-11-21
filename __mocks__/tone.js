@@ -24,6 +24,24 @@ const createMockTimeline = () => ({
 });
 
 const mockTone = {
+  // Add methods needed by ToneWrapper
+  start: vi.fn(() => Promise.resolve()),
+  setContext: vi.fn(),
+  context: {
+    resume: vi.fn(() => Promise.resolve()),
+    state: 'running',
+    currentTime: 0,
+    sampleRate: 44100,
+  },
+  getContext: vi.fn(() => ({
+    state: 'running',
+    currentTime: 0,
+    sampleRate: 44100,
+    resume: vi.fn(() => Promise.resolve()),
+  })),
+  Master: {
+    volume: { value: 0 },
+  },
   Gain: vi.fn().mockImplementation(function(value = 1) {
     const node = createMockToneNode();
     // Tone.js Gain nodes have a gain AudioParam property
@@ -120,6 +138,11 @@ export default mockTone;
 
 // Export named exports
 export const {
+  start,
+  setContext,
+  context,
+  getContext,
+  Master,
   Gain,
   Panner,
   Compressor,

@@ -1,12 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
-// TODO: Review non-null assertion - consider null safety
+// Validate environment variables at module load time
+// This ensures the app fails fast if configuration is missing
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
   throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_URL');
 }
 
-// TODO: Review non-null assertion - consider null safety
 if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
   throw new Error(
     'Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY',
@@ -34,12 +33,11 @@ const useMinimalConfig = isWebkit && isE2ETesting;
 
 // Create the Supabase client with appropriate configuration
 const createSupabaseClient = () => {
-  // Get validated environment variables
+  // Get validated environment variables (already checked at module load)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // These should already be validated above, but TypeScript doesn't know that
-  // TODO: Review non-null assertion - consider null safety
+  // Runtime check for extra safety (though already validated at module load)
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
       'Supabase environment variables are not properly configured',
@@ -48,8 +46,6 @@ const createSupabaseClient = () => {
 
   // For webkit E2E testing, return a completely mocked client
   if (useMinimalConfig) {
-    logger.info('Creating mocked Supabase client for webkit E2E testing');
-
     // Create a minimal mock that prevents any actual network calls
     return {
       auth: {
@@ -131,7 +127,7 @@ const createSupabaseClient = () => {
         // Reduce timeout globally to 3 seconds for faster UX
         const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-        return fetch(input, {
+        return globalThis.fetch(input, {
           ...init,
           signal: controller.signal,
         }).finally(() => {
@@ -146,4 +142,6 @@ const createSupabaseClient = () => {
   });
 };
 
-export const supabase = createSupabaseClient() as any;
+// Export typed Supabase client
+// The mock client in E2E mode returns a compatible interface
+export const supabase = createSupabaseClient();

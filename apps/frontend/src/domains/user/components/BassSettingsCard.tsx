@@ -48,7 +48,8 @@ export function BassSettingsCard({ onSettingsChange }: BassSettingsCardProps) {
       setOriginalSettings(defaultSettings);
       onSettingsChange?.(defaultSettings);
     }
-  }, [profile, onSettingsChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   // Check if settings have changed
   useEffect(() => {

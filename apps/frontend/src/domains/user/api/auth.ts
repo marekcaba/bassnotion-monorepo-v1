@@ -6,6 +6,7 @@ import {
 } from '@bassnotion/contracts';
 import type { User, Session } from '@supabase/supabase-js';
 import { AuthError } from '@supabase/supabase-js';
+import { apiClient } from '@/lib/api-client';
 
 const logger = createStructuredLogger('AuthService');
 
@@ -195,8 +196,7 @@ export class AuthService {
       });
 
       // Handle both HTTP errors and successful responses with success: false
-      // TODO: Review non-null assertion - consider null safety
-      if (!response.ok || !result.success) {
+      if (!response.ok || !result?.success) {
         // Extract the specific error message from backend response
         let errorMessage = 'Login failed';
 
@@ -280,6 +280,8 @@ export class AuthService {
       logger.error('Sign out error:', error as Error);
       throw error;
     }
+    // Clear the auth token from API client
+    apiClient.clearAuthToken();
   }
 
   /**

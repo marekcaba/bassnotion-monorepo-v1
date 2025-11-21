@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { VolumeKnob } from './VolumeKnob';
 import { useTrack } from '@/domains/playback/hooks/useTrack';
+import { useTransport } from '@/domains/playback/hooks/useTransport';
 import {
   ensureAudioContext,
   withAudioContext,
@@ -20,16 +21,19 @@ import type {
 import { toMusicalPosition } from '@/domains/playback/types/pattern';
 import { EventBus } from '@/domains/playback/services/core/EventBus';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { usePatternSelector } from '@/domains/patterns/hooks/usePatternSelector';
+import { Settings2, Music2 } from 'lucide-react';
 
 interface DrummerWidgetProps {
   pattern: string;
   isVisible: boolean;
   isPlaying: boolean;
   exercise?: Exercise;
+  tutorialId?: string;
   onPatternChange: (pattern: string) => void;
-  onToggleVisibility: () => void;
+  onToggleVisibility?: () => void;
   onTogglePlay?: () => void;
-  tempo?: number;
+  isAdminMode?: boolean;
 }
 
 // Drum pattern presets
@@ -68,21 +72,117 @@ const drumPatterns = {
 
 const logger = getLogger('drummer-widget');
 
+/**
+ * Map MIDI note numbers to drum types (General MIDI drum map)
+ */
+const MIDI_DRUM_MAP: Record<number, 'kick' | 'snare' | 'hihat'> = {
+  36: 'kick',  // Bass Drum 1
+  35: 'kick',  // Acoustic Bass Drum
+  38: 'snare', // Acoustic Snare
+  40: 'snare', // Electric Snare
+  42: 'hihat', // Closed Hi-Hat
+  44: 'hihat', // Pedal Hi-Hat
+  46: 'hihat', // Open Hi-Hat
+};
+
+/**
+ * Convert parsed MIDI data to DrumPattern format
+ */
+function convertMidiToDrumPattern(parsedData: any): DrumPattern {
+  const pattern: DrumPattern = {
+    id: 'drum-pattern-from-midi',
+    events: [],
+    loopLength: parsedData.metadata?.totalBars || 2,
+  };
+
+  logger.info('🥁 Converting MIDI to drum pattern', {
+    totalBars: parsedData.metadata?.totalBars,
+    measureCount: parsedData.measures?.length,
+    timeSignature: parsedData.metadata?.timeSignature,
+  });
+
+  // Process each measure
+  parsedData.measures?.forEach((measure: any, measureIndex: number) => {
+    measure.notes?.forEach((note: any) => {
+      // Map MIDI note to drum type
+      const drumType = MIDI_DRUM_MAP[note.pitch];
+
+      if (drumType) {
+        // Calculate position within the measure
+        const timeInMeasure = note.time - measure.startTime;
+        const measureDuration = measure.endTime - measure.startTime;
+        const beatsPerMeasure = parsedData.metadata?.timeSignature?.numerator || 4;
+        const beatDuration = measureDuration / beatsPerMeasure;
+
+        const beat = Math.floor(timeInMeasure / beatDuration);
+        const sixteenth = Math.floor(((timeInMeasure % beatDuration) / beatDuration) * 16);
+
+        const event: DrumPatternEvent = {
+          position: {
+            measure: measureIndex,
+            beat: beat,
+            subdivision: sixteenth,
+            tick: 0, // Drums typically use 16th note precision
+          },
+          drum: drumType,
+          velocity: note.velocity / 127, // Normalize from 0-127 to 0-1
+          duration: '16n',
+        };
+
+        pattern.events.push(event);
+        logger.info(`🥁 Added drum event: ${drumType} at ${measureIndex}:${beat}:${sixteenth}`, {
+          velocity: event.velocity.toFixed(2),
+          position: event.position,
+        });
+      }
+    });
+  });
+
+  logger.info(`🥁 Drum pattern created with ${pattern.events.length} events`);
+  return pattern;
+}
+
 export function DrummerWidget({
   pattern,
   isVisible,
   isPlaying: isPlayingProp,
   exercise,
+  tutorialId,
   onPatternChange,
   onToggleVisibility,
   onTogglePlay,
-  tempo = 120,
+  isAdminMode = false,
 }: DrummerWidgetProps) {
   const { correlationId, logger: componentLogger } =
     useCorrelation('DrummerWidget');
+
+  // DEBUG: Log exercise object to understand what we're receiving
+  useEffect(() => {
+    if (exercise) {
+      console.log('🥁 DrummerWidget received exercise:', {
+        id: exercise.id,
+        title: exercise.title,
+        drummerMidiUrl: exercise.drummerMidiUrl,
+        hasDrummerMidi: exercise.hasDrummerMidi?.(),
+        fullExercise: exercise,
+      });
+    }
+  }, [exercise?.id]);
+
+  // Get tempo directly from Transport (single source of truth)
+  const transport = useTransport();
+  const tempo = transport.tempo;
+
+  // Store transport in ref to prevent infinite loops (transport object changes every render)
+  const transportRef = useRef(transport);
+  useEffect(() => {
+    transportRef.current = transport;
+  }, [transport]);
+
   const [currentBeat, setCurrentBeat] = useState(0);
   const [isTransportPlaying, setIsTransportPlaying] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showPatternLibrary, setShowPatternLibrary] = useState(false);
   const [volume, setVolume] = useState(80);
   const [isMuted, setIsMuted] = useState(false);
   const [currentPattern, setCurrentPattern] = useState(
@@ -100,7 +200,16 @@ export function DrummerWidget({
     debugMode: false,
   });
 
-  // We'll load the plugin manually
+  // Extract track.isReady to prevent infinite loops (track object changes every render)
+  const trackIsReady = track.isReady;
+
+  // Store track in ref to access methods without triggering re-renders
+  const trackRef = useRef(track);
+  useEffect(() => {
+    trackRef.current = track;
+  }, [track]);
+
+  // We'll load the plugin manually - MUST be declared before any effects that use it
   const [wamPluginLoaded, setWamPluginLoaded] = useState(false);
   const [pluginClassLoaded, setPluginClassLoaded] = useState(false);
 
@@ -109,6 +218,119 @@ export function DrummerWidget({
   const drummerPluginRef = useRef<any>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentRegionRef = useRef<string | null>(null);
+
+  // Use pattern selector hook if tutorialId is provided
+  const patternSelector = tutorialId ? usePatternSelector({
+    tutorialId,
+    onPatternChange: (type, pattern) => {
+      if (type === 'drums' && pattern.midiData) {
+        // Convert pattern library format to widget format
+        handlePatternLibraryChange(pattern);
+      }
+    }
+  }) : null;
+
+  // DISABLED: DrummerWidget should NOT load MIDI independently
+  // GlobalControls is responsible for loading exercise data and adding regions to tracks
+  // This prevents race conditions and ensures the new architecture (pre-converted drum patterns) works correctly
+  //
+  // Previous behavior: Widget downloaded and parsed MIDI itself, creating regions independently
+  // New behavior: Widget only displays regions created by GlobalControls
+  //
+  // Load MIDI from exercise when exercise prop changes
+  // useEffect(() => {
+  //   if (!exercise?.drummerMidiUrl || !wamPluginLoaded) return;
+  //
+  //   const loadExerciseMidi = async () => {
+  //     try {
+  //       componentLogger.info('Loading drum MIDI from exercise', {
+  //         exerciseId: exercise.id,
+  //         midiUrl: exercise.drummerMidiUrl,
+  //         correlationId
+  //       });
+  //
+  //       // Import MIDI parsing hook
+  //       const { useMidiParsing } = await import('@/domains/admin/hooks/useMidiParsing');
+  //
+  //       // Create a temporary hook instance (not ideal but works outside React component)
+  //       const parseMidi = async (midiUrl: string) => {
+  //         const response = await fetch('/api/v1/midi/parse', {
+  //           method: 'POST',
+  //           headers: { 'Content-Type': 'application/json' },
+  //           body: JSON.stringify({
+  //             midiUrl,
+  //             bpm: tempo,
+  //             timeSignature: { numerator: 4, denominator: 4 },
+  //             totalBars: 2,
+  //           }),
+  //         });
+  //
+  //         if (!response.ok) {
+  //           throw new Error(`MIDI parsing failed: ${response.statusText}`);
+  //         }
+  //
+  //         return response.json();
+  //       };
+  //
+  //       const parsedData = await parseMidi(exercise.drummerMidiUrl);
+  //
+  //       // Convert parsed MIDI notes to drum pattern
+  //       const drumPattern = convertMidiToDrumPattern(parsedData);
+  //
+  //       // Update track with new pattern
+  //       const currentTrack = trackRef.current;
+  //       if (currentTrack?.createRegionFromPattern && currentRegionRef.current) {
+  //         currentTrack.removeRegion(currentRegionRef.current);
+  //         const region = currentTrack.createRegionFromPattern(drumPattern, {
+  //           name: 'Drum Pattern',
+  //           startPosition: '0:0:0',
+  //           duration: `${drumPattern.loopLength}:0:0`,
+  //           loopCount: 0,
+  //         });
+  //         currentRegionRef.current = region.id;
+  //
+  //         // Update RegionProcessor with new MIDI-loaded pattern
+  //         const globalServices = (window as any).__globalCoreServices || (window as any).__coreServices;
+  //         if (globalServices && globalServices.getRegionProcessor) {
+  //           const regionProcessor = globalServices.getRegionProcessor();
+  //           regionProcessor.updateTracks([{
+  //             id: 'drummer-widget-track',
+  //             name: 'Drums',
+  //             instrumentType: 'drums',
+  //             regions: [{
+  //               id: region.id,
+  //               trackId: 'drummer-widget-track',
+  //               startTime: 0,
+  //               duration: drumPattern.loopLength * 4,
+  //               pattern: {
+  //                 id: 'drum-pattern-from-midi',
+  //                 name: 'Drum Pattern',
+  //                 type: 'drums',
+  //                 events: drumPattern.events
+  //               }
+  //             }]
+  //           }]);
+  //         }
+  //
+  //         componentLogger.info('Loaded drum pattern from exercise MIDI', {
+  //           exerciseId: exercise.id,
+  //           events: drumPattern.events.length,
+  //           loopLength: drumPattern.loopLength,
+  //           correlationId
+  //         });
+  //       }
+  //     } catch (error) {
+  //       componentLogger.error('Failed to load exercise MIDI', error instanceof Error ? error : new Error(String(error)), {
+  //         exerciseId: exercise.id,
+  //         correlationId
+  //       });
+  //     }
+  //   };
+  //
+  //   loadExerciseMidi();
+  //   // Note: Removed track from dependencies to prevent infinite loops
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [exercise?.id, exercise?.drummerMidiUrl, wamPluginLoaded, tempo, componentLogger, correlationId]);
 
   // Create drum pattern from current preset
   const createDrumPattern = useCallback(() => {
@@ -132,7 +354,12 @@ export function DrummerWidget({
           const beat = index % 4;
 
           const event: DrumPatternEvent = {
-            position: toMusicalPosition(bar, beat, 0),
+            position: {
+              measure: bar,
+              beat: beat,
+              subdivision: 0,
+              tick: 0,
+            },
             drum: drumType,
             velocity:
               drumType === 'kick' ? 0.9 : drumType === 'snare' ? 0.8 : 0.6,
@@ -174,7 +401,7 @@ export function DrummerWidget({
   // Phase 2: Create the audio node when AudioContext is available
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!pluginClassLoaded || !track.isReady || wamPluginLoaded) return;
+    if (!pluginClassLoaded || !trackIsReady || wamPluginLoaded) return;
 
     // Add guard to prevent multiple instances
     if (drummerPluginRef.current) {
@@ -259,10 +486,18 @@ export function DrummerWidget({
             logger.debug('Default drum kit loaded');
           }
 
+          // Register the plugin with InstrumentRegistry
+          if (globalServices && globalServices.getInstrumentRegistry) {
+            const instrumentRegistry = globalServices.getInstrumentRegistry();
+            instrumentRegistry.setActive('drums', plugin);
+            logger.debug('Registered WAM Drummer with InstrumentRegistry');
+          }
+
           // Register initial pattern with track
-          if (track && track.createRegionFromPattern) {
+          const currentTrack = trackRef.current;
+          if (currentTrack && currentTrack.createRegionFromPattern) {
             const pattern = createDrumPattern();
-            const region = track.createRegionFromPattern(pattern, {
+            const region = currentTrack.createRegionFromPattern(pattern, {
               name: 'Drum Pattern',
               startPosition: '0:0:0',
               duration: `${pattern.loopLength}:0:0`,
@@ -273,6 +508,29 @@ export function DrummerWidget({
               pattern,
               region,
             });
+
+            // Register track with RegionProcessor to enable pattern playback
+            if (globalServices && globalServices.getRegionProcessor) {
+              const regionProcessor = globalServices.getRegionProcessor();
+              regionProcessor.registerTracks([{
+                id: 'drummer-widget-track',
+                name: 'Drums',
+                instrumentType: 'drums',
+                regions: [{
+                  id: region.id,
+                  trackId: 'drummer-widget-track',
+                  startTime: 0,
+                  duration: pattern.loopLength * 4, // Convert bars to seconds (assuming 4/4 time)
+                  pattern: {
+                    id: 'drum-pattern',
+                    name: 'Drum Pattern',
+                    type: 'drums',
+                    events: pattern.events
+                  }
+                }]
+              }]);
+              logger.debug('Registered drum track with RegionProcessor');
+            }
           }
         } else {
           logger.debug('AudioContext not ready yet', {
@@ -286,7 +544,8 @@ export function DrummerWidget({
     };
 
     createAudioNode();
-  }, [track.isReady, wamPluginLoaded, pluginClassLoaded, pluginLoadAttempts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackIsReady, wamPluginLoaded, pluginClassLoaded, pluginLoadAttempts]);
 
   // Handle volume changes
   useEffect(() => {
@@ -346,14 +605,14 @@ export function DrummerWidget({
 
   // Retry plugin loading when audio services become ready
   useEffect(() => {
-    if (audioServicesReady && track.isReady && !wamPluginLoaded) {
+    if (audioServicesReady && trackIsReady && !wamPluginLoaded) {
       logger.debug('Audio services ready, retrying plugin load...');
       // Small delay to ensure everything is fully initialized
       retryTimeoutRef.current = setTimeout(() => {
         setWamPluginLoaded(false); // Force a retry by changing the dependency
       }, 100);
     }
-  }, [audioServicesReady, track.isReady, wamPluginLoaded]);
+  }, [audioServicesReady, trackIsReady, wamPluginLoaded]);
 
   // Update pattern when selection changes
   useEffect(() => {
@@ -363,11 +622,12 @@ export function DrummerWidget({
     setCurrentPattern(newPattern);
 
     // Update pattern in track when drum pattern changes
-    if (track && track.regions && wamPluginLoaded && currentRegionRef.current) {
+    const currentTrack = trackRef.current;
+    if (currentTrack && currentTrack.regions && wamPluginLoaded && currentRegionRef.current) {
       const drumPattern = createDrumPattern();
       // Remove old region and create new one
-      track.removeRegion(currentRegionRef.current);
-      const region = track.createRegionFromPattern(drumPattern, {
+      currentTrack.removeRegion(currentRegionRef.current);
+      const region = currentTrack.createRegionFromPattern(drumPattern, {
         name: 'Drum Pattern',
         startPosition: '0:0:0',
         duration: `${drumPattern.loopLength}:0:0`,
@@ -376,7 +636,10 @@ export function DrummerWidget({
       currentRegionRef.current = region.id;
       logger.debug('Updated drum pattern', { pattern, drumPattern });
     }
-  }, [pattern, wamPluginLoaded, createDrumPattern]); // Removed track from dependencies to prevent loops
+    // Note: createDrumPattern NOT in dependencies - it only depends on pattern prop which IS in deps
+    // Including it would cause infinite loops as useCallback creates new ref when pattern changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pattern, wamPluginLoaded]); // Removed track and createDrumPattern from dependencies to prevent loops
 
   // Note: Drum triggering is handled by the AudioEventRouter service
   // The widget only handles visual updates based on transport position
@@ -421,6 +684,22 @@ export function DrummerWidget({
     };
   }, []);
 
+  // Cleanup on unmount - remove from InstrumentRegistry
+  useEffect(() => {
+    return () => {
+      const globalServices =
+        (window as any).__globalCoreServices ||
+        (window as any).__coreServices;
+      if (globalServices && globalServices.getInstrumentRegistry) {
+        const instrumentRegistry = globalServices.getInstrumentRegistry();
+        if (instrumentRegistry.getActive('drums') === drummerPluginRef.current) {
+          instrumentRegistry.removeActive('drums');
+          logger.debug('Removed WAM Drummer from InstrumentRegistry on unmount');
+        }
+      }
+    };
+  }, []);
+
   // Handle play state changes (simplified - no longer schedules its own pattern)
   useEffect(() => {
     if (!isPlayingProp && !isTransportPlaying) {
@@ -440,6 +719,13 @@ export function DrummerWidget({
     onPositionUpdate: (position) => {
       // Removed console.log that fires every 50ms - causes performance issues!
       // logger.info('[DrummerWidget] Position update received:', position, 'isPlaying:', isPlaying);
+
+      // COUNTDOWN FIX: Don't update beat indicators during countdown (negative bars)
+      // Let the red countdown dots handle the countdown visualization
+      if (position.bars < 0) {
+        return;
+      }
+
       if (isPlaying) {
         const beatIndex = positionToBeatIndex(position);
         // logger.info('[DrummerWidget] Setting current beat to:', beatIndex);
@@ -505,7 +791,115 @@ export function DrummerWidget({
     [testDrumSound],
   );
 
-  if (!isVisible) return null;
+  // Handle pattern change from pattern library
+  const handlePatternLibraryChange = useCallback(async (libraryPattern: any) => {
+    // Load MIDI file from URL
+    if (libraryPattern.midiFileUrl) {
+      try {
+        componentLogger.info('Loading pattern from MIDI:', {
+          name: libraryPattern.name,
+          url: libraryPattern.midiFileUrl,
+          correlationId
+        });
+
+        // Load and parse MIDI file using backend API
+        const { useMidiParsing } = await import('@/domains/admin/hooks/useMidiParsing');
+        const midiParsing = useMidiParsing();
+
+        const parsedData = await midiParsing.parseMidi(
+          'drums-midi', // placeholder ID
+          {
+            midiUrl: libraryPattern.midiFileUrl,
+            bpm: tempo,
+            timeSignature: { numerator: 4, denominator: 4 },
+            totalBars: 2,
+          }
+        );
+
+        // Convert parsed MIDI notes to drum pattern
+        const drumPattern = convertMidiToDrumPattern(parsedData);
+
+        // Update track with new pattern
+        const currentTrack = trackRef.current;
+        if (currentTrack && currentTrack.createRegionFromPattern && currentRegionRef.current) {
+          currentTrack.removeRegion(currentRegionRef.current);
+          const region = currentTrack.createRegionFromPattern(drumPattern, {
+            name: libraryPattern.name || 'Drum Pattern',
+            startPosition: '0:0:0',
+            duration: `${drumPattern.loopLength}:0:0`,
+            loopCount: 0,
+          });
+          currentRegionRef.current = region.id;
+
+          // Update RegionProcessor with new pattern
+          const globalServices = (window as any).__globalCoreServices || (window as any).__coreServices;
+          if (globalServices && globalServices.getRegionProcessor) {
+            const regionProcessor = globalServices.getRegionProcessor();
+            regionProcessor.updateTracks([{
+              id: 'drummer-widget-track',
+              name: 'Drums',
+              instrumentType: 'drums',
+              regions: [{
+                id: region.id,
+                trackId: 'drummer-widget-track',
+                startTime: 0,
+                duration: drumPattern.loopLength * 4,
+                pattern: {
+                  id: 'drum-pattern',
+                  name: libraryPattern.name || 'Drum Pattern',
+                  type: 'drums',
+                  events: drumPattern.events
+                }
+              }]
+            }]);
+          }
+
+          componentLogger.info('Updated drum pattern from MIDI', {
+            name: libraryPattern.name,
+            events: drumPattern.events.length,
+            correlationId
+          });
+        }
+
+        onPatternChange(libraryPattern.name);
+      } catch (error) {
+        componentLogger.error('Failed to load pattern', error instanceof Error ? error : new Error(String(error)), { correlationId });
+
+        // Fallback to genre-based pattern
+        const newPattern = {
+          kick: Array(8).fill(0),
+          snare: Array(8).fill(0),
+          hihat: Array(8).fill(0),
+        };
+
+        // Simple pattern generation based on genre
+        if (libraryPattern.genre === 'rock') {
+          newPattern.kick = [1, 0, 0, 0, 1, 0, 0, 0];
+          newPattern.snare = [0, 0, 1, 0, 0, 0, 1, 0];
+          newPattern.hihat = [1, 1, 1, 1, 1, 1, 1, 1];
+        } else if (libraryPattern.genre === 'jazz') {
+          newPattern.kick = [1, 0, 0, 0, 0, 0, 1, 0];
+          newPattern.snare = [0, 0, 0, 0, 1, 0, 0, 0];
+          newPattern.hihat = [1, 0, 1, 1, 0, 1, 1, 0];
+        } else if (libraryPattern.genre === 'funk') {
+          newPattern.kick = [1, 0, 0, 1, 0, 0, 1, 0];
+          newPattern.snare = [0, 1, 0, 1, 0, 0, 1, 0];
+          newPattern.hihat = [1, 1, 0, 1, 1, 0, 1, 1];
+        }
+
+        setCurrentPattern(newPattern);
+        onPatternChange(libraryPattern.name);
+      }
+    }
+    // Note: Removed track from dependencies to prevent infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onPatternChange, componentLogger, correlationId, tempo]);
+
+  // Don't return null when not visible - we need effects to run for plugin loading
+  // Just hide the UI
+  if (!isVisible) {
+    return <div style={{ display: 'none' }} />;
+  }
 
   return (
     <div
@@ -600,7 +994,7 @@ export function DrummerWidget({
               <div className="flex items-center gap-4 w-full">
                 <div className="flex-1">
                   <div className="flex flex-col gap-2">
-                    {/* Pattern Selector */}
+                    {/* Pattern Selector with Library Button */}
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-400 w-16">
                         Pattern:
@@ -616,7 +1010,60 @@ export function DrummerWidget({
                           </option>
                         ))}
                       </select>
+                      {/* Pattern Library Button */}
+                      {tutorialId && (
+                        <button
+                          onClick={() => setShowPatternLibrary(!showPatternLibrary)}
+                          className="p-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                          title="Browse Pattern Library"
+                        >
+                          <Music2 className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
+
+                    {/* Pattern Library Selector */}
+                    {showPatternLibrary && patternSelector && (
+                      <div className="p-2 bg-slate-800 rounded-lg border border-slate-700">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-slate-300">Pattern Library</span>
+                          <button
+                            onClick={() => setShowPatternLibrary(false)}
+                            className="text-xs text-slate-500 hover:text-slate-400"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        {patternSelector.isLoading ? (
+                          <div className="text-xs text-slate-500">Loading patterns...</div>
+                        ) : (
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {patternSelector.availableDrumPatterns.map((p) => (
+                              <button
+                                key={p.id}
+                                onClick={() => {
+                                  patternSelector.selectDrumPattern(p);
+                                  handlePatternLibraryChange(p);
+                                  setShowPatternLibrary(false);
+                                }}
+                                className={`w-full text-left p-1.5 text-xs rounded hover:bg-slate-700 transition-colors ${
+                                  patternSelector.selectedDrumPattern?.id === p.id
+                                    ? 'bg-slate-700 text-orange-400'
+                                    : 'text-slate-300'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span>{p.name}</span>
+                                  {p.genre && (
+                                    <span className="text-xs text-slate-500">{p.genre}</span>
+                                  )}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Drum pattern grid */}
                     <div className="space-y-1">
@@ -709,7 +1156,7 @@ export function DrummerWidget({
                       await testDrumSound(5); // hihat
                     }}
                     className="px-2 py-1 text-xs bg-orange-600 text-white rounded hover:bg-orange-500 transition-colors"
-                    disabled={!track.isReady}
+                    disabled={!trackIsReady}
                   >
                     Test
                   </button>
@@ -725,18 +1172,6 @@ export function DrummerWidget({
           </div>
         </div>
 
-        {/* Status and Close Button */}
-        <div className="flex items-center gap-2 ml-4">
-          <span className="text-xs text-gray-400">
-            {track.isReady ? '🟢' : '🟡'}
-          </span>
-          <button
-            onClick={onToggleVisibility}
-            className="text-gray-400 hover:text-white"
-          >
-            ✕
-          </button>
-        </div>
       </div>
 
       {/* Play Control (if provided) */}
@@ -749,7 +1184,7 @@ export function DrummerWidget({
                 ? 'bg-red-600 hover:bg-red-700 text-white'
                 : 'bg-green-600 hover:bg-green-700 text-white'
             }`}
-            disabled={!track.isReady}
+            disabled={!trackIsReady}
           >
             {isPlaying ? 'Stop' : 'Play'}
           </button>

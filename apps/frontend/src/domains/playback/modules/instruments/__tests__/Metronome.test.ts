@@ -28,7 +28,7 @@ vi.mock('@/shared/hooks/useCorrelation', () => ({
 import { Metronome } from '../implementations/metronome/Metronome.js';
 import type { MetronomeInstrumentConfig } from '../implementations/metronome/Metronome.js';
 import type { InstrumentEvent } from '../types/index.js';
-import { loadGlobalTone } from '../../../services/plugins/toneLoader.js';
+import { loadGlobalTone } from '../../shared/loaders/toneLoader.js';
 
 // Mock logger globally
 const mockLogger = {

@@ -12,10 +12,12 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { logger } = useCorrelation('ErrorBoundary');
+
   useEffect(() => {
     // Log the error to an error reporting service
-    logger.error(error);
-  }, [error]);
+    logger.error('Application error occurred', error, { digest: error.digest });
+  }, [error, logger]);
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
@@ -23,8 +25,7 @@ export default function Error({
         <div className="mb-6">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            // TODO: Review non-null assertion - consider null safety Something
-            went wrong!
+            Something went wrong!
           </h1>
           <p className="text-gray-600">
             We apologize for the inconvenience. Please try again.

@@ -42,6 +42,7 @@ export class AudioWorkletManager extends EventEmitter {
   private expectedMessageSequence = -1;
   private lastValidTime = 0;
   private lastValidFrame = 0;
+  private lastStopTime = 0; // Track when we last stopped to suppress expected stale warnings
 
   // Configuration
   private config: Required<AudioWorkletConfig>;
@@ -189,10 +190,16 @@ export class AudioWorkletManager extends EventEmitter {
   private handleTimingUpdate(data: TimingMessage): void {
     // Validate session ID
     if (data.sessionId !== this.currentSessionId) {
-      logger.warn('Rejecting stale timing update', {
-        received: data.sessionId,
-        expected: this.currentSessionId,
-      });
+      // Suppress expected stale warnings for 200ms after stop (race condition cleanup)
+      const timeSinceStop = performance.now() - this.lastStopTime;
+      const isExpectedStaleMessage = this.lastStopTime > 0 && timeSinceStop < 200;
+
+      if (!isExpectedStaleMessage) {
+        logger.warn('Rejecting stale timing update', {
+          received: data.sessionId,
+          expected: this.currentSessionId,
+        });
+      }
       return;
     }
 
@@ -288,6 +295,7 @@ export class AudioWorkletManager extends EventEmitter {
     this.expectedMessageSequence = -1;
     this.lastValidTime = 0;
     this.lastValidFrame = 0;
+    this.lastStopTime = performance.now(); // Track stop time to suppress expected stale warnings
 
     this.sendControlMessage({ type: 'stop' });
     logger.info('Stopped AudioWorklet timing', {

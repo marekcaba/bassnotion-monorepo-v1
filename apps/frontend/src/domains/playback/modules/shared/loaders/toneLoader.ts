@@ -33,30 +33,38 @@ export async function loadGlobalTone(
 
   // If audioEngine is provided (dependency injection), use it directly
   if (audioEngine) {
-    const tone = audioEngine.getTone();
+    try {
+      const tone = audioEngine.getTone();
 
-    // If we have a preferred context, just log but don't switch
-    // DON'T switch contexts - this causes buffer invalidation issues
-    if (
-      preferredContext &&
-      tone &&
-      tone.context._context !== preferredContext
-    ) {
-      logger.info(
-        '🎵 toneLoader: Preferred context provided but NOT switching to avoid buffer invalidation',
-      );
+      // If we have a preferred context, just log but don't switch
+      // DON'T switch contexts - this causes buffer invalidation issues
+      if (
+        preferredContext &&
+        tone &&
+        tone.context._context !== preferredContext
+      ) {
+        logger.info(
+          '🎵 toneLoader: Preferred context provided but NOT switching to avoid buffer invalidation',
+        );
+      }
+
+      if (flags.ENABLE_MIGRATION_MONITORING) {
+        logger.info(
+          '🎵 toneLoader: Got Tone instance from injected AudioEngine',
+          {
+            contextState: tone.context.state,
+          },
+        );
+      }
+
+      return tone;
+    } catch (error) {
+      // AudioEngine not initialized yet - fallback to window.Tone
+      logger.warn('🎵 toneLoader: AudioEngine not initialized (injected), falling back to window.Tone', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Fall through to other methods below
     }
-
-    if (flags.ENABLE_MIGRATION_MONITORING) {
-      logger.info(
-        '🎵 toneLoader: Got Tone instance from injected AudioEngine',
-        {
-          contextState: tone.context.state,
-        },
-      );
-    }
-
-    return tone;
   }
 
   // Use CoreServices if available (new approach)
@@ -64,16 +72,24 @@ export async function loadGlobalTone(
     (window as any).__coreServices || (window as any).__globalCoreServices;
 
   if (coreServices?.getAudioEngine) {
-    const audioEngine = coreServices.getAudioEngine();
-    const tone = audioEngine.getTone();
+    try {
+      const audioEngine = coreServices.getAudioEngine();
+      const tone = audioEngine.getTone();
 
-    if (flags.ENABLE_MIGRATION_MONITORING) {
-      logger.info('🎵 toneLoader: Got Tone instance from AudioEngine', {
-        contextState: tone.context.state,
+      if (flags.ENABLE_MIGRATION_MONITORING) {
+        logger.info('🎵 toneLoader: Got Tone instance from AudioEngine', {
+          contextState: tone.context.state,
+        });
+      }
+
+      return tone;
+    } catch (error) {
+      // AudioEngine not initialized yet - fallback to window.Tone
+      logger.warn('🎵 toneLoader: AudioEngine not initialized (CoreServices), falling back to window.Tone', {
+        error: error instanceof Error ? error.message : String(error),
       });
+      // Fall through to window.Tone below
     }
-
-    return tone;
   }
 
   // Fallback: Try to get from window.Tone

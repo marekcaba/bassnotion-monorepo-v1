@@ -5,6 +5,7 @@ import {
 import * as dotenv from 'dotenv';
 import fastifyHelmet from '@fastify/helmet';
 import fastifyRateLimit from '@fastify/rate-limit';
+import fastifyMultipart from '@fastify/multipart';
 
 import { AppModule } from './app.module.js';
 import { ZodValidationPipe } from './shared/pipes/zod-validation.pipe.js';
@@ -20,6 +21,7 @@ import { setupSwagger } from './config/swagger.config.js';
 
 // Load environment variables from .env file in monorepo root
 // Try multiple paths for different deployment scenarios
+dotenv.config({ path: '.env.local' }); // Local development override
 dotenv.config({ path: '../../.env' }); // Local development
 dotenv.config({ path: '.env' }); // Railway deployment
 dotenv.config(); // Default .env loading
@@ -55,6 +57,13 @@ async function bootstrap() {
   // Register security plugins
   await fastifyInstance.register(fastifyHelmet as any, helmetConfig);
   await fastifyInstance.register(fastifyRateLimit as any, rateLimitConfig);
+
+  // Register multipart plugin for file uploads
+  await fastifyInstance.register(fastifyMultipart as any, {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB max file size
+    },
+  });
 
   // Enable global validation pipes
   app.useGlobalPipes(new ZodValidationPipe());

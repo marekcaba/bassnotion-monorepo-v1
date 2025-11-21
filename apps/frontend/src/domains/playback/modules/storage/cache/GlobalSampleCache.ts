@@ -22,6 +22,7 @@ export interface CachedSample {
   sampler?: Sampler;
   loadedAt: number;
   type: 'buffer' | 'sampler' | 'url';
+  isContextCompatible?: boolean; // If true, buffer is from current AudioContext and should survive cleanup
 }
 
 export interface CachedInstrument {
@@ -52,6 +53,7 @@ export class GlobalSampleCacheImpl {
   private samples = new Map<string, CachedSample>();
   private instruments = new Map<string, CachedInstrument>();
   private urlCache = new Map<string, string>(); // path -> Supabase URL
+  private metadata = new Map<string, any>(); // Generic metadata cache for FAANG strategies
 
   // New intelligent cache
   private sampleCache: SampleCache;
@@ -109,19 +111,29 @@ export class GlobalSampleCacheImpl {
    * Get cached URL
    */
   getCachedUrl(path: string): string | undefined {
-    return this.urlCache.get(path);
+    const url = this.urlCache.get(path);
+    if (url) {
+      logger.info(`♻️ Cache HIT for URL: ${path}`);
+    } else {
+      logger.info(`❌ Cache MISS for URL: ${path}`);
+    }
+    return url;
   }
 
   /**
    * Cache an audio buffer
+   * @param path - Cache key (e.g., "grandpiano-v4-A3")
+   * @param buffer - AudioBuffer to cache
+   * @param options - Optional metadata (e.g., { isContextCompatible: true })
    */
-  cacheBuffer(path: string, buffer: AudioBuffer): void {
+  cacheBuffer(path: string, buffer: AudioBuffer, options?: { isContextCompatible?: boolean }): void {
     const existing = this.samples.get(path);
     this.samples.set(path, {
       url: existing?.url || path,
       buffer,
       loadedAt: Date.now(),
       type: 'buffer',
+      isContextCompatible: options?.isContextCompatible,
     });
 
     // Also cache in new system for unified access
@@ -143,6 +155,18 @@ export class GlobalSampleCacheImpl {
     const arrayBuffer = this.audioBufferToArrayBuffer(buffer);
     this.sampleCache.set(path, arrayBuffer, metadata as AudioSampleMetadata);
 
+    // EVIDENCE: Log detailed buffer info
+    console.log(`🔊 CACHE BUFFER: ${path}`, {
+      isAudioBuffer: buffer instanceof AudioBuffer,
+      duration: buffer.duration,
+      sampleRate: buffer.sampleRate,
+      channels: buffer.numberOfChannels,
+      length: buffer.length,
+      memorySizeKB: Math.round((buffer.numberOfChannels * buffer.length * 4) / 1024),
+      type: typeof buffer,
+      constructor: buffer.constructor.name
+    });
+
     logger.info(`🔊 Cached buffer: ${path}`);
   }
 
@@ -150,7 +174,28 @@ export class GlobalSampleCacheImpl {
    * Get cached buffer
    */
   getCachedBuffer(path: string): AudioBuffer | undefined {
-    return this.samples.get(path)?.buffer;
+    const sample = this.samples.get(path);
+    const buffer = sample?.buffer;
+
+    // DIAGNOSTIC: Log cache lookup details
+    if (buffer) {
+      console.log(`[CACHE HIT] ${path}`, {
+        hasBuffer: !!buffer,
+        isContextCompatible: sample?.isContextCompatible,
+        bufferType: typeof buffer,
+        isAudioBuffer: buffer instanceof AudioBuffer
+      });
+    } else {
+      console.warn(`[CACHE MISS] ${path}`, {
+        sampleExists: !!sample,
+        sampleType: sample?.type,
+        hasBuffer: !!sample?.buffer,
+        sampleKeys: sample ? Object.keys(sample) : 'N/A',
+        totalCachedSamples: this.samples.size,
+        first5Keys: Array.from(this.samples.keys()).slice(0, 5)
+      });
+    }
+    return buffer;
   }
 
   /**
@@ -222,6 +267,50 @@ export class GlobalSampleCacheImpl {
    */
   getCachedInstrumentNames(): string[] {
     return Array.from(this.instruments.keys());
+  }
+
+  /**
+   * Cache metadata for preload strategies (e.g., required notes from MIDI analysis)
+   */
+  cacheMetadata(key: string, data: any): void {
+    this.metadata.set(key, {
+      data,
+      cachedAt: Date.now(),
+    });
+
+    logger.info(`📋 Cached metadata: ${key}`, {
+      dataKeys: Object.keys(data),
+    });
+  }
+
+  /**
+   * Get cached metadata
+   */
+  getCachedMetadata(key: string): any | undefined {
+    const cached = this.metadata.get(key);
+    if (cached) {
+      logger.debug(`♻️ Using cached metadata: ${key}`);
+      return cached.data;
+    }
+    return undefined;
+  }
+
+  /**
+   * Clear specific metadata
+   */
+  clearMetadata(key: string): void {
+    if (this.metadata.has(key)) {
+      this.metadata.delete(key);
+      logger.info(`🗑️ Cleared metadata: ${key}`);
+    }
+  }
+
+  /**
+   * Clear all metadata
+   */
+  clearAllMetadata(): void {
+    this.metadata.clear();
+    logger.info('🗑️ Cleared all metadata');
   }
 
   /**
@@ -442,10 +531,12 @@ export const GlobalSampleCache = {
     GlobalSampleCacheImpl.getInstance().getCachedSampler(url),
   getCachedInstrument: (name: string) =>
     GlobalSampleCacheImpl.getInstance().getCachedInstrument(name),
+  getCachedInstrumentNames: () =>
+    GlobalSampleCacheImpl.getInstance().getCachedInstrumentNames(),
   cacheUrl: (path: string, url: string) =>
     GlobalSampleCacheImpl.getInstance().cacheUrl(path, url),
-  cacheBuffer: (path: string, buffer: AudioBuffer) =>
-    GlobalSampleCacheImpl.getInstance().cacheBuffer(path, buffer),
+  cacheBuffer: (path: string, buffer: AudioBuffer, options?: { isContextCompatible?: boolean }) =>
+    GlobalSampleCacheImpl.getInstance().cacheBuffer(path, buffer, options),
   cacheSampler: (path: string, sampler: Sampler) =>
     GlobalSampleCacheImpl.getInstance().cacheSampler(path, sampler),
   cacheInstrument: (name: string, sampler: any) =>

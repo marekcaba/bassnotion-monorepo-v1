@@ -3,6 +3,10 @@
  * Ensures all components use the same AudioContext instance
  */
 
+import { getLogger } from '@/utils/logger.js';
+
+const logger = getLogger('audioContext');
+
 /**
  * Get the persistent audio context
  * This context is shared across the entire application to prevent

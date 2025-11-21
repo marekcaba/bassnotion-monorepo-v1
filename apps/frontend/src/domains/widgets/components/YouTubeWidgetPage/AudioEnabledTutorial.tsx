@@ -20,17 +20,13 @@ import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Simple logging function
 const log = (message: string, data?: any) => {
-  logger.info(message, data);
+  // Only log in debug mode
+  if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_LOG_LEVEL === 'DEBUG') {
+    console.debug(`[AudioEnabledTutorial] ${message}`, data);
+  }
 };
 
-// Create a global log buffer for debugging
-if (typeof window !== 'undefined') {
-  (window as any).__audioLogs = (window as any).__audioLogs || [];
-  (window as any).__audioLogs.push('🎵 AudioEnabledTutorial: Module loading');
-}
-
-// After restoration, we should be able to use regular console
-log('🎵 AudioEnabledTutorial: Module loading');
+// Remove global log buffer - not needed in production
 
 interface AudioEnabledTutorialProps {
   tutorialData: Tutorial;
@@ -55,18 +51,12 @@ function AudioEnabledTutorialContent({
   useEffect(() => {
     // Log instead of alert to avoid blocking
     setTimeout(() => {
-      logger.info(
-        'AudioEnabledTutorial useEffect completed - page should be interactive now',
-        { correlationId },
-      );
+      logger.debug('AudioEnabledTutorial mounted', { correlationId });
     }, 1000);
   }, []);
 
-  // Add immediate console log to verify logging is working
-  log('🎧 AudioEnabledTutorialContent rendering...', {
-    tutorialSlug,
-    hasExercises: exercises?.length > 0,
-  });
+  // Debug logging only
+  log('Rendering', { tutorialSlug });
 
   // Use refs for values that don't need to trigger re-renders
   const coreServicesRef = useRef<any>(null);
@@ -79,8 +69,8 @@ function AudioEnabledTutorialContent({
   const [audioInitialized, setAudioInitialized] = useState(false);
 
   const addLog = (message: string) => {
-    // Use logger to avoid state updates
-    logger.info(message, { correlationId });
+    // Use debug level for verbose logs
+    logger.debug(message, { correlationId });
   };
 
   // Initialize core services - EXACT same pattern as test-unified-transport

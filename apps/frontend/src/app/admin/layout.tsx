@@ -1,24 +1,21 @@
+'use client';
+
 import { ReactNode } from 'react';
-import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { usePathname } from 'next/navigation';
 
 // Simple admin layout with basic protection
-// TODO: Add proper authentication check once admin roles are implemented
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  // Basic protection - check for admin header or localhost
-  const headersList = headers();
-  const host = headersList.get('host') || '';
+  const pathname = usePathname();
 
-  // Allow access from localhost for development
-  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+  // Check if we're on a tutorial edit page
+  const isTutorialEditPage = pathname?.includes('/admin/tutorials/') && pathname?.includes('/edit');
 
-  // In production, you would check for admin authentication here
-  // For now, we'll allow localhost access for monitoring
-  if (!isLocalhost && process.env.NODE_ENV === 'production') {
-    // TODO: Check for admin authentication
-    // redirect('/');
+  // For tutorial edit pages, render without admin wrapper
+  if (isTutorialEditPage) {
+    return <>{children}</>;
   }
 
+  // For other admin pages, use the standard admin layout
   return (
     <>
       <div className="min-h-screen bg-gray-50">
@@ -32,11 +29,22 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                   <a
                     href="/admin/monitoring"
-                    className="inline-flex items-center border-b-2 border-indigo-500 px-1 pt-1 text-sm font-medium text-gray-900"
+                    className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
                   >
                     Monitoring
                   </a>
-                  {/* Add more admin navigation items here */}
+                  <a
+                    href="/admin/tutorials"
+                    className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
+                  >
+                    Tutorials
+                  </a>
+                  <a
+                    href="/admin/instruments/wurlitzer"
+                    className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
+                  >
+                    Wurlitzer
+                  </a>
                 </div>
               </div>
             </div>

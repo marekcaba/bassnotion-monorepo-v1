@@ -165,10 +165,6 @@ export { AudioProvider } from './providers/AudioProvider.js';
 export { useAudio } from './hooks/useAudio.js';
 export { useTransport } from './hooks/useTransport.js';
 export { usePlugins } from './hooks/usePlugins.js';
-export { useToneInit } from './hooks/useToneInit.js';
-
-// Legacy hooks - these should be migrated to new hooks
-export { useCorePlaybackEngine } from './hooks/useCorePlaybackEngine';
 
 // ============================================================================
 // STATE MANAGEMENT - Zustand store

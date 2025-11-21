@@ -58,6 +58,7 @@ export class SampleAccurateClock {
 
   // Timing tracking
   private startTime = 0;
+  private lastDriftWarnTime = 0;
   private pauseTime = 0;
   private elapsedBeforePause = 0;
 
@@ -149,12 +150,16 @@ export class SampleAccurateClock {
         this.driftHistory.shift();
       }
 
-      // Notify if drift exceeds threshold
+      // Only log high drift occasionally to reduce spam
       if (drift > this.config.driftThreshold!) {
-        logger.warn('High drift detected', {
-          drift: drift.toFixed(2),
-          threshold: this.config.driftThreshold,
-        });
+        // Only log every 1000ms to reduce console spam
+        if (!this.lastDriftWarnTime || Date.now() - this.lastDriftWarnTime > 1000) {
+          logger.debug('Drift compensation active', {
+            drift: drift.toFixed(2),
+            threshold: this.config.driftThreshold,
+          });
+          this.lastDriftWarnTime = Date.now();
+        }
         this.onDrift?.(drift);
       }
     }

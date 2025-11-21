@@ -1,3 +1,5 @@
+import type { DrumHit } from '@bassnotion/contracts';
+
 export interface ExerciseNoteDto {
   id: string;
   timestamp: number;
@@ -21,10 +23,26 @@ export interface ExerciseDto {
   updated_at: string;
   is_active: boolean;
   created_by?: string;
+  // Legacy single MIDI file (kept for backward compatibility)
   midi_file_path?: string;
   original_filename?: string;
   file_size?: number;
   uploaded_at?: string;
+  // New separate MIDI files for each widget (Story 4.4)
+  drummer_midi_url?: string;
+  bassline_midi_url?: string;
+  harmony_midi_url?: string;
+  metronome_midi_url?: string;
+  // Pre-converted patterns (Story 4.4 - avoid re-parsing MIDI on client)
+  drum_pattern?: DrumHit[];
+  harmony_notes?: any[]; // Pre-converted harmony notes from MIDI
+  harmony_control_changes?: any[]; // MIDI control change events (sustain, expression)
+  harmony_instrument?: 'grandpiano' | 'rhodes' | 'wurlitzer' | 'pad'; // Harmony instrument type
+  // Musical metadata
+  duration_beats?: number;
+  total_bars?: number;
+  time_signature?: { numerator: number; denominator: number };
+  tutorial_id?: string;
 }
 
 export interface ExercisesResponseDto {

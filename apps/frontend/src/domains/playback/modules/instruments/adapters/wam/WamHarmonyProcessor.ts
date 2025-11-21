@@ -32,7 +32,7 @@ export class WamHarmonyProcessor {
   private wamKeyboardNode: any | null = null;
   private isInitialized = false;
   private volume = 0.8;
-  private currentInstrument = 'salamander'; // Default to piano
+  private currentInstrument = 'grandpiano'; // Default to grand piano
 
   async initialize(
     audioContext: AudioContext,
@@ -58,10 +58,14 @@ export class WamHarmonyProcessor {
 
       // Disconnect from destination and reconnect through our gain
       // Only disconnect if the node is currently connected
-      if (this.wamKeyboardNode.isConnected) {
-        this.wamKeyboardNode.disconnect();
+      if (this.wamKeyboardNode && this.outputNode) {
+        if (this.wamKeyboardNode.isConnected) {
+          this.wamKeyboardNode.disconnect();
+        }
+        this.wamKeyboardNode.connect(this.outputNode);
+      } else {
+        this.logger.warn('WAM keyboard node or output node not available, skipping connection');
       }
-      this.wamKeyboardNode.connect(this.outputNode);
 
       // Cache the plugin for this processor
       const cacheKey = `wam-harmony-processor-${this.currentInstrument}`;
@@ -99,7 +103,7 @@ export class WamHarmonyProcessor {
    * Change keyboard instrument
    */
   async setInstrument(
-    instrument: 'salamander' | 'rhodes' | 'wurlitzer',
+    instrument: 'grandpiano' | 'rhodes' | 'wurlitzer',
   ): Promise<void> {
     if (!this.wamPlugin) {
       throw new Error('WAM harmony processor not initialized');
@@ -109,7 +113,7 @@ export class WamHarmonyProcessor {
 
     // Map instrument name to index
     const instrumentMap = {
-      salamander: 0,
+      grandpiano: 0,
       rhodes: 1,
       wurlitzer: 2,
     };
@@ -147,7 +151,7 @@ export class WamHarmonyProcessor {
         // Schedule each note
         midiNotes.forEach((midiNote, index) => {
           if (!this.context) return;
-          const noteTime = (time || this.context.currentTime) + index * 0.01;
+          const noteTime = (time !== undefined ? time : this.context.currentTime) + index * 0.01;
           this.wamKeyboardNode?.triggerNote(
             midiNote,
             Math.round(velocity * 127),
@@ -159,7 +163,7 @@ export class WamHarmonyProcessor {
         const chordNotes = this.parseChord(chord);
         chordNotes.forEach((midiNote, index) => {
           if (!this.context) return;
-          const noteTime = (time || this.context.currentTime) + index * 0.01;
+          const noteTime = (time !== undefined ? time : this.context.currentTime) + index * 0.01;
           this.wamKeyboardNode?.triggerNote(
             midiNote,
             Math.round(velocity * 127),
@@ -264,6 +268,31 @@ export class WamHarmonyProcessor {
     } else {
       // Major chord
       return [rootMidi, rootMidi + 4, rootMidi + 7];
+    }
+  }
+
+  /**
+   * Activate plugin - enable audio processing
+   * Called by PluginManager when transport starts
+   */
+  async activate(): Promise<void> {
+    // WamHarmonyProcessor uses Tone.js Sampler which handles activation internally
+  }
+
+  /**
+   * Deactivate plugin - stop all active audio sources immediately
+   * Called by PluginManager when transport stops
+   */
+  async deactivate(): Promise<void> {
+    // CRITICAL FIX: First clear all scheduled events
+    // This prevents new chord notes from starting after stop
+    if (this.wamKeyboardNode) {
+      this.wamKeyboardNode.clearEvents();
+    }
+
+    // Then stop all active chord notes using WamKeyboard's releaseAll()
+    if (this.wamKeyboardNode) {
+      this.wamKeyboardNode.releaseAll();
     }
   }
 

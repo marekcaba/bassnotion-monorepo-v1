@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Harmony Plugin Creation Diagnostic</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #0f0;
+      line-height: 1.6;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #0a0;
+      color: #000;
+      border: 2px solid #0f0;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #0f0;
+    }
+    .output {
+      background: #000;
+      padding: 15px;
+      margin: 10px 0;
+      border: 2px solid #0f0;
+      max-height: 600px;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+    h1 { color: #0ff; text-shadow: 0 0 10px #0ff; }
+    h2 { color: #ff0; margin-top: 20px; }
+    .error { color: #f00; font-weight: bold; }
+    .success { color: #0f0; font-weight: bold; }
+    .info { color: #ff0; }
+    .checkpoint { color: #0af; margin-left: 20px; }
+    .decision { background: #330; padding: 10px; margin: 10px 0; border-left: 4px solid #ff0; }
+    code { background: #333; padding: 2px 6px; color: #0ff; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Harmony Plugin Creation Diagnostic</h1>
+
+  <p><strong>Purpose:</strong> Identify why <code>createAudioNodeAttempt()</code> never reaches <code>setWamPluginLoaded(true)</code></p>
+
+  <div>
+    <button onclick="checkConsole()">Check Console for Checkpoints</button>
+    <button onclick="checkConditions()">Check Trigger Conditions</button>
+    <button onclick="clearOutput()">Clear Output</button>
+  </div>
+
+  <div class="output" id="output"></div>
+
+  <h2>📊 Checkpoint Decision Tree</h2>
+  <div class="decision">
+    <strong>IF you see:</strong>
+    <ul>
+      <li><code>🔍 [CHECKPOINT-4]</code> but NO <code>CREATE-ATTEMPT-ENTRY</code>
+        <br>→ <span class="error">Trigger useEffect runs but function not called (guard at line 763)</span></li>
+
+      <li><code>CREATE-ATTEMPT-ENTRY</code> then <code>CREATE-ATTEMPT-SKIP</code>
+        <br>→ <span class="error">Guard condition triggered (line 352-361)</span></li>
+
+      <li>Stops at <code>CREATE-CHECKPOINT-7-RETURN</code>
+        <br>→ <span class="error">AudioEngine.getContext() threw error (line 404)</span></li>
+
+      <li>Stops at <code>CREATE-CHECKPOINT-14-RETURN</code>
+        <br>→ <span class="error">Context suspended after resume attempt (line 492)</span></li>
+
+      <li>Stops at <code>CREATE-CHECKPOINT-18-RETURN</code>
+        <br>→ <span class="error">No desiredInstrument from exercise (line 544)</span></li>
+
+      <li>Stops at <code>CREATE-CHECKPOINT-21-ERROR</code>
+        <br>→ <span class="error">PluginManager threw error (line 703)</span></li>
+
+      <li>Reaches <code>CREATE-CHECKPOINT-20</code>
+        <br>→ <span class="success">SUCCESS! Plugin created successfully</span></li>
+    </ul>
+  </div>
+
+  <h2>🎯 What to Do Next</h2>
+  <div class="decision">
+    <ol>
+      <li>Play an exercise with harmony notes (e.g., "Harmony 24")</li>
+      <li>Open browser DevTools Console (F12)</li>
+      <li>Click "Check Console for Checkpoints" above</li>
+      <li>Read the diagnosis and follow the recommended fix</li>
+    </ol>
+  </div>
+
+  <script>
+    const output = document.getElementById('output');
+
+    function log(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'checkpoint' ? 'checkpoint' : 'info';
+      output.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+      console.log(`[DIAGNOSTIC] ${message}`);
+    }
+
+    function clearOutput() {
+      output.innerHTML = '';
+      console.clear();
+      log('Output cleared', 'info');
+    }
+
+    function checkConsole() {
+      log('🔍 Analyzing console logs...', 'info');
+      log('', 'info');
+      log('⚠️  Open your browser DevTools Console (F12) and look for:', 'info');
+      log('', 'info');
+
+      // Check for trigger effect
+      log('STEP 1: Check if trigger useEffect runs', 'checkpoint');
+      log('  Search for: 🔍 [CHECKPOINT-4]', 'checkpoint');
+      log('  This logs when the useEffect that calls createAudioNodeAttempt() runs', 'checkpoint');
+      log('', 'info');
+
+      // Check for function entry
+      log('STEP 2: Check if createAudioNodeAttempt() is called', 'checkpoint');
+      log('  Search for: 🔍🔍🔍 [CREATE-ATTEMPT-ENTRY]', 'checkpoint');
+      log('  This is the FIRST line of createAudioNodeAttempt()', 'checkpoint');
+      log('', 'info');
+
+      // Check for early exit
+      log('STEP 3: Check if guard condition blocks execution', 'checkpoint');
+      log('  Search for: 🔍🔍🔍 [CREATE-ATTEMPT-SKIP]', 'checkpoint');
+      log('  If present, plugin is already loaded (shouldnt happen)', 'checkpoint');
+      log('', 'info');
+
+      // Check progress through checkpoints
+      log('STEP 4: Find the LAST checkpoint number', 'checkpoint');
+      log('  Search for: 🔍🔍🔍 [CREATE-CHECKPOINT-', 'checkpoint');
+      log('  The highest number tells us where execution stopped', 'checkpoint');
+      log('', 'info');
+
+      // Common failure points
+      log('COMMON FAILURE POINTS:', 'info');
+      log('', 'info');
+
+      log('❌ CHECKPOINT-7-RETURN: AudioEngine.getContext() failed', 'error');
+      log('   Fix: CoreServices not ready - add retry logic', 'info');
+      log('', 'info');
+
+      log('❌ CHECKPOINT-18-RETURN: No desiredInstrument', 'error');
+      log('   Fix: Exercise missing harmonyInstrument field', 'info');
+      log('   Check: exercise?.harmonyInstrument should be "grandpiano", "rhodes", or "wurlitzer"', 'info');
+      log('', 'info');
+
+      log('❌ CHECKPOINT-21-ERROR: PluginManager threw error', 'error');
+      log('   Fix: WamKeyboardPlugin not registered or initialization failed', 'info');
+      log('', 'info');
+
+      log('✅ CHECKPOINT-20: Success!', 'success');
+      log('   Plugin created, wamPluginLoaded should be true', 'success');
+      log('', 'info');
+
+      log('📋 Copy the checkpoint number and error details from console', 'info');
+    }
+
+    function checkConditions() {
+      log('🔍 Checking HarmonyWidget trigger conditions...', 'info');
+      log('', 'info');
+      log('⚠️  Look in console for: 🔍 [CHECKPOINT-4] Plugin creation trigger useEffect', 'info');
+      log('', 'info');
+      log('This log shows the state of all conditions:', 'checkpoint');
+      log('  • windowAvailable: should be true', 'checkpoint');
+      log('  • pluginClassLoaded: should be true', 'checkpoint');
+      log('  • trackIsReady: should be true', 'checkpoint');
+      log('  • wamPluginLoaded: should be false (we want to create it)', 'checkpoint');
+      log('  • hasPlugin: should be false', 'checkpoint');
+      log('  • currentInstrumentState: should be "grandpiano", "rhodes", or "wurlitzer"', 'checkpoint');
+      log('  • exerciseHarmonyInstrument: CRITICAL - must match currentInstrumentState', 'checkpoint');
+      log('', 'info');
+      log('If ANY condition is wrong, the function wont be called!', 'error');
+      log('', 'info');
+
+      log('📋 Common Issues:', 'info');
+      log('', 'info');
+      log('❌ pluginClassLoaded = false', 'error');
+      log('   → WamKeyboard class not loaded yet', 'info');
+      log('   → Check: useEffect at line ~250-280 that loads the class', 'info');
+      log('', 'info');
+
+      log('❌ trackIsReady = false', 'error');
+      log('   → useTrack() hook hasnt initialized the track', 'info');
+      log('   → Check: track.isReady state', 'info');
+      log('', 'info');
+
+      log('❌ wamPluginLoaded = true (when it should be false)', 'error');
+      log('   → Plugin already marked as loaded but keyboardPluginRef is null', 'info');
+      log('   → This is a STATE CORRUPTION bug', 'info');
+      log('', 'info');
+
+      log('❌ exerciseHarmonyInstrument = undefined', 'error');
+      log('   → Exercise data missing harmonyInstrument field', 'info');
+      log('   → Check backend: exercises table should have harmony_instrument column', 'info');
+    }
+
+    // Auto-show instructions on load
+    window.addEventListener('load', () => {
+      log('📊 Diagnostic page loaded', 'success');
+      log('', 'info');
+      log('🎯 INSTRUCTIONS:', 'info');
+      log('1. Go to the app and select an exercise with harmony (e.g., "Harmony 24")', 'info');
+      log('2. Press Play', 'info');
+      log('3. Come back here and click "Check Console for Checkpoints"', 'info');
+      log('4. Follow the diagnosis', 'info');
+      log('', 'info');
+      log('💡 TIP: Keep this page open alongside the app!', 'info');
+    });
+  </script>
+</body>
+</html>

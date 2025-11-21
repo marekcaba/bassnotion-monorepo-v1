@@ -17,6 +17,7 @@ export interface AuthUser extends User {
 export interface UserProfile extends User {
   bio?: string;
   avatarUrl?: string;
+  role?: 'user' | 'admin' | 'moderator'; // User role
   preferences: UserPreferences;
 }
 

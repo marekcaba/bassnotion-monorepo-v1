@@ -26,6 +26,7 @@ function LoginPageContent() {
   const { setUser, setSession } = useAuth();
   const { redirectAfterAuth } = useAuthRedirect();
   const { toast } = useToast();
+  const { logger } = useCorrelation('LoginPage');
 
   // Show messages from URL params (e.g., after registration)
   useEffect(() => {
@@ -51,11 +52,10 @@ function LoginPageContent() {
         throw new Error('Email and password are required');
       }
 
-      logger.info('[Login Debug] Using backend auth:', useBackendAuth);
-      logger.info(
-        '[Login Debug] Environment variable:',
-        process.env.NEXT_PUBLIC_USE_BACKEND_AUTH,
-      );
+      logger.info('[Login Debug] Using backend auth:', { useBackendAuth });
+      logger.info('[Login Debug] Environment variable:', {
+        value: process.env.NEXT_PUBLIC_USE_BACKEND_AUTH,
+      });
 
       if (useBackendAuth) {
         // Use backend API for E2E testing

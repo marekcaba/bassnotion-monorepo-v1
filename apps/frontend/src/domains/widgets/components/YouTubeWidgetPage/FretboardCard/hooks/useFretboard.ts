@@ -7,6 +7,8 @@ import { useFretboardConnections } from './useFretboardConnections';
 import { useFretboardExercise } from './useFretboardExercise';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
+const logger = createStructuredLogger('useFretboard');
+
 /**
  * Main fretboard hook that combines all fretboard functionality
  * This is the primary hook that components should use

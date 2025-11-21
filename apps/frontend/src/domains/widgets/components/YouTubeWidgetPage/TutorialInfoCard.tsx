@@ -14,7 +14,22 @@ export function TutorialInfoCard({ tutorialData }: TutorialInfoCardProps) {
   const description =
     tutorialData?.description ||
     'Learn advanced modal thinking and tension/release techniques';
-  const difficulty = tutorialData?.difficulty || 'advanced';
+  const difficulty = tutorialData?.difficulty || tutorialData?.level || 'advanced';
+
+  // Core concept data (editable in admin mode)
+  const defaultCoreConcept = {
+    description: 'Use different modes starting from the same root note (D) over a 2-5-1 progression to create intentional tension and release without shifting the root.',
+    points: [
+      'Modal interchange over static root notes',
+      'Advanced tension and release techniques',
+      'II-V-I progression variations'
+    ]
+  };
+
+  const coreConcept = {
+    description: tutorialData?.coreConcept?.description || tutorialData?.core_concept_description || defaultCoreConcept.description,
+    points: tutorialData?.coreConcept?.bulletPoints || tutorialData?.coreConcept?.points || tutorialData?.core_concept_points || defaultCoreConcept.points
+  };
 
   return (
     <div className="relative">
@@ -42,29 +57,17 @@ export function TutorialInfoCard({ tutorialData }: TutorialInfoCardProps) {
               Core Concept
             </h3>
             <p className="text-slate-400 text-base leading-relaxed mb-4">
-              Use different modes starting from the same root note (D) over a
-              2-5-1 progression to create intentional tension and release
-              without shifting the root.
+              {coreConcept.description}
             </p>
 
             {/* Core Concept Bullet Points */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-green-300">
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <span className="text-sm">
-                  Modal interchange over static root notes
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-green-300">
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <span className="text-sm">
-                  Advanced tension and release techniques
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-green-300">
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <span className="text-sm">II-V-I progression variations</span>
-              </div>
+              {Array.isArray(coreConcept.points) && coreConcept.points.map((point, index) => (
+                <div key={index} className="flex items-center gap-2 text-green-300">
+                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  <span className="text-sm">{point}</span>
+                </div>
+              ))}
             </div>
           </div>
         </CardContent>

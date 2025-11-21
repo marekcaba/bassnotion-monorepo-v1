@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { createStructuredLogger } from '@bassnotion/contracts';
 
 import { AuthController } from './auth.controller.js';
@@ -9,7 +9,7 @@ import { PasswordSecurityService } from './services/password-security.service.js
 import { DatabaseModule } from '../../../infrastructure/database/database.module.js';
 
 @Module({
-  imports: [forwardRef(() => DatabaseModule)],
+  imports: [DatabaseModule],
   controllers: [AuthController],
   providers: [
     PasswordSecurityService,

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Home, Edit, Trash2 } from 'lucide-react';
+import { Home, Edit, Trash2, Library, Settings } from 'lucide-react';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { authService } from '@/domains/user/api/auth';
 import { profileService } from '@/domains/user/api/profile';
@@ -18,6 +18,7 @@ import type { UserProfileData } from '@bassnotion/contracts';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
 
 export default function DashboardPage() {
   const { user, session, isAuthenticated, isReady, reset } = useAuth();
@@ -25,6 +26,8 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const { navigateWithTransition } = useViewTransitionRouter();
   const { redirectToLogin, redirectToHome } = useAuthRedirect();
+  const { logger } = useCorrelation('DashboardPage');
+  const { profile } = useUserProfile();
 
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
@@ -120,6 +123,14 @@ export default function DashboardPage() {
 
   const handleGoHome = () => {
     navigateWithTransition('/');
+  };
+
+  const handleGoToLibrary = () => {
+    navigateWithTransition('/library');
+  };
+
+  const handleGoToWurlitzerAdmin = () => {
+    navigateWithTransition('/admin/instruments/wurlitzer');
   };
 
   const handleProfileUpdate = async (data: UserProfileData) => {
@@ -256,6 +267,24 @@ export default function DashboardPage() {
                 <Home className="h-4 w-4 mr-2" />
                 Home
               </Button>
+              <Button
+                onClick={handleGoToLibrary}
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                <Library className="h-4 w-4 mr-2" />
+                Library
+              </Button>
+              {profile?.role === 'admin' && (
+                <Button
+                  onClick={handleGoToWurlitzerAdmin}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Wurlitzer Config
+                </Button>
+              )}
               <Button
                 onClick={handleSignOut}
                 variant="outline"

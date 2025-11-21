@@ -36,6 +36,7 @@ import { GrandPianoKeyboardMapper } from './region-processing/scheduling/GrandPi
 
 // Import extracted modules (Phase 5: Utilities + Routing)
 import { DiagnosticLogger } from './region-processing/diagnostics/DiagnosticLogger.js';
+import { VelocityLayerSelector } from './region-processing/harmony/VelocityLayerSelector.js';
 
 const logger = getLogger('RegionProcessor');
 
@@ -163,6 +164,9 @@ export class RegionProcessor {
   // Phase 5: Diagnostic logging delegated to DiagnosticLogger
   private diagnosticLogger!: DiagnosticLogger; // Initialized in constructor
 
+  // Phase 5: Velocity layer selection delegated to VelocityLayerSelector
+  private velocityLayerSelector!: VelocityLayerSelector; // Initialized in constructor
+
   // Diagnostic: Count logged notes
   private _noteLogCount = 0;
 
@@ -233,6 +237,9 @@ export class RegionProcessor {
       this.findCC64DownDuringNote.bind(this),
       this.findNextCC64Up.bind(this),
     );
+
+    // Phase 5: Instantiate velocity layer selector
+    this.velocityLayerSelector = new VelocityLayerSelector(this._instanceId);
 
     logger.info('🔧 RegionProcessor instance created', {
       instanceId: this._instanceId,
@@ -439,6 +446,15 @@ export class RegionProcessor {
       perNoteVelocityRanges,
       instrument,
     );
+
+    // Phase 5: Sync state to VelocityLayerSelector
+    this.velocityLayerSelector.setInstrument(
+      instrument || this.currentHarmonyInstrument || 'wurlitzer',
+    );
+    if (perNoteVelocityRanges) {
+      this.velocityLayerSelector.setVelocityRanges(perNoteVelocityRanges);
+    }
+    this.velocityLayerSelector.setHarmonyBuffers(this.harmonyBuffers);
   }
 
   setBassBuffers(
@@ -1916,64 +1932,10 @@ export class RegionProcessor {
     noteName: string,
     velocity: number,
   ): string {
-    // If we have per-note velocity ranges, use them
-    if (this.harmonyVelocityRanges) {
-      // Try with sharp notation first (Cs4, Ds4, Fs4, etc.)
-      let ranges = this.harmonyVelocityRanges[noteName];
-
-      // If not found, try converting to # notation (C#4, D#4, F#4, etc.)
-      // The config might use # notation
-      if (!ranges) {
-        const noteWithSharp = noteName.replace('s', '#');
-        ranges = this.harmonyVelocityRanges[noteWithSharp];
-      }
-
-      if (ranges && ranges.length > 0) {
-        // Find which layer this velocity falls into for this specific note
-        for (const range of ranges) {
-          if (velocity >= range.min && velocity <= range.max) {
-            return range.layer;
-          }
-        }
-        // If velocity is out of range, use the last layer (highest velocity)
-        return ranges[ranges.length - 1].layer;
-      }
-    }
-
-    // Fallback to instrument-specific velocity mapping if no per-note config
-    // Use currentHarmonyInstrument to determine which ranges to use
-    const instrument = this.currentHarmonyInstrument || 'wurlitzer';
-
-    if (instrument === 'grandpiano') {
-      // Grand Piano velocity ranges (7 layers)
-      if (velocity <= 18) return 'v1';
-      if (velocity <= 36) return 'v2';
-      if (velocity <= 54) return 'v3';
-      if (velocity <= 72) return 'v4';
-      if (velocity <= 90) return 'v5';
-      if (velocity <= 108) return 'v6';
-      return 'v7';
-    } else if (instrument === 'wurlitzer') {
-      // Wurlitzer velocity ranges (5 layers)
-      if (velocity <= 25) return 'v1';
-      if (velocity <= 51) return 'v2';
-      if (velocity <= 76) return 'v3';
-      if (velocity <= 102) return 'v4';
-      return 'v5';
-    } else if (instrument === 'rhodes') {
-      // Rhodes velocity ranges (4 layers)
-      if (velocity <= 31) return 'v1';
-      if (velocity <= 63) return 'v2';
-      if (velocity <= 95) return 'v3';
-      return 'v4';
-    } else {
-      // Default to Wurlitzer ranges for unknown instruments
-      if (velocity <= 25) return 'v1';
-      if (velocity <= 51) return 'v2';
-      if (velocity <= 76) return 'v3';
-      if (velocity <= 102) return 'v4';
-      return 'v5';
-    }
+    return this.velocityLayerSelector.getLayerForNoteVelocity(
+      noteName,
+      velocity,
+    );
   }
 
   /**
@@ -1982,49 +1944,7 @@ export class RegionProcessor {
    * @returns true if sparse (Grand Piano), false if full chromatic (Wurlitzer)
    */
   private detectSparseSampling(): boolean {
-    if (this.harmonyBuffers.size === 0) return false;
-
-    // Get all available note names across all velocity layers
-    const allNoteNames = new Set<string>();
-    for (const layerMap of this.harmonyBuffers.values()) {
-      for (const noteName of layerMap.keys()) {
-        allNoteNames.add(noteName);
-      }
-    }
-
-    // Group notes by octave
-    const notesByOctave = new Map<number, Set<string>>();
-    for (const noteName of allNoteNames) {
-      const octave = parseInt(noteName.slice(-1), 10);
-      if (!notesByOctave.has(octave)) {
-        notesByOctave.set(octave, new Set());
-      }
-      const noteWithoutOctave = noteName.slice(0, -1);
-      notesByOctave.get(octave)!.add(noteWithoutOctave);
-    }
-
-    // Check if ANY octave has all 12 chromatic notes
-    const allChromaticNotes = [
-      'C',
-      'Cs',
-      'D',
-      'Ds',
-      'E',
-      'F',
-      'Fs',
-      'G',
-      'Gs',
-      'A',
-      'As',
-      'B',
-    ];
-    for (const notesInOctave of notesByOctave.values()) {
-      if (allChromaticNotes.every((note) => notesInOctave.has(note))) {
-        return false; // Full chromatic (Wurlitzer)
-      }
-    }
-
-    return true; // Sparse (Grand Piano)
+    return this.velocityLayerSelector.detectSparseSampling();
   }
 
   // ============================================================================

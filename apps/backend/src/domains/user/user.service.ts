@@ -55,6 +55,7 @@ export class UserService {
       .single();
 
     if (error || !profile) {
+      logger.warn('⚠️ No profile found in database, returning defaults');
       // If no profile exists, create a minimal one from user data
       return {
         id: user.id,
@@ -62,6 +63,7 @@ export class UserService {
         displayName: user.displayName,
         bio: '',
         avatarUrl: user.avatarUrl,
+        role: user.role as 'user' | 'admin' | 'moderator', // Include role from user entity
         preferences: {
           theme: 'light',
           emailNotifications: true,
@@ -476,10 +478,11 @@ export class UserService {
       displayName: profile.display_name,
       bio: profile.bio,
       avatarUrl: profile.avatar_url,
+      role: profile.role || 'user', // Include role field
       createdAt: profile.created_at,
       updatedAt: profile.updated_at,
       preferences: {
-        theme: 'light', // Default theme
+        theme: 'light' as const, // Default theme
         emailNotifications: true, // Default setting
         defaultMetronomeSettings: {
           enabled: false,
@@ -487,9 +490,13 @@ export class UserService {
           beatsPerMeasure: 4,
           subdivision: 1,
           accentFirstBeat: true,
-          volume: 75 },
+          volume: 75,
+        },
         bassConfiguration: {
           stringCount: profile.bass_string_count || 4,
-          maxFrets: profile.bass_max_frets || 24 } } };
+          maxFrets: profile.bass_max_frets || 24,
+        },
+      },
+    };
   }
 }

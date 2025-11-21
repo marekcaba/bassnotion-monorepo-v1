@@ -66,4 +66,9 @@ export interface PreloadResult {
    * Total samples attempted
    */
   total: number;
+
+  /**
+   * Optional metadata (e.g., required notes from MIDI analysis)
+   */
+  metadata?: any;
 }

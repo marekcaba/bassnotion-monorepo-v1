@@ -10,6 +10,9 @@ import {
   ensureToneUsesPersistentContext,
 } from './audioContext.js';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { createStructuredLogger } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('ensureAudioContext');
 
 /**
  * Ensures the AudioContext is initialized and running
@@ -62,8 +65,16 @@ export async function ensureAudioContext(): Promise<void> {
       await audioEngine.initialize();
     }
 
-    // Get Tone instance from AudioEngine
-    const ToneFromEngine = audioEngine.getTone();
+    // Get Tone instance from AudioEngine with fallback
+    let ToneFromEngine;
+    try {
+      ToneFromEngine = audioEngine.getTone();
+    } catch (error) {
+      logger.warn('ensureAudioContext: AudioEngine.getTone() failed, using window.Tone fallback', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      ToneFromEngine = (window as any).Tone;
+    }
 
     if (ToneFromEngine && ToneFromEngine.context.state === 'suspended') {
       logger.info('ensureAudioContext: Starting audio context...');

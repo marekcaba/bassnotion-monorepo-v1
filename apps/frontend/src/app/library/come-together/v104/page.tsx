@@ -4,6 +4,9 @@ import React from 'react';
 import { YouTubeWidgetPage } from '@/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { createStructuredLogger } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('V104Page');
 
 // Error boundary to catch errors
 class ErrorBoundary extends React.Component<
@@ -20,8 +23,7 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    logger.error('🚨 Error caught by boundary:', error);
-    logger.error('Error info:', errorInfo);
+    logger.error('🚨 Error caught by boundary:', error, { errorInfo });
   }
 
   render() {

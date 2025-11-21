@@ -1,6 +1,6 @@
 import { Exercise } from '../entities/exercise.entity';
-import { ExerciseId } from '../value-objects/exercise-id';
-import { Difficulty } from '../value-objects/difficulty';
+import { ExerciseId } from '../value-objects/exercise-id.vo';
+import { Difficulty } from '../value-objects/difficulty.vo';
 import { Result } from '@/shared/types/result';
 
 export interface PaginationOptions {

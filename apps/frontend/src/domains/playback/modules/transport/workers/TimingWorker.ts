@@ -107,7 +107,8 @@ class TimingWorkerState {
   constructor() {
     // Initialize worker
     self.onmessage = this.handleMessage.bind(this);
-    console.log('[TimingWorker] Initialized');
+    // SUPPRESSED: TimingWorker logging disabled
+    // console.log('[TimingWorker] Initialized');
   }
 
   private handleMessage(event: MessageEvent<WorkerMessage>): void {
@@ -169,10 +170,11 @@ class TimingWorkerState {
     this.startUpdates();
     this.sendStatus();
 
-    console.log('[TimingWorker] Started', {
-      tempo: this.tempo,
-      updateInterval: this.updateInterval,
-    });
+    // SUPPRESSED: TimingWorker start logging disabled
+    // console.log('[TimingWorker] Started', {
+    //   tempo: this.tempo,
+    //   updateInterval: this.updateInterval,
+    // });
   }
 
   private stop(): void {
@@ -187,7 +189,8 @@ class TimingWorkerState {
     this.totalPausedTime = 0;
 
     this.sendStatus();
-    console.log('[TimingWorker] Stopped');
+    // SUPPRESSED: TimingWorker stop logging disabled
+    // console.log('[TimingWorker] Stopped');
   }
 
   private pause(): void {
@@ -204,7 +207,8 @@ class TimingWorkerState {
     this.currentPosition = elapsed / 1000; // Convert to seconds
 
     this.sendStatus();
-    console.log('[TimingWorker] Paused at', this.currentPosition);
+    // SUPPRESSED: TimingWorker pause logging disabled
+    // console.log('[TimingWorker] Paused at', this.currentPosition);
   }
 
   private resume(): void {
@@ -218,7 +222,8 @@ class TimingWorkerState {
 
     this.startUpdates();
     this.sendStatus();
-    console.log('[TimingWorker] Resumed');
+    // SUPPRESSED: TimingWorker resume logging disabled
+    // console.log('[TimingWorker] Resumed');
   }
 
   private seek(position: number): void {
@@ -232,7 +237,8 @@ class TimingWorkerState {
 
     // Send immediate update
     this.sendTimingUpdate();
-    console.log('[TimingWorker] Seeked to', position);
+    // SUPPRESSED: TimingWorker seek logging disabled
+    // console.log('[TimingWorker] Seeked to', position);
   }
 
   private setTempo(tempo: number): void {
@@ -249,7 +255,8 @@ class TimingWorkerState {
         this.seek(newPosition);
       }
 
-      console.log('[TimingWorker] Tempo changed to', tempo);
+      // SUPPRESSED: TimingWorker tempo logging disabled
+      // console.log('[TimingWorker] Tempo changed to', tempo);
     }
   }
 

@@ -6,10 +6,23 @@
  */
 
 /**
- * Musical position in bars:beats:sixteenths format
- * Examples: "0:0:0" (start), "1:2:0" (bar 1, beat 2)
+ * Musical position with MIDI tick precision
+ * Supports both object format (preferred) and legacy string format
+ *
+ * Object format provides 480 PPQ (Pulses Per Quarter note) precision:
+ * { measure: 1, beat: 2, subdivision: 3, tick: 120 }
+ *
+ * String format (legacy):
+ * "1:2:3" or "1:2:3:120" (bar:beat:sixteenth[:tick])
  */
-export type MusicalPosition = string;
+export type MusicalPosition =
+  | {
+      measure: number;
+      beat: number;
+      subdivision: number;
+      tick?: number; // MIDI tick precision (0-479 per quarter note, 480 PPQ)
+    }
+  | string; // Legacy format for backward compatibility
 
 /**
  * Base pattern event that all patterns extend

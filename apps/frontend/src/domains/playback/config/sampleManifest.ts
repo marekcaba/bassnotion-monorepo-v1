@@ -100,14 +100,14 @@ export const SAMPLE_MANIFEST: Record<string, InstrumentManifest> = {
       },
       {
         quality: 'standard',
-        description: 'Boss DR-110 samples',
+        description: 'Colombo Acoustic samples',
         samples: [
-          { url: 'dr110kik.mp3', size: 30000 }, // kick
-          { url: 'dr110clp.mp3', size: 25000 }, // snare/clap
-          { url: 'dr110cht.mp3', size: 15000 }, // closed hihat
+          { url: 'kick-v1.wav', size: 125746 }, // kick
+          { url: 'snare-v1.wav', size: 227378 }, // snare
+          { url: 'hihat-v1.wav', size: 137350 }, // closed hihat
         ],
-        estimatedSize: 70000, // 70KB (30+25+15)
-        loadTime: 560, // 0.56 seconds at 1Mbps
+        estimatedSize: 490474, // ~490KB (126+227+137)
+        loadTime: 3924, // ~3.9 seconds at 1Mbps
       },
       {
         quality: 'premium',
@@ -174,8 +174,8 @@ export const SAMPLE_MANIFEST: Record<string, InstrumentManifest> = {
         quality: 'standard',
         description: 'Woodblock and click samples',
         samples: [
-          { url: 'Clicks_03.mp3', size: 5000 }, // High pitched
-          { url: 'Clicks_01.mp3', size: 5000 }, // Low pitched
+          { url: 'Click_High.mp3', size: 5000 }, // High pitched
+          { url: 'Click_Low.mp3', size: 5000 }, // Low pitched
           { url: 'woodblock_hi.mp3', size: 8000 },
           { url: 'woodblock_lo.mp3', size: 8000 },
         ],
@@ -193,6 +193,48 @@ export const SAMPLE_MANIFEST: Record<string, InstrumentManifest> = {
       },
     ],
   },
+
+  'voice-cue': {
+    name: 'voice-cue',
+    displayName: 'Voice Countdown Cues',
+    tiers: [
+      {
+        quality: 'essential',
+        description: 'Voice countdown samples',
+        samples: [
+          { url: 'metronome/Cues/one.ogg', size: 11000 }, // "One"
+          { url: 'metronome/Cues/two.ogg', size: 11000 }, // "Two"
+          { url: 'metronome/Cues/three.ogg', size: 4500 }, // "Three"
+          { url: 'metronome/Cues/four.ogg', size: 11000 }, // "Four"
+        ],
+        estimatedSize: 37500, // 37.5KB (much smaller than MP3!)
+        loadTime: 300, // ~0.3 seconds at 1Mbps
+      },
+      {
+        quality: 'standard',
+        description: 'Extended voice cues',
+        samples: [
+          { url: 'metronome/Cues/one.ogg', size: 11000 },
+          { url: 'metronome/Cues/two.ogg', size: 11000 },
+          { url: 'metronome/Cues/three.ogg', size: 4500 },
+          { url: 'metronome/Cues/four.ogg', size: 11000 },
+          { url: 'metronome/Cues/ready.ogg', size: 11000 }, // "Ready" (future)
+          { url: 'metronome/Cues/go.ogg', size: 11000 }, // "Go!" (future)
+        ],
+        estimatedSize: 59500, // 59.5KB
+        loadTime: 476, // ~0.5 seconds at 1Mbps
+      },
+      {
+        quality: 'premium',
+        description: 'Full voice guidance pack',
+        samples: [
+          // Future: Multiple voice packs, languages, phrases
+        ],
+        estimatedSize: 500000, // 500KB
+        loadTime: 4000, // 4 seconds at 1Mbps
+      },
+    ],
+  },
 };
 
 /**
@@ -200,6 +242,7 @@ export const SAMPLE_MANIFEST: Record<string, InstrumentManifest> = {
  */
 export function getLoadingPriority(): string[] {
   return [
+    'voice-cue:essential', // Load voice cues first for countdown
     'harmony:essential',
     'drums:essential',
     'metronome:essential',
@@ -207,11 +250,13 @@ export function getLoadingPriority(): string[] {
     'drums:standard',
     'bass:essential',
     'metronome:standard',
+    'voice-cue:standard',
     'harmony:premium',
     'drums:premium',
     'bass:standard',
     'bass:premium',
     'metronome:premium',
+    'voice-cue:premium',
   ];
 }
 

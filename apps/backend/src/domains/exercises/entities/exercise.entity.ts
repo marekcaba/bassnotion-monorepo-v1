@@ -17,19 +17,33 @@ interface ExerciseNoteBasic {
 
 export interface ExerciseProps {
   id: ExerciseId;
+  tutorialId?: string; // UUID reference to tutorial
   title: string;
   description: string;
   difficulty: Difficulty;
-  duration: number; // in seconds
+  duration: number; // DEPRECATED: in seconds - use durationBeats
+  durationBeats?: number; // Musical duration in beats
+  totalBars?: number; // Total measures/bars
   bpm: number;
   key: string;
+  timeSignature?: { numerator: number; denominator: number };
   notes: ExerciseNoteBasic[];
   tags: string[];
   isActive: boolean;
+  // Legacy single MIDI file (kept for backward compatibility)
   midiFilePath?: string;
   originalFilename?: string;
   fileSize?: number;
   uploadedAt?: Date;
+  // New separate MIDI files for each widget
+  drummerMidiUrl?: string;
+  basslineMidiUrl?: string;
+  harmonyMidiUrl?: string;
+  metronomeMidiUrl?: string;
+  // Harmony instrument data (converted from MIDI)
+  harmonyNotes?: any[]; // GeneratedHarmonyNote[] - using any to avoid circular imports
+  harmonyControlChanges?: any[]; // HarmonyControlChange[] - MIDI control events (sustain, expression)
+  harmonyInstrument?: 'grandpiano' | 'rhodes' | 'wurlitzer' | 'pad';
   createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -57,6 +71,10 @@ export class Exercise {
     return this.props.id;
   }
 
+  get tutorialId(): string | undefined {
+    return this.props.tutorialId;
+  }
+
   get title(): string {
     return this.props.title;
   }
@@ -73,12 +91,24 @@ export class Exercise {
     return this.props.duration;
   }
 
+  get durationBeats(): number | undefined {
+    return this.props.durationBeats;
+  }
+
+  get totalBars(): number | undefined {
+    return this.props.totalBars;
+  }
+
   get bpm(): number {
     return this.props.bpm;
   }
 
   get key(): string {
     return this.props.key;
+  }
+
+  get timeSignature(): { numerator: number; denominator: number } | undefined {
+    return this.props.timeSignature;
   }
 
   get notes(): ExerciseNoteBasic[] {
@@ -95,6 +125,34 @@ export class Exercise {
 
   get midiFilePath(): string | undefined {
     return this.props.midiFilePath;
+  }
+
+  get drummerMidiUrl(): string | undefined {
+    return this.props.drummerMidiUrl;
+  }
+
+  get basslineMidiUrl(): string | undefined {
+    return this.props.basslineMidiUrl;
+  }
+
+  get harmonyMidiUrl(): string | undefined {
+    return this.props.harmonyMidiUrl;
+  }
+
+  get metronomeMidiUrl(): string | undefined {
+    return this.props.metronomeMidiUrl;
+  }
+
+  get harmonyNotes(): any[] | undefined {
+    return this.props.harmonyNotes ? [...this.props.harmonyNotes] : undefined;
+  }
+
+  get harmonyControlChanges(): any[] | undefined {
+    return this.props.harmonyControlChanges ? [...this.props.harmonyControlChanges] : undefined;
+  }
+
+  get harmonyInstrument(): 'grandpiano' | 'rhodes' | 'wurlitzer' | 'pad' | undefined {
+    return this.props.harmonyInstrument;
   }
 
   get createdAt(): Date {
@@ -132,6 +190,28 @@ export class Exercise {
 
   hasMidiFile(): boolean {
     return !!this.props.midiFilePath;
+  }
+
+  hasDrummerMidi(): boolean {
+    return !!this.props.drummerMidiUrl;
+  }
+
+  hasBasslineMidi(): boolean {
+    return !!this.props.basslineMidiUrl;
+  }
+
+  hasHarmonyMidi(): boolean {
+    return !!this.props.harmonyMidiUrl;
+  }
+
+  hasMetronomeMidi(): boolean {
+    return !!this.props.metronomeMidiUrl;
+  }
+
+  hasAnyMidiFile(): boolean {
+    return this.hasMidiFile() || this.hasDrummerMidi() ||
+           this.hasBasslineMidi() || this.hasHarmonyMidi() ||
+           this.hasMetronomeMidi();
   }
 
   // Mutation methods
@@ -196,12 +276,16 @@ export class Exercise {
   toPersistence(): any {
     return {
       id: this.props.id.value,
+      tutorial_id: this.props.tutorialId,
       title: this.props.title,
       description: this.props.description,
       difficulty: this.props.difficulty.value,
       duration: this.props.duration,
+      duration_beats: this.props.durationBeats,
+      total_bars: this.props.totalBars,
       bpm: this.props.bpm,
       key: this.props.key,
+      time_signature: this.props.timeSignature,
       notes: this.props.notes,
       tags: this.props.tags,
       is_active: this.props.isActive,
@@ -209,6 +293,13 @@ export class Exercise {
       original_filename: this.props.originalFilename,
       file_size: this.props.fileSize,
       uploaded_at: this.props.uploadedAt?.toISOString(),
+      drummer_midi_url: this.props.drummerMidiUrl,
+      bassline_midi_url: this.props.basslineMidiUrl,
+      harmony_midi_url: this.props.harmonyMidiUrl,
+      metronome_midi_url: this.props.metronomeMidiUrl,
+      harmony_notes: this.props.harmonyNotes,
+      harmony_control_changes: this.props.harmonyControlChanges,
+      harmony_instrument: this.props.harmonyInstrument,
       created_by: this.props.createdBy,
       created_at: this.props.createdAt.toISOString(),
       updated_at: this.props.updatedAt.toISOString() };

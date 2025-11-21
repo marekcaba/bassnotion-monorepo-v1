@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { VolumeKnob } from './VolumeKnob';
 import { useTrack } from '@/domains/playback/hooks/useTrack';
+import { useTransport } from '@/domains/playback/hooks/useTransport';
 import {
   ensureAudioContext,
   withAudioContext,
@@ -29,12 +30,14 @@ const MetronomeSound = {
 type MetronomeSoundType = (typeof MetronomeSound)[keyof typeof MetronomeSound];
 
 interface MetronomeWidgetProps {
-  bpm: number;
   isVisible: boolean;
   isPlaying: boolean;
-  onBpmChange: (bpm: number) => void;
-  onToggleVisibility: () => void;
+  onToggleVisibility?: () => void;
   onTogglePlay?: () => void;
+  timeSignature?: {
+    numerator: number;
+    denominator: number;
+  };
 }
 
 interface MetronomeDot {
@@ -52,22 +55,26 @@ const initialDots: MetronomeDot[] = Array.from({ length: 8 }, (_, i) => ({
 const logger = getLogger('metronome-widget');
 
 export function MetronomeWidget({
-  bpm,
   isVisible,
   isPlaying: isPlayingProp,
-  onBpmChange,
   onToggleVisibility,
   onTogglePlay,
+  timeSignature,
 }: MetronomeWidgetProps) {
   const { correlationId, logger: componentLogger } =
     useCorrelation('MetronomeWidget');
+
+  // Get tempo directly from Transport (single source of truth)
+  const transport = useTransport();
+  const bpm = transport.tempo;
+
   const [metronomeDots, setMetronomeDots] = useState(initialDots);
   const [volume, setVolume] = useState(80);
   const [isMuted, setIsMuted] = useState(false);
   const [isTransportPlaying, setIsTransportPlaying] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [beats, setBeats] = useState(4);
-  const [noteValue, setNoteValue] = useState(4);
+  const [beats, setBeats] = useState(timeSignature?.numerator || 4);
+  const [noteValue, setNoteValue] = useState(timeSignature?.denominator || 4);
   const [currentSound, setCurrentSound] = useState<MetronomeSoundType>(
     MetronomeSound.CLASSIC,
   );
@@ -99,7 +106,7 @@ export function MetronomeWidget({
     const checkPreloadedMetronome = async () => {
       // Check GlobalSampleCache first
       const { GlobalSampleCache } = await import(
-        '@/domains/playback/services/storage/GlobalSampleCache'
+        '@/domains/playback/modules/storage/cache/GlobalSampleCache'
       );
       const preloadedMetronome = GlobalSampleCache.getCachedInstrument(
         'metronome-preloaded',
@@ -201,7 +208,7 @@ export function MetronomeWidget({
       // Check GlobalSampleCache first for preloaded metronome
       try {
         const { GlobalSampleCache } = await import(
-          '@/domains/playback/services/storage/GlobalSampleCache'
+          '@/domains/playback/modules/storage/cache/GlobalSampleCache'
         );
         const preloadedMetronome = GlobalSampleCache.getCachedInstrument(
           'metronome-preloaded',
@@ -285,6 +292,13 @@ export function MetronomeWidget({
 
           logger.debug('WAM Metronome plugin loaded and connected');
 
+          // Register with InstrumentRegistry so AudioEventRouter can use it
+          if (globalServices && globalServices.getInstrumentRegistry) {
+            const instrumentRegistry = globalServices.getInstrumentRegistry();
+            instrumentRegistry.setActive('metronome', plugin);
+            logger.debug('Registered WAM Metronome with InstrumentRegistry');
+          }
+
           // Load default samples
           if (plugin.loadDefaultSamples) {
             try {
@@ -314,6 +328,29 @@ export function MetronomeWidget({
               pattern,
               region,
             });
+
+            // Register track with RegionProcessor to enable pattern playback
+            if (globalServices && globalServices.getRegionProcessor) {
+              const regionProcessor = globalServices.getRegionProcessor();
+              regionProcessor.registerTracks([{
+                id: 'metronome-track',
+                name: 'Metronome',
+                instrumentType: 'metronome',
+                regions: [{
+                  id: region.id,
+                  trackId: 'metronome-track',
+                  startTime: 0,
+                  duration: beats * 4, // Convert beats to seconds (assuming 4/4 time)
+                  pattern: {
+                    id: 'metronome-pattern',
+                    name: 'Metronome Pattern',
+                    type: 'metronome',
+                    events: pattern.events
+                  }
+                }]
+              }]);
+              logger.debug('Registered track with RegionProcessor');
+            }
           }
         } else {
           logger.debug('AudioContext not ready yet', {
@@ -383,6 +420,29 @@ export function MetronomeWidget({
           subdiv,
           pattern,
         });
+
+        // Update RegionProcessor with new pattern
+        const globalServices = (window as any).__globalCoreServices || (window as any).__coreServices;
+        if (globalServices && globalServices.getRegionProcessor) {
+          const regionProcessor = globalServices.getRegionProcessor();
+          regionProcessor.updateTracks([{
+            id: 'metronome-track',
+            name: 'Metronome',
+            instrumentType: 'metronome',
+            regions: [{
+              id: region.id,
+              trackId: 'metronome-track',
+              startTime: 0,
+              duration: beats * 4,
+              pattern: {
+                id: 'metronome-pattern',
+                name: 'Metronome Pattern',
+                type: 'metronome',
+                events: pattern.events
+              }
+            }]
+          }]);
+        }
       }
     },
     [beats, wamPluginLoaded, createMetronomePattern],
@@ -417,15 +477,53 @@ export function MetronomeWidget({
         noteValue,
         pattern,
       });
+
+      // Update RegionProcessor with new pattern
+      const globalServices = (window as any).__globalCoreServices || (window as any).__coreServices;
+      if (globalServices && globalServices.getRegionProcessor) {
+        const regionProcessor = globalServices.getRegionProcessor();
+        regionProcessor.updateTracks([{
+          id: 'metronome-track',
+          name: 'Metronome',
+          instrumentType: 'metronome',
+          regions: [{
+            id: region.id,
+            trackId: 'metronome-track',
+            startTime: 0,
+            duration: beats * 4,
+            pattern: {
+              id: 'metronome-pattern',
+              name: 'Metronome Pattern',
+              type: 'metronome',
+              events: pattern.events
+            }
+          }]
+        }]);
+      }
     }
   }, [beats, noteValue, wamPluginLoaded, createMetronomePattern]); // Removed track from dependencies to prevent loops
 
   // Handle tempo changes
   useEffect(() => {
+    logger.info('🎵 MetronomeWidget: BPM changed', {
+      bpm,
+      transportTempo: transport.tempo,
+      hasPlugin: !!metronomePluginRef.current
+    });
     if (metronomePluginRef.current) {
       metronomePluginRef.current.setTempo(bpm);
+      logger.info('🎵 MetronomeWidget: Called plugin.setTempo', { bpm });
     }
-  }, [bpm]);
+  }, [bpm, transport.tempo]);
+
+  // Update time signature when prop changes
+  useEffect(() => {
+    if (timeSignature) {
+      logger.debug('Time signature changed from props:', timeSignature);
+      setBeats(timeSignature.numerator);
+      setNoteValue(timeSignature.denominator);
+    }
+  }, [timeSignature?.numerator, timeSignature?.denominator]);
 
   // Listen for audio services ready event
   useEffect(() => {
@@ -563,6 +661,23 @@ export function MetronomeWidget({
     };
   }, []);
 
+  // Cleanup effect to unregister from InstrumentRegistry on unmount
+  useEffect(() => {
+    return () => {
+      if (metronomePluginRef.current) {
+        const globalServices =
+          (window as any).__coreServices || (window as any).__globalCoreServices;
+        if (globalServices && globalServices.getInstrumentRegistry) {
+          const instrumentRegistry = globalServices.getInstrumentRegistry();
+          if (instrumentRegistry.getActive('metronome') === metronomePluginRef.current) {
+            instrumentRegistry.removeActive('metronome');
+            logger.debug('Removed WAM Metronome from InstrumentRegistry on unmount');
+          }
+        }
+      }
+    };
+  }, []);
+
   // Handle play state changes (simplified - no longer schedules its own pattern)
   useEffect(() => {
     if (!isPlayingProp && !isTransportPlaying && metronomePluginRef.current) {
@@ -578,6 +693,13 @@ export function MetronomeWidget({
   useTransportPosition({
     onPositionUpdate: (position) => {
       // Position updates are too frequent for logging
+
+      // COUNTDOWN FIX: Don't update beat indicators during countdown (negative bars)
+      // Let the red countdown dots handle the countdown visualization
+      if (position.bars < 0) {
+        return;
+      }
+
       if (isPlaying) {
         // Update dots based on transport position
         const beatIndex = position.beats % beats;
@@ -622,13 +744,6 @@ export function MetronomeWidget({
     [wamPluginLoaded],
   );
 
-  // Handle BPM wheel
-  const handleBpmWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -1 : 1;
-    const newBpm = Math.max(40, Math.min(300, bpm + delta));
-    onBpmChange(newBpm);
-  };
 
   if (!isVisible) return null;
 
@@ -665,7 +780,7 @@ export function MetronomeWidget({
                   <p
                     className={`text-xs ${volume === 0 ? 'text-slate-600' : 'text-slate-400'}`}
                   >
-                    {bpm} BPM | {beats}/{noteValue} | {currentSound}
+                    {beats}/{noteValue} | {currentSound}
                   </p>
                 </div>
 
@@ -687,12 +802,6 @@ export function MetronomeWidget({
                       />
                     ))}
                   </div>
-                  <span
-                    className={`text-lg font-bold ${volume === 0 ? 'text-slate-600' : 'text-green-400'} min-w-[3rem] text-right`}
-                    onWheel={handleBpmWheel}
-                  >
-                    {bpm}
-                  </span>
                 </button>
               </>
             ) : (
@@ -707,7 +816,7 @@ export function MetronomeWidget({
                         min="40"
                         max="300"
                         value={bpm}
-                        onChange={(e) => onBpmChange(Number(e.target.value))}
+                        onChange={(e) => transport.setTempo(Number(e.target.value))}
                         className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer"
                       />
                       <span className="text-xs text-green-400 font-bold w-10 text-right">
@@ -798,18 +907,6 @@ export function MetronomeWidget({
           </div>
         </div>
 
-        {/* Status and Close Button */}
-        <div className="flex items-center gap-2 ml-4">
-          <span className="text-xs text-gray-400">
-            {track.isReady ? '🟢' : '🟡'}
-          </span>
-          <button
-            onClick={onToggleVisibility}
-            className="text-gray-400 hover:text-white"
-          >
-            ✕
-          </button>
-        </div>
       </div>
 
       {/* Play Control (if provided) */}

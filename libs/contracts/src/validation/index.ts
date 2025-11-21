@@ -19,3 +19,6 @@ export * from './exercise-schemas.js';
 
 // Playback domain validation - NEW for Task 15
 export * from './playback-schemas.js';
+
+// Musical time validation - Shared schemas for MIDI parsing and conversion
+export * from './musical-time-schemas.js';

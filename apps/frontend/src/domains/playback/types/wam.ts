@@ -8,7 +8,7 @@
  * Part of Story 3.21 Task 7 - Web Audio Standards Compliance
  */
 
-import type { MusicalPosition } from '../services/core/UnifiedTransport.js';
+import type { MusicalPosition } from '../modules/transport/types/index.js';
 
 /**
  * WAM descriptor containing plugin metadata

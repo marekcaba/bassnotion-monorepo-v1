@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body, UseGuards, Request, BadRequestException, UseInterceptors, UploadedFile } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Controller, Get, Post, Put, Delete, Param, Query, Body, UseGuards, Request, BadRequestException, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import type { FastifyRequest } from 'fastify';
 import { ExercisesService } from './exercises.service.js';
 import {
   ExercisesResponseDto,
@@ -315,57 +315,69 @@ export class ExercisesController {
   /**
    * POST /api/exercises/upload/musicxml
    * Upload and process MusicXML file to create bass exercise
+   *
+   * FIXED: Using Fastify multipart instead of Express FileInterceptor
    */
   @Post('upload/musicxml')
   @UseGuards(AuthGuard)
-  @UseInterceptors(
-    FileInterceptor('file', {
-      limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
-      },
-      fileFilter: (req, file, callback) => {
-        const allowedMimeTypes = [
-          'text/xml',
-          'application/xml',
-          'application/vnd.recordare.musicxml',
-          'application/vnd.recordare.musicxml+xml',
-        ];
-
-        const allowedExtensions = ['.xml', '.musicxml', '.mxl'];
-        const fileExtension = file.originalname.toLowerCase();
-        const hasValidExtension = allowedExtensions.some((ext) =>
-          fileExtension.endsWith(ext),
-        );
-
-        if (allowedMimeTypes.includes(file.mimetype) || hasValidExtension) {
-          callback(null, true);
-        } else {
-          callback(
-            new BadRequestException(
-              'Invalid file type. Only MusicXML files are allowed.',
-            ),
-            false,
-          );
-        }
-      } }),
-  )
   async uploadMusicXML(
     @Request() req: any,
-    @UploadedFile() file: any,
+    @Req() fastifyReq: FastifyRequest,
     @Body() uploadDto: FileUploadDto,
     @Body() configDto?: MusicXMLUploadConfigDto,
   ): Promise<FileUploadResponseDto | FileUploadErrorDto> {
     const userId = req.user?.id;
-    this.staticLogger.info(
-      `POST /api/exercises/upload/musicxml - User: ${userId}, File: ${file?.originalname}`,
-    );
 
     if (!userId) {
       throw new BadRequestException('User authentication required');
     }
 
-    if (!file) {
+    // Get multipart file from Fastify request
+    const data = await fastifyReq.file();
+
+    if (!data) {
       throw new BadRequestException('No file uploaded');
+    }
+
+    const { file: fileStream, filename, mimetype } = data;
+
+    // Read file buffer from stream
+    const chunks: Buffer[] = [];
+    for await (const chunk of fileStream) {
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+    const fileSize = buffer.length;
+
+    this.staticLogger.info(
+      `POST /api/exercises/upload/musicxml - User: ${userId}, File: ${filename}`,
+    );
+
+    // Validation: file size (max 10MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (fileSize > MAX_FILE_SIZE) {
+      throw new BadRequestException(
+        `File too large: ${fileSize} bytes (max ${MAX_FILE_SIZE} bytes)`,
+      );
+    }
+
+    // Validation: file type
+    const allowedMimeTypes = [
+      'text/xml',
+      'application/xml',
+      'application/vnd.recordare.musicxml',
+      'application/vnd.recordare.musicxml+xml',
+    ];
+    const allowedExtensions = ['.xml', '.musicxml', '.mxl'];
+    const fileExtension = filename.toLowerCase();
+    const hasValidExtension = allowedExtensions.some((ext) =>
+      fileExtension.endsWith(ext),
+    );
+
+    if (!allowedMimeTypes.includes(mimetype) && !hasValidExtension) {
+      throw new BadRequestException(
+        'Invalid file type. Only MusicXML files are allowed.',
+      );
     }
 
     // Defensive programming: check file upload service
@@ -377,19 +389,27 @@ export class ExercisesController {
       // Set file type
       uploadDto.fileType = 'musicxml' as any;
 
+      // Create file object compatible with existing service
+      const fileObject = {
+        buffer,
+        originalname: filename,
+        mimetype,
+        size: fileSize,
+      };
+
       const result = await this.fileUploadService.processUploadedFile(
-        file,
+        fileObject,
         uploadDto,
         configDto,
       );
 
       this.staticLogger.info(
-        `Successfully processed MusicXML file: ${file.originalname}`,
+        `Successfully processed MusicXML file: ${filename}`,
       );
       return result;
     } catch (error) {
       this.staticLogger.error(
-        `Error processing MusicXML file ${file.originalname}:`,
+        `Error processing MusicXML file ${filename}:`,
         error as Error,
       );
       throw error;
@@ -399,56 +419,69 @@ export class ExercisesController {
   /**
    * POST /api/exercises/upload/midi
    * Upload and process MIDI file to create bass exercise
+   *
+   * FIXED: Using Fastify multipart instead of Express FileInterceptor
    */
   @Post('upload/midi')
   @UseGuards(AuthGuard)
-  @UseInterceptors(
-    FileInterceptor('file', {
-      limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
-      },
-      fileFilter: (req, file, callback) => {
-        const allowedMimeTypes = [
-          'audio/midi',
-          'audio/x-midi',
-          'application/x-midi',
-        ];
-
-        const allowedExtensions = ['.mid', '.midi'];
-        const fileExtension = file.originalname.toLowerCase();
-        const hasValidExtension = allowedExtensions.some((ext) =>
-          fileExtension.endsWith(ext),
-        );
-
-        if (allowedMimeTypes.includes(file.mimetype) || hasValidExtension) {
-          callback(null, true);
-        } else {
-          callback(
-            new BadRequestException(
-              'Invalid file type. Only MIDI files are allowed.',
-            ),
-            false,
-          );
-        }
-      } }),
-  )
   async uploadMIDI(
     @Request() req: any,
-    @UploadedFile() file: any,
+    @Req() fastifyReq: FastifyRequest,
     @Body() uploadDto: FileUploadDto,
     @Body() configDto?: MIDIUploadConfigDto,
   ): Promise<FileUploadResponseDto | FileUploadErrorDto> {
     const userId = req.user?.id;
-    this.staticLogger.info(
-      `POST /api/exercises/upload/midi - User: ${userId}, File: ${file?.originalname}`,
-    );
 
     if (!userId) {
       throw new BadRequestException('User authentication required');
     }
 
-    if (!file) {
+    // Get multipart file from Fastify request
+    const data = await fastifyReq.file();
+
+    if (!data) {
       throw new BadRequestException('No file uploaded');
+    }
+
+    const { file: fileStream, filename, mimetype } = data;
+
+    // Read file buffer from stream
+    const chunks: Buffer[] = [];
+    for await (const chunk of fileStream) {
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+    const fileSize = buffer.length;
+
+    this.staticLogger.info(
+      `POST /api/exercises/upload/midi - User: ${userId}, File: ${filename}`,
+    );
+
+    // Validation: file size (max 10MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (fileSize > MAX_FILE_SIZE) {
+      throw new BadRequestException(
+        `File too large: ${fileSize} bytes (max ${MAX_FILE_SIZE} bytes)`,
+      );
+    }
+
+    // Validation: file type
+    const allowedMimeTypes = [
+      'audio/midi',
+      'audio/x-midi',
+      'application/x-midi',
+      'application/octet-stream', // Some systems report MIDI as this
+    ];
+    const allowedExtensions = ['.mid', '.midi'];
+    const fileExtension = filename.toLowerCase();
+    const hasValidExtension = allowedExtensions.some((ext) =>
+      fileExtension.endsWith(ext),
+    );
+
+    if (!allowedMimeTypes.includes(mimetype) && !hasValidExtension) {
+      throw new BadRequestException(
+        'Invalid file type. Only MIDI files are allowed.',
+      );
     }
 
     // Defensive programming: check file upload service
@@ -463,9 +496,17 @@ export class ExercisesController {
         uploadDto.storeFile = true;
       }
 
+      // Create file object compatible with existing service
+      const fileObject = {
+        buffer,
+        originalname: filename,
+        mimetype,
+        size: fileSize,
+      };
+
       // Process and store the MIDI file
       const result = await this.fileUploadService.processAndStoreFile(
-        file,
+        fileObject,
         uploadDto,
         userId,
         configDto,
@@ -487,8 +528,8 @@ export class ExercisesController {
             key: result.exercise.key,
             notes: [], // We'll need to get the notes from the actual parsed exercise
             midi_file_path: result.storageInfo.filePath,
-            original_filename: file.originalname,
-            file_size: file.size,
+            original_filename: filename,
+            file_size: fileSize,
             uploaded_at: new Date().toISOString(),
             created_by: userId };
 
@@ -516,11 +557,11 @@ export class ExercisesController {
         }
       }
 
-      this.staticLogger.info(`Successfully processed MIDI file: ${file.originalname}`);
+      this.staticLogger.info(`Successfully processed MIDI file: ${filename}`);
       return result;
     } catch (error) {
       this.staticLogger.error(
-        `Error processing MIDI file ${file.originalname}:`,
+        `Error processing MIDI file ${filename}:`,
         error as Error,
       );
       throw error;

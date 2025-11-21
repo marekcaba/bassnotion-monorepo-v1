@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import { VolumeKnob } from './VolumeKnob';
 import { useTrack } from '@/domains/playback/hooks/useTrack';
+import { useTransport } from '@/domains/playback/hooks/useTransport';
 import { getLogger } from '@/utils/logger.js';
 import type { MusicalPosition } from '@bassnotion/contracts/types/musical-time';
 import type { Exercise } from '@bassnotion/contracts';
@@ -31,9 +32,9 @@ interface BassLineWidgetProps {
   isPlaying: boolean;
   exercise?: Exercise;
   onPatternChange: (pattern: string) => void;
-  onToggleVisibility: () => void;
+  onToggleVisibility?: () => void;
   onTogglePlay?: () => void;
-  tempo?: number;
+  isAdminMode?: boolean;
 }
 
 // Bass patterns for quick selection
@@ -86,8 +87,11 @@ export function BassLineWidget({
   onPatternChange,
   onToggleVisibility,
   onTogglePlay,
-  tempo = 120,
+  isAdminMode = false,
 }: BassLineWidgetProps) {
+  // Get tempo directly from Transport (single source of truth)
+  const transport = useTransport();
+  const tempo = transport.tempo;
   const [isExpanded, setIsExpanded] = useState(false);
   const [volume, setVolume] = useState(80);
   const [isMuted, setIsMuted] = useState(false);
@@ -119,7 +123,7 @@ export function BassLineWidget({
     const checkPreloadedBass = async () => {
       // Check GlobalSampleCache first
       const { GlobalSampleCache } = await import(
-        '@/domains/playback/services/storage/GlobalSampleCache'
+        '@/domains/playback/modules/storage/cache/GlobalSampleCache'
       );
       const preloadedBass =
         GlobalSampleCache.getCachedInstrument('bass-preloaded');
@@ -187,8 +191,10 @@ export function BassLineWidget({
       // Check GlobalSampleCache first for preloaded bass instrument
       try {
         const { GlobalSampleCache } = await import(
-          '@/domains/playback/services/storage/GlobalSampleCache'
+          '@/domains/playback/modules/storage/cache/GlobalSampleCache'
         );
+
+        // Check for pre-loaded bass instrument
         const preloadedBass =
           GlobalSampleCache.getCachedInstrument('bass-preloaded');
 
@@ -205,6 +211,24 @@ export function BassLineWidget({
           });
 
           return;
+        }
+
+        // FAANG MIDI-based loading: Check for cached metadata about required notes
+        const bassMetadata = GlobalSampleCache.getCachedMetadata('bass-required-notes');
+        if (bassMetadata) {
+          logger.info('🎸 FAANG bass metadata found:', {
+            exerciseId: bassMetadata.exerciseId,
+            requiredNotes: bassMetadata.requiredNotes,
+            noteCount: bassMetadata.noteCount,
+            savingsVsFullLoad: `${Math.round((1 - (bassMetadata.noteCount / 24)) * 100)}%`
+          });
+
+          // TODO: When bass samples are implemented in WamBass.loadSamples(),
+          // pass bassMetadata.requiredNotes to load only those specific samples
+          // instead of loading all 24 bass notes.
+          // This will reduce bandwidth and improve load times.
+        } else {
+          logger.debug('No FAANG bass metadata found - will load default samples when bass samples are implemented');
         }
       } catch (error) {
         logger.debug(
@@ -685,18 +709,6 @@ export function BassLineWidget({
           </div>
         </div>
 
-        {/* Status and Close Button */}
-        <div className="flex items-center gap-2 ml-4">
-          <span className="text-xs text-gray-400">
-            {track.isReady ? '🟢' : '🟡'}
-          </span>
-          <button
-            onClick={onToggleVisibility}
-            className="text-gray-400 hover:text-white"
-          >
-            ✕
-          </button>
-        </div>
       </div>
 
       {/* Play Control (if provided) */}

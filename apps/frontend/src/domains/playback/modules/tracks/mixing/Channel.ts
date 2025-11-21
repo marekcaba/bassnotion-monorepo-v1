@@ -646,11 +646,11 @@ export class Channel {
 
   // Factory methods for DI support
   private createGain(gain?: number): any {
-    return this.audioEngine?.createGain?.(gain) || new Tone.Gain(gain);
+    return this.audioEngine?.createGain?.(gain) || new Tone.Gain({ gain });
   }
 
   private createPanner(pan?: number): any {
-    return this.audioEngine?.createPanner?.(pan) || new Tone.Panner(pan);
+    return this.audioEngine?.createPanner?.(pan) || new Tone.Panner({ pan });
   }
 
   private createEQ3(options?: any): any {

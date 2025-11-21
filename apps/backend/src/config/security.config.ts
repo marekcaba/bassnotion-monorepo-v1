@@ -22,20 +22,43 @@ export const helmetConfig = {
 
 /**
  * Rate limiting configuration
+ * NOTE: Increased limits for development to handle React Strict Mode double-rendering
+ * and multiple browser tabs. Adjust for production deployment.
  */
 export const rateLimitConfig: RateLimitOptions = {
-  max: 100, // Max requests per window
+  max: 500, // Max requests per window (increased for development)
   timeWindow: '15 minutes',
 
   // Custom error response
   errorResponseBuilder: (request, context) => {
+    // Safely handle the reset time
+    let resetTime: string | undefined;
+    let retryAfter: string | undefined;
+
+    if (context.after && !isNaN(Number(context.after))) {
+      try {
+        const resetDate = new Date(Number(context.after));
+        if (!isNaN(resetDate.getTime())) {
+          resetTime = resetDate.toISOString();
+          retryAfter = resetDate.toISOString();
+        }
+      } catch (error) {
+        // If date conversion fails, use a default message
+        retryAfter = 'a few minutes';
+      }
+    } else {
+      retryAfter = 'a few minutes';
+    }
+
     return {
       statusCode: 429,
       error: 'Too Many Requests',
-      message: `Rate limit exceeded. Please retry after ${new Date(context.after).toISOString()}.`,
+      message: `Rate limit exceeded. Please retry after ${retryAfter}.`,
       rateLimit: {
         limit: context.max,
-        resetTime: new Date(context.after).toISOString() } };
+        resetTime: resetTime || 'unknown'
+      }
+    };
   },
 
   // Skip rate limiting in development for easier testing
@@ -59,6 +82,11 @@ export const endpointRateLimits = {
     max: 10,
     timeWindow: '1 hour' },
 
+  // User profile endpoint (higher limit for development with React Strict Mode)
+  userProfile: {
+    max: 500,
+    timeWindow: '15 minutes' },
+
   // Public API endpoints
   public: {
     max: 200,
@@ -68,11 +96,13 @@ export const endpointRateLimits = {
  * CORS configuration (already in main.ts, but centralized here)
  */
 export const corsConfig = {
-  origin: true, // Allow all origins for now, can be made more restrictive in production
+  origin: ['http://localhost:3001', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id'],
-  exposedHeaders: ['x-correlation-id'] };
+  exposedHeaders: ['x-correlation-id'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204 };
 
 /**
  * Input sanitization options

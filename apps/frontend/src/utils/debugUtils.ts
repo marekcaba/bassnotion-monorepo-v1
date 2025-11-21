@@ -3,6 +3,8 @@ import React from 'react';
 import { createStructuredLogger } from '@bassnotion/contracts';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
+const logger = createStructuredLogger('DebugUtils');
+
 export function deepCompareAndLog(
   label: string,
   obj1: any,

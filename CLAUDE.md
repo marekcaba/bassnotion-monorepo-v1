@@ -4,6 +4,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Critical Rules
 
+### Logger Configuration (CHECK BEFORE ADDING LOGS!)
+
+**CRITICAL - HIGH PRIORITY**: Before adding console.log or logger statements, ALWAYS check logger configuration first!
+
+**Current Logger Setup:**
+- **Environment**: `NEXT_PUBLIC_LOG_LEVEL=INFO` in `.env.local`
+- **Two Logger Systems**:
+  1. **Frontend Logger** (`apps/frontend/src/utils/logger.ts`) - Category-based with disabled list
+  2. **Structured Logger** (`libs/contracts/src/utils/structured-logger.ts`) - Used by RegionProcessor
+
+**RegionProcessor Logger Status:**
+- Uses: `getLogger('RegionProcessor')` from `@/utils/logger.js`
+- **NOT in disabled categories list** - logs WILL show
+- Log levels enabled: `ERROR`, `WARN`, `INFO` (DEBUG and VERBOSE disabled by default)
+- Current calls in code:
+  - `logger.info()` - ✅ WILL SHOW (level INFO)
+  - `logger.debug()` - ❌ WON'T SHOW (level DEBUG > INFO threshold)
+
+**How to Enable Debug Logs:**
+```typescript
+// Option 1: In browser console
+window.logger.setLevel(window.LogLevel.DEBUG);
+
+// Option 2: Update .env.local
+NEXT_PUBLIC_LOG_LEVEL=DEBUG
+```
+
+**When Adding Diagnostic Logs:**
+1. ✅ **DO**: Use `console.log()` for critical diagnostics (always shows)
+2. ✅ **DO**: Use `logger.info()` for important events (shows with INFO level)
+3. ❌ **DON'T**: Use `logger.debug()` unless you know DEBUG is enabled
+4. ✅ **DO**: Check disabled categories list in `logger.ts` (lines 32-48)
+5. ✅ **DO**: Add context name to logs: `[CC64 DIAGNOSTIC]`, `[SUSTAIN DIAGNOSTIC]`
+
+**Disabled Categories (won't log INFO/DEBUG/VERBOSE):**
+- FretboardCard, useFretboard, useFretboardExercise
+- youtube-widget, CoreServices, EventBus, CircuitBreaker
+- CacheMonitor, WidgetSyncService, TransportClock, SyncedWidget
+- (See `logger.ts` lines 32-48 for full list)
+
 ### Tool Call Concurrency (PREVENTS API 400 ERRORS)
 
 **CRITICAL**: Limit parallel tool calls to avoid API rate limits and 400 errors:

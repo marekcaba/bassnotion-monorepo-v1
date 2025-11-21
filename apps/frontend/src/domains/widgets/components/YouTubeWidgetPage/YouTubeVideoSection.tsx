@@ -25,6 +25,14 @@ interface SimpleYouTubePlayerProps {
 
 function SimpleYouTubePlayer({ videoUrl, playing }: SimpleYouTubePlayerProps) {
   const getYouTubeVideoId = (url: string): string | null => {
+    if (!url) return null;
+
+    // If it's already just an ID (11 characters, alphanumeric with - and _)
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+      return url;
+    }
+
+    // Otherwise try to extract from URL
     const regex =
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/;
     const match = url.match(regex);
@@ -54,8 +62,16 @@ function CustomYouTubeThumbnail({
   videoUrl,
   onPlay,
 }: CustomYouTubeThumbnailProps) {
-  // Extract YouTube video ID from URL
+  // Extract YouTube video ID from URL or use as-is if it's already an ID
   const getYouTubeVideoId = (url: string): string | null => {
+    if (!url) return null;
+
+    // If it's already just an ID (11 characters, alphanumeric with - and _)
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+      return url;
+    }
+
+    // Otherwise try to extract from URL
     const regex =
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/;
     const match = url.match(regex);
@@ -65,6 +81,7 @@ function CustomYouTubeThumbnail({
   const videoId = getYouTubeVideoId(videoUrl);
 
   if (!videoId) {
+    console.warn('Invalid YouTube URL or ID:', videoUrl);
     return (
       <div className="absolute inset-0 bg-slate-800 flex items-center justify-center">
         <p className="text-white">Invalid YouTube URL</p>
@@ -111,25 +128,26 @@ export function YouTubeVideoSection({
   const { navigateWithTransition } = useViewTransitionRouter();
   const [playing, setPlaying] = useState(false);
 
-  // Use tutorialData or fallback to default
-  const videoUrl =
-    tutorialData?.youtube_url || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+  // Build video URL from youtube_id if youtube_url is not provided
+  let videoUrl = tutorialData?.youtube_url;
+
+  // If no youtube_url but we have youtube_id, construct the URL
+  if (!videoUrl && tutorialData?.youtube_id) {
+    videoUrl = `https://www.youtube.com/watch?v=${tutorialData.youtube_id}`;
+  }
+
+  // Fallback to default if neither is available
+  if (!videoUrl) {
+    videoUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+  }
+
+  // Reset playing state when video URL changes
+  React.useEffect(() => {
+    setPlaying(false);
+  }, [videoUrl]);
 
   return (
     <div className="space-y-4">
-      {/* Back to Library Button */}
-      <div className="flex items-center gap-3 text-slate-300">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigateWithTransition('/library')}
-          className="text-white/70 hover:text-white"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Library
-        </Button>
-      </div>
-
       {/* YouTube Video Player - Standalone */}
       <div className="relative">
         <div className="aspect-video bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 rounded-xl overflow-hidden relative group shadow-2xl">

@@ -34,6 +34,7 @@ export class DriftPredictor {
   private lastMeasurementTime = 0;
   private driftVelocity = 0; // Rate of drift change
   private driftAcceleration = 0; // Rate of velocity change
+  private lastResetTime = 0; // Track when reset was called to suppress warnings
 
   // Configuration
   private readonly driftThreshold: number; // ms
@@ -104,9 +105,13 @@ export class DriftPredictor {
 
     this.lastMeasurementTime = measurement.timestamp;
 
-    // Log significant drift
-    if (Math.abs(measurement.drift) > this.driftThreshold) {
-      logger.warn('Significant drift detected', {
+    // Log significant drift (suppress for 500ms after reset to avoid transition noise)
+    const timeSinceReset = performance.now() - this.lastResetTime;
+    const isInTransitionPeriod = this.lastResetTime > 0 && timeSinceReset < 500;
+
+    // Changed to debug level - 1ms drift is actually excellent, no need to warn
+    if (Math.abs(measurement.drift) > this.driftThreshold && !isInTransitionPeriod) {
+      logger.debug('Drift detected', {
         drift: measurement.drift.toFixed(3),
         filtered: filteredDrift.toFixed(3),
         velocity: this.driftVelocity.toFixed(3),
@@ -269,8 +274,17 @@ export class DriftPredictor {
     this.lastMeasurementTime = 0;
     this.driftVelocity = 0;
     this.driftAcceleration = 0;
+    this.lastResetTime = performance.now(); // Track reset time to suppress transition warnings
 
     logger.info('DriftPredictor reset');
+  }
+
+  /**
+   * Mark start of transition period to suppress warnings
+   */
+  startTransition(): void {
+    this.lastResetTime = performance.now();
+    logger.debug('Transition period started - warnings suppressed for 500ms');
   }
 
   /**

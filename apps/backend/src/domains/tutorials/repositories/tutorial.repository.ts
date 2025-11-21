@@ -25,17 +25,38 @@ interface TutorialRecord {
   published_at?: string;
   created_at: string;
   updated_at: string;
+  // New fields for draft and MIDI support
+  status?: string;
+  last_modified?: string;
+  auto_save_version?: number;
+  drummer_midi_url?: string;
+  bassline_midi_url?: string;
+  harmony_midi_url?: string;
+  deleted_at?: string;
+  // Creator fields for YouTube attribution
+  creator_name?: string;
+  creator_channel_url?: string;
+  creator_avatar_url?: string;
+  creator_subscriber_count?: number;
 }
 
 @Injectable()
 export class TutorialRepository implements ITutorialRepository {
   private readonly staticLogger = createStructuredLogger(TutorialRepository.name);
+  private supabaseClient?: SupabaseClient;
 
   constructor(
-    private readonly supabase: SupabaseClient,
+    private readonly supabaseService: any, // Will be SupabaseService
     @Inject(RequestContextService)
     private readonly requestContext: RequestContextService,
   ) {}
+
+  private get supabase(): SupabaseClient {
+    if (!this.supabaseClient) {
+      this.supabaseClient = this.supabaseService.getClient();
+    }
+    return this.supabaseClient!;
+  }
 
   async findById(id: TutorialId): Promise<Tutorial | null> {
     try {
@@ -490,6 +511,20 @@ export class TutorialRepository implements ITutorialRepository {
         ? new Date(record.published_at)
         : undefined,
       createdAt: new Date(record.created_at),
-      updatedAt: new Date(record.updated_at) });
+      updatedAt: new Date(record.updated_at),
+      // New fields for draft and MIDI support
+      status: record.status as 'draft' | 'published' | 'archived' || 'draft',
+      lastModified: record.last_modified ? new Date(record.last_modified) : undefined,
+      autoSaveVersion: record.auto_save_version || 0,
+      drummerMidiUrl: record.drummer_midi_url,
+      basslineMidiUrl: record.bassline_midi_url,
+      harmonyMidiUrl: record.harmony_midi_url,
+      deletedAt: record.deleted_at ? new Date(record.deleted_at) : undefined,
+      // Creator fields for YouTube attribution
+      creatorName: record.creator_name,
+      creatorChannelUrl: record.creator_channel_url,
+      creatorAvatarUrl: record.creator_avatar_url,
+      creatorSubscriberCount: record.creator_subscriber_count,
+    });
   }
 }

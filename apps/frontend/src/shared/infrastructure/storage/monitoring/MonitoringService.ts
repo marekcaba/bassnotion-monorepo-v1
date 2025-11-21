@@ -231,7 +231,7 @@ export class MonitoringService implements IMonitoringService {
       try {
         handler(alert);
       } catch (error) {
-        logger.error('Alert handler error', { alert, error });
+        logger.error('Alert handler error', error as Error, { alert });
       }
     }
   }

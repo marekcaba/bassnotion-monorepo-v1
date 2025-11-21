@@ -1,6 +1,6 @@
 // Value Objects
-export { ExerciseId } from '../value-objects/exercise-id';
-export { Difficulty } from '../value-objects/difficulty';
+export { ExerciseId } from '../value-objects/exercise-id.vo';
+export { Difficulty } from '../value-objects/difficulty.vo';
 
 // Entities
 export { Exercise } from '../entities/exercise.entity';

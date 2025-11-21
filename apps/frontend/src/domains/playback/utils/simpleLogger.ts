@@ -1,13 +1,14 @@
 /**
  * Simple logger for critical initialization messages only
+ * DISABLED: All logging suppressed to reduce console noise
  */
 
 export const initLogger = {
   toneInitialized: () => {
-    logger.info('✅ Tone.JS initialized');
+    // SUPPRESSED: Initialization logging disabled
   },
 
   widgetsLoaded: () => {
-    logger.info('✅ Widgets loaded');
+    // SUPPRESSED: Initialization logging disabled
   },
 };

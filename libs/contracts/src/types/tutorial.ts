@@ -4,6 +4,7 @@ export interface Tutorial {
   title: string;
   artist: string;
   youtube_url?: string;
+  youtube_id?: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   duration?: string;
   description?: string;
@@ -17,6 +18,7 @@ export interface Tutorial {
   creator_name?: string;
   creator_channel_url?: string;
   creator_avatar_url?: string;
+  creator_subscriber_count?: number;
 }
 
 export interface TutorialWithExercises extends Tutorial {
@@ -62,6 +64,7 @@ export interface CreateTutorialDto {
   creator_name?: string;
   creator_channel_url?: string;
   creator_avatar_url?: string;
+  creator_subscriber_count?: number;
 }
 
 export interface UpdateTutorialDto extends Partial<CreateTutorialDto> {

@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Inject } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 
 import { AuthService } from '../auth.service.js';
@@ -10,7 +10,6 @@ export class AuthGuard implements CanActivate {
   private readonly staticLogger = createStructuredLogger(AuthGuard.name);
 
   constructor(
-    @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
     @Inject(RequestContextService)
     private readonly requestContext: RequestContextService,
@@ -21,19 +20,36 @@ export class AuthGuard implements CanActivate {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Create logger directly to avoid initialization issues
+    const logger = createStructuredLogger('AuthGuard.canActivate');
     const request = context.switchToHttp().getRequest<FastifyRequest>();
+
+    logger.debug('AuthGuard checking request', {
+      url: request.url,
+      headers: {
+        authorization: request.headers.authorization?.substring(0, 50)
+      }
+    });
 
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {
+      logger.error('No token provided in request');
       throw new UnauthorizedException('No token provided');
     }
+
+    logger.debug('Token extracted', {
+      tokenLength: token.length,
+      tokenPrefix: token.substring(0, 20)
+    });
 
     try {
       const user = await this.authService.validateToken(token);
       (request as FastifyRequest & { user: unknown }).user = user;
+      logger.debug('User authenticated successfully', { userId: user.id });
       return true;
-    } catch {
+    } catch (error) {
+      logger.error('Token validation failed', error as Error);
       throw new UnauthorizedException('Invalid token');
     }
   }

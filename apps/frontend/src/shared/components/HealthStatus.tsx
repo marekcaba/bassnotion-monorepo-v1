@@ -46,10 +46,34 @@ export function HealthStatus() {
   };
 
   useEffect(() => {
-    checkHealth();
-    const interval = setInterval(checkHealth, 30000); // Check every 30 seconds
-    return () => clearInterval(interval);
-  }, []);
+    // OPTIMIZATION: Prevent multiple intervals in React Strict Mode
+    // Strict Mode mounts twice in dev, causing duplicate intervals
+    let mounted = true;
+    let interval: NodeJS.Timeout | null = null;
+
+    const initializeHealthCheck = async () => {
+      if (!mounted) return;
+
+      // Initial health check
+      await checkHealth();
+
+      // Start polling interval (only if still mounted)
+      if (mounted) {
+        // OPTIMIZATION: Increased from 30s to 2 minutes to reduce unnecessary API calls
+        interval = setInterval(() => {
+          if (mounted) checkHealth();
+        }, 120000); // Check every 2 minutes
+      }
+    };
+
+    initializeHealthCheck();
+
+    return () => {
+      mounted = false;
+      if (interval) clearInterval(interval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once per mount
 
   if (!health) return null;
 

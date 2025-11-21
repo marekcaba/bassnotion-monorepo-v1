@@ -5,9 +5,12 @@ import {
 } from '@/lib/hooks/use-view-transition-router';
 import { BassSettingsCard } from '../BassSettingsCard';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
 
 export function DashboardContent() {
   const { correlationId, logger } = useCorrelation('DashboardContent');
+  const { invalidate: invalidateProfile } = useUserProfile();
+
   // This ensures transitions are pre-heated for smooth first navigation
   const { isPreHeated } = useTransitionPreHeat();
   const { navigateWithTransition } = useViewTransitionRouter();
@@ -31,11 +34,16 @@ export function DashboardContent() {
     setTimeout(() => navigateWithTransition('/'), 100);
   };
 
-  const handleBassSettingsChange = (settings: {
+  const handleBassSettingsChange = async (settings: {
     stringCount: 4 | 5 | 6;
     maxFrets: number;
   }) => {
-    // Emit a custom event that other parts of the app can listen to
+    logger.info('🎯 Bass settings changed, invalidating cache...', settings);
+
+    // Invalidate React Query cache to refetch fresh profile
+    await invalidateProfile();
+
+    // Also emit event for real-time updates across the app
     window.dispatchEvent(
       new CustomEvent('bass-settings-changed', {
         detail: settings,

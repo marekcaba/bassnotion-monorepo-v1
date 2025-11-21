@@ -148,7 +148,19 @@ export class Mixer {
 
   private constructor() {
     this.audioEngine = AudioEngine.getInstance();
-    this.tone = this.audioEngine.getTone();
+
+    // Try to get Tone from AudioEngine, fallback to window.Tone if not initialized
+    try {
+      this.tone = this.audioEngine.getTone();
+    } catch (error) {
+      logger.warn('Mixer: AudioEngine not initialized, using window.Tone fallback', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      this.tone = (window as any).Tone;
+      if (!this.tone) {
+        logger.error('Mixer: No Tone.js instance available (neither AudioEngine nor window.Tone)');
+      }
+    }
 
     try {
       this.eventBus = serviceRegistry.get<EventBus>('eventBus');

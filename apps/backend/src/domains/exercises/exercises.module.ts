@@ -2,9 +2,16 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ExercisesController } from './exercises.controller.js';
 import { ExercisesService } from './exercises.service.js';
+import { AdminExercisesController } from './admin-exercises.controller.js';
+import { AdminExercisesService } from './admin-exercises.service.js';
 import { UserBasslinesController } from './user-basslines.controller.js';
 import { UserBasslinesService } from './user-basslines.service.js';
+import { MidiController } from './midi.controller.js';
 import { FileUploadService } from './services/file-upload.service.js';
+import { MidiParserService } from './services/midi-parser.service.js';
+import { FretboardMapperService } from './services/fretboard-mapper.service.js';
+import { DrumMapperService } from './services/drum-mapper.service.js';
+import { HarmonyMapperService } from './services/harmony-mapper.service.js';
 import { AuthModule } from '../user/auth/auth.module.js';
 import { ExerciseRepository } from './repositories/exercise.repository.js';
 import { CachedExerciseRepository } from './repositories/cached-exercise.repository.js';
@@ -16,11 +23,16 @@ import { RequestContextService } from '../../shared/services/request-context.ser
 
 @Module({
   imports: [AuthModule], // SupabaseModule and CacheModule are now global
-  controllers: [ExercisesController, UserBasslinesController],
+  controllers: [ExercisesController, AdminExercisesController, UserBasslinesController, MidiController],
   providers: [
     ExercisesService,
+    AdminExercisesService,
     UserBasslinesService,
     FileUploadService,
+    MidiParserService,
+    FretboardMapperService,
+    DrumMapperService,
+    HarmonyMapperService,
     // Base repository
     {
       provide: ExerciseRepository,

@@ -55,6 +55,7 @@ export class TransportController implements Service {
   private isInitialized = false;
   private state: TransportState = 'stopped';
   private config: TransportControllerConfig;
+  private autoStopTimerId: ReturnType<typeof setTimeout> | null = null;
 
   // Singleton
   private static instance: TransportController | null = null;
@@ -178,6 +179,13 @@ export class TransportController implements Service {
     // The position manager's getDisplayPosition() handles showing countdown as negative bars
     this.positionManager.resetToStart();
 
+    // CRITICAL FIX: Set state to 'playing' BEFORE starting transport
+    // This prevents race condition where Transport.start() immediately fires
+    // position update callback, but TransportController state is still 'stopped',
+    // causing the callback to filter out all position updates
+    this.state = 'playing';
+    console.log('🎯 [CONTROLLER FIX] State set to playing BEFORE transport.start()');
+
     // Start transport
     this.transport.start();
 
@@ -187,21 +195,62 @@ export class TransportController implements Service {
       Tone.Transport.start();
     }
 
-    // Update state
-    this.state = 'playing';
-
     // Emit events
     this.eventBus.emit('transport:start', {
       position: this.positionManager.getPosition(),
       timestamp: Date.now(),
     });
+
+    // Schedule auto-stop at exercise end (if exercise duration is set)
+    const timeline = this.transport.getTimeline();
+    const exerciseDurationSeconds = timeline.getExerciseDurationSeconds();
+    if (exerciseDurationSeconds > 0) {
+      const durationMs = exerciseDurationSeconds * 1000;
+      logger.info('🎵 Scheduling auto-stop', {
+        durationSeconds: exerciseDurationSeconds.toFixed(2),
+        durationMs,
+        durationBeats: timeline.getExerciseDurationBeats(),
+      });
+
+      this.autoStopTimerId = setTimeout(() => {
+        // Only stop if still playing (user might have stopped manually)
+        if (this.state === 'playing') {
+          logger.info('🎵 Auto-stop triggered at exercise end');
+          this.autoStopTimerId = null;
+          // GRACEFUL STOP: Let one-shot samples (drums, metronome) finish naturally
+          this.stop(true);
+        } else {
+          logger.debug('🎵 Auto-stop skipped - transport not playing', {
+            currentState: this.state,
+          });
+          this.autoStopTimerId = null;
+        }
+      }, durationMs);
+    } else {
+      logger.debug('🎵 No exercise duration set - playback will continue until manually stopped');
+    }
   }
 
   /**
    * Stop playback
+   * @param graceful - If true, allow one-shot samples to finish naturally (auto-stop).
+   *                   If false, force-stop all audio immediately (manual stop).
    */
-  async stop(): Promise<void> {
-    logger.info('Stopping playback...');
+  async stop(graceful = false): Promise<void> {
+    // Clear auto-stop timer if present (user manually stopped before exercise end)
+    if (this.autoStopTimerId !== null) {
+      clearTimeout(this.autoStopTimerId);
+      this.autoStopTimerId = null;
+      logger.info('🎵 Cleared auto-stop timer (manual stop)');
+    }
+
+    // Idempotency check: prevent race conditions from duplicate stop calls
+    if (this.state === 'stopped') {
+      logger.warn('🎵 Transport already stopped, ignoring duplicate stop call');
+      return;
+    }
+
+    logger.info('🎵 Stopping playback...', { previousState: this.state, graceful });
 
     // Stop transport
     this.transport.stop();
@@ -236,48 +285,27 @@ export class TransportController implements Service {
     // Reset position (positionManager.reset() now respects countdown offset)
     this.positionManager.reset();
 
-    // Update state
+    // CRITICAL: Update state to 'stopped' IMMEDIATELY
+    // This blocks any pending position update interval callbacks
     this.state = 'stopped';
+    logger.info('🎵 TransportController: State → stopped');
 
-    // Emit stop event
+    // Emit stop event with graceful flag so audio components know how to stop
     this.eventBus.emit('transport:stop', {
+      timestamp: Date.now(),
+      graceful, // Let CoreServices know if this is auto-stop (graceful) or manual stop
+    });
+
+    // Emit final position update to ensure UI shows reset position
+    const resetPosition = this.positionManager.getDisplayPosition();
+    this.eventBus.emit('transport:position-updated', {
+      position: resetPosition,
+      seconds: 0,
       timestamp: Date.now(),
     });
 
-
-    // CRITICAL FIX: Force position update to prevent race condition
-    // The position update interval may have queued a callback before we cleared it.
-    // We emit the correct position FIRST, then after a microtask cycle,
-    // we emit it AGAIN to ensure it's the last update the UI receives.
-    const resetPosition = this.positionManager.getDisplayPosition();
-    const positionPayload = {
-      position: {
-        bars: resetPosition.bars,
-        beats: resetPosition.beats,
-        sixteenths: resetPosition.sixteenths,
-        ticks: resetPosition.ticks,
-        seconds: 0,
-      },
-      timestamp: Date.now(),
-    };
-
-    // First emission
-    this.eventBus.emit('transport:position-updated', positionPayload);
-    logger.debug('Position reset after stop (first emission)', { displayPosition: resetPosition });
-
-    // Schedule second emission after event loop clears to override any stale callbacks
-    // This ensures that even if a stale interval callback fires, our correct position wins
-    Promise.resolve().then(() => {
-      // Check state again - if somehow we're playing again, don't override
-      if (this.state === 'stopped') {
-        this.eventBus.emit('transport:position-updated', {
-          ...positionPayload,
-          timestamp: Date.now(),
-        });
-        logger.debug('Position reset after stop (second emission - race condition guard)', {
-          displayPosition: resetPosition,
-        });
-      }
+    logger.info('🎵 Stop complete - position reset to start', {
+      displayPosition: resetPosition,
     });
   }
 
@@ -434,6 +462,21 @@ export class TransportController implements Service {
 
     // Emit event
     this.eventBus.emit('transport:time-signature-change', timeSignature);
+  }
+
+  /**
+   * Set exercise duration for auto-stop functionality
+   * @param totalBars - Total number of bars (including countdown)
+   * @param beatsPerBar - Beats per bar from time signature
+   */
+  setExerciseDuration(totalBars: number, beatsPerBar: number): void {
+    const timeline = this.transport.getTimeline();
+    timeline.setExerciseDuration(totalBars, beatsPerBar);
+    logger.info('Exercise duration configured for auto-stop', {
+      totalBars,
+      beatsPerBar,
+      totalBeats: totalBars * beatsPerBar,
+    });
   }
 
   /**
@@ -617,12 +660,13 @@ export class TransportController implements Service {
       // This prevents stale callbacks from overwriting the reset position after stop()
       // Race condition: timing worker fires final update AFTER stop() resets position
       if (this.state !== 'playing') {
-        logger.debug('Ignoring position update - transport not playing', {
-          seconds,
-          state: this.state,
-        });
+        // REMOVED SPAM: This fires 40x/second when stopped, flooding console
+        // console.log('🔴 [CONTROLLER DEBUG] Ignoring position update - state not playing');
         return;
       }
+
+      // REMOVED SPAM: This fires 40x/second during playback, flooding console
+      // console.log('✅ [CONTROLLER DEBUG] Position update ACCEPTED');
 
       // Update the raw position internally
       this.positionManager.updatePosition(seconds);

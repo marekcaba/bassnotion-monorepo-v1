@@ -14,12 +14,18 @@ export function UserIndicator() {
   const handleClick = () => {
     if (isAuthenticated) {
       navigateWithTransition('/dashboard');
+    } else {
+      navigateWithTransition('/login');
     }
   };
 
   if (!isAuthenticated || !user) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+      <div
+        className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
+        onClick={handleClick}
+        title="Click to login"
+      >
         <LogIn className="w-4 h-4 text-slate-400" />
         <span className="text-sm text-slate-400">Not logged in</span>
       </div>

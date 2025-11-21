@@ -35,7 +35,7 @@ export class UserRepository implements IUserRepository {
 
   async findById(id: UserId): Promise<User | null> {
     const { data, error } = await this.supabase
-      .from('users')
+      .from('profiles')
       .select('*')
       .eq('id', id.value)
       .single();
@@ -49,7 +49,7 @@ export class UserRepository implements IUserRepository {
 
   async findByEmail(email: Email): Promise<User | null> {
     const { data, error } = await this.supabase
-      .from('users')
+      .from('profiles')
       .select('*')
       .eq('email', email.value)
       .single();
@@ -66,7 +66,7 @@ export class UserRepository implements IUserRepository {
       const offset = (options.page - 1) * options.limit;
 
       const { data, error, count } = await this.supabase
-        .from('users')
+        .from('profiles')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(offset, offset + options.limit - 1);
@@ -95,7 +95,7 @@ export class UserRepository implements IUserRepository {
   async findByRole(role: UserRole): Promise<User[]> {
     try {
       const { data, error } = await this.supabase
-        .from('users')
+        .from('profiles')
         .select('*')
         .eq('role', role.value)
         .order('display_name', { ascending: true });
@@ -118,7 +118,7 @@ export class UserRepository implements IUserRepository {
   async search(query: string): Promise<User[]> {
     try {
       const { data, error } = await this.supabase
-        .from('users')
+        .from('profiles')
         .select('*')
         .or(`email.ilike.%${query}%,display_name.ilike.%${query}%`)
         .order('display_name', { ascending: true });
@@ -141,7 +141,7 @@ export class UserRepository implements IUserRepository {
   async save(user: User): Promise<void> {
     try {
       const data = user.toPersistence();
-      const { error } = await this.supabase.from('users').insert({
+      const { error } = await this.supabase.from('profiles').insert({
         ...data,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString() });
@@ -165,7 +165,7 @@ export class UserRepository implements IUserRepository {
     try {
       const data = user.toPersistence();
       const { error } = await this.supabase
-        .from('users')
+        .from('profiles')
         .update({
           ...data,
           updated_at: new Date().toISOString() })
@@ -188,7 +188,7 @@ export class UserRepository implements IUserRepository {
 
   async delete(id: UserId): Promise<void> {
     const { error } = await this.supabase
-      .from('users')
+      .from('profiles')
       .delete()
       .eq('id', id.value);
 
@@ -199,7 +199,7 @@ export class UserRepository implements IUserRepository {
 
   async exists(id: UserId): Promise<boolean> {
     const { count, error } = await this.supabase
-      .from('users')
+      .from('profiles')
       .select('id', { count: 'exact', head: true })
       .eq('id', id.value);
 
@@ -212,7 +212,7 @@ export class UserRepository implements IUserRepository {
 
   async existsByEmail(email: Email): Promise<boolean> {
     const { count, error } = await this.supabase
-      .from('users')
+      .from('profiles')
       .select('id', { count: 'exact', head: true })
       .eq('email', email.value);
 
@@ -231,7 +231,7 @@ export class UserRepository implements IUserRepository {
 
       const idValues = ids.map((id) => id.value);
       const { data, error } = await this.supabase
-        .from('users')
+        .from('profiles')
         .select('*')
         .in('id', idValues);
 
@@ -259,7 +259,7 @@ export class UserRepository implements IUserRepository {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString() }));
 
-      const { error } = await this.supabase.from('users').insert(data);
+      const { error } = await this.supabase.from('profiles').insert(data);
 
       if (error) {
         throw new Error(`Failed to save users batch: ${error.message}`);
@@ -283,7 +283,7 @@ export class UserRepository implements IUserRepository {
       // Supabase doesn't support bulk updates natively, so we use a transaction-like approach
       const updates = users.map((user) =>
         this.supabase
-          .from('users')
+          .from('profiles')
           .update({
             ...user.toPersistence(),
             updated_at: new Date().toISOString() })
@@ -316,7 +316,7 @@ export class UserRepository implements IUserRepository {
     try {
       const idValues = ids.map((id) => id.value);
       const { error } = await this.supabase
-        .from('users')
+        .from('profiles')
         .delete()
         .in('id', idValues);
 

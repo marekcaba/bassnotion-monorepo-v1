@@ -166,8 +166,14 @@ export class SampleMappingLoader {
     // Required fields
     if (!config.name) errors.push('Missing name');
     if (!config.version) errors.push('Missing version');
-    if (!config.velocityRanges || config.velocityRanges.length === 0) {
-      errors.push('Missing or empty velocityRanges');
+
+    // Support both velocityRanges (simple) and globalVelocityRanges (advanced per-note config)
+    const hasVelocityRanges = config.velocityRanges && config.velocityRanges.length > 0;
+    const hasGlobalVelocityRanges = (config as any).globalVelocityRanges &&
+                                    (config as any).globalVelocityRanges.length > 0;
+
+    if (!hasVelocityRanges && !hasGlobalVelocityRanges) {
+      errors.push('Missing or empty velocityRanges or globalVelocityRanges');
     }
     if (
       !config.sampleMapping ||
@@ -269,22 +275,48 @@ export class SampleMappingLoader {
     layer: string,
   ): string {
     const { storage, sampleMapping } = config;
-    const fileName = sampleMapping[note];
+    let fileName = sampleMapping[note];
 
     if (!fileName) {
       throw new Error(`No sample mapping found for note ${note}`);
     }
 
+    // Replace {layer} placeholder in fileName template (for advanced configs like Wurlitzer)
+    fileName = fileName.replace(/\{layer\}/g, layer);
+
+    // URL-encode the filename to handle special characters like # in note names (F#, C#, etc.)
+    // Split path and encode each component separately to preserve directory structure
+    const encodePathComponent = (path: string): string => {
+      return path
+        .split('/')
+        .map((component) => encodeURIComponent(component))
+        .join('/');
+    };
+
     // Build URL based on storage config
     if (storage.baseUrl) {
       // Remote URL
+      // Check if fileName already includes layer path (advanced config)
+      const hasLayerInPath = fileName.includes('/');
+
+      // Encode fileName components
+      const encodedFileName = encodePathComponent(fileName);
+
       const path = storage.bucketPath
-        ? `${storage.bucketPath}/${layer}/${fileName}`
-        : `${layer}/${fileName}`;
+        ? hasLayerInPath
+          ? `${storage.bucketPath}/${encodedFileName}`  // fileName has layer already (e.g., "v2/A0_v2.ogg")
+          : `${storage.bucketPath}/${layer}/${encodedFileName}`  // Simple format (e.g., "A0.mp3")
+        : hasLayerInPath
+          ? encodedFileName
+          : `${layer}/${encodedFileName}`;
       return `${storage.baseUrl}/${path}`;
     } else if (storage.localPath) {
-      // Local path
-      return `${storage.localPath}/${layer}/${fileName}`;
+      // Local path - also encode for consistency
+      const hasLayerInPath = fileName.includes('/');
+      const encodedFileName = encodePathComponent(fileName);
+      return hasLayerInPath
+        ? `${storage.localPath}/${encodedFileName}`
+        : `${storage.localPath}/${layer}/${encodedFileName}`;
     } else {
       throw new Error('No storage configuration found');
     }
@@ -298,7 +330,10 @@ export class SampleMappingLoader {
     layers?: string[],
   ): Map<string, Map<string, string>> {
     const urls = new Map<string, Map<string, string>>();
-    const targetLayers = layers || config.velocityRanges.map((r) => r.layer);
+
+    // Support both velocityRanges and globalVelocityRanges
+    const velocityRanges = config.velocityRanges || (config as any).globalVelocityRanges;
+    const targetLayers = layers || (velocityRanges ? velocityRanges.map((r: any) => r.layer) : []);
 
     for (const layer of targetLayers) {
       const layerUrls = new Map<string, string>();

@@ -6,7 +6,7 @@
  */
 
 import * as Tone from 'tone';
-import { GlobalSampleCache } from '../services/storage/GlobalSampleCache.js';
+import { GlobalSampleCache } from '../modules/storage/cache/GlobalSampleCache.js';
 import { getLogger } from '@/utils/logger.js';
 
 const logger = getLogger('context-manager');

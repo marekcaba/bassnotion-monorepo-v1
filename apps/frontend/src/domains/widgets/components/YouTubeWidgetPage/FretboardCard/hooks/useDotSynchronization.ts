@@ -1,6 +1,5 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import type { SelectedDotsMap, StringCount } from '../types/fretboardTypes';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface UseDotSynchronizationProps {
   is3DMode: boolean;
@@ -43,7 +42,7 @@ export function useDotSynchronization({
         .filter((order) => typeof order === 'number');
       return allOrders.length > 0 ? Math.max(...allOrders) : 0;
     } catch (error) {
-      logger.error('Error calculating selection order:', error);
+      console.error('Error calculating selection order:', error);
       return 0;
     }
   }, []);
@@ -111,19 +110,9 @@ export function useDotSynchronization({
     onUserManualSelection,
   ]);
 
-  // String count synchronization: 2D → shared (when in 2D mode)
-  useEffect(() => {
-    if (!is3DMode && localStringCount !== sharedStringCount) {
-      setSharedStringCount(localStringCount);
-    }
-  }, [localStringCount, sharedStringCount, is3DMode, setSharedStringCount]);
-
-  // String count synchronization: shared → 2D (when in 3D mode)
-  useEffect(() => {
-    if (is3DMode && sharedStringCount !== localStringCount) {
-      setLocalStringCount(sharedStringCount);
-    }
-  }, [sharedStringCount, localStringCount, is3DMode, setLocalStringCount]);
+  // REMOVED: String count synchronization - NO AUTOMATIC SYNCING
+  // String count comes from parent (profile settings) as the SINGLE SOURCE OF TRUTH
+  // User can manually change it via UI controls, but it flows DOWN from parent only
 
   // Mode switching synchronization
   useEffect(() => {

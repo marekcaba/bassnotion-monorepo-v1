@@ -33,6 +33,10 @@ export class Timeline {
 
   private tempo = 120; // BPM
   private loopEnabled = false;
+
+  // COUNTDOWN OFFSET: Track countdown duration for display adjustment
+  // When countdownBeats > 0, the first N beats are pre-roll (measure -1 or 0)
+  private countdownBeats = 0; // Number of beats in countdown (e.g., 4 for one measure of 4/4)
   private loopStart: MusicalPosition = {
     bars: 0,
     beats: 0,
@@ -89,10 +93,110 @@ export class Timeline {
   }
 
   /**
-   * Get the current musical position
+   * Set countdown offset (number of beats in pre-roll)
+   * This adjusts position display so countdown shows as measure -1 or 0
+   */
+  setCountdownBeats(beats: number): void {
+    this.countdownBeats = beats;
+    logger.info('Countdown offset set', { countdownBeats: beats });
+  }
+
+  /**
+   * Get countdown offset
+   */
+  getCountdownBeats(): number {
+    return this.countdownBeats;
+  }
+
+  // Exercise duration tracking for auto-stop functionality
+  private exerciseDurationBeats = 0;
+
+  /**
+   * Set exercise duration (in beats) for auto-stop functionality
+   * This includes countdown beats + actual exercise beats
+   * @param totalBars - Total number of bars (including countdown)
+   * @param beatsPerBar - Beats per bar from time signature
+   */
+  setExerciseDuration(totalBars: number, beatsPerBar: number): void {
+    this.exerciseDurationBeats = totalBars * beatsPerBar;
+    logger.info('Exercise duration set', {
+      totalBars,
+      beatsPerBar,
+      totalBeats: this.exerciseDurationBeats,
+    });
+  }
+
+  /**
+   * Get exercise duration in beats
+   * Returns 0 if no duration has been set (infinite playback)
+   */
+  getExerciseDurationBeats(): number {
+    return this.exerciseDurationBeats;
+  }
+
+  /**
+   * Get exercise duration in seconds based on current tempo
+   * Returns 0 if no duration has been set (infinite playback)
+   */
+  getExerciseDurationSeconds(): number {
+    if (this.exerciseDurationBeats === 0) {
+      return 0;
+    }
+    return (this.exerciseDurationBeats / this.tempo) * 60;
+  }
+
+  /**
+   * Get the current musical position (raw, without countdown adjustment)
    */
   getPosition(): MusicalPosition {
-    return { ...this.musicalPosition };
+    // Defensive: Ensure all position values are valid numbers
+    const pos = this.musicalPosition;
+    return {
+      bars: typeof pos.bars === 'number' && !isNaN(pos.bars) ? pos.bars : 0,
+      beats: typeof pos.beats === 'number' && !isNaN(pos.beats) ? pos.beats : 0,
+      sixteenths: typeof pos.sixteenths === 'number' && !isNaN(pos.sixteenths) ? pos.sixteenths : 0,
+      ticks: typeof pos.ticks === 'number' && !isNaN(pos.ticks) ? pos.ticks : 0,
+    };
+  }
+
+  /**
+   * Get the display position (adjusted for countdown offset)
+   * This is what should be shown in the UI to match DAW conventions
+   *
+   * Example with 4-beat countdown (one measure of 4/4):
+   * - Raw position 0:0:0 → Display -1:0:0 (or 0:0:0 if using 0-based countdown)
+   * - Raw position 0:3:0 → Display -1:3:0 (last beat of countdown)
+   * - Raw position 0:4:0 → Display 1:0:0 (first beat of exercise)
+   * - Raw position 1:0:0 → Display 2:0:0 (second measure of exercise)
+   */
+  getDisplayPosition(): MusicalPosition {
+    const pos = this.getPosition();
+
+    if (this.countdownBeats === 0) {
+      // No countdown - return as-is
+      return pos;
+    }
+
+    // Convert position to total beats
+    const beatsPerBar = this.timeSignature.numerator;
+    const totalBeats = pos.bars * beatsPerBar + pos.beats + pos.sixteenths / 4;
+
+    // Subtract countdown offset
+    const adjustedBeats = totalBeats - this.countdownBeats;
+
+    // Convert back to bars:beats:sixteenths
+    const adjustedBars = Math.floor(adjustedBeats / beatsPerBar);
+    const beatsInBar = adjustedBeats % beatsPerBar;
+    const adjustedBeatsInt = Math.floor(beatsInBar);
+    const fractionalBeat = beatsInBar % 1;
+    const adjustedSixteenths = Math.floor(fractionalBeat * 4);
+
+    return {
+      bars: adjustedBars,
+      beats: adjustedBeatsInt,
+      sixteenths: adjustedSixteenths,
+      ticks: Math.floor(adjustedSixteenths * 240), // 240 ticks per sixteenth
+    };
   }
 
   /**
@@ -112,6 +216,17 @@ export class Timeline {
     const totalBeats = seconds * beatsPerSecond;
     const beatsPerBar = this.timeSignature.numerator;
 
+    // DIAGNOSTIC: Log if we're about to create NaN values
+    if (isNaN(beatsPerBar) || beatsPerBar === 0) {
+      logger.warn('🔍 DIAGNOSTIC: beatsPerBar is NaN or 0!', {
+        timeSignature: this.timeSignature,
+        numerator: this.timeSignature.numerator,
+        denominator: this.timeSignature.denominator,
+        bpm,
+        seconds,
+      });
+    }
+
     const bars = Math.floor(totalBeats / beatsPerBar);
     const beatsInBar = totalBeats % beatsPerBar;
     const beats = Math.floor(beatsInBar);
@@ -120,9 +235,24 @@ export class Timeline {
     const sixteenths = Math.floor(sixteenthsInBeat);
 
     // Calculate ticks with sub-sixteenth precision
-    // 960 ticks per quarter note (MIDI standard), so 240 ticks per sixteenth
-    const ticksPerSixteenth = 240;
+    // 480 ticks per quarter note (MIDI standard), so 120 ticks per sixteenth
+    const ticksPerSixteenth = 120;
     const ticks = Math.floor(sixteenthsInBeat * ticksPerSixteenth);
+
+    // DIAGNOSTIC: Log if we created NaN values
+    if (isNaN(bars) || isNaN(beats)) {
+      logger.warn('🔍 DIAGNOSTIC: Calculated NaN position!', {
+        bars,
+        beats,
+        sixteenths,
+        ticks,
+        totalBeats,
+        beatsPerBar,
+        beatsInBar,
+        bpm,
+        seconds,
+      });
+    }
 
     this.musicalPosition = {
       bars,
@@ -219,8 +349,13 @@ export class Timeline {
    * Get extended transport position with time info
    */
   getTransportPosition(): TransportPosition {
+    // Defensive: Ensure all position values are valid numbers (same as getPosition())
+    const pos = this.musicalPosition;
     return {
-      ...this.musicalPosition,
+      bars: typeof pos.bars === 'number' && !isNaN(pos.bars) ? pos.bars : 0,
+      beats: typeof pos.beats === 'number' && !isNaN(pos.beats) ? pos.beats : 0,
+      sixteenths: typeof pos.sixteenths === 'number' && !isNaN(pos.sixteenths) ? pos.sixteenths : 0,
+      ticks: typeof pos.ticks === 'number' && !isNaN(pos.ticks) ? pos.ticks : 0,
       seconds: this.positionToSeconds(),
     };
   }

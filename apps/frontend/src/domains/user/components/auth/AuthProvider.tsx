@@ -11,6 +11,7 @@ import { useToast } from '@/shared/hooks/use-toast';
 import { supabase } from '@/infrastructure/supabase/client';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { apiClient } from '@/lib/api-client';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -53,6 +54,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { session } = await authService.refreshSession();
       if (session) {
         setSession(session);
+        // Set the auth token for API calls
+        if (session.access_token) {
+          apiClient.setAuthToken(session.access_token);
+        }
       }
       resetIdleTimer();
     } catch (error) {
@@ -131,8 +136,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (session) {
           setUser(session.user);
           setSession(session);
+          // Set the auth token for API calls
+          if (session.access_token) {
+            apiClient.setAuthToken(session.access_token);
+          }
         } else {
           reset();
+          apiClient.clearAuthToken();
         }
       } catch (error) {
         logger.error('Error initializing auth:', error);
@@ -195,8 +205,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
               if (session) {
                 setUser(session.user);
                 setSession(session);
+                // Set the auth token for API calls
+                if (session.access_token) {
+                  apiClient.setAuthToken(session.access_token);
+                }
               } else {
                 reset();
+                apiClient.clearAuthToken();
                 setShowIdleWarning(false);
               }
             } catch (error) {

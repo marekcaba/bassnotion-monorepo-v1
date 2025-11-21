@@ -56,6 +56,7 @@ export interface MusicalPosition {
   measure: number; // Which measure (1-based)
   beat: number; // Which beat in measure (1-based)
   subdivision: number; // Subdivision of beat (0-based, typically 0-3 for sixteenths)
+  tick?: number; // Precise position within beat (0-479 at 480 PPQ) - preserves sub-16th timing
 }
 
 /**

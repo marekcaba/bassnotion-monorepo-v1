@@ -396,10 +396,26 @@ export class ExercisesService {
       notes: persistenceData.notes,
       tags: persistenceData.tags,
       is_active: persistenceData.is_active,
+      // Legacy single MIDI file
       midi_file_path: persistenceData.midi_file_path,
       original_filename: persistenceData.original_filename,
       file_size: persistenceData.file_size,
       uploaded_at: persistenceData.uploaded_at,
+      // New separate MIDI files for each widget (Story 4.4)
+      drummer_midi_url: persistenceData.drummer_midi_url,
+      bassline_midi_url: persistenceData.bassline_midi_url,
+      harmony_midi_url: persistenceData.harmony_midi_url,
+      metronome_midi_url: persistenceData.metronome_midi_url,
+      // Pre-converted patterns (Story 4.4 - avoid re-parsing MIDI on client)
+      drum_pattern: persistenceData.drum_pattern,
+      harmony_notes: persistenceData.harmony_notes,
+      harmony_control_changes: persistenceData.harmony_control_changes,
+      harmony_instrument: persistenceData.harmony_instrument,
+      // Musical metadata
+      duration_beats: persistenceData.duration_beats,
+      total_bars: persistenceData.total_bars,
+      time_signature: persistenceData.time_signature,
+      tutorial_id: persistenceData.tutorial_id,
       created_by: persistenceData.created_by,
       created_at: persistenceData.created_at,
       updated_at: persistenceData.updated_at } as ExerciseDto;

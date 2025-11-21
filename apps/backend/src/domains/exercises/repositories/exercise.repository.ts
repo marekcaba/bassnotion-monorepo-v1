@@ -12,12 +12,16 @@ import { RequestContextService } from '../../../shared/services/request-context.
 
 interface ExerciseRecord {
   id: string;
+  tutorial_id?: string;
   title: string;
   description: string;
   difficulty: string;
-  duration: number;
+  duration: number; // DEPRECATED: milliseconds
+  duration_beats?: number; // Total beats in exercise (musical time)
+  total_bars?: number; // Total measures/bars
   bpm: number;
   key: string;
+  time_signature?: { numerator: number; denominator: number };
   notes: any[]; // Schema doesn't match ExerciseNote type yet
   tags: string[];
   is_active: boolean;
@@ -25,6 +29,14 @@ interface ExerciseRecord {
   original_filename?: string;
   file_size?: number;
   uploaded_at?: string;
+  drummer_midi_url?: string;
+  bassline_midi_url?: string;
+  harmony_midi_url?: string;
+  metronome_midi_url?: string;
+  drum_pattern?: any[]; // Pre-converted drum pattern from MIDI
+  harmony_notes?: any[]; // Pre-converted harmony notes from MIDI
+  harmony_control_changes?: any[]; // MIDI control changes (sustain pedal, expression, etc.)
+  harmony_instrument?: 'grandpiano' | 'rhodes' | 'wurlitzer' | 'pad'; // Harmony instrument type
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -369,12 +381,16 @@ export class ExerciseRepository implements IExerciseRepository {
   private mapToEntity(record: ExerciseRecord): Exercise {
     return Exercise.reconstitute({
       id: ExerciseId.create(record.id),
+      tutorialId: record.tutorial_id,
       title: record.title,
       description: record.description,
       difficulty: Difficulty.create(record.difficulty),
       duration: record.duration,
+      durationBeats: record.duration_beats,
+      totalBars: record.total_bars,
       bpm: record.bpm,
       key: record.key,
+      timeSignature: record.time_signature,
       notes: record.notes || [],
       tags: record.tags || [],
       isActive: record.is_active,
@@ -382,6 +398,13 @@ export class ExerciseRepository implements IExerciseRepository {
       originalFilename: record.original_filename,
       fileSize: record.file_size,
       uploadedAt: record.uploaded_at ? new Date(record.uploaded_at) : undefined,
+      drummerMidiUrl: record.drummer_midi_url,
+      basslineMidiUrl: record.bassline_midi_url,
+      harmonyMidiUrl: record.harmony_midi_url,
+      metronomeMidiUrl: record.metronome_midi_url,
+      harmonyNotes: record.harmony_notes,
+      harmonyControlChanges: record.harmony_control_changes,
+      harmonyInstrument: record.harmony_instrument,
       createdBy: record.created_by,
       createdAt: new Date(record.created_at),
       updatedAt: new Date(record.updated_at) });

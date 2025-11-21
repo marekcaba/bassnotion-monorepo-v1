@@ -10,6 +10,7 @@ interface BypassPageProps {
 }
 
 export default function BypassPage({ params }: BypassPageProps) {
+  const { logger } = useCorrelation('BypassPage');
   const resolvedParams = React.use(params);
   const tutorialSlug = resolvedParams.tutorialId;
 
@@ -18,13 +19,13 @@ export default function BypassPage({ params }: BypassPageProps) {
     alert(`Bypass page loaded! Tutorial: ${tutorialSlug}`);
 
     // Log to console
-    logger.error('BYPASS PAGE LOADED:', tutorialSlug);
+    logger.info('BYPASS PAGE LOADED:', { tutorialSlug });
 
     // Check if window is frozen
     let count = 0;
     const interval = setInterval(() => {
       count++;
-      logger.error('Page is alive, count:', count);
+      logger.info('Page is alive', { count });
       if (count >= 5) {
         clearInterval(interval);
         alert('Page is responsive! Interval completed.');

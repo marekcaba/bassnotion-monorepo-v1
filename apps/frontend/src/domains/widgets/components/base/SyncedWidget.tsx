@@ -12,6 +12,9 @@ import React, { ErrorInfo, ReactNode, useEffect } from 'react';
 import { useWidgetSync } from '../../hooks/useWidgetSync';
 import type { UseWidgetSyncOptions } from '../../hooks/useWidgetSync';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { createStructuredLogger } from '@bassnotion/contracts';
+
+const logger = createStructuredLogger('SyncedWidget');
 
 // ============================================================================
 // INTERFACES
@@ -109,7 +112,7 @@ class SyncedWidgetErrorBoundary extends React.Component<
     });
 
     // Log error
-    logger.error(`[${this.props.widgetId}] Widget error:`, error, errorInfo);
+    logger.error(`[${this.props.widgetId}] Widget error:`, error, { errorInfo });
 
     // Call error handler
     if (this.props.onError) {

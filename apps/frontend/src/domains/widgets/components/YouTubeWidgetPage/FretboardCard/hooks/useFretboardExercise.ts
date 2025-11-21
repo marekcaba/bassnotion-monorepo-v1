@@ -1,5 +1,6 @@
 import { useMemo, useCallback, useEffect, useRef } from 'react';
 import type { SyncedWidgetRenderProps } from '../../../base';
+import { createStructuredLogger } from '@bassnotion/contracts';
 import type { ExerciseNote } from '@bassnotion/contracts';
 import type {
   Fret,
@@ -8,6 +9,8 @@ import type {
 } from '../types/fretboardTypes';
 import { useAudioFretboard } from '../../../../hooks/useAudioFretboard';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+
+const logger = createStructuredLogger('useFretboardExercise');
 
 /**
  * Hook to manage exercise integration with the fretboard
@@ -88,14 +91,14 @@ export const useFretboardExercise = (
         let noteStringIndex: number;
 
         if (maxString <= 4) {
-          // 4-string bass exercise: strings 1-4 map to E(1), A(2), D(3), G(4)
-          noteStringIndex = note.string; // string 1 -> index 1, string 2 -> index 2, etc.
+          // 4-string bass exercise: strings 1-4 map to G(4), D(3), A(2), E(1)
+          noteStringIndex = 5 - note.string; // string 1 -> index 4, string 2 -> index 3, string 3 -> index 2, string 4 -> index 1
         } else if (maxString <= 5) {
-          // 5-string bass exercise: strings 1-5 map to B(0), E(1), A(2), D(3), G(4)
-          noteStringIndex = note.string - 1; // string 1 -> index 0, string 2 -> index 1, etc.
+          // 5-string bass exercise: strings 1-5 map to G(4), D(3), A(2), E(1), B(0)
+          noteStringIndex = 5 - note.string; // string 1 -> index 4, string 2 -> index 3, etc.
         } else {
-          // 6-string bass exercise: strings 1-6 map to B(0), E(1), A(2), D(3), G(4), C(5)
-          noteStringIndex = note.string - 1; // string 1 -> index 0, string 2 -> index 1, etc.
+          // 6-string bass exercise: strings 1-6 map to C(5), G(4), D(3), A(2), E(1), B(0)
+          noteStringIndex = 6 - note.string; // string 1 -> index 5, string 2 -> index 4, etc.
         }
 
         const noteFret = note.fret === 0 ? 'open' : note.fret;
@@ -279,14 +282,17 @@ export const useFretboardExercise = (
         let stringIndex: number;
 
         if (maxString <= 4) {
-          // 4-string bass exercise: strings 1-4 map to E(1), A(2), D(3), G(4)
-          stringIndex = note.string; // string 1 -> index 1, string 2 -> index 2, etc.
+          // 4-string bass exercise: strings 1-4 map to G(4), D(3), A(2), E(1)
+          // String 1 = G = index 4, String 2 = D = index 3, String 3 = A = index 2, String 4 = E = index 1
+          stringIndex = 5 - note.string; // string 1 -> index 4, string 2 -> index 3, string 3 -> index 2, string 4 -> index 1
         } else if (maxString <= 5) {
-          // 5-string bass exercise: strings 1-5 map to B(0), E(1), A(2), D(3), G(4)
-          stringIndex = note.string - 1; // string 1 -> index 0, string 2 -> index 1, etc.
+          // 5-string bass exercise: strings 1-5 map to G(4), D(3), A(2), E(1), B(0)
+          // String 1 = G = index 4, String 2 = D = index 3, String 3 = A = index 2, String 4 = E = index 1, String 5 = B = index 0
+          stringIndex = 5 - note.string; // string 1 -> index 4, string 2 -> index 3, etc.
         } else {
-          // 6-string bass exercise: strings 1-6 map to B(0), E(1), A(2), D(3), G(4), C(5)
-          stringIndex = note.string - 1; // string 1 -> index 0, string 2 -> index 1, etc.
+          // 6-string bass exercise: strings 1-6 map to C(5), G(4), D(3), A(2), E(1), B(0)
+          // String 1 = C = index 5, String 2 = G = index 4, String 3 = D = index 3, String 4 = A = index 2, String 5 = E = index 1, String 6 = B = index 0
+          stringIndex = 6 - note.string; // string 1 -> index 5, string 2 -> index 4, etc.
         }
 
         // Convert fret number (0 means open string)

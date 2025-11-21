@@ -33,8 +33,8 @@ export function TransportClock({
   const { correlationId, logger } = useCorrelation('TransportClock');
   transportClockRenderCount++;
 
-  const { position, tempo, timeSignature, isPlaying, isPaused, isStopped } =
-    useTransport();
+  const transport = useTransport();
+  const { position, tempo, timeSignature, isPlaying, isPaused, isStopped } = transport;
 
   // Track render count for this instance
   const renderCountRef = React.useRef(0);
@@ -46,7 +46,9 @@ export function TransportClock({
       logger.info('⏰ [TransportClock] Transport state:', {
         position,
         tempo,
-        timeSignature,
+        // CRITICAL FIX: Ensure timeSignature object is properly serialized for logging
+        timeSignature: timeSignature ? `${timeSignature.numerator}/${timeSignature.denominator}` : 'undefined',
+        timeSignatureRaw: JSON.stringify(timeSignature),
         isPlaying,
         isPaused,
         isStopped,
@@ -58,10 +60,24 @@ export function TransportClock({
 
   const [audioContextState, setAudioContextState] = useState<string>('unknown');
   const [updateCount, setUpdateCount] = useState(0);
+  const [isEditingTempo, setIsEditingTempo] = useState(false);
+  const [editedTempo, setEditedTempo] = useState<string>('');
+  const [userTempo, setUserTempo] = useState<number | null>(null);
+  const tempoInputRef = React.useRef<HTMLInputElement>(null);
 
   // Use ref to track current state to avoid closure issues
   const audioContextStateRef = React.useRef(audioContextState);
   audioContextStateRef.current = audioContextState;
+
+  // Get current display tempo - prioritize user-set tempo, then transport, then exercise default
+  const displayTempo = userTempo || tempo || selectedExercise?.bpm;
+
+  // Initialize user tempo when exercise changes
+  useEffect(() => {
+    if (selectedExercise?.bpm && !userTempo) {
+      setUserTempo(selectedExercise.bpm);
+    }
+  }, [selectedExercise?.bpm, userTempo]);
 
   // Monitor AudioContext state using singleton pattern
   useEffect(() => {
@@ -187,19 +203,47 @@ export function TransportClock({
 
   // Format position for display
   const formatPosition = () => {
-    if (!position) return '1:1:0';
+    if (!position) return '1:1:00';
 
-    // Display as bars:beats:sixteenths (1-based for musician-friendly display)
-    const bar = position.bars + 1;
-    const beat = position.beats + 1;
-    const sixteenth = position.sixteenths;
+    // Defensive checks - ensure all position properties are numbers
+    const bars = typeof position.bars === 'number' ? position.bars : 0;
+    const beats = typeof position.beats === 'number' ? position.beats : 0;
+    const sixteenths = typeof position.sixteenths === 'number' ? position.sixteenths : 0;
 
-    return `${bar}:${beat}:${sixteenth.toString().padStart(2, '0')}`;
+    // COUNTDOWN FIX: Handle negative bars (countdown/pre-roll)
+    // Negative bars indicate countdown before the exercise starts
+    // Beats are 0-indexed (0, 1, 2, 3 for 4/4 time)
+    // We want to display them as 1-indexed (1, 2, 3, 4)
+    // So we just add 1 to convert from 0-indexed to 1-indexed
+
+    let displayBar: number;
+    let displayBeat: number;
+    let displaySixteenth: number;
+    let isNegative = false;
+
+    if (bars < 0) {
+      // Negative bars: In countdown mode
+      isNegative = true;
+      displayBar = Math.abs(bars);
+      // Simply convert from 0-indexed to 1-indexed
+      // beat 0 → 1, beat 1 → 2, beat 2 → 3, beat 3 → 4
+      displayBeat = beats + 1;
+      displaySixteenth = sixteenths;
+    } else {
+      // Positive bars: Add 1 for 1-based display (bar 0 → "1")
+      displayBar = bars + 1;
+      displayBeat = beats + 1;
+      displaySixteenth = sixteenths;
+    }
+
+    // Format with single negative sign at the start if in countdown
+    const timeString = `${displayBar}:${displayBeat}:${displaySixteenth.toString().padStart(2, '0')}`;
+    return isNegative ? `-${timeString}` : timeString;
   };
 
   // Format seconds
   const formatSeconds = () => {
-    if (!position?.seconds) return '0.000s';
+    if (!position?.seconds || typeof position.seconds !== 'number') return '0.000s';
     return `${position.seconds.toFixed(3)}s`;
   };
 
@@ -219,6 +263,66 @@ export function TransportClock({
     return 'text-gray-500';
   };
 
+  // Handle tempo editing
+  const handleTempoClick = React.useCallback(() => {
+    if (displayTempo) {
+      setEditedTempo(displayTempo.toString());
+      setIsEditingTempo(true);
+    }
+  }, [displayTempo]);
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditingTempo && tempoInputRef.current) {
+      tempoInputRef.current.focus();
+      tempoInputRef.current.select();
+    }
+  }, [isEditingTempo]);
+
+  // Handle tempo change
+  const handleTempoChange = React.useCallback(
+    async (newTempo: number) => {
+      if (newTempo >= 40 && newTempo <= 300) {
+        try {
+          // Save user tempo first
+          setUserTempo(newTempo);
+          // Then update transport
+          await transport.setTempo(newTempo);
+          logger.info('🎵 Tempo updated:', { newTempo });
+        } catch (error) {
+          logger.error('Failed to update tempo:', error);
+        }
+      }
+    },
+    [transport, logger],
+  );
+
+  // Handle input submission
+  const handleTempoSubmit = React.useCallback(() => {
+    const newTempo = parseInt(editedTempo, 10);
+    if (!isNaN(newTempo)) {
+      handleTempoChange(newTempo);
+    }
+    setIsEditingTempo(false);
+  }, [editedTempo, handleTempoChange]);
+
+  // Handle input blur
+  const handleTempoBlur = React.useCallback(() => {
+    handleTempoSubmit();
+  }, [handleTempoSubmit]);
+
+  // Handle input key press
+  const handleTempoKeyDown = React.useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        handleTempoSubmit();
+      } else if (e.key === 'Escape') {
+        setIsEditingTempo(false);
+      }
+    },
+    [handleTempoSubmit],
+  );
+
   return (
     <div className="bg-slate-800 rounded-2xl p-3 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5),inset_-2px_-2px_5px_rgba(255,255,255,0.1)]">
       {/* First Row - Time Signature, Clock, Tempo */}
@@ -227,8 +331,8 @@ export function TransportClock({
         <div className="flex items-center gap-2">
           <div className="bg-slate-700 rounded-xl px-4 py-2 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4),inset_-2px_-2px_4px_rgba(255,255,255,0.08)]">
             <div className="text-xs text-slate-400 mb-0.5">Time</div>
-            <div className="text-lg font-mono font-bold text-white">
-              {timeSignature.numerator}/{timeSignature.denominator}
+            <div className="text-lg font-mono-display font-bold text-white tabular-nums">
+              {timeSignature?.numerator || 4}/{timeSignature?.denominator || 4}
             </div>
           </div>
         </div>
@@ -240,21 +344,38 @@ export function TransportClock({
               <div
                 className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-500' : 'bg-slate-600'} shadow-[0_0_4px_rgba(0,255,0,0.6)]`}
               />
-              <div className="text-3xl font-mono font-bold text-white tracking-wider">
+              <div className="text-3xl font-mono-display font-bold text-white tracking-wider tabular-nums">
                 {formatPosition()}
               </div>
-              <div className="text-sm text-slate-400">{formatSeconds()}</div>
             </div>
           </div>
         </div>
 
         {/* Tempo Adjustment - Right */}
         <div className="flex items-center gap-2">
-          <div className="bg-slate-700 rounded-xl px-4 py-2 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4),inset_-2px_-2px_4px_rgba(255,255,255,0.08)]">
-            <div className="text-xs text-slate-400 mb-0.5">Tempo</div>
-            <div className="text-lg font-mono font-bold text-white">
-              {tempo} BPM
-            </div>
+          <div
+            className="bg-slate-700 rounded-xl px-4 py-2 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4),inset_-2px_-2px_4px_rgba(255,255,255,0.08)] flex flex-col items-center cursor-pointer hover:bg-slate-600 transition-colors"
+            onClick={handleTempoClick}
+            title="Click to edit tempo"
+          >
+            {isEditingTempo ? (
+              <input
+                ref={tempoInputRef}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={editedTempo}
+                onChange={(e) => setEditedTempo(e.target.value)}
+                onBlur={handleTempoBlur}
+                onKeyDown={handleTempoKeyDown}
+                className="text-lg font-mono-display font-bold text-white bg-transparent border-none outline-none w-16 text-center tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            ) : (
+              <div className="text-lg font-mono-display font-bold text-white tabular-nums">
+                {displayTempo || '—'}
+              </div>
+            )}
+            <div className="text-xs text-slate-400">BPM</div>
           </div>
         </div>
       </div>

@@ -11,13 +11,6 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { convertFrom3DFormat } from '../utils/formatConversion';
-import {
-  doesConnectionCrossAnyDot,
-  getSelectedPositionsByOrder,
-} from '../utils/connectionDetection';
-
-// Feature flag for connection line color system - set to false to disable
-const ENABLE_CROSSING_LINE_COLORS = true;
 
 // Create a rounded rectangle shape
 function createRoundedRectShape(
@@ -801,13 +794,6 @@ Target: [${target.x.toFixed(4)}, ${target.y.toFixed(4)}, ${target.z.toFixed(4)}]
         };
       });
 
-    // Track drawn connections to detect overlaps (same logic as 2D)
-    const drawnConnections: Array<{
-      start: [number, number, number];
-      end: [number, number, number];
-    }> = [];
-    let overlapCount = 0; // Track number of overlaps for alternating colors
-
     // Draw lines between consecutive selected dots
     for (let i = 0; i < selectedPositions.length - 1; i++) {
       const start = selectedPositions[i];
@@ -817,69 +803,8 @@ Target: [${target.x.toFixed(4)}, ${target.y.toFixed(4)}, ${target.z.toFixed(4)}]
         const startPos = getConnectionPosition(start.stringIndex, start.fret);
         const endPos = getConnectionPosition(end.stringIndex, end.fret);
 
-        // Check for overlaps with previously drawn connections
-        let offset = 0;
-        let isOverlapping = false;
-        let offsetDirection = 1; // 1 for positive offset, -1 for negative
-
-        for (const drawn of drawnConnections) {
-          // Check if lines overlap (simplified for 3D - check if they share similar paths)
-          const isHorizontalOverlap =
-            startPos[2] === endPos[2] &&
-            drawn.start[2] === drawn.end[2] &&
-            startPos[2] === drawn.start[2] &&
-            ((startPos[0] <= drawn.start[0] && endPos[0] >= drawn.start[0]) ||
-              (startPos[0] <= drawn.end[0] && endPos[0] >= drawn.end[0]) ||
-              (drawn.start[0] <= startPos[0] && drawn.end[0] >= startPos[0]) ||
-              (drawn.start[0] <= endPos[0] && drawn.end[0] >= endPos[0]));
-
-          const isVerticalOverlap =
-            startPos[0] === endPos[0] &&
-            drawn.start[0] === drawn.end[0] &&
-            startPos[0] === drawn.start[0] &&
-            ((startPos[2] <= drawn.start[2] && endPos[2] >= drawn.start[2]) ||
-              (startPos[2] <= drawn.end[2] && endPos[2] >= drawn.end[2]) ||
-              (drawn.start[2] <= startPos[2] && drawn.end[2] >= startPos[2]) ||
-              (drawn.start[2] <= endPos[2] && drawn.end[2] >= endPos[2]));
-
-          if (isHorizontalOverlap || isVerticalOverlap) {
-            isOverlapping = true;
-            offset = 1; // Offset by 1 unit for 3D visibility
-            // Alternate offset direction: first overlap one side, second overlap other side
-            offsetDirection = overlapCount % 2 === 0 ? 1 : -1;
-            break;
-          }
-        }
-
-        // Convert positions for crossing detection (need FretboardPosition format)
-        const pos1 = { stringIndex: start.stringIndex, fret: start.fret };
-        const pos2 = { stringIndex: end.stringIndex, fret: end.fret };
-
-        // Determine line color based on whether it crosses any dots and overlap status
-        let lineColor = '#10b981'; // Default green
-        if (ENABLE_CROSSING_LINE_COLORS) {
-          if (isOverlapping) {
-            // For overlapping lines: first overlap = blue, second = red, then cycle
-            if (overlapCount === 0) {
-              lineColor = '#3b82f6'; // First overlap: blue
-            } else if (overlapCount === 1) {
-              lineColor = '#ef4444'; // Second overlap: red
-            } else {
-              // Third and beyond: alternate between blue and red
-              lineColor = overlapCount % 2 === 0 ? '#3b82f6' : '#ef4444';
-            }
-            overlapCount++;
-          } else {
-            // For non-overlapping lines, use crossing detection
-            const crossesDot = doesConnectionCrossAnyDot(
-              pos1,
-              pos2,
-              selectedDots2D,
-              sortedPositions,
-            );
-            lineColor = crossesDot ? '#3b82f6' : '#10b981'; // blue : green
-          }
-        }
+        // All lines are green, connecting notes in sequence
+        const lineColor = '#10b981'; // Green
 
         result.push(
           <ConnectionLine3D
@@ -888,13 +813,10 @@ Target: [${target.x.toFixed(4)}, ${target.y.toFixed(4)}, ${target.z.toFixed(4)}]
             end={endPos}
             isHighlighted={true}
             color={lineColor}
-            offset={offset}
-            offsetDirection={offsetDirection}
+            offset={0}
+            offsetDirection={1}
           />,
         );
-
-        // Track this connection
-        drawnConnections.push({ start: startPos, end: endPos });
       }
     }
 

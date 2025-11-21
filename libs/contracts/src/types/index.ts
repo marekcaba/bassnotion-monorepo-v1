@@ -38,6 +38,7 @@ export type {
   TrackConfiguration,
   DrumPattern,
   HarmonyVoicing,
+  HarmonyControlChange, // MIDI control change events for harmony instruments
   // Story 3.8: Enhanced Bassline Persistence Types
   BasslineMetadata,
   SavedBassline,
@@ -404,6 +405,16 @@ export {
   isValidPosition,
   getNextPosition,
 } from './musical-timing.js';
+
+// Bass articulation types
+export type {
+  BassTechnique,
+  BassArticulationType,
+  BassArticulation,
+  GeneratedBassNote,
+  ArticulationMatrixEntry,
+  ArticulationSuggestion,
+} from './bass-articulation.js';
 
 // Musical timing utilities
 // export { MusicalTimeConverter } from '../utils/musical-time-converter.js'; // Moved to services

@@ -93,25 +93,8 @@ export function LoopGridStrip({
     const bpm = exercise.bpm || 120;
     const beatsPerMeasure = timeSignature.numerator;
 
-    // Calculate total measures from duration_beats if available
-    let totalMeasures: number;
-
-    if (exercise.duration_beats) {
-      // Calculate measures from total beats
-      totalMeasures = Math.ceil(exercise.duration_beats / beatsPerMeasure);
-    } else if (exercise.total_bars) {
-      // Use total_bars if available
-      totalMeasures = exercise.total_bars;
-    } else {
-      // Fallback: calculate from duration
-      const durationInSeconds = duration / 1000;
-      const beatsPerSecond = bpm / 60;
-      const secondsPerMeasure = beatsPerMeasure / beatsPerSecond;
-      totalMeasures = Math.max(
-        1,
-        Math.ceil(durationInSeconds / secondsPerMeasure),
-      );
-    }
+    // Use total_bars directly (primary field - musicians think in bars!)
+    const totalMeasures = exercise.total_bars || 4; // Default to 4 bars if not set
 
     // Calculate measure duration for timeline
     const beatsPerSecond = bpm / 60;
@@ -124,7 +107,7 @@ export function LoopGridStrip({
       endTime: (i + 1) * measureDurationInSeconds,
       width: measureWidth,
     }));
-  }, [exercise, duration]);
+  }, [exercise?.id, exercise?.total_bars, exercise?.bpm, exercise?.timeSignature, duration]);
 
   // Calculate measure and beat from mouse position (discrete incremental)
   const getMeasureAndBeatFromPosition = useCallback(

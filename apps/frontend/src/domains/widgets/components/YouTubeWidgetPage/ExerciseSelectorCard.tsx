@@ -30,11 +30,13 @@ interface ExerciseSelectorCardProps {
   onExerciseSelect?: (exerciseId: string) => void;
 }
 
-// Helper function to format duration from milliseconds to mm:ss
-function formatDuration(durationMs: number): string {
-  const minutes = Math.floor(durationMs / (1000 * 60));
-  const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+// Helper function to format duration as bars (measures)
+function formatDurationInBars(totalBars?: number): string {
+  if (!totalBars || totalBars <= 0) {
+    return '--';
+  }
+
+  return `${totalBars} ${totalBars === 1 ? 'bar' : 'bars'}`;
 }
 
 // Helper function to format file size
@@ -92,7 +94,9 @@ const difficultyConfig = {
 
 // Helper function to get difficulty config with fallback
 function getDifficultyConfig(difficulty: any) {
-  const normalizedDifficulty = difficulty?.toLowerCase();
+  // Handle both string and Difficulty object with value property
+  const difficultyValue = typeof difficulty === 'object' ? difficulty?.value : difficulty;
+  const normalizedDifficulty = difficultyValue?.toLowerCase();
   if (normalizedDifficulty in difficultyConfig) {
     return difficultyConfig[
       normalizedDifficulty as keyof typeof difficultyConfig
@@ -101,7 +105,7 @@ function getDifficultyConfig(difficulty: any) {
   // Fallback for unknown difficulties
   return {
     color: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
-    label: 'Unknown',
+    label: difficultyValue || 'Unknown',
   };
 }
 
@@ -334,14 +338,20 @@ function ExerciseSelectorCardContent({
                         <div className="flex items-center gap-3 text-xs text-slate-400">
                           <div className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            <span>{formatDuration(exercise.duration)}</span>
+                            <span>{formatDurationInBars(exercise.total_bars)}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Music className="w-3 h-3" />
-                            <span>{exercise.bpm} BPM</span>
+                            <span>
+                              {exercise.bpm !== undefined && exercise.bpm !== null && exercise.bpm !== 0
+                                ? `${exercise.bpm} BPM`
+                                : '-- BPM'}
+                            </span>
                           </div>
                           <div className="flex items-center gap-1">
-                            <span>Key: {exercise.key}</span>
+                            <span>
+                              Key: {exercise.key && exercise.key !== '' ? exercise.key : 'N/A'}
+                            </span>
                           </div>
                           {exercise.midi_file_path && (
                             <div className="flex items-center gap-1">

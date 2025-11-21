@@ -2,6 +2,8 @@
 import { vi } from 'vitest';
 import { createStructuredLogger } from '@bassnotion/contracts';
 
+const logger = createStructuredLogger('standardized-audio-context-mock');
+
 // TODO: Review non-null assertion - consider null safety
 logger.info('🔊 STANDARDIZED-AUDIO-CONTEXT MOCK LOADED!');
 

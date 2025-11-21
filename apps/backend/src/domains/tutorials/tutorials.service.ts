@@ -48,6 +48,7 @@ export class TutorialsService {
           title: tutorial.title,
           artist: tutorial.authorName,
           youtube_url: tutorial.youtubeId,
+          youtube_id: tutorial.youtubeId,
           difficulty: tutorial.level as
             | 'beginner'
             | 'intermediate'
@@ -76,6 +77,7 @@ export class TutorialsService {
       title: tutorial.title,
       artist: tutorial.authorName,
       youtube_url: tutorial.youtubeId,
+      youtube_id: tutorial.youtubeId,
       difficulty: tutorial.level as 'beginner' | 'intermediate' | 'advanced',
       duration: tutorial.duration?.toString(),
       description: tutorial.description,
@@ -127,6 +129,8 @@ export class TutorialsService {
     const tutorial = await this.findBySlug(slug);
 
     // Then get the exercises for this tutorial
+    // NOTE: Using exercises table directly instead of exercises_with_runtime view
+    // because the view doesn't include MIDI URL columns yet
     const { data: exercises, error: exercisesError } =
       await this.supabaseService
         .getClient()
@@ -145,7 +149,18 @@ export class TutorialsService {
         updated_at,
         is_active,
         chord_progression,
-        notes
+        notes,
+        total_bars,
+        time_signature,
+        tempo,
+        drummer_midi_url,
+        bassline_midi_url,
+        harmony_midi_url,
+        metronome_midi_url,
+        drum_pattern,
+        harmony_notes,
+        harmony_control_changes,
+        harmony_instrument
       `,
         )
         .eq('tutorial_id', tutorial.id)
@@ -230,6 +245,12 @@ export class TutorialsService {
       // Optional fields
       headline: undefined,
       concepts: tutorial.tags,
-      rating: undefined };
+      rating: undefined,
+      // Creator fields for YouTube attribution
+      creator_name: tutorial.creatorName,
+      creator_channel_url: tutorial.creatorChannelUrl,
+      creator_avatar_url: tutorial.creatorAvatarUrl,
+      creator_subscriber_count: tutorial.creatorSubscriberCount,
+    };
   }
 }

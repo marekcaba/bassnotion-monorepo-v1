@@ -87,6 +87,39 @@ function TeachingTakeawayCardContent({
     }
   }, [syncProps.selectedExercise]);
 
+  // Teaching takeaway data (editable in admin mode)
+  const defaultTeachingTakeaway = {
+    title: 'What You\'ll Learn',
+    subtitle: 'Key learning points and practice tips',
+    coreLearningTitle: 'Core Learning',
+    coreLearningDescription: 'This lesson encourages interval thinking, melodic phrasing, and rhythmic creativity — all through a familiar tool: the pentatonic scale. Great for breaking out of "box scale" habits.',
+    keyConceptsCount: 3,
+    duration: 15,
+    level: 'Int',
+    masterySectionTitle: 'What You\'ll Master',
+    points: [
+      'Essential groove patterns for any style',
+      'Modal interchange techniques',
+      'Advanced rhythm concepts'
+    ],
+    practiceTipTitle: 'Practice Tip',
+    practiceTipDescription: 'Start slowly with each modal concept. Practice the exercises at 60-80 BPM before increasing tempo. Focus on hearing the tension and release rather than just playing the notes.',
+  };
+
+  const teachingTakeaway = {
+    title: _tutorialData?.teachingTakeaway?.title || defaultTeachingTakeaway.title,
+    subtitle: _tutorialData?.teachingTakeaway?.subtitle || defaultTeachingTakeaway.subtitle,
+    coreLearningTitle: _tutorialData?.teachingTakeaway?.coreLearningTitle || defaultTeachingTakeaway.coreLearningTitle,
+    coreLearningDescription: _tutorialData?.teachingTakeaway?.coreLearningDescription || defaultTeachingTakeaway.coreLearningDescription,
+    keyConceptsCount: _tutorialData?.teachingTakeaway?.keyConceptsCount || defaultTeachingTakeaway.keyConceptsCount,
+    duration: _tutorialData?.teachingTakeaway?.duration || defaultTeachingTakeaway.duration,
+    level: _tutorialData?.teachingTakeaway?.level || defaultTeachingTakeaway.level,
+    masterySectionTitle: _tutorialData?.teachingTakeaway?.masterySectionTitle || defaultTeachingTakeaway.masterySectionTitle,
+    points: _tutorialData?.teachingTakeaway?.points || defaultTeachingTakeaway.points,
+    practiceTipTitle: _tutorialData?.teachingTakeaway?.practiceTipTitle || defaultTeachingTakeaway.practiceTipTitle,
+    practiceTipDescription: _tutorialData?.teachingTakeaway?.practiceTipDescription || defaultTeachingTakeaway.practiceTipDescription,
+  };
+
   return (
     <Card className="bg-emerald-900/20 backdrop-blur-xl border border-emerald-700/30 shadow-2xl">
       <CardContent className="p-6">
@@ -97,10 +130,10 @@ function TeachingTakeawayCardContent({
           </div>
           <div>
             <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-300 to-green-300 bg-clip-text text-transparent">
-              💡 Teaching Takeaway
+              💡 {teachingTakeaway.title}
             </h2>
             <p className="text-emerald-200/80">
-              Key learning points and practice tips
+              {teachingTakeaway.subtitle}
             </p>
           </div>
         </div>
@@ -108,26 +141,24 @@ function TeachingTakeawayCardContent({
         {/* Main Lesson Summary */}
         <div className="bg-emerald-800/20 rounded-xl p-6 mb-6 border border-emerald-600/20">
           <h3 className="text-lg font-semibold text-white mb-3">
-            Core Learning
+            {teachingTakeaway.coreLearningTitle}
           </h3>
           <p className="text-emerald-100 leading-relaxed mb-4">
-            This lesson encourages interval thinking, melodic phrasing, and
-            rhythmic creativity — all through a familiar tool: the pentatonic
-            scale. Great for breaking out of "box scale" habits.
+            {teachingTakeaway.coreLearningDescription}
           </p>
 
           {/* Learning Stats */}
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-3 bg-emerald-700/20 rounded-lg">
-              <div className="text-2xl font-bold text-emerald-300">3</div>
+              <div className="text-2xl font-bold text-emerald-300">{teachingTakeaway.keyConceptsCount}</div>
               <div className="text-xs text-emerald-200">Key Concepts</div>
             </div>
             <div className="text-center p-3 bg-emerald-700/20 rounded-lg">
-              <div className="text-2xl font-bold text-emerald-300">15</div>
+              <div className="text-2xl font-bold text-emerald-300">{teachingTakeaway.duration}</div>
               <div className="text-xs text-emerald-200">Minutes</div>
             </div>
             <div className="text-center p-3 bg-emerald-700/20 rounded-lg">
-              <div className="text-2xl font-bold text-emerald-300">Int</div>
+              <div className="text-2xl font-bold text-emerald-300">{teachingTakeaway.level}</div>
               <div className="text-xs text-emerald-200">Level</div>
             </div>
           </div>
@@ -136,12 +167,12 @@ function TeachingTakeawayCardContent({
         {/* Key Concepts */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-white mb-4">
-            What You'll Master
+            {teachingTakeaway.masterySectionTitle}
           </h3>
 
-          {keyConcepts.map((concept, index) => (
+          {Array.isArray(teachingTakeaway.points) && teachingTakeaway.points.map((point, index) => (
             <div
-              key={concept.id}
+              key={index}
               className="flex items-start gap-4 p-4 bg-slate-800/30 rounded-xl border border-slate-700/30 hover:bg-slate-700/30 transition-all duration-200"
             >
               {/* Concept Number */}
@@ -152,17 +183,11 @@ function TeachingTakeawayCardContent({
               {/* Concept Content */}
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="text-emerald-400">{concept.icon}</div>
-                  <h4 className="font-semibold text-white">{concept.title}</h4>
-                  <div
-                    className={`px-2 py-1 rounded-full text-xs font-medium border ${difficultyColors[concept.difficulty]}`}
-                  >
-                    {concept.difficulty}
+                  <div className="text-emerald-400">
+                    <CheckCircle className="w-5 h-5" />
                   </div>
+                  <h4 className="font-semibold text-white">{point}</h4>
                 </div>
-                <p className="text-slate-300 text-sm leading-relaxed">
-                  {concept.description}
-                </p>
               </div>
             </div>
           ))}
@@ -172,12 +197,10 @@ function TeachingTakeawayCardContent({
         <div className="mt-6 p-4 bg-gradient-to-r from-emerald-800/20 to-green-800/20 rounded-xl border border-emerald-600/20">
           <div className="flex items-center gap-3 mb-2">
             <Lightbulb className="w-5 h-5 text-yellow-400" />
-            <h4 className="font-semibold text-white">Practice Tip</h4>
+            <h4 className="font-semibold text-white">{teachingTakeaway.practiceTipTitle}</h4>
           </div>
           <p className="text-emerald-100/90 text-sm">
-            Start slowly with each modal concept. Practice the exercises at
-            60-80 BPM before increasing tempo. Focus on hearing the tension and
-            release rather than just playing the notes.
+            {teachingTakeaway.practiceTipDescription}
           </p>
         </div>
       </CardContent>

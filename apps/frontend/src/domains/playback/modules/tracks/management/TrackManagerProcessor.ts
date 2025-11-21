@@ -82,6 +82,7 @@ export type InstrumentType =
   | 'bass'
   | 'chords'
   | 'melody'
+  | 'voice-cue'
   | 'unknown';
 export type RawMidiTrack = any; // From MidiParserProcessor
 export type InstrumentProcessor = any; // Base processor interface

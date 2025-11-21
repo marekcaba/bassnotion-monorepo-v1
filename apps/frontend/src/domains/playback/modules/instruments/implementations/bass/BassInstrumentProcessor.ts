@@ -870,7 +870,7 @@ class BassAmpSimulator {
       });
     } else {
       // Fallback for backward compatibility
-      this.preamp = new Tone.Gain(this.config.preamp.gain);
+      this.preamp = new Tone.Gain({ gain: this.config.preamp.gain });
       this.eq = new Tone.EQ3({
         low: this.config.eq.bass,
         mid: this.config.eq.mid,

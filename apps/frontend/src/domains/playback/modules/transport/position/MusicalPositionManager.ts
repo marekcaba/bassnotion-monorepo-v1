@@ -10,10 +10,10 @@
  * - sixteenths: 0-based sixteenth within beat (0-3)
  */
 
+import * as Tone from 'tone';
 import { EventEmitter } from '../shared/EventEmitter.js';
 import { createStructuredLogger } from '../../shared/index.js';
 import type { MusicalPosition, TimeSignature } from '../../types/index.js';
-import * as Tone from 'tone';
 
 const logger = createStructuredLogger('MusicalPositionManager');
 
@@ -36,6 +36,10 @@ export class MusicalPositionManager extends EventEmitter {
   private currentPosition: MusicalPosition;
   private loopRegion: LoopRegion;
 
+  // COUNTDOWN OFFSET: Track countdown duration for display adjustment
+  // When countdownBeats > 0, the first N beats are pre-roll (measure -1 or 0)
+  private countdownBeats = 0; // Number of beats in countdown (e.g., 4 for one measure of 4/4)
+
   constructor(config: PositionConfig = {}) {
     super();
 
@@ -44,7 +48,7 @@ export class MusicalPositionManager extends EventEmitter {
       denominator: 4,
     };
     this.tempo = config.tempo || 120;
-    this.ppq = config.ppq || 960; // Standard MIDI resolution
+    this.ppq = config.ppq || 480; // Standard MIDI resolution (480 PPQ)
 
     this.currentPosition = {
       bars: 0,
@@ -68,10 +72,12 @@ export class MusicalPositionManager extends EventEmitter {
 
   /**
    * Convert seconds to musical position
+   * FAANG FIX: Use Tone.Transport.bpm.value as single source of truth
    */
   secondsToPosition(seconds: number): MusicalPosition {
-    // Calculate total sixteenths
-    const beatsPerSecond = this.tempo / 60;
+    // FAANG FIX: Always use current Tone.Transport BPM (single source of truth)
+    const currentBpm = Tone.Transport.bpm.value;
+    const beatsPerSecond = currentBpm / 60;
     const sixteenthsPerSecond = beatsPerSecond * 4;
     const totalSixteenths = Math.floor(seconds * sixteenthsPerSecond);
 
@@ -92,6 +98,8 @@ export class MusicalPositionManager extends EventEmitter {
 
   /**
    * Convert musical position to seconds
+   * FAANG FIX: Use Tone.Transport.bpm.value as single source of truth
+   * this.tempo can become stale when tempo changes via transport
    */
   positionToSeconds(position: MusicalPosition): number {
     // Calculate total sixteenths
@@ -105,8 +113,10 @@ export class MusicalPositionManager extends EventEmitter {
     const ticksPerSixteenth = this.ppq / 4;
     const fractionalSixteenths = position.ticks / ticksPerSixteenth;
 
-    // Convert to seconds
-    const beatsPerSecond = this.tempo / 60;
+    // FAANG FIX: Always use current Tone.Transport BPM (single source of truth)
+    // this.tempo might be stale if tempo changed via transport without calling setTempo()
+    const currentBpm = Tone.Transport.bpm.value;
+    const beatsPerSecond = currentBpm / 60;
     const sixteenthsPerSecond = beatsPerSecond * 4;
     const seconds =
       (totalSixteenths + fractionalSixteenths) / sixteenthsPerSecond;
@@ -174,10 +184,133 @@ export class MusicalPositionManager extends EventEmitter {
   }
 
   /**
-   * Get current position
+   * Get current position (raw, without countdown adjustment)
    */
   getPosition(): MusicalPosition {
     return { ...this.currentPosition };
+  }
+
+  /**
+   * Set countdown offset (number of beats in pre-roll)
+   * This adjusts position display so countdown shows as measure -1 or 0
+   */
+  setCountdownBeats(beats: number): void {
+    this.countdownBeats = beats;
+    logger.info('Countdown offset set', { countdownBeats: beats });
+  }
+
+  /**
+   * Get countdown offset
+   */
+  getCountdownBeats(): number {
+    return this.countdownBeats;
+  }
+
+  /**
+   * Get the display position (adjusted for countdown offset)
+   * This is what should be shown in the UI to match DAW conventions
+   *
+   * Example with 4-beat countdown (one measure of 4/4):
+   * - Raw position 0:0:0 → Display -1:0:0 (or 0:0:0 if using 0-based countdown)
+   * - Raw position 0:3:0 → Display -1:3:0 (last beat of countdown)
+   * - Raw position 0:4:0 → Display 1:0:0 (first beat of exercise)
+   * - Raw position 1:0:0 → Display 2:0:0 (second measure of exercise)
+   */
+  getDisplayPosition(): MusicalPosition {
+    const pos = this.getPosition();
+
+    if (this.countdownBeats === 0) {
+      // No countdown - return as-is
+      return pos;
+    }
+
+    // Convert position to total beats
+    const beatsPerBar = this.timeSignature.numerator;
+    const totalBeats = pos.bars * beatsPerBar + pos.beats + pos.sixteenths / 4;
+
+    // Subtract countdown offset
+    const adjustedBeats = totalBeats - this.countdownBeats;
+
+    // Convert back to bars:beats:sixteenths
+    // Handle negative beats properly for countdown display
+    let adjustedBars: number;
+    let adjustedBeatsInt: number;
+    let adjustedSixteenths: number;
+
+    if (adjustedBeats < 0) {
+      // During countdown: We want beats to COUNT DOWN from 4 to 1 (in 4/4 time)
+      // Desired timeline:
+      // adjustedBeats = -4.0 → display -1:4:00 (beat 3, sixteenths 0)
+      // adjustedBeats = -3.75 → display -1:4:01 (beat 3, sixteenths 1)
+      // adjustedBeats = -3.0 → display -1:3:00 (beat 2, sixteenths 0)
+      // adjustedBeats = -2.0 → display -1:2:00 (beat 1, sixteenths 0)
+      // adjustedBeats = -1.0 → display -1:1:00 (beat 0, sixteenths 0)
+      // adjustedBeats = -0.25 → display -1:1:03 (beat 0, sixteenths 3)
+      // adjustedBeats = 0.0 → display 1:1:00 (beat 0, sixteenths 0)
+
+      // So the mapping is: adjustedBeats + countdownBeats gives us the beat position
+      // -4 + 4 = 0 (but we started at beat 3, so we need to reverse within the bar)
+
+      // Calculate bar: keep it as -1 for the ENTIRE countdown period
+      // Even when adjustedBeats = -0.1, we want to stay at bar -1
+      // Only when adjustedBeats >= 0 do we switch to bar 0 (which displays as bar 1)
+      adjustedBars = -1;
+
+      // Calculate position for countdown (beats count DOWN from 4 to 1)
+      // Timeline mapping:
+      // absBeats 4.0-3.01 → beat 3 (displays as 4)
+      // absBeats 3.0-2.01 → beat 2 (displays as 3)
+      // absBeats 2.0-1.01 → beat 1 (displays as 2)
+      // absBeats 1.0-0.01 → beat 0 (displays as 1)
+      const absBeats = Math.abs(adjustedBeats);
+
+      // Determine which beat we're in by using ceil
+      // absBeats=4.0: ceil=4, beat should be 3
+      // absBeats=3.9: ceil=4, beat should be 3
+      // absBeats=3.0: ceil=3, beat should be 2
+      // Pattern: beat = beatsPerBar - ceil(absBeats)
+      // But when absBeats is exactly 4.0: beat = 4 - 4 = 0, we want 3!
+      // When absBeats is 3.0: beat = 4 - 3 = 1, we want 2!
+      // Actually the pattern is: beat = ceil(absBeats) - 1
+      // absBeats=4.0: ceil=4, beat=3 ✓
+      // absBeats=3.9: ceil=4, beat=3 ✓
+      // absBeats=3.0: ceil=3, beat=2 ✓
+      // absBeats=1.1: ceil=2, beat=1 ✓
+      // absBeats=0.5: ceil=1, beat=0 ✓
+      const ceilBeats = Math.ceil(absBeats);
+      adjustedBeatsInt = ceilBeats - 1;
+
+      // Sixteenths within the beat
+      const fractionalPart = absBeats - Math.floor(absBeats);
+      adjustedSixteenths = Math.floor(fractionalPart * 4);
+    } else {
+      // Normal (non-countdown) position
+      adjustedBars = Math.floor(adjustedBeats / beatsPerBar);
+      const beatsInBar = adjustedBeats % beatsPerBar;
+      adjustedBeatsInt = Math.floor(beatsInBar);
+      const fractionalBeat = beatsInBar % 1;
+      adjustedSixteenths = Math.floor(fractionalBeat * 4);
+    }
+
+    const displayPos = {
+      bars: adjustedBars,
+      beats: adjustedBeatsInt,
+      sixteenths: adjustedSixteenths,
+      ticks: Math.floor(adjustedSixteenths * 240), // 240 ticks per sixteenth
+    };
+
+    // Log occasionally (every 10th call)
+    if (Math.random() < 0.1) {
+      logger.info('🎵 getDisplayPosition', {
+        rawPos: pos,
+        totalBeats,
+        countdownBeats: this.countdownBeats,
+        adjustedBeats,
+        displayPos,
+      });
+    }
+
+    return displayPos;
   }
 
   /**
@@ -395,14 +528,53 @@ export class MusicalPositionManager extends EventEmitter {
 
   /**
    * Reset position
+   * FAANG FIX: When countdown is enabled, reset to exercise start (after countdown)
+   * instead of absolute zero, so the clock shows 1:0:00 instead of -1:4:00
+   * This is used when STOPPING playback.
    */
   reset(): void {
+    if (this.countdownBeats > 0) {
+      // Reset to exercise start position (after countdown)
+      // e.g., for 4/4 time with 4-beat countdown: 0:4:0
+      this.currentPosition = {
+        bars: 0,
+        beats: this.countdownBeats,
+        sixteenths: 0,
+        ticks: 0,
+      };
+      logger.info('Reset to exercise start position (stop)', {
+        countdownBeats: this.countdownBeats,
+        position: this.currentPosition
+      });
+    } else {
+      // No countdown - reset to absolute zero
+      this.currentPosition = {
+        bars: 0,
+        beats: 0,
+        sixteenths: 0,
+        ticks: 0,
+      };
+    }
+
+    this.emit('reset');
+  }
+
+  /**
+   * Reset to timeline start (countdown start or absolute zero)
+   * This is used when STARTING playback to ensure we start from the beginning.
+   */
+  resetToStart(): void {
+    // Always reset to absolute zero (countdown start or timeline start if no countdown)
     this.currentPosition = {
       bars: 0,
       beats: 0,
       sixteenths: 0,
       ticks: 0,
     };
+    logger.info('Reset to timeline start (play)', {
+      countdownBeats: this.countdownBeats,
+      position: this.currentPosition
+    });
 
     this.emit('reset');
   }

@@ -20,6 +20,7 @@ This is the central catalog for all documentation. Please refer to this index be
 - [Professional Instruments Implementation](./professional-instruments-implementation.md)
 - [Audio Pipeline Integration Tests](./AUDIO-PIPELINE-INTEGRATION-TESTS.md)
 - [Sample Loading Flow](./SAMPLE-LOADING-FLOW.md)
+- [Pattern System Guide](./PATTERN_SYSTEM_GUIDE.md) - MIDI pattern library and swapping system
 
 #### Playback Domain Deep Dives
 - [Dependency Injection Architecture](./playback/dependency-injection-architecture.md)
@@ -85,6 +86,7 @@ Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
 - [YouTube Batch System](./youtube-batch-system.md)
 - [Pre-commit Hooks](./PRE_COMMIT_HOOKS.md)
 - [Rate Limiting Guide](./developer-handbook/RATE_LIMITING_GUIDE.md)
+- [API Optimization Guide](./developer-handbook/API_OPTIMIZATION_GUIDE.md) - **NEW**: Request deduplication & cost optimization
 - [Middleware Guide](./developer-handbook/MIDDLEWARE_GUIDE.md)
 
 ## 📊 Architecture Analysis & Planning

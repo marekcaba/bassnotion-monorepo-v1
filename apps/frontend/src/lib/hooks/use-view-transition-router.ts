@@ -3,6 +3,8 @@ import { createStructuredLogger } from '@bassnotion/contracts';
 import { useCallback, useEffect } from 'react';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
+const logger = createStructuredLogger('ViewTransitionRouter');
+
 // Enhanced CSS management inspired by Framer Commerce
 const STYLE_ID = 'bassnotion-view-transition-styles';
 
@@ -417,8 +419,19 @@ export function useViewTransitionRouter() {
 
   const navigateWithTransition = useCallback(
     async (url: string) => {
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+
+      // Guard: Don't navigate if already on the target URL
+      if (currentPath === url) {
+        logger.debug('Already on target URL, skipping navigation:', url);
+        return;
+      }
+
+      logger.debug('Navigating with transition:', { from: currentPath, to: url });
+
       // TODO: Review non-null assertion - consider null safety
       if (!document.startViewTransition) {
+        logger.debug('View transitions not supported, using router.push');
         router.push(url);
         return;
       }
@@ -426,6 +439,7 @@ export function useViewTransitionRouter() {
       try {
         // Handle rapid navigation clicks - interrupt current transition
         if (currentTransition && isTransitioning) {
+          logger.debug('Interrupting current transition');
           handleTransitionInterrupt();
         }
 
@@ -442,8 +456,10 @@ export function useViewTransitionRouter() {
 
         isTransitioning = true;
 
+        logger.debug('Starting view transition to:', url);
         currentTransition = document.startViewTransition(async () => {
           await delay(50);
+          logger.debug('Executing router.push to:', url);
           router.push(url);
           await delay(50);
         });

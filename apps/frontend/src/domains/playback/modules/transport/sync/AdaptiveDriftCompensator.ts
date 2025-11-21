@@ -116,6 +116,9 @@ export class AdaptiveDriftCompensator extends EventEmitter {
     this.lastMeasurementTime = referenceTime;
     this.state.isActive = true;
 
+    // Mark transition period to suppress drift warnings during startup
+    this.driftPredictor.startTransition();
+
     logger.info('Drift compensation started', {
       referenceTime,
       config: this.config,

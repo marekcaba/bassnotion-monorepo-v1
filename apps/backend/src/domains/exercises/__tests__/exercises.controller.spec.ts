@@ -2,6 +2,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ExercisesController } from '../exercises.controller.js';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { FileUploadType } from '../dto/file-upload.dto.js';
+import { Readable } from 'stream';
 
 describe('ExercisesController', () => {
   let controller: ExercisesController;
@@ -251,23 +252,39 @@ describe('ExercisesController', () => {
     });
   });
 
-  describe('File Upload Endpoints', () => {
+  describe('File Upload Endpoints (Fastify multipart)', () => {
     const mockRequest = { user: { id: 'user-1' } };
-    const mockFile = {
-      originalname: 'test.midi',
-      mimetype: 'audio/midi',
-      buffer: Buffer.from('test'),
-      size: 1024,
+
+    // Helper to create Fastify request mock with multipart file
+    const createMockFastifyRequest = (fileData: {
+      filename: string;
+      mimetype: string;
+      buffer: Buffer;
+    }) => {
+      const stream = Readable.from([fileData.buffer]);
+      return {
+        file: vi.fn().mockResolvedValue({
+          file: stream,
+          filename: fileData.filename,
+          mimetype: fileData.mimetype,
+        }),
+      } as any;
     };
 
     describe('POST /api/exercises/upload/midi', () => {
       it('should process MIDI file upload', async () => {
+        const fileData = {
+          filename: 'test.midi',
+          mimetype: 'audio/midi',
+          buffer: Buffer.from('test'),
+        };
+
         const mockResponse = {
           success: true,
           exercise: mockExercise,
           storageInfo: {
             filePath: '/uploads/test.midi',
-            size: 1024,
+            size: fileData.buffer.length,
           },
           parsingResult: {
             durationSeconds: 120,
@@ -281,16 +298,22 @@ describe('ExercisesController', () => {
           mockExercise,
         );
 
+        const mockFastifyReq = createMockFastifyRequest(fileData);
         const result = await controller.uploadMIDI(
           mockRequest,
-          mockFile,
+          mockFastifyReq,
           { fileType: FileUploadType.MIDI, storeFile: true },
           undefined,
         );
 
         expect(result).toBeDefined();
         expect(mockFileUploadService.processAndStoreFile).toHaveBeenCalledWith(
-          mockFile,
+          expect.objectContaining({
+            buffer: fileData.buffer,
+            originalname: fileData.filename,
+            mimetype: fileData.mimetype,
+            size: fileData.buffer.length,
+          }),
           expect.objectContaining({ fileType: 'midi', storeFile: true }),
           'user-1',
           undefined,
@@ -298,10 +321,14 @@ describe('ExercisesController', () => {
       });
 
       it('should throw BadRequestException if no file', async () => {
+        const mockFastifyReq = {
+          file: vi.fn().mockResolvedValue(null),
+        } as any;
+
         await expect(
           controller.uploadMIDI(
             mockRequest,
-            null,
+            mockFastifyReq,
             { fileType: FileUploadType.MIDI },
             undefined,
           ),
@@ -309,10 +336,17 @@ describe('ExercisesController', () => {
       });
 
       it('should throw BadRequestException if user not authenticated', async () => {
+        const fileData = {
+          filename: 'test.midi',
+          mimetype: 'audio/midi',
+          buffer: Buffer.from('test'),
+        };
+        const mockFastifyReq = createMockFastifyRequest(fileData);
+
         await expect(
           controller.uploadMIDI(
             {},
-            mockFile,
+            mockFastifyReq,
             { fileType: FileUploadType.MIDI },
             undefined,
           ),
@@ -322,11 +356,12 @@ describe('ExercisesController', () => {
 
     describe('POST /api/exercises/upload/musicxml', () => {
       it('should process MusicXML file upload', async () => {
-        const mockXmlFile = {
-          ...mockFile,
-          originalname: 'test.xml',
+        const fileData = {
+          filename: 'test.xml',
           mimetype: 'text/xml',
+          buffer: Buffer.from('<musicxml>test</musicxml>'),
         };
+
         const mockResponse = {
           success: true,
           exercise: mockExercise,
@@ -336,16 +371,22 @@ describe('ExercisesController', () => {
           mockResponse,
         );
 
+        const mockFastifyReq = createMockFastifyRequest(fileData);
         const result = await controller.uploadMusicXML(
           mockRequest,
-          mockXmlFile,
+          mockFastifyReq,
           { fileType: FileUploadType.MUSICXML },
           undefined,
         );
 
         expect(result).toEqual(mockResponse);
         expect(mockFileUploadService.processUploadedFile).toHaveBeenCalledWith(
-          mockXmlFile,
+          expect.objectContaining({
+            buffer: fileData.buffer,
+            originalname: fileData.filename,
+            mimetype: fileData.mimetype,
+            size: fileData.buffer.length,
+          }),
           expect.objectContaining({ fileType: 'musicxml' }),
           undefined,
         );
