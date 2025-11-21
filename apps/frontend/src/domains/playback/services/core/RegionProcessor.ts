@@ -44,6 +44,7 @@ import { EventRouter } from './region-processing/event-routing/EventRouter.js';
 // Import extracted modules (Phase 6: Region Scheduling Orchestration)
 import { RegionScheduler } from './region-processing/scheduling-orchestrator/RegionScheduler.js';
 import { PositionParser } from './region-processing/position/PositionParser.js';
+import { TrackManager } from './region-processing/track-management/TrackManager.js';
 
 const logger = getLogger('RegionProcessor');
 
@@ -189,6 +190,9 @@ export class RegionProcessor {
   // Phase 6: Position parsing delegated to PositionParser
   private positionParser!: PositionParser; // Initialized in constructor
 
+  // Phase 6: Track management delegated to TrackManager
+  private trackManager!: TrackManager; // Initialized in constructor
+
   // Diagnostic: Count logged notes
   private _noteLogCount = 0;
 
@@ -290,6 +294,9 @@ export class RegionProcessor {
 
     // Phase 6: Instantiate position parser
     this.positionParser = new PositionParser(this._instanceId);
+
+    // Phase 6: Instantiate track manager
+    this.trackManager = new TrackManager(this._instanceId);
 
     logger.info('🔧 RegionProcessor instance created', {
       instanceId: this._instanceId,
@@ -594,128 +601,20 @@ export class RegionProcessor {
 
   /**
    * Register tracks for processing
+   * Phase 6: Delegated to TrackManager
+   *
    * IMPORTANT: Only ONE track per instrument type is allowed
    * If a track with the same instrument type exists, it will be replaced
    */
   registerTracks(tracks: Track[]): void {
-    console.log('🔍 [REGISTER-DEBUG] registerTracks() called with:', {
-      trackCount: tracks.length,
-      currentTracksInMap: this.tracks.size,
-      currentTrackIds: Array.from(this.tracks.keys()),
-      incomingTracks: tracks.map((t) => ({
-        id: t.id || t.track?.id || t.name || 'unknown',
-        instrumentType: t.instrumentType,
-        regions: t.regions.length,
-      })),
-    });
-
-    // 🚨 CRITICAL DIAGNOSTIC: Log harmony track registration with full details
-    const harmonyTracks = tracks.filter((t) => t.instrumentType === 'harmony');
-    if (harmonyTracks.length > 0) {
-      console.log('🚨🚨🚨 HARMONY TRACK DETECTED IN REGISTRATION', {
-        count: harmonyTracks.length,
-        harmonyTracks: harmonyTracks.map((t) => ({
-          id: t.id || t.name,
-          regions: t.regions.length,
-          regionsData: t.regions.map((r) => ({
-            id: r.id,
-            eventsCount: r.events?.length || 0,
-            firstEvents: (r.events || []).slice(0, 3).map((e) => ({
-              type: e.type,
-              position: e.position,
-              hasData: !!e.data,
-            })),
-          })),
-        })),
-      });
-    }
-
-    tracks.forEach((track) => {
-      const trackId = track.id || track.track?.id || track.name || 'unknown';
-      const instrumentType = track.instrumentType;
-
-      console.log('🔍 [REGISTER-DEBUG] Processing track:', {
-        trackId,
-        instrumentType,
-        hasInstrumentType: !!instrumentType,
-      });
-
-      // CRITICAL: Remove any existing track with the same instrument type
-      // This prevents duplicate tracks (e.g., two metronome tracks)
-      if (instrumentType) {
-        const existingEntry = Array.from(this.tracks.entries()).find(
-          ([, t]) => t.instrumentType === instrumentType,
-        );
-        const existingTrackId = existingEntry?.[0];
-        const existingTrack = existingEntry?.[1];
-
-        console.log('🔍 [REGISTER-DEBUG] Checking for existing track:', {
-          instrumentType,
-          existingTrackId,
-          newTrackId: trackId,
-          existingExerciseId: existingTrack?.exerciseId,
-          newExerciseId: track.exerciseId,
-          shouldReplace: !!existingTrackId,
-        });
-
-        // CRITICAL FIX: Replace if ANY existing track found with same instrumentType
-        // Track IDs may be identical (e.g., 'harmony-widget-track') but exercise changed
-        if (existingTrackId) {
-          const exerciseChanged =
-            existingTrack?.exerciseId !== track.exerciseId;
-
-          console.log('⚠️ [REGISTER-DEBUG] REPLACEMENT TRIGGERED:', {
-            replacing: existingTrackId,
-            with: trackId,
-            instrumentType,
-            exerciseChanged,
-            oldExerciseId: existingTrack?.exerciseId,
-            newExerciseId: track.exerciseId,
-          });
-
-          logger.warn(
-            `⚠️ Replacing existing ${instrumentType} track "${existingTrackId}" with "${trackId}"${exerciseChanged ? ' (exercise changed)' : ''}`,
-          );
-
-          // CRITICAL FIX: Clear scheduled events for the old track
-          // Without this, old instrument's audio sources remain scheduled and play alongside new instrument
-          this.clearTrackEvents(existingTrackId);
-
-          // CRITICAL FIX: Clear harmony-specific state when replacing harmony track
-          // This ensures old sustain pedal state and active sources don't carry over
-          if (instrumentType === 'harmony') {
-            this.activeHarmonySources.clear();
-            this.currentCC64Timeline.clear();
-            console.log('✅ [REGISTER-DEBUG] Cleared harmony state');
-            logger.info(
-              '✅ Cleared harmony-specific state during track replacement',
-            );
-          }
-
-          this.tracks.delete(existingTrackId);
-          console.log('✅ [REGISTER-DEBUG] Old track deleted from Map');
-        }
-      }
-
-      this.tracks.set(trackId, track);
-      console.log('✅ [REGISTER-DEBUG] New track added to Map:', {
-        trackId,
-        totalTracksNow: this.tracks.size,
-      });
-
-      logger.info(
-        `Registered track: ${trackId} with ${track.regions.length} regions`,
-      );
-      this.debugger.log('RegionProcessor', `registered-track: ${trackId}`, {
-        regions: track.regions.length,
-        instrumentType: track.instrumentType,
-      });
-    });
-
-    console.log('🔍 [REGISTER-DEBUG] registerTracks() complete:', {
-      totalTracks: this.tracks.size,
-      trackIds: Array.from(this.tracks.keys()),
-    });
+    this.trackManager.registerTracks(
+      tracks,
+      this.tracks,
+      this.scheduledEvents,
+      this.clearTrackEvents.bind(this),
+      this.clearHarmonyState.bind(this),
+      this.debugger.log.bind(this.debugger),
+    );
 
     // CRITICAL FIX: Defensive check for multiple harmony tracks (architectural error detection)
     // There should only ever be ONE harmony track registered at a time
@@ -747,6 +646,15 @@ export class RegionProcessor {
         exerciseId: registeredHarmonyTracks[0].exerciseId,
       });
     }
+  }
+
+  /**
+   * Helper: Clear harmony-specific state
+   * Phase 6: Used by TrackManager when replacing harmony tracks
+   */
+  private clearHarmonyState(): void {
+    this.activeHarmonySources.clear();
+    this.currentCC64Timeline.clear();
   }
 
   /**
@@ -1526,25 +1434,14 @@ export class RegionProcessor {
 
   /**
    * Clear all scheduled events for a specific track
+   * Phase 6: Delegated to TrackManager
+   *
    * Used when switching exercises to prevent old exercise events from playing
    *
    * @param trackId - ID of the track to clear
    */
   private clearTrackEvents(trackId: string): void {
-    logger.info(`🧹 Clearing scheduled events for track: ${trackId}`);
-
-    // Remove track from scheduledEvents Map
-    const cleared = this.scheduledEvents.delete(trackId);
-
-    if (cleared) {
-      logger.info(`✅ Cleared track events for ${trackId}`);
-    } else {
-      logger.info(`ℹ️ No events found for track ${trackId}`);
-    }
-
-    // Note: We don't clear scheduledIds or scheduledAudioSources here
-    // Those are global and will be cleared on stop()
-    // This method only clears the event tracking to allow re-scheduling
+    this.trackManager.clearTrackEvents(trackId, this.scheduledEvents);
   }
 
   /**
@@ -1593,6 +1490,8 @@ export class RegionProcessor {
 
   /**
    * Update tracks (for when regions change)
+   * Phase 6: Delegated to TrackManager
+   *
    * CRITICAL: When running, adds tracks WITHOUT stopping/restarting
    * This prevents interrupting countdown and causing abrupt restarts
    */
@@ -1600,148 +1499,23 @@ export class RegionProcessor {
     tracks: Track[],
     exerciseMetadata?: { harmonyInstrument?: string },
   ): void {
-    // FAANG FIX: Set harmony instrument type as early as possible
-    // This ensures cache lookups work even before buffer injection completes
-    if (exerciseMetadata?.harmonyInstrument) {
-      this.currentHarmonyInstrument = exerciseMetadata.harmonyInstrument;
-      logger.info(
-        `🎹 Early harmony instrument detection: ${exerciseMetadata.harmonyInstrument}`,
-      );
-
-      // CRITICAL FIX: Load keyboard map immediately for Grand Piano
-      // This ensures note mapping works even if playback starts before setHarmonyBuffers() is called
-      if (
-        exerciseMetadata.harmonyInstrument === 'grandpiano' &&
-        !this.grandPianoKeyboardMap
-      ) {
-        console.log(
-          '🗺️ [EARLY-LOAD] Loading keyboard map immediately in updateTracks()...',
-        );
-        this.loadGrandPianoKeyboardMap()
-          .then(() => {
-            console.log('🗺️ [EARLY-LOAD] ✅ Keyboard map loaded early', {
-              hasKeyboardMap: !!this.grandPianoKeyboardMap,
-              mapKeys: this.grandPianoKeyboardMap
-                ? Object.keys(this.grandPianoKeyboardMap).length
-                : 0,
-            });
-          })
-          .catch((error) => {
-            console.error(
-              '🗺️ [EARLY-LOAD] ❌ Failed to load keyboard map early:',
-              error,
-            );
-          });
-      }
-    } else {
-      // Try to infer from tracks
-      const harmonyTrack = tracks.find((t) => t.instrumentType === 'harmony');
-      if (harmonyTrack && (harmonyTrack as any).harmonyInstrument) {
-        this.currentHarmonyInstrument = (harmonyTrack as any).harmonyInstrument;
-        logger.info(
-          `🎹 Inferred harmony instrument from track: ${this.currentHarmonyInstrument}`,
-        );
-
-        // CRITICAL FIX: Load keyboard map immediately for Grand Piano
-        if (
-          this.currentHarmonyInstrument === 'grandpiano' &&
-          !this.grandPianoKeyboardMap
-        ) {
-          console.log(
-            '🗺️ [EARLY-LOAD] Loading keyboard map immediately (inferred)...',
-          );
-          this.loadGrandPianoKeyboardMap()
-            .then(() => {
-              console.log(
-                '🗺️ [EARLY-LOAD] ✅ Keyboard map loaded early (inferred)',
-                {
-                  hasKeyboardMap: !!this.grandPianoKeyboardMap,
-                  mapKeys: this.grandPianoKeyboardMap
-                    ? Object.keys(this.grandPianoKeyboardMap).length
-                    : 0,
-                },
-              );
-            })
-            .catch((error) => {
-              console.error(
-                '🗺️ [EARLY-LOAD] ❌ Failed to load keyboard map early (inferred):',
-                error,
-              );
-            });
-        }
-      }
-    }
-
-    if (this.isRunning) {
-      // FIXED: Add new tracks dynamically without stopping playback
-      // This allows harmony to register late without interrupting metronome countdown
-      logger.info(
-        '⚡ [RegionProcessor] Adding tracks dynamically while running',
-        {
-          newTracks: tracks.map((t) => t.id),
-          existingTracks: Array.from(this.tracks.keys()),
-        },
-      );
-
-      // CRITICAL FIX: Clear old exercise events before adding new ones
-      // This prevents double instrument playback when switching exercises
-      tracks.forEach((track) => {
-        // Check if this is replacing an existing track
-        const existingTrack = this.tracks.get(track.id);
-        if (existingTrack) {
-          logger.info(`🔄 Replacing existing track: ${track.id}`);
-
-          // Clear scheduled events for this track
-          this.clearTrackEvents(track.id);
-
-          // If this is a harmony track, also clear harmony-specific state
-          if (track.instrumentType === 'harmony') {
-            logger.info('🎹 Clearing harmony-specific state');
-
-            // Clear WamKeyboard events if available
-            const harmonyAudioNode = existingTrack as any;
-            if (harmonyAudioNode?.audioNode?.clearEvents) {
-              harmonyAudioNode.audioNode.clearEvents();
-              logger.info('✅ Cleared WamKeyboard events');
-            }
-
-            // Clear active harmony sources (sustain pedal state)
-            this.activeHarmonySources.clear();
-            logger.info('✅ Cleared active harmony sources');
-
-            // Clear CC64 timeline
-            this.currentCC64Timeline.clear();
-            logger.info('✅ Cleared CC64 timeline');
-          }
-        }
-      });
-
-      // Add new tracks to the registry
-      tracks.forEach((track) => {
-        this.tracks.set(track.id, track);
-        logger.info(
-          `📝 [RegionProcessor] Added track dynamically: ${track.id}`,
-        );
-      });
-
-      // CRITICAL FIX: Actually schedule the new track's events!
-      // scheduleAllRegions() already has guard to skip already-scheduled events (line 888-889)
-      // This ensures all 129 harmony events get scheduled, not just the 4 in lookahead window
-      logger.info(
-        '🔄 [RegionProcessor] Scheduling events for newly added tracks',
-      );
-      this.scheduleAllRegions();
-
-      const totalScheduledEvents = Array.from(
-        this.scheduledEvents.values(),
-      ).reduce((sum, set) => sum + set.size, 0);
-      logger.info('✅ [RegionProcessor] Dynamic track scheduling complete', {
-        totalScheduledEvents,
-      });
-    } else {
-      // Not running yet - just register normally
-      this.registerTracks(tracks);
-    }
+    this.trackManager.updateTracks(
+      tracks,
+      exerciseMetadata,
+      this.isRunning,
+      this.tracks,
+      this.scheduledEvents,
+      this.clearTrackEvents.bind(this),
+      this.clearHarmonyState.bind(this),
+      this.registerTracks.bind(this),
+      this.scheduleAllRegions.bind(this),
+      this.loadGrandPianoKeyboardMap.bind(this),
+      () => this.grandPianoKeyboardMap,
+      (instrument: string) => {
+        this.currentHarmonyInstrument = instrument;
+      },
+      this.debugger.log.bind(this.debugger),
+    );
   }
 
   /**
