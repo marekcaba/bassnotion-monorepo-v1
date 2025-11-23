@@ -135,6 +135,14 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
           );
           services = existingInstance;
 
+          // ✅ PHASE 1 TASK 1.5: Register engines when reusing existing instance
+          const regionProcessor = services.getRegionProcessor();
+          const playbackEngine = services.getPlaybackEngine();
+          WindowRegistry.setRegionProcessor(regionProcessor);
+          if (playbackEngine) {
+            WindowRegistry.setPlaybackEngine(playbackEngine);
+          }
+
           // Immediately update React state with existing services
           setCoreServices(services);
           setIsInitialized(true);
@@ -193,6 +201,14 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
         // ✅ BUG #8 FIX: Use WindowRegistry instead of direct window assignments
         WindowRegistry.setServiceRegistry(registry);
         WindowRegistry.setCoreServices(services);
+
+        // ✅ PHASE 1 TASK 1.5: Register playback engines for cleanup tracking
+        const regionProcessor = services.getRegionProcessor();
+        const playbackEngine = services.getPlaybackEngine();
+        WindowRegistry.setRegionProcessor(regionProcessor);
+        if (playbackEngine) {
+          WindowRegistry.setPlaybackEngine(playbackEngine);
+        }
 
         // ✅ BUG #1 FIX: Update state atomically to prevent race conditions
         setCoreServices(services);

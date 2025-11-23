@@ -251,6 +251,100 @@ describe('WindowRegistry - BUG #8: Window Object Pollution Prevention', () => {
   });
 
   // ============================================================================
+  // PLAYBACK ENGINES TESTS (Phase 1 Task 1.5)
+  // ============================================================================
+
+  describe('Playback Engines Management', () => {
+    it('should set and get RegionProcessor', () => {
+      const mockProcessor = { start: () => {}, stop: () => {} };
+
+      WindowRegistry.setRegionProcessor(mockProcessor);
+
+      const retrieved = WindowRegistry.getRegionProcessor();
+      expect(retrieved).toBe(mockProcessor);
+    });
+
+    it('should set and get PlaybackEngine', () => {
+      const mockEngine = {
+        play: () => {},
+        pause: () => {},
+        getState: () => 'idle',
+      };
+
+      WindowRegistry.setPlaybackEngine(mockEngine);
+
+      const retrieved = WindowRegistry.getPlaybackEngine();
+      expect(retrieved).toBe(mockEngine);
+    });
+
+    it('should track both RegionProcessor and PlaybackEngine simultaneously', () => {
+      const mockProcessor = { type: 'region' };
+      const mockEngine = { type: 'playback' };
+
+      WindowRegistry.setRegionProcessor(mockProcessor);
+      WindowRegistry.setPlaybackEngine(mockEngine);
+
+      expect(WindowRegistry.getRegionProcessor()).toBe(mockProcessor);
+      expect(WindowRegistry.getPlaybackEngine()).toBe(mockEngine);
+      expect(WindowRegistry.getRegionProcessor()).not.toBe(mockEngine);
+    });
+
+    it('should allow cleanup of both engines', () => {
+      const mockProcessor = { type: 'region' };
+      const mockEngine = { type: 'playback' };
+
+      WindowRegistry.setRegionProcessor(mockProcessor);
+      WindowRegistry.setPlaybackEngine(mockEngine);
+
+      // Cleanup both
+      WindowRegistry.cleanup();
+
+      expect(WindowRegistry.getRegionProcessor()).toBeNull();
+      expect(WindowRegistry.getPlaybackEngine()).toBeNull();
+    });
+
+    it('should handle null PlaybackEngine (feature flag disabled)', () => {
+      const mockProcessor = { type: 'region' };
+
+      WindowRegistry.setRegionProcessor(mockProcessor);
+      // Don't set PlaybackEngine (simulating feature flag disabled)
+
+      expect(WindowRegistry.getRegionProcessor()).toBe(mockProcessor);
+      expect(WindowRegistry.getPlaybackEngine()).toBeNull();
+    });
+
+    it('should replace existing RegionProcessor', () => {
+      const oldProcessor = { version: 'old' };
+      const newProcessor = { version: 'new' };
+
+      WindowRegistry.setRegionProcessor(oldProcessor);
+      WindowRegistry.setRegionProcessor(newProcessor);
+
+      expect(WindowRegistry.getRegionProcessor()).toBe(newProcessor);
+    });
+
+    it('should replace existing PlaybackEngine', () => {
+      const oldEngine = { version: 'old' };
+      const newEngine = { version: 'new' };
+
+      WindowRegistry.setPlaybackEngine(oldEngine);
+      WindowRegistry.setPlaybackEngine(newEngine);
+
+      expect(WindowRegistry.getPlaybackEngine()).toBe(newEngine);
+    });
+
+    it('should clean up engines on WindowRegistry.cleanup()', () => {
+      WindowRegistry.setRegionProcessor({ test: 'processor' });
+      WindowRegistry.setPlaybackEngine({ test: 'engine' });
+
+      WindowRegistry.cleanup();
+
+      expect(window.__bassnotion_regionProcessor).toBeUndefined();
+      expect(window.__bassnotion_playbackEngine).toBeUndefined();
+    });
+  });
+
+  // ============================================================================
   // INTEGRATION TESTS
   // ============================================================================
 

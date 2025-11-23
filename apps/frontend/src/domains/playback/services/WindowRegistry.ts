@@ -25,6 +25,10 @@ interface BassNotionWindow {
   __bassnotion_audioContext?: AudioContext;
   __bassnotion_audioContextUnsubscribe?: () => void;
 
+  // Playback Engines (Phase 1 Task 1.5 - Dual-Engine Tracking)
+  __bassnotion_regionProcessor?: any;
+  __bassnotion_playbackEngine?: any;
+
   // Initialization Flags
   __bassnotion_samplesReady?: boolean;
   __bassnotion_essentialSamplesLoaded?: boolean;
@@ -198,6 +202,49 @@ export class WindowRegistry {
       window.__bassnotion_audioContextUnsubscribe ||
       (window as any).__audioContextUnsubscribe
     );
+  }
+
+  // ============================================================================
+  // PLAYBACK ENGINES (Phase 1 Task 1.5)
+  // ============================================================================
+
+  /**
+   * Set the RegionProcessor instance
+   * This is the legacy playback engine that will eventually be replaced
+   */
+  static setRegionProcessor(processor: any): void {
+    if (typeof window === 'undefined') return;
+
+    window.__bassnotion_regionProcessor = processor;
+  }
+
+  /**
+   * Get the RegionProcessor instance
+   */
+  static getRegionProcessor(): any {
+    if (typeof window === 'undefined') return null;
+
+    return window.__bassnotion_regionProcessor || null;
+  }
+
+  /**
+   * Set the PlaybackEngine instance
+   * This is the new playback engine (feature flag controlled)
+   */
+  static setPlaybackEngine(engine: any): void {
+    if (typeof window === 'undefined') return;
+
+    window.__bassnotion_playbackEngine = engine;
+  }
+
+  /**
+   * Get the PlaybackEngine instance
+   * Returns null if feature flag is disabled
+   */
+  static getPlaybackEngine(): any {
+    if (typeof window === 'undefined') return null;
+
+    return window.__bassnotion_playbackEngine || null;
   }
 
   // ============================================================================
