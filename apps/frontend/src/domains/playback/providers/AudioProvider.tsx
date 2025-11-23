@@ -29,6 +29,7 @@ import {
   PluginManager,
   type CoreServicesConfig,
 } from '../services/core/index.js';
+import type { PlaybackEngine } from '../services/core/PlaybackEngine.js';
 import {
   getAudioArchitectureFlags,
   logMigrationEvent,
@@ -51,6 +52,9 @@ interface AudioContextValue {
   pluginManager: PluginManager | null;
   serviceRegistry: ServiceRegistry | null;
 
+  /** Phase 1 Task 1.4: New PlaybackEngine (feature flag controlled) */
+  playbackEngine: PlaybackEngine | null;
+
   /** Initialization state */
   isInitialized: boolean;
   error: Error | null;
@@ -69,6 +73,7 @@ const AudioContext = createContext<AudioContextValue>({
   eventBus: null,
   pluginManager: null,
   serviceRegistry: null,
+  playbackEngine: null, // Phase 1 Task 1.4
   isInitialized: false,
   error: null,
   coreServicesReady: false,
@@ -348,6 +353,7 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
     eventBus: coreServices?.getEventBus() || null,
     pluginManager: coreServices?.getPluginManager() || null,
     serviceRegistry: coreServices?.getServiceRegistry() || null,
+    playbackEngine: coreServices?.getPlaybackEngine() || null, // Phase 1 Task 1.4
     isInitialized,
     error,
     coreServicesReady, // ✅ BUG #1 FIX: Include ready flag
@@ -457,6 +463,24 @@ export function useServiceRegistry() {
   }
 
   return serviceRegistry;
+}
+
+/**
+ * Hook to access PlaybackEngine (Phase 1 Task 1.4)
+ * Returns null if feature flag is disabled
+ *
+ * @returns PlaybackEngine instance or null
+ * @throws Error if AudioProvider is not initialized
+ */
+export function usePlaybackEngine(): PlaybackEngine | null {
+  const { playbackEngine, isInitialized } = useAudioServices();
+
+  if (!isInitialized) {
+    throw new Error('PlaybackEngine not yet initialized');
+  }
+
+  // PlaybackEngine may be null if feature flag is disabled - this is expected
+  return playbackEngine;
 }
 
 /**
