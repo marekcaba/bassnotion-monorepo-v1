@@ -4,10 +4,9 @@ import React from 'react';
 import { YouTubeWidgetPage } from '@/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { ScrollTriggerLoader } from '@/domains/playback/components/ScrollTriggerLoader';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
-import { createStructuredLogger } from '@bassnotion/contracts';
+import { createLogger } from '@/utils/logger';
 
-const logger = createStructuredLogger('TutorialPage');
+const logger = createLogger('TutorialPage');
 
 // Error boundary component
 class ErrorBoundary extends React.Component<
@@ -31,7 +30,10 @@ class ErrorBoundary extends React.Component<
     if (this.state.hasError && this.state.error) {
       // TEMPORARY: Don't show error screen for timeSignature rendering errors
       // Just log and continue rendering to test if audio works
-      logger.error('🚨 Error boundary caught error but continuing to render:', this.state.error);
+      logger.error(
+        '🚨 Error boundary caught error but continuing to render:',
+        this.state.error,
+      );
 
       // Still render children - the error might be in a non-critical component
       // Uncomment below to show error screen again:
@@ -85,10 +87,13 @@ export default function TutorialPage({ params }: TutorialPageProps) {
 
   // Memoize the tutorial and exercises to prevent unnecessary re-renders
   // MUST be called unconditionally BEFORE any early returns
-  const memoizedTutorial = React.useMemo(() => tutorial, [tutorial?.id]);
+  const memoizedTutorial = React.useMemo(
+    () => tutorial,
+    [tutorial, tutorial?.id],
+  );
   const memoizedExercises = React.useMemo(
     () => exercises,
-    [exercises?.length, exercises?.[0]?.id],
+    [exercises, exercises?.length, exercises?.[0]?.id],
   );
 
   // Handle loading state - AFTER all hooks

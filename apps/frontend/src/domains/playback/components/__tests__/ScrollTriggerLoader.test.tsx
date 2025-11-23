@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, waitFor } from '@testing-library/react';
 import { ScrollTriggerLoader } from '../ScrollTriggerLoader';
-import { getSamplePreloader } from '../../services/InitialSamplePreloader.bridge';
 import type { Exercise } from '@bassnotion/contracts';
 
 // Create mock functions
@@ -243,7 +242,6 @@ describe('ScrollTriggerLoader', () => {
         expect(mockLoadEssentialSamples).toHaveBeenCalledTimes(1);
       });
     });
-
   });
 
   describe('Window Events', () => {

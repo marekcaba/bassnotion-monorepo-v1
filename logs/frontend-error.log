@@ -1,0 +1,521 @@
+2025-11-23 10:23:26 +01:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:26 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:26 +01:00: Import trace for requested module:
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:26 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:26 +01:00: Import trace for requested module:
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:26 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:26 +01:00: Import trace for requested module:
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:26 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:26 +01:00: Import trace for requested module:
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:26 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:26 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:23:26 +01:00: Critical dependency: the request of a dependency is an expression
+2025-11-23 10:23:26 +01:00: Import trace for requested module:
+2025-11-23 10:23:26 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:23:26 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+2025-11-23 10:23:26 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+2025-11-23 10:23:26 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+2025-11-23 10:23:26 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
+2025-11-23 10:23:26 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
+2025-11-23 10:23:26 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
+2025-11-23 10:23:26 +01:00: ./src/shared/components/ErrorBoundary.tsx
+2025-11-23 10:23:27 +01:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:27 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:27 +01:00: Import trace for requested module:
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:27 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:27 +01:00: Import trace for requested module:
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:27 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:27 +01:00: Import trace for requested module:
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:27 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:27 +01:00: Import trace for requested module:
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:27 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:27 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:23:27 +01:00: Critical dependency: the request of a dependency is an expression
+2025-11-23 10:23:27 +01:00: Import trace for requested module:
+2025-11-23 10:23:27 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:23:27 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+2025-11-23 10:23:27 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+2025-11-23 10:23:27 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+2025-11-23 10:23:27 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
+2025-11-23 10:23:27 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
+2025-11-23 10:23:27 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
+2025-11-23 10:23:27 +01:00: ./src/shared/components/ErrorBoundary.tsx
+2025-11-23 10:23:31 +01:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:31 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:31 +01:00: Import trace for requested module:
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:31 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:31 +01:00: Import trace for requested module:
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:31 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:31 +01:00: Import trace for requested module:
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:31 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:31 +01:00: Import trace for requested module:
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:31 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:31 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:23:31 +01:00: Critical dependency: the request of a dependency is an expression
+2025-11-23 10:23:31 +01:00: Import trace for requested module:
+2025-11-23 10:23:31 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:23:31 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+2025-11-23 10:23:31 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+2025-11-23 10:23:31 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+2025-11-23 10:23:31 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
+2025-11-23 10:23:31 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
+2025-11-23 10:23:31 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
+2025-11-23 10:23:31 +01:00: ./src/shared/components/ErrorBoundary.tsx
+2025-11-23 10:23:33 +01:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:33 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:33 +01:00: Import trace for requested module:
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:33 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:33 +01:00: Import trace for requested module:
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:33 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:33 +01:00: Import trace for requested module:
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:33 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:23:33 +01:00: Import trace for requested module:
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:23:33 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:23:33 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:23:33 +01:00: Critical dependency: the request of a dependency is an expression
+2025-11-23 10:23:33 +01:00: Import trace for requested module:
+2025-11-23 10:23:33 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:23:33 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+2025-11-23 10:23:33 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+2025-11-23 10:23:33 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+2025-11-23 10:23:33 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
+2025-11-23 10:23:33 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
+2025-11-23 10:23:33 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
+2025-11-23 10:23:33 +01:00: ./src/shared/components/ErrorBoundary.tsx
+2025-11-23 10:23:33 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-11-23 10:25:17 +01:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:25:17 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:25:17 +01:00: Import trace for requested module:
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:25:17 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:25:17 +01:00: Import trace for requested module:
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:25:17 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:25:17 +01:00: Import trace for requested module:
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:25:17 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:25:17 +01:00: Import trace for requested module:
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:25:17 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:25:17 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:25:17 +01:00: Critical dependency: the request of a dependency is an expression
+2025-11-23 10:25:17 +01:00: Import trace for requested module:
+2025-11-23 10:25:17 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:25:17 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+2025-11-23 10:25:17 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+2025-11-23 10:25:17 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+2025-11-23 10:25:17 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
+2025-11-23 10:25:17 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
+2025-11-23 10:25:17 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
+2025-11-23 10:25:17 +01:00: ./src/shared/components/ErrorBoundary.tsx
+2025-11-23 10:25:23 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-11-23 10:25:24 +01:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:25:24 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:25:24 +01:00: Import trace for requested module:
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:25:24 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:25:24 +01:00: Import trace for requested module:
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:25:24 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:25:24 +01:00: Import trace for requested module:
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:25:24 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:25:24 +01:00: Import trace for requested module:
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:25:24 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:25:24 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:25:24 +01:00: Critical dependency: the request of a dependency is an expression
+2025-11-23 10:25:24 +01:00: Import trace for requested module:
+2025-11-23 10:25:24 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:25:24 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+2025-11-23 10:25:24 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+2025-11-23 10:25:24 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+2025-11-23 10:25:24 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
+2025-11-23 10:25:24 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
+2025-11-23 10:25:24 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
+2025-11-23 10:25:24 +01:00: ./src/shared/components/ErrorBoundary.tsx
+2025-11-23 10:27:12 +01:00: Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+2025-11-23 10:27:12 +01:00:   npx update-browserslist-db@latest
+2025-11-23 10:27:12 +01:00:   Why you should do it regularly: https://github.com/browserslist/update-db#readme
+2025-11-23 10:27:16 +01:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:27:16 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:27:16 +01:00: Import trace for requested module:
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:27:16 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:27:16 +01:00: Import trace for requested module:
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:27:16 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:27:16 +01:00: Import trace for requested module:
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:27:16 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:27:16 +01:00: Import trace for requested module:
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:27:16 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:27:16 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:27:16 +01:00: Critical dependency: the request of a dependency is an expression
+2025-11-23 10:27:16 +01:00: Import trace for requested module:
+2025-11-23 10:27:16 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:27:16 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+2025-11-23 10:27:16 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+2025-11-23 10:27:16 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+2025-11-23 10:27:16 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
+2025-11-23 10:27:16 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
+2025-11-23 10:27:16 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
+2025-11-23 10:27:16 +01:00: ./src/shared/components/ErrorBoundary.tsx
+2025-11-23 10:27:34 +01:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:27:34 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:27:34 +01:00: Import trace for requested module:
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:27:34 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:27:34 +01:00: Import trace for requested module:
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:27:34 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:27:34 +01:00: Import trace for requested module:
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:27:34 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:27:34 +01:00: Import trace for requested module:
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:27:34 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:27:34 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:27:34 +01:00: Critical dependency: the request of a dependency is an expression
+2025-11-23 10:27:34 +01:00: Import trace for requested module:
+2025-11-23 10:27:34 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:27:34 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+2025-11-23 10:27:34 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+2025-11-23 10:27:34 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+2025-11-23 10:27:34 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
+2025-11-23 10:27:34 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
+2025-11-23 10:27:34 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
+2025-11-23 10:27:34 +01:00: ./src/shared/components/ErrorBoundary.tsx
+2025-11-23 10:27:44 +01:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:27:44 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:27:44 +01:00: Import trace for requested module:
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:27:44 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:27:44 +01:00: Import trace for requested module:
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:27:44 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:27:44 +01:00: Import trace for requested module:
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:27:44 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:27:44 +01:00: Import trace for requested module:
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:27:44 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:27:44 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:27:44 +01:00: Critical dependency: the request of a dependency is an expression
+2025-11-23 10:27:44 +01:00: Import trace for requested module:
+2025-11-23 10:27:44 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:27:44 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+2025-11-23 10:27:44 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+2025-11-23 10:27:44 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+2025-11-23 10:27:44 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
+2025-11-23 10:27:44 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
+2025-11-23 10:27:44 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
+2025-11-23 10:27:44 +01:00: ./src/shared/components/ErrorBoundary.tsx
+2025-11-23 10:29:18 +01:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:29:18 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:29:18 +01:00: Import trace for requested module:
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:29:18 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:29:18 +01:00: Import trace for requested module:
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:29:18 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:29:18 +01:00: Import trace for requested module:
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:29:18 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:29:18 +01:00: Import trace for requested module:
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:29:18 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:29:18 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:29:18 +01:00: Critical dependency: the request of a dependency is an expression
+2025-11-23 10:29:18 +01:00: Import trace for requested module:
+2025-11-23 10:29:18 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:29:18 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+2025-11-23 10:29:18 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+2025-11-23 10:29:18 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+2025-11-23 10:29:18 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
+2025-11-23 10:29:18 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
+2025-11-23 10:29:18 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
+2025-11-23 10:29:18 +01:00: ./src/shared/components/ErrorBoundary.tsx
+2025-11-23 10:29:32 +01:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:29:32 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:29:32 +01:00: Import trace for requested module:
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:29:32 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:29:32 +01:00: Import trace for requested module:
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:29:32 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:29:32 +01:00: Import trace for requested module:
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:29:32 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:29:32 +01:00: Import trace for requested module:
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:29:32 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:29:32 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:29:32 +01:00: Critical dependency: the request of a dependency is an expression
+2025-11-23 10:29:32 +01:00: Import trace for requested module:
+2025-11-23 10:29:32 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:29:32 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+2025-11-23 10:29:32 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+2025-11-23 10:29:32 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+2025-11-23 10:29:32 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
+2025-11-23 10:29:32 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
+2025-11-23 10:29:32 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
+2025-11-23 10:29:32 +01:00: ./src/shared/components/ErrorBoundary.tsx
+2025-11-23 10:29:38 +01:00:  [33m[1m⚠[22m[39m ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:29:38 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:29:38 +01:00: Import trace for requested module:
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:29:38 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:29:38 +01:00: Import trace for requested module:
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:29:38 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:29:38 +01:00: Import trace for requested module:
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/region-processing/buffers/BufferRegistry.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:29:38 +01:00: Should not import the named export 'noteMap' (imported as 'grandPianoKeyboardMap') from default-exporting module (only default export is available soon)
+2025-11-23 10:29:38 +01:00: Import trace for requested module:
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/region-processing/scheduling/GrandPianoKeyboardMapper.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/RegionProcessor.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/CoreServices.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/services/core/index.ts
+2025-11-23 10:29:38 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-11-23 10:29:38 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:29:38 +01:00: Critical dependency: the request of a dependency is an expression
+2025-11-23 10:29:38 +01:00: Import trace for requested module:
+2025-11-23 10:29:38 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+2025-11-23 10:29:38 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+2025-11-23 10:29:38 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+2025-11-23 10:29:38 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+2025-11-23 10:29:38 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
+2025-11-23 10:29:38 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
+2025-11-23 10:29:38 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
+2025-11-23 10:29:38 +01:00: ./src/shared/components/ErrorBoundary.tsx

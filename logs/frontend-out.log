@@ -1,0 +1,89 @@
+2025-11-23 10:22:50 +01:00: 
+2025-11-23 10:22:50 +01:00: > nx run @bassnotion/frontend:serve
+2025-11-23 10:22:50 +01:00: 
+2025-11-23 10:22:51 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-11-23 10:22:51 +01:00:    - Local:        http://localhost:3001
+2025-11-23 10:22:51 +01:00:    - Network:      http://10.0.0.6:3001
+2025-11-23 10:22:51 +01:00:    - Environments: .env.local, .env
+2025-11-23 10:22:51 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-11-23 10:22:53 +01:00:  [32m[1m✓[22m[39m Ready in 2.5s
+2025-11-23 10:23:18 +01:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-11-23 10:23:27 +01:00:  GET /dashboard [32m200[39m in 9895ms
+2025-11-23 10:23:33 +01:00:  GET /library [32m200[39m in 2156ms
+2025-11-23 10:23:33 +01:00:  GET /library [32m200[39m in 16ms
+2025-11-23 10:23:34 +01:00:  GET /dashboard [32m200[39m in 517ms
+2025-11-23 10:25:15 +01:00:  GET /library [32m200[39m in 62ms
+2025-11-23 10:25:25 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 3650ms
+2025-11-23 10:25:25 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 7848ms
+2025-11-23 10:25:25 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 127ms
+2025-11-23 10:25:25 +01:00:  GET /library [32m200[39m in 2751ms
+2025-11-23 10:25:32 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 21ms
+2025-11-23 10:38:52 +01:00: 
+2025-11-23 10:38:52 +01:00:  NX   Daemon process terminated and closed the connection
+2025-11-23 10:38:52 +01:00: 
+2025-11-23 10:38:52 +01:00: Please rerun the command, which will restart the daemon.
+2025-11-23 10:38:52 +01:00: If you get this error again, check for any errors in the daemon process logs found in: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/.nx/workspace-data/d/daemon.log
+2025-11-23 10:38:52 +01:00: 
+2025-11-23 10:40:55 +01:00: 
+2025-11-23 10:40:55 +01:00: > nx run @bassnotion/frontend:serve
+2025-11-23 10:40:55 +01:00: 
+2025-11-23 10:40:55 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-11-23 10:40:55 +01:00:    - Local:        http://localhost:3001
+2025-11-23 10:40:55 +01:00:    - Network:      http://10.0.0.6:3001
+2025-11-23 10:40:55 +01:00:    - Environments: .env.local, .env
+2025-11-23 10:40:55 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-11-23 10:40:57 +01:00:  [32m[1m✓[22m[39m Ready in 2.1s
+2025-11-23 10:45:25 +01:00: 
+2025-11-23 10:45:25 +01:00: > nx run @bassnotion/frontend:serve
+2025-11-23 10:45:25 +01:00: 
+2025-11-23 10:45:26 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-11-23 10:45:26 +01:00:    - Local:        http://localhost:3001
+2025-11-23 10:45:26 +01:00:    - Network:      http://10.0.0.6:3001
+2025-11-23 10:45:26 +01:00:    - Environments: .env.local, .env
+2025-11-23 10:45:26 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-11-23 10:45:28 +01:00:  [32m[1m✓[22m[39m Ready in 1950ms
+2025-11-23 10:50:30 +01:00: 
+2025-11-23 10:50:30 +01:00: > nx run @bassnotion/frontend:serve
+2025-11-23 10:50:30 +01:00: 
+2025-11-23 10:50:31 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-11-23 10:50:31 +01:00:    - Local:        http://localhost:3001
+2025-11-23 10:50:31 +01:00:    - Network:      http://10.0.0.6:3001
+2025-11-23 10:50:31 +01:00:    - Environments: .env.local, .env
+2025-11-23 10:50:31 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-11-23 10:50:33 +01:00:  [32m[1m✓[22m[39m Ready in 2.2s
+2025-11-23 10:55:46 +01:00: 
+2025-11-23 10:55:46 +01:00: > nx run @bassnotion/frontend:serve
+2025-11-23 10:55:46 +01:00: 
+2025-11-23 10:55:47 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-11-23 10:55:47 +01:00:    - Local:        http://localhost:3001
+2025-11-23 10:55:47 +01:00:    - Network:      http://10.0.0.6:3001
+2025-11-23 10:55:47 +01:00:    - Environments: .env.local, .env
+2025-11-23 10:55:47 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-11-23 10:55:49 +01:00:  [32m[1m✓[22m[39m Ready in 2.2s
+2025-11-23 11:01:59 +01:00: 
+2025-11-23 11:01:59 +01:00: > nx run @bassnotion/frontend:serve
+2025-11-23 11:01:59 +01:00: 
+2025-11-23 11:02:00 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-11-23 11:02:00 +01:00:    - Local:        http://localhost:3001
+2025-11-23 11:02:00 +01:00:    - Network:      http://10.0.0.6:3001
+2025-11-23 11:02:00 +01:00:    - Environments: .env.local, .env
+2025-11-23 11:02:00 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-11-23 11:02:02 +01:00:  [32m[1m✓[22m[39m Ready in 2.1s
+2025-11-23 11:07:34 +01:00: 
+2025-11-23 11:07:34 +01:00: > nx run @bassnotion/frontend:serve
+2025-11-23 11:07:34 +01:00: 
+2025-11-23 11:07:35 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-11-23 11:07:35 +01:00:    - Local:        http://localhost:3001
+2025-11-23 11:07:35 +01:00:    - Network:      http://10.0.0.6:3001
+2025-11-23 11:07:35 +01:00:    - Environments: .env.local, .env
+2025-11-23 11:07:35 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-11-23 11:07:37 +01:00:  [32m[1m✓[22m[39m Ready in 2.1s
+2025-11-23 11:11:06 +01:00: 
+2025-11-23 11:11:06 +01:00: > nx run @bassnotion/frontend:serve
+2025-11-23 11:11:06 +01:00: 
+2025-11-23 11:11:07 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-11-23 11:11:07 +01:00:    - Local:        http://localhost:3001
+2025-11-23 11:11:07 +01:00:    - Network:      http://10.0.0.6:3001
+2025-11-23 11:11:07 +01:00:    - Environments: .env.local, .env
+2025-11-23 11:11:07 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-11-23 11:11:09 +01:00:  [32m[1m✓[22m[39m Ready in 2s

@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { CoreServicesGate, useCoreServicesReady } from '../CoreServicesGate.js';
 import * as AudioProviderModule from '../../providers/AudioProvider.js';
 
@@ -43,10 +43,12 @@ describe('CoreServicesGate - BUG #1: Race Condition Prevention', () => {
       render(
         <CoreServicesGate>
           <div>Should not render</div>
-        </CoreServicesGate>
+        </CoreServicesGate>,
       );
 
-      expect(screen.getByText(/Initializing audio system/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Initializing audio system/i),
+      ).toBeInTheDocument();
       expect(screen.queryByText('Should not render')).not.toBeInTheDocument();
     });
 
@@ -67,7 +69,7 @@ describe('CoreServicesGate - BUG #1: Race Condition Prevention', () => {
       render(
         <CoreServicesGate fallback={<div>Custom Loading...</div>}>
           <div>Should not render</div>
-        </CoreServicesGate>
+        </CoreServicesGate>,
       );
 
       expect(screen.getByText('Custom Loading...')).toBeInTheDocument();
@@ -91,10 +93,12 @@ describe('CoreServicesGate - BUG #1: Race Condition Prevention', () => {
       render(
         <CoreServicesGate>
           <div>Should not render</div>
-        </CoreServicesGate>
+        </CoreServicesGate>,
       );
 
-      expect(screen.getByText(/Initializing audio system/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Initializing audio system/i),
+      ).toBeInTheDocument();
       expect(screen.queryByText('Should not render')).not.toBeInTheDocument();
     });
   });
@@ -123,7 +127,7 @@ describe('CoreServicesGate - BUG #1: Race Condition Prevention', () => {
       render(
         <CoreServicesGate>
           <div>Audio Component</div>
-        </CoreServicesGate>
+        </CoreServicesGate>,
       );
 
       expect(screen.getByText('Audio Component')).toBeInTheDocument();
@@ -146,10 +150,10 @@ describe('CoreServicesGate - BUG #1: Race Condition Prevention', () => {
         getTone: () => null,
       });
 
-      const { container } = render(
+      render(
         <CoreServicesGate>
           <div data-testid="child">Rendered</div>
-        </CoreServicesGate>
+        </CoreServicesGate>,
       );
 
       // Should render immediately, no delay
@@ -181,10 +185,12 @@ describe('CoreServicesGate - BUG #1: Race Condition Prevention', () => {
       render(
         <CoreServicesGate>
           <div>Should not render</div>
-        </CoreServicesGate>
+        </CoreServicesGate>,
       );
 
-      expect(screen.getByText(/Failed to initialize audio system/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Failed to initialize audio system/i),
+      ).toBeInTheDocument();
       expect(screen.queryByText('Should not render')).not.toBeInTheDocument();
     });
 
@@ -209,7 +215,7 @@ describe('CoreServicesGate - BUG #1: Race Condition Prevention', () => {
           errorFallback={(error) => <div>Error: {error.message}</div>}
         >
           <div>Should not render</div>
-        </CoreServicesGate>
+        </CoreServicesGate>,
       );
 
       expect(screen.getByText('Error: Custom error')).toBeInTheDocument();
@@ -239,12 +245,14 @@ describe('CoreServicesGate - BUG #1: Race Condition Prevention', () => {
         getTone: () => null,
       };
 
-      vi.mocked(AudioProviderModule.useAudioServices).mockImplementation(() => mockReturn);
+      vi.mocked(AudioProviderModule.useAudioServices).mockImplementation(
+        () => mockReturn,
+      );
 
       const { rerender } = render(
         <CoreServicesGate>
           <div data-testid="child">Audio Component</div>
-        </CoreServicesGate>
+        </CoreServicesGate>,
       );
 
       // Initially should show loading
@@ -262,7 +270,7 @@ describe('CoreServicesGate - BUG #1: Race Condition Prevention', () => {
       rerender(
         <CoreServicesGate>
           <div data-testid="child">Audio Component</div>
-        </CoreServicesGate>
+        </CoreServicesGate>,
       );
 
       // Now should render children
@@ -289,7 +297,7 @@ describe('CoreServicesGate - BUG #1: Race Condition Prevention', () => {
       const { rerender } = render(
         <CoreServicesGate>
           <div data-testid="child">Child 1</div>
-        </CoreServicesGate>
+        </CoreServicesGate>,
       );
 
       expect(screen.getByTestId('child')).toHaveTextContent('Child 1');
@@ -298,7 +306,7 @@ describe('CoreServicesGate - BUG #1: Race Condition Prevention', () => {
       rerender(
         <CoreServicesGate>
           <div data-testid="child">Child 2</div>
-        </CoreServicesGate>
+        </CoreServicesGate>,
       );
 
       expect(screen.getByTestId('child')).toHaveTextContent('Child 2');
@@ -306,7 +314,7 @@ describe('CoreServicesGate - BUG #1: Race Condition Prevention', () => {
       rerender(
         <CoreServicesGate>
           <div data-testid="child">Child 3</div>
-        </CoreServicesGate>
+        </CoreServicesGate>,
       );
 
       expect(screen.getByTestId('child')).toHaveTextContent('Child 3');
