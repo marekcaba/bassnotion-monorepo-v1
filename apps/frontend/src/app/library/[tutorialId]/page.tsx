@@ -123,7 +123,11 @@ export default function TutorialPage({ params }: TutorialPageProps) {
     <>
       <ErrorBoundary>
         {/* Phase 2: Progressive sample loading on first user interaction */}
-        <ScrollTriggerLoader />
+        {/* Pass exercises to enable tutorial-level sample loading */}
+        <ScrollTriggerLoader
+          exercises={memoizedExercises}
+          tutorialId={tutorial?.id}
+        />
         <YouTubeWidgetPage
           tutorialData={memoizedTutorial}
           tutorialSlug={tutorialSlug}

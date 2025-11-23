@@ -1,12 +1,14 @@
 /**
  * HarmonyScheduler - Direct audio scheduling for harmony instruments
  *
+ * Phase 4.2: Merged GrandPianoKeyboardMapper
+ *
  * Schedules piano, Rhodes, and Wurlitzer samples with:
  * - Sample-perfect timing using AudioBufferSourceNode
  * - Per-note velocity layer selection (v1-v15)
  * - Instrument-specific octave shifts (Wurlitzer: -12, Grand Piano: 0)
  * - CC64 sustain pedal integration for duration extension
- * - Grand Piano sparse sampling with pitch-shift mapping
+ * - Grand Piano sparse sampling with pitch-shift mapping (from GrandPianoKeyboardMapper)
  * - Last-note ring-out detection (3s decay at exercise end)
  * - Polyphony management with active source tracking
  * - Sample looping for sustained notes
@@ -15,9 +17,17 @@
 import { getLogger } from '@/utils/logger.js';
 import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache.js';
 import type { PatternEvent } from '../types/region.types.js';
-import type { GrandPianoKeyboardMapper } from './GrandPianoKeyboardMapper.js';
+import * as grandPianoKeyboardMap from '@/domains/playback/data/instruments/piano/grandpiano-keyboard-map.json';
+// Phase 4.2: Removed GrandPianoKeyboardMapper (merged into this class)
 import type { CC64TimelineBuilder } from '../sustain/CC64TimelineBuilder.js';
 import type { SustainPedalAnalyzer } from '../sustain/SustainPedalAnalyzer.js';
+
+// Phase 4.2: Types from GrandPianoKeyboardMapper
+export interface NoteMapping {
+  sample: string; // Actual sample name (e.g., "A3" for "Gs3")
+  playbackRate: number; // Pitch-shift rate (1.059 = +1 semitone)
+  semitones: number; // Pitch shift amount (+1, -2, etc.)
+}
 
 const logger = getLogger('HarmonyScheduler');
 
@@ -58,8 +68,11 @@ export class HarmonyScheduler {
   private instanceId: string;
   private tracks: Map<string, any>; // Reference to track registry for validation
 
+  // Phase 4.2: Grand Piano keyboard mapping (from GrandPianoKeyboardMapper)
+  private grandPianoKeyboardMap: Record<string, NoteMapping> | null = null;
+
   // Injected dependencies
-  private keyboardMapper: GrandPianoKeyboardMapper;
+  // Removed: keyboardMapper (merged into this class)
   private cc64Builder: CC64TimelineBuilder;
   private sustainAnalyzer: SustainPedalAnalyzer;
 
@@ -71,13 +84,11 @@ export class HarmonyScheduler {
   constructor(
     instanceId: string,
     tracks: Map<string, any>,
-    keyboardMapper: GrandPianoKeyboardMapper,
     cc64Builder: CC64TimelineBuilder,
     sustainAnalyzer: SustainPedalAnalyzer,
   ) {
     this.instanceId = instanceId;
     this.tracks = tracks;
-    this.keyboardMapper = keyboardMapper;
     this.cc64Builder = cc64Builder;
     this.sustainAnalyzer = sustainAnalyzer;
   }
@@ -109,9 +120,9 @@ export class HarmonyScheduler {
     this.harmonyVelocityRanges = perNoteVelocityRanges;
     this.currentHarmonyInstrument = instrument || null;
 
-    // Load Grand Piano keyboard map if instrument is Grand Piano
-    if (instrument === 'grandpiano' && !this.keyboardMapper.hasKeyboardMap()) {
-      await this.keyboardMapper.loadKeyboardMap();
+    // Phase 4.2: Load Grand Piano keyboard map if instrument is Grand Piano
+    if (instrument === 'grandpiano' && !this.hasKeyboardMap()) {
+      await this.loadKeyboardMap();
     }
 
     logger.info('✅ Harmony buffers injected', {
@@ -149,10 +160,9 @@ export class HarmonyScheduler {
 
   /**
    * Check if keyboard map is loaded (for testing)
+   * Phase 4.2: Now a direct method (no longer delegating to keyboardMapper)
    */
-  hasKeyboardMap(): boolean {
-    return this.keyboardMapper.hasKeyboardMap();
-  }
+  // Method is defined in the Grand Piano Keyboard Mapping section below
 
   /**
    * Schedule harmony event with direct audio
@@ -312,9 +322,29 @@ export class HarmonyScheduler {
         sources.push(source);
         successCount++;
 
-        // Auto-cleanup
+        // Store gain reference for cleanup
+        const gainNode = gain;
+        const sourceNode = source;
+
+        // Auto-cleanup when playback ends
         source.onended = () => {
-          gain.disconnect();
+          gainNode.disconnect();
+
+          // Remove from activeHarmonySources
+          const chordIdForCleanup = `chord-${frame}`;
+          const activeSources =
+            this.activeHarmonySources.get(chordIdForCleanup);
+          if (activeSources) {
+            const index = activeSources.findIndex(
+              (s) => s.source === sourceNode,
+            );
+            if (index !== -1) {
+              activeSources.splice(index, 1);
+            }
+            if (activeSources.length === 0) {
+              this.activeHarmonySources.delete(chordIdForCleanup);
+            }
+          }
         };
       } catch (error) {
         logger.error(`Failed to schedule harmony note ${note}`, error);
@@ -393,9 +423,9 @@ export class HarmonyScheduler {
       // eslint-disable-next-line no-console, no-restricted-syntax
       console.log('[HARMONY-SCHEDULE-START] 🎹 Instrument state:', {
         currentInstrument: this.currentHarmonyInstrument,
-        hasKeyboardMap: this.keyboardMapper.hasKeyboardMap(),
-        keyboardMapSize: this.keyboardMapper.getKeyboardMap()
-          ? Object.keys(this.keyboardMapper.getKeyboardMap()!).length
+        hasKeyboardMap: this.hasKeyboardMap(),
+        keyboardMapSize: this.getKeyboardMap()
+          ? Object.keys(this.getKeyboardMap()!).length
           : 0,
         harmonyBuffersSize: this.harmonyBuffers.size,
         harmonyLayers: Array.from(this.harmonyBuffers.keys()),
@@ -470,16 +500,16 @@ export class HarmonyScheduler {
       console.log(
         '🗺️ [NOTE-MAPPING] Grand Piano detected, checking keyboard map...',
         {
-          hasKeyboardMap: this.keyboardMapper.hasKeyboardMap(),
+          hasKeyboardMap: this.hasKeyboardMap(),
           requestedNote: noteName,
-          mapKeys: this.keyboardMapper.getKeyboardMap()
-            ? Object.keys(this.keyboardMapper.getKeyboardMap()!).length
+          mapKeys: this.getKeyboardMap()
+            ? Object.keys(this.getKeyboardMap()!).length
             : 0,
         },
       );
 
-      if (this.keyboardMapper.hasKeyboardMap()) {
-        const mapping = this.keyboardMapper.mapNote(noteName);
+      if (this.hasKeyboardMap()) {
+        const mapping = this.mapNote(noteName);
         if (mapping) {
           actualSampleNote = mapping.sample; // e.g., "A3" for "Gs3"
           playbackRate = mapping.playbackRate;
@@ -554,8 +584,8 @@ export class HarmonyScheduler {
     // Example: G4 uses Fs4 sample at 1.059 playbackRate (+1 semitone)
     let sampleNote = noteName; // Default to requested note (for non-Grand Piano or notes without mapping)
 
-    if (this.keyboardMapper.hasKeyboardMap()) {
-      const mapping = this.keyboardMapper.mapNote(noteName);
+    if (this.hasKeyboardMap()) {
+      const mapping = this.mapNote(noteName);
       if (mapping) {
         playbackRate = mapping.playbackRate; // Apply pitch-shift rate
         sampleNote = mapping.sample; // Update to mapped sample (e.g., "A2" for "As2")
@@ -707,7 +737,7 @@ export class HarmonyScheduler {
       console.log(`========================================================\n`);
 
       // For Grand Piano, also check what the keyboard map says
-      const keyboardMapping = this.keyboardMapper.mapNote(noteName);
+      const keyboardMapping = this.mapNote(noteName);
       const keyboardMapInfo = keyboardMapping
         ? {
             mappedSample: keyboardMapping.sample,
@@ -776,7 +806,7 @@ export class HarmonyScheduler {
           sampleNote, // The actual sample being used (e.g., A3 for Gs3)
           playbackRate,
           isGrandPiano: this.currentHarmonyInstrument === 'grandpiano',
-          hasKeyboardMap: this.keyboardMapper.hasKeyboardMap(),
+          hasKeyboardMap: this.hasKeyboardMap(),
           layer,
           duration,
         });
@@ -1291,5 +1321,157 @@ export class HarmonyScheduler {
     });
     this.scheduledAudioSources.clear();
     this.activeHarmonySources.clear();
+  }
+
+  // ============================================================================
+  // GRAND PIANO KEYBOARD MAPPING (from GrandPianoKeyboardMapper)
+  // ============================================================================
+
+  /**
+   * Load keyboard map from cache (preferred) or fallback to import
+   * Cache is populated by HarmonyPreloadStrategy during preload
+   */
+  async loadKeyboardMap(): Promise<void> {
+    try {
+      // eslint-disable-next-line no-console, no-restricted-syntax
+      console.log(
+        '🗺️ [KEYBOARD-MAP-LOAD] GrandPianoKeyboardMapper attempting to load...',
+      );
+
+      // Try cache first (populated by HarmonyPreloadStrategy during preload)
+      const cached = GlobalSampleCache.getInstance().getCachedMetadata(
+        'grandpiano-keyboard-map',
+      );
+      // eslint-disable-next-line no-console, no-restricted-syntax
+      console.log('🗺️ [KEYBOARD-MAP-LOAD] Cache lookup result:', {
+        found: !!cached,
+        hasKeys: cached ? Object.keys(cached).length : 0,
+        firstKey: cached ? Object.keys(cached)[0] : 'N/A',
+      });
+
+      if (cached) {
+        this.grandPianoKeyboardMap = cached;
+        // eslint-disable-next-line no-console, no-restricted-syntax
+        console.log('🗺️ [KEYBOARD-MAP-LOAD] ✅ Retrieved from cache', {
+          totalKeys: Object.keys(cached).length,
+          hasKeyboardMap: !!this.grandPianoKeyboardMap,
+        });
+        logger.info(
+          '✅ Retrieved Grand Piano keyboard map from cache (88 keys A0-C8)',
+          {
+            source: 'GlobalSampleCache',
+            totalKeys: Object.keys(cached).length,
+          },
+        );
+        return;
+      }
+
+      // Fallback to direct import if cache miss (rare - happens if setHarmonyBuffers called before preload)
+      // eslint-disable-next-line no-console, no-restricted-syntax
+      console.log('🗺️ [KEYBOARD-MAP-LOAD] ⚠️ Cache miss - loading from import');
+      this.grandPianoKeyboardMap = (grandPianoKeyboardMap as any).noteMap;
+      // eslint-disable-next-line no-console, no-restricted-syntax
+      console.log('🗺️ [KEYBOARD-MAP-LOAD] ✅ Loaded from import', {
+        totalKeys: this.grandPianoKeyboardMap
+          ? Object.keys(this.grandPianoKeyboardMap).length
+          : 0,
+        hasKeyboardMap: !!this.grandPianoKeyboardMap,
+      });
+      logger.info(
+        '✅ Loaded Grand Piano keyboard map from import (88 keys A0-C8)',
+        {
+          source: 'direct-import',
+          note: 'Cache miss - this is expected if setHarmonyBuffers called before preload completes',
+        },
+      );
+    } catch (error) {
+      // eslint-disable-next-line no-console, no-restricted-syntax
+      console.error(
+        '🗺️ [KEYBOARD-MAP-LOAD] ❌ Error loading keyboard map:',
+        error,
+      );
+      logger.error('Error loading Grand Piano keyboard map:', error);
+    }
+  }
+
+  /**
+   * Map a note to its physical sample with pitch-shift
+   * @param noteName - e.g., "G4", "Gs3"
+   * @returns Mapping with sample name and playbackRate, or null if not found
+   */
+  mapNote(noteName: string): NoteMapping | null {
+    if (!this.grandPianoKeyboardMap) {
+      return null;
+    }
+    return this.grandPianoKeyboardMap[noteName] || null;
+  }
+
+  /**
+   * Check if keyboard map is loaded
+   */
+  hasKeyboardMap(): boolean {
+    return !!this.grandPianoKeyboardMap;
+  }
+
+  /**
+   * Get the entire keyboard map (for testing/inspection)
+   */
+  getKeyboardMap(): Record<string, NoteMapping> | null {
+    return this.grandPianoKeyboardMap;
+  }
+
+  /**
+   * Detect if the loaded harmony instrument uses sparse sampling (like Grand Piano)
+   * by checking if ANY octave has all 12 chromatic notes
+   * @param harmonyBuffers - Harmony buffer map to analyze
+   * @returns true if sparse (Grand Piano), false if full chromatic (Wurlitzer/Rhodes)
+   */
+  detectSparseSampling(
+    harmonyBuffers: Map<string, Map<string, AudioBuffer>>,
+  ): boolean {
+    if (harmonyBuffers.size === 0) return false;
+
+    // Get all available note names across all velocity layers
+    const allNoteNames = new Set<string>();
+    for (const layerMap of harmonyBuffers.values()) {
+      for (const noteName of layerMap.keys()) {
+        allNoteNames.add(noteName);
+      }
+    }
+
+    // Group notes by octave
+    const notesByOctave = new Map<number, Set<string>>();
+    for (const noteName of allNoteNames) {
+      const octave = parseInt(noteName.slice(-1), 10);
+      if (!notesByOctave.has(octave)) {
+        notesByOctave.set(octave, new Set());
+      }
+      const noteWithoutOctave = noteName.slice(0, -1);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      notesByOctave.get(octave)!.add(noteWithoutOctave);
+    }
+
+    // Check if ANY octave has all 12 chromatic notes
+    const allChromaticNotes = [
+      'C',
+      'Cs',
+      'D',
+      'Ds',
+      'E',
+      'F',
+      'Fs',
+      'G',
+      'Gs',
+      'A',
+      'As',
+      'B',
+    ];
+    for (const notesInOctave of notesByOctave.values()) {
+      if (allChromaticNotes.every((note) => notesInOctave.has(note))) {
+        return false; // Full chromatic (Wurlitzer/Rhodes)
+      }
+    }
+
+    return true; // Sparse (Grand Piano)
   }
 }

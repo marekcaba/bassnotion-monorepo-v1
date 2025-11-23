@@ -15,6 +15,7 @@ import {
   BrowserInfo,
   AudioEngineConfig,
 } from '../types/index.js';
+import { WindowRegistry } from '../../../services/WindowRegistry.js';
 
 const logger = createStructuredLogger('AudioContextManager');
 
@@ -29,6 +30,10 @@ const SUPPORTED_BROWSERS = {
 
 export class AudioContextManager {
   private static globalContext: AudioContext | null = null;
+  // BUG #4 FIX: Global event handlers for state change broadcasting
+  private static globalEventHandlers: Set<(state: AudioContextState) => void> =
+    new Set();
+
   private context: AudioContext | null = null;
   private keepAliveInterval: number | null = null;
   private stateChangeHandlers: Set<(state: AudioContextState) => void> =
@@ -70,10 +75,8 @@ export class AudioContextManager {
     // Store as global context
     AudioContextManager.globalContext = this.context;
 
-    // Also store on window for absolute persistence
-    if (typeof window !== 'undefined') {
-      (window as any).__persistentAudioContext = this.context;
-    }
+    // ✅ BUG #8 FIX: Store on window using WindowRegistry
+    WindowRegistry.setAudioContext(this.context);
 
     // Setup state change handling
     this.setupStateChangeHandling();
@@ -237,6 +240,44 @@ export class AudioContextManager {
   }
 
   /**
+   * Subscribe to global AudioContext state changes
+   * BUG #4 FIX: Allows any component to listen for state changes without having an AudioContextManager instance
+   * @param handler Callback function to invoke when state changes
+   * @returns Unsubscribe function
+   */
+  static onGlobalStateChange(
+    handler: (state: AudioContextState) => void,
+  ): () => void {
+    AudioContextManager.globalEventHandlers.add(handler);
+
+    logger.debug('Added global state change handler', {
+      totalHandlers: AudioContextManager.globalEventHandlers.size,
+    });
+
+    // Return unsubscribe function
+    return () => {
+      AudioContextManager.globalEventHandlers.delete(handler);
+      logger.debug('Removed global state change handler', {
+        totalHandlers: AudioContextManager.globalEventHandlers.size,
+      });
+    };
+  }
+
+  /**
+   * Notify all global listeners of state change
+   * BUG #4 FIX: Broadcasts state changes to all subscribers
+   */
+  private notifyGlobalStateChange(state: AudioContextState): void {
+    AudioContextManager.globalEventHandlers.forEach((handler) => {
+      try {
+        handler(state);
+      } catch (error) {
+        logger.error('Error in global state change handler', error as Error);
+      }
+    });
+  }
+
+  /**
    * Setup context state change handling
    */
   private setupStateChangeHandling(): void {
@@ -248,8 +289,11 @@ export class AudioContextManager {
         const state = this.context?.state as AudioContextState;
         logger.info('AudioContext state changed', { state });
 
-        // Notify listeners
+        // Notify instance-level listeners
         this.stateChangeHandlers.forEach((handler) => handler(state));
+
+        // BUG #4 FIX: Notify global listeners
+        this.notifyGlobalStateChange(state);
 
         // Attempt recovery if suspended
         if (state === 'suspended') {

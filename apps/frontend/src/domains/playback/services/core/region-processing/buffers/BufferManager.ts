@@ -1,19 +1,31 @@
 /**
- * BufferRegistry - Centralized buffer management for all instrument types
+ * BufferManager - Centralized buffer management and scheduler synchronization
  *
- * Consolidates all setXxxBuffers() methods into a single registry that:
- * - Manages audio buffers for metronome, drums, voice cues, harmony, and bass
- * - Handles buffer organization (flat maps → structured maps)
- * - Loads Grand Piano keyboard mapping when needed
- * - Provides buffer access to schedulers
- * - Validates buffer state before scheduling
+ * Phase 2.3: Merged BufferRegistry + BufferCoordinator
+ *
+ * Responsibilities:
+ * - Manage audio buffers for all instruments (metronome, drums, voice cues, harmony, bass)
+ * - Handle buffer organization (flat maps → structured maps)
+ * - Coordinate buffer loading across all instruments
+ * - Sync buffers to specialized schedulers
+ * - Manage AudioContext propagation
+ * - Load Grand Piano keyboard mapping when needed
+ * - Provide buffer access to schedulers
+ * - Validate buffer state before scheduling
+ *
+ * This module acts as the central hub for all buffer-related operations,
+ * ensuring consistent state across schedulers and RegionProcessor.
  */
 
 import { getLogger } from '@/utils/logger.js';
 import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache.js';
 import * as grandPianoKeyboardMap from '@/domains/playback/data/instruments/piano/grandpiano-keyboard-map.json';
 
-const logger = getLogger('BufferRegistry');
+const logger = getLogger('BufferManager');
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
 
 export interface NoteMapping {
   sample: string;
@@ -21,7 +33,60 @@ export interface NoteMapping {
   semitones: number;
 }
 
-export class BufferRegistry {
+// Scheduler interfaces
+interface AudioContextAware {
+  setAudioContext(context: AudioContext): void;
+}
+
+// SimpleInstrumentScheduler interface (Phase 3: unified scheduler interface)
+interface SimpleInstrumentScheduler extends AudioContextAware {
+  setBuffers(buffers: Record<string, AudioBuffer>, destination: AudioNode): void;
+}
+
+interface HarmonyScheduler extends AudioContextAware {
+  setBuffers(
+    samples: Map<string, AudioBuffer>,
+    destination: AudioNode,
+    perNoteVelocityRanges?: Record<string, any[]>,
+    instrument?: string,
+  ): Promise<void>;
+}
+
+interface VelocityLayerSelector {
+  setInstrument(instrument: string): void;
+  setVelocityRanges(ranges: Record<string, any[]>): void;
+  setHarmonyBuffers(buffers: Map<string, Map<string, AudioBuffer>>): void;
+}
+
+interface TimingMetricsCollector {
+  setSampleRate(rate: number): void;
+}
+
+interface SustainPedalManager {
+  setAudioContext(context: AudioContext): void;
+}
+
+interface EventRouter {
+  initialize(
+    context: AudioContext,
+    sampleRate: number,
+    eventBus: any,
+    metronomeScheduler: MetronomeScheduler,
+    drumScheduler: DrumScheduler,
+    harmonyScheduler: HarmonyScheduler,
+    bassScheduler: BassScheduler,
+    voiceCueScheduler: VoiceCueScheduler,
+    trackTimingAccuracy: (frame: number, time: number) => void,
+  ): void;
+}
+
+// ============================================================================
+// BUFFER MANAGER CLASS
+// ============================================================================
+
+export class BufferManager {
+  private instanceId: string;
+
   // Metronome buffers
   private metronomeBuffers: {
     accent: AudioBuffer | null;
@@ -57,22 +122,98 @@ export class BufferRegistry {
   // Audio destination node (shared across all instruments)
   private audioDestination: AudioNode | null = null;
 
-  private instanceId: string;
-
   constructor(instanceId: string) {
     this.instanceId = instanceId;
   }
 
+  // ============================================================================
+  // AUDIOCONTEXT MANAGEMENT (from BufferCoordinator)
+  // ============================================================================
+
   /**
-   * Set metronome buffers (accent and click samples)
+   * Set AudioContext and propagate to all modules
+   *
+   * CRITICAL: Must be called before start() to enable proper time domain conversion
+   *
+   * @param context - AudioContext for sample-accurate timing
+   * @param schedulers - All schedulers that need AudioContext
+   * @param eventRouter - Event router to initialize
+   * @param eventBus - Event bus for routing
+   * @param trackTimingAccuracy - Timing accuracy callback
+   * @param timingMetricsCollector - Timing metrics collector
+   * @param sustainPedalManager - Sustain pedal manager
+   *
+   * @returns Sample rate from context
+   */
+  setAudioContext(
+    context: AudioContext,
+    schedulers: {
+      voiceCue: SimpleInstrumentScheduler;
+      metronome: SimpleInstrumentScheduler;
+      drum: SimpleInstrumentScheduler;
+      bass: SimpleInstrumentScheduler;
+    },
+    eventRouter: EventRouter,
+    eventBus: any,
+    harmonyScheduler: HarmonyScheduler,
+    trackTimingAccuracy: (frame: number, time: number) => void,
+    timingMetricsCollector: TimingMetricsCollector,
+    sustainPedalManager: SustainPedalManager,
+  ): number {
+    const sampleRate = context.sampleRate;
+
+    // Sync sample rate to timing metrics collector
+    timingMetricsCollector.setSampleRate(sampleRate);
+
+    // Sync audio context to sustain pedal manager
+    sustainPedalManager.setAudioContext(context);
+
+    // Sync audio context to all schedulers
+    schedulers.voiceCue.setAudioContext(context);
+    schedulers.metronome.setAudioContext(context);
+    schedulers.drum.setAudioContext(context);
+    schedulers.bass.setAudioContext(context);
+
+    // Initialize event router with all dependencies
+    eventRouter.initialize(
+      context,
+      sampleRate,
+      eventBus,
+      schedulers.metronome,
+      schedulers.drum,
+      harmonyScheduler,
+      schedulers.bass,
+      schedulers.voiceCue,
+      trackTimingAccuracy,
+    );
+
+    logger.info('🔧 AudioContext set for BufferManager', {
+      instanceId: this.instanceId,
+      sampleRate,
+    });
+
+    return sampleRate;
+  }
+
+  // ============================================================================
+  // BUFFER SETTERS (from BufferRegistry + BufferCoordinator sync logic)
+  // ============================================================================
+
+  /**
+   * Set metronome buffers and sync to scheduler
    */
   setMetronomeBuffers(
     accent: AudioBuffer,
     click: AudioBuffer,
     destination: AudioNode,
+    metronomeScheduler: SimpleInstrumentScheduler,
   ): void {
     this.metronomeBuffers = { accent, click };
     this.audioDestination = destination;
+
+    // Sync to scheduler (Phase 3: using unified interface)
+    metronomeScheduler.setBuffers({ accent, click }, destination);
+
     logger.info('✅ Metronome buffers injected', {
       hasAccent: !!accent,
       hasClick: !!click,
@@ -82,16 +223,21 @@ export class BufferRegistry {
   }
 
   /**
-   * Set drum buffers (kick, snare, hihat samples)
+   * Set drum buffers and sync to scheduler
    */
   setDrumBuffers(
     kick: AudioBuffer,
     snare: AudioBuffer,
     hihat: AudioBuffer,
     destination: AudioNode,
+    drumScheduler: SimpleInstrumentScheduler,
   ): void {
     this.drumBuffers = { kick, snare, hihat };
     this.audioDestination = destination;
+
+    // Sync to scheduler (Phase 3: using unified interface)
+    drumScheduler.setBuffers({ kick, snare, hihat }, destination);
+
     logger.info('✅ Drum buffers injected', {
       hasKick: !!kick,
       hasSnare: !!snare,
@@ -102,14 +248,20 @@ export class BufferRegistry {
   }
 
   /**
-   * Set voice cue buffers (count-in samples)
+   * Set voice cue buffers and sync to scheduler
    */
   setVoiceCueBuffers(
     samples: Map<string, AudioBuffer>,
     destination: AudioNode,
+    voiceCueScheduler: SimpleInstrumentScheduler,
   ): void {
     this.voiceCueBuffers = samples;
     this.audioDestination = destination;
+
+    // Sync to scheduler (Phase 3: using unified interface - convert Map to Record)
+    const buffersRecord = Object.fromEntries(samples);
+    voiceCueScheduler.setBuffers(buffersRecord, destination);
+
     logger.info('✅ Voice cue buffers injected', {
       sampleCount: samples.size,
       cues: Array.from(samples.keys()),
@@ -119,19 +271,27 @@ export class BufferRegistry {
   }
 
   /**
-   * Set harmony buffers (piano/Rhodes/Wurlitzer samples)
+   * Set harmony buffers and sync to scheduler + velocity layer selector
    * Organizes flat map (v10-D4 → buffer) into nested map (layer → note → buffer)
+   * Handles Grand Piano keyboard map loading if needed
    */
   async setHarmonyBuffers(
     samples: Map<string, AudioBuffer>,
     destination: AudioNode,
-    perNoteVelocityRanges?: Record<string, any[]>,
-    instrument?: string,
-  ): Promise<void> {
+    perNoteVelocityRanges: Record<string, any[]> | undefined,
+    instrument: string | undefined,
+    harmonyScheduler: HarmonyScheduler,
+    velocityLayerSelector: VelocityLayerSelector,
+  ): Promise<{
+    harmonyBuffers: Map<string, Map<string, AudioBuffer>>;
+    harmonyVelocityRanges: Record<string, any[]> | undefined;
+    currentHarmonyInstrument: string | null;
+    grandPianoKeyboardMap: Record<string, any> | null;
+  }> {
     // CRITICAL FIX: Clear old buffers to prevent multiple instruments playing together
     if (this.harmonyBuffers && this.harmonyBuffers.size > 0) {
       // eslint-disable-next-line no-console, no-restricted-syntax
-      console.log('[BUFFER-REGISTRY] 🗑️ Clearing old harmony buffers', {
+      console.log('[BUFFER-MANAGER] 🗑️ Clearing old harmony buffers', {
         oldBufferCount: this.harmonyBuffers.size,
         oldInstrument: this.currentHarmonyInstrument,
         newInstrument: instrument,
@@ -222,16 +382,43 @@ export class BufferRegistry {
           : 0,
       instanceId: this.instanceId,
     });
+
+    // Sync to harmony scheduler (will load keyboard map internally if grandpiano)
+    await harmonyScheduler.setBuffers(
+      samples,
+      destination,
+      perNoteVelocityRanges,
+      instrument,
+    );
+
+    // Sync to velocity layer selector
+    velocityLayerSelector.setInstrument(
+      instrument || this.currentHarmonyInstrument || 'wurlitzer',
+    );
+    if (perNoteVelocityRanges) {
+      velocityLayerSelector.setVelocityRanges(perNoteVelocityRanges);
+    }
+    velocityLayerSelector.setHarmonyBuffers(this.harmonyBuffers);
+
+    return {
+      harmonyBuffers: this.harmonyBuffers,
+      harmonyVelocityRanges: this.harmonyVelocityRanges,
+      currentHarmonyInstrument: this.currentHarmonyInstrument,
+      grandPianoKeyboardMap: this.grandPianoKeyboardMap,
+    };
   }
 
   /**
-   * Set bass buffers (normal, slap, mute, etc.)
+   * Set bass buffers and sync to scheduler
    * Organizes flat map (normal-D2 → buffer) into nested map (articulation → note → buffer)
    */
   setBassBuffers(
     samples: Map<string, AudioBuffer>,
     destination: AudioNode,
-  ): void {
+    bassScheduler: SimpleInstrumentScheduler,
+  ): {
+    bassBuffers: Map<string, Map<string, AudioBuffer>>;
+  } {
     this.bassBuffers.clear();
 
     samples.forEach((buffer, key) => {
@@ -264,7 +451,19 @@ export class BufferRegistry {
       hasDestination: !!destination,
       instanceId: this.instanceId,
     });
+
+    // Sync to scheduler (Phase 3: using unified interface - convert Map to Record)
+    const buffersRecord = Object.fromEntries(samples);
+    bassScheduler.setBuffers(buffersRecord, destination);
+
+    return {
+      bassBuffers: this.bassBuffers,
+    };
   }
+
+  // ============================================================================
+  // GRAND PIANO KEYBOARD MAP (from BufferRegistry)
+  // ============================================================================
 
   /**
    * Load Grand Piano keyboard note map
@@ -275,7 +474,7 @@ export class BufferRegistry {
     try {
       // eslint-disable-next-line no-console, no-restricted-syntax
       console.log(
-        '🗺️ [KEYBOARD-MAP-LOAD] BufferRegistry attempting to load keyboard map...',
+        '🗺️ [KEYBOARD-MAP-LOAD] BufferManager attempting to load keyboard map...',
       );
 
       // Try cache first (populated by HarmonyPreloadStrategy during preload)
@@ -335,6 +534,21 @@ export class BufferRegistry {
   }
 
   /**
+   * Ensure Grand Piano keyboard map is loaded
+   * (Public wrapper called by RegionProcessor when instrument type is detected)
+   */
+  async ensureGrandPianoKeyboardMap(): Promise<Record<string, any> | null> {
+    if (!this.grandPianoKeyboardMap) {
+      await this.loadGrandPianoKeyboardMap();
+    }
+    return this.grandPianoKeyboardMap;
+  }
+
+  // ============================================================================
+  // UTILITY METHODS (from BufferRegistry)
+  // ============================================================================
+
+  /**
    * Detect if the loaded harmony instrument uses sparse sampling (like Grand Piano)
    * by checking if ANY octave has all 12 chromatic notes
    * @returns true if sparse (Grand Piano), false if full chromatic (Wurlitzer/Rhodes)
@@ -386,7 +600,9 @@ export class BufferRegistry {
     return true; // Sparse (Grand Piano)
   }
 
-  // === GETTER METHODS ===
+  // ============================================================================
+  // GETTER METHODS (from BufferRegistry)
+  // ============================================================================
 
   getMetronomeBuffers() {
     return this.metronomeBuffers;
@@ -422,16 +638,5 @@ export class BufferRegistry {
 
   getAudioDestination() {
     return this.audioDestination;
-  }
-
-  /**
-   * Public wrapper for loading Grand Piano keyboard map
-   * Called by RegionProcessor when instrument type is detected
-   * (BufferRegistry already loads this automatically in setHarmonyBuffers for grandpiano)
-   */
-  async ensureGrandPianoKeyboardMap(): Promise<void> {
-    if (!this.grandPianoKeyboardMap) {
-      await this.loadGrandPianoKeyboardMap();
-    }
   }
 }

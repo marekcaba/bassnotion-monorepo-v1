@@ -683,6 +683,61 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       return;
     }
 
+    // CRITICAL: Wait for samples to be ready before starting playback
+    // This prevents Bug #1 (samples loading when play button clicked too fast)
+    if (typeof window !== 'undefined' && !(window as any).__samplesReady) {
+      logger.warn('⚠️ Samples not ready yet, waiting...');
+
+      // Show toast notification
+      const { toast } = await import('@/shared/hooks/use-toast');
+      toast({
+        title: 'Loading Sounds...',
+        description: 'Please wait while we prepare the audio samples.',
+      });
+
+      try {
+        // Wait for samplesReady event with 10 second timeout
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Timeout waiting for samples to load'));
+          }, 10000);
+
+          const handleSamplesReady = () => {
+            clearTimeout(timeout);
+            window.removeEventListener('samplesReady', handleSamplesReady);
+            resolve();
+          };
+
+          // Check if samples became ready while we were setting up listener
+          if ((window as any).__samplesReady) {
+            clearTimeout(timeout);
+            resolve();
+            return;
+          }
+
+          window.addEventListener('samplesReady', handleSamplesReady);
+        });
+
+        logger.info('✅ Samples ready, continuing with playback');
+
+        // Show success toast
+        toast({
+          title: 'Ready!',
+          description: 'Audio samples loaded successfully.',
+        });
+      } catch (error) {
+        logger.error('❌ Failed to wait for samples:', error);
+        toast({
+          title: 'Loading Error',
+          description: 'Failed to load audio samples. Please refresh the page.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      logger.debug('✅ Samples already ready, proceeding with playback');
+    }
+
     logger.debug('🎵 Transport state:', {
       isPlaying: transport.isPlaying,
       isPaused: transport.isPaused,

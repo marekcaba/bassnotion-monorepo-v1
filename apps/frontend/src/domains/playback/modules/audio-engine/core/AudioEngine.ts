@@ -570,10 +570,12 @@ export class AudioEngine {
 
   /**
    * Handle context state changes
+   * BUG #4 NOTE: Global broadcasting handled by AudioContextManager.setupStateChangeHandling()
    */
   private handleContextStateChange(state: AudioContextState): void {
     logger.info('AudioContext state changed', { state });
 
+    // Emit to AudioEngine event listeners
     this.emit({
       type: 'state-changed',
       data: { state, timestamp: Date.now() },

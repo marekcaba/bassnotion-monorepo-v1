@@ -140,8 +140,9 @@ export class DrumPreloadStrategy implements PreloadStrategy {
         throw new Error('NEXT_PUBLIC_SUPABASE_URL not configured');
       }
 
-      // Create offline context for decoding
-      const offlineContext = new OfflineAudioContext(2, 44100, 44100);
+      // ✅ BUG #2 FIX: Removed OfflineAudioContext creation
+      // We now cache raw ArrayBuffer data instead of decoding with OfflineContext
+      // The real AudioContext will handle decoding during playback
 
       // Load only the 3 essential drum samples (kick, snare, hihat)
       const essentialDrums = [
@@ -166,11 +167,13 @@ export class DrumPreloadStrategy implements PreloadStrategy {
         }
 
         const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await offlineContext.decodeAudioData(arrayBuffer);
+
+        // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
+        // The real AudioContext will decode these when needed during playback
 
         // Cache with multiple keys for compatibility
-        GlobalSampleCache.getInstance().cacheBuffer(`drum-${drum.key}`, audioBuffer);
-        GlobalSampleCache.getInstance().cacheBuffer(`drum-pad-${drum.pad}`, audioBuffer);
+        GlobalSampleCache.getInstance().cacheBuffer(`drum-${drum.key}`, arrayBuffer);
+        GlobalSampleCache.getInstance().cacheBuffer(`drum-pad-${drum.pad}`, arrayBuffer);
 
         logger.info(`✅ ${drum.key} cached`);
       }
@@ -179,7 +182,7 @@ export class DrumPreloadStrategy implements PreloadStrategy {
       this.total = essentialDrums.length;
 
       const duration = performance.now() - startTime;
-      logger.info('✅ Essential drum samples preloaded as AudioBuffers', {
+      logger.info('✅ Essential drum samples preloaded as raw ArrayBuffers (BUG #2 FIX)', {
         duration: `${duration.toFixed(2)}ms`,
         samplesLoaded: essentialDrums.length,
         averagePerSample: `${(duration / essentialDrums.length).toFixed(2)}ms`,

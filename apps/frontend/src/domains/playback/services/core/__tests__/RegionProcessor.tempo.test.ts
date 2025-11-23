@@ -338,13 +338,14 @@ describe('RegionProcessor - Tempo Change', () => {
       };
       (regionProcessor as any).scheduledAudioSources.set(source, 'one-shot');
 
-      // Add mock scheduled events
-      (regionProcessor as any).scheduledEvents.add('event1');
+      // Add mock scheduled events (scheduledEvents is a Map<string, Set<string>>)
+      (regionProcessor as any).scheduledEvents.set('track-1', new Set(['event1']));
       (regionProcessor as any).scheduledIds.add(123);
 
-      // Mock scheduleAllRegions
+      // Mock scheduleAllRegions at the service level (Phase 8: service delegates)
+      const schedulingService = (regionProcessor as any).schedulingOrchestrationService;
       const scheduleAllRegionsSpy = vi.spyOn(
-        regionProcessor as any,
+        schedulingService,
         'scheduleAllRegions'
       ).mockImplementation(() => {});
 
@@ -403,8 +404,10 @@ describe('RegionProcessor - Tempo Change', () => {
       (regionProcessor as any).audioContext = null;
       (Tone.Transport as any).seconds = 4.0;
 
+      // Mock at service level (Phase 8)
+      const schedulingService = (regionProcessor as any).schedulingOrchestrationService;
       const scheduleAllRegionsSpy = vi.spyOn(
-        regionProcessor as any,
+        schedulingService,
         'scheduleAllRegions'
       ).mockImplementation(() => {});
 

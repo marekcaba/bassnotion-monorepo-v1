@@ -37,6 +37,10 @@ export type {
   UseTrackMigrationReturn,
 } from './useTrackMigration.js';
 
+// BUG #4 FIX: Event-driven AudioContext state hook
+export { useAudioContext } from './useAudioContext.js';
+export type { UseAudioContextReturn } from './useAudioContext.js';
+
 // Legacy hooks (will be deprecated)
 export { useAssetLoading } from './useAssetLoading.js';
 export { usePlaybackState } from './usePlaybackState.js';

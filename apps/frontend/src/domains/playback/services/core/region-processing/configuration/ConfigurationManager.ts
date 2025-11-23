@@ -1,20 +1,26 @@
 /**
- * CountdownManager - Manages countdown pre-roll functionality
+ * ConfigurationManager - Manages countdown configuration and module synchronization
  *
- * Handles countdown configuration and region generation:
- * - Enables/disables countdown with time signature
- * - Calculates countdown offset (one measure)
- * - Generates metronome countdown regions (accent + clicks)
- * - Generates voice cue countdown regions ("one", "two", "three", "four")
- * - Injects countdown regions at beginning of tracks
+ * Phase 2.4: Merged CountdownManager + ConfigurationCoordinator
+ *
+ * Responsibilities:
+ * - Enable/disable countdown with time signature
+ * - Calculate countdown offset (one measure)
+ * - Generate metronome countdown regions (accent + clicks)
+ * - Generate voice cue countdown regions ("one", "two", "three", "four")
+ * - Inject countdown regions at beginning of tracks
+ * - Synchronize countdown state across all modules (ScheduleCache, SustainPedalManager)
+ * - Coordinate configuration changes consistently
  */
 
 import { getLogger } from '@/utils/logger.js';
 import type { Region, PatternEvent } from '../types/region.types.js';
+import type { ScheduleCache } from '../cache/ScheduleCache.js';
+import type { SustainPedalManager } from '../sustain/SustainPedalManager.js';
 
-const logger = getLogger('CountdownManager');
+const logger = getLogger('ConfigurationManager');
 
-export class CountdownManager {
+export class ConfigurationManager {
   private countdownEnabled = true;
   private countdownOffsetBeats = 0;
   private instanceId: string;
@@ -23,31 +29,55 @@ export class CountdownManager {
     this.instanceId = instanceId;
   }
 
+  // ============================================================================
+  // COUNTDOWN CONFIGURATION (from CountdownManager + ConfigurationCoordinator sync)
+  // ============================================================================
+
   /**
-   * Enable countdown pre-roll with time signature
+   * Enable countdown pre-roll with time signature and sync to all modules
    * All events will be offset by one measure (numerator beats)
    */
-  enableCountdown(timeSignature: {
-    numerator: number;
-    denominator: number;
-  }): void {
+  enableCountdown(
+    timeSignature: { numerator: number; denominator: number },
+    scheduleCache: ScheduleCache,
+    sustainPedalManager: SustainPedalManager,
+  ): number {
     this.countdownEnabled = true;
     this.countdownOffsetBeats = timeSignature.numerator;
-    logger.info('🎵 Countdown enabled', {
+
+    // Sync countdown offset to ScheduleCache for cache key generation
+    scheduleCache.setCountdownOffsetBeats(this.countdownOffsetBeats);
+
+    // Sync countdown configuration to SustainPedalManager
+    sustainPedalManager.setCountdownConfig(this.countdownOffsetBeats, true);
+
+    logger.info('✅ Countdown enabled and synced across modules', {
+      instanceId: this.instanceId,
       timeSignature,
       offsetBeats: this.countdownOffsetBeats,
       offsetMeasures: 1,
-      instanceId: this.instanceId,
     });
+
+    return this.countdownOffsetBeats;
   }
 
   /**
-   * Disable countdown pre-roll (all events start at beat 0)
+   * Disable countdown pre-roll and sync to all modules (all events start at beat 0)
    */
-  disableCountdown(): void {
+  disableCountdown(
+    scheduleCache: ScheduleCache,
+    sustainPedalManager: SustainPedalManager,
+  ): void {
     this.countdownEnabled = false;
     this.countdownOffsetBeats = 0;
-    logger.info('🎵 Countdown disabled', {
+
+    // Sync countdown offset to ScheduleCache
+    scheduleCache.setCountdownOffsetBeats(0);
+
+    // Sync countdown configuration to SustainPedalManager
+    sustainPedalManager.setCountdownConfig(0, false);
+
+    logger.info('✅ Countdown disabled and synced across modules', {
       instanceId: this.instanceId,
     });
   }
@@ -65,6 +95,10 @@ export class CountdownManager {
   isCountdownEnabled(): boolean {
     return this.countdownEnabled;
   }
+
+  // ============================================================================
+  // COUNTDOWN REGION GENERATION (from CountdownManager)
+  // ============================================================================
 
   /**
    * Add countdown click events at beats 0, 1, 2, 3 (before offset)

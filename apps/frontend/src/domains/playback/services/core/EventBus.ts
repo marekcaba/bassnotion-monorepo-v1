@@ -11,6 +11,7 @@
 import { Service } from './ServiceRegistry.js';
 import { CircuitBreaker } from '../errors/CircuitBreaker.js';
 import { getLogger } from '@/utils/logger.js';
+import { WindowRegistry } from '../WindowRegistry.js';
 
 const logger = getLogger('EventBus');
 
@@ -122,10 +123,8 @@ export class EventBus implements Service {
     if (!EventBus._globalInstance) {
       logger.info('🎵 EventBus: Creating global singleton instance');
       EventBus._globalInstance = new EventBus(config);
-      // Store it globally for easy access
-      if (typeof window !== 'undefined') {
-        (window as any).__globalEventBus = EventBus._globalInstance;
-      }
+      // ✅ BUG #8 FIX: Store globally using WindowRegistry
+      WindowRegistry.setEventBus(EventBus._globalInstance);
     } else {
       logger.info(
         `🎵 EventBus: Returning existing global instance (ID: ${EventBus._globalInstance._instanceId})`,

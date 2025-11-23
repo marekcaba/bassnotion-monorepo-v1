@@ -35,8 +35,10 @@ import {
   isNewAudioArchitectureEnabled,
 } from '../config/featureFlags.js';
 import { ToneProvider } from './ToneProvider.js';
-import { audioContextManager } from '../utils/contextManager.js';
+import { AudioContextManager } from '../modules/audio-engine/core/AudioContextManager.js';
+import { GlobalSampleCache } from '../modules/storage/cache/GlobalSampleCache.js';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { WindowRegistry } from '../services/WindowRegistry.js';
 
 interface AudioContextValue {
   /** Core services instance */
@@ -53,6 +55,9 @@ interface AudioContextValue {
   isInitialized: boolean;
   error: Error | null;
 
+  /** ✅ BUG #1 FIX: Flag to indicate CoreServices is ready to use */
+  coreServicesReady: boolean;
+
   /** Get Tone.js instance (compatibility layer) */
   getTone: () => any;
 }
@@ -66,6 +71,7 @@ const AudioContext = createContext<AudioContextValue>({
   serviceRegistry: null,
   isInitialized: false,
   error: null,
+  coreServicesReady: false,
   getTone: () => null,
 });
 
@@ -91,6 +97,10 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
   const initRef = useRef(false);
   const [_servicesReady, setServicesReady] = useState(false);
   const cleanupRef = useRef(false); // Prevent StrictMode double cleanup
+  // ✅ BUG #1 FIX: Track when CoreServices is ready to prevent race conditions
+  const [coreServicesReady, setCoreServicesReady] = useState(false);
+  // ✅ BUG #7 FIX: Store unsubscribe function for audio:initialized event
+  const unsubscribeAudioInitRef = useRef<(() => void) | null>(null);
 
   const shouldUseLegacyProvider = !isNewAudioArchitectureEnabled();
 
@@ -124,8 +134,10 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
           setCoreServices(services);
           setIsInitialized(true);
           setServicesReady(true);
+          // ✅ BUG #1 FIX: Mark CoreServices as ready
+          setCoreServicesReady(true);
           logger.info(
-            'AudioProvider: Context state updated with existing services - isInitialized: true',
+            'AudioProvider: Context state updated with existing services - isInitialized: true, coreServicesReady: true',
           );
 
           logMigrationEvent('AudioProvider reusing existing global instance');
@@ -173,15 +185,15 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
         // Set global service registry and core services for hooks
         const registry = services.getServiceRegistry();
 
-        // Set on window BEFORE any other operations
-        (window as any).__serviceRegistry = registry;
-        (window as any).__globalCoreServices = services; // New global reference
-        (window as any).__coreServices = services; // Legacy global reference for backward compatibility
+        // ✅ BUG #8 FIX: Use WindowRegistry instead of direct window assignments
+        WindowRegistry.setServiceRegistry(registry);
+        WindowRegistry.setCoreServices(services);
 
-        // Update state atomically to prevent race conditions
+        // ✅ BUG #1 FIX: Update state atomically to prevent race conditions
         setCoreServices(services);
         setIsInitialized(true);
         setServicesReady(true);
+        setCoreServicesReady(true);
 
         // Dispatch a custom event to notify waiting hooks
         window.dispatchEvent(new Event('audioServicesReady'));
@@ -206,8 +218,19 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
           );
           AudioContextCompatibility.cleanupIncompatibleBuffers();
 
-          // Start monitoring for context changes
-          audioContextManager.startMonitoring();
+          // BUG #4 FIX: Subscribe to AudioContext state changes (event-driven, not polling!)
+          const unsubscribe = AudioContextManager.onGlobalStateChange((state) => {
+            logger.info('AudioContext state changed (event-driven)', { state });
+
+            // Clear incompatible buffers if context changes
+            if (state === 'closed') {
+              logger.warn('AudioContext closed - clearing cached buffers');
+              GlobalSampleCache.clearAllBuffers();
+            }
+          });
+
+          // ✅ BUG #8 FIX: Store unsubscribe function using WindowRegistry
+          WindowRegistry.setAudioContextUnsubscribe(unsubscribe);
 
           try {
             // Now fully initialize all services (including UnifiedTransport)
@@ -226,8 +249,9 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
         };
 
         // Listen for audio initialization
+        // ✅ BUG #7 FIX: Store unsubscribe function for cleanup
         const eventBus = services.getEventBus();
-        eventBus.on('audio:initialized', handleAudioInitialized);
+        unsubscribeAudioInitRef.current = eventBus.on('audio:initialized', handleAudioInitialized);
 
         logger.info(
           'AudioProvider: Context state updated - isInitialized: true',
@@ -274,6 +298,21 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
         return;
       }
 
+      // ✅ BUG #4 & #8 FIX: Unsubscribe from AudioContext state changes
+      const unsubscribe = WindowRegistry.getAudioContextUnsubscribe();
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+        logger.info('AudioProvider: Unsubscribed from AudioContext state changes');
+        WindowRegistry.setAudioContextUnsubscribe(undefined);
+      }
+
+      // ✅ BUG #7 FIX: Unsubscribe from audio:initialized event
+      if (unsubscribeAudioInitRef.current) {
+        unsubscribeAudioInitRef.current();
+        logger.info('AudioProvider: Unsubscribed from audio:initialized event');
+        unsubscribeAudioInitRef.current = null;
+      }
+
       if (services) {
         logMigrationEvent('Cleaning up AudioProvider');
         cleanupRef.current = true;
@@ -311,6 +350,7 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
     serviceRegistry: coreServices?.getServiceRegistry() || null,
     isInitialized,
     error,
+    coreServicesReady, // ✅ BUG #1 FIX: Include ready flag
     getTone: () => coreServices?.getAudioEngine().getTone() || null,
   };
 

@@ -19,9 +19,10 @@ const logger = createStructuredLogger('GlobalSampleCache');
 export interface CachedSample {
   url: string;
   buffer?: AudioBuffer;
+  rawBuffer?: ArrayBuffer; // Raw audio data (not yet decoded)
   sampler?: Sampler;
   loadedAt: number;
-  type: 'buffer' | 'sampler' | 'url';
+  type: 'buffer' | 'sampler' | 'url' | 'raw';
   isContextCompatible?: boolean; // If true, buffer is from current AudioContext and should survive cleanup
 }
 
@@ -121,81 +122,133 @@ export class GlobalSampleCacheImpl {
   }
 
   /**
-   * Cache an audio buffer
+   * Cache an audio buffer (AudioBuffer or raw ArrayBuffer)
    * @param path - Cache key (e.g., "grandpiano-v4-A3")
-   * @param buffer - AudioBuffer to cache
+   * @param buffer - AudioBuffer (decoded) or ArrayBuffer (raw audio data)
    * @param options - Optional metadata (e.g., { isContextCompatible: true })
+   *
+   * BUG #2 FIX: This method now accepts both AudioBuffer and ArrayBuffer.
+   * - AudioBuffer: Must be from the CURRENT AudioContext (validate with isContextCompatible)
+   * - ArrayBuffer: Raw audio data that will be decoded by AudioEngine when needed
    */
-  cacheBuffer(path: string, buffer: AudioBuffer, options?: { isContextCompatible?: boolean }): void {
+  cacheBuffer(
+    path: string,
+    buffer: AudioBuffer | ArrayBuffer,
+    options?: { isContextCompatible?: boolean },
+  ): void {
     const existing = this.samples.get(path);
-    this.samples.set(path, {
-      url: existing?.url || path,
-      buffer,
-      loadedAt: Date.now(),
-      type: 'buffer',
-      isContextCompatible: options?.isContextCompatible,
-    });
 
-    // Also cache in new system for unified access
-    const metadata: Partial<AudioSampleMetadata> = {
-      path,
-      size: buffer.numberOfChannels * buffer.length * 4,
-      duration: buffer.duration,
-      sampleRate: buffer.sampleRate,
-      bitDepth: 32,
-      channels: buffer.numberOfChannels,
-      bitRate: Math.round(
-        (buffer.numberOfChannels * buffer.sampleRate * 32) / 1000,
-      ),
-      format: 'wav' as any,
-      tags: ['buffer', 'legacy'],
-    };
+    // Check if this is a raw ArrayBuffer or decoded AudioBuffer
+    if (buffer instanceof ArrayBuffer) {
+      // Raw audio data - cache for later decoding
+      this.samples.set(path, {
+        url: existing?.url || path,
+        rawBuffer: buffer,
+        loadedAt: Date.now(),
+        type: 'raw',
+      });
 
-    // Convert AudioBuffer to ArrayBuffer for new cache
-    const arrayBuffer = this.audioBufferToArrayBuffer(buffer);
-    this.sampleCache.set(path, arrayBuffer, metadata as AudioSampleMetadata);
+      // Also cache in new system
+      const metadata: Partial<AudioSampleMetadata> = {
+        path,
+        size: buffer.byteLength,
+        format: 'unknown' as any,
+        tags: ['raw', 'arraybuffer'],
+      };
 
-    // EVIDENCE: Log detailed buffer info
-    console.log(`🔊 CACHE BUFFER: ${path}`, {
-      isAudioBuffer: buffer instanceof AudioBuffer,
-      duration: buffer.duration,
-      sampleRate: buffer.sampleRate,
-      channels: buffer.numberOfChannels,
-      length: buffer.length,
-      memorySizeKB: Math.round((buffer.numberOfChannels * buffer.length * 4) / 1024),
-      type: typeof buffer,
-      constructor: buffer.constructor.name
-    });
+      this.sampleCache.set(path, buffer, metadata as AudioSampleMetadata);
 
-    logger.info(`🔊 Cached buffer: ${path}`);
+      logger.info(
+        `📦 Cached raw ArrayBuffer: ${path} (${Math.round(buffer.byteLength / 1024)}KB)`,
+      );
+    } else if (buffer instanceof AudioBuffer) {
+      // Decoded AudioBuffer - validate it's from the correct context
+      if (!options?.isContextCompatible) {
+        logger.warn(
+          `⚠️ BUG #2 WARNING: Caching AudioBuffer without isContextCompatible flag! ` +
+            `This buffer may be from OfflineAudioContext and will cause playback issues. ` +
+            `Path: ${path}`,
+        );
+      }
+
+      this.samples.set(path, {
+        url: existing?.url || path,
+        buffer,
+        loadedAt: Date.now(),
+        type: 'buffer',
+        isContextCompatible: options?.isContextCompatible,
+      });
+
+      // Also cache in new system for unified access
+      const metadata: Partial<AudioSampleMetadata> = {
+        path,
+        size: buffer.numberOfChannels * buffer.length * 4,
+        duration: buffer.duration,
+        sampleRate: buffer.sampleRate,
+        bitDepth: 32,
+        channels: buffer.numberOfChannels,
+        bitRate: Math.round(
+          (buffer.numberOfChannels * buffer.sampleRate * 32) / 1000,
+        ),
+        format: 'wav' as any,
+        tags: ['buffer', 'decoded'],
+      };
+
+      // Convert AudioBuffer to ArrayBuffer for new cache
+      const arrayBuffer = this.audioBufferToArrayBuffer(buffer);
+      this.sampleCache.set(path, arrayBuffer, metadata as AudioSampleMetadata);
+
+      logger.info(
+        `🔊 Cached AudioBuffer: ${path} (${buffer.duration.toFixed(2)}s, ${buffer.sampleRate}Hz)`,
+      );
+    } else {
+      throw new Error(
+        `Invalid buffer type for path ${path}: expected AudioBuffer or ArrayBuffer, got ${typeof buffer}`,
+      );
+    }
   }
 
   /**
-   * Get cached buffer
+   * Get cached buffer (decoded AudioBuffer only)
    */
   getCachedBuffer(path: string): AudioBuffer | undefined {
     const sample = this.samples.get(path);
     const buffer = sample?.buffer;
 
-    // DIAGNOSTIC: Log cache lookup details
     if (buffer) {
-      console.log(`[CACHE HIT] ${path}`, {
-        hasBuffer: !!buffer,
-        isContextCompatible: sample?.isContextCompatible,
-        bufferType: typeof buffer,
-        isAudioBuffer: buffer instanceof AudioBuffer
-      });
+      logger.info(`♻️ Cache HIT for AudioBuffer: ${path}`);
+
+      // BUG #2 WARNING: Check if buffer is context-compatible
+      if (!sample?.isContextCompatible) {
+        logger.warn(
+          `⚠️ BUG #2 WARNING: Returning AudioBuffer that may not be context-compatible! ` +
+            `This could cause "buffer from different context" errors. Path: ${path}`,
+        );
+      }
     } else {
-      console.warn(`[CACHE MISS] ${path}`, {
-        sampleExists: !!sample,
-        sampleType: sample?.type,
-        hasBuffer: !!sample?.buffer,
-        sampleKeys: sample ? Object.keys(sample) : 'N/A',
-        totalCachedSamples: this.samples.size,
-        first5Keys: Array.from(this.samples.keys()).slice(0, 5)
-      });
+      logger.info(`❌ Cache MISS for AudioBuffer: ${path}`);
     }
+
     return buffer;
+  }
+
+  /**
+   * Get cached raw ArrayBuffer (undecoded audio data)
+   * BUG #2 FIX: Use this to get raw audio data that can be decoded by AudioEngine
+   */
+  getCachedRawBuffer(path: string): ArrayBuffer | undefined {
+    const sample = this.samples.get(path);
+    const rawBuffer = sample?.rawBuffer;
+
+    if (rawBuffer) {
+      logger.info(
+        `♻️ Cache HIT for raw ArrayBuffer: ${path} (${Math.round(rawBuffer.byteLength / 1024)}KB)`,
+      );
+    } else {
+      logger.info(`❌ Cache MISS for raw ArrayBuffer: ${path}`);
+    }
+
+    return rawBuffer;
   }
 
   /**

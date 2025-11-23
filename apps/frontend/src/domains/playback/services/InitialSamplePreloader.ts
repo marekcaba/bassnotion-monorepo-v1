@@ -81,12 +81,19 @@ export class InitialSamplePreloader {
         this.registerMetronomeConfig(), // Register metronome instrument config
       ]);
 
-      // Also try to preload samples if AudioContext is available
-      const coreServices =
-        (window as any).__globalCoreServices || (window as any).__coreServices;
-      const audioEngine = coreServices?.getAudioEngine?.();
+      // CRITICAL: CoreServices is now GUARANTEED to exist
+      // ScrollTriggerLoader ensures CoreServices.preInitialize() runs first
+      const coreServices = (window as any).__globalCoreServices;
 
-      // Check if AudioEngine is ready WITHOUT calling getContext() which throws
+      if (!coreServices) {
+        // This should NEVER happen now, but adding defensive check
+        logger.error('❌ CRITICAL: CoreServices not found! This indicates a bug in initialization sequence.');
+        throw new Error('CoreServices must be initialized before loadEssentialSamples()');
+      }
+
+      const audioEngine = coreServices.getAudioEngine();
+
+      // Check if AudioEngine is ready (AudioContext may not be created yet - that requires user gesture)
       if (audioEngine?.isReady?.()) {
         try {
           const context = audioEngine.getContext();
@@ -182,6 +189,167 @@ export class InitialSamplePreloader {
       // Clean up after loading completes (success or failure)
       this.loadingPromises.delete(loadingKey);
     }
+  }
+
+  /**
+   * Load all samples for a tutorial
+   * Analyzes all exercises in tutorial and loads all required samples upfront
+   * This eliminates loading delays when switching between exercises
+   *
+   * @param exercises - Array of exercises in the tutorial
+   * @param tutorialId - Tutorial ID (for logging)
+   */
+  async loadTutorialSamples(exercises: any[], tutorialId?: string): Promise<void> {
+    logger.info('🎯 Tutorial-level sample loading started', {
+      tutorialId,
+      exerciseCount: exercises.length,
+    });
+
+    // Analyze all exercises to determine required samples
+    const requiredSamples = this.analyzeTutorialSamples(exercises);
+
+    logger.info('📊 Tutorial sample analysis complete', {
+      tutorialId,
+      uniqueInstruments: Object.keys(requiredSamples.harmony).length,
+      totalHarmonyNotes: Object.values(requiredSamples.harmony).reduce(
+        (sum: number, notes: any) => sum + notes.length,
+        0
+      ),
+      hasBass: requiredSamples.bass.length > 0,
+      hasDrums: requiredSamples.drums,
+    });
+
+    try {
+      // Load all samples in parallel
+      const loadingTasks = [];
+
+      // Load harmony samples for each instrument used in tutorial
+      for (const [instrument, notes] of Object.entries(requiredSamples.harmony)) {
+        if (notes.length > 0) {
+          loadingTasks.push(
+            this.loadHarmonyForInstrument(instrument, notes as string[])
+          );
+        }
+      }
+
+      // Load bass samples if any exercise uses bass
+      if (requiredSamples.bass.length > 0) {
+        loadingTasks.push(this.loadBassSamples(requiredSamples.bass));
+      }
+
+      // Load drums, metronome, voice cues (essential for all exercises)
+      loadingTasks.push(this.loadEssentialSamples());
+
+      // Wait for all samples to load
+      await Promise.all(loadingTasks);
+
+      logger.info('✅ Tutorial samples loaded successfully', {
+        tutorialId,
+        exerciseCount: exercises.length,
+      });
+
+      this.preloadComplete = true;
+    } catch (error) {
+      logger.error('❌ Failed to load tutorial samples:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Analyze all exercises in a tutorial to determine which samples are needed
+   * Returns a manifest of all unique samples required across all exercises
+   */
+  private analyzeTutorialSamples(exercises: any[]): {
+    harmony: Record<string, string[]>; // instrument -> unique notes
+    bass: string[]; // unique bass notes
+    drums: boolean; // always true
+  } {
+    const manifest: {
+      harmony: Record<string, Set<string>>;
+      bass: Set<string>;
+      drums: boolean;
+    } = {
+      harmony: {},
+      bass: new Set(),
+      drums: true,
+    };
+
+    // Analyze each exercise
+    for (const exercise of exercises) {
+      // Extract harmony notes
+      if (exercise.harmonyNotes && exercise.harmonyNotes.length > 0) {
+        const instrument = exercise.harmonyInstrument || 'grandpiano';
+
+        if (!manifest.harmony[instrument]) {
+          manifest.harmony[instrument] = new Set();
+        }
+
+        // Extract unique pitches from harmony notes
+        for (const note of exercise.harmonyNotes) {
+          if (note.pitch) {
+            manifest.harmony[instrument].add(note.pitch);
+          }
+        }
+      }
+
+      // Extract bass notes (if we add bass support later)
+      // For now, leaving this empty
+    }
+
+    // Convert Sets to Arrays for easier handling
+    const result: {
+      harmony: Record<string, string[]>;
+      bass: string[];
+      drums: boolean;
+    } = {
+      harmony: {},
+      bass: Array.from(manifest.bass),
+      drums: manifest.drums,
+    };
+
+    for (const [instrument, notes] of Object.entries(manifest.harmony)) {
+      result.harmony[instrument] = Array.from(notes);
+    }
+
+    return result;
+  }
+
+  /**
+   * Load harmony samples for a specific instrument
+   */
+  private async loadHarmonyForInstrument(
+    instrument: string,
+    notes: string[]
+  ): Promise<void> {
+    logger.info(`Loading harmony samples for ${instrument}`, {
+      noteCount: notes.length,
+      notes: notes.slice(0, 10), // Log first 10 notes
+    });
+
+    // Create a mock exercise with the required notes
+    // This allows us to reuse the existing HarmonyPreloadStrategy
+    const mockExercise = {
+      harmonyInstrument: instrument,
+      harmonyNotes: notes.map((pitch) => ({
+        pitch,
+        velocity: 80, // Use medium velocity to load middle layers
+        time: 0,
+        duration: 1,
+      })),
+    };
+
+    // Use existing loadFullSamples logic
+    await this.executeLoadFullSamples(mockExercise, instrument, `tutorial-${instrument}`);
+  }
+
+  /**
+   * Load bass samples (placeholder for future implementation)
+   */
+  private async loadBassSamples(notes: string[]): Promise<void> {
+    logger.info('Bass sample loading not yet implemented', {
+      noteCount: notes.length,
+    });
+    // TODO: Implement bass sample loading when BassPreloadStrategy is ready
   }
 
   /**
@@ -428,22 +596,25 @@ export class InitialSamplePreloader {
 
     try {
       // Step 1: Check if CoreServices are available
-      const coreServices =
-        (window as any).__globalCoreServices || (window as any).__coreServices;
+      // After Bug #1 fix, CoreServices MUST exist (ScrollTriggerLoader creates it first)
+      const coreServices = (window as any).__globalCoreServices;
+
       if (!coreServices) {
-        logger.info(
-          'CoreServices not ready yet, falling back to URL caching only',
+        const error = new Error(
+          'CRITICAL: CoreServices must be pre-initialized before loadEssentialSamples(). ' +
+          'This indicates Bug #1 (Race Condition) was not properly fixed. ' +
+          'ScrollTriggerLoader should create CoreServices before calling this method.'
         );
-        const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-        return this.loadEssentialHarmonySamples(offlineContext);
+        logger.error('❌ CoreServices not found:', error);
+        throw error;
       }
 
       // Step 2: Check if AudioEngine is ready
       const audioEngine = coreServices.getAudioEngine?.();
       if (!audioEngine || !audioEngine.isReady()) {
-        logger.info('AudioEngine not ready, falling back to URL caching only');
-        const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-        return this.loadEssentialHarmonySamples(offlineContext);
+        logger.warn('AudioEngine not ready yet, will retry after initialization');
+        // Return early - samples will load on-demand when needed
+        return;
       }
 
       // Step 3: Get AudioContext from AudioEngine - this is now persistent!
@@ -456,13 +627,13 @@ export class InitialSamplePreloader {
       });
 
       if (!context || context.state !== 'running') {
-        logger.info(
-          `AudioContext state: ${context?.state || 'null'}, falling back to URL caching`,
+        logger.warn(
+          `AudioContext state: ${context?.state || 'null'}, cannot load samples yet. ` +
+          `Samples will load on-demand when AudioContext is running.`
         );
-        // DON'T try to resume during scroll - not a valid user gesture
-        // Just fall back to URL caching which will download samples
-        const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-        return this.loadEssentialHarmonySamples(offlineContext);
+        // Return early - don't use OfflineContext fallback!
+        // Samples will be loaded later when user clicks play and AudioContext is running
+        return;
       }
 
       // Step 4: Create WamKeyboard instance through singleton
@@ -524,9 +695,9 @@ export class InitialSamplePreloader {
       }
     } catch (error) {
       logger.error('Failed to create harmony instrument:', error);
-      // Fall back to traditional loading
-      const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-      return this.loadEssentialHarmonySamples(offlineContext);
+      // Don't fall back to OfflineContext - samples will load on-demand
+      // This prevents Bug #2 (OfflineContext buffer incompatibility)
+      logger.warn('Harmony samples will load on-demand when needed');
     }
   }
 
@@ -626,40 +797,38 @@ export class InitialSamplePreloader {
 
     try {
       // Step 1: Check if CoreServices are available
-      const coreServices =
-        (window as any).__globalCoreServices || (window as any).__coreServices;
+      // After Bug #1 fix, CoreServices MUST exist
+      const coreServices = (window as any).__globalCoreServices;
+
       if (!coreServices) {
-        logger.info(
-          'CoreServices not ready yet, falling back to URL caching only',
+        const error = new Error(
+          'CRITICAL: CoreServices must be pre-initialized before loadEssentialDrumInstrument().'
         );
-        const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-        return this.loadEssentialDrumSamples(offlineContext);
+        logger.error('❌ CoreServices not found:', error);
+        throw error;
       }
 
       // Step 2: Check if AudioEngine is ready
       const audioEngine = coreServices.getAudioEngine?.();
       if (!audioEngine || !audioEngine.isReady()) {
-        logger.info('AudioEngine not ready, falling back to URL caching only');
-        const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-        return this.loadEssentialDrumSamples(offlineContext);
+        logger.warn('AudioEngine not ready, drums will load on-demand');
+        return;
       }
 
       // Step 3: Get Tone.js from AudioEngine first
       const ToneInstance = audioEngine.getTone();
       if (!ToneInstance) {
-        logger.info('Tone.js not available, falling back to URL caching');
-        const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-        return this.loadEssentialDrumSamples(offlineContext);
+        logger.warn('Tone.js not available, drums will load on-demand');
+        return;
       }
 
       // Step 4: Use Tone's context to ensure compatibility
       const context = ToneInstance.context;
       if (!context || context.state !== 'running') {
-        logger.info(
-          `Tone context state: ${context?.state || 'null'}, will create drums on demand`,
+        logger.warn(
+          `Tone context state: ${context?.state || 'null'}, drums will load on-demand`
         );
-        const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-        return this.loadEssentialDrumSamples(offlineContext);
+        return;
       }
 
       // Step 5: Create drum samplers
@@ -756,9 +925,7 @@ export class InitialSamplePreloader {
       this._drumInstrument = drumPads;
     } catch (error) {
       logger.error('Failed to create drum instrument:', error);
-      // Fall back to traditional loading
-      const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-      return this.loadEssentialDrumSamples(offlineContext);
+      logger.warn('Drum samples will load on-demand when needed');
     }
   }
 
@@ -852,32 +1019,35 @@ export class InitialSamplePreloader {
 
     try {
       // Step 1: Check if CoreServices are available
-      const coreServices =
-        (window as any).__globalCoreServices || (window as any).__coreServices;
+      const coreServices = (window as any).__globalCoreServices;
+
       if (!coreServices) {
-        logger.info(
-          'CoreServices not ready yet, falling back to URL caching only',
+        const error = new Error(
+          'CRITICAL: CoreServices must be pre-initialized before loadEssentialMetronomeInstrument(). ' +
+            'This indicates Bug #1 (Race Condition) was not properly fixed. ' +
+            'ScrollTriggerLoader should create CoreServices before calling this method.',
         );
-        const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-        return this.loadEssentialMetronomeSamples(offlineContext);
+        logger.error('❌ CoreServices not found:', error);
+        throw error;
       }
 
       // Step 2: Check if AudioEngine is ready
       const audioEngine = coreServices.getAudioEngine?.();
       if (!audioEngine || !audioEngine.isReady()) {
-        logger.info('AudioEngine not ready, falling back to URL caching only');
-        const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-        return this.loadEssentialMetronomeSamples(offlineContext);
+        logger.warn(
+          'AudioEngine not ready yet, metronome samples will load on-demand when AudioContext is running',
+        );
+        return; // Early return - samples will load on-demand
       }
 
       // Step 3: Get AudioContext from AudioEngine
       const context = audioEngine.getContext();
       if (!context || context.state !== 'running') {
-        logger.info(
-          `AudioContext state: ${context?.state || 'null'}, falling back to URL caching`,
+        logger.warn(
+          `AudioContext state: ${context?.state || 'null'}, cannot load metronome samples yet. ` +
+            `Samples will load on-demand when AudioContext is running.`,
         );
-        const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-        return this.loadEssentialMetronomeSamples(offlineContext);
+        return; // Early return - samples will load on-demand
       }
 
       // Step 4: Create WamMetronome instance
@@ -911,9 +1081,7 @@ export class InitialSamplePreloader {
       );
     } catch (error) {
       logger.error('Failed to create metronome instrument:', error);
-      // Fall back to traditional loading
-      const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-      return this.loadEssentialMetronomeSamples(offlineContext);
+      logger.warn('Metronome samples will load on-demand when needed');
     }
   }
 
@@ -1377,34 +1545,30 @@ export class InitialSamplePreloader {
 
           const arrayBuffer = await response.arrayBuffer();
 
-          // Create OfflineAudioContext for decoding (no user gesture needed)
-          const offlineContext = new OfflineAudioContext(2, 44100, 44100);
-          const audioBuffer = await offlineContext.decodeAudioData(
-            arrayBuffer.slice(0),
-          );
+          // BUG #2 FIX: DO NOT decode or cache buffers from OfflineAudioContext!
+          // OfflineContext-decoded buffers are incompatible with the real AudioContext.
+          // Instead, we just download and cache the raw ArrayBuffer data.
+          // The real AudioContext will decode these when needed.
 
-          // EVIDENCE: Log what we're caching
           logger.debug(
-            `📦 PRELOADER: Decoded AudioBuffer for ${sample.path}:`,
+            `📦 PRELOADER: Downloaded raw audio data for ${sample.path}:`,
             {
-              isAudioBuffer: audioBuffer instanceof AudioBuffer,
-              duration: audioBuffer.duration,
-              sampleRate: audioBuffer.sampleRate,
-              channels: audioBuffer.numberOfChannels,
-              length: audioBuffer.length,
-              memorySizeKB: Math.round(
-                (audioBuffer.numberOfChannels * audioBuffer.length * 4) / 1024,
-              ),
+              sizeKB: Math.round(arrayBuffer.byteLength / 1024),
               willCacheWith: sample.cacheKeys,
             },
           );
 
-          // Cache with ALL the keys that instruments will look for
+          // Cache the raw ArrayBuffer with all the keys that instruments will look for
+          // The AudioEngine will decode these using the REAL AudioContext when needed
           sample.cacheKeys.forEach((key) => {
             logger.debug(
-              `📦 PRELOADER: Caching AudioBuffer with key: "${key}"`,
+              `📦 PRELOADER: Caching raw ArrayBuffer with key: "${key}"`,
             );
-            GlobalSampleCache.getInstance().cacheBuffer(key, audioBuffer);
+            // Store as ArrayBuffer, not decoded AudioBuffer
+            GlobalSampleCache.getInstance().cacheBuffer(
+              key,
+              arrayBuffer.slice(0),
+            );
           });
 
           const sampleDuration = performance.now() - sampleStartTime;
@@ -1533,11 +1697,11 @@ export class InitialSamplePreloader {
           );
 
         if (!this.harmonyInstrument) {
-          logger.info(
-            'No harmony instrument found, falling back to traditional loading',
+          logger.warn(
+            'No harmony instrument found - samples were not preloaded. ' +
+              'They will load on-demand when first needed.',
           );
-          const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-          return this.loadFullHarmonySamples(offlineContext);
+          return; // Early return - samples will load on-demand
         }
       }
 
@@ -1547,8 +1711,7 @@ export class InitialSamplePreloader {
       logger.info('✅ Harmony instrument already has full samples loaded');
     } catch (error) {
       logger.error('Failed to load full harmony samples:', error);
-      const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
-      return this.loadFullHarmonySamples(offlineContext);
+      logger.warn('Full harmony samples will load on-demand when needed');
     }
   }
 

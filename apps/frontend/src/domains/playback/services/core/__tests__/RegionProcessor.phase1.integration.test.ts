@@ -2,9 +2,9 @@
  * Phase 1 Integration Tests
  *
  * Validates that RegionProcessor correctly delegates to:
- * - CountdownManager (4 methods)
- * - BufferRegistry (5 methods + 1 wrapper)
- * - MusicalTimeConverter (instantiated but not yet used)
+ * - ConfigurationManager (4 methods) [Phase 2.4: merged CountdownManager + ConfigurationCoordinator]
+ * - BufferManager (5 methods + 1 wrapper) [Phase 2: renamed from BufferRegistry]
+ * - TimePositionConverter (instantiated but not yet used) [Phase 2: renamed from MusicalTimeConverter]
  *
  * Tests ensure:
  * 1. 1:1 functional equivalence with original implementation
@@ -52,10 +52,10 @@ describe('RegionProcessor - Phase 1 Integration', () => {
   });
 
   // ============================================================================
-  // COUNTDOWN MANAGER DELEGATION TESTS
+  // CONFIGURATION MANAGER DELEGATION TESTS (Phase 2.4: merged CountdownManager)
   // ============================================================================
 
-  describe('CountdownManager delegation', () => {
+  describe('ConfigurationManager delegation', () => {
     it('should delegate enableCountdown() and sync state', () => {
       const timeSignature = { numerator: 4, denominator: 4 };
 
@@ -63,7 +63,7 @@ describe('RegionProcessor - Phase 1 Integration', () => {
 
       // Access private field for testing (TypeScript will complain, but works at runtime)
       const countdownOffsetBeats = (regionProcessor as any).countdownOffsetBeats;
-      expect(countdownOffsetBeats).toBe(4); // Should sync from CountdownManager
+      expect(countdownOffsetBeats).toBe(4); // Should sync from ConfigurationManager
     });
 
     it('should delegate disableCountdown() and sync state', () => {
@@ -154,10 +154,10 @@ describe('RegionProcessor - Phase 1 Integration', () => {
   });
 
   // ============================================================================
-  // BUFFER REGISTRY DELEGATION TESTS
+  // BUFFER MANAGER DELEGATION TESTS (Phase 2: renamed from BufferRegistry)
   // ============================================================================
 
-  describe('BufferRegistry delegation', () => {
+  describe('BufferManager delegation', () => {
     it('should delegate setMetronomeBuffers() and sync destination', () => {
       const accentBuffer = new AudioBuffer({
         length: 1,
@@ -202,7 +202,7 @@ describe('RegionProcessor - Phase 1 Integration', () => {
 
       regionProcessor.setVoiceCueBuffers(samples, mockDestination);
 
-      // Verify internal state synced from BufferRegistry
+      // Verify internal state synced from BufferManager
       const voiceCueBuffers = (regionProcessor as any).voiceCueBuffers;
       expect(voiceCueBuffers).toBe(samples);
       expect(voiceCueBuffers.size).toBe(4);
@@ -231,7 +231,7 @@ describe('RegionProcessor - Phase 1 Integration', () => {
         'wurlitzer',
       );
 
-      // Verify all harmony state synced from BufferRegistry
+      // Verify all harmony state synced from BufferManager
       const harmonyBuffers = (regionProcessor as any).harmonyBuffers;
       expect(harmonyBuffers).toBeInstanceOf(Map);
       expect(harmonyBuffers.size).toBeGreaterThan(0);
@@ -285,7 +285,7 @@ describe('RegionProcessor - Phase 1 Integration', () => {
 
       regionProcessor.setBassBuffers(samples, mockDestination);
 
-      // Verify internal state synced from BufferRegistry
+      // Verify internal state synced from BufferManager
       const bassBuffers = (regionProcessor as any).bassBuffers;
       expect(bassBuffers).toBeInstanceOf(Map);
       expect(bassBuffers.size).toBeGreaterThan(0);
@@ -312,42 +312,42 @@ describe('RegionProcessor - Phase 1 Integration', () => {
   // ============================================================================
 
   describe('Module instantiation', () => {
-    it('should instantiate CountdownManager in constructor', () => {
-      const countdownManager = (regionProcessor as any).countdownManager;
-      expect(countdownManager).toBeDefined();
-      expect(countdownManager.constructor.name).toBe('CountdownManager');
+    it('should instantiate ConfigurationManager in constructor', () => {
+      const configurationManager = (regionProcessor as any).configurationManager;
+      expect(configurationManager).toBeDefined();
+      expect(configurationManager.constructor.name).toBe('ConfigurationManager');
     });
 
-    it('should instantiate BufferRegistry in constructor', () => {
-      const bufferRegistry = (regionProcessor as any).bufferRegistry;
-      expect(bufferRegistry).toBeDefined();
-      expect(bufferRegistry.constructor.name).toBe('BufferRegistry');
+    it('should instantiate BufferManager in constructor', () => {
+      const bufferManager = (regionProcessor as any).bufferManager;
+      expect(bufferManager).toBeDefined();
+      expect(bufferManager.constructor.name).toBe('BufferManager');
     });
 
-    it('should instantiate MusicalTimeConverter in constructor', () => {
-      const musicalTimeConverter = (regionProcessor as any)
-        .musicalTimeConverter;
-      expect(musicalTimeConverter).toBeDefined();
-      expect(musicalTimeConverter.constructor.name).toBe(
-        'MusicalTimeConverter',
+    it('should instantiate TimePositionConverter in constructor', () => {
+      const timePositionConverter = (regionProcessor as any)
+        .timePositionConverter;
+      expect(timePositionConverter).toBeDefined();
+      expect(timePositionConverter.constructor.name).toBe(
+        'TimePositionConverter',
       );
     });
 
     it('should pass instanceId to stateful modules', () => {
       const instanceId = (regionProcessor as any)._instanceId;
 
-      const countdownManager = (regionProcessor as any).countdownManager;
-      expect(countdownManager.instanceId).toBe(instanceId);
+      const configurationManager = (regionProcessor as any).configurationManager;
+      expect(configurationManager.instanceId).toBe(instanceId);
 
-      const bufferRegistry = (regionProcessor as any).bufferRegistry;
-      expect(bufferRegistry.instanceId).toBe(instanceId);
+      const bufferManager = (regionProcessor as any).bufferManager;
+      expect(bufferManager.instanceId).toBe(instanceId);
 
-      // Note: MusicalTimeConverter doesn't need instanceId (stateless utility)
-      const musicalTimeConverter = (regionProcessor as any)
-        .musicalTimeConverter;
-      expect(musicalTimeConverter).toBeDefined();
-      expect(musicalTimeConverter.constructor.name).toBe(
-        'MusicalTimeConverter',
+      // Note: TimePositionConverter doesn't need instanceId (stateless utility)
+      const timePositionConverter = (regionProcessor as any)
+        .timePositionConverter;
+      expect(timePositionConverter).toBeDefined();
+      expect(timePositionConverter.constructor.name).toBe(
+        'TimePositionConverter',
       );
     });
   });

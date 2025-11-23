@@ -515,25 +515,15 @@ export function useCoreServices(
     ],
   );
 
-  // Auto-initialize on mount if enabled
-  useEffect(() => {
-    if (autoInitialize && !isInitialized && !isLoading) {
-      const handleFirstInteraction = () => {
-        initialize().catch(console.error);
-        document.removeEventListener('click', handleFirstInteraction);
-        document.removeEventListener('touchstart', handleFirstInteraction);
-      };
-
-      document.addEventListener('click', handleFirstInteraction);
-      document.addEventListener('touchstart', handleFirstInteraction);
-
-      return () => {
-        document.removeEventListener('click', handleFirstInteraction);
-        document.removeEventListener('touchstart', handleFirstInteraction);
-      };
-    }
-    return undefined;
-  }, [autoInitialize, isInitialized, isLoading, initialize]);
+  // REMOVED: Auto-initialize logic moved to ScrollTriggerLoader
+  // This prevents race condition between useCoreServices and ScrollTriggerLoader
+  // ScrollTriggerLoader now controls the initialization sequence:
+  // 1. First interaction → CoreServices.preInitialize()
+  // 2. Load tutorial samples
+  // 3. Emit 'samples-ready' event
+  // 4. Play button calls initialize() to create AudioContext
+  //
+  // Note: initialize() is still available for manual calls
 
   // Cleanup on unmount
   useEffect(() => {

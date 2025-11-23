@@ -14,37 +14,38 @@ import type { WamKeyboard } from '../../modules/instruments/adapters/wam/WamKeyb
 import type { WamKeyboardPlugin } from '../../modules/instruments/adapters/wam/WamKeyboardPlugin.js';
 
 // Import extracted modules (Phase 1: Foundation)
-import { CountdownManager } from './region-processing/countdown/CountdownManager.js';
-import { BufferRegistry } from './region-processing/buffers/BufferRegistry.js';
-import { MusicalTimeConverter } from './region-processing/timing/MusicalTimeConverter.js';
+import { ConfigurationManager } from './region-processing/configuration/ConfigurationManager.js';
+import { BufferManager } from './region-processing/buffers/BufferManager.js';
+import { TimePositionConverter } from './region-processing/timing/TimePositionConverter.js';
 
 // Import extracted modules (Phase 2: Caching + Timing)
 import { ScheduleCache } from './region-processing/cache/ScheduleCache.js';
 import { TimingMetricsCollector } from './region-processing/timing/TimingMetricsCollector.js';
 
-// Import extracted modules (Phase 3: CC64 Sustain System)
-import { CC64TimelineBuilder } from './region-processing/sustain/CC64TimelineBuilder.js';
-import { SustainPedalAnalyzer } from './region-processing/sustain/SustainPedalAnalyzer.js';
+// Import extracted modules (Phase 3: CC64 Sustain System - Phase 2.1: Merged into SustainPedalManager)
+import { SustainPedalManager } from './region-processing/sustain/SustainPedalManager.js';
 
-// Import extracted modules (Phase 4: Schedulers)
-import { VoiceCueScheduler } from './region-processing/scheduling/VoiceCueScheduler.js';
-import { MetronomeScheduler } from './region-processing/scheduling/MetronomeScheduler.js';
-import { DrumScheduler } from './region-processing/scheduling/DrumScheduler.js';
-import { BassScheduler } from './region-processing/scheduling/BassScheduler.js';
+// Import extracted modules (Phase 4: Schedulers - Phase 3: Simplified)
+import { SimpleInstrumentScheduler } from './region-processing/scheduling/SimpleInstrumentScheduler.js';
 import { HarmonyScheduler } from './region-processing/scheduling/HarmonyScheduler.js';
-import { GrandPianoKeyboardMapper } from './region-processing/scheduling/GrandPianoKeyboardMapper.js';
+// Removed (Phase 4.2): GrandPianoKeyboardMapper merged into HarmonyScheduler
 
 // Import extracted modules (Phase 5: Utilities + Routing)
 import { DiagnosticLogger } from './region-processing/diagnostics/DiagnosticLogger.js';
 import { VelocityLayerSelector } from './region-processing/harmony/VelocityLayerSelector.js';
-import { ExerciseDurationCalculator } from './region-processing/duration/ExerciseDurationCalculator.js';
-import { BackupScheduler } from './region-processing/backup/BackupScheduler.js';
+// Removed (Phase 4.1): ExerciseDurationCalculator merged into RegionScheduler
+// Removed (Phase 4.1): BackupScheduler merged into RegionScheduler
 import { EventRouter } from './region-processing/event-routing/EventRouter.js';
 
 // Import extracted modules (Phase 6: Region Scheduling Orchestration)
 import { RegionScheduler } from './region-processing/scheduling-orchestrator/RegionScheduler.js';
-import { PositionParser } from './region-processing/position/PositionParser.js';
+// Removed: import { PositionParser } // from './region-processing/position/PositionParser.js';
 import { TrackManager } from './region-processing/track-management/TrackManager.js';
+
+// Import extracted modules (Phase 7: Lifecycle Management)
+import { LifecycleCoordinator } from './region-processing/lifecycle/LifecycleCoordinator.js';
+// Removed: import { BufferCoordinator } // from './region-processing/buffers/BufferCoordinator.js';
+// Removed: import { ConfigurationCoordinator } // from './region-processing/configuration/ConfigurationCoordinator.js';
 
 const logger = getLogger('RegionProcessor');
 
@@ -124,8 +125,8 @@ export class RegionProcessor {
     { type: 'one-shot' | 'sustained'; hasStopScheduled: boolean }
   >();
 
-  // Phase 1: Buffer management delegated to BufferRegistry
-  private bufferRegistry!: BufferRegistry; // Initialized in constructor
+  // Phase 1: Buffer management delegated to BufferManager
+  private bufferManager!: BufferManager; // Initialized in constructor
 
   // Keep these for backward compatibility (synced from BufferRegistry)
   private harmonyBuffers = new Map<string, Map<string, AudioBuffer>>();
@@ -157,17 +158,16 @@ export class RegionProcessor {
   // Phase 2: Timing metrics delegated to TimingMetricsCollector
   private timingMetricsCollector!: TimingMetricsCollector; // Initialized in constructor
 
-  // Phase 3: CC64 sustain system delegated to CC64TimelineBuilder and SustainPedalAnalyzer
-  private cc64TimelineBuilder!: CC64TimelineBuilder; // Initialized in constructor
-  private sustainPedalAnalyzer!: SustainPedalAnalyzer; // Initialized in constructor
+  // Phase 3: CC64 sustain system delegated to SustainPedalManager (Phase 2.1: Merged)
+  private sustainPedalManager!: SustainPedalManager; // Initialized in constructor
 
-  // Phase 4: Schedulers delegated to specialized scheduler modules
-  private voiceCueScheduler!: VoiceCueScheduler; // Initialized in constructor
-  private metronomeScheduler!: MetronomeScheduler; // Initialized in constructor
-  private drumScheduler!: DrumScheduler; // Initialized in constructor
-  private bassScheduler!: BassScheduler; // Initialized in constructor
-  private harmonyScheduler!: HarmonyScheduler; // Initialized in constructor
-  private grandPianoKeyboardMapper!: GrandPianoKeyboardMapper; // Initialized in constructor
+  // Phase 4: Schedulers (Phase 3: Simplified to use SimpleInstrumentScheduler)
+  private voiceCueScheduler!: SimpleInstrumentScheduler; // Voice cue scheduler
+  private metronomeScheduler!: SimpleInstrumentScheduler; // Metronome scheduler
+  private drumScheduler!: SimpleInstrumentScheduler; // Drum scheduler
+  private bassScheduler!: SimpleInstrumentScheduler; // Bass scheduler
+  private harmonyScheduler!: HarmonyScheduler; // Harmony scheduler (complex, not simplified)
+  // Removed (Phase 4.2): grandPianoKeyboardMapper (merged into HarmonyScheduler)
 
   // Phase 5: Diagnostic logging delegated to DiagnosticLogger
   private diagnosticLogger!: DiagnosticLogger; // Initialized in constructor
@@ -175,11 +175,9 @@ export class RegionProcessor {
   // Phase 5: Velocity layer selection delegated to VelocityLayerSelector
   private velocityLayerSelector!: VelocityLayerSelector; // Initialized in constructor
 
-  // Phase 5: Exercise duration calculation delegated to ExerciseDurationCalculator
-  private exerciseDurationCalculator!: ExerciseDurationCalculator; // Initialized in constructor
-
-  // Phase 5: Backup scheduling delegated to BackupScheduler
-  private backupScheduler!: BackupScheduler; // Initialized in constructor
+  // Phase 4.1: Exercise duration calculation + backup scheduling merged into RegionScheduler
+  // Removed: exerciseDurationCalculator (merged into regionScheduler)
+  // Removed: backupScheduler (merged into regionScheduler)
 
   // Phase 5: Event routing and audio scheduling delegated to EventRouter
   private eventRouter!: EventRouter; // Initialized in constructor
@@ -188,10 +186,19 @@ export class RegionProcessor {
   private regionScheduler!: RegionScheduler; // Initialized in constructor
 
   // Phase 6: Position parsing delegated to PositionParser
-  private positionParser!: PositionParser; // Initialized in constructor
+  // Removed: private positionParser!: PositionParser; // Initialized in constructor
 
   // Phase 6: Track management delegated to TrackManager
   private trackManager!: TrackManager; // Initialized in constructor
+
+  // Phase 7: Lifecycle management delegated to LifecycleCoordinator
+  private lifecycleCoordinator!: LifecycleCoordinator; // Initialized in constructor
+
+  // Phase 7: Buffer coordination delegated to BufferCoordinator
+  // Removed: private bufferCoordinator!: BufferCoordinator; // Initialized in constructor
+
+  // Phase 7: Configuration synchronization delegated to ConfigurationCoordinator
+  // Removed: private configurationCoordinator!: ConfigurationCoordinator; // Initialized in constructor
 
   // Diagnostic: Count logged notes
   private _noteLogCount = 0;
@@ -199,13 +206,14 @@ export class RegionProcessor {
   // Instance tracking for debugging
   private _instanceId = Math.random().toString(36).substring(2, 11);
 
-  // Phase 1: Countdown management delegated to CountdownManager
-  private countdownManager!: CountdownManager; // Initialized in constructor
-  // Keep countdownOffsetBeats for backward compatibility (synced from CountdownManager)
+  // Phase 1: Countdown management delegated to ConfigurationManager
+  private configurationManager!: ConfigurationManager; // Initialized in constructor
+  // Keep countdownOffsetBeats for backward compatibility (synced from ConfigurationManager)
   private countdownOffsetBeats = 0; // Will be set to time signature numerator (e.g., 4 for 4/4)
+  private countdownEnabled = false; // Synced from ConfigurationManager
 
-  // Phase 1: Musical time conversion delegated to MusicalTimeConverter
-  private musicalTimeConverter!: MusicalTimeConverter; // Initialized in constructor
+  // Phase 1: Musical time conversion delegated to TimePositionConverter
+  private timePositionConverter!: TimePositionConverter; // Initialized in constructor
 
   // AUDIO DOUBLING FIX: Guard flag to prevent backup scheduler during initial scheduling
   private isInitialScheduling = false;
@@ -224,35 +232,80 @@ export class RegionProcessor {
   // Plugin manager for accessing WAM instruments (WamKeyboard for CC events)
   private pluginManager: PluginManager | null = null;
 
+  // ✅ BUG #7 FIX: Store unsubscribe functions for event listener cleanup
+  private unsubscribeTempoChange: (() => void) | null = null;
+
   constructor(eventBus: EventBus) {
     this.eventBus = eventBus;
 
     // Phase 1: Instantiate foundation modules
-    this.countdownManager = new CountdownManager(this._instanceId);
-    this.bufferRegistry = new BufferRegistry(this._instanceId);
-    this.musicalTimeConverter = new MusicalTimeConverter(this._instanceId);
+    this.configurationManager = new ConfigurationManager(this._instanceId);
+    this.bufferManager = new BufferManager(this._instanceId);
+    this.timePositionConverter = new TimePositionConverter();
 
     // Phase 2: Instantiate caching and timing modules
     this.scheduleCache = new ScheduleCache();
     this.timingMetricsCollector = new TimingMetricsCollector();
 
-    // Phase 3: Instantiate CC64 sustain system modules
-    this.cc64TimelineBuilder = new CC64TimelineBuilder();
-    this.cc64TimelineBuilder.setTimeConverter(this.musicalTimeConverter); // Inject time converter
-    this.sustainPedalAnalyzer = new SustainPedalAnalyzer();
+    // Phase 3: Instantiate CC64 sustain system (Phase 2.1: Merged into SustainPedalManager)
+    this.sustainPedalManager = new SustainPedalManager();
+    this.sustainPedalManager.setTimeConverter(this.timePositionConverter); // Inject time converter
 
-    // Phase 4: Instantiate scheduler modules
-    this.voiceCueScheduler = new VoiceCueScheduler(this._instanceId);
-    this.metronomeScheduler = new MetronomeScheduler(this._instanceId, this.tracks);
-    this.drumScheduler = new DrumScheduler(this._instanceId, this.tracks);
-    this.bassScheduler = new BassScheduler(this._instanceId, this.tracks);
-    this.grandPianoKeyboardMapper = new GrandPianoKeyboardMapper(this._instanceId);
+    // Phase 4: Instantiate scheduler modules (Phase 3: Using SimpleInstrumentScheduler)
+    this.voiceCueScheduler = new SimpleInstrumentScheduler(
+      this._instanceId,
+      this.tracks,
+      {
+        loggerName: 'VoiceCueScheduler',
+        instrumentType: 'voice-cue',
+        eventTypeToBufferKey: { 'voice-cue': 'voice-cue' },
+        preserveAttackEnvelope: false,
+        baseVolume: 0.9,
+      },
+    );
+
+    this.metronomeScheduler = new SimpleInstrumentScheduler(
+      this._instanceId,
+      this.tracks,
+      {
+        loggerName: 'MetronomeScheduler',
+        instrumentType: 'metronome',
+        eventTypeToBufferKey: { accent: 'accent', click: 'click' },
+        preserveAttackEnvelope: true, // Preserve attack envelope for metronome
+        baseVolume: 0.8,
+      },
+    );
+
+    this.drumScheduler = new SimpleInstrumentScheduler(
+      this._instanceId,
+      this.tracks,
+      {
+        loggerName: 'DrumScheduler',
+        instrumentType: 'drums',
+        eventTypeToBufferKey: { kick: 'kick', snare: 'snare', hihat: 'hihat' },
+        preserveAttackEnvelope: false,
+        baseVolume: 0.8,
+      },
+    );
+
+    this.bassScheduler = new SimpleInstrumentScheduler(
+      this._instanceId,
+      this.tracks,
+      {
+        loggerName: 'BassScheduler',
+        instrumentType: 'bass',
+        eventTypeToBufferKey: {}, // Bass uses event.data.note for buffer lookup
+        preserveAttackEnvelope: false,
+        baseVolume: 0.8,
+      },
+    );
+
+    // Phase 4.2: GrandPianoKeyboardMapper merged into HarmonyScheduler
     this.harmonyScheduler = new HarmonyScheduler(
       this._instanceId,
       this.tracks,
-      this.grandPianoKeyboardMapper,
-      this.cc64TimelineBuilder,
-      this.sustainPedalAnalyzer,
+      this.sustainPedalManager,
+      this.sustainPedalManager,
     );
 
     // Phase 5: Instantiate diagnostic logger
@@ -267,13 +320,9 @@ export class RegionProcessor {
     // Phase 5: Instantiate velocity layer selector
     this.velocityLayerSelector = new VelocityLayerSelector(this._instanceId);
 
-    // Phase 5: Instantiate exercise duration calculator
-    this.exerciseDurationCalculator = new ExerciseDurationCalculator(
-      this._instanceId,
-    );
-
-    // Phase 5: Instantiate backup scheduler
-    this.backupScheduler = new BackupScheduler(this._instanceId);
+    // Phase 4.1: Exercise duration + backup scheduling now in RegionScheduler
+    // Removed: exerciseDurationCalculator instantiation
+    // Removed: backupScheduler instantiation
 
     // Phase 5: Instantiate event router
     this.eventRouter = new EventRouter(this._instanceId);
@@ -292,11 +341,20 @@ export class RegionProcessor {
     // Phase 6: Instantiate region scheduler
     this.regionScheduler = new RegionScheduler(this._instanceId);
 
-    // Phase 6: Instantiate position parser
-    this.positionParser = new PositionParser(this._instanceId);
+    // Phase 6: Position parser merged into TimePositionConverter (Phase 2.2)
+    // (Already initialized in Phase 1)
 
     // Phase 6: Instantiate track manager
     this.trackManager = new TrackManager(this._instanceId);
+
+    // Phase 7: Instantiate lifecycle coordinator
+    this.lifecycleCoordinator = new LifecycleCoordinator(this._instanceId);
+
+    // Phase 7: Buffer coordinator merged into BufferManager (Phase 2.3)
+    // (Already initialized in Phase 1)
+
+    // Phase 7: Configuration coordinator merged into ConfigurationManager (Phase 2.4)
+    // (Already initialized in Phase 1)
 
     logger.info('🔧 RegionProcessor instance created', {
       instanceId: this._instanceId,
@@ -305,7 +363,8 @@ export class RegionProcessor {
 
     // Listen for tempo changes and reschedule events
     // TEMPO CHANGE FIX: Debounce rapid tempo changes to prevent UI freezing
-    this.eventBus.on(
+    // ✅ BUG #7 FIX: Store unsubscribe function for cleanup
+    this.unsubscribeTempoChange = this.eventBus.on(
       'transport:tempo-change',
       (data: { tempo: number; bpm: number }) => {
         const newTempo = data.tempo || data.bpm;
@@ -355,32 +414,25 @@ export class RegionProcessor {
     numerator: number;
     denominator: number;
   }): void {
-    this.countdownManager.enableCountdown(timeSignature);
-    this.countdownOffsetBeats = this.countdownManager.getCountdownOffsetBeats(); // Sync for backward compat
-
-    // Phase 2: Sync countdown offset to ScheduleCache for cache key generation
-    this.scheduleCache.setCountdownOffsetBeats(this.countdownOffsetBeats);
-
-    // Phase 3: Sync countdown configuration to CC64TimelineBuilder
-    this.cc64TimelineBuilder.setCountdownConfig(this.countdownOffsetBeats, true);
-
-    // Phase 4: Schedulers don't need countdown config - events are already offset
+    // Delegate to ConfigurationManager (Phase 2.4)
+    const countdownOffsetBeats = this.configurationManager.enableCountdown(
+      timeSignature,
+      this.scheduleCache,
+      this.sustainPedalManager,
+    );
+    this.countdownOffsetBeats = countdownOffsetBeats;
   }
 
   /**
    * Disable countdown pre-roll (all events start at beat 0)
    */
   disableCountdown(): void {
-    this.countdownManager.disableCountdown();
-    this.countdownOffsetBeats = 0; // Sync for backward compat
-
-    // Phase 2: Sync countdown offset to ScheduleCache
-    this.scheduleCache.setCountdownOffsetBeats(0);
-
-    // Phase 3: Sync countdown configuration to CC64TimelineBuilder
-    this.cc64TimelineBuilder.setCountdownConfig(0, false);
-
-    // Phase 4: Schedulers don't need countdown config - events are already offset
+    // Delegate to ConfigurationManager (Phase 2.4)
+    this.configurationManager.disableCountdown(
+      this.scheduleCache,
+      this.sustainPedalManager,
+    );
+    this.countdownOffsetBeats = 0;
   }
 
   /**
@@ -391,7 +443,8 @@ export class RegionProcessor {
     numerator: number;
     denominator: number;
   }): void {
-    this.countdownManager.addCountdownRegion(this.tracks, timeSignature);
+    // Delegate to ConfigurationManager (Phase 2.4)
+    this.configurationManager.addCountdownRegion(this.tracks, timeSignature);
   }
 
   /**
@@ -402,7 +455,11 @@ export class RegionProcessor {
     numerator: number;
     denominator: number;
   }): void {
-    this.countdownManager.addVoiceCountdownRegion(this.tracks, timeSignature);
+    // Delegate to ConfigurationManager (Phase 2.4)
+    this.configurationManager.addVoiceCountdownRegion(
+      this.tracks,
+      timeSignature,
+    );
   }
 
   /**
@@ -410,40 +467,25 @@ export class RegionProcessor {
    * CRITICAL: Must be called before start() to enable proper time domain conversion
    */
   setAudioContext(context: AudioContext): void {
-    this.audioContext = context;
-    this.sampleRate = context.sampleRate;
-
-    // Phase 2: Sync sample rate to TimingMetricsCollector
-    this.timingMetricsCollector.setSampleRate(this.sampleRate);
-
-    // Phase 3: Sync audio context to CC64TimelineBuilder
-    this.cc64TimelineBuilder.setAudioContext(context);
-
-    // Phase 4: Sync audio context to all schedulers
-    this.voiceCueScheduler.setAudioContext(context);
-    this.metronomeScheduler.setAudioContext(context);
-    this.drumScheduler.setAudioContext(context);
-    this.bassScheduler.setAudioContext(context);
-    // HarmonyScheduler gets transportStartTime in setAudioContext (will be set in start())
-    // GrandPianoKeyboardMapper doesn't need audio context
-
-    // Phase 5: Sync audio context to EventRouter
-    this.eventRouter.initialize(
+    // Delegate to BufferManager (Phase 2.3: merged BufferRegistry + BufferCoordinator)
+    const sampleRate = this.bufferManager.setAudioContext(
       context,
-      this.sampleRate,
+      {
+        voiceCue: this.voiceCueScheduler,
+        metronome: this.metronomeScheduler,
+        drum: this.drumScheduler,
+        bass: this.bassScheduler,
+      },
+      this.eventRouter,
       this.eventBus,
-      this.metronomeScheduler,
-      this.drumScheduler,
       this.harmonyScheduler,
-      this.bassScheduler,
-      this.voiceCueScheduler,
       this.trackTimingAccuracy.bind(this),
+      this.timingMetricsCollector,
+      this.sustainPedalManager,
     );
-
-    logger.info('🔧 AudioContext set for RegionProcessor', {
-      instanceId: this._instanceId,
-      sampleRate: this.sampleRate,
-    });
+    // Update local state
+    this.audioContext = context;
+    this.sampleRate = sampleRate;
   }
 
   /**
@@ -455,11 +497,14 @@ export class RegionProcessor {
     click: AudioBuffer,
     destination: AudioNode,
   ): void {
-    this.bufferRegistry.setMetronomeBuffers(accent, click, destination);
-    this.audioDestination = this.bufferRegistry.getAudioDestination(); // Sync for backward compat
-
-    // Phase 4: Sync buffers to MetronomeScheduler
-    this.metronomeScheduler.setBuffers(accent, click, destination);
+    // Delegate to BufferManager (Phase 2.3)
+    this.bufferManager.setMetronomeBuffers(
+      accent,
+      click,
+      destination,
+      this.metronomeScheduler,
+    );
+    this.audioDestination = destination;
   }
 
   setDrumBuffers(
@@ -468,23 +513,31 @@ export class RegionProcessor {
     hihat: AudioBuffer,
     destination: AudioNode,
   ): void {
-    this.bufferRegistry.setDrumBuffers(kick, snare, hihat, destination);
-    this.audioDestination = this.bufferRegistry.getAudioDestination();
-
-    // Phase 4: Sync buffers to DrumScheduler
-    this.drumScheduler.setBuffers(kick, snare, hihat, destination);
+    // Delegate to BufferManager (Phase 2.3)
+    this.bufferManager.setDrumBuffers(
+      kick,
+      snare,
+      hihat,
+      destination,
+      this.drumScheduler,
+    );
+    // Update local state for backward compatibility
+    this.audioDestination = destination;
   }
 
   setVoiceCueBuffers(
     samples: Map<string, AudioBuffer>,
     destination: AudioNode,
   ): void {
-    this.bufferRegistry.setVoiceCueBuffers(samples, destination);
-    this.voiceCueBuffers = samples; // Sync for backward compat (used by scheduling logic)
-    this.audioDestination = this.bufferRegistry.getAudioDestination();
-
-    // Phase 4: Sync buffers to VoiceCueScheduler
-    this.voiceCueScheduler.setBuffers(samples, destination);
+    // Delegate to BufferManager (Phase 2.3)
+    this.bufferManager.setVoiceCueBuffers(
+      samples,
+      destination,
+      this.voiceCueScheduler,
+    );
+    // Update local state for backward compatibility
+    this.voiceCueBuffers = samples;
+    this.audioDestination = destination;
   }
 
   async setHarmonyBuffers(
@@ -493,59 +546,45 @@ export class RegionProcessor {
     perNoteVelocityRanges?: Record<string, any[]>,
     instrument?: string,
   ): Promise<void> {
-    await this.bufferRegistry.setHarmonyBuffers(
+    // Delegate to BufferManager (Phase 2.3)
+    const result = await this.bufferManager.setHarmonyBuffers(
       samples,
       destination,
       perNoteVelocityRanges,
       instrument,
+      this.harmonyScheduler,
+      this.velocityLayerSelector,
     );
-
-    // Sync internal state for backward compatibility (used by scheduling logic)
-    this.harmonyBuffers = this.bufferRegistry.getHarmonyBuffers();
-    this.harmonyVelocityRanges = this.bufferRegistry.getHarmonyVelocityRanges();
-    this.currentHarmonyInstrument =
-      this.bufferRegistry.getCurrentHarmonyInstrument();
-    this.grandPianoKeyboardMap = this.bufferRegistry.getGrandPianoKeyboardMap();
-    this.audioDestination = this.bufferRegistry.getAudioDestination();
-
-    // Phase 4: Sync buffers to HarmonyScheduler
-    // HarmonyScheduler will load keyboard map internally if instrument is 'grandpiano'
-    await this.harmonyScheduler.setBuffers(
-      samples,
-      destination,
-      perNoteVelocityRanges,
-      instrument,
-    );
-
-    // Phase 5: Sync state to VelocityLayerSelector
-    this.velocityLayerSelector.setInstrument(
-      instrument || this.currentHarmonyInstrument || 'wurlitzer',
-    );
-    if (perNoteVelocityRanges) {
-      this.velocityLayerSelector.setVelocityRanges(perNoteVelocityRanges);
-    }
-    this.velocityLayerSelector.setHarmonyBuffers(this.harmonyBuffers);
+    // Update local state for backward compatibility
+    this.harmonyBuffers = result.harmonyBuffers;
+    this.harmonyVelocityRanges = result.harmonyVelocityRanges;
+    this.currentHarmonyInstrument = result.currentHarmonyInstrument;
+    this.grandPianoKeyboardMap = result.grandPianoKeyboardMap;
+    this.audioDestination = destination;
   }
 
   setBassBuffers(
     samples: Map<string, AudioBuffer>,
     destination: AudioNode,
   ): void {
-    this.bufferRegistry.setBassBuffers(samples, destination);
-    this.bassBuffers = this.bufferRegistry.getBassBuffers(); // Sync for backward compat
-    this.audioDestination = this.bufferRegistry.getAudioDestination();
-
-    // Phase 4: Sync buffers to BassScheduler
-    this.bassScheduler.setBuffers(samples, destination);
+    // Delegate to BufferManager (Phase 2.3)
+    const result = this.bufferManager.setBassBuffers(
+      samples,
+      destination,
+      this.bassScheduler,
+    );
+    // Update local state for backward compatibility
+    this.bassBuffers = result.bassBuffers;
+    this.audioDestination = destination;
   }
 
   /**
    * Ensure Grand Piano keyboard map is loaded
-   * (Delegated to BufferRegistry - this is a backward compat wrapper)
    */
   private async loadGrandPianoKeyboardMap(): Promise<void> {
-    await this.bufferRegistry.ensureGrandPianoKeyboardMap();
-    this.grandPianoKeyboardMap = this.bufferRegistry.getGrandPianoKeyboardMap(); // Sync for backward compat
+    // Delegate to BufferManager (Phase 2.3)
+    this.grandPianoKeyboardMap =
+      await this.bufferManager.ensureGrandPianoKeyboardMap();
   }
 
   /**
@@ -554,9 +593,6 @@ export class RegionProcessor {
    */
   setPluginManager(pluginManager: PluginManager): void {
     this.pluginManager = pluginManager;
-    logger.info('✅ PluginManager injected into RegionProcessor', {
-      instanceId: this._instanceId,
-    });
   }
 
   /**
@@ -601,12 +637,12 @@ export class RegionProcessor {
 
   /**
    * Register tracks for processing
-   * Phase 6: Delegated to TrackManager
    *
    * IMPORTANT: Only ONE track per instrument type is allowed
    * If a track with the same instrument type exists, it will be replaced
    */
   registerTracks(tracks: Track[]): void {
+    // Delegate to TrackManager (was Phase 8)
     this.trackManager.registerTracks(
       tracks,
       this.tracks,
@@ -616,11 +652,19 @@ export class RegionProcessor {
       this.debugger.log.bind(this.debugger),
     );
 
-    // CRITICAL FIX: Defensive check for multiple harmony tracks (architectural error detection)
-    // There should only ever be ONE harmony track registered at a time
+    // Validate harmony track uniqueness (was in TrackRegistrationService)
+    this.validateHarmonyTrackUniqueness();
+  }
+
+  /**
+   * Validate that only ONE harmony track is registered
+   * This is an architectural invariant that must be maintained
+   */
+  private validateHarmonyTrackUniqueness(): void {
     const registeredHarmonyTracks = Array.from(this.tracks.values()).filter(
       (t) => t.instrumentType === 'harmony',
     );
+
     if (registeredHarmonyTracks.length > 1) {
       console.error(
         '[ARCHITECTURE-ERROR] Multiple harmony tracks detected:',
@@ -633,6 +677,7 @@ export class RegionProcessor {
       logger.error(
         'CRITICAL: Multiple harmony tracks registered simultaneously',
         {
+          instanceId: this._instanceId,
           count: registeredHarmonyTracks.length,
           tracks: registeredHarmonyTracks.map((t) => ({
             id: t.id,
@@ -644,6 +689,10 @@ export class RegionProcessor {
       console.log('✅ [REGISTER-DEBUG] Single harmony track verified:', {
         id: registeredHarmonyTracks[0].id,
         exerciseId: registeredHarmonyTracks[0].exerciseId,
+      });
+      logger.debug('Single harmony track validated', {
+        instanceId: this._instanceId,
+        trackId: registeredHarmonyTracks[0].id,
       });
     }
   }
@@ -661,151 +710,64 @@ export class RegionProcessor {
    * Start processing regions
    */
   start(): void {
-    if (this.isRunning) return;
+    // Phase 7: Delegate lifecycle management to LifecycleCoordinator
+    const result = this.lifecycleCoordinator.start(
+      this.isRunning,
+      this.audioContext,
+      this.sampleRate,
+      this.tracks,
+      this.metronomeBuffers,
+      this.audioDestination,
+      this.scheduledIds,
+      this.scheduledEvents,
+      this.scheduleInterval,
+      this.isInitialScheduling,
 
-    // CRITICAL: Capture transport start time to anchor musical timeline to hardware clock
-    // Try to get AudioContext from Tone.js if not set explicitly
-    if (!this.audioContext && Tone.context) {
-      logger.warn(
-        '⚠️ AudioContext not set via setAudioContext(), using Tone.context as fallback',
-        {
-          instanceId: (this as any)._instanceId || 'unknown',
-          hasBuffers: !!(
-            this.metronomeBuffers.accent && this.metronomeBuffers.click
-          ),
-          hasDestination: !!this.audioDestination,
-        },
-      );
-      this.audioContext = Tone.context as unknown as AudioContext;
-      this.sampleRate = this.audioContext.sampleRate;
-    }
-
-    if (this.audioContext) {
-      // FAANG SOLUTION: Add startup lookahead to prevent first beat latency
-      // Problem: By the time events are scheduled, currentTime has moved forward
-      // Solution: Schedule start time slightly in the future with sufficient buffer
-      // Increased from 50ms → 100ms → 200ms to handle:
-      // - React re-renders between consecutive sessions
-      // - Salamander piano initialization (90 samples)
-      // - Event collection and batching (~70-80ms with logging)
-      // - Buffer silence analysis for first-beat timing compensation
-      // User logs showed 100ms left only 28ms actual lookahead after processing
-      const startupLookahead = 0.2; // 200ms - ensures first beat has adequate scheduling time
-      this.transportStartTime =
-        this.audioContext.currentTime + startupLookahead;
-
-      // Phase 2: Sync transport start time to TimingMetricsCollector
-      this.timingMetricsCollector.setTransportStartTime(this.transportStartTime);
-
-      // Phase 3: Sync transport start time to CC64TimelineBuilder
-      this.cc64TimelineBuilder.setTransportStartTime(this.transportStartTime);
-
-      // Phase 4: Sync audio context with transport start time to HarmonyScheduler
-      // Other schedulers don't need transportStartTime (they receive pre-calculated audioTime)
-      this.harmonyScheduler.setAudioContext(this.audioContext, this.transportStartTime);
-
-      // Phase 5: Sync transport start time to EventRouter
-      this.eventRouter.setTransportStartTime(this.transportStartTime);
-
-      logger.info(
-        '🎯 Transport start anchor captured with FAANG startup lookahead',
-        {
-          transportStartTime: this.transportStartTime.toFixed(3),
-          currentContextTime: this.audioContext.currentTime.toFixed(3),
-          startupLookahead: `${startupLookahead * 1000}ms`,
-          sampleRate: this.sampleRate,
-        },
-      );
-    } else {
-      logger.error(
-        '❌ CRITICAL: No AudioContext available! Time domain conversion will fail completely.',
-      );
-    }
-
-    logger.info('Starting RegionProcessor');
-    this.debugger.log('RegionProcessor', 'starting', {
-      tracks: this.tracks.size,
-      transportState: Tone.Transport.state,
-      transportSeconds: Tone.Transport.seconds,
-      transportPosition: Tone.Transport.position,
-      transportStartTime: this.transportStartTime,
-    });
-
-    this.isRunning = true;
-    this.lastProcessedPosition = -1;
-
-    // FAANG FIX: Clear old Tone.Transport scheduled events FIRST before clearing tracking
-    // This ensures tempo changes while stopped take effect on next play
-    // CRITICAL: Must clear Tone events BEFORE clearing scheduledEvents to prevent race condition
-    this.scheduledIds.forEach((toneId) => {
-      try {
-        Tone.Transport.clear(toneId);
-      } catch (e) {
-        // Ignore errors when clearing
-      }
-    });
-    this.scheduledIds.clear();
-
-    // AUDIO DOUBLING FIX: Clear scheduledEvents AFTER clearing Tone.Transport events
-    // This prevents race condition where backup scheduler thinks events aren't scheduled
-    this.scheduledEvents.clear();
-
-    // Reset and start timing metrics
-    this.resetMetrics();
-    this.startMetricsReporting();
-
-    // DIAGNOSTIC: Check what BPM Tone.Transport has RIGHT NOW before scheduling
-    const currentToneBpm = Tone.Transport.bpm.value;
-    logger.info(
-      '🎵 RegionProcessor.start() - Checking Tone.Transport BPM before scheduling',
-      {
-        toneBpm: currentToneBpm,
-        instanceId: this._instanceId,
+      // Dependencies
+      (context) => {
+        this.audioContext = context;
+      },
+      (rate) => {
+        this.sampleRate = rate;
+      },
+      (time) => {
+        this.transportStartTime = time;
+      },
+      (time) => {
+        // Sync transport start time to all modules
+        this.timingMetricsCollector.setTransportStartTime(time);
+        this.sustainPedalManager.setTransportStartTime(time);
+        this.harmonyScheduler.setAudioContext(this.audioContext!, time);
+        this.eventRouter.setTransportStartTime(time);
+      },
+      () => {
+        // Clear scheduled state
+        this.scheduledIds.clear();
+        this.scheduledEvents.clear();
+      },
+      () => {
+        this.resetMetrics();
+      },
+      () => {
+        this.startMetricsReporting();
+      },
+      () => {
+        this.scheduleAllRegions();
+      },
+      () => {
+        return this.debugger;
+      },
+      () => {
+        this.processCurrentPosition();
       },
     );
 
-    // AUDIO DOUBLING FIX: Disable Tone.Transport.loop to prevent event re-triggering
-    // Loop can cause already-scheduled events to fire again on 2nd/3rd playback
-    if (Tone.Transport.loop) {
-      logger.warn(
-        '⚠️ Tone.Transport.loop was enabled - disabling to prevent double playback',
-        {
-          loopStart: Tone.Transport.loopStart,
-          loopEnd: Tone.Transport.loopEnd,
-          instanceId: this._instanceId,
-        },
-      );
-      Tone.Transport.loop = false;
-    }
-
-    // AUDIO DOUBLING FIX: Set guard flag to prevent backup scheduler during initial scheduling
-    // This prevents race condition where backup scheduler schedules events that main scheduler is still scheduling
-    this.isInitialScheduling = true;
-
-    // Schedule events ahead of time using Tone.js scheduler
-    this.scheduleAllRegions();
-
-    // AUDIO DOUBLING FIX: Clear guard flag after initial scheduling completes
-    this.isInitialScheduling = false;
-
-    // Also set up a regular check for dynamic scheduling
-    this.scheduleInterval = setInterval(() => {
-      // DEBUG: Log interval fires to detect race conditions
-      logger.debug('⏰ Interval callback fired', {
-        isRunning: this.isRunning,
-        transportState: Tone.Transport.state,
-        isInitialScheduling: this.isInitialScheduling,
-        timestamp: Date.now(),
-      });
-
-      if (
-        this.isRunning &&
-        Tone.Transport.state === 'started' &&
-        !this.isInitialScheduling
-      ) {
-        this.processCurrentPosition();
-      }
-    }, 25); // Check every 25ms
+    // Update state from result
+    this.isRunning = result.isRunning;
+    this.transportStartTime = result.transportStartTime;
+    this.scheduleInterval = result.scheduleInterval;
+    this.isInitialScheduling = result.isInitialScheduling;
+    this.lastProcessedPosition = -1;
   }
 
   /**
@@ -815,250 +777,37 @@ export class RegionProcessor {
    *                   Default: false (manual stop behavior)
    */
   stop(graceful = false): void {
-    if (!this.isRunning) return;
+    // Phase 7: Delegate lifecycle management to LifecycleCoordinator
+    const result = this.lifecycleCoordinator.stop(
+      graceful,
+      this.isRunning,
+      this.scheduleInterval,
+      this.scheduledIds,
+      this.scheduledEvents,
+      this.currentCC64Timeline,
+      this.activeHarmonySources,
+      this.activeBassSources,
+      this.scheduledAudioSources,
+      this.tracks,
+      this.audioContext,
 
-    logger.info('Stopping RegionProcessor', { graceful });
+      // Dependencies
+      () => {
+        return this.getTimingMetrics();
+      },
+      () => {
+        this.stopMetricsReporting();
+      },
+    );
 
-    // Stop metrics reporting and log final stats (only if we have events)
-    // Phase 2: Get metrics from TimingMetricsCollector before stopping
-    const metricsBeforeStop = this.getTimingMetrics();
-    this.stopMetricsReporting();
-    if (metricsBeforeStop.totalEvents > 0) {
-      logger.info('📊 Final Timing Report', metricsBeforeStop);
-    }
-
-    // CRITICAL FIX: Clear interval BEFORE setting isRunning = false
-    // This prevents race condition where interval callback fires after stop is called
-    // but before interval is cleared, scheduling "orphaned" audio sources
-    logger.info('🛑 STOP: Clearing interval FIRST to prevent race condition', {
-      hasInterval: !!this.scheduleInterval,
-      timestamp: Date.now(),
-    });
-
-    if (this.scheduleInterval) {
-      clearInterval(this.scheduleInterval);
-      this.scheduleInterval = null;
-      logger.info('🛑 STOP: Interval cleared successfully');
-    }
-
-    // Now safe to set flag - interval cannot fire anymore
-    this.isRunning = false;
-    logger.info('🛑 STOP: isRunning = false');
-
-    // Clear all scheduled events using the Tone.Transport IDs
-    this.scheduledIds.forEach((toneId) => {
-      try {
-        Tone.Transport.clear(toneId);
-      } catch (e) {
-        // Ignore errors when clearing
-      }
-    });
-    this.scheduledIds.clear();
-    this.scheduledEvents.clear();
-
-    // CRITICAL FIX: Cancel ALL events on Tone.Transport to stop future triggers
-    // Tone.Transport.clear(id) only clears specific tracked events
-    // Some events may not be tracked in scheduledIds - cancel() ensures complete cleanup
-    try {
-      Tone.Transport.cancel(0); // Cancel all events from time 0 onwards
-      logger.info('🎵 RegionProcessor: Cancelled all Tone.Transport events');
-    } catch (e) {
-      logger.error(
-        '🎵 RegionProcessor: Failed to cancel Tone.Transport events',
-        e,
-      );
-    }
-
-    // Clear CC64 timeline
-    this.currentCC64Timeline.clear();
-
-    // Handle audio sources based on stop type
-    const now = this.audioContext?.currentTime || 0;
-    const fadeOutTime = 0.03; // 30ms - fast stop for manual stop button
-
-    if (!graceful) {
-      // MANUAL STOP: Fade out all active harmony notes with fast 30ms fade
-      this.activeHarmonySources.forEach((sourceGainPairs, noteName) => {
-        sourceGainPairs.forEach(({ source, gain }) => {
-          try {
-            const currentGain = gain.gain.value;
-            // Cancel any scheduled gain changes
-            gain.gain.cancelScheduledValues(now);
-            // Set current gain value as starting point
-            gain.gain.setValueAtTime(currentGain, now);
-            // Apply fast 30ms exponential fadeout
-            gain.gain.exponentialRampToValueAtTime(0.001, now + fadeOutTime);
-          } catch (e) {
-            // Ignore if already stopped
-          }
-        });
-      });
-    }
-    // GRACEFUL STOP: Don't touch active harmony sources - they have pre-scheduled fade-outs
-
-    // Clear harmony sustain state (but sources continue playing with scheduled fade)
-    this.activeHarmonySources.clear();
-
-    if (graceful) {
-      // GRACEFUL STOP (auto-stop at exercise end):
-      // Let one-shot samples (drums, metronome) finish naturally (1-2 seconds)
-      // Last harmony notes will ring out naturally via pre-scheduled 2-second extension
-      logger.info(
-        '🎵 GRACEFUL STOP: Allowing one-shot samples to finish, last harmony notes ring naturally',
-      );
-
-      let oneShotCount = 0;
-
-      this.scheduledAudioSources.forEach((info, source) => {
-        if (info.type === 'one-shot') {
-          // Let drums and metronome clicks finish naturally
-          oneShotCount++;
-          logger.debug(`🎵 Preserving ${info.type} source to finish naturally`);
-          // Don't call source.stop() - let it finish on its own
-          // Will auto-disconnect when it ends
-        } else {
-          // Sustained notes (harmony) - last notes have pre-scheduled ring-out
-          logger.debug(
-            `🎵 Harmony note - will ring naturally if it's a last note`,
-          );
-        }
-      });
-
-      logger.info('🎵 GRACEFUL STOP: Audio cleanup complete', {
-        oneShotsPreserved: oneShotCount,
-        harmonyLastNotes: 'pre-scheduled to ring for 2s (1s hold + 1s fade)',
-      });
-    } else {
-      // MANUAL STOP (user clicked stop button):
-      // Fast 30ms fade for instant stop feel
-      // Last notes had pre-scheduled ring-out, but manual stop overrides it
-      logger.info('🛑 MANUAL STOP: Fast 30ms fadeout for all harmony notes');
-
-      // CRITICAL FIX: Stop harmony WAM plugin ONCE before stopping individual sources
-      // This prevents calling clearEvents() 129 times (once per note)
-      const harmonyTrack = Array.from(this.tracks.values()).find(
-        (t) => t.instrumentType === 'harmony',
-      );
-      if (harmonyTrack?.audioNode?.clearEvents) {
-        logger.info('🛑 Stopping harmony WAM plugin via clearEvents()');
-        harmonyTrack.audioNode.clearEvents();
-      }
-
-      // Stop non-harmony sources (drums, bass, metronome) with fadeout to prevent clicks
-      this.scheduledAudioSources.forEach((info, source) => {
-        try {
-          if (info.type === 'one-shot') {
-            // Stop one-shot samples with fadeout to prevent audio spikes
-            source.stop(now + fadeOutTime); // 30ms fadeout prevents clicks
-            // Don't disconnect immediately - let onended callback handle cleanup
-            logger.debug(
-              `🛑 Stopped ${info.type} source with ${fadeOutTime * 1000}ms fadeout`,
-            );
-          } else if (info.hasStopScheduled) {
-            // Sustained notes (harmony) - already have fast 30ms fadeout applied
-            logger.debug(`🛑 Harmony note - fast fadeout applied`);
-          }
-        } catch (e) {
-          // Ignore errors if source already stopped/ended
-          logger.debug(`🛑 Error stopping source: ${e}`);
-        }
-      });
-
-      logger.info(
-        '🛑 MANUAL STOP: Non-harmony sources stopped, harmony with fast 30ms fadeout',
-      );
-    }
-
-    // CRITICAL FIX: Handle scheduled audio sources based on stop type
-    // scheduledAudioSources includes notes that are scheduled to play in the future
-    let futureSourcesStopped = 0;
-
-    if (graceful) {
-      // GRACEFUL STOP: Only stop sources that haven't started yet (future notes)
-      // Let currently playing sources finish with their pre-scheduled ring-out
-      this.scheduledAudioSources.forEach((info, source) => {
-        try {
-          // Check if source has already started playing
-          // Web Audio API doesn't expose playbackState, so we track this via type
-          if (info.type === 'sustained' && info.hasStopScheduled) {
-            // This is a harmony note with pre-scheduled stop time (includes ring-out)
-            // Let it continue playing and ring out naturally
-            logger.debug(
-              `🎵 GRACEFUL: Preserving ${info.type} source with scheduled ring-out`,
-            );
-          } else {
-            // This is a future note that hasn't started, or one-shot without ring-out
-            // Stop it to prevent it from starting after stop is called
-            source.stop(now + fadeOutTime);
-            futureSourcesStopped++;
-            logger.debug(`🛑 GRACEFUL: Stopped future ${info.type} source`);
-          }
-        } catch (e) {
-          logger.debug(`🛑 Source already stopped: ${info.type}`);
-        }
-      });
-
-      logger.info(
-        `🎵 GRACEFUL STOP: Stopped ${futureSourcesStopped} future sources, preserved playing sources with ring-out`,
-      );
-
-      // DON'T clear scheduledAudioSources immediately in graceful stop
-      // Sources will auto-remove via onended callbacks after ring-out completes
-      // Schedule cleanup after max ring-out time (3 seconds)
-      setTimeout(() => {
-        this.scheduledAudioSources.clear();
-        logger.info(
-          '🎵 GRACEFUL STOP: Cleared scheduled sources after ring-out period',
-        );
-      }, 3500); // 3s ring-out + 500ms buffer
-    } else {
-      // MANUAL STOP: Stop ALL sources immediately with fast fadeout
-      this.scheduledAudioSources.forEach((info, source) => {
-        try {
-          source.stop(now + fadeOutTime); // 30ms fadeout prevents clicks
-          futureSourcesStopped++;
-          logger.debug(
-            `🛑 Stopped future ${info.type} source with ${fadeOutTime * 1000}ms fadeout`,
-          );
-        } catch (e) {
-          logger.debug(`🛑 Source already stopped: ${info.type}`);
-        }
-      });
-
-      logger.info(
-        `🛑 MANUAL STOP: Stopped ${futureSourcesStopped} future sources with ${fadeOutTime * 1000}ms fadeout`,
-      );
-
-      this.scheduledAudioSources.clear();
-      logger.info('🛑 MANUAL STOP: All scheduled audio sources cleared');
-    }
-
-    // Note: activeHarmonySources already cleared in manual stop section above (line 794)
-    // with proper 3-second fadeout applied. No need to force-stop them here.
-
-    // Stop all active bass notes with fadeout to prevent audio spikes
-    this.activeBassSources.forEach((source) => {
-      try {
-        source.stop(now + fadeOutTime); // 30ms fadeout prevents clicks
-        // Don't disconnect - let onended callback handle cleanup
-      } catch (e) {
-        // Ignore errors if already stopped
-      }
-    });
-    this.activeBassSources.clear();
-
-    // IMPORTANT: DO NOT clear tracks here!
-    // Tracks should persist between play/stop cycles
-    // Widgets register tracks once when ready, not on every play
-    // Clearing here causes harmony track to disappear before scheduling
-    // this.tracks.clear(); // REMOVED - was causing harmony track loss
-
-    this.lastProcessedPosition = -1;
+    // Update state from result
+    this.isRunning = result.isRunning;
+    this.scheduleInterval = result.scheduleInterval;
+    this.lastProcessedPosition = result.lastProcessedPosition;
   }
 
   /**
    * Reschedule all pending events when tempo changes during playback
-   * This clears the old schedule and creates a new one with updated timing
    *
    * TEMPO CHANGE FIX: FAANG-style instant tempo change implementation
    * - Stops all scheduled audio sources immediately
@@ -1067,109 +816,34 @@ export class RegionProcessor {
    */
   private reschedulePendingEvents(): void {
     if (!this.isRunning) {
-      logger.warn('⚠️ RegionProcessor: Cannot reschedule events - not running');
-      return;
-    }
-
-    // CRITICAL: Check for scheduling lock to prevent race conditions
-    if (this.isScheduling) {
-      logger.warn(
-        '⚠️ RegionProcessor: Cannot reschedule during active scheduling - deferring',
-      );
-      return;
-    }
-
-    const totalScheduledEvents = Array.from(
-      this.scheduledEvents.values(),
-    ).reduce((sum, set) => sum + set.size, 0);
-    logger.info(
-      '♻️ RegionProcessor: Rescheduling all events due to tempo change',
-      {
+      logger.warn('⚠️ Cannot reschedule events - not running', {
         instanceId: this._instanceId,
-        currentToneBpm: Tone.Transport.bpm.value,
-        scheduledEventCount: totalScheduledEvents,
-        scheduledIdCount: this.scheduledIds.size,
-        scheduledAudioSources: this.scheduledAudioSources.size,
-      },
-    );
+      });
+      return;
+    }
 
-    // CRITICAL FIX #1: Stop all scheduled AudioBufferSourceNodes
-    // This prevents audio event doubling when tempo changes during playback
-    logger.info('🛑 Stopping all scheduled audio sources', {
-      sourceCount: this.scheduledAudioSources.size,
-    });
-
-    this.scheduledAudioSources.forEach((type, source) => {
-      try {
-        source.stop(0); // Stop immediately
-        source.disconnect();
-      } catch (e) {
-        // Source may have already ended or been stopped - this is OK
-        logger.debug('Source already stopped/ended during reschedule', {
-          type,
-        });
+    // STEP 1: Stop all currently scheduled audio sources
+    this.scheduledAudioSources.forEach((metadata, source) => {
+      if (!metadata.hasStopScheduled && source.context.state === 'running') {
+        try {
+          source.stop();
+        } catch (e) {
+          // Already stopped - ignore
+        }
       }
     });
     this.scheduledAudioSources.clear();
 
-    logger.info('✅ All audio sources stopped and cleared');
+    // STEP 2: Recalculate transportStartTime anchor
+    const currentTransportTime = Tone.Transport.seconds;
+    const currentAudioTime = this.audioContext?.currentTime || 0;
+    this.transportStartTime = currentAudioTime - currentTransportTime;
 
-    // CRITICAL FIX #2: Recalculate transportStartTime anchor
-    // This ensures new events are scheduled with correct timing relative to current position
-    // Formula: new anchor = current hardware time - elapsed musical time
-    if (this.audioContext) {
-      const currentTonePosition = Tone.Transport.seconds; // Musical time elapsed
-      const currentHardwareTime = this.audioContext.currentTime; // Hardware clock
-      const oldAnchor = this.transportStartTime;
-
-      // New anchor: where we are NOW in hardware time minus musical time
-      this.transportStartTime = currentHardwareTime - currentTonePosition;
-
-      // Phase 2: Sync updated transport start time to TimingMetricsCollector
-      this.timingMetricsCollector.setTransportStartTime(this.transportStartTime);
-
-      // Phase 3: Sync updated transport start time to CC64TimelineBuilder
-      this.cc64TimelineBuilder.setTransportStartTime(this.transportStartTime);
-
-      logger.info(
-        '🎯 Recalculated transportStartTime anchor for tempo change',
-        {
-          oldAnchor: oldAnchor.toFixed(6),
-          newAnchor: this.transportStartTime.toFixed(6),
-          drift: (this.transportStartTime - oldAnchor).toFixed(6),
-          tonePosition: currentTonePosition.toFixed(6),
-          hardwareTime: currentHardwareTime.toFixed(6),
-          newBpm: Tone.Transport.bpm.value,
-        },
-      );
-    }
-
-    // Clear all scheduled Tone.Transport events
-    this.scheduledIds.forEach((toneId) => {
-      try {
-        Tone.Transport.clear(toneId);
-      } catch (e) {
-        // Ignore errors when clearing
-      }
-    });
-    this.scheduledIds.clear();
-
-    // Clear scheduled event tracking to allow rescheduling
+    // STEP 3: Clear scheduled events
     this.scheduledEvents.clear();
 
-    // Reschedule all regions with new tempo
-    // Events will be recalculated using parsePosition() with the new BPM
-    // and scheduled with the updated transportStartTime anchor
+    // STEP 4: Reschedule with new tempo
     this.scheduleAllRegions();
-
-    const newTotalScheduledEvents = Array.from(
-      this.scheduledEvents.values(),
-    ).reduce((sum, set) => sum + set.size, 0);
-    logger.info('✅ RegionProcessor: Events rescheduled successfully', {
-      newScheduledEventCount: newTotalScheduledEvents,
-      newScheduledIdCount: this.scheduledIds.size,
-      newTransportStartTime: this.transportStartTime.toFixed(6),
-    });
   }
 
   /**
@@ -1177,26 +851,15 @@ export class RegionProcessor {
    * Used to detect which notes should have extended ring-out
    */
   private calculateExerciseDuration(): void {
-    const result = this.exerciseDurationCalculator.calculateDuration(
-      this.tracks,
-      this.countdownEnabled,
+    // Phase 4.1: Use RegionScheduler's calculateDuration method
+    const result = this.regionScheduler.calculateDuration(
+      Array.from(this.tracks.values()) as any,
+      this.configurationManager.isCountdownEnabled(),
       this.countdownOffsetBeats,
     );
 
     this.exerciseEndTime = result.exerciseEndTime;
     this.lastBeatThreshold = result.lastBeatThreshold;
-
-    // Phase 3: Sync exercise timing to SustainPedalAnalyzer
-    this.sustainPedalAnalyzer.setExerciseTiming(
-      this.exerciseEndTime,
-      this.lastBeatThreshold,
-    );
-
-    // Phase 4: Sync exercise timing to HarmonyScheduler (needed for last-note ring-out)
-    this.harmonyScheduler.setExerciseTiming(
-      this.exerciseEndTime,
-      this.lastBeatThreshold,
-    );
   }
 
   /**
@@ -1204,49 +867,47 @@ export class RegionProcessor {
    * TEMPO CHANGE FIX: Protected by scheduling lock to prevent race conditions
    */
   private scheduleAllRegions(): void {
-    // TEMPO CHANGE FIX: Prevent concurrent scheduling operations
+    // Prevent concurrent scheduling
     if (this.isScheduling) {
-      logger.error('🚨 RegionProcessor: Scheduling already in progress!');
+      logger.error('🚨 Scheduling already in progress!', {
+        instanceId: this._instanceId,
+      });
       return;
     }
 
-    this.isScheduling = true;
-
     try {
-      this.debugger.log('RegionProcessor', 'scheduling-all-regions', {
-        trackCount: this.tracks.size,
-      });
+      this.isScheduling = true;
 
-      // Phase 6: Delegate to RegionScheduler
+      // Delegate to RegionScheduler (was Phase 8)
       const result = this.regionScheduler.scheduleAll(
         this.tracks,
         this.scheduledEvents,
-        this.countdownManager.isCountdownEnabled(),
+        this.countdownEnabled,
         this.countdownOffsetBeats,
         this.transportStartTime,
         this.audioContext,
         // Dependencies
         this.getInstrumentType.bind(this),
-        this.parsePositionToObject.bind(this),
-        this.parsePosition.bind(this),
-        this.buildCC64Timeline.bind(this),
+        this.timePositionConverter.parsePositionToObject.bind(
+          this.timePositionConverter,
+        ),
+        this.timePositionConverter.parsePosition.bind(
+          this.timePositionConverter,
+        ),
+        this.sustainPedalManager.buildTimeline.bind(this.sustainPedalManager),
         this.logCC64DiagnosticTable.bind(this),
-        this.getCachedSchedule.bind(this),
-        this.setCachedSchedule.bind(this),
-        this.emitEvent.bind(this),
-        this.setCurrentCC64Timeline.bind(this),
+        this.scheduleCache.get.bind(this.scheduleCache),
+        this.scheduleCache.set.bind(this.scheduleCache),
+        this.eventRouter.emitEvent.bind(this.eventRouter),
+        (timeline: Map<number, boolean>) => {
+          this.currentCC64Timeline = timeline;
+        },
         this.calculateExerciseDuration.bind(this),
       );
 
-      // Update current CC64 timeline
+      // Update state
       this.currentCC64Timeline = result.currentCC64Timeline;
-
-      logger.info(
-        `✅ Scheduled ${result.totalEvents} audio events total in ${result.batchCount} batches (via RegionScheduler)`,
-      );
-
     } finally {
-      // TEMPO CHANGE FIX: Always release scheduling lock, even if error occurs
       this.isScheduling = false;
     }
   }
@@ -1255,16 +916,17 @@ export class RegionProcessor {
    * Process current transport position (backup method)
    */
   private processCurrentPosition(): void {
-    this.backupScheduler.processPosition(
+    // Phase 4.1: Use RegionScheduler's processPosition method
+    this.regionScheduler.processPosition(
       this.isRunning,
-      this.tracks,
+      Array.from(this.tracks.values()) as any,
       this.scheduledEvents,
       this.scheduledIds,
-      this.countdownEnabled,
+      this.configurationManager.isCountdownEnabled(),
       this.countdownOffsetBeats,
       this.parsePosition.bind(this),
-      this.getInstrumentType.bind(this),
-      this.emitEvent.bind(this),
+      this.getInstrumentType.bind(this) as any,
+      this.eventRouter.emitEvent.bind(this.eventRouter),
     );
   }
 
@@ -1290,7 +952,7 @@ export class RegionProcessor {
       | string
       | { measure: number; beat: number; subdivision: number; tick?: number },
   ): number {
-    return this.positionParser.parsePosition(position);
+    return this.timePositionConverter.parsePosition(position);
   }
 
   /**
@@ -1302,7 +964,7 @@ export class RegionProcessor {
       | string
       | { measure: number; beat: number; subdivision?: number; tick?: number },
   ): { measure: number; beat: number; subdivision: number; tick: number } {
-    return this.positionParser.parsePositionToObject(position);
+    return this.timePositionConverter.parsePositionToObject(position);
   }
 
   /**
@@ -1364,7 +1026,7 @@ export class RegionProcessor {
     events: any[],
     region: Region,
   ): Map<number, boolean> {
-    return this.cc64TimelineBuilder.buildTimeline(events, region);
+    return this.sustainPedalManager.buildTimeline(events, region);
   }
 
   /**
@@ -1375,7 +1037,7 @@ export class RegionProcessor {
     time: number,
     cc64Timeline: Map<number, boolean>,
   ): boolean {
-    return this.sustainPedalAnalyzer.isPedalDownAtTime(time, cc64Timeline);
+    return this.sustainPedalManager.isPedalDownAtTime(time, cc64Timeline);
   }
 
   /**
@@ -1386,7 +1048,7 @@ export class RegionProcessor {
     noteStartTime: number,
     cc64Timeline: Map<number, boolean>,
   ): number | null {
-    return this.sustainPedalAnalyzer.findNextCC64Up(noteStartTime, cc64Timeline);
+    return this.sustainPedalManager.findNextCC64Up(noteStartTime, cc64Timeline);
   }
 
   /**
@@ -1394,7 +1056,7 @@ export class RegionProcessor {
    * Phase 3: Delegated to SustainPedalAnalyzer
    */
   private isNoteHeldUntilExerciseEnd(midiNoteEndTime: number): boolean {
-    return this.sustainPedalAnalyzer.isNoteHeldUntilExerciseEnd(midiNoteEndTime);
+    return this.sustainPedalManager.isNoteHeldUntilExerciseEnd(midiNoteEndTime);
   }
 
   /**
@@ -1406,7 +1068,7 @@ export class RegionProcessor {
     noteEnd: number,
     timeline: Map<number, boolean>,
   ): number | null {
-    return this.sustainPedalAnalyzer.findCC64DownDuringNote(
+    return this.sustainPedalManager.findCC64DownDuringNote(
       noteStart,
       noteEnd,
       timeline,
@@ -1414,7 +1076,6 @@ export class RegionProcessor {
   }
 
   // ============================================================================
-
 
   /**
    * Emit the appropriate event based on instrument type
@@ -1490,7 +1151,6 @@ export class RegionProcessor {
 
   /**
    * Update tracks (for when regions change)
-   * Phase 6: Delegated to TrackManager
    *
    * CRITICAL: When running, adds tracks WITHOUT stopping/restarting
    * This prevents interrupting countdown and causing abrupt restarts
@@ -1499,6 +1159,7 @@ export class RegionProcessor {
     tracks: Track[],
     exerciseMetadata?: { harmonyInstrument?: string },
   ): void {
+    // Delegate to TrackManager (was Phase 8)
     this.trackManager.updateTracks(
       tracks,
       exerciseMetadata,
@@ -1511,7 +1172,7 @@ export class RegionProcessor {
       this.scheduleAllRegions.bind(this),
       this.loadGrandPianoKeyboardMap.bind(this),
       () => this.grandPianoKeyboardMap,
-      (instrument: string) => {
+      (instrument) => {
         this.currentHarmonyInstrument = instrument;
       },
       this.debugger.log.bind(this.debugger),
@@ -1593,5 +1254,45 @@ export class RegionProcessor {
       this.countdownOffsetBeats,
     );
     this.diagnosticLogger.logCC64DiagnosticTable(sortedEvents, region);
+  }
+
+  // ============================================================================
+  // CLEANUP AND DISPOSAL
+  // ============================================================================
+
+  /**
+   * ✅ BUG #7 FIX: Dispose method to clean up event listeners and prevent memory leaks
+   *
+   * This method should be called when RegionProcessor is no longer needed.
+   * Cleans up:
+   * - EventBus subscriptions (tempo-change listener)
+   * - Debounce timers
+   *
+   * Note: Audio sources are cleaned up separately in BUG #3 fix
+   */
+  dispose(): void {
+    logger.info('🧹 RegionProcessor: Disposing instance', {
+      instanceId: this._instanceId,
+      hadTempoListener: !!this.unsubscribeTempoChange,
+      hadDebounceTimer: !!this.tempoChangeDebounce,
+    });
+
+    // Unsubscribe from tempo-change events
+    if (this.unsubscribeTempoChange) {
+      this.unsubscribeTempoChange();
+      this.unsubscribeTempoChange = null;
+      logger.info('✅ RegionProcessor: Unsubscribed from tempo-change events');
+    }
+
+    // Clear any pending debounce timer
+    if (this.tempoChangeDebounce) {
+      clearTimeout(this.tempoChangeDebounce);
+      this.tempoChangeDebounce = null;
+      logger.info('✅ RegionProcessor: Cleared tempo debounce timer');
+    }
+
+    logger.info('✅ RegionProcessor: Disposal complete', {
+      instanceId: this._instanceId,
+    });
   }
 }

@@ -420,7 +420,7 @@ describe('RegionProcessor - Tempo Change Integration', () => {
     it('should handle multiple rapid tempo changes in sequence', async () => {
       (Tone.Transport as any).bpm.value = 120;
       (regionProcessor as any).isRunning = true;
-      mockAudioContext.currentTime = 2.0;
+      mockAudioContext.currentTime = 5.0;
       (Tone.Transport as any).seconds = 2.0;
 
       const track = {
@@ -447,9 +447,10 @@ describe('RegionProcessor - Tempo Change Integration', () => {
       vi.advanceTimersByTime(50);
 
       const anchor1 = (regionProcessor as any).transportStartTime;
+      expect(anchor1).toBe(3.0); // 5.0 - 2.0
 
-      // Advance time
-      mockAudioContext.currentTime = 3.0;
+      // Advance time (hardware advances more than musical time)
+      mockAudioContext.currentTime = 8.0;
       (Tone.Transport as any).seconds = 3.0;
 
       // Second tempo change
@@ -462,8 +463,8 @@ describe('RegionProcessor - Tempo Change Integration', () => {
       // Anchors should be different (recalculated each time)
       expect(anchor2).not.toBe(anchor1);
 
-      // Second anchor should be: 3.0 - 3.0 = 0.0
-      expect(anchor2).toBe(0.0);
+      // Second anchor should be: 8.0 - 3.0 = 5.0
+      expect(anchor2).toBe(5.0);
     });
   });
 
@@ -474,13 +475,15 @@ describe('RegionProcessor - Tempo Change Integration', () => {
       mockAudioContext.currentTime = 1.0;
       (Tone.Transport as any).seconds = 1.0;
 
+      const trackId = 'track-1';
       const eventKey = 'test-event-1';
 
-      // Add event to scheduledEvents
-      (regionProcessor as any).scheduledEvents.add(eventKey);
+      // Add event to scheduledEvents (Map<string, Set<string>>)
+      (regionProcessor as any).scheduledEvents.set(trackId, new Set([eventKey]));
 
       // Verify event is tracked
-      expect((regionProcessor as any).scheduledEvents.has(eventKey)).toBe(true);
+      expect((regionProcessor as any).scheduledEvents.has(trackId)).toBe(true);
+      expect((regionProcessor as any).scheduledEvents.get(trackId).has(eventKey)).toBe(true);
 
       // Change tempo - this clears scheduledEvents
       (Tone.Transport as any).bpm.value = 140;

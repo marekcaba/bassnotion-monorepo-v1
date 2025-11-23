@@ -1,25 +1,36 @@
 /**
- * MusicalTimeConverter - Converts between musical time and audio time
+ * TimePositionConverter - Converts between musical time and audio time
+ *
+ * Phase 2.2: Merged MusicalTimeConverter + PositionParser
  *
  * CRITICAL MODULE: All timing calculations flow through here.
  * Handles conversion from musical positions (bars:beats:sixteenths) to
  * hardware audio time (seconds) using the current BPM.
  *
- * This ensures tempo changes work correctly by always using Tone.Transport.bpm
- * as the single source of truth.
+ * Responsibilities:
+ * - Parse string positions ("bar:beat:sixteenth:tick")
+ * - Parse object positions ({measure, beat, subdivision, tick})
+ * - Convert to absolute seconds using current BPM
+ * - Handle tick precision (480 PPQ MIDI standard)
+ * - Convert positions to comparable objects for sorting
+ * - Parse musical durations (4n, 8n, etc.)
+ * - Provide current BPM accessor
+ *
+ * Note: Uses Tone.Transport.bpm as single source of truth for tempo.
+ * This ensures tempo changes work correctly.
  */
 
 import { getLogger } from '@/utils/logger.js';
 import * as Tone from 'tone';
 import type { ParsedPosition } from '../types/region.types.js';
 
-const logger = getLogger('MusicalTimeConverter');
+const logger = getLogger('TimePositionConverter');
 
-type PositionInput =
+export type PositionInput =
   | string
   | { measure: number; beat: number; subdivision?: number; tick?: number };
 
-export class MusicalTimeConverter {
+export class TimePositionConverter {
   private readonly TICKS_PER_BEAT = 480; // MIDI standard PPQ
   private readonly TICKS_PER_SIXTEENTH = 120; // 480 / 4
   private beatsPerBar: number = 4; // Default time signature

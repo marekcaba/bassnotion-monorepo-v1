@@ -35,8 +35,9 @@ export class MetronomePreloadStrategy implements PreloadStrategy {
         lowUrl: clickLowUrl,
       });
 
-      // Create AudioContext for decoding (use OfflineAudioContext to avoid affecting user's context)
-      const offlineContext = new OfflineAudioContext(2, 44100, 44100);
+      // ✅ BUG #2 FIX: Removed OfflineAudioContext creation
+      // We now cache raw ArrayBuffer data instead of decoding with OfflineContext
+      // The real AudioContext will handle decoding during playback
 
       // Load and cache HIGH click
       logger.info('📥 Fetching high click...');
@@ -45,9 +46,9 @@ export class MetronomePreloadStrategy implements PreloadStrategy {
         throw new Error(`Failed to fetch high click: ${highResponse.status}`);
       }
       const highArrayBuffer = await highResponse.arrayBuffer();
-      const highAudioBuffer = await offlineContext.decodeAudioData(highArrayBuffer);
 
-      GlobalSampleCache.getInstance().cacheBuffer('metronome-high', highAudioBuffer);
+      // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
+      GlobalSampleCache.getInstance().cacheBuffer('metronome-high', highArrayBuffer);
       logger.info('✅ High click cached');
 
       // Load and cache LOW click
@@ -57,16 +58,16 @@ export class MetronomePreloadStrategy implements PreloadStrategy {
         throw new Error(`Failed to fetch low click: ${lowResponse.status}`);
       }
       const lowArrayBuffer = await lowResponse.arrayBuffer();
-      const lowAudioBuffer = await offlineContext.decodeAudioData(lowArrayBuffer);
 
-      GlobalSampleCache.getInstance().cacheBuffer('metronome-low', lowAudioBuffer);
+      // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
+      GlobalSampleCache.getInstance().cacheBuffer('metronome-low', lowArrayBuffer);
       logger.info('✅ Low click cached');
 
       this.loaded = 2;
       this.total = 2;
 
       const duration = performance.now() - startTime;
-      logger.info('✅ Essential metronome samples preloaded and cached as AudioBuffers', {
+      logger.info('✅ Essential metronome samples preloaded as raw ArrayBuffers (BUG #2 FIX)', {
         duration: `${duration.toFixed(2)}ms`,
         samplesLoaded: 2,
         averagePerSample: `${(duration / 2).toFixed(2)}ms`,

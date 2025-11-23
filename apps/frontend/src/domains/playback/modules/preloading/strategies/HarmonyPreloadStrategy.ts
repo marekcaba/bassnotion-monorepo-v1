@@ -661,8 +661,9 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
     });
 
     try {
-      // Create OfflineAudioContext for decoding (doesn't require user interaction)
-      const offlineContext = new OfflineAudioContext(2, 44100 * 10, 44100);
+      // ✅ BUG #2 FIX: Removed OfflineAudioContext creation
+      // We now cache raw ArrayBuffer data instead of decoding with OfflineContext
+      // The real AudioContext will handle decoding during playback
 
       const { supabase } = await import('@/infrastructure/supabase/client');
 
@@ -713,7 +714,10 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
             }
 
             const arrayBuffer = await response.arrayBuffer();
-            const audioBuffer = await offlineContext.decodeAudioData(arrayBuffer);
+
+            // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
+            // OfflineContext-decoded buffers are incompatible with the real AudioContext
+            // The real AudioContext will decode these when needed during playback
 
             // CHECKPOINT 9: Buffer caching - log each cache operation
             const cacheKey = `${instrument}-${layer}-${noteName}`;
@@ -722,16 +726,14 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
               instrument,
               layer,
               noteName,
-              bufferDuration: audioBuffer.duration,
-              sampleRate: audioBuffer.sampleRate,
+              bufferSizeKB: Math.round(arrayBuffer.byteLength / 1024),
             });
 
-            // CRITICAL FIX: Cache buffer under physical sample name
-            // Mark as context-compatible so AudioContextCompatibility doesn't clear it
+            // CRITICAL FIX: Cache raw ArrayBuffer (not decoded AudioBuffer)
+            // This allows the real AudioContext to decode it later at the correct sample rate
             GlobalSampleCache.getInstance().cacheBuffer(
               cacheKey,
-              audioBuffer,
-              { isContextCompatible: true }
+              arrayBuffer // ✅ BUG #2 FIX: Pass ArrayBuffer, not AudioBuffer
             );
 
             console.log('🔍 [CHECKPOINT-9-CACHED] Buffer cached successfully:', cacheKey);

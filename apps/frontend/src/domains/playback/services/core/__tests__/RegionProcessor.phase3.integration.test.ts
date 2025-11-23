@@ -188,13 +188,13 @@ describe('RegionProcessor - Phase 3 Integration', () => {
       expect(countdownEnabled).toBe(false);
     });
 
-    it('should inject MusicalTimeConverter to CC64TimelineBuilder', () => {
+    it('should inject TimePositionConverter to CC64TimelineBuilder', () => {
       // Access private cc64TimelineBuilder
       const builder = (regionProcessor as any).cc64TimelineBuilder;
       const timeConverter = (builder as any).timeConverter;
 
       expect(timeConverter).toBeDefined();
-      expect(timeConverter.constructor.name).toBe('MusicalTimeConverter');
+      expect(timeConverter.constructor.name).toBe('TimePositionConverter');
     });
   });
 

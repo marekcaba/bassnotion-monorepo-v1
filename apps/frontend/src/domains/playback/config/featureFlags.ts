@@ -40,6 +40,15 @@ export interface AudioArchitectureFlags {
 
   /** Enable debug logging for instruments migration */
   DEBUG_INSTRUMENTS_MIGRATION: boolean;
+
+  /** Use new PlaybackEngine instead of RegionProcessor (Phase 0.4) */
+  ENABLE_NEW_PLAYBACK_ENGINE: boolean;
+
+  /** Enable debug logging for PlaybackEngine migration */
+  DEBUG_PLAYBACK_ENGINE_MIGRATION: boolean;
+
+  /** Enable performance comparison between RegionProcessor and PlaybackEngine */
+  COMPARE_PLAYBACK_ENGINE_PERFORMANCE: boolean;
 }
 
 // Default feature flag configuration
@@ -55,6 +64,9 @@ const defaultFlags: AudioArchitectureFlags = {
   COMPARE_TRANSPORT_PERFORMANCE: false, // No longer needed
   USE_MODULAR_INSTRUMENTS: true, // Modular instruments are now the default
   DEBUG_INSTRUMENTS_MIGRATION: false, // Migration complete
+  ENABLE_NEW_PLAYBACK_ENGINE: false, // Phase 0.4 - PlaybackEngine migration (starts disabled)
+  DEBUG_PLAYBACK_ENGINE_MIGRATION: false, // Enable for debugging during rollout
+  COMPARE_PLAYBACK_ENGINE_PERFORMANCE: false, // Enable to compare old vs new performance
 };
 
 /**
@@ -111,6 +123,18 @@ export function getAudioArchitectureFlags(): AudioArchitectureFlags {
     DEBUG_INSTRUMENTS_MIGRATION:
       process.env.NEXT_PUBLIC_DEBUG_INSTRUMENTS_MIGRATION === 'true' ||
       defaultFlags.DEBUG_INSTRUMENTS_MIGRATION,
+
+    ENABLE_NEW_PLAYBACK_ENGINE:
+      process.env.NEXT_PUBLIC_ENABLE_NEW_PLAYBACK_ENGINE === 'true' ||
+      defaultFlags.ENABLE_NEW_PLAYBACK_ENGINE,
+
+    DEBUG_PLAYBACK_ENGINE_MIGRATION:
+      process.env.NEXT_PUBLIC_DEBUG_PLAYBACK_ENGINE_MIGRATION === 'true' ||
+      defaultFlags.DEBUG_PLAYBACK_ENGINE_MIGRATION,
+
+    COMPARE_PLAYBACK_ENGINE_PERFORMANCE:
+      process.env.NEXT_PUBLIC_COMPARE_PLAYBACK_ENGINE_PERFORMANCE === 'true' ||
+      defaultFlags.COMPARE_PLAYBACK_ENGINE_PERFORMANCE,
   };
 
   // Apply rollout percentage logic
@@ -261,6 +285,32 @@ export function logInstrumentsMigrationEvent(
 export const AUDIO_ARCHITECTURE_FLAGS = getAudioArchitectureFlags();
 
 /**
+ * Check if new PlaybackEngine is enabled (Phase 0.4)
+ */
+export function isNewPlaybackEngineEnabled(): boolean {
+  const flags = getAudioArchitectureFlags();
+  return flags.ENABLE_NEW_PLAYBACK_ENGINE && !flags.ROLLBACK_TO_OLD_SYSTEM;
+}
+
+/**
+ * Log PlaybackEngine migration event
+ */
+export function logPlaybackEngineMigrationEvent(
+  event: string,
+  data?: Record<string, any>,
+): void {
+  const flags = getAudioArchitectureFlags();
+
+  if (flags.DEBUG_PLAYBACK_ENGINE_MIGRATION) {
+    logger.info(`[PlaybackEngine Migration] ${event}`, {
+      ...data,
+      usingNewPlaybackEngine: flags.ENABLE_NEW_PLAYBACK_ENGINE,
+      timestamp: new Date().toISOString(),
+    });
+  }
+}
+
+/**
  * Simple feature flags object for easy access
  */
 export const featureFlags = {
@@ -272,5 +322,8 @@ export const featureFlags = {
   },
   get newAudioArchitecture() {
     return isNewAudioArchitectureEnabled();
+  },
+  get newPlaybackEngine() {
+    return isNewPlaybackEngineEnabled();
   },
 };

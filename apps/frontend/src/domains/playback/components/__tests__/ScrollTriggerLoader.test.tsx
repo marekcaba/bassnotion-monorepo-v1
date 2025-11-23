@@ -3,14 +3,23 @@ import React from 'react';
 import { render, waitFor } from '@testing-library/react';
 import { ScrollTriggerLoader } from '../ScrollTriggerLoader';
 import { getSamplePreloader } from '../../services/InitialSamplePreloader.bridge';
-import userEvent from '@testing-library/user-event';
+import type { Exercise } from '@bassnotion/contracts';
 
-// Create a stable mock instance
+// Create mock functions
 const mockLoadEssentialSamples = vi.fn().mockResolvedValue(undefined);
+const mockLoadTutorialSamples = vi.fn().mockResolvedValue(undefined);
 const mockGetStats = vi.fn(() => ({ isComplete: false, isPreloading: false }));
+
 const mockPreloaderInstance = {
   loadEssentialSamples: mockLoadEssentialSamples,
+  loadTutorialSamples: mockLoadTutorialSamples,
   getStats: mockGetStats,
+};
+
+// Mock CoreServices
+const mockPreInitialize = vi.fn().mockResolvedValue(undefined);
+const mockCoreServices = {
+  preInitialize: mockPreInitialize,
 };
 
 // Mock the sample preloader
@@ -18,15 +27,16 @@ vi.mock('../../services/InitialSamplePreloader.bridge', () => ({
   getSamplePreloader: vi.fn(() => mockPreloaderInstance),
 }));
 
+// Mock CoreServices
+vi.mock('../../services/core/CoreServices.js', () => ({
+  CoreServices: vi.fn(() => mockCoreServices),
+}));
+
 // Mock logger
 vi.mock('@/utils/logger', () => ({
   getLogger: vi.fn(() => ({
-    info: vi.fn((msg: string) =>
-      console.log(`[scroll-trigger-loader] 📝 ${msg}`, ''),
-    ),
-    error: vi.fn((msg: string, error: any) =>
-      console.error(`[scroll-trigger-loader] 🚨 ${msg}`, error, ''),
-    ),
+    info: vi.fn(),
+    error: vi.fn(),
     debug: vi.fn(),
     warn: vi.fn(),
   })),
@@ -39,8 +49,18 @@ describe('ScrollTriggerLoader', () => {
     // Reset mock functions
     mockLoadEssentialSamples.mockClear();
     mockLoadEssentialSamples.mockResolvedValue(undefined);
+    mockLoadTutorialSamples.mockClear();
+    mockLoadTutorialSamples.mockResolvedValue(undefined);
+    mockPreInitialize.mockClear();
+    mockPreInitialize.mockResolvedValue(undefined);
     mockGetStats.mockClear();
     mockGetStats.mockReturnValue({ isComplete: false, isPreloading: false });
+
+    // Clear window globals
+    delete (window as any).__globalCoreServices;
+    delete (window as any).__samplesReady;
+    delete (window as any).__essentialSamplesLoaded;
+    delete (window as any).__initializationFailed;
 
     // Reset window events
     window.removeEventListener = vi.fn();
@@ -205,28 +225,6 @@ describe('ScrollTriggerLoader', () => {
       });
     });
 
-    it('should log appropriate messages during loading', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-      render(<ScrollTriggerLoader />);
-
-      // Trigger loading
-      const scrollHandler = (window.addEventListener as any).mock.calls.find(
-        (call: any) => call[0] === 'scroll',
-      )[1];
-
-      scrollHandler();
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
-          '[scroll-trigger-loader] 📝 🚀 First user interaction detected - loading essential samples',
-          '',
-        );
-      });
-
-      consoleSpy.mockRestore();
-    });
-
     it('should check if already loading before starting', async () => {
       render(<ScrollTriggerLoader />);
 
@@ -246,33 +244,6 @@ describe('ScrollTriggerLoader', () => {
       });
     });
 
-    it('should handle loading errors gracefully', async () => {
-      const consoleSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
-
-      // Make loadEssentialSamples throw
-      mockLoadEssentialSamples.mockRejectedValue(new Error('Loading failed'));
-
-      render(<ScrollTriggerLoader />);
-
-      // Trigger loading
-      const scrollHandler = (window.addEventListener as any).mock.calls.find(
-        (call: any) => call[0] === 'scroll',
-      )[1];
-
-      scrollHandler();
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
-          '[scroll-trigger-loader] 🚨 ❌ Failed to load essential samples:',
-          expect.any(Error),
-          '',
-        );
-      });
-
-      consoleSpy.mockRestore();
-    });
   });
 
   describe('Window Events', () => {
@@ -328,6 +299,166 @@ describe('ScrollTriggerLoader', () => {
 
         // Should set loading flag
         expect((window as any).__essentialSamplesLoaded).toBe(true);
+      });
+    });
+  });
+
+  // ============================================================================
+  // BUG #1: RACE CONDITION FIX TESTS
+  // ============================================================================
+  describe('Bug #1: Race Condition Prevention', () => {
+    it('should load samples when triggered', async () => {
+      render(<ScrollTriggerLoader />);
+
+      const scrollHandler = (window.addEventListener as any).mock.calls.find(
+        (call: any) => call[0] === 'scroll',
+      )[1];
+
+      scrollHandler();
+
+      await waitFor(() => {
+        // Samples should load
+        expect(mockLoadEssentialSamples).toHaveBeenCalled();
+      });
+    });
+
+    it('should not recreate CoreServices if it already exists', async () => {
+      // Pre-populate window.__globalCoreServices
+      (window as any).__globalCoreServices = mockCoreServices;
+
+      render(<ScrollTriggerLoader />);
+
+      const scrollHandler = (window.addEventListener as any).mock.calls.find(
+        (call: any) => call[0] === 'scroll',
+      )[1];
+
+      scrollHandler();
+
+      await waitFor(() => {
+        // Should NOT call preInitialize again
+        expect(mockPreInitialize).not.toHaveBeenCalled();
+
+        // But should still load samples
+        expect(mockLoadEssentialSamples).toHaveBeenCalled();
+      });
+    });
+
+    it('should use tutorial-level loading when exercises provided', async () => {
+      const mockExercises: Exercise[] = [
+        {
+          id: 'ex1',
+          name: 'Exercise 1',
+          harmonyInstrument: 'grandpiano',
+          harmonyNotes: [{ pitch: 'C4' }, { pitch: 'E4' }],
+        } as any,
+        {
+          id: 'ex2',
+          name: 'Exercise 2',
+          harmonyInstrument: 'wurlitzer',
+          harmonyNotes: [{ pitch: 'D4' }, { pitch: 'F4' }],
+        } as any,
+      ];
+
+      render(
+        <ScrollTriggerLoader
+          exercises={mockExercises}
+          tutorialId="tutorial-123"
+        />,
+      );
+
+      const scrollHandler = (window.addEventListener as any).mock.calls.find(
+        (call: any) => call[0] === 'scroll',
+      )[1];
+
+      scrollHandler();
+
+      await waitFor(() => {
+        // Should call loadTutorialSamples instead of loadEssentialSamples
+        expect(mockLoadTutorialSamples).toHaveBeenCalledWith(
+          mockExercises,
+          'tutorial-123',
+        );
+        expect(mockLoadEssentialSamples).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should fall back to essential samples when no exercises provided', async () => {
+      render(<ScrollTriggerLoader />);
+
+      const scrollHandler = (window.addEventListener as any).mock.calls.find(
+        (call: any) => call[0] === 'scroll',
+      )[1];
+
+      scrollHandler();
+
+      await waitFor(() => {
+        // Should call loadEssentialSamples
+        expect(mockLoadEssentialSamples).toHaveBeenCalled();
+        expect(mockLoadTutorialSamples).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should emit both samplesReady and essentialSamplesLoaded events', async () => {
+      const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+      render(<ScrollTriggerLoader />);
+
+      const scrollHandler = (window.addEventListener as any).mock.calls.find(
+        (call: any) => call[0] === 'scroll',
+      )[1];
+
+      scrollHandler();
+
+      await waitFor(() => {
+        // Should dispatch both events for backward compatibility
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ type: 'samplesReady' }),
+        );
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ type: 'essentialSamplesLoaded' }),
+        );
+      });
+    });
+
+    it('should set both __samplesReady and __essentialSamplesLoaded flags', async () => {
+      render(<ScrollTriggerLoader />);
+
+      const scrollHandler = (window.addEventListener as any).mock.calls.find(
+        (call: any) => call[0] === 'scroll',
+      )[1];
+
+      scrollHandler();
+
+      await waitFor(() => {
+        expect((window as any).__samplesReady).toBe(true);
+        expect((window as any).__essentialSamplesLoaded).toBe(true);
+      });
+    });
+
+    it('should handle sample loading errors gracefully', async () => {
+      const testError = new Error('Sample loading failed');
+      mockLoadEssentialSamples.mockRejectedValueOnce(testError);
+
+      const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+      render(<ScrollTriggerLoader />);
+
+      const scrollHandler = (window.addEventListener as any).mock.calls.find(
+        (call: any) => call[0] === 'scroll',
+      )[1];
+
+      scrollHandler();
+
+      await waitFor(() => {
+        // Should set failure flag
+        expect((window as any).__initializationFailed).toBe(true);
+
+        // Should dispatch error event
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: 'initializationError',
+          }),
+        );
       });
     });
   });
