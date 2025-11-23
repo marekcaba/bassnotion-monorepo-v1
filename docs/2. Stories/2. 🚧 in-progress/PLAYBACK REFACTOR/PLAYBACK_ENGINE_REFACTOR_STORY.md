@@ -20,11 +20,11 @@
 - ✅ Task 0.6: PluginManager/WAM Integration Analysis (1 day) - **COMPLETED 2025-11-23**
 - ✅ Task 0.7: Memory Leak Status Audit (1 day) - **COMPLETED 2025-11-23**
 
-**Phase 1: Core Module Refactor** - 🟡 **In Progress** (2/5 tasks complete)
+**Phase 1: Core Module Refactor** - 🟡 **In Progress** (3/5 tasks complete - 60%)
 **Phase 2: Bug Fix Preservation & Widget Migration** - ⏸️ **Not Started** (0/2 tasks)
 **Phase 3: Rollout, Monitoring, and Cleanup** - ⏸️ **Not Started** (0/3 tasks)
 
-**Overall Progress:** 9/17 tasks complete (53%) - **Tasks 1.1 and 1.2 Complete! ✅**
+**Overall Progress:** 10/17 tasks complete (59%) - **Tasks 1.1, 1.2, and 1.3 Complete! ✅**
 
 ---
 
@@ -448,23 +448,26 @@ The current playback system is brittle and overly fragmented. Refactoring over t
     - [x] State machine transitions correctly ✅ (10 tests passing)
   - [x] **Deliverable:** ✅ `playback/services/core/PlaybackEngine.ts` (~485 lines) + `PlaybackEngine.test.ts` (~850 lines, 54/54 tests passing)
 
-- [ ] **Task 1.3:** Implement `timeUtils.ts` - Pure Time Conversion (1 day)
-  - [ ] Create `timeUtils.ts` with pure functions (no classes)
-  - [ ] Extract functions from TimePositionConverter:
-    - `parsePosition()` - Tone.js position string to beats
-    - `beatsToSeconds()` - beats to seconds based on BPM
-    - `secondsToBeats()` - seconds to beats based on BPM
-    - `calculateDuration()` - total exercise duration
-    - `parseTransportPosition()` - Tone.Transport position to seconds
-  - [ ] Remove class wrapper (convert to pure functions)
-  - [ ] Write unit tests with edge cases (tempo changes, time signatures)
-  - [ ] Validate against old implementation (comparison tests)
-  - [ ] **Acceptance Criteria:**
-    - [ ] All time conversion functions are pure (no state)
-    - [ ] Tests verify correctness against old TimePositionConverter
-    - [ ] No dependencies on other modules (standalone)
-    - [ ] Edge cases handled (tempo changes, time signatures, tick precision)
-  - [ ] **Deliverable:** `playback/services/core/timeUtils.ts` (~100 lines)
+- [x] **Task 1.3:** Implement `timeUtils.ts` - Pure Time Conversion (1 day) ✅ **COMPLETED 2025-11-23**
+  - [x] Create `timeUtils.ts` with pure functions (no classes) ✅
+  - [x] Extract functions from TimePositionConverter: ✅
+    - ✅ `parsePositionToBeats()` - Position to beats conversion
+    - ✅ `parsePosition()` - Position to seconds based on BPM
+    - ✅ `beatsToSeconds()` - beats to seconds based on BPM
+    - ✅ `secondsToBeats()` - seconds to beats based on BPM
+    - ✅ `parseDuration()` - Musical duration strings (4n, 8n, etc.)
+    - ✅ `calculateDuration()` - Duration between two positions
+    - ✅ `parsePositionToObject()` - Position parsing for sorting
+    - ✅ `barsToBeats()` / `beatsToBars()` - Bar/beat conversions
+  - [x] Remove class wrapper (convert to pure functions) ✅
+  - [x] Write unit tests with edge cases (tempo changes, time signatures) ✅ (73 tests)
+  - [x] Validate against old implementation (comparison tests) ✅
+  - [x] **Acceptance Criteria:**
+    - [x] All time conversion functions are pure (no state) ✅
+    - [x] Tests verify correctness against old TimePositionConverter ✅ (compatibility suite)
+    - [x] No dependencies on other modules (standalone) ✅ (no Tone.js, no logging)
+    - [x] Edge cases handled (tempo changes, time signatures, tick precision) ✅
+  - [x] **Deliverable:** ✅ `playback/services/core/timeUtils.ts` (~290 lines) + `timeUtils.test.ts` (~560 lines, 73/73 tests passing)
 
 - [ ] **Task 1.4:** Update `CoreServices` and `AudioProvider` (3 days)
   - [ ] Day 1: CoreServices integration
