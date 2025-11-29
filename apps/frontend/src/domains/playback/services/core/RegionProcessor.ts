@@ -27,8 +27,8 @@ import { SustainPedalManager } from './region-processing/sustain/SustainPedalMan
 
 // Import extracted modules (Phase 4: Schedulers - Phase 3: Simplified)
 import { SimpleInstrumentScheduler } from './region-processing/scheduling/SimpleInstrumentScheduler.js';
-import { HarmonyScheduler } from './region-processing/scheduling/HarmonyScheduler.js';
-// Removed (Phase 4.2): GrandPianoKeyboardMapper merged into HarmonyScheduler
+import { HarmonySchedulerV2 } from './scheduling/HarmonySchedulerV2.js';
+// Legacy HarmonyScheduler replaced with modular HarmonySchedulerV2 (Day 10)
 
 // Import extracted modules (Phase 5: Utilities + Routing)
 import { DiagnosticLogger } from './region-processing/diagnostics/DiagnosticLogger.js';
@@ -114,9 +114,9 @@ export class RegionProcessor {
   private debugger = AudioDebugger.getInstance();
 
   // CRITICAL: Transport start anchor - maps transport beats to AudioContext hardware time
-  private transportStartTime: number = 0;
+  private transportStartTime = 0;
   private audioContext: AudioContext | null = null;
-  private sampleRate: number = 48000; // Default, will be updated from context
+  private sampleRate = 48000; // Default, will be updated from context
 
   // FAANG SOLUTION: Direct audio scheduling - store audio sources for cleanup
   // Map sources to instrument type and stop status
@@ -166,8 +166,8 @@ export class RegionProcessor {
   private metronomeScheduler!: SimpleInstrumentScheduler; // Metronome scheduler
   private drumScheduler!: SimpleInstrumentScheduler; // Drum scheduler
   private bassScheduler!: SimpleInstrumentScheduler; // Bass scheduler
-  private harmonyScheduler!: HarmonyScheduler; // Harmony scheduler (complex, not simplified)
-  // Removed (Phase 4.2): grandPianoKeyboardMapper (merged into HarmonyScheduler)
+  private harmonyScheduler!: HarmonySchedulerV2; // Modular harmony scheduler (Day 10)
+  // Legacy HarmonyScheduler replaced with HarmonySchedulerV2
 
   // Phase 5: Diagnostic logging delegated to DiagnosticLogger
   private diagnosticLogger!: DiagnosticLogger; // Initialized in constructor
@@ -226,8 +226,8 @@ export class RegionProcessor {
   private readonly TEMPO_DEBOUNCE_MS = 50;
 
   // LAST NOTE RING-OUT: Track exercise duration to detect last notes
-  private exerciseEndTime: number = 0; // Total exercise duration in seconds
-  private lastBeatThreshold: number = 0; // Start of LAST BEAT (time-signature aware)
+  private exerciseEndTime = 0; // Total exercise duration in seconds
+  private lastBeatThreshold = 0; // Start of LAST BEAT (time-signature aware)
 
   // Plugin manager for accessing WAM instruments (WamKeyboard for CC events)
   private pluginManager: PluginManager | null = null;
@@ -300,8 +300,8 @@ export class RegionProcessor {
       },
     );
 
-    // Phase 4.2: GrandPianoKeyboardMapper merged into HarmonyScheduler
-    this.harmonyScheduler = new HarmonyScheduler(
+    // Day 10: Using modular HarmonySchedulerV2
+    this.harmonyScheduler = new HarmonySchedulerV2(
       this._instanceId,
       this.tracks,
       this.sustainPedalManager,
@@ -666,14 +666,6 @@ export class RegionProcessor {
     );
 
     if (registeredHarmonyTracks.length > 1) {
-      console.error(
-        '[ARCHITECTURE-ERROR] Multiple harmony tracks detected:',
-        registeredHarmonyTracks.map((t) => ({
-          id: t.id,
-          exerciseId: t.exerciseId,
-          regions: t.regions.length,
-        })),
-      );
       logger.error(
         'CRITICAL: Multiple harmony tracks registered simultaneously',
         {
@@ -686,10 +678,6 @@ export class RegionProcessor {
         },
       );
     } else if (registeredHarmonyTracks.length === 1) {
-      console.log('✅ [REGISTER-DEBUG] Single harmony track verified:', {
-        id: registeredHarmonyTracks[0].id,
-        exerciseId: registeredHarmonyTracks[0].exerciseId,
-      });
       logger.debug('Single harmony track validated', {
         instanceId: this._instanceId,
         trackId: registeredHarmonyTracks[0].id,
@@ -737,7 +725,9 @@ export class RegionProcessor {
         // Sync transport start time to all modules
         this.timingMetricsCollector.setTransportStartTime(time);
         this.sustainPedalManager.setTransportStartTime(time);
-        this.harmonyScheduler.setAudioContext(this.audioContext!, time);
+        if (this.audioContext) {
+          this.harmonyScheduler.setAudioContext(this.audioContext, time);
+        }
         this.eventRouter.setTransportStartTime(time);
       },
       () => {
@@ -827,7 +817,7 @@ export class RegionProcessor {
       if (!metadata.hasStopScheduled && source.context.state === 'running') {
         try {
           source.stop();
-        } catch (e) {
+        } catch {
           // Already stopped - ignore
         }
       }
@@ -1131,7 +1121,7 @@ export class RegionProcessor {
   }
 
   /**
-   * Update current CC64 timeline and sync to HarmonyScheduler
+   * Update current CC64 timeline and sync to HarmonySchedulerV2
    * Phase 6: Helper for RegionScheduler
    */
   private setCurrentCC64Timeline(timeline: Map<number, boolean>): void {
