@@ -19,11 +19,27 @@
  */
 
 import { getLogger } from '@/utils/logger.js';
+import * as Tone from 'tone';
 import { Scheduler } from './Scheduler.js';
 import type { EventBus } from './EventBus.js';
 import type { PluginManager } from './PluginManager.js';
 import type { WamKeyboard } from '../../modules/instruments/adapters/wam/WamKeyboard.js';
 import type { WamKeyboardPlugin } from '../../modules/instruments/adapters/wam/WamKeyboardPlugin.js';
+import { RegionScheduler } from './region-processing/scheduling-orchestrator/RegionScheduler.js';
+import { TimingMetricsCollector } from './region-processing/timing/TimingMetricsCollector.js';
+import { EventRouter } from './region-processing/event-routing/EventRouter.js';
+import { MusicalTimeConverter, ScheduleCache } from './region-processing/index.js';
+import {
+  VoiceCueScheduler,
+  MetronomeScheduler,
+  DrumScheduler,
+  BassScheduler,
+} from './region-processing/index.js';
+import { HarmonySchedulerV2 } from './scheduling/HarmonySchedulerV2.js';
+import { SustainPedalManager } from './region-processing/sustain/SustainPedalManager.js';
+import { TrackInstrumentUtils } from './utils/TrackInstrumentUtils.js';
+import { TRANSPORT_TIMING_CONFIG } from '../../config/transportTiming.js';
+import { WindowRegistry } from '../WindowRegistry.js';
 
 /**
  * Playback engine state machine
@@ -126,6 +142,35 @@ export class PlaybackEngine {
   // Instance ID for debugging
   private instanceId: string;
 
+  // Scheduling infrastructure (inlined from LifecycleCoordinator)
+  private transportStartTime = 0;
+  private positionCallbackCleanup: (() => void) | null = null;
+  private isInitialScheduling = false;
+  private scheduledIds = new Set<number>(); // Tone.Transport event IDs
+  private scheduledEvents = new Map<string, Set<string>>(); // Track region IDs
+  private isRunning = false;
+  private sampleRate = 44100;
+
+  // Scheduling modules (from region-processing)
+  private regionScheduler: RegionScheduler | null = null;
+  private metricsCollector: TimingMetricsCollector | null = null;
+  private eventRouter: EventRouter | null = null;
+
+  // Timing and conversion utilities
+  private musicalTimeConverter: MusicalTimeConverter | null = null;
+  private sustainPedalManager: SustainPedalManager | null = null;
+  private scheduleCache: ScheduleCache | null = null;
+
+  // Instrument schedulers
+  private metronomeScheduler: MetronomeScheduler | null = null;
+  private drumScheduler: DrumScheduler | null = null;
+  private bassScheduler: BassScheduler | null = null;
+  private voiceCueScheduler: VoiceCueScheduler | null = null;
+  private harmonyScheduler: HarmonySchedulerV2 | null = null;
+
+  // CC64 timeline state
+  private currentCC64Timeline = new Map<number, boolean>();
+
   constructor(eventBus: EventBus, config: PlaybackEngineConfig = {}) {
     this.instanceId = Math.random().toString(36).substring(2, 11);
     this.logger = getLogger('PlaybackEngine');
@@ -133,6 +178,13 @@ export class PlaybackEngine {
 
     // Initialize scheduler
     this.scheduler = new Scheduler(this.instanceId, this.tracks);
+
+    // Initialize instrument schedulers (will be fully configured in initialize())
+    this.metronomeScheduler = new MetronomeScheduler(this.instanceId, this.tracks);
+    this.drumScheduler = new DrumScheduler(this.instanceId, this.tracks);
+    this.bassScheduler = new BassScheduler(this.instanceId, this.tracks);
+    this.voiceCueScheduler = new VoiceCueScheduler(this.instanceId, this.tracks);
+    // HarmonySchedulerV2 will be initialized in initialize() after cc64TimelineBuilder
 
     // Apply configuration
     if (config.countdownBeats !== undefined) {
@@ -168,15 +220,60 @@ export class PlaybackEngine {
     try {
       this.audioContext = audioContext;
       this.audioDestination = audioDestination;
+      this.sampleRate = audioContext.sampleRate;
 
       // Initialize scheduler
       this.scheduler.setAudioContext(audioContext);
+
+      // Initialize timing and conversion utilities (in dependency order)
+      this.musicalTimeConverter = new MusicalTimeConverter();
+      this.sustainPedalManager = new SustainPedalManager();
+      this.scheduleCache = new ScheduleCache();
+
+      // Initialize harmony scheduler with CC64 support
+      // SustainPedalManager acts as both CC64TimelineBuilder and SustainPedalAnalyzer
+      this.harmonyScheduler = new HarmonySchedulerV2(
+        this.instanceId,
+        this.tracks, // Pass tracks map reference
+        this.sustainPedalManager, // Acts as CC64TimelineBuilder
+        this.sustainPedalManager, // Acts as SustainPedalAnalyzer
+      );
+
+      // Initialize scheduling modules
+      this.regionScheduler = new RegionScheduler(this.instanceId);
+      this.metricsCollector = new TimingMetricsCollector();
+      this.eventRouter = new EventRouter(this.instanceId);
+
+      // Set audio context for all instrument schedulers
+      this.metronomeScheduler!.setAudioContext(audioContext);
+      this.drumScheduler!.setAudioContext(audioContext);
+      this.bassScheduler!.setAudioContext(audioContext);
+      this.voiceCueScheduler!.setAudioContext(audioContext);
+      this.harmonyScheduler.setAudioContext(audioContext);
+
+      // Initialize EventRouter with instrument schedulers
+      this.eventRouter.initialize(
+        audioContext,
+        this.sampleRate,
+        this.eventBus,
+        this.metronomeScheduler!,
+        this.drumScheduler!,
+        this.harmonyScheduler,
+        this.bassScheduler!,
+        this.voiceCueScheduler!,
+        (frame: number, time: number) => {
+          if (this.metricsCollector) {
+            this.metricsCollector.track(frame, time);
+          }
+        },
+      );
 
       this.isInitialized = true;
       this.setState('ready');
 
       this.logger.info('PlaybackEngine initialized successfully', {
         instanceId: this.instanceId,
+        sampleRate: this.sampleRate,
       });
     } catch (error) {
       this.logger.error('Failed to initialize PlaybackEngine', error);
@@ -274,46 +371,275 @@ export class PlaybackEngine {
   }
 
   /**
-   * Start playback
+   * Add metronome countdown region (accent on beat 1, clicks on beats 2-4)
    */
-  start(): void {
-    if (this.state !== 'ready' && this.state !== 'stopped') {
-      this.logger.warn(`Cannot start from state: ${this.state}`);
+  addCountdownRegion(timeSignature: { numerator: number; denominator: number }): void {
+    if (!this.countdownEnabled) {
+      // eslint-disable-next-line no-console
+      console.log('[COUNTDOWN DIAGNOSTIC] Countdown disabled, skipping metronome countdown region');
       return;
     }
 
-    this.setState('playing');
-    this.logger.info('Playback started', { instanceId: this.instanceId });
+    const countdownEvents: PatternEvent[] = [];
+    for (let beat = 0; beat < timeSignature.numerator; beat++) {
+      countdownEvents.push({
+        position: `0:${beat}:0`,
+        type: beat === 0 ? 'accent' : 'click',
+        velocity: beat === 0 ? 0.9 : 0.7,
+      });
+    }
 
-    // Emit playback start event
-    this.eventBus.emit('playback:start', { instanceId: this.instanceId });
+    // eslint-disable-next-line no-console
+    console.log('[COUNTDOWN DIAGNOSTIC] Creating metronome countdown events:', {
+      timeSignature,
+      countdownBeats: this.countdownBeats,
+      events: countdownEvents.map((e, i) => ({
+        beat: i,
+        position: e.position,
+        type: e.type,
+        velocity: e.velocity,
+      })),
+    });
+
+    const countdownRegion: Region = {
+      id: 'countdown-region',
+      trackId: 'metronome',
+      startTime: 0,
+      duration: timeSignature.numerator,
+      skipCountdownOffset: true,
+      pattern: {
+        id: 'countdown-pattern',
+        name: 'Countdown',
+        type: 'metronome',
+        events: countdownEvents,
+      },
+    };
+
+    let metronomeTrack = this.tracks.get('metronome');
+    if (!metronomeTrack) {
+      metronomeTrack = {
+        id: 'metronome',
+        name: 'Metronome',
+        regions: [],
+        instrumentType: 'metronome',
+      };
+      this.tracks.set('metronome', metronomeTrack);
+      // eslint-disable-next-line no-console
+      console.log('[COUNTDOWN DIAGNOSTIC] Created new metronome track');
+    }
+
+    metronomeTrack.regions.unshift(countdownRegion);
+    // eslint-disable-next-line no-console
+    console.log('[COUNTDOWN DIAGNOSTIC] Metronome countdown region added', {
+      regionId: countdownRegion.id,
+      startTime: countdownRegion.startTime,
+      duration: countdownRegion.duration,
+      skipCountdownOffset: countdownRegion.skipCountdownOffset,
+      totalRegions: metronomeTrack.regions.length,
+    });
+
+    this.logger.info('Countdown region added', {
+      beats: timeSignature.numerator,
+      events: countdownEvents.length,
+    });
   }
 
   /**
-   * Stop playback
+   * Add voice cue countdown region ("one", "two", "three", "four")
    */
-  stop(graceful = false): void {
-    if (this.state !== 'playing' && this.state !== 'paused') {
-      this.logger.warn(`Cannot stop from state: ${this.state}`);
+  addVoiceCountdownRegion(timeSignature: { numerator: number; denominator: number }): void {
+    if (!this.countdownEnabled) {
+      // eslint-disable-next-line no-console
+      console.log('[COUNTDOWN DIAGNOSTIC] Countdown disabled, skipping voice countdown region');
       return;
     }
 
-    // Cancel all scheduled sources
-    if (!graceful) {
-      this.scheduler.cancelAllScheduled();
+    const cueNames = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
+    const voiceCueEvents: PatternEvent[] = [];
+
+    for (let beat = 0; beat < timeSignature.numerator; beat++) {
+      if (beat < cueNames.length) {
+        voiceCueEvents.push({
+          position: `0:${beat}:0`,
+          type: 'voice-cue',
+          velocity: 0.9,
+          data: { cue: cueNames[beat] },
+        });
+      }
     }
 
-    this.setState('stopped');
-    this.logger.info('Playback stopped', {
-      graceful,
+    // eslint-disable-next-line no-console
+    console.log('[COUNTDOWN DIAGNOSTIC] Creating voice countdown events:', {
+      timeSignature,
+      countdownBeats: this.countdownBeats,
+      events: voiceCueEvents.map((e, i) => ({
+        beat: i,
+        position: e.position,
+        cue: e.data?.cue,
+        type: e.type,
+      })),
+    });
+
+    const voiceCueRegion: Region = {
+      id: 'voice-cue-countdown-region',
+      trackId: 'voice-cue',
+      startTime: 0,
+      duration: timeSignature.numerator,
+      skipCountdownOffset: true,
+      pattern: {
+        id: 'voice-cue-countdown-pattern',
+        name: 'Voice Countdown',
+        type: 'voice-cue',
+        events: voiceCueEvents,
+      },
+    };
+
+    let voiceCueTrack = this.tracks.get('voice-cue');
+    if (!voiceCueTrack) {
+      voiceCueTrack = {
+        id: 'voice-cue',
+        name: 'Voice Cues',
+        regions: [],
+        instrumentType: 'voice-cue',
+      };
+      this.tracks.set('voice-cue', voiceCueTrack);
+      // eslint-disable-next-line no-console
+      console.log('[COUNTDOWN DIAGNOSTIC] Created new voice-cue track');
+    }
+
+    voiceCueTrack.regions.unshift(voiceCueRegion);
+    // eslint-disable-next-line no-console
+    console.log('[COUNTDOWN DIAGNOSTIC] Voice countdown region added', {
+      regionId: voiceCueRegion.id,
+      startTime: voiceCueRegion.startTime,
+      duration: voiceCueRegion.duration,
+      skipCountdownOffset: voiceCueRegion.skipCountdownOffset,
+      totalRegions: voiceCueTrack.regions.length,
+    });
+
+    this.logger.info('Voice countdown region added', {
+      beats: timeSignature.numerator,
+      cues: voiceCueEvents.length,
+    });
+  }
+
+  /**
+   * Start playback with 4-phase scheduling
+   * Inlined from LifecycleCoordinator.start()
+   */
+  start(): void {
+    // DIAGNOSTIC: Log start() call and current state
+    console.log('[PlaybackEngine.start() DIAGNOSTIC]', {
+      currentState: this.state,
+      isInitialized: this.isInitialized,
+      isRunning: this.isRunning,
+      hasAudioContext: !!this.audioContext,
+      hasRegionScheduler: !!this.regionScheduler,
+      hasEventRouter: !!this.eventRouter,
+      tracksCount: this.tracks.size,
+    });
+
+    if (this.state !== 'ready' && this.state !== 'stopped') {
+      this.logger.warn(`Cannot start from state: ${this.state}`);
+      console.error('[PlaybackEngine.start() BLOCKED]', {
+        reason: 'Invalid state',
+        currentState: this.state,
+        expectedStates: ['ready', 'stopped'],
+      });
+      return;
+    }
+
+    if (this.isRunning) {
+      this.logger.warn('Playback already running');
+      console.error('[PlaybackEngine.start() BLOCKED]', {
+        reason: 'Already running',
+      });
+      return;
+    }
+
+    // Get AudioContext from Tone.js if not set
+    if (!this.audioContext && Tone.context) {
+      this.logger.warn('Using Tone.context as fallback for AudioContext');
+      this.audioContext = Tone.context as unknown as AudioContext;
+      this.sampleRate = this.audioContext.sampleRate;
+    }
+
+    if (!this.audioContext) {
+      this.logger.error('Cannot start: No AudioContext available');
+      this.setState('error');
+      return;
+    }
+
+    // PHASE 1: State preparation - clear old events
+    this.clearScheduledState();
+    this.resetMetrics();
+    this.startMetricsReporting();
+
+    // Check BPM before scheduling
+    const currentToneBpm = Tone.Transport.bpm.value;
+    this.logger.info('🎵 Checking Tone.Transport BPM before scheduling', {
+      toneBpm: currentToneBpm,
       instanceId: this.instanceId,
     });
 
-    // Emit playback stop event
-    this.eventBus.emit('playback:stop', {
-      graceful,
+    // Disable Tone.Transport.loop to prevent double playback
+    if (Tone.Transport.loop) {
+      this.logger.warn('⚠️ Tone.Transport.loop was enabled - disabling to prevent double playback', {
+        loopStart: Tone.Transport.loopStart,
+        loopEnd: Tone.Transport.loopEnd,
+      });
+      Tone.Transport.loop = false;
+    }
+
+    // PHASE 2: Capture transportStartTime BEFORE scheduling (for audio timing)
+    const startupLookahead = TRANSPORT_TIMING_CONFIG.startupLookahead;
+    this.transportStartTime = this.audioContext.currentTime + startupLookahead;
+    this.syncTransportStartTime(this.transportStartTime);
+
+    this.logger.info('🎯 Transport start anchor captured (BEFORE scheduling)', {
+      transportStartTime: this.transportStartTime.toFixed(3),
+      currentContextTime: this.audioContext.currentTime.toFixed(3),
+      startupLookahead: `${startupLookahead * 1000}ms`,
+    });
+
+    // PHASE 3: Initial scheduling
+    this.isInitialScheduling = true;
+    this.scheduleAllRegions();
+    this.isInitialScheduling = false;
+
+    // PHASE 4: Subscribe to Transport position updates via EventBus (FIGHTING CLOCKS FIX)
+    // Instead of polling with setInterval, subscribe to 'transport:position-updated' events
+    // emitted by TransportController from the master Transport clock (requestAnimationFrame)
+    const positionUpdateHandler = () => {
+      if (this.isRunning && Tone.Transport.state === 'started' && !this.isInitialScheduling) {
+        this.processCurrentPosition();
+      }
+    };
+
+    // Subscribe to EventBus position updates (returns unsubscribe function)
+    const unsubscribe = this.eventBus.on('transport:position-updated', positionUpdateHandler);
+
+    // Store cleanup function to unsubscribe
+    this.positionCallbackCleanup = () => {
+      unsubscribe();
+      this.logger.debug('Unsubscribed from Transport position updates');
+    };
+
+    this.logger.info('✅ Subscribed to Transport position updates via EventBus (event-driven)', {
       instanceId: this.instanceId,
     });
+
+    // Update state
+    this.isRunning = true;
+    this.setState('playing');
+
+    this.logger.info('✅ Playback started with 4-phase scheduling', {
+      instanceId: this.instanceId,
+      tracksCount: this.tracks.size,
+    });
+
+    // Emit playback start event
+    this.eventBus.emit('playback:start', { instanceId: this.instanceId });
   }
 
   /**
@@ -427,6 +753,243 @@ export class PlaybackEngine {
   }
 
   /**
+   * Sync transport start time to all modules
+   * Inlined from LifecycleCoordinator
+   */
+  private syncTransportStartTime(time: number): void {
+    // Set Tone.Transport time offset to align with transport start time
+    // This ensures all Tone.Transport.schedule() calls use the correct time reference
+    if (this.audioContext) {
+      Tone.Transport.seconds = 0;
+      this.logger.debug('Synced transport start time', {
+        transportStartTime: time.toFixed(3),
+        transportSeconds: Tone.Transport.seconds,
+      });
+    }
+  }
+
+  /**
+   * Sync CC64 timeline to harmony scheduler
+   * Called by RegionScheduler after building CC64 timeline
+   */
+  private syncCC64Timeline(timeline: Map<number, boolean>): void {
+    this.currentCC64Timeline = timeline;
+    if (this.harmonyScheduler) {
+      this.harmonyScheduler.setCurrentCC64Timeline(timeline);
+    }
+  }
+
+  /**
+   * Clear scheduled state from previous playback
+   * Inlined from LifecycleCoordinator
+   */
+  private clearScheduledState(): void {
+    // Clear Tone.Transport scheduled events
+    this.scheduledIds.forEach((toneId) => {
+      try {
+        Tone.Transport.clear(toneId);
+      } catch (e) {
+        // Ignore errors when clearing
+      }
+    });
+    this.scheduledIds.clear();
+    this.scheduledEvents.clear();
+  }
+
+  /**
+   * Reset timing metrics
+   * Inlined from LifecycleCoordinator
+   */
+  private resetMetrics(): void {
+    if (this.metricsCollector) {
+      this.metricsCollector.reset();
+    }
+  }
+
+  /**
+   * Start metrics reporting
+   * Inlined from LifecycleCoordinator
+   */
+  private startMetricsReporting(): void {
+    if (this.metricsCollector) {
+      this.metricsCollector.startReporting();
+    }
+  }
+
+  /**
+   * Schedule all regions upfront
+   * Integrated with region-processing modules (RegionScheduler, EventRouter, instrument schedulers)
+   */
+  private scheduleAllRegions(): void {
+    if (!this.audioContext || !this.regionScheduler || !this.eventRouter) {
+      this.logger.error('Cannot schedule regions: Missing dependencies', {
+        hasAudioContext: !!this.audioContext,
+        hasRegionScheduler: !!this.regionScheduler,
+        hasEventRouter: !!this.eventRouter,
+      });
+      return;
+    }
+
+    if (!this.musicalTimeConverter || !this.sustainPedalManager || !this.scheduleCache) {
+      this.logger.error('Cannot schedule regions: Missing utility modules', {
+        hasMusicalTimeConverter: !!this.musicalTimeConverter,
+        hasSustainPedalManager: !!this.sustainPedalManager,
+        hasScheduleCache: !!this.scheduleCache,
+      });
+      return;
+    }
+
+    try {
+      // Call RegionScheduler.scheduleAll() with all required dependencies
+      const result = this.regionScheduler.scheduleAll(
+        this.tracks,
+        this.scheduledEvents,
+        this.countdownEnabled,
+        this.countdownBeats,
+        this.transportStartTime,
+        this.audioContext,
+        // Dependency 7: getInstrumentType
+        (track: any) => TrackInstrumentUtils.getInstrumentType(track),
+        // Dependency 8: parsePositionToObject
+        this.musicalTimeConverter.parsePositionToObject.bind(this.musicalTimeConverter),
+        // Dependency 9: parsePosition
+        this.musicalTimeConverter.parsePosition.bind(this.musicalTimeConverter),
+        // Dependency 10: buildCC64Timeline
+        this.sustainPedalManager.buildTimeline.bind(this.sustainPedalManager),
+        // Dependency 11: logCC64DiagnosticTable (no-op for now, RegionScheduler handles it)
+        () => {}, // CC64 diagnostic logging handled by RegionScheduler internally
+        // Dependency 12: getCachedSchedule
+        this.scheduleCache.get.bind(this.scheduleCache),
+        // Dependency 13: setCachedSchedule
+        this.scheduleCache.set.bind(this.scheduleCache),
+        // Dependency 14: emitEvent
+        this.eventRouter.emitEvent.bind(this.eventRouter),
+        // Dependency 15: setCurrentCC64Timeline
+        this.syncCC64Timeline.bind(this),
+        // Dependency 16: calculateExerciseDuration
+        () => {
+          // RegionScheduler handles this internally via calculateDuration() method
+          this.regionScheduler!.calculateDuration(
+            Array.from(this.tracks.values()),
+            this.countdownEnabled,
+            this.countdownBeats,
+          );
+        },
+      );
+
+      this.logger.info('✅ All regions scheduled via RegionScheduler', {
+        tracksCount: this.tracks.size,
+        totalEvents: result.totalEvents,
+        batchCount: result.batchCount,
+        countdownEnabled: this.countdownEnabled,
+      });
+    } catch (error) {
+      this.logger.error('❌ Failed to schedule regions', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process current transport position for dynamic scheduling
+   * Backup scheduling for events not scheduled upfront (defense-in-depth)
+   */
+  private processCurrentPosition(): void {
+    if (!this.isRunning || !this.audioContext || !this.regionScheduler || !this.eventRouter) {
+      return;
+    }
+
+    if (!this.musicalTimeConverter) {
+      return;
+    }
+
+    try {
+      // Call RegionScheduler.processPosition() for backup scheduling
+      this.regionScheduler.processPosition(
+        this.isRunning,
+        Array.from(this.tracks.values()),
+        this.scheduledEvents,
+        this.scheduledIds,
+        this.countdownEnabled,
+        this.countdownBeats,
+        this.musicalTimeConverter.parsePosition.bind(this.musicalTimeConverter),
+        (track: any) => TrackInstrumentUtils.getInstrumentType(track),
+        this.eventRouter.emitEvent.bind(this.eventRouter),
+      );
+    } catch (error) {
+      this.logger.error('Error processing current position', error);
+    }
+  }
+
+  /**
+   * Stop playback and cancel all scheduled audio events
+   * This stops all active audio sources immediately without disposing the engine
+   * @param graceful - If true, allows notes to ring out (not yet implemented, always immediate stop)
+   */
+  stop(graceful = false): void {
+    console.log('[PLAYBACK-ENGINE STOP] Stopping all audio sources', {
+      state: this.state,
+      instanceId: this.instanceId,
+      graceful,
+    });
+
+    // Stop all instrument schedulers - this cancels their active audio sources
+    if (this.metronomeScheduler) {
+      this.metronomeScheduler.stopAll();
+      console.log('[PLAYBACK-ENGINE STOP] Metronome stopped');
+    }
+    if (this.drumScheduler) {
+      this.drumScheduler.stopAll();
+      console.log('[PLAYBACK-ENGINE STOP] Drums stopped');
+    }
+    if (this.bassScheduler) {
+      this.bassScheduler.stopAll();
+      console.log('[PLAYBACK-ENGINE STOP] Bass stopped');
+    }
+    if (this.voiceCueScheduler) {
+      this.voiceCueScheduler.stopAll();
+      console.log('[PLAYBACK-ENGINE STOP] Voice cue stopped');
+    }
+    if (this.harmonyScheduler) {
+      this.harmonyScheduler.stopAll();
+      console.log('[PLAYBACK-ENGINE STOP] Harmony stopped');
+    }
+
+    // Unsubscribe from Transport position updates (FIGHTING CLOCKS FIX)
+    if (this.positionCallbackCleanup) {
+      this.positionCallbackCleanup();
+      this.positionCallbackCleanup = null;
+    }
+
+    // 🔧 SECOND PLAYBACK FIX: Reset timing and state for clean restart
+    // This mirrors the Transport.stop() cleanup pattern to ensure
+    // second playback cycle works correctly without clock corruption
+    this.transportStartTime = 0;
+    console.log('[PLAYBACK-ENGINE STOP] Reset transportStartTime to 0');
+
+    // Reset running state (critical for second playback to schedule regions)
+    this.isRunning = false;
+    console.log('[PLAYBACK-ENGINE STOP] Reset isRunning to false');
+
+    // Clear scheduled event tracking (prevent memory leaks)
+    this.scheduledEvents.clear();
+    this.scheduledIds.clear();
+    console.log('[PLAYBACK-ENGINE STOP] Cleared scheduled events tracking', {
+      scheduledEventsCleared: this.scheduledEvents.size === 0,
+      scheduledIdsCleared: this.scheduledIds.size === 0,
+    });
+
+    // Reset scheduling flag (prevent edge case if stopped during initial scheduling)
+    this.isInitialScheduling = false;
+
+    // Update state
+    this.state = 'stopped';
+
+    this.logger.info('PlaybackEngine stopped - all audio sources cancelled', {
+      instanceId: this.instanceId,
+    });
+  }
+
+  /**
    * Dispose of the playback engine and clean up resources (Bug #7 fix preserved)
    */
   dispose(): void {
@@ -434,9 +997,15 @@ export class PlaybackEngine {
       instanceId: this.instanceId,
     });
 
-    // Stop playback
+    // Stop playback (this will also unsubscribe from position updates)
     if (this.state === 'playing' || this.state === 'paused') {
       this.stop();
+    }
+
+    // Ensure position callback cleanup (defensive)
+    if (this.positionCallbackCleanup) {
+      this.positionCallbackCleanup();
+      this.positionCallbackCleanup = null;
     }
 
     // Clear tempo debounce timer (Bug #7 fix)
@@ -460,6 +1029,29 @@ export class PlaybackEngine {
     // Dispose scheduler
     this.scheduler.dispose();
 
+    // Stop all instrument schedulers
+    if (this.metronomeScheduler) {
+      this.metronomeScheduler.stopAll();
+    }
+    if (this.drumScheduler) {
+      this.drumScheduler.stopAll();
+    }
+    if (this.bassScheduler) {
+      this.bassScheduler.stopAll();
+    }
+    if (this.voiceCueScheduler) {
+      this.voiceCueScheduler.stopAll();
+    }
+    if (this.harmonyScheduler) {
+      this.harmonyScheduler.stopAll();
+    }
+
+    // Clear scheduling state
+    this.clearScheduledState();
+
+    // Clear CC64 timeline
+    this.currentCC64Timeline.clear();
+
     // Clear tracks
     this.tracks.clear();
 
@@ -467,12 +1059,184 @@ export class PlaybackEngine {
     this.audioContext = null;
     this.audioDestination = null;
     this.pluginManager = null;
+    this.regionScheduler = null;
+    this.metricsCollector = null;
+    this.eventRouter = null;
+    this.musicalTimeConverter = null;
+    this.sustainPedalManager = null;
+    this.scheduleCache = null;
+    this.metronomeScheduler = null;
+    this.drumScheduler = null;
+    this.bassScheduler = null;
+    this.voiceCueScheduler = null;
+    this.harmonyScheduler = null;
 
     // Reset state (force transition to idle, bypassing validation)
     this.isInitialized = false;
+    this.isRunning = false;
     this.setState('idle', true);
 
     this.logger.info('PlaybackEngine disposed', {
+      instanceId: this.instanceId,
+    });
+  }
+
+  /**
+   * Set harmony buffers and instrument type (for harmony instrument scheduling)
+   * This is a wrapper for Scheduler.setBuffers() + Scheduler.setHarmonyInstrument()
+   *
+   * Note: HarmonyWidget passes a flat Map<string, AudioBuffer> with keys like 'v3-Cs4'
+   */
+  setHarmonyBuffers(
+    buffers: Map<string, AudioBuffer> | Map<string, Map<string, AudioBuffer>>,
+    destination: AudioNode,
+    perNoteVelocityRanges?: any,
+    instrumentName?: string,
+  ): void {
+    if (!this.audioContext || !destination) {
+      this.logger.warn('Cannot set harmony buffers: audio context or destination not ready');
+      return;
+    }
+
+    // Convert Map to flat Record for Scheduler
+    const flatBuffers: Record<string, AudioBuffer> = {};
+
+    // Check if it's a flat Map or nested Map
+    const firstValue = buffers.values().next().value;
+    const isNestedMap = firstValue instanceof Map;
+
+    if (isNestedMap) {
+      // Nested Map<string, Map<string, AudioBuffer>>
+      (buffers as Map<string, Map<string, AudioBuffer>>).forEach((velocityLayers, noteName) => {
+        velocityLayers.forEach((buffer, layer) => {
+          const key = `${noteName}_${layer}`;
+          flatBuffers[key] = buffer;
+        });
+      });
+    } else {
+      // Flat Map<string, AudioBuffer> (HarmonyWidget format)
+      (buffers as Map<string, AudioBuffer>).forEach((buffer, key) => {
+        flatBuffers[key] = buffer;
+      });
+    }
+
+    // Set buffers in scheduler (legacy path)
+    this.scheduler.setBuffers(flatBuffers, destination);
+
+    // Set harmony instrument type if provided
+    if (instrumentName) {
+      const instrument = instrumentName as any; // 'wurlitzer' | 'grandpiano' | 'rhodes' | 'nicekeysrhodes'
+      this.scheduler.setHarmonyInstrument(instrument, perNoteVelocityRanges);
+      this.logger.info('Harmony instrument set', {
+        instrument: instrumentName,
+        bufferCount: Object.keys(flatBuffers).length,
+      });
+    }
+
+    // CRITICAL FIX: Also set buffers on HarmonySchedulerV2
+    if (this.harmonyScheduler) {
+      // HarmonySchedulerV2 expects Map<string, Map<string, AudioBuffer>> (nested structure)
+      // Convert flat buffers back to nested structure
+      const nestedBuffers = new Map<string, Map<string, AudioBuffer>>();
+
+      if (isNestedMap) {
+        // Already nested, use as-is
+        (buffers as Map<string, Map<string, AudioBuffer>>).forEach((velocityLayers, noteName) => {
+          nestedBuffers.set(noteName, velocityLayers);
+        });
+      } else {
+        // Flat structure from HarmonyWidget - convert to nested
+        (buffers as Map<string, AudioBuffer>).forEach((buffer, key) => {
+          // Keys are like "v3-Cs4" or "C4"
+          // Extract layer and note name
+          const parts = key.split('-');
+          let layer: string;
+          let noteName: string;
+
+          if (parts.length === 2) {
+            // Format: "v3-Cs4"
+            layer = parts[0];
+            noteName = parts[1];
+          } else {
+            // Format: "Cs4" (single layer)
+            layer = 'v1';
+            noteName = key;
+          }
+
+          if (!nestedBuffers.has(layer)) {
+            nestedBuffers.set(layer, new Map());
+          }
+          nestedBuffers.get(layer)!.set(noteName, buffer);
+        });
+      }
+
+      const instrument = (instrumentName || 'wurlitzer') as 'grandpiano' | 'wurlitzer' | 'rhodes' | 'nicekeysrhodes';
+      this.harmonyScheduler.setBuffers(
+        nestedBuffers,
+        destination,
+        perNoteVelocityRanges,
+        instrument,
+      );
+
+      this.logger.info('HarmonySchedulerV2 buffers set', {
+        layerCount: nestedBuffers.size,
+        instrument,
+      });
+    }
+
+    this.logger.info('Harmony buffers set', {
+      bufferCount: Object.keys(flatBuffers).length,
+      instanceId: this.instanceId,
+    });
+  }
+
+  /**
+   * Set metronome buffers for direct audio scheduling
+   * This configures the MetronomeScheduler to play metronome clicks
+   */
+  setMetronomeBuffers(
+    accent: AudioBuffer,
+    click: AudioBuffer,
+    destination: AudioNode,
+  ): void {
+    if (!this.audioContext || !destination) {
+      this.logger.warn('Cannot set metronome buffers: audio context or destination not ready');
+      return;
+    }
+
+    // Set audio context on scheduler
+    this.metronomeScheduler.setAudioContext(this.audioContext);
+
+    // Set buffers with destination
+    this.metronomeScheduler.setBuffers({ accent, click }, destination);
+
+    this.logger.info('Metronome buffers set', {
+      hasAccent: !!accent,
+      hasClick: !!click,
+      hasDestination: !!destination,
+      instanceId: this.instanceId,
+    });
+  }
+
+  /**
+   * Set voice cue buffers for countdown
+   * This configures the VoiceCueScheduler to play "one, two, three, four"
+   */
+  setVoiceCueBuffers(buffers: Record<string, AudioBuffer>, destination: AudioNode): void {
+    if (!this.audioContext || !destination) {
+      this.logger.warn('Cannot set voice cue buffers: audio context or destination not ready');
+      return;
+    }
+
+    // Set audio context on scheduler
+    this.voiceCueScheduler.setAudioContext(this.audioContext);
+
+    // Set buffers with destination
+    this.voiceCueScheduler.setBuffers(buffers, destination);
+
+    this.logger.info('Voice cue buffers set', {
+      bufferCount: Object.keys(buffers).length,
+      hasDestination: !!destination,
       instanceId: this.instanceId,
     });
   }

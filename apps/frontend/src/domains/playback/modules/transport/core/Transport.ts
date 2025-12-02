@@ -38,6 +38,15 @@ export class Transport {
   // Position update callback
   private positionUpdateCallback?: (seconds: number) => void;
 
+  // ✅ DOUBLE COUNTDOWN FIX: Countdown offset for visual display
+  // Set by TransportController before calling start() to adjust clock display
+  private countdownOffsetSeconds: number = 0;
+
+  // 🔧 COUNTDOWN TIME FIX: Track transport start time for elapsed time calculation
+  // Captures audioContext.currentTime when transport starts to calculate relative elapsed time
+  // This ensures position updates start from 0s (showing -1:4:0 countdown) instead of skipping ahead
+  private transportStartTime: number = 0;
+
   // Metrics tracking
   private metrics: TimingMetrics = {
     stability: 100,
@@ -103,12 +112,29 @@ export class Transport {
     // Start clock sync (only for basic mode)
     this.clock.startSync();
 
-    // Initialize Tone.js transport
-    await Tone.start();
+    // 🔧 FIX: DON'T call Tone.start() during initialization!
+    // Tone.start() resumes the AudioContext, which requires a user gesture and will block for up to 5 seconds.
+    // The AudioContext will be resumed later by AudioProvider's click handler.
+    // Just configure Tone.js transport without starting it:
+    // await Tone.start(); // ❌ REMOVED - blocks initialization
+
+    // ✅ Configure Tone.js transport tempo without resuming AudioContext
     Tone.Transport.bpm.value = this.config.tempo;
 
     this.isInitialized = true;
-    logger.info('Transport initialized');
+    logger.info('Transport initialized (AudioContext will be resumed on user gesture)');
+  }
+
+  /**
+   * ✅ DOUBLE COUNTDOWN FIX: Set countdown offset for visual display
+   * Called by TransportController before start() to adjust clock display
+   * @param seconds - Countdown duration in seconds (e.g., 3.478 for 4 beats at 69 BPM)
+   */
+  setCountdownOffset(seconds: number): void {
+    this.countdownOffsetSeconds = seconds;
+    logger.info('🎯 [COUNTDOWN FIX] Countdown offset set', {
+      countdownOffsetSeconds: seconds,
+    });
   }
 
   /**
@@ -143,8 +169,33 @@ export class Transport {
     // Start scheduler
     this.scheduler.start();
 
+    console.log('🚀 [TRANSPORT DIAGNOSTIC] About to start clock', {
+      audioWorkletActive: (this.clock as any).audioWorkletActive,
+      timestamp: performance.now(),
+    });
+
     // Start clock timing (for AudioWorklet mode)
     this.clock.start();
+
+    console.log('🚀 [TRANSPORT DIAGNOSTIC] Clock started, about to capture transportStartTime', {
+      timestamp: performance.now(),
+      warning: '⚠️ RACE CONDITION ZONE: AudioWorklet may not have sent first update yet',
+    });
+
+    // 🔧 COUNTDOWN TIME FIX: Capture transport start time BEFORE starting position updates
+    // This creates a reference point (t=0) for calculating elapsed time
+    // Without this, position updates use audioContext.currentTime directly (~2.5s)
+    // which causes the countdown to be skipped entirely
+    this.transportStartTime = this.clock.getAudioTime();
+    console.log('🚀 [COUNTDOWN TIME FIX] Captured transport start time', {
+      transportStartTime: this.transportStartTime.toFixed(6),
+      explanation: 'Position updates will calculate elapsed time relative to this start point',
+      expectedBehavior: 'First position will be 0s → -1:4:0 (countdown visible!)',
+      captureTimestamp: performance.now(),
+    });
+    logger.info('🚀 [COUNTDOWN TIME FIX] Transport start time captured', {
+      transportStartTime: this.transportStartTime,
+    });
 
     // Update state
     this.state = 'playing';
@@ -215,6 +266,12 @@ export class Transport {
       sixteenths: 0,
       ticks: 0,
     });
+
+    // 🔧 COUNTDOWN TIME FIX: Reset transport start time on stop
+    // Ensures clean restart - next start() will capture fresh start time
+    this.transportStartTime = 0;
+    console.log('🛑 [COUNTDOWN TIME FIX] Reset transport start time to 0');
+    logger.info('🛑 [COUNTDOWN TIME FIX] Transport start time reset');
 
     // FAANG FIX: DO NOT reset Tone.Transport.position here!
     // TransportController.stop() handles this with countdown-aware logic.
@@ -522,17 +579,33 @@ export class Transport {
         return;
       }
 
-      // Update timeline from clock
-      const currentTime = this.clock.getAudioTime();
-      this.timeline.updatePositionFromSeconds(currentTime);
+      // 🔧 COUNTDOWN TIME FIX: Calculate ELAPSED time since transport started
+      // This ensures position updates start from 0s (not 2.5s) so countdown displays correctly
+      const absoluteTime = this.clock.getAudioTime();
+      const elapsedTime = absoluteTime - this.transportStartTime;
+
+      console.log('🔄 [COUNTDOWN TIME FIX] Position update', {
+        absoluteTime: absoluteTime.toFixed(6),
+        transportStartTime: this.transportStartTime.toFixed(6),
+        elapsedTime: elapsedTime.toFixed(6),
+        explanation: 'Using elapsed time (not absolute) ensures countdown starts at 0s → -1:4:0',
+        isNegative: elapsedTime < 0,
+        warning: elapsedTime < 0 ? '⚠️ NEGATIVE ELAPSED TIME! Clock display will be corrupted!' : undefined,
+      });
+
+      // ✅ DOUBLE COUNTDOWN FIX: Pass elapsed time (not absolute time)
+      // MusicalPositionManager.getDisplayPosition() handles countdown offset exclusively
+      // Using elapsedTime ensures we start from position 0:0:0 (raw) → -1:4:0 (display)
+      // Previously, we passed absoluteTime (~2.5s) which skipped countdown entirely
+      this.timeline.updatePositionFromSeconds(elapsedTime);
 
       // Emit position update event (would integrate with EventBus)
       const position = this.timeline.getTransportPosition();
-      logger.debug('Position update', { position });
+      logger.debug('Position update', { position, elapsedTime });
 
-      // Call position update callback if registered
+      // Call position update callback if registered with ELAPSED time
       if (this.positionUpdateCallback) {
-        this.positionUpdateCallback(currentTime);
+        this.positionUpdateCallback(elapsedTime);
       }
     };
 

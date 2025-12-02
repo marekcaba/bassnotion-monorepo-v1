@@ -78,7 +78,9 @@ export class Clock {
 
     this.config = {
       useAudioWorklet: config.useAudioWorklet ?? true,
-      useWebWorker: config.useWebWorker ?? true,
+      // FIGHTING CLOCKS FIX: Disable Web Worker timing loop
+      // TimingWorker runs parallel setInterval that conflicts with Transport.startPositionUpdates()
+      useWebWorker: config.useWebWorker ?? false,
       useHardwareClock: config.useHardwareClock ?? true,
       syncIntervalMs: config.syncIntervalMs ?? 1000,
       audioWorkletPath: config.audioWorkletPath,
@@ -105,8 +107,10 @@ export class Clock {
 
     this.audioContext = audioContext;
 
-    // Try to initialize AudioWorklet if enabled
-    if (this.useAudioWorklet) {
+    // 🔧 FIX: DON'T initialize AudioWorklet if AudioContext is suspended
+    // AudioWorklet requires a running context, which needs user interaction
+    // Defer AudioWorklet initialization until after user gesture resumes the context
+    if (this.useAudioWorklet && audioContext.state === 'running') {
       try {
         await this.initializeAudioWorklet();
       } catch (error) {
@@ -116,10 +120,14 @@ export class Clock {
         );
         this.audioWorkletActive = false;
       }
+    } else if (this.useAudioWorklet && audioContext.state !== 'running') {
+      logger.info('AudioContext suspended - deferring AudioWorklet initialization until context resumes');
+      // AudioWorklet will be initialized later when context is resumed
     }
 
     // Try Web Worker as fallback if AudioWorklet failed
-    if (!this.audioWorkletActive && this.useWebWorker) {
+    // 🔧 FIX: Also defer WebWorker if AudioContext is suspended (may need running context)
+    if (!this.audioWorkletActive && this.useWebWorker && audioContext.state === 'running') {
       try {
         await this.initializeWebWorker();
       } catch (error) {
@@ -129,6 +137,9 @@ export class Clock {
         );
         this.webWorkerActive = false;
       }
+    } else if (!this.audioWorkletActive && this.useWebWorker && audioContext.state !== 'running') {
+      logger.info('AudioContext suspended - deferring WebWorker initialization until context resumes');
+      // WebWorker will be initialized later when context is resumed
     }
 
     // Initialize drift compensation if enabled
@@ -159,6 +170,46 @@ export class Clock {
       this.syncWithHardware();
     }
 
+    // FIGHTING CLOCKS FIX: Monitor AudioContext state changes and retry AudioWorklet initialization
+    // when context resumes from suspended state (e.g., after user interaction)
+    audioContext.addEventListener('statechange', async () => {
+      logger.info('AudioContext state changed', {
+        newState: audioContext.state,
+        currentMode: this.audioWorkletActive
+          ? 'AudioWorklet'
+          : this.webWorkerActive
+            ? 'WebWorker'
+            : 'Basic',
+      });
+
+      // If context just became running and we're not using AudioWorklet yet, try to initialize it
+      if (
+        audioContext.state === 'running' &&
+        !this.audioWorkletActive &&
+        this.useAudioWorklet
+      ) {
+        logger.info('Attempting to initialize AudioWorklet now that context is running');
+        try {
+          await this.initializeAudioWorklet();
+          logger.info('✅ Successfully upgraded to AudioWorklet mode', {
+            previousMode: this.webWorkerActive ? 'WebWorker' : 'Basic',
+          });
+        } catch (error) {
+          logger.warn('Failed to initialize AudioWorklet after context resume', error as Error);
+
+          // Try WebWorker as fallback
+          if (!this.webWorkerActive && this.useWebWorker) {
+            try {
+              await this.initializeWebWorker();
+              logger.info('✅ Fallback to WebWorker mode successful');
+            } catch (workerError) {
+              logger.warn('WebWorker fallback also failed, staying in Basic mode', workerError as Error);
+            }
+          }
+        }
+      }
+    });
+
     logger.info('Clock initialized', {
       sampleRate: audioContext.sampleRate,
       baseLatency: audioContext.baseLatency,
@@ -171,6 +222,7 @@ export class Clock {
           ? 'WebWorker'
           : 'Basic',
       driftCompensation: this.config.driftCompensation,
+      stateChangeListenerAdded: true,
     });
   }
 
@@ -352,26 +404,122 @@ export class Clock {
     }
 
     let baseTime: number;
+    let timeSource: string;
+    let fallbackTriggered = false;
 
-    // Use AudioWorklet time if active
+    // Use AudioWorklet time if active AND providing updates
     if (this.audioWorkletActive && this.sampleAccurateClock) {
-      baseTime = this.sampleAccurateClock.getCurrentTime();
+      const workletTime = this.sampleAccurateClock.getCurrentTime();
+      const contextTime = this.audioContext.currentTime;
+      const updateCount = this.sampleAccurateClock.getUpdateCount();
+      const lastUpdateTime = this.sampleAccurateClock.getLastUpdateTime();
+      const timeSinceLastUpdate = lastUpdateTime > 0 ? performance.now() - lastUpdateTime : 0;
+
+      // 🔧 RACE CONDITION FIX: Distinguish between states
+      // - Running + no updates yet: Trust 0 (just started, race condition fix)
+      // - Not running + no updates: Fallback to hardware clock (not started)
+      // - Running + has updates but stopped: Fallback to hardware clock (stuck)
+      const isRunning = this.sampleAccurateClock.getState().isRunning;
+      const isStuck =
+        updateCount > 0 && // Has received updates before
+        timeSinceLastUpdate > 100; // But hasn't updated in >100ms (stuck!)
+
+      if (workletTime === 0 && contextTime > 0 && isStuck) {
+        // AudioWorklet is STUCK - fallback to AudioContext
+        baseTime = contextTime + this.hardwareClockOffset;
+        timeSource = 'AudioContext (FALLBACK - STUCK)';
+        fallbackTriggered = true;
+
+        console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() FALLBACK - AudioWorklet STUCK', {
+          workletTime: workletTime.toFixed(6),
+          contextTime: contextTime.toFixed(6),
+          hardwareClockOffset: this.hardwareClockOffset.toFixed(6),
+          returnedTime: baseTime.toFixed(6),
+          updateCount,
+          timeSinceLastUpdate: timeSinceLastUpdate.toFixed(2) + 'ms',
+          reason: 'AudioWorklet stopped sending updates (stuck)',
+        });
+      } else if (workletTime === 0 && contextTime > 0 && updateCount === 0 && !isRunning) {
+        // AudioWorklet initialized but NOT started yet - fallback to hardware clock
+        baseTime = contextTime + this.hardwareClockOffset;
+        timeSource = 'AudioContext (FALLBACK - NOT STARTED)';
+        fallbackTriggered = true;
+
+        console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() FALLBACK - Not Started', {
+          workletTime: workletTime.toFixed(6),
+          contextTime: contextTime.toFixed(6),
+          hardwareClockOffset: this.hardwareClockOffset.toFixed(6),
+          returnedTime: baseTime.toFixed(6),
+          updateCount,
+          isRunning,
+          reason: 'AudioWorklet initialized but not started (isRunning=false)',
+          explanation: 'Using hardware clock until AudioWorklet starts',
+        });
+      } else if (workletTime === 0 && contextTime > 0 && updateCount === 0 && isRunning) {
+        // AudioWorklet IS running but no updates yet - trust 0 (race condition fix)
+        baseTime = workletTime;
+        timeSource = 'AudioWorklet (STARTUP - isRunning=true)';
+
+        console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() TRUSTING ZERO - Just Started', {
+          workletTime: workletTime.toFixed(6),
+          contextTime: contextTime.toFixed(6),
+          returnedTime: baseTime.toFixed(6),
+          updateCount,
+          isRunning,
+          reason: 'AudioWorklet started, no updates yet (RACE CONDITION FIX)',
+          explanation: 'Returning 0 for fresh start, not falling back to AudioContext',
+        });
+      } else {
+        // Normal case - AudioWorklet is running and providing updates
+        baseTime = workletTime;
+        timeSource = 'AudioWorklet';
+      }
+
+      console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() from AudioWorklet path', {
+        workletTime: workletTime.toFixed(6),
+        contextTime: contextTime.toFixed(6),
+        timeSource,
+        fallbackTriggered,
+        returnedTime: baseTime.toFixed(6),
+        updateCount,
+        timeSinceLastUpdate: timeSinceLastUpdate > 0 ? timeSinceLastUpdate.toFixed(2) + 'ms' : 'N/A',
+      });
     }
     // Use Web Worker time if active
     else if (this.webWorkerActive && this.workerTimingManager) {
       baseTime = this.workerTimingManager.getCurrentTime();
+      timeSource = 'WebWorker';
+      console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() from WebWorker', {
+        returnedTime: baseTime.toFixed(6),
+      });
     }
     // Use hardware clock if enabled
     else if (this.useHardwareClock) {
       baseTime = this.audioContext.currentTime + this.hardwareClockOffset;
+      timeSource = 'Hardware Clock';
+      console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() from Hardware Clock', {
+        contextTime: this.audioContext.currentTime.toFixed(6),
+        hardwareClockOffset: this.hardwareClockOffset.toFixed(6),
+        returnedTime: baseTime.toFixed(6),
+      });
     } else {
       baseTime = this.audioContext.currentTime;
+      timeSource = 'AudioContext (default)';
+      console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() from AudioContext default', {
+        returnedTime: baseTime.toFixed(6),
+      });
     }
 
     // Apply drift compensation if enabled
     if (this.driftCompensator && this.config.driftCompensation === 'adaptive') {
       const compensation = this.driftCompensator.getCompensation();
-      return baseTime + compensation / 1000; // Convert ms to seconds
+      const finalTime = baseTime + compensation / 1000;
+      console.log('🔄 [CLOCK DIAGNOSTIC] Applied drift compensation', {
+        baseTime: baseTime.toFixed(6),
+        compensation: compensation.toFixed(3) + 'ms',
+        finalTime: finalTime.toFixed(6),
+      });
+      return finalTime; // Convert ms to seconds
     }
 
     return baseTime;

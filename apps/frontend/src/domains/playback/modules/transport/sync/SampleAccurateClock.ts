@@ -280,6 +280,14 @@ export class SampleAccurateClock {
    * Get current time in seconds
    */
   getCurrentTime(): number {
+    console.log('🔄 [SAMPLE-ACCURATE-CLOCK DIAGNOSTIC] getCurrentTime() called', {
+      currentTime: this.state.currentTime.toFixed(6),
+      currentFrame: this.state.currentFrame,
+      isRunning: this.state.isRunning,
+      updateCount: this.state.updateCount,
+      lastUpdateTime: this.state.lastUpdateTime,
+      hasReceivedUpdates: this.state.updateCount > 0,
+    });
     return this.state.currentTime;
   }
 
@@ -288,6 +296,20 @@ export class SampleAccurateClock {
    */
   getCurrentFrame(): number {
     return this.state.currentFrame;
+  }
+
+  /**
+   * Get update count (number of timing updates received from AudioWorklet)
+   */
+  getUpdateCount(): number {
+    return this.state.updateCount;
+  }
+
+  /**
+   * Get last update timestamp (performance.now() when last update received)
+   */
+  getLastUpdateTime(): number {
+    return this.state.lastUpdateTime;
   }
 
   /**
