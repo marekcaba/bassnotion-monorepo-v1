@@ -539,11 +539,19 @@ export class InitialSamplePreloader {
 
               if (voiceCueBuffers.size > 0 && playbackEngine) {
                 // Phase 3.1: Use PlaybackEngine.setVoiceCueBuffers()
-                playbackEngine.setVoiceCueBuffers(voiceCueBuffers, audioContext.destination);
-                logger.info('✅ Voice cue buffers injected into PlaybackEngine', {
-                  buffersInjected: voiceCueBuffers.size,
+                // Convert Map<string, AudioBuffer> to Record<string, AudioBuffer>
+                // Fix: Object.entries(Map) returns [] - must convert to plain object
+                const voiceCueRecord: Record<string, AudioBuffer> = {};
+                voiceCueBuffers.forEach((buffer, key) => {
+                  voiceCueRecord[key] = buffer;
                 });
-                console.log(`✅ [VOICE-CUE-INJECTION] Injected ${voiceCueBuffers.size} voice cue buffers`);
+
+                playbackEngine.setVoiceCueBuffers(voiceCueRecord, audioContext.destination);
+                logger.info('✅ Voice cue buffers injected into PlaybackEngine', {
+                  buffersInjected: Object.keys(voiceCueRecord).length,
+                  bufferKeys: Object.keys(voiceCueRecord),
+                });
+                console.log(`✅ [VOICE-CUE-INJECTION] Injected ${Object.keys(voiceCueRecord).length} voice cue buffers:`, Object.keys(voiceCueRecord));
               } else {
                 logger.warn('⚠️ No voice cue buffers available for injection');
               }
