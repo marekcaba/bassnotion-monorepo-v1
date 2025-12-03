@@ -30,7 +30,7 @@ import { useTransportContext } from '@/domains/playback/contexts/TransportContex
 import { useTrack } from '@/domains/playback/hooks';
 import type { CoreServices } from '@/domains/playback/services/core/CoreServices.js';
 import * as Tone from 'tone';
-import { RegionProcessor } from '@/domains/playback/services/core/RegionProcessor.js';
+// Phase 3.1.2: Removed dead import - RegionProcessor not used (uses adapter via CoreServices)
 import { ExerciseLoader } from '@/domains/playback/modules/exercises/core/ExerciseLoader.js';
 import { getLogger } from '@/utils/logger.js';
 import { useAudioServices } from '@/domains/playback/providers/AudioProvider';

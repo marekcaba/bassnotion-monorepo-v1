@@ -126,8 +126,8 @@ export class InitialSamplePreloader {
 
       logger.info('✅ Instrument configurations registered!');
 
-      // PHASE 2 ENHANCEMENT: Set up RegionProcessor with tracks
-      logger.info('🎯 Setting up RegionProcessor for instant playback...');
+      // Phase 3.1: Set up PlaybackEngine with tracks
+      logger.info('🎯 Setting up PlaybackEngine for instant playback...');
       await this.setupRegionProcessorWithTracks();
 
       // PHASE 2 ENHANCEMENT: Download and cache sample files
@@ -402,9 +402,9 @@ export class InitialSamplePreloader {
               : 'N/A',
         });
 
-        console.log('🔧 [BEFORE-REGIONPROCESSOR] About to inject buffers into RegionProcessor');
+        console.log('🔧 [BEFORE-PLAYBACK-ENGINE] About to inject buffers into PlaybackEngine');
 
-        // CRITICAL: Inject harmony buffers into RegionProcessor immediately after loading
+        // CRITICAL: Inject harmony buffers into PlaybackEngine immediately after loading
         // This enables direct AudioBufferSourceNode scheduling for instant stop functionality
         try {
           // ✅ FIX: Use WindowRegistry key instead of legacy __globalCoreServices
@@ -413,7 +413,12 @@ export class InitialSamplePreloader {
           if (!coreServices) {
             logger.warn('⚠️ CoreServices not initialized yet - harmony buffers will be injected later');
           } else {
-            const regionProcessor = coreServices.getRegionProcessor();
+            // Phase 3.1: Use PlaybackEngine instead of RegionProcessor
+            const playbackEngine = coreServices.getPlaybackEngine();
+            if (!playbackEngine) {
+              logger.warn('⚠️ PlaybackEngine not available - harmony buffers will be injected later');
+              return;
+            }
             const sampleCache = GlobalSampleCache.getInstance();
 
             // Get the instrument that was just preloaded
@@ -456,7 +461,7 @@ export class InitialSamplePreloader {
               }
 
               if (buffer) {
-                // Convert 'wurlitzer-v3-C4' to 'v3-C4' for RegionProcessor
+                // Convert 'wurlitzer-v3-C4' to 'v3-C4' for PlaybackEngine
                 // Remove the instrument prefix to get the layer-note format
                 const keyWithoutPrefix = cacheKey.replace(`${instrument}-`, '');
                 harmonyBuffers.set(keyWithoutPrefix, buffer);
@@ -464,12 +469,13 @@ export class InitialSamplePreloader {
               }
             }
 
-            console.log(`✅ [BUFFER-INJECTION] Collected ${buffersFound} buffers for RegionProcessor`)
+            console.log(`✅ [BUFFER-INJECTION] Collected ${buffersFound} buffers for PlaybackEngine`)
 
-            if (buffersFound > 0 && regionProcessor) {
+            if (buffersFound > 0 && playbackEngine) {
               // audioContext already obtained above before the loop
-              regionProcessor.setHarmonyBuffers(harmonyBuffers, audioContext.destination);
-              logger.info('✅ Harmony buffers injected into RegionProcessor', {
+              // Phase 3.1: Use PlaybackEngine.setHarmonyBuffers()
+              playbackEngine.setHarmonyBuffers(harmonyBuffers, audioContext.destination);
+              logger.info('✅ Harmony buffers injected into PlaybackEngine', {
                 instrument,
                 buffersInjected: buffersFound,
                 cachedKeys: harmonyCachedKeys.length
@@ -483,23 +489,24 @@ export class InitialSamplePreloader {
           }
         } catch (error) {
           console.error('❌ [REGIONPROCESSOR-ERROR] Failed to inject buffers:', error);
-          logger.error('Failed to inject harmony buffers into RegionProcessor', error as Error);
+          logger.error('Failed to inject harmony buffers into PlaybackEngine', error as Error);
         }
 
-        console.log('✅ [AFTER-REGIONPROCESSOR] RegionProcessor injection attempt completed');
+        console.log('✅ [AFTER-PLAYBACK-ENGINE] PlaybackEngine injection attempt completed');
 
-        // CRITICAL FIX: Inject voice cue buffers into RegionProcessor
+        // CRITICAL FIX: Inject voice cue buffers into PlaybackEngine
         // Voice cue samples are preloaded (lines 1518-1533) but were never injected
         try {
           const coreServices = (window as any).__bassnotion_coreServices || (window as any).__globalCoreServices;
 
           if (coreServices) {
-            const regionProcessor = coreServices.getRegionProcessor();
+            // Phase 3.1: Use PlaybackEngine instead of RegionProcessor
+            const playbackEngine = coreServices.getPlaybackEngine();
             const sampleCache = GlobalSampleCache.getInstance();
             const audioEngine = coreServices.getAudioEngine();
             const audioContext = audioEngine.getContext();
 
-            if (regionProcessor && audioContext) {
+            if (playbackEngine && audioContext) {
               const voiceCueBuffers = new Map<string, AudioBuffer>();
               const cueNames = ['one', 'two', 'three', 'four'];
 
@@ -525,14 +532,15 @@ export class InitialSamplePreloader {
                 }
 
                 if (buffer) {
-                  // Map 'voice-cue-one' to 'one' for RegionProcessor
+                  // Map 'voice-cue-one' to 'one' for PlaybackEngine
                   voiceCueBuffers.set(cueName, buffer);
                 }
               }
 
-              if (voiceCueBuffers.size > 0) {
-                regionProcessor.setVoiceCueBuffers(voiceCueBuffers, audioContext.destination);
-                logger.info('✅ Voice cue buffers injected into RegionProcessor', {
+              if (voiceCueBuffers.size > 0 && playbackEngine) {
+                // Phase 3.1: Use PlaybackEngine.setVoiceCueBuffers()
+                playbackEngine.setVoiceCueBuffers(voiceCueBuffers, audioContext.destination);
+                logger.info('✅ Voice cue buffers injected into PlaybackEngine', {
                   buffersInjected: voiceCueBuffers.size,
                 });
                 console.log(`✅ [VOICE-CUE-INJECTION] Injected ${voiceCueBuffers.size} voice cue buffers`);
@@ -543,7 +551,7 @@ export class InitialSamplePreloader {
           }
         } catch (error) {
           console.error('❌ [VOICE-CUE-ERROR] Failed to inject voice cue buffers:', error);
-          logger.error('Failed to inject voice cue buffers into RegionProcessor', error as Error);
+          logger.error('Failed to inject voice cue buffers into PlaybackEngine', error as Error);
         }
       } else {
         logger.warn('⚠️ Harmony sample loading completed with warnings', {
@@ -1440,47 +1448,42 @@ export class InitialSamplePreloader {
   }
 
   /**
-   * Set up RegionProcessor with tracks ready for instant playback
-   * This runs during Phase 2 (scroll trigger) without needing AudioContext
+   * Phase 3.1: Set up PlaybackEngine with tracks ready for instant playback
+   * This runs during sample preloading without needing AudioContext
+   * (Function name retained for backward compatibility during refactor)
    */
   private async setupRegionProcessorWithTracks(): Promise<void> {
     try {
       const coreServices =
-        (window as any).__globalCoreServices || (window as any).__coreServices;
-      const eventBus = coreServices?.getEventBus?.();
+        (window as any).__globalCoreServices ||
+        (window as any).__coreServices ||
+        (window as any).__bassnotion_coreServices;
 
-      if (!eventBus) {
-        logger.info(
-          'EventBus not available yet, RegionProcessor will be set up on play',
-        );
+      if (!coreServices) {
+        logger.info('CoreServices not available yet, setup will be done on play');
         return;
       }
 
-      // Create RegionProcessor if not exists
-      let regionProcessor = (window as any).__preConfiguredRegionProcessor;
-      if (!regionProcessor) {
-        const { RegionProcessor } = await import(
-          '../services/core/RegionProcessor.js'
-        );
-        regionProcessor = new RegionProcessor(eventBus);
-        (window as any).__preConfiguredRegionProcessor = regionProcessor;
-        logger.info('✅ Created RegionProcessor for preloading');
+      const eventBus = coreServices?.getEventBus?.();
+      if (!eventBus) {
+        logger.info('EventBus not available yet, PlaybackEngine will be set up on play');
+        return;
       }
 
-      // REMOVED: Metronome track registration moved to MetronomeWidget
-      // The widget is responsible for managing its own track lifecycle
-      // This prevents duplicate track registration which was causing:
-      // - Doubled volume (two tracks playing same events)
-      // - Phase cancellation issues
+      // Phase 3.1: Use PlaybackEngine instead of RegionProcessor
+      // PlaybackEngine is at 100% rollout, RegionProcessor is legacy
+      const playbackEngine = coreServices.getPlaybackEngine();
+      if (!playbackEngine) {
+        logger.warn('PlaybackEngine not available, skipping buffer pre-configuration');
+        return;
+      }
 
-      logger.info(
-        '✅ RegionProcessor created (tracks will be registered by widgets)',
-      );
+      logger.info('✅ Using PlaybackEngine for buffer preloading (Phase 3.1 refactor)');
 
       // Store configuration for play button to use
       (window as any).__tracksPreConfigured = true;
     } catch (error) {
-      logger.error('Failed to setup RegionProcessor:', error);
+      logger.error('Failed to setup PlaybackEngine:', error);
     }
   }
 
@@ -2132,7 +2135,9 @@ export function getPreloadedHarmonyInstrument(): any {
 }
 
 /**
+ * @deprecated Legacy helper - no longer used after Phase 3.1 refactor
  * Get pre-configured RegionProcessor if available
+ * Will be removed in Phase 3.2
  */
 export function getPreConfiguredRegionProcessor(): any {
   return (window as any).__preConfiguredRegionProcessor;
