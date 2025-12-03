@@ -43,7 +43,7 @@ export class TransportAdapter {
       scheduleInterval: 0.025,
       enableAudioWorklet: true,
       enableWebWorker: true,
-      driftCompensation: 'adaptive',
+      driftCompensation: 'basic',
       bufferStrategy: 'adaptive',
       ...config,
     };

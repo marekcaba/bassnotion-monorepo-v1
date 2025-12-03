@@ -88,7 +88,7 @@ export const DEFAULT_TRANSPORT_CONFIG: TransportConfig = {
   scheduleInterval: 0.025, // 25ms - 40Hz update rate
   enableAudioWorklet: true,
   enableWebWorker: true,
-  driftCompensation: 'adaptive',
+  driftCompensation: 'basic', // AudioWorklet provides sample-accurate timing
   bufferStrategy: 'adaptive',
 };
 

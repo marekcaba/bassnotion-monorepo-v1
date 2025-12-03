@@ -69,7 +69,7 @@ export class Transport {
       scheduleInterval: TRANSPORT_TIMING_CONFIG.updateInterval,
       enableAudioWorklet: true,
       enableWebWorker: true,
-      driftCompensation: 'adaptive',
+      driftCompensation: 'basic',
       bufferStrategy: 'adaptive',
       ...config,
     };

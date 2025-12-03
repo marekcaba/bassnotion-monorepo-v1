@@ -25,6 +25,7 @@ import {
   isNewPlaybackEngineEnabled,
   logPlaybackEngineMigrationEvent,
 } from '../../config/featureFlags.js';
+import { WindowRegistry } from '../WindowRegistry.js';
 
 export interface CoreServicesConfig {
   enableHighPrecisionTiming?: boolean;
@@ -81,7 +82,7 @@ export class CoreServices {
       {
         enableWebWorker: this.config.enableHighPrecisionTiming,
         enableAudioWorklet: this.config.enableHighPrecisionTiming,
-        driftCompensation: 'adaptive',
+        driftCompensation: 'basic',
         bufferStrategy: 'adaptive',
       },
     );
