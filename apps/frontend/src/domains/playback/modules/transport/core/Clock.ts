@@ -13,6 +13,8 @@ import { ClockSyncData } from '../types/index.js';
 import { ClockSyncError } from '../types/errors.js';
 import { createStructuredLogger } from '../shared/index.js';
 import { SampleAccurateClock } from '../sync/SampleAccurateClock.js';
+// Phase 2.2: AdaptiveDriftCompensator deprecated - AudioWorklet provides sample accuracy
+// Only used when driftCompensation === 'adaptive' (default is 'basic')
 import { AdaptiveDriftCompensator } from '../sync/AdaptiveDriftCompensator.js';
 import { WorkerTimingManager } from '../sync/WorkerTimingManager.js';
 
@@ -54,6 +56,8 @@ export class Clock {
   private lastUpdateTime = 0;
 
   // Drift compensation
+  // Phase 2.2: DEPRECATED - Only used when config.driftCompensation === 'adaptive' (default: 'basic')
+  // AudioWorklet provides sample-accurate timing without drift compensation
   private driftCompensator: AdaptiveDriftCompensator | null = null;
   private driftMeasurementInterval: number | null = null;
 
@@ -465,19 +469,49 @@ export class Clock {
       });
     }
 
-    // Apply drift compensation if enabled
+    // Phase 2.2: Drift compensation deprecated - only applies when config === 'adaptive'
+    // Default config is 'basic', so this code path is rarely (if ever) executed
     if (this.driftCompensator && this.config.driftCompensation === 'adaptive') {
       const compensation = this.driftCompensator.getCompensation();
       const finalTime = baseTime + compensation / 1000;
-      console.log('🔄 [CLOCK DIAGNOSTIC] Applied drift compensation', {
+      console.warn('⚠️ [CLOCK] DEPRECATED: Using adaptive drift compensation', {
         baseTime: baseTime.toFixed(6),
         compensation: compensation.toFixed(3) + 'ms',
         finalTime: finalTime.toFixed(6),
+        note: 'Consider using default (basic) mode - AudioWorklet provides sample accuracy',
       });
       return finalTime; // Convert ms to seconds
     }
 
     return baseTime;
+  }
+
+  /**
+   * Get the current active timing source (for debugging/monitoring)
+   * Phase 2.3: Diagnostic method to verify which timing source is being used
+   */
+  getCurrentTimeSource(): string {
+    if (!this.audioContext) {
+      return 'Not initialized';
+    }
+
+    if (this.audioWorkletActive && this.sampleAccurateClock) {
+      const workletTime = this.sampleAccurateClock.getCurrentTime();
+      const updateCount = this.sampleAccurateClock.getUpdateCount();
+      const isRunning = this.sampleAccurateClock.getState().isRunning;
+
+      if (workletTime === 0 && updateCount === 0 && isRunning) {
+        return 'AudioWorklet (starting)';
+      } else if (workletTime > 0 || updateCount > 0) {
+        return 'AudioWorklet (active)';
+      } else {
+        return 'AudioWorklet (fallback to AudioContext)';
+      }
+    } else if (this.webWorkerActive && this.workerTimingManager) {
+      return 'WebWorker';
+    } else {
+      return 'AudioContext (fallback)';
+    }
   }
 
   /**
