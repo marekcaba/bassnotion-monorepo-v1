@@ -137,27 +137,6 @@ export class Clock {
       // WebWorker will be initialized later when context is resumed
     }
 
-    // Initialize drift compensation if enabled
-    if (this.config.driftCompensation === 'adaptive') {
-      this.driftCompensator = new AdaptiveDriftCompensator({
-        enableAdaptiveMode: true,
-        measurementIntervalMs: 100,
-        lookAheadMs: 100,
-        maxCompensationMs: 5,
-      });
-
-      // Set up drift measurement
-      this.driftCompensator.on('compensationUpdate', (data) => {
-        logger.debug('Drift compensation update', {
-          drift: data.drift.toFixed(3),
-          compensation: data.compensation.toFixed(3),
-          trend: data.prediction.trend,
-        });
-      });
-
-      this.driftCompensator.start();
-    }
-
     this.isInitialized = true;
 
     // Perform initial sync if not using AudioWorklet
@@ -289,14 +268,6 @@ export class Clock {
     // AudioWorklet handles its own timing
     if (this.audioWorkletActive) {
       logger.debug('Clock sync not needed - AudioWorklet active');
-
-      // But we still need drift measurement if adaptive compensation is enabled
-      if (
-        this.driftCompensator &&
-        this.config.driftCompensation === 'adaptive'
-      ) {
-        this.startDriftMeasurement();
-      }
       return;
     }
 
@@ -310,11 +281,6 @@ export class Clock {
       this.syncIntervalMs,
     );
 
-    // Start drift measurement if enabled
-    if (this.driftCompensator && this.config.driftCompensation === 'adaptive') {
-      this.startDriftMeasurement();
-    }
-
     logger.debug('Clock sync started', { intervalMs: this.syncIntervalMs });
   }
 
@@ -327,8 +293,6 @@ export class Clock {
       this.clockSyncInterval = null;
       logger.debug('Clock sync stopped');
     }
-
-    this.stopDriftMeasurement();
   }
 
   /**
@@ -471,20 +435,6 @@ export class Clock {
         returnedTime: baseTime.toFixed(6),
         reason: this.useHardwareClock ? 'useHardwareClock enabled but offset removed' : 'AudioWorklet/WebWorker not active',
       });
-    }
-
-    // Phase 2.2: Drift compensation deprecated - only applies when config === 'adaptive'
-    // Default config is 'basic', so this code path is rarely (if ever) executed
-    if (this.driftCompensator && this.config.driftCompensation === 'adaptive') {
-      const compensation = this.driftCompensator.getCompensation();
-      const finalTime = baseTime + compensation / 1000;
-      logger.warn('DEPRECATED: Using adaptive drift compensation', {
-        baseTime: baseTime.toFixed(6),
-        compensation: compensation.toFixed(3) + 'ms',
-        finalTime: finalTime.toFixed(6),
-        note: 'Consider using default (basic) mode - AudioWorklet provides sample accuracy',
-      });
-      return finalTime; // Convert ms to seconds
     }
 
     return baseTime;
@@ -736,10 +686,6 @@ export class Clock {
     this.currentFrame = 0;
     this.lastUpdateTime = 0;
 
-    if (this.driftCompensator) {
-      this.driftCompensator.reset();
-    }
-
     logger.info('Clock reset');
   }
 
@@ -794,11 +740,6 @@ export class Clock {
       this.workerTimingManager = null;
     }
 
-    if (this.driftCompensator) {
-      this.driftCompensator.dispose();
-      this.driftCompensator = null;
-    }
-
     this.audioContext = null;
     this.isInitialized = false;
 
@@ -822,98 +763,6 @@ export class Clock {
   }
 
   /**
-   * Start drift measurement
-   */
-  private startDriftMeasurement(): void {
-    if (this.driftMeasurementInterval || !this.driftCompensator) {
-      return;
-    }
-
-    const measureInterval = 100; // Measure every 100ms
-    let lastMeasureTime = performance.now();
-    let lastAudioTime = this.getRawAudioTime(); // Use raw time without compensation
-
-    this.driftMeasurementInterval = window.setInterval(() => {
-      const now = performance.now();
-      const currentAudioTime = this.getRawAudioTime(); // Use raw time without compensation
-
-      // Calculate expected vs actual time delta
-      const expectedDelta = (now - lastMeasureTime) / 1000; // Convert to seconds
-      const actualDelta = currentAudioTime - lastAudioTime;
-
-      // Feed measurement to drift compensator
-      this.driftCompensator!.measureDrift(
-        lastAudioTime + expectedDelta,
-        currentAudioTime,
-      );
-
-      lastMeasureTime = now;
-      lastAudioTime = currentAudioTime;
-    }, measureInterval);
-
-    logger.debug('Drift measurement started', { interval: measureInterval });
-  }
-
-  /**
-   * Get raw audio time without drift compensation
-   */
-  private getRawAudioTime(): number {
-    if (!this.audioContext) {
-      throw new ClockSyncError('AudioContext not initialized');
-    }
-
-    // Use AudioWorklet time if active
-    if (this.audioWorkletActive && this.sampleAccurateClock) {
-      return this.sampleAccurateClock.getCurrentTime();
-    }
-    // Use Web Worker time if active
-    else if (this.webWorkerActive && this.workerTimingManager) {
-      return this.workerTimingManager.getCurrentTime();
-    }
-    // Fallback to raw AudioContext time
-    else {
-      return this.audioContext.currentTime;
-    }
-  }
-
-  /**
-   * Stop drift measurement
-   */
-  private stopDriftMeasurement(): void {
-    if (this.driftMeasurementInterval) {
-      clearInterval(this.driftMeasurementInterval);
-      this.driftMeasurementInterval = null;
-      logger.debug('Drift measurement stopped');
-    }
-  }
-
-  /**
-   * Get drift compensation statistics
-   */
-  getDriftStatistics() {
-    if (!this.driftCompensator) {
-      return null;
-    }
-
-    return this.driftCompensator.getStatistics();
-  }
-
-  /**
-   * Update system conditions for adaptive drift compensation
-   */
-  updateSystemConditions(conditions: {
-    cpuUsage?: number;
-    memoryPressure?: number;
-    networkLatency?: number;
-    audioDropouts?: number;
-    bufferUnderruns?: number;
-  }): void {
-    if (this.driftCompensator) {
-      this.driftCompensator.updateSystemConditions(conditions);
-    }
-  }
-
-  /**
    * Destroy the clock
    */
   destroy(): void {
@@ -927,11 +776,6 @@ export class Clock {
     if (this.workerTimingManager) {
       this.workerTimingManager.destroy();
       this.workerTimingManager = null;
-    }
-
-    if (this.driftCompensator) {
-      this.driftCompensator.destroy();
-      this.driftCompensator = null;
     }
 
     this.isInitialized = false;
