@@ -7,8 +7,7 @@
 // Core instrument interface
 export * from './IInstrumentCore.js';
 
-// Scheduler interface
-export * from './IInstrumentScheduler.js';
+// REMOVED: IInstrumentScheduler.js (legacy interface, unused)
 
 // Effects interface
 export * from './IInstrumentEffects.js';
@@ -16,5 +15,4 @@ export * from './IInstrumentEffects.js';
 // Lifecycle interface
 export * from './IInstrumentLifecycle.js';
 
-// Dependency injection
-export * from './InstrumentContainer.js';
+// REMOVED: InstrumentContainer.js (legacy DI container, unused)

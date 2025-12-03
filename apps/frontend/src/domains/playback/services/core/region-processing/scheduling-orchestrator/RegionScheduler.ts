@@ -48,6 +48,7 @@ interface Region {
 }
 
 interface Track {
+  id?: string; // Track ID (e.g., "metronome", "voice-cue", "harmony-widget-track")
   regions: Region[];
   instrumentType?: string;
   name?: string;
@@ -201,9 +202,19 @@ export class RegionScheduler {
           const isCC64 =
             event.type === 'harmony-control-change' &&
             (event as any).data?.cc === 64;
+
+          // Extract tick from original position if available (not in ParsedPosition interface)
+          let tick = 0;
+          if (typeof event.position === 'object' && (event.position as any).tick !== undefined) {
+            tick = (event.position as any).tick;
+          } else if (typeof event.position === 'string') {
+            const parts = event.position.split(':');
+            tick = parseInt(parts[3] || '0', 10);
+          }
+
           // eslint-disable-next-line no-console
           console.log(
-            `  ${i}: ${event.type}${isCC64 ? ' (CC64)' : ''} @ ${parsedPos.measure}:${parsedPos.beat}:${parsedPos.subdivision}:${parsedPos.tick}`,
+            `  ${i}: ${event.type}${isCC64 ? ' (CC64)' : ''} @ ${parsedPos.bars}:${parsedPos.beats}:${parsedPos.sixteenths}:${tick}`,
             isCC64 ? `value=${(event as any).data?.value}` : '',
           );
         });
@@ -377,8 +388,8 @@ export class RegionScheduler {
         events.forEach(({ instrumentType, event }, index) => {
           const eventStartTime = performance.now();
 
-          // Schedule audio directly
-          emitEvent(instrumentType, event, timeKey);
+          // Schedule audio directly with absolute audio time (transportStartTime + relative time)
+          emitEvent(instrumentType, event, absoluteAudioTime);
 
           const eventEndTime = performance.now();
 
@@ -506,8 +517,11 @@ export class RegionScheduler {
     // Process events within lookahead window
     const lookAheadEnd = currentTime + this.lookAheadTime;
 
-    tracks.forEach((track, trackId) => {
+    tracks.forEach((track) => {
       const instrumentType = getInstrumentType(track);
+      // CRITICAL FIX: tracks is an Array, but we need the actual track ID string for scheduledEvents Map
+      // Extract the track ID from the track object itself, not the array index
+      const trackId = (track as any).id || track.name || instrumentType;
 
       track.regions.forEach((region) => {
         if (!region.pattern?.events) return;

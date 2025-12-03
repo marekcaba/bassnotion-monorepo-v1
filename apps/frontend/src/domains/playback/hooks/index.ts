@@ -10,8 +10,10 @@
 export { useAudio } from './useAudio.js';
 export type { UseAudioResult } from './useAudio.js';
 
-export { useTransport } from './useTransport.js';
-export type { UseTransportResult } from './useTransport.js';
+// REMOVED: Old useTransport hook - now use TransportContext instead
+// Import from: @/domains/playback/contexts/TransportContext
+// export { useTransport } from './useTransport.js';
+// export type { UseTransportResult } from './useTransport.js';
 
 export { usePlugins } from './usePlugins.js';
 export type { UsePluginsResult } from './usePlugins.js';

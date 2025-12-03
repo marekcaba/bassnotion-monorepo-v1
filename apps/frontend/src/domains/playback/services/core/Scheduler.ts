@@ -14,6 +14,11 @@
 
 import { getLogger } from '@/utils/logger.js';
 import type { PatternEvent } from './region-processing/types/region.types.js';
+import {
+  VelocityLayerSelector,
+  type HarmonyInstrument,
+  type PerNoteVelocityRanges,
+} from './scheduling/VelocityLayerSelector.js';
 
 /**
  * Instrument types supported by the scheduler
@@ -62,6 +67,12 @@ export interface InstrumentConfig {
 
   /** Silence detection threshold */
   silenceThreshold?: number;
+
+  /** Harmony instrument type (grandpiano, wurlitzer, rhodes, nicekeysrhodes) */
+  harmonyInstrument?: HarmonyInstrument;
+
+  /** Octave shift in semitones (for harmony instruments) */
+  octaveShift?: number;
 }
 
 /**
@@ -108,6 +119,8 @@ export const INSTRUMENT_CONFIGS: Record<InstrumentType, InstrumentConfig> = {
     hasVelocityLayers: true,
     velocityLayerKeys: ['v2', 'v3', 'v4', 'v5'],
     baseVolume: 0.8,
+    harmonyInstrument: 'wurlitzer', // Default instrument
+    octaveShift: 12, // Wurlitzer/Rhodes: -12 semitones, Grand Piano: 0
   },
   bass: {
     loggerName: 'BassScheduler',
@@ -152,10 +165,19 @@ export class Scheduler {
   private tracks: Map<string, any>; // Reference to track registry
   private logger: ReturnType<typeof getLogger>;
 
+  // Velocity layer selector for harmony instruments (extracted from legacy)
+  private velocityLayerSelector: VelocityLayerSelector;
+  private currentHarmonyInstrument: HarmonyInstrument = 'wurlitzer'; // Default
+
   constructor(instanceId: string, tracks: Map<string, any>) {
     this.instanceId = instanceId;
     this.tracks = tracks;
     this.logger = getLogger('Scheduler');
+
+    // Initialize velocity layer selector with default instrument
+    this.velocityLayerSelector = new VelocityLayerSelector(
+      this.currentHarmonyInstrument,
+    );
   }
 
   /**
@@ -195,18 +217,38 @@ export class Scheduler {
   }
 
   /**
-   * Velocity layer selection for harmony (inlined from VelocityLayerSelector)
+   * Set harmony instrument type (wurlitzer, grandpiano, rhodes, nicekeysrhodes)
+   * Updates velocity layer selection and octave shift accordingly
+   *
+   * Octave shifting behavior:
+   * - Grand Piano: No octave shift (use MIDI note as-is)
+   * - Wurlitzer/Rhodes/NiceKeysRhodes: -12 semitones (1 octave down)
+   *
+   * This ensures samples align with their recorded pitch:
+   * - Grand Piano samples recorded at actual pitch (C4 = MIDI 60)
+   * - Wurlitzer/Rhodes samples recorded 1 octave higher (C5 sample plays as C4)
    */
-  private selectVelocityLayer(velocity: number): string {
-    // Map MIDI velocity (0-127) to velocity layers (v2-v5)
-    // v2: 0-31   (quiet)
-    // v3: 32-63  (medium-soft)
-    // v4: 64-95  (medium-loud)
-    // v5: 96-127 (loud)
-    if (velocity <= 31) return 'v2';
-    if (velocity <= 63) return 'v3';
-    if (velocity <= 95) return 'v4';
-    return 'v5';
+  public setHarmonyInstrument(
+    instrument: HarmonyInstrument,
+    perNoteRanges?: PerNoteVelocityRanges,
+  ): void {
+    this.currentHarmonyInstrument = instrument;
+    this.velocityLayerSelector.setInstrument(instrument);
+
+    if (perNoteRanges) {
+      this.velocityLayerSelector.setPerNoteRanges(perNoteRanges);
+    }
+
+    // Update octave shift in harmony config
+    const harmonyConfig = INSTRUMENT_CONFIGS.harmony;
+    harmonyConfig.harmonyInstrument = instrument;
+    harmonyConfig.octaveShift = instrument === 'grandpiano' ? 0 : 12;
+
+    this.logger.info('Harmony instrument updated', {
+      instrument,
+      octaveShift: harmonyConfig.octaveShift,
+      hasPerNoteRanges: !!perNoteRanges,
+    });
   }
 
   /**
@@ -310,6 +352,10 @@ export class Scheduler {
 
   /**
    * Schedule a harmony note (sustained with velocity layers)
+   *
+   * Applies instrument-specific octave shifting:
+   * - Grand Piano: No shift (MIDI 60 → C4)
+   * - Wurlitzer/Rhodes: -12 semitones (MIDI 60 → C3, but uses C4 sample)
    */
   private scheduleHarmonyNote(
     event: PatternEvent,
@@ -325,15 +371,35 @@ export class Scheduler {
       return false;
     }
 
-    const { duration = 0.5, velocity = 64, noteName = 'C4' } = options ?? {};
+    let { duration = 0.5, velocity = 64, midiNote, noteName } = options ?? {};
 
-    // Select velocity layer
-    const layer = this.selectVelocityLayer(velocity);
+    // Apply octave shift for non-Grand Piano instruments
+    const harmonyConfig = INSTRUMENT_CONFIGS.harmony;
+    const octaveShift = harmonyConfig.octaveShift ?? 0;
+
+    // If MIDI note provided but no noteName, calculate note name after octave shift
+    if (midiNote !== undefined && !noteName) {
+      const adjustedMidiNote = midiNote - octaveShift;
+      noteName = this.midiToNoteName(adjustedMidiNote);
+    }
+
+    // Default to C4 if still no note name
+    if (!noteName) {
+      noteName = 'C4';
+    }
+
+    // Select velocity layer using VelocityLayerSelector (supports 4-16 layers per instrument)
+    const layer = this.velocityLayerSelector.selectLayer(velocity, noteName);
     const bufferKey = `${noteName}_${layer}`;
     const buffer = this.getBuffer(bufferKey);
 
     if (!buffer) {
-      this.logger.warn(`Harmony buffer not found: ${bufferKey}`);
+      this.logger.warn(`Harmony buffer not found: ${bufferKey}`, {
+        midiNote,
+        octaveShift,
+        noteName,
+        layer,
+      });
       return false;
     }
 
@@ -441,11 +507,11 @@ export class Scheduler {
 
     for (const [source, metadata] of this.activeSources.entries()) {
       try {
-        // Only stop if stop hasn't been scheduled yet
-        if (!metadata.hasStopScheduled) {
-          source.stop();
-          stoppedCount++;
-        }
+        // CRITICAL FIX: ALWAYS stop sources immediately when user clicks stop button
+        // Even if they have a scheduled stop time (e.g., sustained notes), we need to
+        // stop them NOW to respect the user's action
+        source.stop();
+        stoppedCount++;
       } catch {
         // Source already stopped or disposed
       }
@@ -498,5 +564,32 @@ export class Scheduler {
       bufferCount: this.buffers.size,
       instanceId: this.instanceId,
     };
+  }
+
+  /**
+   * Convert MIDI note number to note name with 's' for sharps
+   * Example: 60 → 'C4', 61 → 'Cs4', 62 → 'D4'
+   *
+   * Uses 's' for sharps (not '#') to match buffer cache keys
+   * Grand Piano keyboard map uses: 'Cs4', 'Ds4', 'Fs4', 'Gs4', 'As4'
+   */
+  private midiToNoteName(midiNote: number): string {
+    const noteNames = [
+      'C',
+      'Cs',
+      'D',
+      'Ds',
+      'E',
+      'F',
+      'Fs',
+      'G',
+      'Gs',
+      'A',
+      'As',
+      'B',
+    ];
+    const octave = Math.floor(midiNote / 12) - 1;
+    const noteIndex = midiNote % 12;
+    return `${noteNames[noteIndex]}${octave}`;
   }
 }

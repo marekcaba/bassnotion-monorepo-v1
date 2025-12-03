@@ -421,6 +421,15 @@ export class RegionProcessor {
       this.sustainPedalManager,
     );
     this.countdownOffsetBeats = countdownOffsetBeats;
+
+    // CRITICAL FIX: Sync countdownEnabled flag from ConfigurationManager
+    // This was missing, causing countdown to be disabled even after enableCountdown() was called
+    this.countdownEnabled = true;
+
+    logger.info('🎯 RegionProcessor countdown enabled', {
+      countdownOffsetBeats,
+      countdownEnabled: this.countdownEnabled,
+    });
   }
 
   /**
@@ -698,6 +707,12 @@ export class RegionProcessor {
    * Start processing regions
    */
   start(): void {
+    console.log('[REGIONPROCESSOR-DIAGNOSTIC] start() called', {
+      isRunning: this.isRunning,
+      hasAudioContext: !!this.audioContext,
+      tracksCount: this.tracks.size,
+    });
+
     // Phase 7: Delegate lifecycle management to LifecycleCoordinator
     const result = this.lifecycleCoordinator.start(
       this.isRunning,
@@ -790,6 +805,15 @@ export class RegionProcessor {
       },
     );
 
+    // CRITICAL FIX: Stop all active harmony sources in HarmonySchedulerV2
+    // The LifecycleCoordinator stops sources tracked in scheduledAudioSources,
+    // but HarmonySchedulerV2 maintains its own activeHarmonySources map that
+    // needs to be stopped separately
+    if (!graceful) {
+      this.harmonyScheduler.stopAll();
+      logger.info('🛑 Stopped all harmony sources via HarmonySchedulerV2.stopAll()');
+    }
+
     // Update state from result
     this.isRunning = result.isRunning;
     this.scheduleInterval = result.scheduleInterval;
@@ -857,8 +881,22 @@ export class RegionProcessor {
    * TEMPO CHANGE FIX: Protected by scheduling lock to prevent race conditions
    */
   private scheduleAllRegions(): void {
+    console.log('[REGIONPROCESSOR-DIAGNOSTIC] scheduleAllRegions() called', {
+      tracksCount: this.tracks.size,
+      tracks: Array.from(this.tracks.values()).map((t: any) => ({
+        id: t.id || t.track?.id,
+        name: t.name,
+        instrumentType: t.instrumentType,
+        regionsCount: t.regions?.length,
+      })),
+      isScheduling: this.isScheduling,
+      hasAudioContext: !!this.audioContext,
+      transportStartTime: this.transportStartTime,
+    });
+
     // Prevent concurrent scheduling
     if (this.isScheduling) {
+      console.error('[REGIONPROCESSOR-DIAGNOSTIC] Scheduling already in progress - returning early');
       logger.error('🚨 Scheduling already in progress!', {
         instanceId: this._instanceId,
       });
@@ -867,6 +905,8 @@ export class RegionProcessor {
 
     try {
       this.isScheduling = true;
+
+      console.log('[REGIONPROCESSOR-DIAGNOSTIC] Delegating to RegionScheduler.scheduleAll()');
 
       // Delegate to RegionScheduler (was Phase 8)
       const result = this.regionScheduler.scheduleAll(

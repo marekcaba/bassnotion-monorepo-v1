@@ -83,7 +83,9 @@ export class InitialSamplePreloader {
 
       // CRITICAL: CoreServices is now GUARANTEED to exist
       // ScrollTriggerLoader ensures CoreServices.preInitialize() runs first
-      const coreServices = (window as any).__globalCoreServices;
+      // Use WindowRegistry to access CoreServices (supports both new and legacy keys)
+      const { WindowRegistry } = await import('./WindowRegistry.js');
+      const coreServices = WindowRegistry.getCoreServices();
 
       if (!coreServices) {
         // This should NEVER happen now, but adding defensive check
@@ -139,9 +141,16 @@ export class InitialSamplePreloader {
         registry.getStatus(),
       );
 
-      // Dispatch event to notify that essential samples are ready
+      // Dispatch events to notify that essential samples are ready
       if (typeof window !== 'undefined') {
+        // Set window flag for backward compatibility
+        (window as any).__samplesReady = true;
+
+        // Dispatch both events
         window.dispatchEvent(new Event('essentialSamplesReady'));
+        window.dispatchEvent(new Event('samplesReady')); // GlobalControls waits for this
+
+        logger.info('✅ Dispatched samplesReady and essentialSamplesReady events');
       }
     } catch (error) {
       logger.error('❌ Failed to register instrument configs:', error);
@@ -398,8 +407,8 @@ export class InitialSamplePreloader {
         // CRITICAL: Inject harmony buffers into RegionProcessor immediately after loading
         // This enables direct AudioBufferSourceNode scheduling for instant stop functionality
         try {
-          // Access global CoreServices instance (created by useCoreServices hook)
-          const coreServices = (window as any).__globalCoreServices;
+          // ✅ FIX: Use WindowRegistry key instead of legacy __globalCoreServices
+          const coreServices = (window as any).__bassnotion_coreServices || (window as any).__globalCoreServices;
 
           if (!coreServices) {
             logger.warn('⚠️ CoreServices not initialized yet - harmony buffers will be injected later');
@@ -411,36 +420,59 @@ export class InitialSamplePreloader {
             const instrument = exercise?.harmonyInstrument || 'wurlitzer';
 
             const harmonyBuffers = new Map<string, AudioBuffer>();
-            const layers = ['v2', 'v3', 'v4', 'v5']; // Harmony velocity layers
-            // CRITICAL FIX: Use sharp notation (Cs, Ds, Fs, Gs, As) to match HarmonyPreloadStrategy
-            // This ensures cache lookups succeed for preloaded samples
-            const notes = ['C', 'Cs', 'D', 'Ds', 'E', 'F', 'Fs', 'G', 'Gs', 'A', 'As', 'B'];
-            const octaves = [2, 3, 4, 5, 6];
+
+            // ✅ FIX: Get actually cached keys instead of iterating through all possibilities
+            // This matches what HarmonyWidget does (line 1414)
+            const allCachedKeys = Array.from((sampleCache as any).samples?.keys() || []);
+            const harmonyCachedKeys = allCachedKeys.filter(key => key.startsWith(`${instrument}-`));
+
+            console.log(`🔍 [BUFFER-INJECTION] Found ${harmonyCachedKeys.length} cached buffers for ${instrument}:`,
+              harmonyCachedKeys.slice(0, 5));
+
+            // Get audioContext for decoding raw buffers from CoreServices
+            const audioEngine = coreServices.getAudioEngine();
+            const audioContext = audioEngine.getContext();
+
             let buffersFound = 0;
 
-            for (const layer of layers) {
-              for (const octave of octaves) {
-                for (const note of notes) {
-                  const noteName = `${note}${octave}`;
-                  // CRITICAL FIX: Use instrument-specific cache keys (e.g., 'wurlitzer-v3-C4')
-                  const cacheKey = `${instrument}-${layer}-${noteName}`;
-                  const buffer = sampleCache.getCachedBuffer(cacheKey);
-                  if (buffer) {
-                    // RegionProcessor expects format: 'v3-C4' (without instrument prefix)
-                    harmonyBuffers.set(`${layer}-${noteName}`, buffer);
-                    buffersFound++;
+            // Iterate only through actually cached keys
+            for (const cacheKey of harmonyCachedKeys) {
+              // ✅ FIX: Try decoded buffer first, fallback to raw buffer + decode
+              let buffer = sampleCache.getCachedBuffer(cacheKey);
+
+              if (!buffer) {
+                // Buffer not decoded yet - get raw ArrayBuffer and decode it
+                const rawBuffer = await sampleCache.getCachedRawBuffer(cacheKey);
+                if (rawBuffer && audioContext) {
+                  try {
+                    buffer = await audioContext.decodeAudioData(rawBuffer.slice(0));
+                    // Cache the decoded buffer for next time
+                    await sampleCache.cacheBuffer(cacheKey, buffer, { isContextCompatible: true });
+                    console.log(`🔄 [BUFFER-INJECTION] Decoded raw buffer on-demand: ${cacheKey}`);
+                  } catch (error) {
+                    console.error(`❌ [BUFFER-INJECTION] Failed to decode ${cacheKey}:`, error);
                   }
                 }
               }
+
+              if (buffer) {
+                // Convert 'wurlitzer-v3-C4' to 'v3-C4' for RegionProcessor
+                // Remove the instrument prefix to get the layer-note format
+                const keyWithoutPrefix = cacheKey.replace(`${instrument}-`, '');
+                harmonyBuffers.set(keyWithoutPrefix, buffer);
+                buffersFound++;
+              }
             }
 
+            console.log(`✅ [BUFFER-INJECTION] Collected ${buffersFound} buffers for RegionProcessor`)
+
             if (buffersFound > 0 && regionProcessor) {
-              const audioContext = (await import('../../playback/utils/ensureAudioContext.js')).ensureAudioContext();
+              // audioContext already obtained above before the loop
               regionProcessor.setHarmonyBuffers(harmonyBuffers, audioContext.destination);
               logger.info('✅ Harmony buffers injected into RegionProcessor', {
                 instrument,
                 buffersInjected: buffersFound,
-                layers: layers.length
+                cachedKeys: harmonyCachedKeys.length
               });
             } else {
               logger.warn('⚠️ No harmony buffers available for injection', {
@@ -455,6 +487,64 @@ export class InitialSamplePreloader {
         }
 
         console.log('✅ [AFTER-REGIONPROCESSOR] RegionProcessor injection attempt completed');
+
+        // CRITICAL FIX: Inject voice cue buffers into RegionProcessor
+        // Voice cue samples are preloaded (lines 1518-1533) but were never injected
+        try {
+          const coreServices = (window as any).__bassnotion_coreServices || (window as any).__globalCoreServices;
+
+          if (coreServices) {
+            const regionProcessor = coreServices.getRegionProcessor();
+            const sampleCache = GlobalSampleCache.getInstance();
+            const audioEngine = coreServices.getAudioEngine();
+            const audioContext = audioEngine.getContext();
+
+            if (regionProcessor && audioContext) {
+              const voiceCueBuffers = new Map<string, AudioBuffer>();
+              const cueNames = ['one', 'two', 'three', 'four'];
+
+              for (const cueName of cueNames) {
+                const cacheKey = `voice-cue-${cueName}`;
+
+                // Try decoded buffer first, fallback to raw buffer + decode
+                let buffer = sampleCache.getCachedBuffer(cacheKey);
+
+                if (!buffer) {
+                  // Buffer not decoded yet - get raw ArrayBuffer and decode it
+                  const rawBuffer = await sampleCache.getCachedRawBuffer(cacheKey);
+                  if (rawBuffer && audioContext) {
+                    try {
+                      buffer = await audioContext.decodeAudioData(rawBuffer.slice(0));
+                      // Cache the decoded buffer for next time
+                      await sampleCache.cacheBuffer(cacheKey, buffer, { isContextCompatible: true });
+                      console.log(`🔄 [VOICE-CUE-INJECTION] Decoded raw buffer on-demand: ${cacheKey}`);
+                    } catch (error) {
+                      console.error(`❌ [VOICE-CUE-INJECTION] Failed to decode ${cacheKey}:`, error);
+                    }
+                  }
+                }
+
+                if (buffer) {
+                  // Map 'voice-cue-one' to 'one' for RegionProcessor
+                  voiceCueBuffers.set(cueName, buffer);
+                }
+              }
+
+              if (voiceCueBuffers.size > 0) {
+                regionProcessor.setVoiceCueBuffers(voiceCueBuffers, audioContext.destination);
+                logger.info('✅ Voice cue buffers injected into RegionProcessor', {
+                  buffersInjected: voiceCueBuffers.size,
+                });
+                console.log(`✅ [VOICE-CUE-INJECTION] Injected ${voiceCueBuffers.size} voice cue buffers`);
+              } else {
+                logger.warn('⚠️ No voice cue buffers available for injection');
+              }
+            }
+          }
+        } catch (error) {
+          console.error('❌ [VOICE-CUE-ERROR] Failed to inject voice cue buffers:', error);
+          logger.error('Failed to inject voice cue buffers into RegionProcessor', error as Error);
+        }
       } else {
         logger.warn('⚠️ Harmony sample loading completed with warnings', {
           error: harmonyResult.error,
@@ -597,7 +687,8 @@ export class InitialSamplePreloader {
     try {
       // Step 1: Check if CoreServices are available
       // After Bug #1 fix, CoreServices MUST exist (ScrollTriggerLoader creates it first)
-      const coreServices = (window as any).__globalCoreServices;
+      const { WindowRegistry } = await import('../services/WindowRegistry.js');
+      const coreServices = WindowRegistry.getCoreServices();
 
       if (!coreServices) {
         const error = new Error(
@@ -798,7 +889,8 @@ export class InitialSamplePreloader {
     try {
       // Step 1: Check if CoreServices are available
       // After Bug #1 fix, CoreServices MUST exist
-      const coreServices = (window as any).__globalCoreServices;
+      const { WindowRegistry } = await import('../services/WindowRegistry.js');
+      const coreServices = WindowRegistry.getCoreServices();
 
       if (!coreServices) {
         const error = new Error(
@@ -1019,7 +1111,8 @@ export class InitialSamplePreloader {
 
     try {
       // Step 1: Check if CoreServices are available
-      const coreServices = (window as any).__globalCoreServices;
+      const { WindowRegistry } = await import('../services/WindowRegistry.js');
+      const coreServices = WindowRegistry.getCoreServices();
 
       if (!coreServices) {
         const error = new Error(
@@ -1527,55 +1620,72 @@ export class InitialSamplePreloader {
       const downloadPromises = sampleFiles.map(async (sample) => {
         const sampleStartTime = performance.now();
         try {
-          const url = supabase.storage
-            .from('audio-samples')
-            .getPublicUrl(sample.path).data.publicUrl;
+          // Use first cache key to check IndexedDB
+          const primaryCacheKey = sample.cacheKeys[0];
 
-          // Cache the URL
-          GlobalSampleCache.getInstance().cacheUrl(sample.path, url);
+          // CRITICAL: Check IndexedDB cache BEFORE network fetch
+          const cachedBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer(primaryCacheKey);
 
-          // Download the file
-          logger.info(`📥 Fetching ${sample.path}...`);
-          const response = await fetch(url, { mode: 'cors' });
-          if (!response.ok) {
-            throw new Error(
-              `Failed to fetch ${sample.path}: ${response.status}`,
-            );
-          }
+          let arrayBuffer: ArrayBuffer;
 
-          const arrayBuffer = await response.arrayBuffer();
+          if (cachedBuffer) {
+            console.log(`💾 [INDEXEDDB-HIT] Using cached sample: ${primaryCacheKey}`);
+            logger.info(`💾 IndexedDB cache HIT: ${sample.path}`);
+            arrayBuffer = cachedBuffer;
+            successCount++;
+          } else {
+            // Not in cache, fetch from network
+            const url = supabase.storage
+              .from('audio-samples')
+              .getPublicUrl(sample.path).data.publicUrl;
 
-          // BUG #2 FIX: DO NOT decode or cache buffers from OfflineAudioContext!
-          // OfflineContext-decoded buffers are incompatible with the real AudioContext.
-          // Instead, we just download and cache the raw ArrayBuffer data.
-          // The real AudioContext will decode these when needed.
+            // Cache the URL
+            GlobalSampleCache.getInstance().cacheUrl(sample.path, url);
 
-          logger.debug(
-            `📦 PRELOADER: Downloaded raw audio data for ${sample.path}:`,
-            {
-              sizeKB: Math.round(arrayBuffer.byteLength / 1024),
-              willCacheWith: sample.cacheKeys,
-            },
-          );
+            // Download the file
+            logger.info(`📥 Fetching ${sample.path}...`);
+            const response = await fetch(url, { mode: 'cors' });
+            if (!response.ok) {
+              throw new Error(
+                `Failed to fetch ${sample.path}: ${response.status}`,
+              );
+            }
 
-          // Cache the raw ArrayBuffer with all the keys that instruments will look for
-          // The AudioEngine will decode these using the REAL AudioContext when needed
-          sample.cacheKeys.forEach((key) => {
+            arrayBuffer = await response.arrayBuffer();
+
+            // BUG #2 FIX: DO NOT decode or cache buffers from OfflineAudioContext!
+            // OfflineContext-decoded buffers are incompatible with the real AudioContext.
+            // Instead, we just download and cache the raw ArrayBuffer data.
+            // The real AudioContext will decode these when needed.
+
             logger.debug(
-              `📦 PRELOADER: Caching raw ArrayBuffer with key: "${key}"`,
+              `📦 PRELOADER: Downloaded raw audio data for ${sample.path}:`,
+              {
+                sizeKB: Math.round(arrayBuffer.byteLength / 1024),
+                willCacheWith: sample.cacheKeys,
+              },
             );
-            // Store as ArrayBuffer, not decoded AudioBuffer
-            GlobalSampleCache.getInstance().cacheBuffer(
-              key,
-              arrayBuffer.slice(0),
-            );
-          });
 
-          const sampleDuration = performance.now() - sampleStartTime;
-          logger.debug(
-            `✅ Downloaded and cached: ${sample.path} (${sampleDuration.toFixed(2)}ms)`,
-          );
-          successCount++;
+            // Cache the raw ArrayBuffer with all the keys that instruments will look for
+            // The AudioEngine will decode these using the REAL AudioContext when needed
+            // PERSISTENT CACHE: Also stores to IndexedDB for cross-session persistence
+            for (const key of sample.cacheKeys) {
+              logger.debug(
+                `📦 PRELOADER: Caching raw ArrayBuffer with key: "${key}"`,
+              );
+              // Store as ArrayBuffer, not decoded AudioBuffer
+              await GlobalSampleCache.getInstance().cacheBuffer(
+                key,
+                arrayBuffer.slice(0),
+              );
+            }
+
+            const sampleDuration = performance.now() - sampleStartTime;
+            logger.debug(
+              `✅ Downloaded and cached: ${sample.path} (${sampleDuration.toFixed(2)}ms)`,
+            );
+            successCount++;
+          }
         } catch (error) {
           logger.warn(`⚠️ Failed to download ${sample.path}:`, error);
         }

@@ -17,6 +17,7 @@ import { AudioEventRouter } from './AudioEventRouter.js';
 import { InstrumentRegistry } from './InstrumentRegistry.js';
 import { RegionProcessor } from './RegionProcessor.js';
 import { PlaybackEngine } from './PlaybackEngine.js';
+import { RegionProcessorAdapter } from './RegionProcessorAdapter.js';
 import { AudioDebugger } from './AudioDebugger.js';
 import { getLogger } from '@/utils/logger.js';
 import { getPreloadableRegistry } from './PreloadableInstrumentRegistry.js';
@@ -49,7 +50,7 @@ export class CoreServices {
   private pluginManager: PluginManager;
   private audioEventRouter: AudioEventRouter;
   private instrumentRegistry: InstrumentRegistry;
-  private regionProcessor: RegionProcessor;
+  private regionProcessor: RegionProcessor | null = null; // Legacy - only created if PlaybackEngine is disabled
   private playbackEngine: PlaybackEngine | null = null; // Phase 1 Task 1.4: New PlaybackEngine (feature flag)
   private isInitialized = false;
   private isPreInitialized = false;
@@ -88,9 +89,9 @@ export class CoreServices {
     this.pluginManager = new PluginManager(this.audioEngine, this.eventBus);
     this.audioEventRouter = new AudioEventRouter();
     this.instrumentRegistry = new InstrumentRegistry(this.eventBus);
-    this.regionProcessor = new RegionProcessor(this.eventBus);
 
     // Phase 1 Task 1.4: Create PlaybackEngine if feature flag is enabled
+    // CRITICAL: Only create ONE of RegionProcessor OR PlaybackEngine, never both!
     if (isNewPlaybackEngineEnabled()) {
       this.playbackEngine = new PlaybackEngine(this.eventBus, {
         countdownBeats: 4,
@@ -99,6 +100,12 @@ export class CoreServices {
       });
       logPlaybackEngineMigrationEvent('PlaybackEngine created', {
         instanceId: (this.playbackEngine as any).instanceId,
+      });
+    } else {
+      // Only create RegionProcessor if new PlaybackEngine is disabled (legacy fallback)
+      this.regionProcessor = new RegionProcessor(this.eventBus);
+      logPlaybackEngineMigrationEvent('Using legacy RegionProcessor', {
+        reason: 'PlaybackEngine feature flag disabled',
       });
     }
 
@@ -126,11 +133,19 @@ export class CoreServices {
       await this.audioEngine.preInitialize();
       logger.info('CoreServices: AudioEngine pre-initialized (Tone.js loaded)');
 
+      // 🔧 FIX: Register plugins early to prevent race condition with widgets
+      // Widgets need plugins to be available before they mount
+      if (this.config.autoLoadPlugins) {
+        logger.info('CoreServices: Registering plugins during pre-initialization...');
+        await registerExistingPlugins(this.pluginManager);
+        logger.info('CoreServices: Plugins registered during pre-initialization');
+      }
+
       this.isPreInitialized = true;
-      logger.info('CoreServices: Pre-initialization complete!');
+      logger.info('CoreServices: Pre-initialization complete (plugins ready)!');
 
       this.eventBus.emit('core-services:pre-initialized', {
-        services: ['eventBus', 'audioEngine'],
+        services: ['eventBus', 'audioEngine', 'pluginManager'],
       });
     } catch (error) {
       logger.error('CoreServices: Pre-initialization failed:', error as Error);
@@ -165,14 +180,23 @@ export class CoreServices {
       logger.info('CoreServices: PreloadableInstrumentRegistry initialized');
 
       // Ensure AudioEngine is fully initialized first (must be called from user gesture)
+      console.log('[DEBUG-INIT] 🔍 About to call audioEngine.initialize()...');
       logger.info('CoreServices: Fully initializing AudioEngine...');
       await this.audioEngine.initialize();
+      console.log('[DEBUG-INIT] ✅ audioEngine.initialize() completed!');
       logger.info('CoreServices: AudioEngine fully initialized');
 
       // Initialize service registry (handles dependency order)
+      console.log('[DEBUG-INIT] 🔍 About to call registry.initialize()...');
       logger.info('CoreServices: Initializing service registry...');
       await this.registry.initialize();
+      console.log('[DEBUG-INIT] ✅ registry.initialize() completed!');
       logger.info('CoreServices: Service registry initialized');
+
+      // NOTE: WamKeyboardPlugin is registered during preInitialize() but NOT eagerly loaded
+      // The plugin will be loaded lazily when HarmonyWidget first needs it
+      // This prevents race conditions with React mounting and StrictMode double-mounting
+      console.log('[MILESTONE] 🎹 STEP 2.5: WamKeyboardPlugin registered (will load on-demand)');
 
       // Initialize TransportSyncManager after registry (it's not a registered service)
       logger.info('CoreServices: Initializing TransportSyncManager...');
@@ -183,10 +207,11 @@ export class CoreServices {
       logger.info('CoreServices: TransportSyncManager initialized');
 
       // Register existing plugins if auto-load is enabled
+      // Note: This is idempotent - safe to call even if already registered in preInitialize()
       if (this.config.autoLoadPlugins) {
-        logger.info('CoreServices: Registering existing plugins...');
+        logger.info('CoreServices: Ensuring plugins are registered...');
         await registerExistingPlugins(this.pluginManager);
-        logger.info('CoreServices: Plugins registered');
+        logger.info('CoreServices: Plugins registration confirmed');
       }
 
       // Initialize AudioEventRouter with EventBus and AudioEngine
@@ -213,19 +238,7 @@ export class CoreServices {
         'audio-event-router-started',
       );
 
-      // CRITICAL: Set AudioContext on RegionProcessor for time domain conversion
-      logger.info('CoreServices: Setting AudioContext on RegionProcessor...');
       const audioContext = await this.audioEngine.getContext();
-      this.regionProcessor.setAudioContext(audioContext);
-      logger.info(
-        'CoreServices: RegionProcessor configured with AudioContext for sample-accurate timing',
-      );
-
-      // Inject PluginManager for accessing WamKeyboard (sustain pedal routing)
-      this.regionProcessor.setPluginManager(this.pluginManager);
-      logger.info(
-        'CoreServices: PluginManager injected into RegionProcessor for CC event routing',
-      );
 
       // Phase 1 Task 1.4: Initialize PlaybackEngine if feature flag is enabled
       if (this.playbackEngine) {
@@ -235,7 +248,7 @@ export class CoreServices {
           audioContext.destination,
         );
 
-        // Inject PluginManager for CC64 routing (same as RegionProcessor)
+        // Inject PluginManager for CC64 routing
         this.playbackEngine.setPluginManager(this.pluginManager);
 
         logPlaybackEngineMigrationEvent('PlaybackEngine initialized', {
@@ -243,88 +256,130 @@ export class CoreServices {
           state: this.playbackEngine.getState(),
         });
         logger.info('CoreServices: PlaybackEngine initialized and ready');
+      } else if (this.regionProcessor) {
+        // Legacy path: Initialize RegionProcessor if PlaybackEngine is disabled
+        logger.info('CoreServices: Setting AudioContext on RegionProcessor...');
+        this.regionProcessor.setAudioContext(audioContext);
+        logger.info(
+          'CoreServices: RegionProcessor configured with AudioContext for sample-accurate timing',
+        );
+
+        // Inject PluginManager for accessing WamKeyboard (sustain pedal routing)
+        this.regionProcessor.setPluginManager(this.pluginManager);
+        logger.info(
+          'CoreServices: PluginManager injected into RegionProcessor for CC event routing',
+        );
       }
 
       // FAANG SOLUTION: Inject audio buffers for direct scheduling
       // This enables sample-perfect audio rendering by bypassing JavaScript callback timing
-      logger.info(
-        'CoreServices: Injecting audio buffers for direct scheduling...',
-      );
-      const { GlobalSampleCache } = await import(
-        '../../modules/storage/cache/GlobalSampleCache.js'
-      );
-      const sampleCache = GlobalSampleCache.getInstance();
+      // Both RegionProcessor (legacy) and PlaybackEngine need these buffers
+      console.log('[CORESERVICES-BUFFER-INJECTION] Checking condition:', {
+        hasRegionProcessor: !!this.regionProcessor,
+        hasPlaybackEngine: !!this.playbackEngine,
+        willInject: !!(this.regionProcessor || this.playbackEngine),
+      });
 
-      // Inject metronome buffers
-      const accentBuffer = sampleCache.getCachedBuffer('metronome-high');
-      const clickBuffer = sampleCache.getCachedBuffer('metronome-low');
-
-      if (accentBuffer && clickBuffer) {
-        this.regionProcessor.setMetronomeBuffers(
-          accentBuffer,
-          clickBuffer,
-          audioContext.destination,
-        );
+      if (this.regionProcessor || this.playbackEngine) {
+        console.log('[CORESERVICES-BUFFER-INJECTION] Starting buffer injection...');
         logger.info(
-          '✅ CoreServices: Metronome buffers injected - direct audio scheduling enabled',
+          'CoreServices: Injecting audio buffers for direct scheduling...',
         );
-      } else {
-        logger.warn(
-          '⚠️ CoreServices: Metronome buffers not found in cache - will fall back to event bus',
+        const { GlobalSampleCache } = await import(
+          '../../modules/storage/cache/GlobalSampleCache.js'
         );
-        logger.debug('Metronome buffer status:', {
-          accentBuffer: accentBuffer ? 'found' : 'missing',
-          clickBuffer: clickBuffer ? 'found' : 'missing',
-        });
-      }
+        const sampleCache = GlobalSampleCache.getInstance();
+        console.log('[CORESERVICES-BUFFER-INJECTION] Got GlobalSampleCache instance');
 
-      // Inject drum buffers
-      const kickBuffer = sampleCache.getCachedBuffer('drum-kick');
-      const snareBuffer = sampleCache.getCachedBuffer('drum-snare');
-      const hihatBuffer = sampleCache.getCachedBuffer('drum-hihat');
+        // Inject metronome buffers for countdown
+        // Note: Samples are cached as raw ArrayBuffers, need to decode first
+        let accentBuffer = sampleCache.getCachedBuffer('metronome-high');
+        let clickBuffer = sampleCache.getCachedBuffer('metronome-low');
 
-      if (kickBuffer && snareBuffer && hihatBuffer) {
-        this.regionProcessor.setDrumBuffers(
-          kickBuffer,
-          snareBuffer,
-          hihatBuffer,
-          audioContext.destination,
-        );
-        logger.info(
-          '✅ CoreServices: Drum buffers injected - direct audio scheduling enabled',
-        );
-      } else {
-        logger.warn(
-          '⚠️ CoreServices: Drum buffers not found in cache - will fall back to event bus',
-        );
-        logger.warn('Drum buffer status:', {
-          kickBuffer: kickBuffer ? 'found' : 'missing',
-          snareBuffer: snareBuffer ? 'found' : 'missing',
-          hihatBuffer: hihatBuffer ? 'found' : 'missing',
-        });
-      }
-
-      // Inject voice cue buffers
-      const voiceCueBuffers = new Map<string, AudioBuffer>();
-      const cues = ['one', 'two', 'three', 'four'];
-      let voiceCuesFound = 0;
-
-      for (const cue of cues) {
-        const buffer = sampleCache.getCachedBuffer(`voice-cue-${cue}`);
-        if (buffer) {
-          voiceCueBuffers.set(cue, buffer);
-          voiceCuesFound++;
+        // Decode from raw if not already decoded
+        if (!accentBuffer) {
+          const rawAccent = await sampleCache.getCachedRawBuffer('metronome-high');
+          if (rawAccent) {
+            accentBuffer = await audioContext.decodeAudioData(rawAccent.slice(0));
+            await sampleCache.cacheBuffer('metronome-high', accentBuffer, { isContextCompatible: true });
+          }
         }
-      }
 
-      if (voiceCuesFound === cues.length) {
-        this.regionProcessor.setVoiceCueBuffers(
-          voiceCueBuffers,
-          audioContext.destination,
-        );
-        logger.info(
-          '✅ CoreServices: Voice cue buffers injected - countdown guidance enabled',
-        );
+        if (!clickBuffer) {
+          const rawClick = await sampleCache.getCachedRawBuffer('metronome-low');
+          if (rawClick) {
+            clickBuffer = await audioContext.decodeAudioData(rawClick.slice(0));
+            await sampleCache.cacheBuffer('metronome-low', clickBuffer, { isContextCompatible: true });
+          }
+        }
+
+        if (accentBuffer && clickBuffer && this.playbackEngine) {
+          this.playbackEngine.setMetronomeBuffers(accentBuffer, clickBuffer, audioContext.destination);
+          logger.info('✅ CoreServices: Metronome buffers injected for countdown');
+        }
+
+        // Inject drum buffers
+        const kickBuffer = sampleCache.getCachedBuffer('drum-kick');
+        const snareBuffer = sampleCache.getCachedBuffer('drum-snare');
+        const hihatBuffer = sampleCache.getCachedBuffer('drum-hihat');
+
+        if (kickBuffer && snareBuffer && hihatBuffer) {
+          if (this.regionProcessor) {
+            this.regionProcessor.setDrumBuffers(
+              kickBuffer,
+              snareBuffer,
+              hihatBuffer,
+              audioContext.destination,
+            );
+          }
+          // Note: PlaybackEngine doesn't have setDrumBuffers yet - drums handled by DrummerWidget
+          logger.info(
+            '✅ CoreServices: Drum buffers injected - direct audio scheduling enabled',
+          );
+        } else {
+          logger.warn(
+            '⚠️ CoreServices: Drum buffers not found in cache - will fall back to event bus',
+          );
+          logger.warn('Drum buffer status:', {
+            kickBuffer: kickBuffer ? 'found' : 'missing',
+            snareBuffer: snareBuffer ? 'found' : 'missing',
+            hihatBuffer: hihatBuffer ? 'found' : 'missing',
+          });
+        }
+
+        // Inject voice cue buffers
+        const voiceCueBuffers = new Map<string, AudioBuffer>();
+        const cues = ['one', 'two', 'three', 'four'];
+        let voiceCuesFound = 0;
+
+        for (const cue of cues) {
+          const buffer = sampleCache.getCachedBuffer(`voice-cue-${cue}`);
+          if (buffer) {
+            voiceCueBuffers.set(cue, buffer);
+            voiceCuesFound++;
+          }
+        }
+
+        if (voiceCuesFound === cues.length) {
+          if (this.regionProcessor) {
+            this.regionProcessor.setVoiceCueBuffers(
+              voiceCueBuffers,
+              audioContext.destination,
+            );
+          }
+          if (this.playbackEngine) {
+            const voiceCueRecord: Record<string, AudioBuffer> = {};
+            voiceCueBuffers.forEach((buffer, key) => {
+              voiceCueRecord[key] = buffer;
+            });
+            this.playbackEngine.setVoiceCueBuffers(
+              voiceCueRecord,
+              audioContext.destination,
+            );
+          }
+          logger.info(
+            '✅ CoreServices: Voice cue buffers injected - countdown guidance enabled',
+          );
       } else {
         logger.warn(
           '⚠️ CoreServices: Some voice cue buffers not found in cache - countdown may be silent',
@@ -408,11 +463,12 @@ export class CoreServices {
         );
       }
 
-      // Note: RegionProcessor will be started when transport starts (via event listener)
-      logger.info(
-        'CoreServices: RegionProcessor initialized (will start with transport)',
-      );
-      AudioDebugger.getInstance().log('CoreServices', 'region-processor-ready');
+        // Note: RegionProcessor will be started when transport starts (via event listener)
+        logger.info(
+          'CoreServices: RegionProcessor initialized (will start with transport)',
+        );
+        AudioDebugger.getInstance().log('CoreServices', 'region-processor-ready');
+      } // End of RegionProcessor buffer injection guard
 
       this.isInitialized = true;
       logger.info('CoreServices: Full initialization complete!');
@@ -461,8 +517,13 @@ export class CoreServices {
    */
   async stop(): Promise<void> {
     try {
-      // Stop RegionProcessor first (it's generating events)
-      this.regionProcessor.stop();
+      // Stop RegionProcessor or PlaybackEngine first (they're generating events)
+      if (this.regionProcessor) {
+        this.regionProcessor.stop();
+      }
+      if (this.playbackEngine) {
+        this.playbackEngine.stop();
+      }
       // Stop AudioEventRouter (it depends on other services)
       await this.audioEventRouter.stop();
       await this.registry.stop();
@@ -512,7 +573,22 @@ export class CoreServices {
     return this.unifiedTransport;
   }
 
-  getRegionProcessor(): RegionProcessor {
+  getRegionProcessor(): RegionProcessor | RegionProcessorAdapter {
+    // MIGRATION: When feature flag is enabled, return adapter wrapping PlaybackEngine
+    // This allows GlobalControls and other widgets to work without code changes
+    if (isNewPlaybackEngineEnabled() && this.playbackEngine) {
+      logPlaybackEngineMigrationEvent('getRegionProcessor() returning adapter', {
+        playbackEngineId: (this.playbackEngine as any).instanceId,
+      });
+      return new RegionProcessorAdapter(this.playbackEngine);
+    }
+
+    // Legacy: Return actual RegionProcessor when flag is off
+    if (!this.regionProcessor) {
+      throw new CoreServicesError(
+        'RegionProcessor not available - feature flag may be misconfigured'
+      );
+    }
     return this.regionProcessor;
   }
 
@@ -597,10 +673,15 @@ export class CoreServices {
           graceful,
         });
 
-        // Stop RegionProcessor with graceful flag
+        // Stop RegionProcessor or PlaybackEngine with graceful flag
         // graceful=true (auto-stop): Let one-shot drums/metronome finish naturally
         // graceful=false (manual stop): Force-stop all audio immediately
-        this.regionProcessor.stop(graceful);
+        if (this.regionProcessor) {
+          this.regionProcessor.stop(graceful);
+        }
+        if (this.playbackEngine) {
+          this.playbackEngine.stop(graceful);
+        }
 
         // CRITICAL FIX: Stop AudioEventRouter (prevents new triggers from being routed)
         await this.audioEventRouter.stop();

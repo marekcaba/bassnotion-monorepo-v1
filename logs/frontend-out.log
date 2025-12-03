@@ -1,89 +1,53 @@
-2025-11-23 10:22:50 +01:00: 
-2025-11-23 10:22:50 +01:00: > nx run @bassnotion/frontend:serve
-2025-11-23 10:22:50 +01:00: 
-2025-11-23 10:22:51 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-11-23 10:22:51 +01:00:    - Local:        http://localhost:3001
-2025-11-23 10:22:51 +01:00:    - Network:      http://10.0.0.6:3001
-2025-11-23 10:22:51 +01:00:    - Environments: .env.local, .env
-2025-11-23 10:22:51 +01:00:  [32m[1m✓[22m[39m Starting...
-2025-11-23 10:22:53 +01:00:  [32m[1m✓[22m[39m Ready in 2.5s
-2025-11-23 10:23:18 +01:00:  [37m[1m○[22m[39m Compiling /dashboard ...
-2025-11-23 10:23:27 +01:00:  GET /dashboard [32m200[39m in 9895ms
-2025-11-23 10:23:33 +01:00:  GET /library [32m200[39m in 2156ms
-2025-11-23 10:23:33 +01:00:  GET /library [32m200[39m in 16ms
-2025-11-23 10:23:34 +01:00:  GET /dashboard [32m200[39m in 517ms
-2025-11-23 10:25:15 +01:00:  GET /library [32m200[39m in 62ms
-2025-11-23 10:25:25 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 3650ms
-2025-11-23 10:25:25 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 7848ms
-2025-11-23 10:25:25 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 127ms
-2025-11-23 10:25:25 +01:00:  GET /library [32m200[39m in 2751ms
-2025-11-23 10:25:32 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 21ms
-2025-11-23 10:38:52 +01:00: 
-2025-11-23 10:38:52 +01:00:  NX   Daemon process terminated and closed the connection
-2025-11-23 10:38:52 +01:00: 
-2025-11-23 10:38:52 +01:00: Please rerun the command, which will restart the daemon.
-2025-11-23 10:38:52 +01:00: If you get this error again, check for any errors in the daemon process logs found in: /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/.nx/workspace-data/d/daemon.log
-2025-11-23 10:38:52 +01:00: 
-2025-11-23 10:40:55 +01:00: 
-2025-11-23 10:40:55 +01:00: > nx run @bassnotion/frontend:serve
-2025-11-23 10:40:55 +01:00: 
-2025-11-23 10:40:55 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-11-23 10:40:55 +01:00:    - Local:        http://localhost:3001
-2025-11-23 10:40:55 +01:00:    - Network:      http://10.0.0.6:3001
-2025-11-23 10:40:55 +01:00:    - Environments: .env.local, .env
-2025-11-23 10:40:55 +01:00:  [32m[1m✓[22m[39m Starting...
-2025-11-23 10:40:57 +01:00:  [32m[1m✓[22m[39m Ready in 2.1s
-2025-11-23 10:45:25 +01:00: 
-2025-11-23 10:45:25 +01:00: > nx run @bassnotion/frontend:serve
-2025-11-23 10:45:25 +01:00: 
-2025-11-23 10:45:26 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-11-23 10:45:26 +01:00:    - Local:        http://localhost:3001
-2025-11-23 10:45:26 +01:00:    - Network:      http://10.0.0.6:3001
-2025-11-23 10:45:26 +01:00:    - Environments: .env.local, .env
-2025-11-23 10:45:26 +01:00:  [32m[1m✓[22m[39m Starting...
-2025-11-23 10:45:28 +01:00:  [32m[1m✓[22m[39m Ready in 1950ms
-2025-11-23 10:50:30 +01:00: 
-2025-11-23 10:50:30 +01:00: > nx run @bassnotion/frontend:serve
-2025-11-23 10:50:30 +01:00: 
-2025-11-23 10:50:31 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-11-23 10:50:31 +01:00:    - Local:        http://localhost:3001
-2025-11-23 10:50:31 +01:00:    - Network:      http://10.0.0.6:3001
-2025-11-23 10:50:31 +01:00:    - Environments: .env.local, .env
-2025-11-23 10:50:31 +01:00:  [32m[1m✓[22m[39m Starting...
-2025-11-23 10:50:33 +01:00:  [32m[1m✓[22m[39m Ready in 2.2s
-2025-11-23 10:55:46 +01:00: 
-2025-11-23 10:55:46 +01:00: > nx run @bassnotion/frontend:serve
-2025-11-23 10:55:46 +01:00: 
-2025-11-23 10:55:47 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-11-23 10:55:47 +01:00:    - Local:        http://localhost:3001
-2025-11-23 10:55:47 +01:00:    - Network:      http://10.0.0.6:3001
-2025-11-23 10:55:47 +01:00:    - Environments: .env.local, .env
-2025-11-23 10:55:47 +01:00:  [32m[1m✓[22m[39m Starting...
-2025-11-23 10:55:49 +01:00:  [32m[1m✓[22m[39m Ready in 2.2s
-2025-11-23 11:01:59 +01:00: 
-2025-11-23 11:01:59 +01:00: > nx run @bassnotion/frontend:serve
-2025-11-23 11:01:59 +01:00: 
-2025-11-23 11:02:00 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-11-23 11:02:00 +01:00:    - Local:        http://localhost:3001
-2025-11-23 11:02:00 +01:00:    - Network:      http://10.0.0.6:3001
-2025-11-23 11:02:00 +01:00:    - Environments: .env.local, .env
-2025-11-23 11:02:00 +01:00:  [32m[1m✓[22m[39m Starting...
-2025-11-23 11:02:02 +01:00:  [32m[1m✓[22m[39m Ready in 2.1s
-2025-11-23 11:07:34 +01:00: 
-2025-11-23 11:07:34 +01:00: > nx run @bassnotion/frontend:serve
-2025-11-23 11:07:34 +01:00: 
-2025-11-23 11:07:35 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-11-23 11:07:35 +01:00:    - Local:        http://localhost:3001
-2025-11-23 11:07:35 +01:00:    - Network:      http://10.0.0.6:3001
-2025-11-23 11:07:35 +01:00:    - Environments: .env.local, .env
-2025-11-23 11:07:35 +01:00:  [32m[1m✓[22m[39m Starting...
-2025-11-23 11:07:37 +01:00:  [32m[1m✓[22m[39m Ready in 2.1s
-2025-11-23 11:11:06 +01:00: 
-2025-11-23 11:11:06 +01:00: > nx run @bassnotion/frontend:serve
-2025-11-23 11:11:06 +01:00: 
-2025-11-23 11:11:07 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
-2025-11-23 11:11:07 +01:00:    - Local:        http://localhost:3001
-2025-11-23 11:11:07 +01:00:    - Network:      http://10.0.0.6:3001
-2025-11-23 11:11:07 +01:00:    - Environments: .env.local, .env
-2025-11-23 11:11:07 +01:00:  [32m[1m✓[22m[39m Starting...
-2025-11-23 11:11:09 +01:00:  [32m[1m✓[22m[39m Ready in 2s
+2025-12-03 00:06:53 +01:00:  GET /dashboard [31m500[39m in 5095ms
+2025-12-03 00:06:54 +01:00:  GET /dashboard [31m500[39m in 2265ms
+2025-12-03 00:06:55 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [31m500[39m in 1340ms
+2025-12-03 00:09:06 +01:00:  GET /dashboard [32m200[39m in 1968ms
+2025-12-03 00:09:06 +01:00:  GET /_next/static/webpack/9650eef5c041c5e2.webpack.hot-update.json [33m404[39m in 3347ms
+2025-12-03 00:09:06 +01:00:  GET /dashboard [32m200[39m in 39ms
+2025-12-03 00:09:06 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 34ms
+2025-12-03 00:09:06 +01:00:  GET /_next/static/css/app/layout.css?v=1764716946683 [33m404[39m in 71ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/main-app.js?v=1764716946683 [33m404[39m in 165ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/vendors-_app-pages-browser_node_modules_pnpm_tonejs_midi_2_0_28_node_modules_tonejs_midi_dist-3a6135.js [33m404[39m in 164ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/app-pages-internals.js [33m404[39m in 165ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/vendors-_app-pages-browser_node_modules_pnpm_next_15_3_2__babel_core_7_28_0__opentelemetry_ap-8cfb4f.js?v=1764716946683 [33m404[39m in 173ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/_app-pages-browser_src_lib_hooks_use-view-transition-router_ts-_app-pages-browser_src_shared_-d4bb87.js [33m404[39m in 167ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/vendors-_app-pages-browser_node_modules_pnpm_next_15_3_2__babel_core_7_28_0__opentelemetry_ap-f794cf.js [33m404[39m in 168ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/audio-engine.js [33m404[39m in 158ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/tone-instruments.js [33m404[39m in 159ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/tone-core.js [33m404[39m in 159ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/app/error.js [33m404[39m in 161ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/vendors-_app-pages-browser_node_modules_pnpm_supabase_supabase-js_2_50_5_node_modules_supabas-d701f7.js [33m404[39m in 159ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/vendors-_app-pages-browser_node_modules_pnpm_hookform_resolvers_5_1_1_react-hook-form_7_60_0_-93d3c9.js [33m404[39m in 159ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/_app-pages-browser_src_infrastructure_supabase_client_ts-_app-pages-browser_src_lib_api-clien-aa5001.js [33m404[39m in 153ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/vendors-_app-pages-browser_node_modules_pnpm_radix-ui_react-alert-dialog_1_1_14__types_react--0c2f0a.js [33m404[39m in 154ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/_app-pages-browser_src_domains_user_api_auth_ts-_app-pages-browser_src_shared_components_ui_f-1932db.js [33m404[39m in 153ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/vendors-_app-pages-browser_node_modules_pnpm_tanstack_query-core_5_82_0_node_modules_tanstack-a0f69b.js [33m404[39m in 156ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/vendors-_app-pages-browser_node_modules_pnpm_next_15_3_2__babel_core_7_28_0__opentelemetry_ap-03e1a5.js [33m404[39m in 155ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/vendors-_app-pages-browser_node_modules_pnpm_events_3_3_0_node_modules_events_events_js-_app--eab81e.js [33m404[39m in 156ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/_app-pages-browser_src_utils_logger_ts.js [33m404[39m in 132ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/vendors-_app-pages-browser_node_modules_pnpm_tanstack_react-query_5_82_0_react_19_1_0_node_mo-d96ac5.js [33m404[39m in 132ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/vendors-_app-pages-browser_node_modules_pnpm_formkit_auto-animate_0_8_2_node_modules_formkit_-cb732e.js [33m404[39m in 132ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/_app-pages-browser_src_domains_user_components_auth_AuthProvider_tsx-_app-pages-browser_src_d-eb7389.js [33m404[39m in 134ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/_app-pages-browser_src_domains_user_hooks_use-user-profile_ts-_app-pages-browser_src_shared_c-840de7.js [33m404[39m in 68ms
+2025-12-03 00:09:07 +01:00:  GET /_next/static/chunks/app/dashboard/page.js [33m404[39m in 35ms
+2025-12-03 00:09:15 +01:00: 
+2025-12-03 00:09:15 +01:00: > nx run @bassnotion/frontend:serve
+2025-12-03 00:09:15 +01:00: 
+2025-12-03 00:09:16 +01:00:    [1m[38;2;173;127;168m▲ Next.js 15.3.2[39m[22m
+2025-12-03 00:09:16 +01:00:    - Local:        http://localhost:3001
+2025-12-03 00:09:16 +01:00:    - Network:      http://10.0.0.6:3001
+2025-12-03 00:09:16 +01:00:    - Environments: .env.local, .env
+2025-12-03 00:09:16 +01:00:  [32m[1m✓[22m[39m Starting...
+2025-12-03 00:09:18 +01:00:  [32m[1m✓[22m[39m Ready in 2s
+2025-12-03 00:10:46 +01:00:  [37m[1m○[22m[39m Compiling /dashboard ...
+2025-12-03 00:10:59 +01:00:  GET /dashboard [32m200[39m in 13641ms
+2025-12-03 00:11:03 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 4281ms
+2025-12-03 00:11:03 +01:00:  GET /dashboard [32m200[39m in 555ms
+2025-12-03 00:11:07 +01:00:  GET /library [32m200[39m in 1743ms
+2025-12-03 00:11:07 +01:00:  GET /dashboard [32m200[39m in 530ms
+2025-12-03 00:11:07 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 56ms
+2025-12-03 00:11:10 +01:00:  GET /library [32m200[39m in 23ms
+2025-12-03 00:11:17 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 5660ms
+2025-12-03 00:11:18 +01:00:  GET /library [32m200[39m in 1831ms
+2025-12-03 00:11:18 +01:00:  GET /.well-known/appspecific/com.chrome.devtools.json [33m404[39m in 278ms
+2025-12-03 00:11:26 +01:00:  GET /library/how-to-find-notes-on-the-bass-fretboard [32m200[39m in 176ms

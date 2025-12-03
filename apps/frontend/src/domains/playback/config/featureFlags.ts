@@ -64,9 +64,9 @@ const defaultFlags: AudioArchitectureFlags = {
   COMPARE_TRANSPORT_PERFORMANCE: false, // No longer needed
   USE_MODULAR_INSTRUMENTS: true, // Modular instruments are now the default
   DEBUG_INSTRUMENTS_MIGRATION: false, // Migration complete
-  ENABLE_NEW_PLAYBACK_ENGINE: false, // Phase 0.4 - PlaybackEngine migration (starts disabled)
-  DEBUG_PLAYBACK_ENGINE_MIGRATION: false, // Enable for debugging during rollout
-  COMPARE_PLAYBACK_ENGINE_PERFORMANCE: false, // Enable to compare old vs new performance
+  ENABLE_NEW_PLAYBACK_ENGINE: true, // Phase 0.4 - PlaybackEngine migration ACTIVATED 🚀
+  DEBUG_PLAYBACK_ENGINE_MIGRATION: true, // Enable for debugging during rollout
+  COMPARE_PLAYBACK_ENGINE_PERFORMANCE: true, // Enable to compare old vs new performance
 };
 
 /**

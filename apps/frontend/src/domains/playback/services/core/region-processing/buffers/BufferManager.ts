@@ -19,7 +19,7 @@
 
 import { getLogger } from '@/utils/logger.js';
 import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache.js';
-import * as grandPianoKeyboardMap from '@/domains/playback/data/instruments/piano/grandpiano-keyboard-map.json';
+import grandPianoKeyboardMapData from '@/domains/playback/data/instruments/piano/grandpiano-keyboard-map.json';
 
 const logger = getLogger('BufferManager');
 
@@ -508,7 +508,7 @@ export class BufferManager {
       // Fallback to direct import if cache miss (rare - happens if setHarmonyBuffers called before preload)
       // eslint-disable-next-line no-console, no-restricted-syntax
       console.log('🗺️ [KEYBOARD-MAP-LOAD] ⚠️ Cache miss - loading from import');
-      this.grandPianoKeyboardMap = (grandPianoKeyboardMap as any).noteMap;
+      this.grandPianoKeyboardMap = grandPianoKeyboardMapData.noteMap;
       // eslint-disable-next-line no-console, no-restricted-syntax
       console.log('🗺️ [KEYBOARD-MAP-LOAD] ✅ Loaded from import', {
         totalKeys: this.grandPianoKeyboardMap

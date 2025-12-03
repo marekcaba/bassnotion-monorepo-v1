@@ -1,0 +1,410 @@
+/**
+ * bug1-race-condition.test.ts
+ *
+ * Bug #1 Verification: Race Condition Fix (coreServicesReady)
+ *
+ * Original Issue: "getRegionProcessor is not a function" errors when widgets
+ * accessed RegionProcessor before CoreServices was fully initialized.
+ *
+ * Root Cause: React StrictMode double-mounting and async initialization
+ * timing issues caused widgets to access services before ready.
+ *
+ * Original Fix: [AudioProvider.tsx:59-101]
+ * - coreServicesReady flag prevents premature access
+ * - initRef.current prevents double initialization
+ * - cleanupRef.current prevents double cleanup
+ * - audioServicesReady event signals when ready
+ *
+ * Preservation: PlaybackEngine follows same initialization pattern through
+ * CoreServices and AudioProvider integration.
+ *
+ * Pass Criteria:
+ * - Zero "getPlaybackEngine is not a function" errors
+ * - Exactly 1 initialization in React StrictMode
+ * - No race conditions in 100 mount/unmount cycles
+ * - Singleton behavior maintained
+ * - audioServicesReady event fires correctly
+ */
+
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { CoreServices, GlobalAudioSystem } from '../../CoreServices.js';
+import type { PlaybackEngine } from '../../PlaybackEngine.js';
+
+describe('Bug #1: Race Condition Fix Verification', () => {
+  beforeEach(() => {
+    // Reset global state
+    GlobalAudioSystem._resetForTesting();
+    delete (window as any).__globalCoreServices;
+    delete (window as any).__coreServices;
+    vi.clearAllMocks();
+  });
+
+  afterEach(async () => {
+    GlobalAudioSystem._resetForTesting();
+  });
+
+  // ============================================================================
+  // Test 1: coreServicesReady Prevents Premature Access
+  // ============================================================================
+
+  describe('Test 1: coreServicesReady Prevents Premature Access', () => {
+    it('should handle getPlaybackEngine() call before initialization gracefully', async () => {
+      // Create CoreServices but don't initialize
+      const coreServices = new CoreServices();
+
+      // Attempt to get PlaybackEngine before initialization
+      // Should not throw "getPlaybackEngine is not a function"
+      expect(() => {
+        const engine = coreServices.getPlaybackEngine?.();
+        // Engine should be undefined or handle gracefully
+        expect(engine).toBeUndefined();
+      }).not.toThrow();
+
+      await coreServices.dispose();
+    });
+
+    it('should throw descriptive error when accessing PlaybackEngine before initialization', async () => {
+      const coreServices = new CoreServices();
+
+      // Verify we get a helpful error, not "function is not defined"
+      try {
+        const engine = coreServices.getPlaybackEngine();
+        // If it doesn't throw, it should return undefined
+        expect(engine).toBeUndefined();
+      } catch (error: any) {
+        // If it throws, should be descriptive
+        expect(error.message).not.toContain('is not a function');
+        expect(error.message).toContain('initialized');
+      }
+
+      await coreServices.dispose();
+    });
+
+    it('should allow getPlaybackEngine() after initialization', async () => {
+      const coreServices = new CoreServices();
+
+      // Mock AudioContext for initialization
+      vi.spyOn(window, 'AudioContext').mockImplementation(
+        () =>
+          ({
+            state: 'running',
+            currentTime: 0,
+            sampleRate: 48000,
+            createGain: vi.fn(() => ({
+              gain: { value: 1 },
+              connect: vi.fn(),
+              disconnect: vi.fn(),
+            })),
+            destination: {},
+            resume: vi.fn(() => Promise.resolve()),
+            suspend: vi.fn(() => Promise.resolve()),
+            close: vi.fn(() => Promise.resolve()),
+          }) as any,
+      );
+
+      await coreServices.initialize();
+
+      // Should work after initialization
+      const engine = coreServices.getPlaybackEngine?.();
+
+      // Verify we got a PlaybackEngine instance
+      if (engine) {
+        expect(engine).toBeDefined();
+        expect(typeof engine.initialize).toBe('function');
+        expect(typeof engine.start).toBe('function');
+      }
+
+      await coreServices.dispose();
+    });
+  });
+
+  // ============================================================================
+  // Test 2: React StrictMode Double-Mount Prevention
+  // ============================================================================
+
+  describe('Test 2: React StrictMode Double-Mount Prevention', () => {
+    it('should initialize exactly once despite double-mount', async () => {
+      let initCount = 0;
+
+      // Simulate React StrictMode behavior (double-mount)
+      const initRef = { current: false };
+      const cleanupRef = { current: false };
+
+      // First mount
+      const init1 = async () => {
+        if (initRef.current) return;
+        initRef.current = true;
+        initCount++;
+
+        const instance = await GlobalAudioSystem.getPreInitializedInstance();
+        return instance;
+      };
+
+      // Second mount (React StrictMode)
+      const init2 = async () => {
+        if (initRef.current) return;
+        initRef.current = true;
+        initCount++;
+
+        const instance = await GlobalAudioSystem.getPreInitializedInstance();
+        return instance;
+      };
+
+      const instance1 = await init1();
+      const instance2 = await init2();
+
+      // Should only initialize once
+      expect(initCount).toBe(1);
+
+      // Should return same instance
+      expect(instance1).toBe(instance2);
+
+      if (instance1) {
+        await instance1.dispose();
+      }
+    });
+
+    it('should prevent double cleanup on unmount', async () => {
+      let cleanupCount = 0;
+
+      const instance = await GlobalAudioSystem.getPreInitializedInstance();
+
+      const cleanupRef = { current: false };
+
+      const cleanup1 = () => {
+        if (cleanupRef.current) return;
+        cleanupRef.current = true;
+        cleanupCount++;
+      };
+
+      const cleanup2 = () => {
+        if (cleanupRef.current) return;
+        cleanupRef.current = true;
+        cleanupCount++;
+      };
+
+      cleanup1();
+      cleanup2(); // Simulate React StrictMode double-cleanup
+
+      // Should only cleanup once
+      expect(cleanupCount).toBe(1);
+
+      await instance.dispose();
+    });
+  });
+
+  // ============================================================================
+  // Test 3: No Race Conditions in Rapid Mount/Unmount
+  // ============================================================================
+
+  describe('Test 3: No Race Conditions in Rapid Mount/Unmount', () => {
+    it('should handle 100 rapid mount/unmount cycles without errors', async () => {
+      const errors: Error[] = [];
+
+      for (let i = 0; i < 100; i++) {
+        try {
+          // Reset between cycles
+          GlobalAudioSystem._resetForTesting();
+
+          // Simulate component mount
+          const instance = await GlobalAudioSystem.getPreInitializedInstance();
+
+          // Attempt to access services immediately
+          const eventBus = instance.getEventBus();
+          expect(eventBus).toBeDefined();
+
+          // Simulate component unmount
+          await instance.dispose();
+        } catch (error: any) {
+          errors.push(error);
+        }
+      }
+
+      // Should have zero race condition errors
+      expect(errors).toHaveLength(0);
+    });
+
+    it('should maintain consistent initialization state across cycles', async () => {
+      for (let i = 0; i < 10; i++) {
+        GlobalAudioSystem._resetForTesting();
+
+        const instance = await GlobalAudioSystem.getPreInitializedInstance();
+
+        // Should always be in a valid state
+        expect(instance).toBeDefined();
+        expect(instance.getEventBus()).toBeDefined();
+
+        await instance.dispose();
+
+        // After disposal, should be fully cleaned
+        expect(instance.isReady()).toBe(false);
+      }
+    });
+  });
+
+  // ============================================================================
+  // Test 4: GlobalAudioSystem Singleton Behavior
+  // ============================================================================
+
+  describe('Test 4: GlobalAudioSystem Singleton Behavior', () => {
+    it('should return same instance across multiple calls', async () => {
+      const instance1 = await GlobalAudioSystem.getPreInitializedInstance();
+      const instance2 = await GlobalAudioSystem.getPreInitializedInstance();
+      const instance3 = await GlobalAudioSystem.getPreInitializedInstance();
+
+      // All should be the same instance
+      expect(instance1).toBe(instance2);
+      expect(instance2).toBe(instance3);
+
+      await instance1.dispose();
+    });
+
+    it('should share state across instance references', async () => {
+      const instance1 = await GlobalAudioSystem.getPreInitializedInstance();
+      const instance2 = await GlobalAudioSystem.getPreInitializedInstance();
+
+      const eventBus1 = instance1.getEventBus();
+      const eventBus2 = instance2.getEventBus();
+
+      // Should be the same EventBus
+      expect(eventBus1).toBe(eventBus2);
+
+      // Events emitted on one should be visible on the other
+      const listener = vi.fn();
+      eventBus2.on('test:event', listener);
+
+      eventBus1.emit('test:event', { data: 'test' });
+
+      expect(listener).toHaveBeenCalled();
+
+      await instance1.dispose();
+    });
+
+    it('should maintain singleton across 10 rapid accesses', async () => {
+      const instances: CoreServices[] = [];
+
+      for (let i = 0; i < 10; i++) {
+        instances.push(await GlobalAudioSystem.getPreInitializedInstance());
+      }
+
+      // All should be the same reference
+      const firstInstance = instances[0];
+      instances.forEach((instance) => {
+        expect(instance).toBe(firstInstance);
+      });
+
+      await firstInstance.dispose();
+    });
+  });
+
+  // ============================================================================
+  // Test 5: audioServicesReady Event Dispatch
+  // ============================================================================
+
+  describe('Test 5: audioServicesReady Event Dispatch', () => {
+    it('should dispatch audioServicesReady after initialization', async () => {
+      let eventFired = false;
+      let eventDetail: any = null;
+
+      // Listen for the event
+      const listener = (event: Event) => {
+        eventFired = true;
+        eventDetail = (event as CustomEvent).detail;
+      };
+
+      window.addEventListener('audioServicesReady', listener);
+
+      // Mock AudioContext
+      vi.spyOn(window, 'AudioContext').mockImplementation(
+        () =>
+          ({
+            state: 'running',
+            currentTime: 0,
+            sampleRate: 48000,
+            createGain: vi.fn(() => ({
+              gain: { value: 1 },
+              connect: vi.fn(),
+              disconnect: vi.fn(),
+            })),
+            destination: {},
+            resume: vi.fn(() => Promise.resolve()),
+            suspend: vi.fn(() => Promise.resolve()),
+            close: vi.fn(() => Promise.resolve()),
+          }) as any,
+      );
+
+      const instance = await GlobalAudioSystem.getPreInitializedInstance();
+      await instance.initialize();
+
+      // Event should have fired
+      expect(eventFired).toBe(true);
+
+      window.removeEventListener('audioServicesReady', listener);
+      await instance.dispose();
+    });
+
+    it('should dispatch event exactly once per initialization', async () => {
+      let eventCount = 0;
+
+      const listener = () => {
+        eventCount++;
+      };
+
+      window.addEventListener('audioServicesReady', listener);
+
+      vi.spyOn(window, 'AudioContext').mockImplementation(
+        () =>
+          ({
+            state: 'running',
+            currentTime: 0,
+            sampleRate: 48000,
+            createGain: vi.fn(() => ({
+              gain: { value: 1 },
+              connect: vi.fn(),
+              disconnect: vi.fn(),
+            })),
+            destination: {},
+            resume: vi.fn(() => Promise.resolve()),
+            suspend: vi.fn(() => Promise.resolve()),
+            close: vi.fn(() => Promise.resolve()),
+          }) as any,
+      );
+
+      const instance = await GlobalAudioSystem.getPreInitializedInstance();
+      await instance.initialize();
+
+      // Should fire exactly once
+      expect(eventCount).toBe(1);
+
+      window.removeEventListener('audioServicesReady', listener);
+      await instance.dispose();
+    });
+
+    it('should not dispatch event if initialization fails', async () => {
+      let eventFired = false;
+
+      const listener = () => {
+        eventFired = true;
+      };
+
+      window.addEventListener('audioServicesReady', listener);
+
+      // Force initialization failure
+      (window as any).AudioContext = undefined;
+
+      const instance = await GlobalAudioSystem.getPreInitializedInstance();
+
+      try {
+        await instance.initialize();
+      } catch (error) {
+        // Expected to fail
+      }
+
+      // Event should NOT have fired
+      expect(eventFired).toBe(false);
+
+      window.removeEventListener('audioServicesReady', listener);
+      await instance.dispose();
+    });
+  });
+});

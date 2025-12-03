@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useTransport } from '@/domains/playback/hooks/useTransport';
+import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
 import { Clock, Activity } from 'lucide-react';
 import { LoopGridStrip } from './LoopGridStrip';
 import type { LoopRegion } from './LoopGridStrip';
@@ -33,8 +33,50 @@ export function TransportClock({
   const { correlationId, logger } = useCorrelation('TransportClock');
   transportClockRenderCount++;
 
-  const transport = useTransport();
+  // MOUNT/UNMOUNT DETECTION for double countdown bug
+  React.useEffect(() => {
+    console.log('🔴 [MOUNT DEBUG] TransportClock MOUNTED', {
+      timestamp: Date.now(),
+      selectedExercise: selectedExercise?.id,
+    });
+    return () => {
+      console.log('🔴 [UNMOUNT DEBUG] TransportClock UNMOUNTING', {
+        timestamp: Date.now(),
+      });
+    };
+  }, []);
+
+  const transport = useTransportContext();
   const { position, tempo, timeSignature, isPlaying, isPaused, isStopped } = transport;
+
+  // 🔧 FLICKER FIX: Validate position before using it
+  // During AudioWorklet initialization, position calculations can be corrupted
+  // resulting in invalid beat numbers (e.g., beat 10 in 4/4 time)
+  const isValidPosition = React.useMemo(() => {
+    const beatsPerBar = timeSignature?.upper ?? 4;
+    // Beat numbers should be 0-4 in 4/4 time (0-based, with display as 1-based)
+    // If beat > beatsPerBar, position calculation is corrupted
+    if (position.beats > beatsPerBar || position.beats < 0) {
+      console.warn('⚠️ [FLICKER FIX] Invalid position detected, skipping display update', {
+        position: `${position.bars}:${position.beats}:${position.sixteenths}`,
+        beats: position.beats,
+        beatsPerBar,
+        reason: 'Beat number out of range - likely AudioWorklet not ready',
+      });
+      return false;
+    }
+    return true;
+  }, [position.bars, position.beats, position.sixteenths, timeSignature?.upper]);
+
+  // POSITION CHANGE DETECTION for double countdown bug
+  React.useEffect(() => {
+    console.log('📍 [POSITION DEBUG] TransportClock received new position', {
+      position: `${position.bars}:${position.beats}:${position.sixteenths}`,
+      isPlaying,
+      isValid: isValidPosition,
+      timestamp: Date.now(),
+    });
+  }, [position.bars, position.beats, position.sixteenths, isPlaying, isValidPosition]);
 
   // Track render count for this instance
   const renderCountRef = React.useRef(0);
@@ -197,13 +239,21 @@ export function TransportClock({
   }, []);
 
   // Count position updates to see if transport is running
+  // 🚨 INFINITE LOOP FIX: Depend on primitive values, not entire object reference
+  // position object is recreated every frame (60Hz), causing infinite re-renders
   useEffect(() => {
     setUpdateCount((prev) => prev + 1);
-  }, [position]);
+  }, [position.bars, position.beats, position.sixteenths]);
 
   // Format position for display
   const formatPosition = () => {
     if (!position) return '1:1:00';
+
+    // 🔧 FLICKER FIX: Don't display invalid positions
+    // Return idle state if position is corrupted (e.g., beat 10 in 4/4 time)
+    if (!isValidPosition) {
+      return '1:1:00'; // Return idle/default position instead of corrupted value
+    }
 
     // Defensive checks - ensure all position properties are numbers
     const bars = typeof position.bars === 'number' ? position.bars : 0;
@@ -225,14 +275,14 @@ export function TransportClock({
       // Negative bars: In countdown mode
       isNegative = true;
       displayBar = Math.abs(bars);
-      // Simply convert from 0-indexed to 1-indexed
-      // beat 0 → 1, beat 1 → 2, beat 2 → 3, beat 3 → 4
-      displayBeat = beats + 1;
+      // Beats are already 1-based from getDisplayPosition(), no conversion needed
+      displayBeat = beats;
       displaySixteenth = sixteenths;
     } else {
-      // Positive bars: Add 1 for 1-based display (bar 0 → "1")
-      displayBar = bars + 1;
-      displayBeat = beats + 1;
+      // ✅ FIX: Position is already 1-based from getDisplayPosition() - no conversion needed
+      // Previously was doing double conversion: getDisplayPosition() (0→1) + here (1→2) = wrong!
+      displayBar = bars;
+      displayBeat = beats;
       displaySixteenth = sixteenths;
     }
 

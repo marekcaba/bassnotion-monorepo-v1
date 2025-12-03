@@ -1,1 +1,6 @@
-{}
+{
+  "/dashboard/page": "app/dashboard/page.js",
+  "/library/page": "app/library/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/library/[tutorialId]/page": "app/library/[tutorialId]/page.js"
+}

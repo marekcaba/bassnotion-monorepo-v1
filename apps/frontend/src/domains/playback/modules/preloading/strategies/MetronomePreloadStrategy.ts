@@ -40,28 +40,52 @@ export class MetronomePreloadStrategy implements PreloadStrategy {
       // The real AudioContext will handle decoding during playback
 
       // Load and cache HIGH click
-      logger.info('📥 Fetching high click...');
-      const highResponse = await fetch(clickHighUrl);
-      if (!highResponse.ok) {
-        throw new Error(`Failed to fetch high click: ${highResponse.status}`);
-      }
-      const highArrayBuffer = await highResponse.arrayBuffer();
+      // CRITICAL: Check IndexedDB cache BEFORE network fetch
+      const cachedHighBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer('metronome-high');
 
-      // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
-      GlobalSampleCache.getInstance().cacheBuffer('metronome-high', highArrayBuffer);
-      logger.info('✅ High click cached');
+      let highArrayBuffer: ArrayBuffer;
+
+      if (cachedHighBuffer) {
+        console.log('💾 [INDEXEDDB-HIT] Using cached metronome sample: metronome-high');
+        logger.info('💾 IndexedDB cache HIT: metronome-high');
+        highArrayBuffer = cachedHighBuffer;
+      } else {
+        logger.info('📥 Fetching high click...');
+        const highResponse = await fetch(clickHighUrl);
+        if (!highResponse.ok) {
+          throw new Error(`Failed to fetch high click: ${highResponse.status}`);
+        }
+        highArrayBuffer = await highResponse.arrayBuffer();
+
+        // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
+        // PERSISTENT CACHE: Also stores to IndexedDB for cross-session persistence
+        await GlobalSampleCache.getInstance().cacheBuffer('metronome-high', highArrayBuffer);
+        logger.info('✅ High click cached');
+      }
 
       // Load and cache LOW click
-      logger.info('📥 Fetching low click...');
-      const lowResponse = await fetch(clickLowUrl);
-      if (!lowResponse.ok) {
-        throw new Error(`Failed to fetch low click: ${lowResponse.status}`);
-      }
-      const lowArrayBuffer = await lowResponse.arrayBuffer();
+      // CRITICAL: Check IndexedDB cache BEFORE network fetch
+      const cachedLowBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer('metronome-low');
 
-      // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
-      GlobalSampleCache.getInstance().cacheBuffer('metronome-low', lowArrayBuffer);
-      logger.info('✅ Low click cached');
+      let lowArrayBuffer: ArrayBuffer;
+
+      if (cachedLowBuffer) {
+        console.log('💾 [INDEXEDDB-HIT] Using cached metronome sample: metronome-low');
+        logger.info('💾 IndexedDB cache HIT: metronome-low');
+        lowArrayBuffer = cachedLowBuffer;
+      } else {
+        logger.info('📥 Fetching low click...');
+        const lowResponse = await fetch(clickLowUrl);
+        if (!lowResponse.ok) {
+          throw new Error(`Failed to fetch low click: ${lowResponse.status}`);
+        }
+        lowArrayBuffer = await lowResponse.arrayBuffer();
+
+        // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
+        // PERSISTENT CACHE: Also stores to IndexedDB for cross-session persistence
+        await GlobalSampleCache.getInstance().cacheBuffer('metronome-low', lowArrayBuffer);
+        logger.info('✅ Low click cached');
+      }
 
       this.loaded = 2;
       this.total = 2;

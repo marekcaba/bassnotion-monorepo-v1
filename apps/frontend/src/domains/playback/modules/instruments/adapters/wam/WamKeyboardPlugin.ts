@@ -124,30 +124,47 @@ export class WamKeyboardPlugin extends EventEmitter implements AudioPlugin {
    */
   async initialize(context: PluginAudioContext): Promise<void> {
     if (this.state === PluginState.INACTIVE || this.state === PluginState.ACTIVE) {
+      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] Already initialized (state: ' + this.state + '), skipping');
       logger.warn('WamKeyboardPlugin already initialized, skipping');
       return;
     }
 
     try {
+      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] 🎹 Starting initialization...');
       logger.info('🎹 Initializing WamKeyboardPlugin with AudioContext...');
 
       this.audioContext = context.audioContext as AudioContext;
+      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] AudioContext received:', {
+        state: this.audioContext.state,
+        sampleRate: this.audioContext.sampleRate
+      });
 
       // Create WamKeyboard instance with AudioContext
+      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] Creating WamKeyboard instance...');
       this.wamKeyboard = new WamKeyboard(this.audioContext);
+      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] WamKeyboard instance created');
 
       // Initialize WamKeyboard (creates audio node, skip instrument load for now)
+      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] Calling wamKeyboard.initialize()...');
       await this.wamKeyboard.initialize({ skipInstrumentLoad: true });
+      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] wamKeyboard.initialize() completed');
 
       // State transition
       this.state = PluginState.INACTIVE;
       this.emit('initialized');
 
+      console.log('[PLAYBACK-ENGINE][WamKeyboardPlugin] ✅ Initialization complete', {
+        hasWamKeyboard: !!this.wamKeyboard,
+        hasAudioNode: !!this.wamKeyboard?.audioNode,
+        contextState: this.audioContext.state,
+        state: this.state
+      });
       logger.info('✅ WamKeyboardPlugin initialized successfully', {
         hasAudioNode: !!this.wamKeyboard.audioNode,
         contextState: this.audioContext.state,
       });
     } catch (error) {
+      console.error('[PLAYBACK-ENGINE][WamKeyboardPlugin] ❌ Initialization FAILED:', error);
       this.state = PluginState.ERROR;
       this.emit('error', error, { operation: 'initialize' });
       throw error;

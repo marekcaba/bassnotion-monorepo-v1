@@ -157,25 +157,40 @@ export class DrumPreloadStrategy implements PreloadStrategy {
       });
 
       for (const drum of essentialDrums) {
-        const kitPath = 'drums/hydrogen-kits/colombo-acoustic';
-        const url = `${supabaseUrl}/storage/v1/object/public/audio-samples/${kitPath}/${drum.file}`;
+        const cacheKey = `drum-${drum.key}`;
 
-        logger.info(`📥 Fetching ${drum.key}...`);
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch ${drum.key}: ${response.status}`);
+        // CRITICAL: Check IndexedDB cache BEFORE network fetch
+        const cachedBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
+
+        let arrayBuffer: ArrayBuffer;
+
+        if (cachedBuffer) {
+          console.log(`💾 [INDEXEDDB-HIT] Using cached drum sample: ${cacheKey}`);
+          logger.info(`💾 IndexedDB cache HIT: ${cacheKey}`);
+          arrayBuffer = cachedBuffer;
+        } else {
+          // Not in cache, fetch from network
+          const kitPath = 'drums/hydrogen-kits/colombo-acoustic';
+          const url = `${supabaseUrl}/storage/v1/object/public/audio-samples/${kitPath}/${drum.file}`;
+
+          logger.info(`📥 Fetching ${drum.key}...`);
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch ${drum.key}: ${response.status}`);
+          }
+
+          arrayBuffer = await response.arrayBuffer();
+
+          // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
+          // The real AudioContext will decode these when needed during playback
+          // PERSISTENT CACHE: Also stores to IndexedDB for cross-session persistence
+
+          // Cache with multiple keys for compatibility
+          await GlobalSampleCache.getInstance().cacheBuffer(cacheKey, arrayBuffer);
+          await GlobalSampleCache.getInstance().cacheBuffer(`drum-pad-${drum.pad}`, arrayBuffer);
+
+          logger.info(`✅ ${drum.key} cached`);
         }
-
-        const arrayBuffer = await response.arrayBuffer();
-
-        // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
-        // The real AudioContext will decode these when needed during playback
-
-        // Cache with multiple keys for compatibility
-        GlobalSampleCache.getInstance().cacheBuffer(`drum-${drum.key}`, arrayBuffer);
-        GlobalSampleCache.getInstance().cacheBuffer(`drum-pad-${drum.pad}`, arrayBuffer);
-
-        logger.info(`✅ ${drum.key} cached`);
       }
 
       this.loaded = essentialDrums.length;

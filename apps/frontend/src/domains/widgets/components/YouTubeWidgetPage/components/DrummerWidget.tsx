@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { VolumeKnob } from './VolumeKnob';
 import { useTrack } from '@/domains/playback/hooks/useTrack';
-import { useTransport } from '@/domains/playback/hooks/useTransport';
+import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
 import {
   ensureAudioContext,
   withAudioContext,
@@ -23,6 +23,7 @@ import { EventBus } from '@/domains/playback/services/core/EventBus';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { usePatternSelector } from '@/domains/patterns/hooks/usePatternSelector';
 import { Settings2, Music2 } from 'lucide-react';
+import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 
 interface DrummerWidgetProps {
   pattern: string;
@@ -170,7 +171,7 @@ export function DrummerWidget({
   }, [exercise?.id]);
 
   // Get tempo directly from Transport (single source of truth)
-  const transport = useTransport();
+  const transport = useTransportContext();
   const tempo = transport.tempo;
 
   // Store transport in ref to prevent infinite loops (transport object changes every render)
@@ -427,9 +428,7 @@ export function DrummerWidget({
         let context = null;
 
         // Try to get context from global audio services
-        const globalServices =
-          (window as any).__globalCoreServices ||
-          (window as any).__coreServices;
+        const globalServices = WindowRegistry.getCoreServices();
         if (globalServices && globalServices.getAudioEngine) {
           const audioEngine = globalServices.getAudioEngine();
           if (audioEngine && audioEngine.getContext) {
@@ -509,27 +508,29 @@ export function DrummerWidget({
               region,
             });
 
-            // Register track with RegionProcessor to enable pattern playback
-            if (globalServices && globalServices.getRegionProcessor) {
-              const regionProcessor = globalServices.getRegionProcessor();
-              regionProcessor.registerTracks([{
-                id: 'drummer-widget-track',
-                name: 'Drums',
-                instrumentType: 'drums',
-                regions: [{
-                  id: region.id,
-                  trackId: 'drummer-widget-track',
-                  startTime: 0,
-                  duration: pattern.loopLength * 4, // Convert bars to seconds (assuming 4/4 time)
-                  pattern: {
-                    id: 'drum-pattern',
-                    name: 'Drum Pattern',
-                    type: 'drums',
-                    events: pattern.events
-                  }
-                }]
-              }]);
-              logger.debug('Registered drum track with RegionProcessor');
+            // Register track with PlaybackEngine to enable pattern playback
+            if (globalServices && globalServices.getPlaybackEngine) {
+              const playbackEngine = globalServices.getPlaybackEngine();
+              if (playbackEngine) {
+                playbackEngine.registerTrack({
+                  id: 'drummer-widget-track',
+                  name: 'Drums',
+                  instrumentType: 'drums',
+                  regions: [{
+                    id: region.id,
+                    trackId: 'drummer-widget-track',
+                    startTime: 0,
+                    duration: pattern.loopLength * 4, // Convert bars to seconds (assuming 4/4 time)
+                    pattern: {
+                      id: 'drum-pattern',
+                      name: 'Drum Pattern',
+                      type: 'drums',
+                      events: pattern.events
+                    }
+                  }]
+                });
+                logger.debug('Registered drum track with PlaybackEngine');
+              }
             }
           }
         } else {
@@ -568,8 +569,7 @@ export function DrummerWidget({
     };
 
     // Check if services are already ready
-    const globalServices =
-      (window as any).__globalCoreServices || (window as any).__coreServices;
+    const globalServices = WindowRegistry.getCoreServices();
     if (globalServices && globalServices.getAudioEngine) {
       try {
         const audioEngine = globalServices.getAudioEngine();
@@ -646,8 +646,7 @@ export function DrummerWidget({
 
   // Monitor transport state directly from EventBus
   useEffect(() => {
-    const coreServices =
-      (window as any).__coreServices || (window as any).__globalCoreServices;
+    const coreServices = WindowRegistry.getCoreServices();
     if (!coreServices || typeof coreServices.getEventBus !== 'function') {
       return;
     }
@@ -831,27 +830,31 @@ export function DrummerWidget({
           });
           currentRegionRef.current = region.id;
 
-          // Update RegionProcessor with new pattern
-          const globalServices = (window as any).__globalCoreServices || (window as any).__coreServices;
-          if (globalServices && globalServices.getRegionProcessor) {
-            const regionProcessor = globalServices.getRegionProcessor();
-            regionProcessor.updateTracks([{
-              id: 'drummer-widget-track',
-              name: 'Drums',
-              instrumentType: 'drums',
-              regions: [{
-                id: region.id,
-                trackId: 'drummer-widget-track',
-                startTime: 0,
-                duration: drumPattern.loopLength * 4,
-                pattern: {
-                  id: 'drum-pattern',
-                  name: libraryPattern.name || 'Drum Pattern',
-                  type: 'drums',
-                  events: drumPattern.events
-                }
-              }]
-            }]);
+          // Update PlaybackEngine with new pattern
+          const globalServices = WindowRegistry.getCoreServices();
+          if (globalServices && globalServices.getPlaybackEngine) {
+            const playbackEngine = globalServices.getPlaybackEngine();
+            if (playbackEngine) {
+              // Unregister old track, then register new one
+              playbackEngine.unregisterTrack('drummer-widget-track');
+              playbackEngine.registerTrack({
+                id: 'drummer-widget-track',
+                name: 'Drums',
+                instrumentType: 'drums',
+                regions: [{
+                  id: region.id,
+                  trackId: 'drummer-widget-track',
+                  startTime: 0,
+                  duration: drumPattern.loopLength * 4,
+                  pattern: {
+                    id: 'drum-pattern',
+                    name: libraryPattern.name || 'Drum Pattern',
+                    type: 'drums',
+                    events: drumPattern.events
+                  }
+                }]
+              });
+            }
           }
 
           componentLogger.info('Updated drum pattern from MIDI', {

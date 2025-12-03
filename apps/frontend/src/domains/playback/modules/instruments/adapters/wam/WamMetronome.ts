@@ -28,6 +28,7 @@ import type {
 } from '../../../../types/wam.js';
 import { GlobalSampleCache } from '../../../storage/cache/GlobalSampleCache.js';
 import { createStructuredLogger } from '../../../shared/index.js';
+import { musicalTruth } from '../../../tempo/MusicalTruthAuthority.js';
 
 // Base WebAudioModule class - minimal implementation for compatibility
 abstract class WebAudioModuleBase implements Partial<WebAudioModule> {
@@ -125,7 +126,7 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
   private currentSound: MetronomeSound = MetronomeSound.CLASSIC;
   private timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
   private isPlaying = false;
-  private tempo = 120;
+  // ❌ REMOVED: private tempo = 120 - now reads from musicalTruth
   private subdivisions = 1; // 1 = quarter notes, 2 = 8th notes, 3 = triplets
   private accentPattern: boolean[] = [true, false, false, false]; // Accent pattern
   private _currentBeat = 0;
@@ -143,6 +144,13 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
 
   get context(): BaseAudioContext {
     return this.module.audioContext;
+  }
+
+  /**
+   * Get current tempo from musicalTruth (single source of truth)
+   */
+  private get tempo(): number {
+    return musicalTruth.getBPM();
   }
 
   constructor(
@@ -198,20 +206,45 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
    */
   async loadSound(sound: MetronomeSound): Promise<void> {
     try {
-      // FIRST: Try to get preloaded samples from GlobalSampleCache
+      // FIRST: Try to get preloaded decoded AudioBuffers from memory cache
       const cachedHighBuffer = this.sampleCache.getCachedBuffer('metronome-high');
       const cachedLowBuffer = this.sampleCache.getCachedBuffer('metronome-low');
 
       if (cachedHighBuffer && cachedLowBuffer) {
-        this.logger.info('✅ Using preloaded metronome samples from cache!');
+        this.logger.info('✅ Using preloaded metronome samples from memory cache!');
         this.accentBuffer = cachedHighBuffer;
         this.clickBuffer = cachedLowBuffer;
         this.currentSound = sound;
         return;
       }
 
-      // If preloaded samples not found, load from Supabase
-      this.logger.info('⚠️ Preloaded samples not found, loading from Supabase...');
+      // Not in memory - check IndexedDB for raw ArrayBuffers
+      this.logger.info('⚠️ Preloaded samples not in memory, checking IndexedDB...');
+
+      const rawHighBuffer = await this.sampleCache.getCachedRawBuffer('metronome-high');
+      const rawLowBuffer = await this.sampleCache.getCachedRawBuffer('metronome-low');
+
+      if (rawHighBuffer && rawLowBuffer) {
+        console.log('💾 [INDEXEDDB-HIT] Using cached metronome samples from IndexedDB');
+        this.logger.info('💾 IndexedDB cache HIT for metronome samples, decoding...');
+
+        // Decode the raw buffers
+        const highAudioBuffer = await this.context.decodeAudioData(rawHighBuffer);
+        const lowAudioBuffer = await this.context.decodeAudioData(rawLowBuffer);
+
+        // Cache decoded buffers in memory for next time
+        this.sampleCache.cacheBuffer('metronome-high', highAudioBuffer);
+        this.sampleCache.cacheBuffer('metronome-low', lowAudioBuffer);
+
+        this.accentBuffer = highAudioBuffer;
+        this.clickBuffer = lowAudioBuffer;
+        this.currentSound = sound;
+        this.logger.info('✅ Metronome ready from IndexedDB cache');
+        return;
+      }
+
+      // If not in IndexedDB either, load from Supabase
+      this.logger.info('⚠️ Samples not in IndexedDB, loading from Supabase...');
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -244,9 +277,11 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
         const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
         this.logger.info(`🎵 Regular click loaded: ${audioBuffer.duration}s`);
 
+        // Cache both raw (to IndexedDB) and decoded (to memory)
+        await this.sampleCache.cacheBuffer('metronome-low', arrayBuffer);
         this.sampleCache.cacheBuffer(clickUrl, audioBuffer);
         this.sampleCache.cacheBuffer('metronome-click', audioBuffer);
-        this.sampleCache.cacheBuffer('metronome-low', audioBuffer); // Also cache with preload key
+        this.sampleCache.cacheBuffer('metronome-low', audioBuffer);
         this.clickBuffer = audioBuffer;
       }
 
@@ -268,9 +303,11 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
         const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
         this.logger.info(`🎵 Accent click loaded: ${audioBuffer.duration}s`);
 
+        // Cache both raw (to IndexedDB) and decoded (to memory)
+        await this.sampleCache.cacheBuffer('metronome-high', arrayBuffer);
         this.sampleCache.cacheBuffer(accentUrl, audioBuffer);
         this.sampleCache.cacheBuffer('metronome-accent', audioBuffer);
-        this.sampleCache.cacheBuffer('metronome-high', audioBuffer); // Also cache with preload key
+        this.sampleCache.cacheBuffer('metronome-high', audioBuffer);
         this.accentBuffer = audioBuffer;
       }
 
@@ -525,7 +562,12 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
         this.clearScheduledEvents();
         break;
       case 'tempo':
-        this.tempo = data.tempo;
+        // ✅ REMOVED: tempo setter - tempo now comes from musicalTruth
+        // Tempo changes should be done via musicalTruth.setFromExercise()
+        this.logger.warn('⚠️ WamMetronome received tempo event - ignoring. Use musicalTruth.setFromExercise() instead', {
+          receivedTempo: data.tempo,
+          currentMusicalTruthTempo: musicalTruth.getBPM()
+        });
         break;
     }
   }
@@ -658,7 +700,11 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
       await this.loadSound(state.sound);
     }
     if (state.tempo !== undefined) {
-      this.tempo = state.tempo;
+      // ✅ REMOVED: tempo setter - tempo now comes from musicalTruth
+      this.logger.warn('⚠️ WamMetronome.setState() received tempo - ignoring. Use musicalTruth.setFromExercise() instead', {
+        receivedTempo: state.tempo,
+        currentMusicalTruthTempo: musicalTruth.getBPM()
+      });
     }
     if (state.subdivisions !== undefined) {
       this.subdivisions = state.subdivisions;
@@ -893,6 +939,14 @@ export class WamMetronome extends WebAudioModuleBase {
 
   destroyGui(gui: Element): void {
     gui.remove();
+  }
+
+  /**
+   * Get audio destination node for direct scheduling
+   * Required by SimpleInstrumentScheduler for FAANG direct scheduling
+   */
+  getDestination(): AudioNode | null {
+    return this.audioNode || null;
   }
 
   /**

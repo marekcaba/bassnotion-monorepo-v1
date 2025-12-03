@@ -228,4 +228,19 @@ export class VoiceCueInstrument {
     this.isInitialized = false;
     logger.info('VoiceCueInstrument disposed');
   }
+
+  /**
+   * Get audio destination node for direct scheduling
+   * Required by SimpleInstrumentScheduler for FAANG direct scheduling
+   */
+  getDestination(): AudioNode | null {
+    // Voice cue samplers are Tone.js Sampler nodes which have an output property
+    // Return the first sampler's output node if available
+    const firstSampler = this.samplers.values().next().value;
+    if (firstSampler && typeof firstSampler.toDestination === 'function') {
+      // Samplers connect to Tone.Destination, return the sampler itself as the destination
+      return firstSampler as any as AudioNode;
+    }
+    return null;
+  }
 }

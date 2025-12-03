@@ -226,29 +226,45 @@ export class AudioEngine {
       try {
         this.initAttempts = attempt;
 
+        console.log('[AUDIOENGINE-INIT] Step 1: Starting preInitialize()');
         // Pre-initialize if needed
         await this.preInitialize();
+        console.log('[AUDIOENGINE-INIT] Step 1: preInitialize() done');
 
+        console.log('[AUDIOENGINE-INIT] Step 2: Getting or creating AudioContext');
         // Get or create AudioContext
         const context = await this.contextManager.getOrCreateContext();
+        console.log('[AUDIOENGINE-INIT] Step 2: AudioContext ready, state:', context.state);
 
+        console.log('[AUDIOENGINE-INIT] Step 3: Initializing ToneWrapper');
         // Initialize Tone.js with the context
         await this.toneWrapper.initialize(context);
+        console.log('[AUDIOENGINE-INIT] Step 3: ToneWrapper initialized');
 
-        // Start Tone.js (resumes context if needed)
-        await this.toneWrapper.start();
+        // DON'T start Tone.js here - context is suspended and will hang without user gesture
+        // The context will be resumed on first user interaction in AudioProvider
+        // await this.toneWrapper.start();
 
+        console.log('[AUDIOENGINE-INIT] Step 4: Applying timing config');
         // Apply timing configuration
         await this.toneWrapper.applyTimingConfig();
+        console.log('[AUDIOENGINE-INIT] Step 4: Timing config applied');
 
+        console.log('[AUDIOENGINE-INIT] Step 5: Setting up state change handling');
         // Setup state change handling
         this.contextManager.onStateChange(
           this.handleContextStateChange.bind(this),
         );
+        console.log('[AUDIOENGINE-INIT] Step 5: State change handler registered');
 
+        console.log('[AUDIOENGINE-INIT] Step 6: Validation check');
         // Validate if enabled
         if (this.config.enableValidation) {
+          console.log('[AUDIOENGINE-INIT] Step 6: Running validation');
           await this.validateAudioSystem();
+          console.log('[AUDIOENGINE-INIT] Step 6: Validation complete');
+        } else {
+          console.log('[AUDIOENGINE-INIT] Step 6: Validation disabled');
         }
 
         this.isInitialized = true;

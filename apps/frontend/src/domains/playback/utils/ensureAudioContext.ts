@@ -11,6 +11,7 @@ import {
 } from './audioContext.js';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { createStructuredLogger } from '@bassnotion/contracts';
+import { WindowRegistry } from '../services/WindowRegistry.js';
 
 const logger = createStructuredLogger('ensureAudioContext');
 
@@ -28,9 +29,9 @@ export async function ensureAudioContext(): Promise<void> {
     // Ensure Tone.js uses the persistent context
     ensureToneUsesPersistentContext();
 
-    // Get global services
-    const globalServices =
-      (window as any).__globalCoreServices || (window as any).__coreServices;
+    // Get global services using WindowRegistry
+    // ✅ FIX: Use WindowRegistry instead of direct window access
+    const globalServices = WindowRegistry.getCoreServices();
 
     if (!globalServices) {
       logger.warn('ensureAudioContext: Global audio services not found');
@@ -113,8 +114,8 @@ export async function ensureAudioContext(): Promise<void> {
  */
 export function isAudioContextReady(): boolean {
   try {
-    const globalServices =
-      (window as any).__globalCoreServices || (window as any).__coreServices;
+    // ✅ FIX: Use WindowRegistry instead of direct window access
+    const globalServices = WindowRegistry.getCoreServices();
 
     if (!globalServices) {
       return false;
@@ -149,8 +150,8 @@ export async function ensureAudioContextLightweight(): Promise<void> {
     ensureToneUsesPersistentContext();
 
     // First check if everything is already initialized
-    const globalServices =
-      (window as any).__globalCoreServices || (window as any).__coreServices;
+    // ✅ FIX: Use WindowRegistry instead of direct window access
+    const globalServices = WindowRegistry.getCoreServices();
 
     if (globalServices) {
       const audioEngine = globalServices.getAudioEngine?.();

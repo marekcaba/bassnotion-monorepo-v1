@@ -31,8 +31,17 @@ export class AudioContextCompatibility {
       return;
     }
 
-    // Get all cached samples
-    const samples = (GlobalSampleCache as any).samples as Map<string, any>;
+    // Get all cached samples from the singleton instance
+    const instance = GlobalSampleCache.getInstance();
+    const samples = (instance as any).samples as Map<string, any>;
+
+    // Guard against undefined samples Map
+    if (!samples) {
+      logger.info('✅ No samples map available');
+      this.hasCleanedUp = true;
+      return;
+    }
+
     let cleanedCount = 0;
     let skippedCount = 0;
 

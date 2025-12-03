@@ -34,22 +34,23 @@ export {
 // Cache
 export { ScheduleCache } from './cache/index.js';
 
-// Sustain pedal
-export { CC64TimelineBuilder, SustainPedalAnalyzer } from './sustain/index.js';
+// Sustain pedal (merged CC64TimelineBuilder + SustainPedalAnalyzer)
+export { SustainPedalManager } from './sustain/index.js';
+export type { CC64TimelineBuilder, SustainPedalAnalyzer } from './sustain/index.js';
 
-// Schedulers
+// Simple instrument schedulers (metronome, drums, bass, voice-cue)
 export {
   VoiceCueScheduler,
   MetronomeScheduler,
   DrumScheduler,
   BassScheduler,
-  HarmonyScheduler,
-  GrandPianoKeyboardMapper,
 } from './scheduling/index.js';
-export type { NoteMapping } from './scheduling/index.js';
+
+// HarmonySchedulerV2 is in ../scheduling/HarmonySchedulerV2.ts (not in region-processing)
+// Import directly from there if needed
 
 // Buffer management
-export { BufferRegistry } from './buffers/index.js';
+export { BufferManager } from './buffers/index.js';
 
-// Countdown system
-export { CountdownManager } from './countdown/index.js';
+// Countdown system - not yet extracted, handled inline in RegionScheduler
+// export { CountdownManager } from './countdown/index.js';

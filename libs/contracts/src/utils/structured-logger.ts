@@ -73,7 +73,7 @@ function getCurrentLogLevel(): LogLevelValue {
 // Contexts that generate excessive logs
 const NOISY_CONTEXTS = [
   'useWidgetPageState',
-  'AudioProvider',
+  // 'AudioProvider', // TEMPORARILY ENABLED for audio initialization debugging
   'TransportController',
   'SchedulerService',
   'MetronomeService',

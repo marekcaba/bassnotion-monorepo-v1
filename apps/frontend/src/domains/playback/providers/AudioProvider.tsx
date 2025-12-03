@@ -40,6 +40,7 @@ import { AudioContextManager } from '../modules/audio-engine/core/AudioContextMa
 import { GlobalSampleCache } from '../modules/storage/cache/GlobalSampleCache.js';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { WindowRegistry } from '../services/WindowRegistry.js';
+import { initSeq } from '../utils/initSequenceLogger.js';
 
 interface AudioContextValue {
   /** Core services instance */
@@ -104,8 +105,6 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
   const cleanupRef = useRef(false); // Prevent StrictMode double cleanup
   // ✅ BUG #1 FIX: Track when CoreServices is ready to prevent race conditions
   const [coreServicesReady, setCoreServicesReady] = useState(false);
-  // ✅ BUG #7 FIX: Store unsubscribe function for audio:initialized event
-  const unsubscribeAudioInitRef = useRef<(() => void) | null>(null);
 
   const shouldUseLegacyProvider = !isNewAudioArchitectureEnabled();
 
@@ -117,10 +116,17 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
   }, [hasLoggedFlags, flags, logger]);
 
   useEffect(() => {
+    initSeq.log('provider-mount', { shouldUseLegacyProvider });
+
     // Skip initialization if using legacy provider
-    if (shouldUseLegacyProvider) return;
+    if (shouldUseLegacyProvider) {
+      return;
+    }
+
     // Prevent double initialization in development
-    if (initRef.current) return;
+    if (initRef.current) {
+      return;
+    }
     initRef.current = true;
 
     let services: CoreServices | null = null;
@@ -154,9 +160,9 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
           );
 
           logMigrationEvent('AudioProvider reusing existing global instance');
+          initSeq.log('state-updated', { reusedExisting: true });
           return;
         }
-
         logMigrationEvent(
           'Initializing new AudioProvider with global singleton',
         );
@@ -172,6 +178,7 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
           );
         });
 
+        initSeq.log('create-services-start');
         logger.info('AudioProvider: Starting createCoreServicesWithPreInit...');
 
         try {
@@ -179,15 +186,17 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
           services = await Promise.race([
             createCoreServicesWithPreInit({
               ...config,
-              autoLoadPlugins: false, // Disable to avoid plugin initialization errors
+              autoLoadPlugins: true, // ✅ Issue #8 FIX: Enable plugin registration
             }),
             timeoutPromise,
           ]);
 
+          initSeq.log('create-services-done');
           logger.info(
             'AudioProvider: createCoreServicesWithPreInit completed successfully',
           );
         } catch (timeoutError) {
+          initSeq.log('create-services-done', { error: String(timeoutError) });
           logger.error(
             'AudioProvider: createCoreServicesWithPreInit timed out or failed',
             timeoutError as Error,
@@ -202,6 +211,64 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
         WindowRegistry.setServiceRegistry(registry);
         WindowRegistry.setCoreServices(services);
 
+        // PHASE 1: Eager initialization - creates AudioContext in suspended state
+        // This allows samples to preload and plugins to register before user interaction
+        logger.info('AudioProvider: Starting eager initialization (AudioContext will be suspended)...');
+
+        // Clean up any incompatible cached buffers before initializing
+        const { AudioContextCompatibility } = await import(
+          '../services/storage/AudioContextCompatibility.js'
+        );
+        AudioContextCompatibility.cleanupIncompatibleBuffers();
+
+        // BUG #4 FIX: Subscribe to AudioContext state changes (event-driven, not polling!)
+        const unsubscribe = AudioContextManager.onGlobalStateChange((state) => {
+          logger.info('AudioContext state changed (event-driven)', { state });
+
+          // Clear incompatible buffers if context changes
+          if (state === 'closed') {
+            logger.warn('AudioContext closed - clearing cached buffers');
+            GlobalSampleCache.clearAllBuffers();
+          }
+        });
+
+        // Store unsubscribe function using WindowRegistry
+        WindowRegistry.setAudioContextUnsubscribe(unsubscribe);
+
+        try {
+          initSeq.log('services-init-start');
+          logger.info('AudioProvider: Starting services.initialize() - will create AudioContext in suspended state');
+
+          // Initialize all services - AudioContext will be created in suspended state
+          await services.initialize();
+
+          // Log AudioContext state immediately after initialization
+          const audioEngine = services.getAudioEngine();
+          const context = audioEngine.getContext();
+
+          initSeq.log('audiocontext-created', {
+            contextState: context.state,
+            sampleRate: context.sampleRate
+          });
+
+          initSeq.log('services-init-done');
+          logger.info('AudioProvider: Eager initialization complete (AudioContext suspended, plugins registered)');
+
+          // Note: Click listener for context resume is registered in separate useEffect
+          // to avoid StrictMode double-mount issues
+
+        } catch (error) {
+          initSeq.log('services-init-done', { error: String(error) });
+          logger.error('AudioProvider: Failed during initialization', error as Error);
+        }
+
+        // ✅ CRITICAL FIX: Update state AFTER services.initialize() completes
+        // This prevents the resume useEffect from running before AudioContext is created
+        setCoreServices(services);
+        setIsInitialized(true);
+        setServicesReady(true);
+        setCoreServicesReady(true);
+
         // ✅ PHASE 1 TASK 1.5: Register playback engines for cleanup tracking
         const regionProcessor = services.getRegionProcessor();
         const playbackEngine = services.getPlaybackEngine();
@@ -210,69 +277,10 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
           WindowRegistry.setPlaybackEngine(playbackEngine);
         }
 
-        // ✅ BUG #1 FIX: Update state atomically to prevent race conditions
-        setCoreServices(services);
-        setIsInitialized(true);
-        setServicesReady(true);
-        setCoreServicesReady(true);
-
         // Dispatch a custom event to notify waiting hooks
         window.dispatchEvent(new Event('audioServicesReady'));
 
-        // Set up listener for when AudioContext is ready (after user gesture)
-        const handleAudioInitialized = async () => {
-          logger.info(
-            'AudioProvider: audio:initialized event received, fully initializing services...',
-          );
-
-          // Check if services are already fully initialized
-          if (services && services.isReady()) {
-            logger.info(
-              'AudioProvider: Services already fully initialized, skipping duplicate initialization',
-            );
-            return;
-          }
-
-          // Clean up any incompatible cached buffers before initializing
-          const { AudioContextCompatibility } = await import(
-            '../services/storage/AudioContextCompatibility.js'
-          );
-          AudioContextCompatibility.cleanupIncompatibleBuffers();
-
-          // BUG #4 FIX: Subscribe to AudioContext state changes (event-driven, not polling!)
-          const unsubscribe = AudioContextManager.onGlobalStateChange((state) => {
-            logger.info('AudioContext state changed (event-driven)', { state });
-
-            // Clear incompatible buffers if context changes
-            if (state === 'closed') {
-              logger.warn('AudioContext closed - clearing cached buffers');
-              GlobalSampleCache.clearAllBuffers();
-            }
-          });
-
-          // ✅ BUG #8 FIX: Store unsubscribe function using WindowRegistry
-          WindowRegistry.setAudioContextUnsubscribe(unsubscribe);
-
-          try {
-            // Now fully initialize all services (including UnifiedTransport)
-            if (services && !services.isReady()) {
-              await services.initialize();
-              logger.info(
-                'AudioProvider: All services fully initialized after user gesture',
-              );
-            }
-          } catch (error) {
-            logger.error(
-              'AudioProvider: Failed to fully initialize services',
-              error as Error,
-            );
-          }
-        };
-
-        // Listen for audio initialization
-        // ✅ BUG #7 FIX: Store unsubscribe function for cleanup
-        const eventBus = services.getEventBus();
-        unsubscribeAudioInitRef.current = eventBus.on('audio:initialized', handleAudioInitialized);
+        initSeq.log('state-updated', { isInitialized: true, coreServicesReady: true });
 
         logger.info(
           'AudioProvider: Context state updated - isInitialized: true',
@@ -327,12 +335,6 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
         WindowRegistry.setAudioContextUnsubscribe(undefined);
       }
 
-      // ✅ BUG #7 FIX: Unsubscribe from audio:initialized event
-      if (unsubscribeAudioInitRef.current) {
-        unsubscribeAudioInitRef.current();
-        logger.info('AudioProvider: Unsubscribed from audio:initialized event');
-        unsubscribeAudioInitRef.current = null;
-      }
 
       if (services) {
         logMigrationEvent('Cleaning up AudioProvider');
@@ -352,6 +354,112 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
       }
     };
   }, [config, logger, shouldUseLegacyProvider]);
+
+  // Separate useEffect for AudioContext resume on first user interaction
+  // This runs independently of initialization to avoid StrictMode double-mount issues
+  // IMPORTANT: Depends on isInitialized (not coreServicesReady) to ensure services.initialize() completed
+  useEffect(() => {
+    initSeq.log('resume-effect-mounted', { isInitialized, hasCoreServices: !!coreServices });
+
+    if (!isInitialized || !coreServices) {
+      return;
+    }
+
+    initSeq.log('resume-effect-ready');
+    logger.info('[INIT] Setting up click listener (separate useEffect)...');
+
+    // CRITICAL: This function MUST be synchronous (no async/await) to keep the call
+    // within the event handler call stack. Safari/iOS require resume() to be called
+    // synchronously within a user gesture event handler.
+    const resumeAudioContext = (event: Event) => {
+      initSeq.log('user-gesture-detected', { eventType: event.type });
+
+      try {
+        const audioEngine = coreServices.getAudioEngine();
+        // getContext() is synchronous - no await needed
+        const context = audioEngine.getContext();
+
+        if (context.state === 'suspended') {
+          logger.info('AudioProvider: Resuming suspended AudioContext...');
+
+          // Safari fallback: Listen for state change in case promise doesn't resolve
+          // This provides a backup mechanism for browsers that have quirky promise behavior
+          const stateChangeHandler = () => {
+            if (context.state === 'running') {
+              initSeq.log('resume-success', { via: 'onstatechange', contextState: context.state });
+              logger.info('AudioProvider: Context running (detected via onstatechange)');
+
+              // Emit event for tracking/analytics
+              coreServices.getEventBus().emit('audio:activated', {
+                timestamp: Date.now(),
+                sampleRate: context.sampleRate
+              });
+
+              // Remove listener once fired
+              context.removeEventListener('statechange', stateChangeHandler);
+            }
+          };
+
+          context.addEventListener('statechange', stateChangeHandler);
+
+          // Call resume() synchronously within the event handler call stack
+          // This is CRITICAL for Safari/iOS - the resume() call must happen
+          // in the same call stack as the user gesture event
+          initSeq.log('resume-called', { contextState: context.state });
+          const resumePromise = context.resume();
+
+          // Handle the promise asynchronously (this is fine - the call itself was synchronous)
+          resumePromise.then(() => {
+            initSeq.log('resume-success', { via: 'promise', contextState: context.state, sampleRate: context.sampleRate });
+            logger.info('AudioProvider: AudioContext resumed successfully', {
+              state: context.state,
+              sampleRate: context.sampleRate
+            });
+
+            // Remove Safari fallback listener if promise resolved successfully
+            context.removeEventListener('statechange', stateChangeHandler);
+
+            // Emit event for tracking/analytics
+            coreServices.getEventBus().emit('audio:activated', {
+              timestamp: Date.now(),
+              sampleRate: context.sampleRate
+            });
+          }).catch(err => {
+            initSeq.log('resume-failed', { error: String(err) });
+            logger.error('AudioProvider: Resume failed', err as Error);
+
+            // Keep Safari fallback active if promise failed
+          });
+        } else {
+          initSeq.log('resume-called', { alreadyRunning: true, contextState: context.state });
+        }
+      } catch (error) {
+        initSeq.log('resume-failed', { error: String(error) });
+        logger.error('AudioProvider: Failed to resume AudioContext', error as Error);
+      }
+    };
+
+    // Listen for first user interaction to resume context
+    // Only "strong" gestures work: click, touch, keypress
+    // Note: scroll doesn't work - browsers don't consider it a valid activation gesture
+    const gestureEvents = ['click', 'touchstart', 'keydown'];
+
+    gestureEvents.forEach(eventType => {
+      // Don't use passive for these - they need to be activation gestures
+      document.addEventListener(eventType, resumeAudioContext, { once: true });
+    });
+
+    initSeq.log('listener-registered', { events: gestureEvents });
+    logger.info('[INIT] Gesture listeners registered', { events: gestureEvents });
+
+    // Cleanup: Remove all listeners if component unmounts before interaction
+    return () => {
+      gestureEvents.forEach(eventType => {
+        document.removeEventListener(eventType, resumeAudioContext);
+      });
+      logger.info('[INIT] Gesture listeners cleaned up');
+    };
+  }, [isInitialized, coreServices, logger]);
 
   // Use old provider if feature flags are disabled or rollback is active
   if (shouldUseLegacyProvider) {

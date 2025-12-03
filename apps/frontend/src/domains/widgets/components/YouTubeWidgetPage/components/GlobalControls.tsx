@@ -26,12 +26,14 @@ import type {
 } from '@bassnotion/contracts';
 import { MIDIFileParser } from '@bassnotion/contracts';
 import { Button } from '@/shared/components/ui/button';
-import { useTransport, useTrack } from '@/domains/playback/hooks';
-import { serviceRegistry } from '@/domains/playback/services/core/ServiceRegistry.js';
+import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
+import { useTrack } from '@/domains/playback/hooks';
 import type { CoreServices } from '@/domains/playback/services/core/CoreServices.js';
+import * as Tone from 'tone';
 import { RegionProcessor } from '@/domains/playback/services/core/RegionProcessor.js';
 import { ExerciseLoader } from '@/domains/playback/modules/exercises/core/ExerciseLoader.js';
 import { getLogger } from '@/utils/logger.js';
+import { useAudioServices } from '@/domains/playback/providers/AudioProvider';
 
 // VexFlow imports for sheet music (DEPRECATED - keeping for reference)
 // import * as VF from 'vexflow';
@@ -41,6 +43,7 @@ import { SheetMusicDisplay } from '../../SheetMusic/index.js';
 
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { useCountdown } from '@/domains/widgets/hooks/useCountdown';
+import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 
 const logger = getLogger('global-controls');
 
@@ -281,12 +284,16 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 }) => {
   globalControlsRenderCount++;
 
+  // ✅ FIX: Get services directly from AudioProvider context (no race conditions)
+  const { coreServices: contextCoreServices, audioEngine: contextAudioEngine, eventBus: contextEventBus, coreServicesReady } = useAudioServices();
+
   // Log renders every 10th time
   if (globalControlsRenderCount % 10 === 0) {
     logger.info(`🎯 GlobalControls RENDER #${globalControlsRenderCount}`, {
       selectedExerciseId: selectedExercise?.id,
       duration,
       is3DMode,
+      coreServicesReady, // Log readiness state
       timestamp: Date.now(),
     });
   }
@@ -374,7 +381,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   const loadingRef = useRef(false);
 
   // Use transport directly for playback control
-  const transport = useTransport();
+  const transport = useTransportContext();
   // Create tracks using hooks
   const metronomeTrack = useTrack({
     trackId: 'metronome',
@@ -403,65 +410,31 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
     }, []),
   });
 
-  // Initialize DAW system
+  // ✅ FIX: Initialize using AudioProvider context (no polling/retries needed)
   useEffect(() => {
-    const initializeDAW = async () => {
-      logger.debug('🎮 GlobalControls: Initializing DAW system...');
+    // Wait for services to be available from context
+    if (!contextCoreServices || !contextAudioEngine || !contextEventBus) {
+      logger.debug('🎮 GlobalControls: Waiting for services from AudioProvider context...');
+      return;
+    }
 
-      // Wait for services to be available
-      const maxRetries = 10;
-      let retries = 0;
+    logger.debug('🎮 GlobalControls: Services ready from AudioProvider context');
 
-      const checkServices = async () => {
-        try {
-          const eventBus = serviceRegistry.get('eventBus');
-          const audioEngine = serviceRegistry.get('audioEngine');
+    // Set services from context
+    setCoreServices({ eventBus: contextEventBus, audioEngine: contextAudioEngine } as any);
+    setSystemInitialized(true);
 
-          if (eventBus && audioEngine) {
-            logger.debug('🎮 GlobalControls: Services available from registry');
-            setCoreServices({ eventBus, audioEngine } as any);
-            setSystemInitialized(true);
-
-            // Check if audio is already initialized
-            try {
-              const context = audioEngine.getContext();
-              if (context) {
-                setAudioInitialized(true);
-                logger.debug('🎮 GlobalControls: Audio already initialized');
-              }
-            } catch (e) {
-              logger.debug('🎮 GlobalControls: Audio not yet initialized');
-            }
-          } else if (retries < maxRetries) {
-            retries++;
-            logger.debug(
-              `🎮 GlobalControls: Waiting for services... (${retries}/${maxRetries})`,
-            );
-            setTimeout(checkServices, 100);
-          } else {
-            logger.error(
-              '🎮 GlobalControls: Failed to get services from registry',
-            );
-          }
-        } catch (error) {
-          // ServiceRegistry might not be initialized yet
-          if (retries < maxRetries) {
-            retries++;
-            logger.debug(
-              `🎮 GlobalControls: ServiceRegistry not ready (${retries}/${maxRetries})`,
-            );
-            setTimeout(checkServices, 100);
-          } else {
-            logger.error('🎮 GlobalControls: ServiceRegistry error:', error);
-          }
-        }
-      };
-
-      checkServices();
-    };
-
-    initializeDAW();
-  }, []); // Only run once on mount
+    // Check if audio is already initialized
+    try {
+      const context = contextAudioEngine.getContext();
+      if (context) {
+        setAudioInitialized(true);
+        logger.debug('🎮 GlobalControls: Audio already initialized');
+      }
+    } catch (e) {
+      logger.debug('🎮 GlobalControls: Audio not yet initialized');
+    }
+  }, [contextCoreServices, contextAudioEngine, contextEventBus]); // Re-run when services change
 
   // Log track state for debugging
   useEffect(() => {
@@ -526,14 +499,16 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
   // Normalize notes to handle field name variations (duration vs noteDuration)
   // CRITICAL: Memoize to prevent SheetMusicDisplay from re-rendering on every render
-  const rawNotes = activeExercise?.notes || [];
+  // PERFORMANCE FIX: Depend on activeExercise?.notes directly, not rawNotes intermediate
+  // The || [] was creating new array reference on every render
   const exerciseNotes: ExerciseNote[] = useMemo(() => {
-    return rawNotes.map((note: any) => ({
+    const notes = activeExercise?.notes || [];
+    return notes.map((note: any) => ({
       ...note,
       // Handle both 'duration' and 'noteDuration' field names
       duration: note.duration || note.noteDuration || 'quarter',
     }));
-  }, [rawNotes]);
+  }, [activeExercise?.notes]);
 
   const exerciseBpm = activeExercise?.bpm || 120;
   const exerciseKey = activeExercise?.key || 'C';
@@ -811,6 +786,28 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           transport.setTimeSignature(4, 4);
         }
 
+        // STEP 0: Set countdown offset in transport BEFORE starting anything
+        // COUNTDOWN FIX: This MUST happen before globalCoreServices.start() which internally calls transport.start()
+        // Otherwise the first position update will show countdownBeats=0
+        const countdownTimeSignature = selectedExercise?.timeSignature || { numerator: 4, denominator: 4 };
+        const coreServicesForCountdown = WindowRegistry.getCoreServices();
+
+        if (coreServicesForCountdown) {
+          try {
+            const unifiedTransport = coreServicesForCountdown.getUnifiedTransport();
+
+            if (unifiedTransport && typeof unifiedTransport.setCountdownBeats === 'function') {
+              console.log('🎯 [COUNTDOWN FIX] Setting countdown BEFORE transport starts', {
+                beats: countdownTimeSignature.numerator,
+                timestamp: Date.now(),
+              });
+              unifiedTransport.setCountdownBeats(countdownTimeSignature.numerator);
+            }
+          } catch (error) {
+            logger.error('Failed to set countdown beats', error);
+          }
+        }
+
         // STEP 1: Resume AudioContext (main user gesture requirement)
         logger.debug('🎵 Resuming AudioContext...');
 
@@ -834,7 +831,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         logger.debug('✅ AudioContext resumed');
 
         // CRITICAL: Ensure CoreServices and AudioEventRouter are started
-        const globalCoreServices = (window as any).__globalCoreServices;
+        // ✅ FIX: Use WindowRegistry instead of direct window access
+        const globalCoreServices = WindowRegistry.getCoreServices();
         if (globalCoreServices) {
           const isReady = globalCoreServices.isReady();
           logger.info('🎵 CoreServices status check', {
@@ -857,7 +855,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         }
 
         // STEP 2: CRITICAL - Get RegionProcessor from CoreServices (the one with buffers injected!)
-        const coreServicesRef = (window as any).__globalCoreServices;
+        // ✅ FIX: Use WindowRegistry instead of direct window access
+        const coreServicesRef = WindowRegistry.getCoreServices();
         let regionProcessor = null;
 
         if (coreServicesRef && coreServicesRef.getRegionProcessor) {
@@ -993,21 +992,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           });
         }
 
-        // STEP 4.3: Set countdown offset in transport for display adjustment
-        // This makes the transport clock show negative bars during countdown
-        const coreServicesForCountdown = (window as any).__globalCoreServices;
-
-        if (coreServicesForCountdown) {
-          try {
-            const unifiedTransport = coreServicesForCountdown.getUnifiedTransport();
-
-            if (unifiedTransport && typeof unifiedTransport.setCountdownBeats === 'function') {
-              unifiedTransport.setCountdownBeats(timeSignature.numerator);
-            }
-          } catch (error) {
-            logger.error('Failed to set countdown beats', error);
-          }
-        }
+        // NOTE: Countdown offset (setCountdownBeats) is now set BEFORE CoreServices.start()
+        // See STEP 0 above (around line 786) - moved there to prevent race condition
 
         // STEP 4.5: Add countdown region AFTER tracks are registered
         if (regionProcessor) {
@@ -1023,9 +1009,18 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // STEP 5: Start RegionProcessor BEFORE transport
         // This must happen here because tracks are registered asynchronously by widgets (MetronomeWidget, etc.)
         // If we wait for transport:start event, tracks won't be registered yet
+        console.log('[PLAYBACK-DIAGNOSTIC] About to call regionProcessor.start()', {
+          hasRegionProcessor: !!regionProcessor,
+          regionProcessorType: regionProcessor?.constructor?.name,
+        });
+
         if (regionProcessor) {
+          console.log('[PLAYBACK-DIAGNOSTIC] Calling regionProcessor.start() now!');
           regionProcessor.start();
           logger.debug('🎵 Started RegionProcessor');
+          console.log('[PLAYBACK-DIAGNOSTIC] regionProcessor.start() completed');
+        } else {
+          console.error('[PLAYBACK-DIAGNOSTIC] No regionProcessor available!');
         }
 
         // STEP 6: Start visual countdown BEFORE transport.start()
@@ -1047,17 +1042,26 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // Manual manipulation here creates race conditions with TransportController's position management,
         // causing the clock to show "3:1:00" on 2nd playback instead of "1:0:00".
 
-        // STEP 8: Configure exercise duration for auto-stop (moved from UI to domain layer)
-        const beatsPerBar = selectedExercise?.timeSignature?.numerator || 4;
-        const totalBars = (selectedExercise as any)?.total_bars || 4;
-        const countdownBars = 1; // One measure of countdown
-        transport.setExerciseDuration(totalBars + countdownBars, beatsPerBar);
-        logger.info('🎵 Configured exercise duration for auto-stop', {
-          totalBars,
-          countdownBars,
-          beatsPerBar,
-          totalBeats: (totalBars + countdownBars) * beatsPerBar,
+        // STEP 8: ✅ SET THE ONE SINGLE SOURCE OF MUSICAL TRUTH
+        // This ONE call replaces:
+        // - transport.setTempo()
+        // - transport.setTimeSignature()
+        // - transport.setExerciseDuration()
+        // - transport.setCountdownBeats()
+        // All systems will now read from musicalTruth singleton
+        const { musicalTruth } = await import('@/domains/playback/modules/tempo/MusicalTruthAuthority.js');
+        musicalTruth.setFromExercise(selectedExercise);
+
+        console.log('✅ [MUSICAL TRUTH] Set from exercise - ALL systems synchronized:', {
+          bpm: musicalTruth.getBPM(),
+          timeSignature: musicalTruth.getTimeSignature(),
+          durationBars: musicalTruth.getDurationBars(),
+          countdownBars: musicalTruth.getCountdownBars(),
+          totalBars: musicalTruth.getTotalBars(),
+          totalBeats: musicalTruth.getTotalBeats(),
         });
+
+        logger.info('✅ Musical truth established from exercise', musicalTruth.getTruth());
 
         // STEP 9: Start transport - everything should be ready!
         // The countdown is now part of the timeline (beats 0-3), exercise starts at beat 4
@@ -1266,6 +1270,29 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       setIsLoadingExercise(true);
       lastLoadedExerciseRef.current = selectedExercise.id;
 
+      // ✅ FIX: Stop transport and reset position/countdown when loading new exercise
+      // This ensures each exercise starts from the beginning with fresh countdown
+      try {
+        await transport.stop();
+
+        // Reset countdown in transport/timeline to clear old exercise's countdown
+        const coreServices = WindowRegistry.getCoreServices();
+        if (coreServices) {
+          const unifiedTransport = coreServices.getUnifiedTransport();
+          if (unifiedTransport?.setCountdownBeats) {
+            unifiedTransport.setCountdownBeats(0);
+            logger.info('🎮 GlobalControls: Reset countdown beats to 0 for new exercise');
+          }
+        }
+
+        // Reset Tone.Transport position to start (this will be -1 bar after countdown is enabled)
+        if (typeof Tone !== 'undefined' && Tone.Transport) {
+          Tone.Transport.position = 0;
+          logger.info('🎮 GlobalControls: Reset transport position to 0:0:0 for new exercise');
+        }
+      } catch (error) {
+        logger.warn('🎮 GlobalControls: Failed to reset transport position', error);
+      }
 
       logger.debug(
         '🎮 GlobalControls: Loading exercise:',
@@ -1295,31 +1322,20 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
       try {
 
-        // FAANG SOLUTION: Only reset tempo on NEW exercise selection
-        // Preserve user tempo changes within the same exercise
-        const exerciseIdChanged = currentExerciseId.current !== selectedExercise.id;
+        // ✅ SET THE ONE SINGLE SOURCE OF MUSICAL TRUTH
+        // This establishes tempo, time signature, and duration from the exercise
+        // Note: User tempo modifications are not yet supported with musicalTruth - future enhancement
+        const { musicalTruth } = await import('@/domains/playback/modules/tempo/MusicalTruthAuthority.js');
 
+        const exerciseIdChanged = currentExerciseId.current !== selectedExercise.id;
         if (exerciseIdChanged) {
-          // New exercise selected - reset tempo to exercise default
           currentExerciseId.current = selectedExercise.id;
           hasUserModifiedTempo.current = false;
+        }
 
-          if (selectedExercise.bpm) {
-            await transport.setTempo(selectedExercise.bpm);
-            logger.info('🎵 [loadExercise] NEW exercise - Set tempo to exercise default:', selectedExercise.bpm);
-          }
-        } else if (!hasUserModifiedTempo.current && selectedExercise.bpm) {
-          // Same exercise, no user modifications - use exercise tempo
-          await transport.setTempo(selectedExercise.bpm);
-          logger.info('🎵 [loadExercise] Same exercise - Set tempo to exercise default:', selectedExercise.bpm);
-        } else {
-          // Same exercise with user modifications - preserve user tempo
-          logger.info('🎵 [loadExercise] Preserving user tempo:', transport.tempo, '(exercise default:', selectedExercise.bpm, ')');
-        }
-        if (selectedExercise.timeSignature) {
-          transport.setTimeSignature(selectedExercise.timeSignature.numerator, selectedExercise.timeSignature.denominator);
-          logger.info('🎵 [loadExercise] Set time signature BEFORE creating regions:', selectedExercise.timeSignature);
-        }
+        // Set musical truth from exercise (replaces setTempo, setTimeSignature, etc.)
+        musicalTruth.setFromExercise(selectedExercise);
+        logger.info('✅ [loadExercise] Musical truth established:', musicalTruth.getTruth());
 
 
         // Clear existing regions
@@ -3618,9 +3634,8 @@ const arePropsEqual = (
 };
 
 // Export the memoized component
-// TEMPORARILY DISABLED React.memo to debug rendering issue
-// export const GlobalControls = React.memo(
-//   GlobalControlsComponent,
-//   arePropsEqual,
-// );
-export const GlobalControls = GlobalControlsComponent;
+// RE-ENABLED React.memo to fix excessive re-renders during playback
+export const GlobalControls = React.memo(
+  GlobalControlsComponent,
+  arePropsEqual,
+);

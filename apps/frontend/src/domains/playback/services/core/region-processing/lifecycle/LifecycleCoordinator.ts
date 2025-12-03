@@ -14,6 +14,7 @@
 
 import * as Tone from 'tone';
 import { getLogger } from '@/utils/logger.js';
+import { TRANSPORT_TIMING_CONFIG } from '../../../../config/transportTiming.js';
 
 const logger = getLogger('RegionProcessor');
 
@@ -142,7 +143,8 @@ export class LifecycleCoordinator {
 
     if (audioContext) {
       // FAANG SOLUTION: Add startup lookahead to prevent first beat latency
-      const startupLookahead = 0.2; // 200ms
+      // Use centralized timing config to ensure sync between audio and visual clock
+      const startupLookahead = TRANSPORT_TIMING_CONFIG.startupLookahead;
       transportStartTime = audioContext.currentTime + startupLookahead;
       setTransportStartTime(transportStartTime);
 
@@ -214,6 +216,11 @@ export class LifecycleCoordinator {
       Tone.Transport.loop = false;
     }
 
+    // CRITICAL FIX: Clear scheduled state from previous playback session
+    // This prevents duplicate events when user clicks PLAY → STOP → PLAY
+    clearScheduledState();
+    logger.info('🧹 Cleared scheduled state before scheduling new events');
+
     // AUDIO DOUBLING FIX: Set guard flag
     isInitialScheduling = true;
 
@@ -223,23 +230,15 @@ export class LifecycleCoordinator {
     // AUDIO DOUBLING FIX: Clear guard flag
     isInitialScheduling = false;
 
-    // Set up regular check for dynamic scheduling
-    scheduleInterval = setInterval(() => {
-      logger.debug('⏰ Interval callback fired', {
-        isRunning,
-        transportState: Tone.Transport.state,
-        isInitialScheduling,
-        timestamp: Date.now(),
-      });
+    // FIGHTING CLOCKS FIX: Remove setInterval - position updates now come from EventBus
+    // PlaybackEngine subscribes to 'transport:position-updated' events (60Hz from Transport RAF)
+    // and calls processCurrentPosition() when needed. No need for separate polling loop.
+    // Old code: scheduleInterval = setInterval(() => { processCurrentPosition(); }, 25);
+    scheduleInterval = null; // No interval needed
 
-      if (
-        isRunning &&
-        Tone.Transport.state === 'started' &&
-        !isInitialScheduling
-      ) {
-        processCurrentPosition();
-      }
-    }, 25); // Check every 25ms
+    logger.info('✅ LifecycleCoordinator: Using EventBus for position updates (no polling interval)', {
+      timestamp: Date.now(),
+    });
 
     return {
       isRunning,

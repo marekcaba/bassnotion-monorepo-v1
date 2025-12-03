@@ -212,14 +212,14 @@ export function useWidgetPageState() {
       }
 
       // CRITICAL DEBUG: Log exercise entity to trace harmonyInstrument
-      console.log('🔍 [STATE-FLOW-1] setSelectedExercise called with:', {
-        exerciseId: exercise.id?.value,
-        title: exercise.title,
-        harmonyInstrument: exercise.harmonyInstrument,
-        hasHarmonyInstrumentGetter: typeof exercise.harmonyInstrument !== 'undefined',
-        exerciseType: typeof exercise,
-        exerciseConstructor: exercise.constructor?.name,
-      });
+      // console.log('🔍 [STATE-FLOW-1] setSelectedExercise called with:', {
+      //   exerciseId: exercise.id?.value,
+      //   title: exercise.title,
+      //   harmonyInstrument: exercise.harmonyInstrument,
+      //   hasHarmonyInstrumentGetter: typeof exercise.harmonyInstrument !== 'undefined',
+      //   exerciseType: typeof exercise,
+      //   exerciseConstructor: exercise.constructor?.name,
+      // });
 
       // Convert Exercise to ExerciseData format for timeline integration
       const exerciseData = {
@@ -287,15 +287,15 @@ export function useWidgetPageState() {
       // No default instrument - use exercise's harmonyInstrument or undefined
       const extractedHarmonyInstrument = exercise.harmonyInstrument;
 
-      console.log('🔍 [STATE-FLOW-2] Extracting harmonyInstrument:', {
-        exerciseId: exercise.id.value,
-        title: exercise.title,
-        rawHarmonyInstrument: exercise.harmonyInstrument,
-        extractedHarmonyInstrument,
-        typeOf: typeof exercise.harmonyInstrument,
-        isUndefined: exercise.harmonyInstrument === undefined,
-        isNull: exercise.harmonyInstrument === null,
-      });
+      // console.log('🔍 [STATE-FLOW-2] Extracting harmonyInstrument:', {
+      //   exerciseId: exercise.id.value,
+      //   title: exercise.title,
+      //   rawHarmonyInstrument: exercise.harmonyInstrument,
+      //   extractedHarmonyInstrument,
+      //   typeOf: typeof exercise.harmonyInstrument,
+      //   isUndefined: exercise.harmonyInstrument === undefined,
+      //   isNull: exercise.harmonyInstrument === null,
+      // });
 
       setState((prev) => {
         const newState = {
@@ -304,13 +304,13 @@ export function useWidgetPageState() {
           harmonyInstrument: extractedHarmonyInstrument,
         };
 
-        console.log('🔍 [STATE-FLOW-3] New state object created:', {
-          selectedExerciseId: newState.selectedExercise?.id.value,
-          selectedExerciseTitle: newState.selectedExercise?.title,
-          stateHarmonyInstrument: newState.harmonyInstrument,
-          exerciseHarmonyInstrument: newState.selectedExercise?.harmonyInstrument,
-          prevHarmonyInstrument: prev.harmonyInstrument,
-        });
+        // console.log('🔍 [STATE-FLOW-3] New state object created:', {
+        //   selectedExerciseId: newState.selectedExercise?.id.value,
+        //   selectedExerciseTitle: newState.selectedExercise?.title,
+        //   stateHarmonyInstrument: newState.harmonyInstrument,
+        //   exerciseHarmonyInstrument: newState.selectedExercise?.harmonyInstrument,
+        //   prevHarmonyInstrument: prev.harmonyInstrument,
+        // });
 
         // Update widget states based on exercise data
         if (exercise) {

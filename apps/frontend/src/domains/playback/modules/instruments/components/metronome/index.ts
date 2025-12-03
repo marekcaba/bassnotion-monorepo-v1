@@ -12,12 +12,7 @@ export type {
   MetronomeConfig,
 } from './MetronomeCore.js';
 
-// Scheduling
-export { MetronomeScheduler } from './MetronomeScheduler.js';
-export type {
-  MetronomePattern,
-  MetronomeSchedulerOptions,
-} from './MetronomeScheduler.js';
+// REMOVED: MetronomeScheduler (legacy, unused - replaced by production schedulers)
 
 // Visual feedback
 export { MetronomeVisualizer } from './MetronomeVisualizer.js';

@@ -5,7 +5,7 @@
  */
 
 export * from './BassSynthEngine.js';
-export * from './BassSequencer.js';
+// REMOVED: BassSequencer.js (legacy, unused)
 export * from './BassArticulation.js';
 export * from './BassEffectsChain.js';
 
@@ -16,11 +16,7 @@ export type {
   BassPreset,
 } from './BassSynthEngine.js';
 
-export type {
-  BassPattern,
-  BassSequence,
-  BasslineAnalysis,
-} from './BassSequencer.js';
+// REMOVED: BassSequencer types (legacy, unused)
 
 export type {
   ArticulationParams,

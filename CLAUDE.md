@@ -2,6 +2,29 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Status
+
+**IMPORTANT: PRE-PRODUCTION DEVELOPMENT PHASE**
+
+This project is currently in **active development** with **NO production users or customers yet**. The sole user and tester is the project owner/developer.
+
+**What this means for development:**
+- ✅ Safe to experiment with new architectures and refactors
+- ✅ Breaking changes are acceptable during feature development
+- ✅ Focus on code quality and architecture over backward compatibility
+- ✅ Can iterate quickly without formal rollout procedures
+- ✅ Feature flags can be toggled freely for testing
+- ⚠️ Still maintain good practices (tests, documentation, clean code)
+- ⚠️ Prepare for production (implement monitoring, error handling, rollback plans)
+
+**When production launch approaches:**
+- Switch to formal staged rollout procedures
+- Implement full monitoring and alerting
+- Follow strict backward compatibility rules
+- Execute comprehensive user acceptance testing
+
+**Current Development Mode:** Rapid iteration with production-quality code preparation.
+
 ## Critical Rules
 
 ### Logger Configuration (CHECK BEFORE ADDING LOGS!)

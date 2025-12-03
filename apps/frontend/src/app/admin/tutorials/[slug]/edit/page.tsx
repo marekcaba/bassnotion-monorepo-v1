@@ -16,6 +16,7 @@ import { TeachingTakeawayCard } from '@/domains/widgets/components/YouTubeWidget
 import { TimingDebugWindow } from '@/domains/widgets/components/YouTubeWidgetPage/components/TimingDebugWindow';
 import { UserIndicator } from '@/domains/user/components/UserIndicator';
 import { SyncProvider } from '@/domains/widgets/components/base/SyncProvider';
+import { TransportProvider } from '@/domains/playback/contexts/TransportContext';
 import { useWidgetPageState } from '@/domains/widgets/hooks/useWidgetPageState';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
@@ -584,7 +585,8 @@ export default function AdminTutorialEditPage({ params }: AdminTutorialPageProps
     <>
       {/* Main Tutorial Page Layout - Full width background outside SyncProvider */}
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <SyncProvider>
+        <TransportProvider>
+          <SyncProvider>
 
       {/* Edit Modal */}
       {editMode && (
@@ -1524,7 +1526,8 @@ export default function AdminTutorialEditPage({ params }: AdminTutorialPageProps
           exercise={editingExercise}
           tutorialId={tutorial?.id.value || ''}
         />
-      </SyncProvider>
+          </SyncProvider>
+        </TransportProvider>
     </div>
     </>
   );

@@ -1,10 +1,12 @@
 /**
  * CC64 Sustain Pedal System
  *
- * Modules for handling MIDI CC64 (sustain pedal) events:
- * - Timeline building from MIDI events
- * - Pedal state analysis and queries
+ * SustainPedalManager merges CC64TimelineBuilder + SustainPedalAnalyzer
+ * into a single class for timeline building and pedal state analysis.
  */
 
-export { CC64TimelineBuilder } from './CC64TimelineBuilder.js';
-export { SustainPedalAnalyzer } from './SustainPedalAnalyzer.js';
+export { SustainPedalManager } from './SustainPedalManager.js';
+
+// Type aliases for backward compatibility
+export type { SustainPedalManager as CC64TimelineBuilder } from './SustainPedalManager.js';
+export type { SustainPedalManager as SustainPedalAnalyzer } from './SustainPedalManager.js';

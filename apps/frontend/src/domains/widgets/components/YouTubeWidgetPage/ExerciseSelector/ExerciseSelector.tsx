@@ -75,7 +75,25 @@ export function ExerciseSelector({
             });
 
             // Load samples for this exercise
-            await preloader.loadFullSamples(exercise);
+            const result = await preloader.loadFullSamples(exercise);
+
+            // CRITICAL FIX: Emit event after each exercise loads to trigger HarmonyWidget re-registration
+            if (typeof window !== 'undefined') {
+              const event = new CustomEvent('harmony-samples-loaded', {
+                detail: {
+                  exerciseId: exercise.id,
+                  instrument: exercise.harmonyInstrument,
+                  samplesLoaded: result.loaded,
+                  exerciseTitle: exercise.title,
+                }
+              });
+              window.dispatchEvent(event);
+              console.log('📢 [EXERCISE-SELECTOR] Emitted harmony-samples-loaded event', {
+                exerciseId: exercise.id,
+                instrument: exercise.harmonyInstrument,
+                samplesLoaded: result.loaded,
+              });
+            }
 
             // Small delay between exercises to avoid overwhelming the system
             await new Promise(resolve => setTimeout(resolve, 300));

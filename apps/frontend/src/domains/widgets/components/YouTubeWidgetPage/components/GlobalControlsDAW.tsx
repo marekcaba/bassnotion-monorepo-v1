@@ -25,7 +25,8 @@ import {
   FileText,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
-import { useTransport, useTrack } from '@/domains/playback/hooks';
+import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
+import { useTrack } from '@/domains/playback/hooks';
 import { serviceRegistry } from '@/domains/playback/services/core/ServiceRegistry.js';
 import type { MusicalExercise as Exercise } from '@bassnotion/contracts';
 import type { CoreServices } from '@/domains/playback/services/core/CoreServices.js';
@@ -78,7 +79,7 @@ export const GlobalControlsDAW: React.FC<GlobalControlsDAWProps> = ({
   const loadingRef = useRef(false);
 
   // Transport hook
-  const transport = useTransport();
+  const transport = useTransportContext();
 
   // Create tracks using hooks (same as test-daw-integration)
   const metronomeTrack = useTrack({

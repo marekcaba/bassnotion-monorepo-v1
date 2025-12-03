@@ -449,30 +449,12 @@ export class WamKeyboardNode implements WamNode {
             status.loadedLayers.join(', '),
           );
 
-          // Ensure it's connected to our gain node
-          if (this.gainNode && existingSampler.connect) {
-            try {
-              existingSampler.disconnect();
-              existingSampler.connect(this.gainNode);
-              logger.info(
-                '🎹 Connected pre-loaded sampler to current gain node',
-              );
-            } catch (err) {
-              logger.warn('🎹 Failed to connect pre-loaded sampler:', {
-                error: err as Error,
-              });
-            }
-          }
-
-          this.samplers.set(instrument, existingSampler);
-          this.switchToInstrument(instrument);
-
-          // Also cache it with our key for future use
-          GlobalSampleCache.cacheInstrument(cacheKey, existingSampler);
-          logger.info(
-            '🎹 NO NEW SAMPLES WILL BE LOADED - using preloaded samples!',
-          );
-          return;
+          // CRITICAL FIX: Cached samplers have wrong AudioContext
+          // Sampler's audioContext is set during initialize() and can't be changed after
+          // We MUST create a new sampler with the correct AudioContext
+          console.warn('🔧 [CACHE-BYPASS] Cached sampler found but AudioContext may be wrong - creating new sampler');
+          logger.warn('🔧 Bypassing cached sampler to ensure correct AudioContext');
+          // Fall through to create new sampler with correct AudioContext
         } else {
           logger.warn(
             '🎹 Pre-loaded sampler has no loaded layers, will create new one',
@@ -493,6 +475,8 @@ export class WamKeyboardNode implements WamNode {
           console.log('🎹 [LOAD-INSTRUMENT] Creating Grand Piano sampler');
           logger.info('🎹 Loading Grand Piano');
           sampler = new GrandPianoVelocitySampler();
+          // CRITICAL: Set preferred context BEFORE initialize to ensure singleton AudioContext usage
+          sampler.setPreferredContext(this.module.audioContext as AudioContext);
           // CRITICAL FIX: Initialize FIRST to create Tone.js nodes in correct AudioContext
           // THEN connect to gain node - this prevents AudioContext mismatch
           await sampler.initialize();
@@ -507,6 +491,8 @@ export class WamKeyboardNode implements WamNode {
         case KeyboardInstrument.FENDER_RHODES:
           console.log('🎹 [LOAD-INSTRUMENT] Creating Rhodes sampler');
           sampler = new RhodesVelocitySampler();
+          // CRITICAL: Set preferred context BEFORE initialize to ensure singleton AudioContext usage
+          sampler.setPreferredContext(this.module.audioContext as AudioContext);
           // CRITICAL FIX: Initialize FIRST to create Tone.js nodes in correct AudioContext
           // THEN connect to gain node - this prevents AudioContext mismatch
           await sampler.initialize();
@@ -520,6 +506,8 @@ export class WamKeyboardNode implements WamNode {
         case KeyboardInstrument.WURLITZER:
           console.log('🎹 [LOAD-INSTRUMENT] Creating Wurlitzer sampler');
           sampler = new WurlitzerVelocitySampler();
+          // CRITICAL: Set preferred context BEFORE initialize to ensure singleton AudioContext usage
+          sampler.setPreferredContext(this.module.audioContext as AudioContext);
           // CRITICAL FIX: Initialize FIRST to create Tone.js nodes in correct AudioContext
           // THEN connect to gain node - this prevents AudioContext mismatch
           await sampler.initialize();

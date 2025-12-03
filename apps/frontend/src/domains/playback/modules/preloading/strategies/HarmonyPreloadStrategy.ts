@@ -9,7 +9,6 @@ import { PreloadConfig, PreloadResult } from '../types/index.js';
 import { GlobalSampleCache } from '../../storage/cache/GlobalSampleCache.js';
 import { wamPluginSingleton } from '@/domains/widgets/utils/wamPluginSingleton.js';
 import { getLogger } from '@/utils/logger.js';
-import { extractNotesFromHarmonyMidi } from '../../../utils/midiNoteExtractor.js';
 import type { Exercise } from '@/domains/exercises/entities/exercise.entity.js';
 import grandPianoConfig from '@/domains/playback/data/instruments/piano/grand-piano.json';
 import grandPianoKeyboardMap from '@/domains/playback/data/instruments/piano/grandpiano-keyboard-map.json';
@@ -155,23 +154,23 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
       }
 
       // CHECKPOINT 8: Preload strategy - verify instrument resolution
-      console.log('🔍 [CHECKPOINT-8] HarmonyPreloadStrategy.loadFullSamples:', {
-        exerciseId: exercise.id,
-        exerciseTitle: exercise.title,
-        exerciseHarmonyInstrument: exercise.harmonyInstrument,
-        hasHarmonyInstrument: !!exercise.harmonyInstrument,
-        harmonyInstrumentType: typeof exercise.harmonyInstrument,
-        willResolveAs: exercise.harmonyInstrument || 'grandpiano',
-      });
+      // console.log('[DEBUG][Checkpoint-8] HarmonyPreloadStrategy.loadFullSamples:', {
+      //   exerciseId: exercise.id,
+      //   exerciseTitle: exercise.title,
+      //   exerciseHarmonyInstrument: exercise.harmonyInstrument,
+      //   hasHarmonyInstrument: !!exercise.harmonyInstrument,
+      //   harmonyInstrumentType: typeof exercise.harmonyInstrument,
+      //   willResolveAs: exercise.harmonyInstrument || 'grandpiano',
+      // });
 
       // 2. Load instrument configuration to determine per-note velocity ranges
       const instrument = exercise.harmonyInstrument || 'grandpiano';
 
-      console.log('🔍 [CHECKPOINT-8-RESOLVED] Instrument resolved for preloading:', {
-        instrument,
-        fromExercise: exercise.harmonyInstrument,
-        wasDefaulted: !exercise.harmonyInstrument,
-      });
+      // console.log('[DEBUG][Checkpoint-8] Instrument resolved for preloading:', {
+      //   instrument,
+      //   fromExercise: exercise.harmonyInstrument,
+      //   wasDefaulted: !exercise.harmonyInstrument,
+      // });
 
       const instrumentConfig = await this.loadInstrumentConfig(instrument);
 
@@ -608,10 +607,10 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
     // This ensures keyboard map is available BEFORE playback starts
     // RegionProcessor needs it to map requested notes (e.g., Gs3) to physical samples (e.g., A3)
     if (instrument === 'grandpiano') {
-      console.log('🗺️ [KEYBOARD-MAP] Loading keyboard map for Grand Piano...');
+      console.log('[SAMPLES][Keyboard-Map] Loading keyboard map for Grand Piano...');
       const keyboardMap = await this.loadGrandPianoKeyboardMap();
       if (keyboardMap) {
-        console.log('🗺️ [KEYBOARD-MAP] Keyboard map loaded, caching in GlobalSampleCache...', {
+        console.log('[SAMPLES][Keyboard-Map] Loaded, caching in GlobalSampleCache...', {
           totalKeys: Object.keys(keyboardMap).length,
           sampleKeys: Object.keys(keyboardMap).slice(0, 5), // Show first 5 keys
         });
@@ -619,7 +618,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
 
         // DIAGNOSTIC: Verify it was cached
         const verifyCache = GlobalSampleCache.getInstance().getCachedMetadata('grandpiano-keyboard-map');
-        console.log('🗺️ [KEYBOARD-MAP] Cache verification:', {
+        console.log('[DEBUG][Keyboard-Map] Cache verification:', {
           wasCached: !!verifyCache,
           cacheHasKeys: verifyCache ? Object.keys(verifyCache).length : 0,
           expectedKeys: Object.keys(keyboardMap).length,
@@ -631,7 +630,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
           verified: !!verifyCache,
         });
       } else {
-        console.error('🗺️ [KEYBOARD-MAP] Failed to load keyboard map - got null/undefined');
+        console.error('[SAMPLES][Keyboard-Map] Failed to load keyboard map - got null/undefined');
         logger.error('Failed to load Grand Piano keyboard map');
       }
     }
@@ -643,7 +642,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
     );
 
     // EVIDENCE: Start of preloading
-    console.log('🎹 [PRELOAD START] Downloading harmony samples as AudioBuffers', {
+    console.log('🎹 [SAMPLES] Downloading harmony samples as AudioBuffers', {
       timestamp: new Date().toISOString(),
       uniqueNotes: sampleMap.size,
       instrument,
@@ -700,56 +699,79 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
             .replace('{layer}', layerNumber);
 
           try {
-            const url = supabase.storage
-              .from(config.bucket)
-              .getPublicUrl(`${config.path}/${layer}/${filename}.${config.extension}`)
-              .data.publicUrl;
+            // CRITICAL: Check IndexedDB cache BEFORE network fetch
+            const cacheKey = `${instrument}-${layer}-${noteName}`;
+            const cachedBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer(cacheKey);
 
-            logger.info(`📥 Fetching ${instrument}/${layer}/${noteName}...`);
+            let arrayBuffer: ArrayBuffer;
 
-            const response = await fetch(url);
-            if (!response.ok) {
-              logger.error(`❌ Failed to fetch ${noteName}/${layer}: ${response.status} (This should not happen with smart sample map!)`);
-              continue; // Skip this sample but continue with others
+            if (cachedBuffer) {
+              console.log(`💾 [SAMPLES][IndexedDB-HIT] Using cached sample: ${cacheKey}`);
+              logger.info(`💾 IndexedDB cache HIT: ${cacheKey}`);
+              arrayBuffer = cachedBuffer;
+            } else {
+              // Not in cache, fetch from network
+              const url = supabase.storage
+                .from(config.bucket)
+                .getPublicUrl(`${config.path}/${layer}/${filename}.${config.extension}`)
+                .data.publicUrl;
+
+              logger.info(`📥 Fetching ${instrument}/${layer}/${noteName}...`);
+
+              const response = await fetch(url);
+              if (!response.ok) {
+                logger.error(`❌ Failed to fetch ${noteName}/${layer}: ${response.status} (This should not happen with smart sample map!)`);
+                continue; // Skip this sample but continue with others
+              }
+
+              arrayBuffer = await response.arrayBuffer();
             }
-
-            const arrayBuffer = await response.arrayBuffer();
 
             // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
             // OfflineContext-decoded buffers are incompatible with the real AudioContext
             // The real AudioContext will decode these when needed during playback
 
-            // CHECKPOINT 9: Buffer caching - log each cache operation
-            const cacheKey = `${instrument}-${layer}-${noteName}`;
-            console.log('🔍 [CHECKPOINT-9] Caching buffer:', {
-              cacheKey,
-              instrument,
-              layer,
-              noteName,
-              bufferSizeKB: Math.round(arrayBuffer.byteLength / 1024),
-            });
+            // Only cache if we fetched from network (not from IndexedDB)
+            if (!cachedBuffer) {
+              // CHECKPOINT 9: Buffer caching - log each cache operation
+              console.log('[SAMPLES] Caching buffer:', {
+                cacheKey,
+                instrument,
+                layer,
+                noteName,
+                bufferSizeKB: Math.round(arrayBuffer.byteLength / 1024),
+              });
 
-            // CRITICAL FIX: Cache raw ArrayBuffer (not decoded AudioBuffer)
-            // This allows the real AudioContext to decode it later at the correct sample rate
-            GlobalSampleCache.getInstance().cacheBuffer(
-              cacheKey,
-              arrayBuffer // ✅ BUG #2 FIX: Pass ArrayBuffer, not AudioBuffer
-            );
+              // CRITICAL FIX: Cache raw ArrayBuffer (not decoded AudioBuffer)
+              // This allows the real AudioContext to decode it later at the correct sample rate
+              // PERSISTENT CACHE: Also stores to IndexedDB for cross-session persistence
+              await GlobalSampleCache.getInstance().cacheBuffer(
+                cacheKey,
+                arrayBuffer // ✅ BUG #2 FIX: Pass ArrayBuffer, not AudioBuffer
+              );
 
-            console.log('🔍 [CHECKPOINT-9-CACHED] Buffer cached successfully:', cacheKey);
+              console.log('[SAMPLES] Buffer cached successfully (memory + IndexedDB):', cacheKey);
+            } else {
+              // Already in cache, just restore to memory if needed
+              const memoryCache = GlobalSampleCache.getInstance().getCachedBuffer(cacheKey);
+              if (!memoryCache) {
+                console.log('[SAMPLES][IndexedDB-Restore] Restoring from IndexedDB to memory cache:', cacheKey);
+              }
+            }
 
             // CRITICAL FIX: For Grand Piano, create cache aliases for ALL notes that map to this physical sample
             // (not just notes in current exercise - allows instant switching between exercises)
+            // Only create aliases when we fetched from network (not from cache)
             let aliasCount = 0; // Declare outside if block for logging
-            if (instrument === 'grandpiano') {
+            if (!cachedBuffer && instrument === 'grandpiano') {
               // Get keyboard map from cache (already loaded above at line 614)
               const keyboardMap = GlobalSampleCache.getInstance().getCachedMetadata('grandpiano-keyboard-map');
 
-              console.log(`🔍 [ALIAS DIAGNOSTIC] Grand Piano - noteName: ${noteName}, layer: ${layer}, keyboardMap exists: ${!!keyboardMap}`);
+              console.log(`[DEBUG][Alias] Grand Piano - noteName: ${noteName}, layer: ${layer}, keyboardMap exists: ${!!keyboardMap}`);
 
               if (keyboardMap) {
                 const totalKeys = Object.keys(keyboardMap).length;
-                console.log(`🔍 [ALIAS DIAGNOSTIC] Keyboard map has ${totalKeys} entries, searching for notes that map to sample: ${noteName}`);
+                console.log(`[DEBUG][Alias] Keyboard map has ${totalKeys} entries, searching for notes that map to sample: ${noteName}`);
 
                 let matchingNotes = 0;
                 // Find ALL notes that map to this physical sample
@@ -760,9 +782,9 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
                     if (requestedNote !== noteName) {
                       // Cache under requested note name (e.g., "grandpiano-v3-Gs3" → same buffer as "grandpiano-v3-A3")
                       // Mark as context-compatible so AudioContextCompatibility doesn't clear it
-                      GlobalSampleCache.getInstance().cacheBuffer(
+                      await GlobalSampleCache.getInstance().cacheBuffer(
                         `${instrument}-${layer}-${requestedNote}`,
-                        audioBuffer,
+                        arrayBuffer,
                         { isContextCompatible: true }
                       );
                       aliasCount++;
@@ -770,40 +792,41 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
                   }
                 }
 
-                console.log(`🔍 [ALIAS DIAGNOSTIC] Found ${matchingNotes} notes mapping to ${noteName}, created ${aliasCount} aliases`);
+                console.log(`[DEBUG][Alias] Found ${matchingNotes} notes mapping to ${noteName}, created ${aliasCount} aliases`);
 
                 if (aliasCount > 0) {
-                  console.log(`🔗 [CACHE ALIAS] Created ${aliasCount} aliases for ${instrument}-${layer}-${noteName}`);
+                  console.log(`[SAMPLES][Alias] Created ${aliasCount} aliases for ${instrument}-${layer}-${noteName}`);
                   logger.info(`🔗 CACHE ALIAS: ${aliasCount} aliases for ${instrument}-${layer}-${noteName}`);
                 }
               } else {
-                console.warn(`🔍 [ALIAS DIAGNOSTIC] No keyboard map found for ${instrument} alias creation`);
+                console.warn(`[DEBUG][Alias] No keyboard map found for ${instrument} alias creation`);
                 logger.warn(`🔗 No keyboard map found for ${instrument} alias creation`);
               }
-            } else {
+            } else if (!cachedBuffer) {
               // For other instruments (Wurlitzer, Rhodes), only create aliases for notes in exercise
+              // Only when we fetched from network (not from cache)
               const requestedNotes = this.sampleToRequestedNotes.get(noteName);
-              console.log(`🔍 [ALIAS DIAGNOSTIC] ${instrument} - noteName: ${noteName}, layer: ${layer}, requestedNotes exists: ${!!requestedNotes}, requestedNotes size: ${requestedNotes?.size || 0}`);
-              console.log(`🔍 [ALIAS DIAGNOSTIC] sampleToRequestedNotes map size: ${this.sampleToRequestedNotes.size}, keys: ${Array.from(this.sampleToRequestedNotes.keys()).join(', ')}`);
+              console.log(`[DEBUG][Alias] ${instrument} - noteName: ${noteName}, layer: ${layer}, requestedNotes exists: ${!!requestedNotes}, requestedNotes size: ${requestedNotes?.size || 0}`);
+              console.log(`[DEBUG][Alias] sampleToRequestedNotes map size: ${this.sampleToRequestedNotes.size}, keys: ${Array.from(this.sampleToRequestedNotes.keys()).join(', ')}`);
 
               if (requestedNotes) {
-                console.log(`🔍 [ALIAS DIAGNOSTIC] requestedNotes for ${noteName}: ${Array.from(requestedNotes).join(', ')}`);
+                console.log(`[DEBUG][Alias] requestedNotes for ${noteName}: ${Array.from(requestedNotes).join(', ')}`);
 
                 for (const requestedNote of requestedNotes) {
                   if (requestedNote !== noteName) {
                     // Cache under requested note name (e.g., "wurlitzer-v3-As2" → same buffer as "wurlitzer-v3-A2")
                     // Mark as context-compatible so AudioContextCompatibility doesn't clear it
-                    GlobalSampleCache.getInstance().cacheBuffer(
+                    await GlobalSampleCache.getInstance().cacheBuffer(
                       `${instrument}-${layer}-${requestedNote}`,
-                      audioBuffer,
+                      arrayBuffer,
                       { isContextCompatible: true }
                     );
-                    console.log(`🔗 [CACHE ALIAS] ${instrument}-${layer}-${requestedNote} → ${noteName}`);
+                    console.log(`[SAMPLES][Alias] ${instrument}-${layer}-${requestedNote} → ${noteName}`);
                     logger.info(`🔗 CACHE ALIAS: ${instrument}-${layer}-${requestedNote} → ${noteName}`);
                   }
                 }
               } else {
-                console.warn(`🔍 [ALIAS DIAGNOSTIC] No requestedNotes found for ${instrument} sample ${noteName}`);
+                console.warn(`[DEBUG][Alias] No requestedNotes found for ${instrument} sample ${noteName}`);
               }
             }
 
@@ -814,17 +837,15 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
               ? `${aliasCount || 0} from keyboard map`
               : (this.sampleToRequestedNotes.get(noteName) ? Array.from(this.sampleToRequestedNotes.get(noteName)!) : []);
 
-            console.log(`🔊 PRELOAD CACHE: ${instrument}-${layer}-${noteName}`, {
+            console.log(`[SAMPLES] Cached: ${instrument}-${layer}-${noteName}`, {
               progress: `${samplesLoaded}/${totalSamples}`,
-              bufferDuration: audioBuffer.duration.toFixed(2),
-              sampleRate: audioBuffer.sampleRate,
-              channels: audioBuffer.numberOfChannels,
+              bufferSizeKB: Math.round(arrayBuffer.byteLength / 1024),
               aliases: aliasInfo
             });
 
             // DIAGNOSTIC: Show progress every 5 samples
             if (samplesLoaded % 5 === 0) {
-              console.log(`📊 [LOAD-PROGRESS] ${samplesLoaded}/${totalSamples} samples loaded (${Math.round((samplesLoaded/totalSamples)*100)}%)`);
+              console.log(`[SAMPLES][Progress] ${samplesLoaded}/${totalSamples} samples loaded (${Math.round((samplesLoaded/totalSamples)*100)}%)`);
             }
 
             logger.info(`🔊 CACHE BUFFER: ${instrument}-${layer}-${noteName} cached (${samplesLoaded}/${totalSamples})`);
@@ -841,7 +862,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
       const duration = performance.now() - startTime;
 
       // EVIDENCE: End of preloading
-      console.log('✅ [PRELOAD COMPLETE] Harmony samples preloaded', {
+      console.log('✅ [SAMPLES] Harmony samples preloaded', {
         timestamp: new Date().toISOString(),
         durationMs: duration.toFixed(2),
         samplesLoaded,

@@ -60,10 +60,10 @@ export class AudioContextManager {
 
       this.context = AudioContextManager.globalContext;
 
-      // Resume if suspended
-      if (this.context.state === 'suspended') {
-        await this.resume();
-      }
+      // 🔧 FIX: DON'T resume during initialization - let AudioProvider handle it on user gesture
+      // The context will be resumed when the user clicks (handled in AudioProvider)
+      // Calling resume() here would block initialization waiting for user interaction (5 second timeout)!
+      logger.info('AudioContext will be resumed on first user interaction');
 
       return this.context;
     }

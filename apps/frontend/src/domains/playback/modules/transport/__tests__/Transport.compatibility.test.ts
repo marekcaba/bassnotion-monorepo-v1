@@ -5,7 +5,8 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { Transport } from '../core/Transport.js';
-import { TransportWithEventBus } from '../core/TransportWithEventBus.js';
+// REMOVED: TransportWithEventBus - functionality moved to TransportController
+// import { TransportWithEventBus } from '../core/TransportWithEventBus.js';
 
 // Mock Tone.js
 vi.mock('tone', () => ({
@@ -134,38 +135,11 @@ describe('Transport API Compatibility', () => {
     });
   });
 
-  describe('TransportWithEventBus compatibility', () => {
-    const mockEventBus = {
-      emit: vi.fn(),
-      on: vi.fn(),
-      off: vi.fn(),
-    };
-
-    const transportWithEvents = new TransportWithEventBus(mockEventBus);
-
-    it('should have all base Transport methods', () => {
-      // Check that it extends Transport properly
-      expect(transportWithEvents).toBeInstanceOf(Transport);
-    });
-
-    it('should emit events on state changes', async () => {
-      const mockAudioContext = {
-        currentTime: 0,
-        sampleRate: 48000,
-        baseLatency: 0.01,
-        outputLatency: 0.02,
-        state: 'running',
-      };
-
-      await transportWithEvents.initialize(mockAudioContext as any);
-      await transportWithEvents.start();
-
-      expect(mockEventBus.emit).toHaveBeenCalledWith(
-        'transport:start',
-        expect.any(Object),
-      );
-    });
-  });
+  // REMOVED: TransportWithEventBus tests - class deleted
+  // TransportController now handles EventBus integration
+  // describe('TransportWithEventBus compatibility', () => {
+  //   ... tests removed ...
+  // });
 
   describe('return types match expectations', () => {
     it('getState should return transport state', () => {

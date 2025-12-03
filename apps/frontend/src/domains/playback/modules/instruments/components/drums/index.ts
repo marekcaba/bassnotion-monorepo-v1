@@ -5,7 +5,7 @@
  */
 
 export * from './DrumSampleEngine.js';
-export * from './DrumPatternScheduler.js';
+// REMOVED: DrumPatternScheduler.js (legacy, unused)
 export * from './DrumMixerChannel.js';
 export * from './DrumEffectsRack.js';
 
@@ -17,11 +17,7 @@ export type {
   DrumSampleEngineOptions,
 } from './DrumSampleEngine.js';
 
-export type {
-  DrumStep,
-  DrumPattern,
-  DrumSequence,
-} from './DrumPatternScheduler.js';
+// REMOVED: DrumPatternScheduler types (legacy, unused)
 
 export type {
   DrumChannelConfig,

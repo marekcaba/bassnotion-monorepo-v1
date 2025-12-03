@@ -27,6 +27,7 @@ import { useState, useEffect } from 'react';
 import { AudioContextManager } from '../modules/audio-engine/core/AudioContextManager.js';
 import type { AudioContextState } from '../modules/audio-engine/types/index.js';
 import { createStructuredLogger } from '../modules/shared/index.js';
+import { WindowRegistry } from '../services/WindowRegistry.js';
 
 const logger = createStructuredLogger('useAudioContext');
 
@@ -56,7 +57,8 @@ export function useAudioContext(): UseAudioContextReturn {
 
   useEffect(() => {
     // Get AudioEngine from global CoreServices
-    const coreServices = (window as any).__globalCoreServices;
+    // ✅ FIX: Use WindowRegistry instead of direct window access
+    const coreServices = WindowRegistry.getCoreServices();
 
     if (!coreServices) {
       logger.warn(

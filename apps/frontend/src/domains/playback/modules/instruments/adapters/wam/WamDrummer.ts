@@ -332,7 +332,7 @@ export class WamDrummerNode extends BaseNode implements WamNode {
 
     try {
       if (typeof urlOrBuffer === 'string') {
-        // First check if we have a cached buffer (from preloading)
+        // First check if we have a cached decoded AudioBuffer (memory cache)
         // Try multiple cache keys for maximum compatibility
         let cachedBuffer = GlobalSampleCache.getCachedBuffer(urlOrBuffer);
 
@@ -356,22 +356,59 @@ export class WamDrummerNode extends BaseNode implements WamNode {
         }
 
         if (cachedBuffer) {
-          logger.info(`♻️ Using cached buffer for pad ${padNumber}`);
+          logger.info(`♻️ Using cached decoded AudioBuffer for pad ${padNumber}`);
           pad.buffer = cachedBuffer;
           pad.url = urlOrBuffer;
           pad.loaded = true;
           return;
         }
 
-        // If no cached buffer, try to load from URL
-        logger.info(`📥 Loading sample from URL for pad ${padNumber}`);
-        const response = await fetch(urlOrBuffer);
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
+        // Not in memory cache - check IndexedDB for raw ArrayBuffer
+        let rawArrayBuffer: ArrayBuffer | undefined;
 
-        // Cache the buffer for future use
-        GlobalSampleCache.cacheBuffer(urlOrBuffer, audioBuffer);
-        GlobalSampleCache.cacheBuffer(`drum-pad-${padNumber}`, audioBuffer);
+        // Try IndexedDB with same key priority
+        rawArrayBuffer = await GlobalSampleCache.getCachedRawBuffer(urlOrBuffer);
+
+        if (!rawArrayBuffer) {
+          rawArrayBuffer = await GlobalSampleCache.getCachedRawBuffer(`drum-pad-${padNumber}`);
+        }
+
+        if (!rawArrayBuffer) {
+          const drumNameMap: Record<number, string> = {
+            1: 'kick',
+            3: 'snare',
+            5: 'hihat',
+          };
+          const drumName = drumNameMap[padNumber];
+          if (drumName) {
+            rawArrayBuffer = await GlobalSampleCache.getCachedRawBuffer(`drum-${drumName}`);
+          }
+        }
+
+        let audioBuffer: AudioBuffer;
+
+        if (rawArrayBuffer) {
+          // Found in IndexedDB - decode it
+          console.log(`💾 [INDEXEDDB-HIT] Using cached raw drum sample for pad ${padNumber}`);
+          logger.info(`💾 IndexedDB cache HIT for pad ${padNumber}, decoding...`);
+          audioBuffer = await this.context.decodeAudioData(rawArrayBuffer);
+
+          // Cache the decoded buffer in memory for future use
+          GlobalSampleCache.cacheBuffer(urlOrBuffer, audioBuffer);
+          GlobalSampleCache.cacheBuffer(`drum-pad-${padNumber}`, audioBuffer);
+        } else {
+          // Not in IndexedDB either - fetch from network
+          logger.info(`📥 Loading sample from URL for pad ${padNumber}`);
+          const response = await fetch(urlOrBuffer);
+          const arrayBuffer = await response.arrayBuffer();
+          audioBuffer = await this.context.decodeAudioData(arrayBuffer);
+
+          // Cache both raw (to IndexedDB) and decoded (to memory)
+          await GlobalSampleCache.cacheBuffer(urlOrBuffer, arrayBuffer);
+          await GlobalSampleCache.cacheBuffer(`drum-pad-${padNumber}`, arrayBuffer);
+          GlobalSampleCache.cacheBuffer(urlOrBuffer, audioBuffer);
+          GlobalSampleCache.cacheBuffer(`drum-pad-${padNumber}`, audioBuffer);
+        }
 
         pad.buffer = audioBuffer;
         pad.url = urlOrBuffer;

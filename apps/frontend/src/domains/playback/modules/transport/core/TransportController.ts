@@ -12,8 +12,6 @@
 import { Transport } from './Transport.js';
 import { Clock } from './Clock.js';
 import { Timeline } from './Timeline.js';
-import { Scheduler } from './Scheduler.js';
-import { EventScheduler } from '../scheduling/EventScheduler.js';
 import { MusicalPositionManager } from '../position/MusicalPositionManager.js';
 import { Service } from '../../../services/core/ServiceRegistry.js';
 import { EventBus } from '../../../services/core/EventBus.js';
@@ -44,7 +42,6 @@ export class TransportController implements Service {
 
   // Core modules
   private transport: Transport;
-  private eventScheduler: EventScheduler;
   private positionManager: MusicalPositionManager;
 
   // Dependencies
@@ -75,10 +72,6 @@ export class TransportController implements Service {
 
     // Create modules
     this.transport = new Transport(config);
-    this.eventScheduler = new EventScheduler({
-      lookAheadTime: config.lookAheadTime || 0.1,
-      scheduleInterval: 25,
-    });
     this.positionManager = new MusicalPositionManager({
       tempo: config.tempo || 120,
       timeSignature: config.timeSignature || { numerator: 4, denominator: 4 },
@@ -131,9 +124,6 @@ export class TransportController implements Service {
       const audioContext = await this.audioEngine.getContext();
       await this.transport.initialize(audioContext);
 
-      // Start event scheduler
-      this.eventScheduler.start();
-
       // Sync with Tone.js if legacy compatibility enabled
       if (this.config.enableLegacyCompatibility) {
         this.syncWithTone();
@@ -152,6 +142,18 @@ export class TransportController implements Service {
       logger.error('Failed to initialize', error as Error);
       throw error;
     }
+  }
+
+  /**
+   * Set transport start time (called by PlaybackEngine before start())
+   * This ensures audio scheduling and visual clock use the same time reference
+   */
+  setTransportStartTime(time: number): void {
+    this.transport.setTransportStartTime(time);
+    logger.info('TransportController: Transport start time set', {
+      transportStartTime: time,
+      source: 'PlaybackEngine',
+    });
   }
 
   /**
@@ -185,6 +187,31 @@ export class TransportController implements Service {
     // causing the callback to filter out all position updates
     this.state = 'playing';
     console.log('🎯 [CONTROLLER FIX] State set to playing BEFORE transport.start()');
+
+    // COUNTDOWN FIX: Set countdown offset before starting transport
+    // Transport.start() will apply this offset right before starting position updates
+    const countdownBeats = this.positionManager.getCountdownBeats();
+    if (countdownBeats > 0) {
+      // 🚨 BPM BUG FIX: Use Tone.Transport.bpm.value (source of truth) instead of this.transport.getTempo()
+      // getTempo() returns stale config.tempo (defaults to 120), but Musical Truth sets Tone.Transport.bpm
+      const bpm = Tone.Transport.bpm.value;
+      const countdownDurationSeconds = (countdownBeats / bpm) * 60;
+
+      // Set countdown offset - Transport will apply it at the right moment
+      this.transport.setCountdownOffset(countdownDurationSeconds);
+
+      console.log('🎯 [COUNTDOWN FIX] Set countdown offset on Transport', {
+        countdownBeats,
+        countdownDurationSeconds: countdownDurationSeconds.toFixed(3),
+        bpm,
+        explanation: 'Transport will apply this offset when starting position updates',
+      });
+      logger.info('🎯 [COUNTDOWN FIX] Set countdown offset', {
+        countdownBeats,
+        countdownDurationSeconds: countdownDurationSeconds.toFixed(3),
+        bpm,
+      });
+    }
 
     // Start transport
     this.transport.start();
@@ -278,9 +305,6 @@ export class TransportController implements Service {
         Tone.Transport.position = 0;
       }
     }
-
-    // Clear scheduled events
-    this.eventScheduler.clearAllEvents();
 
     // Reset position (positionManager.reset() now respects countdown offset)
     this.positionManager.reset();
@@ -400,37 +424,35 @@ export class TransportController implements Service {
       transportState: this.state
     });
 
-    // Update transport
-    this.transport.setTempo(bpm);
+    // ⚠️ DEPRECATED: This method should not be called
+    // Tempo is now managed exclusively by MusicalTruthAuthority
+    // Log warning to help identify callers
+    logger.warn('⚠️ TransportController.setTempo() called - use musicalTruth.setFromExercise() instead', {
+      requestedBpm: bpm,
+      stack: new Error().stack?.split('\n').slice(2, 4).join(' <- ')
+    });
 
-    // Update position manager
-    this.positionManager.setTempo(bpm);
+    // ✅ REMOVED: Direct Tone.Transport.bpm write
+    // musicalTruth.setFromExercise() handles Tone.js synchronization
+    // Transport.setTempo() and positionManager.setTempo() are now deprecated (do nothing)
 
-    // Sync with Tone.js
-    if (this.config.enableLegacyCompatibility) {
-      Tone.Transport.bpm.value = bpm;
-      logger.info('🎵 TransportController: Tone.js BPM updated', {
-        newToneBpm: Tone.Transport.bpm.value,
-        success: Tone.Transport.bpm.value === bpm
-      });
-
-      // FAANG FIX: Recalculate loop end if loop is enabled
-      // When tempo changes, the loop end time in seconds changes even though musical position stays same
-      if (Tone.Transport.loop) {
-        const loopRegion = this.positionManager.getLoop();
-        if (loopRegion.enabled) {
-          const startSeconds = this.positionManager.positionToSeconds(loopRegion.start);
-          const endSeconds = this.positionManager.positionToSeconds(loopRegion.end);
-          Tone.Transport.loopStart = startSeconds;
-          Tone.Transport.loopEnd = endSeconds;
-          logger.info('🔁 TransportController: Recalculated loop points for new tempo', {
-            bpm,
-            loopStart: startSeconds,
-            loopEnd: endSeconds,
-            loopStartBars: loopRegion.start.bars,
-            loopEndBars: loopRegion.end.bars
-          });
-        }
+    // FAANG FIX: Recalculate loop end if loop is enabled
+    // When tempo changes, the loop end time in seconds changes even though musical position stays same
+    // Note: Loop recalculation still works because positionManager reads from musicalTruth
+    if (this.config.enableLegacyCompatibility && Tone.Transport.loop) {
+      const loopRegion = this.positionManager.getLoop();
+      if (loopRegion.enabled) {
+        const startSeconds = this.positionManager.positionToSeconds(loopRegion.start);
+        const endSeconds = this.positionManager.positionToSeconds(loopRegion.end);
+        Tone.Transport.loopStart = startSeconds;
+        Tone.Transport.loopEnd = endSeconds;
+        logger.info('🔁 TransportController: Recalculated loop points for new tempo', {
+          bpm,
+          loopStart: startSeconds,
+          loopEnd: endSeconds,
+          loopStartBars: loopRegion.start.bars,
+          loopEndBars: loopRegion.end.bars
+        });
       }
     }
 
@@ -520,41 +542,6 @@ export class TransportController implements Service {
   }
 
   /**
-   * Schedule an event
-   */
-  scheduleEvent(
-    time: number | MusicalPosition,
-    callback: () => void,
-    priority: 'high' | 'normal' | 'low' = 'normal',
-  ): string {
-    let seconds: number;
-
-    if (typeof time === 'number') {
-      seconds = time;
-    } else {
-      seconds = this.positionManager.positionToSeconds(time);
-    }
-
-    const eventId = `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    this.eventScheduler.scheduleEvent({
-      id: eventId,
-      time: seconds,
-      callback,
-      priority,
-    });
-
-    return eventId;
-  }
-
-  /**
-   * Cancel scheduled event
-   */
-  cancelEvent(eventId: string): void {
-    this.eventScheduler.cancelEvent(eventId);
-  }
-
-  /**
    * Get current state
    */
   getState(): TransportState {
@@ -596,11 +583,9 @@ export class TransportController implements Service {
    */
   getMetrics(): TimingMetrics & { scheduler: any } {
     const transportMetrics = this.transport.getMetrics();
-    const schedulerMetrics = this.eventScheduler.getMetrics();
 
     return {
       ...transportMetrics,
-      scheduler: schedulerMetrics,
     };
   }
 
@@ -615,7 +600,6 @@ export class TransportController implements Service {
 
     // Dispose modules
     this.transport.destroy();
-    this.eventScheduler.destroy();
     this.positionManager.destroy();
 
     // Clear singleton
@@ -654,26 +638,34 @@ export class TransportController implements Service {
    * Setup event listeners
    */
   private setupEventListeners(): void {
-    // Listen to transport position updates
+    // Listen to transport position updates from internal timing (sample-accurate)
     this.transport.onPositionUpdate((seconds) => {
       // POSITION RESET BUG FIX: Ignore position updates when not playing
       // This prevents stale callbacks from overwriting the reset position after stop()
       // Race condition: timing worker fires final update AFTER stop() resets position
       if (this.state !== 'playing') {
-        // REMOVED SPAM: This fires 40x/second when stopped, flooding console
-        // console.log('🔴 [CONTROLLER DEBUG] Ignoring position update - state not playing');
         return;
       }
 
-      // REMOVED SPAM: This fires 40x/second during playback, flooding console
-      // console.log('✅ [CONTROLLER DEBUG] Position update ACCEPTED');
-
-      // Update the raw position internally
+      // Update position using internal transport timing (AudioContext.currentTime)
+      // This is sample-accurate and reliable, unlike Tone.Transport.position
       this.positionManager.updatePosition(seconds);
 
-      // CRITICAL: Emit DISPLAY position (adjusted for countdown) to UI
-      // This ensures the clock shows -1:1:00 during countdown, 1:1:00 for exercise start
+      // Get display position (adjusted for countdown using SIMPLIFIED logic)
+      // The simplified getDisplayPosition() eliminates Math.floor() jumps
       const displayPosition = this.positionManager.getDisplayPosition();
+      const rawPosition = this.positionManager.getPosition();
+
+      // POSITION DEBUG: Log the transformation (reduced frequency)
+      if (Math.random() < 0.1) { // 10% of updates
+        console.log('🎵 [POSITION UPDATE] Internal timing', {
+          seconds: seconds.toFixed(3),
+          rawPosition: `${rawPosition.bars}:${rawPosition.beats}:${rawPosition.sixteenths}`,
+          displayPosition: `${displayPosition.bars}:${displayPosition.beats}:${displayPosition.sixteenths}`,
+          countdownBeats: this.positionManager.getCountdownBeats(),
+          note: 'Sample-accurate timing + simplified countdown = smooth clock!',
+        });
+      }
 
       // Emit position update (using the correct event name that useTransport expects)
       this.eventBus.emit('transport:position-updated', {
@@ -697,7 +689,9 @@ export class TransportController implements Service {
    * Sync with Tone.js for legacy compatibility
    */
   private syncWithTone(): void {
-    // Sync initial state
+    // ✅ NOTE: This reads from musicalTruth via positionManager
+    // musicalTruth.setFromExercise() already synchronizes Tone.Transport.bpm,
+    // but this provides additional sync for legacy compatibility mode
     Tone.Transport.bpm.value = this.positionManager.getTempo();
     const timeSignature = this.positionManager.getTimeSignature();
     Tone.Transport.timeSignature = [

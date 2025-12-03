@@ -280,14 +280,6 @@ export class SampleAccurateClock {
    * Get current time in seconds
    */
   getCurrentTime(): number {
-    console.log('🔄 [SAMPLE-ACCURATE-CLOCK DIAGNOSTIC] getCurrentTime() called', {
-      currentTime: this.state.currentTime.toFixed(6),
-      currentFrame: this.state.currentFrame,
-      isRunning: this.state.isRunning,
-      updateCount: this.state.updateCount,
-      lastUpdateTime: this.state.lastUpdateTime,
-      hasReceivedUpdates: this.state.updateCount > 0,
-    });
     return this.state.currentTime;
   }
 

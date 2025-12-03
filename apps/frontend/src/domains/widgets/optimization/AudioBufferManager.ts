@@ -15,6 +15,11 @@
  * @version 1.0.0
  */
 
+import { GlobalSampleCache } from '@/domains/playback/modules/storage/cache/GlobalSampleCache.js';
+import { getLogger } from '@/utils/logger.js';
+
+const logger = getLogger('AudioBufferManager');
+
 export interface AudioBufferConfig {
   sampleRate: number;
   bufferSize: number;
@@ -96,9 +101,6 @@ export class AudioBufferManager {
       (typeof AudioContext !== 'undefined' && AudioContext);
 
     if (!AudioContextConstructor) {
-      const { correlationId, logger } = useCorrelation(
-        'AudioContextConstructor',
-      );
       logger.warn('[AudioBufferManager] Web Audio API not available');
       return;
     }
@@ -228,8 +230,9 @@ export class AudioBufferManager {
       return null;
     }
 
+    // Check memory cache first (fastest path)
     if (asset.buffer) {
-      return asset.buffer; // Already loaded
+      return asset.buffer; // Already loaded in memory
     }
 
     if (!this.audioContext) {
@@ -240,12 +243,33 @@ export class AudioBufferManager {
     try {
       const startTime = performance.now();
 
-      const response = await fetch(asset.url);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+      // CRITICAL: Check IndexedDB cache BEFORE network fetch
+      const cachedRawBuffer = await GlobalSampleCache.getInstance().getCachedRawBuffer(asset.url);
+
+      let audioBuffer: AudioBuffer;
+
+      if (cachedRawBuffer) {
+        // Found in IndexedDB - decode it
+        console.log(`💾 [INDEXEDDB-HIT] Widget asset from cache: ${name}`);
+        logger.info(`💾 IndexedDB cache HIT for widget asset: ${name}`);
+        audioBuffer = await this.audioContext.decodeAudioData(cachedRawBuffer);
+      } else {
+        // Not in IndexedDB - fetch from network
+        logger.debug(`📥 Fetching widget asset: ${name}`);
+        const response = await fetch(asset.url);
+        const arrayBuffer = await response.arrayBuffer();
+
+        // Decode the audio
+        audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+
+        // Cache raw ArrayBuffer to IndexedDB for persistence
+        await GlobalSampleCache.getInstance().cacheBuffer(asset.url, arrayBuffer);
+        logger.debug(`✅ Widget asset cached to IndexedDB: ${name}`);
+      }
 
       const loadTime = performance.now() - startTime;
 
+      // Store decoded buffer in memory for instant reuse
       asset.buffer = audioBuffer;
       asset.loadTime = loadTime;
       asset.lastAccessed = Date.now();

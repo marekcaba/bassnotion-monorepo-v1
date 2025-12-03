@@ -10,7 +10,7 @@
  * This file provides a minimal implementation for backward compatibility.
  */
 
-import { useTransport } from '@/domains/playback/hooks/useTransport';
+import { useTransport } from '@/domains/playback/contexts/TransportContext';
 import { logger } from '@/domains/playback/utils/logger.js';
 
 // Re-export original interfaces for compatibility

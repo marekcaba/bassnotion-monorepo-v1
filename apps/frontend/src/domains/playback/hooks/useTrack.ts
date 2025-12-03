@@ -28,6 +28,7 @@ const logger = getLogger('track');
 import { createRegion } from '../utils/regionUtils.js';
 import { nanoid } from 'nanoid';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { WindowRegistry } from '../services/WindowRegistry.js';
 
 // Helper to wait for services to be available
 function waitForServices(timeout = 10000): Promise<void> {
@@ -40,34 +41,36 @@ function waitForServices(timeout = 10000): Promise<void> {
         const eventBus = serviceRegistry.get('eventBus');
         const audioEngine = serviceRegistry.get('audioEngine');
         if (eventBus && audioEngine) {
-          logger.debug('[useTrack] Services found in serviceRegistry');
           resolve();
           return;
         }
       } catch (e) {
-        // Services might not be registered yet
+        // serviceRegistry not ready yet, continue to WindowRegistry check
       }
 
-      // Check if services are available via window globals or registry
-      const globalServices =
-        (window as any).__globalCoreServices || (window as any).__coreServices;
-      const globalRegistry = (window as any).__serviceRegistry;
+      // Check if services are available via WindowRegistry
+      const globalServices = WindowRegistry.getCoreServices();
+      const globalRegistry = WindowRegistry.getServiceRegistry();
 
       if (globalServices && globalRegistry) {
         // Double-check that eventBus is actually available
         try {
           const eventBus = globalRegistry.get('eventBus');
           if (eventBus) {
-            logger.debug('[useTrack] Services found via window globals');
             resolve();
             return;
           }
         } catch (e) {
-          // Registry exists but eventBus not yet registered
+          // EventBus not ready yet, will retry
         }
       }
 
       if (Date.now() - startTime > timeout) {
+        logger.error('Timeout waiting for audio services', {
+          elapsed: Date.now() - startTime,
+          hasGlobalServices: !!globalServices,
+          hasGlobalRegistry: !!globalRegistry,
+        });
         reject(new Error('Timeout waiting for audio services'));
         return;
       }
@@ -79,7 +82,6 @@ function waitForServices(timeout = 10000): Promise<void> {
     // Also listen for the custom event
     const handleReady = () => {
       window.removeEventListener('audioServicesReady', handleReady);
-      logger.debug('[useTrack] Services ready via audioServicesReady event');
       resolve();
     };
     window.addEventListener('audioServicesReady', handleReady);
@@ -200,8 +202,13 @@ export function useTrack(options: UseTrackOptions): UseTrackReturn {
         await waitForServices();
         debug('Services are ready');
 
-        // Get services
-        eventBusRef.current = serviceRegistry.get<EventBus>('eventBus');
+        // Get services from global registry (not the local prop)
+        // The local serviceRegistry prop may not be the same instance as the global one
+        const globalRegistry = WindowRegistry.getServiceRegistry();
+        if (!globalRegistry) {
+          throw new Error('Global ServiceRegistry not found after waitForServices()');
+        }
+        eventBusRef.current = globalRegistry.get<EventBus>('eventBus');
         transportRef.current = TransportAdapter.getInstance();
 
         // Get or create track manager

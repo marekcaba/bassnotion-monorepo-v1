@@ -118,6 +118,15 @@ export class HarmonySchedulerV2 {
     this.cc64Builder = cc64Builder;
     this.sustainAnalyzer = sustainAnalyzer;
 
+    // DIAGNOSTIC: Log instance creation for debugging
+    console.log('[🏗️ HARMONY-V2 INSTANCE CREATED 🏗️]', {
+      instanceId,
+      tracksType: tracks?.constructor?.name,
+      isMap: tracks instanceof Map,
+      tracksSize: tracks instanceof Map ? tracks.size : 'N/A',
+      timestamp: Date.now(),
+    });
+
     // Initialize extracted modules
     this.velocityLayerSelector = new VelocityLayerSelector();
     this.sustainPedalHandler = new SustainPedalHandler();
@@ -281,6 +290,7 @@ export class HarmonySchedulerV2 {
 
     // STEP 5: Resolve buffer using BufferFallbackStrategy
     const instrument = this.currentHarmonyInstrument || 'wurlitzer';
+
     const bufferResult = BufferFallbackStrategy.resolveBuffer(
       this.harmonyBuffers,
       instrument,
@@ -380,9 +390,38 @@ export class HarmonySchedulerV2 {
         hasStopScheduled: true,
       });
 
-      // Auto-cleanup on end
+      console.log('[🔥 HARMONY-V2 NEW CODE LOADED 🔥] Source tracked!', {
+        instanceId: this.instanceId,
+        noteName,
+        mapSize: this.scheduledAudioSources.size,
+        audioTime,
+      });
+
+      // CRITICAL: DO NOT auto-cleanup on onended during normal playback!
+      // We need to keep ALL sources tracked so stopAll() can cancel future scheduled notes.
+      // Only clean up the active harmony sources (for polyphony), not the tracking Map.
       source.onended = () => {
-        this.cleanupSource(source, noteName);
+        console.log('[✅ ONENDED FIRED - NOT REMOVING FROM MAP ✅]', {
+          instanceId: this.instanceId,
+          noteName,
+          audioTime,
+          currentMapSize: this.scheduledAudioSources.size,
+          keepingSourceInMap: true,
+        });
+
+        // Only clean up the activeHarmonySources for polyphony management
+        // DO NOT remove from scheduledAudioSources - we need it for stopAll()
+        const activeSources = this.activeHarmonySources.get(noteName);
+        if (activeSources) {
+          const index = activeSources.findIndex((s) => s.source === source);
+          if (index !== -1) {
+            activeSources[index].gain.disconnect();
+            activeSources.splice(index, 1);
+          }
+          if (activeSources.length === 0) {
+            this.activeHarmonySources.delete(noteName);
+          }
+        }
       };
 
       logger.debug('Harmony MIDI note scheduled', {
@@ -407,18 +446,59 @@ export class HarmonySchedulerV2 {
 
   /**
    * Stop all active harmony sources
+   * Immediately cancels both currently playing AND future scheduled notes
    */
   stopAll(): void {
+    const mapSnapshot = Array.from(this.scheduledAudioSources.entries()).map(([source, metadata]) => ({
+      sourceState: source.playbackState,
+      metadata,
+    }));
+
+    console.log('[🛑 HARMONY-SCHEDULER-V2 STOP CALLED 🛑]', {
+      instanceId: this.instanceId,
+      scheduledCount: this.scheduledAudioSources.size,
+      activeCount: this.activeHarmonySources.size,
+      mapSnapshot: mapSnapshot.slice(0, 5), // Show first 5 for brevity
+      totalSources: mapSnapshot.length,
+    });
+
+    if (this.scheduledAudioSources.size === 0) {
+      console.error('[🚨 STOP PROBLEM 🚨] Map is EMPTY at stop time!', {
+        instanceId: this.instanceId,
+        activeHarmonySources: this.activeHarmonySources.size,
+        message: 'Sources were removed from Map before stopAll() was called!',
+        possibleCause: 'Wrong instance being called for stop! Check if there are multiple instances.',
+      });
+    }
+
+    let stoppedCount = 0;
+    let errorCount = 0;
+
     this.scheduledAudioSources.forEach((metadata, source) => {
       try {
-        source.stop();
+        // CRITICAL: Use stop(0) to stop immediately, canceling future scheduled starts
+        // Plain stop() won't cancel future starts, only stops currently playing sources
+        if (this.audioContext) {
+          source.stop(this.audioContext.currentTime);
+        } else {
+          source.stop(0);
+        }
         source.disconnect();
-      } catch {
-        // Source may have already stopped/disconnected
+        stoppedCount++;
+      } catch (e) {
+        // Source may have already stopped/disconnected or never started
+        errorCount++;
       }
     });
+
     this.scheduledAudioSources.clear();
     this.activeHarmonySources.clear();
+
+    console.log('[HARMONY-SCHEDULER-V2 STOP] Sources stopped', {
+      stoppedCount,
+      errorCount,
+      cleared: true,
+    });
   }
 
   /**
@@ -451,6 +531,11 @@ export class HarmonySchedulerV2 {
    * @private
    */
   private cleanupSource(source: AudioBufferSourceNode, noteName: string): void {
+    console.error('[🚨🚨🚨 CLEANUP-SOURCE CALLED 🚨🚨🚨] This should NEVER happen!', {
+      noteName,
+      mapSizeBefore: this.scheduledAudioSources.size,
+      stackTrace: new Error().stack,
+    });
     this.scheduledAudioSources.delete(source);
 
     const activeSources = this.activeHarmonySources.get(noteName);

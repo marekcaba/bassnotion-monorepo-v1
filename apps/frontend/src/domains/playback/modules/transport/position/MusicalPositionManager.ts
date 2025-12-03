@@ -219,16 +219,18 @@ export class MusicalPositionManager extends EventEmitter {
   getDisplayPosition(): MusicalPosition {
     const pos = this.getPosition();
 
-    if (this.countdownBeats === 0) {
-      // No countdown - return as-is
-      return pos;
-    }
+    // 🔧 REMOVED EARLY RETURN: Always use unified countdown logic below
+    // Previous early return when countdownBeats === 0 caused race condition:
+    // - Position updates could fire before countdown offset was set
+    // - Would return 1-based position (1:1:0) instead of applying countdown offset
+    // - Countdown would never display because code never reached countdown logic
+    // Now: Always proceed to unified logic that handles both countdown and normal positions
 
     // Convert position to total beats
     const beatsPerBar = this.timeSignature.numerator;
     const totalBeats = pos.bars * beatsPerBar + pos.beats + pos.sixteenths / 4;
 
-    // Subtract countdown offset
+    // Subtract countdown offset (0 if no countdown set)
     const adjustedBeats = totalBeats - this.countdownBeats;
 
     // Convert back to bars:beats:sixteenths
@@ -256,38 +258,34 @@ export class MusicalPositionManager extends EventEmitter {
       // Only when adjustedBeats >= 0 do we switch to bar 0 (which displays as bar 1)
       adjustedBars = -1;
 
-      // Calculate position for countdown (beats count DOWN from 4 to 1)
-      // Timeline mapping:
-      // absBeats 4.0-3.01 → beat 3 (displays as 4)
-      // absBeats 3.0-2.01 → beat 2 (displays as 3)
-      // absBeats 2.0-1.01 → beat 1 (displays as 2)
-      // absBeats 1.0-0.01 → beat 0 (displays as 1)
+      // 🔧 OFF-BY-ONE FIX: Calculate position for countdown (beats count DOWN from 4 to 1)
+      // Timeline mapping for 1-BASED display (UI expects beats 1,2,3,4):
+      // absBeats 4.0-3.01 → beat 4 (1-based: displays as 4)
+      // absBeats 3.0-2.01 → beat 3 (1-based: displays as 3)
+      // absBeats 2.0-1.01 → beat 2 (1-based: displays as 2)
+      // absBeats 1.0-0.01 → beat 1 (1-based: displays as 1)
       const absBeats = Math.abs(adjustedBeats);
 
       // Determine which beat we're in by using ceil
-      // absBeats=4.0: ceil=4, beat should be 3
-      // absBeats=3.9: ceil=4, beat should be 3
-      // absBeats=3.0: ceil=3, beat should be 2
-      // Pattern: beat = beatsPerBar - ceil(absBeats)
-      // But when absBeats is exactly 4.0: beat = 4 - 4 = 0, we want 3!
-      // When absBeats is 3.0: beat = 4 - 3 = 1, we want 2!
-      // Actually the pattern is: beat = ceil(absBeats) - 1
-      // absBeats=4.0: ceil=4, beat=3 ✓
-      // absBeats=3.9: ceil=4, beat=3 ✓
-      // absBeats=3.0: ceil=3, beat=2 ✓
-      // absBeats=1.1: ceil=2, beat=1 ✓
-      // absBeats=0.5: ceil=1, beat=0 ✓
-      const ceilBeats = Math.ceil(absBeats);
-      adjustedBeatsInt = ceilBeats - 1;
+      // For 1-based display, we DON'T subtract 1:
+      // absBeats=4.0: ceil=4, beat should be 4 (not 3) ✅
+      // absBeats=3.9: ceil=4, beat should be 4 ✅
+      // absBeats=3.0: ceil=3, beat should be 3 (not 2) ✅
+      // absBeats=1.1: ceil=2, beat should be 2 (not 1) ✅
+      // absBeats=0.5: ceil=1, beat should be 1 (not 0) ✅
+      adjustedBeatsInt = Math.ceil(absBeats);  // 1-based beats!
 
       // Sixteenths within the beat
       const fractionalPart = absBeats - Math.floor(absBeats);
       adjustedSixteenths = Math.floor(fractionalPart * 4);
     } else {
-      // Normal (non-countdown) position
-      adjustedBars = Math.floor(adjustedBeats / beatsPerBar);
+      // 🔧 OFF-BY-ONE FIX: Normal (non-countdown) position - 1-based display
+      // adjustedBeats=0.0: bars=1, beats=1 (was 0:0, now 1:1) ✅
+      // adjustedBeats=1.0: bars=1, beats=2 (was 0:1, now 1:2) ✅
+      // adjustedBeats=4.0: bars=2, beats=1 (was 1:0, now 2:1) ✅
+      adjustedBars = Math.floor(adjustedBeats / beatsPerBar) + 1;  // +1 for 1-based bars
       const beatsInBar = adjustedBeats % beatsPerBar;
-      adjustedBeatsInt = Math.floor(beatsInBar);
+      adjustedBeatsInt = Math.floor(beatsInBar) + 1;  // +1 for 1-based beats
       const fractionalBeat = beatsInBar % 1;
       adjustedSixteenths = Math.floor(fractionalBeat * 4);
     }
@@ -534,16 +532,25 @@ export class MusicalPositionManager extends EventEmitter {
    */
   reset(): void {
     if (this.countdownBeats > 0) {
+      // ✅ DOUBLE COUNTDOWN FIX: Properly calculate bars and beats from countdown offset
+      // BEFORE: beats: countdownBeats (e.g., 4) - WRONG! beats should be 0-3 in 4/4
+      // AFTER: Use proper modulo to wrap beats correctly
+      const beatsPerBar = this.timeSignature.numerator;
+      const bars = Math.floor(this.countdownBeats / beatsPerBar);
+      const beats = this.countdownBeats % beatsPerBar;
+
       // Reset to exercise start position (after countdown)
-      // e.g., for 4/4 time with 4-beat countdown: 0:4:0
+      // e.g., for 4/4 time with 4-beat countdown: bars=1, beats=0 (displays as 1:1:0)
       this.currentPosition = {
-        bars: 0,
-        beats: this.countdownBeats,
+        bars: bars,
+        beats: beats,
         sixteenths: 0,
         ticks: 0,
       };
       logger.info('Reset to exercise start position (stop)', {
         countdownBeats: this.countdownBeats,
+        calculatedBars: bars,
+        calculatedBeats: beats,
         position: this.currentPosition
       });
     } else {

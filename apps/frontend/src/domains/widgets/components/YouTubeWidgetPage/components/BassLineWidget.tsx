@@ -9,10 +9,11 @@ import React, {
 } from 'react';
 import { VolumeKnob } from './VolumeKnob';
 import { useTrack } from '@/domains/playback/hooks/useTrack';
-import { useTransport } from '@/domains/playback/hooks/useTransport';
+import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
 import { getLogger } from '@/utils/logger.js';
 import type { MusicalPosition } from '@bassnotion/contracts/types/musical-time';
 import type { Exercise } from '@bassnotion/contracts';
+import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 
 // Bass articulation types
 const BassArticulation = {
@@ -90,7 +91,7 @@ export function BassLineWidget({
   isAdminMode = false,
 }: BassLineWidgetProps) {
   // Get tempo directly from Transport (single source of truth)
-  const transport = useTransport();
+  const transport = useTransportContext();
   const tempo = transport.tempo;
   const [isExpanded, setIsExpanded] = useState(false);
   const [volume, setVolume] = useState(80);
@@ -247,9 +248,7 @@ export function BassLineWidget({
         let context = null;
 
         // Try to get context from global audio services
-        const globalServices =
-          (window as any).__globalCoreServices ||
-          (window as any).__coreServices;
+        const globalServices = WindowRegistry.getCoreServices();
         if (globalServices && globalServices.getAudioEngine) {
           const audioEngine = globalServices.getAudioEngine();
           if (audioEngine && audioEngine.getContext) {
@@ -449,7 +448,7 @@ export function BassLineWidget({
     if (!bassPluginRef.current) return;
 
     // Get EventBus instance
-    const eventBus = (window as any).__globalCoreServices?.getEventBus?.();
+    const eventBus = WindowRegistry.getCoreServices()?.getEventBus?.();
     if (!eventBus) {
       logger.warn('EventBus not available for bass triggers');
       return;

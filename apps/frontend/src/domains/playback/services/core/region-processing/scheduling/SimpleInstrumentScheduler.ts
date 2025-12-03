@@ -238,9 +238,12 @@ export class SimpleInstrumentScheduler {
         },
       );
 
-      // Auto-cleanup after playback
+      // CRITICAL: DO NOT auto-cleanup on onended during normal playback!
+      // We need to keep ALL sources tracked so stopAll() can cancel future scheduled sounds.
+      // The gain will be disconnected in stopAll() when we manually stop.
       source.onended = () => {
-        this.scheduledSources.delete(source);
+        // Only disconnect the gain node, but keep the source in scheduledSources Map
+        // so that stopAll() can find and cancel all future scheduled sounds
         velocityGain.disconnect();
       };
 
@@ -256,16 +259,38 @@ export class SimpleInstrumentScheduler {
 
   /**
    * Stop all scheduled sources
+   * Immediately cancels both currently playing AND future scheduled sounds
    */
   stopAll(): void {
+    console.log(`[${this.config.loggerName} STOP] Stopping all sources`, {
+      scheduledCount: this.scheduledSources.size,
+    });
+
+    let stoppedCount = 0;
+    let errorCount = 0;
+
     this.scheduledSources.forEach((metadata, source) => {
       try {
-        source.stop();
+        // CRITICAL: Use stop(0) or stop(currentTime) to immediately cancel future scheduled starts
+        // Plain stop() won't cancel sounds scheduled to start in the future
+        if (this.audioContext) {
+          source.stop(this.audioContext.currentTime);
+        } else {
+          source.stop(0);
+        }
         source.disconnect();
-      } catch {
-        // Source may have already stopped/disconnected
+        stoppedCount++;
+      } catch (e) {
+        // Source may have already stopped/disconnected or never started
+        errorCount++;
       }
     });
+
     this.scheduledSources.clear();
+
+    console.log(`[${this.config.loggerName} STOP] Sources stopped`, {
+      stoppedCount,
+      errorCount,
+    });
   }
 }

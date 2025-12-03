@@ -18,12 +18,12 @@ export function FourWidgetsCard({ widgetState, tutorialId, isAdminMode = false }
   const { state, selectedExercise, setState, harmonyInstrument } = widgetState;
 
   // CRITICAL DEBUG: Log every render
-  console.log('🔍 [STATE-FLOW-3.5] FourWidgetsCard render:', {
-    harmonyInstrument,
-    harmonyInstrumentType: typeof harmonyInstrument,
-    selectedExerciseId: selectedExercise?.id?.value,
-    stateHarmonyInstrument: state.harmonyInstrument,
-  });
+  // console.log('🔍 [STATE-FLOW-3.5] FourWidgetsCard render:', {
+  //   harmonyInstrument,
+  //   harmonyInstrumentType: typeof harmonyInstrument,
+  //   selectedExerciseId: selectedExercise?.id?.value,
+  //   stateHarmonyInstrument: state.harmonyInstrument,
+  // });
 
   // Memoize exercise by ID to prevent object reference changes
   const memoizedExercise = React.useMemo(

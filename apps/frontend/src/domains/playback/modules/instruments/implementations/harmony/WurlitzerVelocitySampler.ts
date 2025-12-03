@@ -79,6 +79,11 @@ export class WurlitzerVelocitySampler {
       cache: true,
       validate: true,
     });
+    // DIAGNOSTIC: Track instance
+    (this as any)._instanceId = `WV${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+    console.log('[WURLITZER CONSTRUCTOR]', {
+      instanceId: (this as any)._instanceId,
+    });
   }
 
   /**
@@ -86,6 +91,12 @@ export class WurlitzerVelocitySampler {
    */
   setPreferredContext(context: AudioContext): void {
     this.preferredContext = context;
+    console.log('[WURLITZER SET-CONTEXT]', {
+      instanceId: (this as any)._instanceId || 'unknown',
+      hasContext: !!context,
+      contextSampleRate: context?.sampleRate,
+      contextState: context?.state,
+    });
     logger.info('🎹 WurlitzerVelocitySampler: Preferred AudioContext set');
   }
 
@@ -151,11 +162,29 @@ export class WurlitzerVelocitySampler {
 
       // Tone.js validation removed - ensureToneLoaded() already handles loading and throws on failure
 
+      // DIAGNOSTIC: Log AudioContext selection
+      console.log('[WURLITZER CONTEXT DIAGNOSTIC]', {
+        instanceId: (this as any)._instanceId || 'unknown',
+        hasPreferredContext: !!this.preferredContext,
+        preferredContextState: this.preferredContext?.state,
+        preferredContextSampleRate: this.preferredContext?.sampleRate,
+        hasPersistentContext: !!getPersistentAudioContext(),
+        hasToneContext: !!Tone?.context,
+        toneContextState: Tone?.context?.state,
+      });
+
       this.audioContext =
         this.preferredContext ||
         getPersistentAudioContext() ||
         Tone?.context?._context ||
         (Tone as any)?._context;
+
+      console.log('[WURLITZER CONTEXT SELECTED]', {
+        selectedContextSampleRate: this.audioContext?.sampleRate,
+        sameAsPreferred: this.audioContext === this.preferredContext,
+        sameAsPersistent: this.audioContext === getPersistentAudioContext(),
+        sameAsTone: this.audioContext === Tone?.context?._context,
+      });
 
       // Ensure Tone.js context is started
       try {

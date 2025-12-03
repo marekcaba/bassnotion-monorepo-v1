@@ -15,7 +15,7 @@ import { TransportClock } from './components/TransportClock';
 import { TimingDebugWindow } from './components/TimingDebugWindow';
 import { useWidgetPageState } from '@/domains/widgets/hooks/useWidgetPageState';
 import { useAudioFretboard } from '@/domains/widgets/hooks/useAudioFretboard';
-import { useTransport } from '@/domains/playback/hooks/useTransport';
+import { TransportProvider, useTransportContext } from '@/domains/playback/contexts/TransportContext';
 // REMOVED: useExerciseSelection import - not needed for tutorial pages
 import { Button } from '@/shared/components/ui/button';
 import { Play, Pause, Volume2, Settings, Edit2, ArrowLeft } from 'lucide-react';
@@ -194,7 +194,7 @@ function YouTubeWidgetPageContent({
   // Tutorial pages should use local state only, not global exercise selection
 
   // Get transport for seek functionality
-  const transport = useTransport();
+  const transport = useTransportContext();
   const [is3DMode, setIs3DMode] = React.useState(false);
   const [selectedDots, setSelectedDots] = React.useState<Map<string, number[]>>(
     new Map(),
@@ -343,14 +343,14 @@ function YouTubeWidgetPageContent({
           setSelectedExerciseId(firstExercise.id);
           // Update widget state after a frame
           requestAnimationFrame(() => {
-            console.log('🔍 [STATE-FLOW-0] Calling setSelectedExercise with:', {
-              exerciseId: firstExercise.id,
-              exerciseTitle: firstExercise.title,
-              harmonyInstrument: firstExercise.harmonyInstrument,
-              harmony_instrument: firstExercise.harmony_instrument,
-              hasHarmonyInstrument: !!firstExercise.harmonyInstrument,
-              allKeys: Object.keys(firstExercise),
-            });
+            // console.log('🔍 [STATE-FLOW-0] Calling setSelectedExercise with:', {
+            //   exerciseId: firstExercise.id,
+            //   exerciseTitle: firstExercise.title,
+            //   harmonyInstrument: firstExercise.harmonyInstrument,
+            //   harmony_instrument: firstExercise.harmony_instrument,
+            //   hasHarmonyInstrument: !!firstExercise.harmonyInstrument,
+            //   allKeys: Object.keys(firstExercise),
+            // });
             widgetStateRef.current.setSelectedExercise(firstExercise);
             console.log('✅ [YOUTUBE-WIDGET] Exercise set in widgetState');
             // REMOVED: globalExerciseSelection update - not needed
@@ -464,6 +464,15 @@ function YouTubeWidgetPageContent({
                 logger.info('Samples loaded successfully for exercise:', {
                   instrument: exercise.harmonyInstrument,
                   result,
+                });
+
+                // CRITICAL FIX: Emit event to trigger HarmonyWidget re-registration
+                // This ensures harmony track gets registered after samples finish loading
+                console.log('📢 [EXERCISE-SELECT] Emitting samples-loaded event for HarmonyWidget');
+                emitGlobalEvent('harmony-samples-loaded', {
+                  exerciseId: exercise.id,
+                  instrument: exercise.harmonyInstrument,
+                  samplesLoaded: result.loaded,
                 });
               })
               .catch((error) => {
@@ -861,16 +870,18 @@ export function YouTubeWidgetPage({
   });
 
   return (
-    <SyncProvider
-      debugMode={false} // Disable debug mode to reduce console noise
-      monitoringInterval={30000} // 30 seconds - much less frequent to prevent re-render loops
-      enableGlobalMonitoring={false} // CRITICAL FIX: Disable monitoring to prevent 1s re-render loop
-    >
-      <YouTubeWidgetPageContent
-        tutorialData={tutorialData}
-        tutorialSlug={tutorialSlug}
-        exercises={exercises}
-      />
-    </SyncProvider>
+    <TransportProvider>
+      <SyncProvider
+        debugMode={false} // Disable debug mode to reduce console noise
+        monitoringInterval={30000} // 30 seconds - much less frequent to prevent re-render loops
+        enableGlobalMonitoring={false} // CRITICAL FIX: Disable monitoring to prevent 1s re-render loop
+      >
+        <YouTubeWidgetPageContent
+          tutorialData={tutorialData}
+          tutorialSlug={tutorialSlug}
+          exercises={exercises}
+        />
+      </SyncProvider>
+    </TransportProvider>
   );
 }

@@ -13,6 +13,7 @@ import type { Sampler } from 'tone';
 import type { AudioSampleMetadata } from '@bassnotion/contracts';
 import { EventBus, createStructuredLogger } from '../../shared/index.js';
 import { SampleCache, type CacheConfig } from './SampleCache.js';
+import { LocalProvider, type LocalProviderConfig } from '../providers/LocalProvider.js';
 
 const logger = createStructuredLogger('GlobalSampleCache');
 
@@ -60,6 +61,9 @@ export class GlobalSampleCacheImpl {
   private sampleCache: SampleCache;
   private eventBus: EventBus;
 
+  // Persistent storage for IndexedDB caching
+  private localStorage: LocalProvider | null = null;
+
   private constructor() {
     this.eventBus = new EventBus();
 
@@ -74,6 +78,40 @@ export class GlobalSampleCacheImpl {
     };
 
     this.sampleCache = new SampleCache(cacheConfig, this.eventBus);
+
+    // Initialize LocalProvider for persistent IndexedDB cache
+    this.initializeLocalStorage();
+  }
+
+  /**
+   * Initialize LocalProvider for persistent sample caching
+   */
+  private initializeLocalStorage(): void {
+    try {
+      console.log('[INDEXEDDB-DEBUG] Initializing LocalProvider...');
+      const localConfig: LocalProviderConfig = {
+        dbName: 'BassNotionAudioSamples',
+        dbVersion: 1,
+        objectStoreName: 'samples',
+        maxStorageSize: 500 * 1024 * 1024, // 500MB
+        enableCompression: false, // Audio files are already compressed (OGG)
+        metadataPrefix: 'sample_meta_',
+      };
+
+      this.localStorage = new LocalProvider(localConfig, this.eventBus);
+      console.log('[INDEXEDDB-DEBUG] LocalProvider instance created:', !!this.localStorage);
+      logger.info('✅ LocalProvider initialized for persistent sample caching');
+
+      // Log when IndexedDB is ready
+      this.eventBus.on('storage:connected', (event) => {
+        console.log('[INDEXEDDB-DEBUG] IndexedDB connected:', event);
+        logger.info('💾 IndexedDB ready for persistent caching');
+      });
+    } catch (error) {
+      console.error('[INDEXEDDB-DEBUG] Failed to initialize LocalProvider:', error);
+      logger.warn('Failed to initialize LocalProvider, will use memory-only cache', error as Error);
+      this.localStorage = null;
+    }
   }
 
   static getInstance(): GlobalSampleCacheImpl {
@@ -130,22 +168,27 @@ export class GlobalSampleCacheImpl {
    * BUG #2 FIX: This method now accepts both AudioBuffer and ArrayBuffer.
    * - AudioBuffer: Must be from the CURRENT AudioContext (validate with isContextCompatible)
    * - ArrayBuffer: Raw audio data that will be decoded by AudioEngine when needed
+   *
+   * PERSISTENT CACHE: Also stores to IndexedDB for cross-session persistence
    */
-  cacheBuffer(
+  async cacheBuffer(
     path: string,
     buffer: AudioBuffer | ArrayBuffer,
     options?: { isContextCompatible?: boolean },
-  ): void {
+  ): Promise<void> {
     const existing = this.samples.get(path);
 
     // Check if this is a raw ArrayBuffer or decoded AudioBuffer
     if (buffer instanceof ArrayBuffer) {
       // Raw audio data - cache for later decoding
+      // ✅ FIX: Preserve existing decoded buffer if present (prevent data loss on double-caching)
       this.samples.set(path, {
         url: existing?.url || path,
         rawBuffer: buffer,
+        buffer: existing?.buffer, // ✅ Keep decoded AudioBuffer if it exists
         loadedAt: Date.now(),
         type: 'raw',
+        isContextCompatible: existing?.isContextCompatible, // ✅ Preserve compatibility flag
       });
 
       // Also cache in new system
@@ -161,6 +204,29 @@ export class GlobalSampleCacheImpl {
       logger.info(
         `📦 Cached raw ArrayBuffer: ${path} (${Math.round(buffer.byteLength / 1024)}KB)`,
       );
+
+      // Store to IndexedDB for persistence across sessions
+      if (this.localStorage) {
+        try {
+          console.log(`[INDEXEDDB-DEBUG] Attempting to store ${path} to IndexedDB...`);
+          const result = await this.localStorage.store(path, buffer, {
+            contentType: 'audio/ogg', // Samples are OGG format
+            metadata: {
+              cachedAt: Date.now(),
+              size: buffer.byteLength,
+              type: 'raw-audio'
+            },
+          });
+          console.log(`[INDEXEDDB-DEBUG] Store result for ${path}:`, result);
+          logger.info(`💾 Persisted to IndexedDB: ${path} (${Math.round(buffer.byteLength / 1024)}KB)`);
+        } catch (error) {
+          console.error(`[INDEXEDDB-DEBUG] Failed to store ${path}:`, error);
+          logger.warn(`Failed to persist ${path} to IndexedDB, will re-download on next session`, error as Error);
+        }
+      } else {
+        console.warn(`[INDEXEDDB-DEBUG] localStorage is null, cannot persist ${path}`);
+        logger.warn(`LocalProvider not initialized, skipping IndexedDB cache for ${path}`);
+      }
     } else if (buffer instanceof AudioBuffer) {
       // Decoded AudioBuffer - validate it's from the correct context
       if (!options?.isContextCompatible) {
@@ -171,8 +237,10 @@ export class GlobalSampleCacheImpl {
         );
       }
 
+      // ✅ FIX: Preserve existing raw buffer if present (prevent data loss on double-caching)
       this.samples.set(path, {
         url: existing?.url || path,
+        rawBuffer: existing?.rawBuffer, // ✅ Keep raw ArrayBuffer if it exists
         buffer,
         loadedAt: Date.now(),
         type: 'buffer',
@@ -235,20 +303,46 @@ export class GlobalSampleCacheImpl {
   /**
    * Get cached raw ArrayBuffer (undecoded audio data)
    * BUG #2 FIX: Use this to get raw audio data that can be decoded by AudioEngine
+   * PERSISTENT CACHE: Checks IndexedDB if not in memory
    */
-  getCachedRawBuffer(path: string): ArrayBuffer | undefined {
+  async getCachedRawBuffer(path: string): Promise<ArrayBuffer | undefined> {
+    // Check memory cache first (fast)
     const sample = this.samples.get(path);
     const rawBuffer = sample?.rawBuffer;
 
     if (rawBuffer) {
       logger.info(
-        `♻️ Cache HIT for raw ArrayBuffer: ${path} (${Math.round(rawBuffer.byteLength / 1024)}KB)`,
+        `♻️ Memory cache HIT for raw ArrayBuffer: ${path} (${Math.round(rawBuffer.byteLength / 1024)}KB)`,
       );
-    } else {
-      logger.info(`❌ Cache MISS for raw ArrayBuffer: ${path}`);
+      return rawBuffer;
     }
 
-    return rawBuffer;
+    // Check IndexedDB persistent cache
+    if (this.localStorage) {
+      try {
+        const result = await this.localStorage.retrieve(path);
+        if (result.success && result.data) {
+          logger.info(
+            `💾 IndexedDB cache HIT for raw ArrayBuffer: ${path} (${Math.round(result.data.byteLength / 1024)}KB)`,
+          );
+
+          // Restore to memory cache for faster subsequent access
+          this.samples.set(path, {
+            url: path,
+            rawBuffer: result.data,
+            loadedAt: Date.now(),
+            type: 'raw',
+          });
+
+          return result.data;
+        }
+      } catch (error) {
+        logger.warn(`Failed to retrieve ${path} from IndexedDB`, error as Error);
+      }
+    }
+
+    logger.info(`❌ Cache MISS for raw ArrayBuffer: ${path}`);
+    return undefined;
   }
 
   /**
@@ -578,6 +672,8 @@ export const GlobalSampleCache = {
     GlobalSampleCacheImpl.getInstance().hasSample(url),
   getCachedBuffer: (url: string) =>
     GlobalSampleCacheImpl.getInstance().getCachedBuffer(url),
+  getCachedRawBuffer: async (url: string) =>
+    GlobalSampleCacheImpl.getInstance().getCachedRawBuffer(url),
   getCachedUrl: (url: string) =>
     GlobalSampleCacheImpl.getInstance().getCachedUrl(url),
   getCachedSampler: (url: string) =>
@@ -588,7 +684,7 @@ export const GlobalSampleCache = {
     GlobalSampleCacheImpl.getInstance().getCachedInstrumentNames(),
   cacheUrl: (path: string, url: string) =>
     GlobalSampleCacheImpl.getInstance().cacheUrl(path, url),
-  cacheBuffer: (path: string, buffer: AudioBuffer, options?: { isContextCompatible?: boolean }) =>
+  cacheBuffer: async (path: string, buffer: AudioBuffer | ArrayBuffer, options?: { isContextCompatible?: boolean }) =>
     GlobalSampleCacheImpl.getInstance().cacheBuffer(path, buffer, options),
   cacheSampler: (path: string, sampler: Sampler) =>
     GlobalSampleCacheImpl.getInstance().cacheSampler(path, sampler),

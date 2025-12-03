@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { VolumeKnob } from './VolumeKnob';
 import { useTrack } from '@/domains/playback/hooks/useTrack';
-import { useTransport } from '@/domains/playback/hooks/useTransport';
+import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
 import {
   ensureAudioContext,
   withAudioContext,
@@ -18,6 +18,7 @@ import type {
 import { toMusicalPosition } from '@/domains/playback/types/pattern';
 import { EventBus } from '@/domains/playback/services/core/EventBus';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 
 // Metronome sound presets
 const MetronomeSound = {
@@ -65,7 +66,7 @@ export function MetronomeWidget({
     useCorrelation('MetronomeWidget');
 
   // Get tempo directly from Transport (single source of truth)
-  const transport = useTransport();
+  const transport = useTransportContext();
   const bpm = transport.tempo;
 
   const [metronomeDots, setMetronomeDots] = useState(initialDots);
@@ -245,9 +246,7 @@ export function MetronomeWidget({
         let context = null;
 
         // Try to get context from global audio services
-        const globalServices =
-          (window as any).__globalCoreServices ||
-          (window as any).__coreServices;
+        const globalServices = WindowRegistry.getCoreServices();
         if (globalServices && globalServices.getAudioEngine) {
           const audioEngine = globalServices.getAudioEngine();
           if (audioEngine && audioEngine.getContext) {
@@ -329,27 +328,29 @@ export function MetronomeWidget({
               region,
             });
 
-            // Register track with RegionProcessor to enable pattern playback
-            if (globalServices && globalServices.getRegionProcessor) {
-              const regionProcessor = globalServices.getRegionProcessor();
-              regionProcessor.registerTracks([{
-                id: 'metronome-track',
-                name: 'Metronome',
-                instrumentType: 'metronome',
-                regions: [{
-                  id: region.id,
-                  trackId: 'metronome-track',
-                  startTime: 0,
-                  duration: beats * 4, // Convert beats to seconds (assuming 4/4 time)
-                  pattern: {
-                    id: 'metronome-pattern',
-                    name: 'Metronome Pattern',
-                    type: 'metronome',
-                    events: pattern.events
-                  }
-                }]
-              }]);
-              logger.debug('Registered track with RegionProcessor');
+            // Register track with PlaybackEngine to enable pattern playback
+            if (globalServices && globalServices.getPlaybackEngine) {
+              const playbackEngine = globalServices.getPlaybackEngine();
+              if (playbackEngine) {
+                playbackEngine.registerTrack({
+                  id: 'metronome-track',
+                  name: 'Metronome',
+                  instrumentType: 'metronome',
+                  regions: [{
+                    id: region.id,
+                    trackId: 'metronome-track',
+                    startTime: 0,
+                    duration: beats * 4, // Convert beats to seconds (assuming 4/4 time)
+                    pattern: {
+                      id: 'metronome-pattern',
+                      name: 'Metronome Pattern',
+                      type: 'metronome',
+                      events: pattern.events
+                    }
+                  }]
+                });
+                logger.debug('Registered track with PlaybackEngine');
+              }
             }
           }
         } else {
@@ -421,27 +422,31 @@ export function MetronomeWidget({
           pattern,
         });
 
-        // Update RegionProcessor with new pattern
-        const globalServices = (window as any).__globalCoreServices || (window as any).__coreServices;
-        if (globalServices && globalServices.getRegionProcessor) {
-          const regionProcessor = globalServices.getRegionProcessor();
-          regionProcessor.updateTracks([{
-            id: 'metronome-track',
-            name: 'Metronome',
-            instrumentType: 'metronome',
-            regions: [{
-              id: region.id,
-              trackId: 'metronome-track',
-              startTime: 0,
-              duration: beats * 4,
-              pattern: {
-                id: 'metronome-pattern',
-                name: 'Metronome Pattern',
-                type: 'metronome',
-                events: pattern.events
-              }
-            }]
-          }]);
+        // Update PlaybackEngine with new pattern
+        const globalServices = WindowRegistry.getCoreServices();
+        if (globalServices && globalServices.getPlaybackEngine) {
+          const playbackEngine = globalServices.getPlaybackEngine();
+          if (playbackEngine) {
+            // Unregister old track, then register new one
+            playbackEngine.unregisterTrack('metronome-track');
+            playbackEngine.registerTrack({
+              id: 'metronome-track',
+              name: 'Metronome',
+              instrumentType: 'metronome',
+              regions: [{
+                id: region.id,
+                trackId: 'metronome-track',
+                startTime: 0,
+                duration: beats * 4,
+                pattern: {
+                  id: 'metronome-pattern',
+                  name: 'Metronome Pattern',
+                  type: 'metronome',
+                  events: pattern.events
+                }
+              }]
+            });
+          }
         }
       }
     },
@@ -478,27 +483,31 @@ export function MetronomeWidget({
         pattern,
       });
 
-      // Update RegionProcessor with new pattern
+      // Update PlaybackEngine with new pattern
       const globalServices = (window as any).__globalCoreServices || (window as any).__coreServices;
-      if (globalServices && globalServices.getRegionProcessor) {
-        const regionProcessor = globalServices.getRegionProcessor();
-        regionProcessor.updateTracks([{
-          id: 'metronome-track',
-          name: 'Metronome',
-          instrumentType: 'metronome',
-          regions: [{
-            id: region.id,
-            trackId: 'metronome-track',
-            startTime: 0,
-            duration: beats * 4,
-            pattern: {
-              id: 'metronome-pattern',
-              name: 'Metronome Pattern',
-              type: 'metronome',
-              events: pattern.events
-            }
-          }]
-        }]);
+      if (globalServices && globalServices.getPlaybackEngine) {
+        const playbackEngine = globalServices.getPlaybackEngine();
+        if (playbackEngine) {
+          // Unregister old track, then register new one
+          playbackEngine.unregisterTrack('metronome-track');
+          playbackEngine.registerTrack({
+            id: 'metronome-track',
+            name: 'Metronome',
+            instrumentType: 'metronome',
+            regions: [{
+              id: region.id,
+              trackId: 'metronome-track',
+              startTime: 0,
+              duration: beats * 4,
+              pattern: {
+                id: 'metronome-pattern',
+                name: 'Metronome Pattern',
+                type: 'metronome',
+                events: pattern.events
+              }
+            }]
+          });
+        }
       }
     }
   }, [beats, noteValue, wamPluginLoaded, createMetronomePattern]); // Removed track from dependencies to prevent loops
@@ -623,8 +632,7 @@ export function MetronomeWidget({
 
   // Monitor transport state directly from EventBus
   useEffect(() => {
-    const coreServices =
-      (window as any).__coreServices || (window as any).__globalCoreServices;
+    const coreServices = WindowRegistry.getCoreServices();
     if (!coreServices || typeof coreServices.getEventBus !== 'function') {
       return;
     }
@@ -665,8 +673,7 @@ export function MetronomeWidget({
   useEffect(() => {
     return () => {
       if (metronomePluginRef.current) {
-        const globalServices =
-          (window as any).__coreServices || (window as any).__globalCoreServices;
+        const globalServices = WindowRegistry.getCoreServices();
         if (globalServices && globalServices.getInstrumentRegistry) {
           const instrumentRegistry = globalServices.getInstrumentRegistry();
           if (instrumentRegistry.getActive('metronome') === metronomePluginRef.current) {

@@ -259,8 +259,8 @@ export class WindowRegistry {
 
     window.__bassnotion_samplesReady = ready;
 
-    // Clean up legacy key
-    delete (window as any).__samplesReady;
+    // ✅ FIX: Also set legacy key for backward compatibility with GlobalControls
+    (window as any).__samplesReady = ready;
   }
 
   /**

@@ -260,7 +260,9 @@ describe('Scheduler - Unified Audio Scheduling', () => {
   describe('Harmony Scheduling (Sustained Notes with Velocity Layers)', () => {
     beforeEach(() => {
       // Create buffers for harmony note C4 with all velocity layers
+      // Wurlitzer (default) has 5 layers: v1-v5
       const buffers = {
+        C4_v1: createMockBuffer(),
         C4_v2: createMockBuffer(),
         C4_v3: createMockBuffer(),
         C4_v4: createMockBuffer(),
@@ -290,7 +292,7 @@ describe('Scheduler - Unified Audio Scheduling', () => {
       expect(success).toBe(true);
     });
 
-    it('should select v2 layer for quiet notes (velocity 0-31)', () => {
+    it('should select v1 layer for very quiet notes (velocity 0-25)', () => {
       const event: PatternEvent = {
         type: 'note',
         timeOffset: 0,
@@ -303,55 +305,75 @@ describe('Scheduler - Unified Audio Scheduling', () => {
         duration: 0.5,
       });
 
-      // Should use C4_v2 buffer
+      // Should use C4_v1 buffer (Wurlitzer layer for velocity 0-25)
       expect(mockAudioContext.createBufferSource).toHaveBeenCalled();
     });
 
-    it('should select v3 layer for medium-soft notes (velocity 32-63)', () => {
+    it('should select v2 layer for quiet notes (velocity 26-51)', () => {
       const event: PatternEvent = {
         type: 'note',
         timeOffset: 0,
-        velocity: 50,
+        velocity: 40,
       };
 
       scheduler.schedule('harmony', event, 1.0, {
-        velocity: 50,
+        velocity: 40,
         noteName: 'C4',
         duration: 0.5,
       });
 
+      // Should use C4_v2 buffer (Wurlitzer layer for velocity 26-51)
       expect(mockAudioContext.createBufferSource).toHaveBeenCalled();
     });
 
-    it('should select v4 layer for medium-loud notes (velocity 64-95)', () => {
+    it('should select v3 layer for medium notes (velocity 52-76)', () => {
       const event: PatternEvent = {
         type: 'note',
         timeOffset: 0,
-        velocity: 80,
+        velocity: 65,
       };
 
       scheduler.schedule('harmony', event, 1.0, {
-        velocity: 80,
+        velocity: 65,
         noteName: 'C4',
         duration: 0.5,
       });
 
+      // Should use C4_v3 buffer (Wurlitzer layer for velocity 52-76)
       expect(mockAudioContext.createBufferSource).toHaveBeenCalled();
     });
 
-    it('should select v5 layer for loud notes (velocity 96-127)', () => {
+    it('should select v4 layer for loud notes (velocity 77-102)', () => {
       const event: PatternEvent = {
         type: 'note',
         timeOffset: 0,
-        velocity: 110,
+        velocity: 90,
       };
 
       scheduler.schedule('harmony', event, 1.0, {
-        velocity: 110,
+        velocity: 90,
         noteName: 'C4',
         duration: 0.5,
       });
 
+      // Should use C4_v4 buffer (Wurlitzer layer for velocity 77-102)
+      expect(mockAudioContext.createBufferSource).toHaveBeenCalled();
+    });
+
+    it('should select v5 layer for very loud notes (velocity 103-127)', () => {
+      const event: PatternEvent = {
+        type: 'note',
+        timeOffset: 0,
+        velocity: 115,
+      };
+
+      scheduler.schedule('harmony', event, 1.0, {
+        velocity: 115,
+        noteName: 'C4',
+        duration: 0.5,
+      });
+
+      // Should use C4_v5 buffer (Wurlitzer layer for velocity 103-127)
       expect(mockAudioContext.createBufferSource).toHaveBeenCalled();
     });
 
@@ -602,6 +624,124 @@ describe('Scheduler - Unified Audio Scheduling', () => {
       const stats = scheduler.getStats();
       expect(stats.bufferCount).toBe(2);
       expect(stats.activeSourcesCount).toBeGreaterThan(0);
+    });
+  });
+
+  // ============================================================================
+  // OCTAVE SHIFTING TESTS (Instrument-Specific Pitch Adjustment)
+  // ============================================================================
+
+  describe('Octave Shifting (Instrument-Specific)', () => {
+    it('should update octave shift when setting harmony instrument to Grand Piano', () => {
+      scheduler.setHarmonyInstrument('grandpiano');
+      const harmonyConfig = INSTRUMENT_CONFIGS.harmony;
+      expect(harmonyConfig.octaveShift).toBe(0);
+      expect(harmonyConfig.harmonyInstrument).toBe('grandpiano');
+    });
+
+    it('should update octave shift when setting harmony instrument to Wurlitzer', () => {
+      scheduler.setHarmonyInstrument('wurlitzer');
+      const harmonyConfig = INSTRUMENT_CONFIGS.harmony;
+      expect(harmonyConfig.octaveShift).toBe(12);
+      expect(harmonyConfig.harmonyInstrument).toBe('wurlitzer');
+    });
+
+    it('should update octave shift when setting harmony instrument to Rhodes', () => {
+      scheduler.setHarmonyInstrument('rhodes');
+      const harmonyConfig = INSTRUMENT_CONFIGS.harmony;
+      expect(harmonyConfig.octaveShift).toBe(12);
+      expect(harmonyConfig.harmonyInstrument).toBe('rhodes');
+    });
+
+    it('should update octave shift when setting harmony instrument to NiceKeysRhodes', () => {
+      scheduler.setHarmonyInstrument('nicekeysrhodes');
+      const harmonyConfig = INSTRUMENT_CONFIGS.harmony;
+      expect(harmonyConfig.octaveShift).toBe(12);
+      expect(harmonyConfig.harmonyInstrument).toBe('nicekeysrhodes');
+    });
+
+    it('should apply octave shift when scheduling harmony note with MIDI number', () => {
+      // Setup buffers for Grand Piano (no octave shift)
+      // MIDI 60 = C4, velocity 64 = v3 layer
+      const buffers = {
+        C4_v1: createMockBuffer(),
+        C4_v2: createMockBuffer(),
+        C4_v3: createMockBuffer(),
+        C4_v4: createMockBuffer(),
+        C4_v5: createMockBuffer(),
+      };
+      scheduler.setBuffers(buffers, mockDestination);
+      scheduler.setHarmonyInstrument('grandpiano');
+
+      const event: PatternEvent = { type: 'harmony-note', timeOffset: 0 };
+      // MIDI 60 should map to C4 for Grand Piano
+      const result = scheduler.schedule('harmony', event, 1.0, {
+        midiNote: 60,
+        velocity: 64,
+        duration: 0.5,
+      });
+
+      expect(result).toBe(true);
+      const mockSource = mockAudioContext.createBufferSource();
+      expect(mockSource.start).toHaveBeenCalledWith(1.0);
+    });
+
+    it('should apply octave shift for Wurlitzer (MIDI 60 → C3 after -12 shift)', () => {
+      // Setup buffers for Wurlitzer (octave shift = 12)
+      const buffers = {
+        C3_v3: createMockBuffer(), // MIDI 60 - 12 = MIDI 48 = C3
+      };
+      scheduler.setBuffers(buffers, mockDestination);
+      scheduler.setHarmonyInstrument('wurlitzer');
+
+      const event: PatternEvent = { type: 'harmony-note', timeOffset: 0 };
+      // MIDI 60 should map to C3 for Wurlitzer (60 - 12 = 48 = C3)
+      scheduler.schedule('harmony', event, 1.0, {
+        midiNote: 60,
+        velocity: 64,
+        duration: 0.5,
+      });
+
+      const mockSource = mockAudioContext.createBufferSource();
+      expect(mockSource.start).toHaveBeenCalledWith(1.0);
+    });
+
+    it('should convert MIDI note to note name with s for sharps', () => {
+      const buffers = {
+        // C# (MIDI 61) with all velocity layers
+        Cs4_v1: createMockBuffer(),
+        Cs4_v2: createMockBuffer(),
+        Cs4_v3: createMockBuffer(),
+        Cs4_v4: createMockBuffer(),
+        Cs4_v5: createMockBuffer(),
+        // D# (MIDI 63) with all velocity layers
+        Ds4_v1: createMockBuffer(),
+        Ds4_v2: createMockBuffer(),
+        Ds4_v3: createMockBuffer(),
+        Ds4_v4: createMockBuffer(),
+        Ds4_v5: createMockBuffer(),
+      };
+      scheduler.setBuffers(buffers, mockDestination);
+      scheduler.setHarmonyInstrument('grandpiano');
+
+      // Test C# (MIDI 61)
+      const event1: PatternEvent = { type: 'harmony-note', timeOffset: 0 };
+      const result1 = scheduler.schedule('harmony', event1, 1.0, {
+        midiNote: 61,
+        velocity: 64,
+      });
+      expect(result1).toBe(true);
+
+      // Test D# (MIDI 63)
+      const event2: PatternEvent = { type: 'harmony-note', timeOffset: 0 };
+      const result2 = scheduler.schedule('harmony', event2, 1.5, {
+        midiNote: 63,
+        velocity: 64,
+      });
+      expect(result2).toBe(true);
+
+      const mockSource = mockAudioContext.createBufferSource();
+      expect(mockSource.start).toHaveBeenCalled();
     });
   });
 

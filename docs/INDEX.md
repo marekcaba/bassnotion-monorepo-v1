@@ -10,17 +10,13 @@ This is the central catalog for all documentation. Please refer to this index be
 
 ### Core Architecture
 - [Tech Stack Overview](./2.%20Technical%20docs/6.%20Tech-Stack.md)
-- [API Documentation](./API_DOCUMENTATION.md) - Complete API reference
-- [API Quick Start](./API_QUICK_START.md) - Getting started with the API
-- [Security Guidelines](./SECURITY.md) - Security best practices
+- [API Documentation](./api/API_DOCUMENTATION.md) - Complete API reference
+- [API Quick Start](./api/API_QUICK_START.md) - Getting started with the API
 
 ### Audio & Playback System
-- [Unified Transport & Track System](./UNIFIED-TRANSPORT-TRACK-SYSTEM.md) - Core playback architecture
-- [Professional DAW Synchronization](./professional-daw-synchronization-architecture.md)
-- [Professional Instruments Implementation](./professional-instruments-implementation.md)
-- [Audio Pipeline Integration Tests](./AUDIO-PIPELINE-INTEGRATION-TESTS.md)
-- [Sample Loading Flow](./SAMPLE-LOADING-FLOW.md)
-- [Pattern System Guide](./PATTERN_SYSTEM_GUIDE.md) - MIDI pattern library and swapping system
+- [Playback System Architecture](./architecture/PLAYBACK_SYSTEM_ARCHITECTURE.md) - **NEW** Complete domain reference (500+ files)
+- [Unified Transport & Track System](./implementations/UNIFIED-TRANSPORT-TRACK-SYSTEM.md) - Core playback architecture
+- [Professional DAW Synchronization](./architecture/professional-daw-synchronization-architecture.md) - Logic Pro X analysis
 
 #### Playback Domain Deep Dives
 - [Dependency Injection Architecture](./playback/dependency-injection-architecture.md)
@@ -29,14 +25,11 @@ This is the central catalog for all documentation. Please refer to this index be
 - [Performance Optimization](./playback/PERFORMANCE-OPTIMIZATION.md)
 - [MIDI Lookahead Integration](./playback/MIDI-LOOKAHEAD-INTEGRATION.md)
 
-### UI Components
-- [UI Component Inventory](./ui-component-inventory.md) - All UI components catalog
-- [3D Fretboard Implementation](./fretboard-3d-implementation.md)
-- [Fretboard Grid Connections](./fretboard-grid-connections.md)
-
 ### Instrument Implementations
-- [Drum Kit Architecture](./drum-kit-architecture.md)
-- [Salamander Piano Implementation](./salamander-piano-implementation.md)
+- [Professional Instruments](./implementations/professional-instruments-implementation.md) - Piano, Rhodes, Organ, Pad
+- [Salamander Piano](./implementations/salamander-piano-implementation.md) - Grand piano implementation
+- [Drum Kit Architecture](./architecture/drum-kit-architecture.md) - FAANG-style drum system
+- [3D Fretboard](./implementations/fretboard-3d-implementation.md) - Three.js 3D visualization
 
 ## 👨‍💻 Developer Resources
 
@@ -55,19 +48,13 @@ This is the central catalog for all documentation. Please refer to this index be
 - [Troubleshooting Flowchart](./developer-handbook/TROUBLESHOOTING_FLOWCHART.md)
 - [Debugging Examples](./developer-handbook/DEBUGGING_EXAMPLES.md)
 - [Correlation & Logging](./developer-handbook/CORRELATION_AND_LOGGING.md)
-- [Logging Guide](./LOGGING-GUIDE.md)
-- [Monitoring Guide](./MONITORING_GUIDE.md)
-- [Monitoring Dashboard](./MONITORING_DASHBOARD.md)
-- [Sentry Setup](./SENTRY_SETUP.md)
-
-### Known Issues & Gotchas
-- [React Rendering Gotchas](./REACT-RENDERING-GOTCHAS.md) - **CRITICAL**
-- [Click Blocking Debug Progress](./CLICK-BLOCKING-DEBUG-PROGRESS.md)
-
-### Testing
-- [E2E Testing Complete Guide](./2.%20Technical%20docs/8.%20E2E-Testing-Complete-Guide.md)
-- [Test Coverage Enhancement Plan](./test-coverage-enhancement-plan.md)
-- [Testing Scale Solutions](./testing-scale-solutions.md)
+- [Logging Guide](./developer-handbook/LOGGING-GUIDE.md)
+- [Log Aggregation Guide](./developer-handbook/LOG_AGGREGATION_GUIDE.md)
+- [Monitoring Guide](./developer-handbook/MONITORING_GUIDE.md)
+- [Monitoring Dashboard](./developer-handbook/MONITORING_DASHBOARD.md)
+- [Sentry Setup](./developer-handbook/SENTRY_SETUP.md)
+- [AudioContext Initialization Fix](./developer-handbook/fix-audiocontext-initialization-plan.md)
+- [First Beat Stutter Solution](./developer-handbook/fix-first-beat-stutter-solution.md)
 
 ## 📅 Project Management
 
@@ -83,15 +70,38 @@ Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
 
 ## 🔧 Backend & Infrastructure
 
-- [YouTube Batch System](./youtube-batch-system.md)
-- [Pre-commit Hooks](./PRE_COMMIT_HOOKS.md)
+- [YouTube Batch System](./developer-handbook/youtube-batch-system.md)
+- [Pre-commit Hooks](./developer-handbook/PRE_COMMIT_HOOKS.md)
 - [Rate Limiting Guide](./developer-handbook/RATE_LIMITING_GUIDE.md)
-- [API Optimization Guide](./developer-handbook/API_OPTIMIZATION_GUIDE.md) - **NEW**: Request deduplication & cost optimization
+- [API Optimization Guide](./developer-handbook/API_OPTIMIZATION_GUIDE.md) - Request deduplication & cost optimization
 - [Middleware Guide](./developer-handbook/MIDDLEWARE_GUIDE.md)
+
+## 🔐 Security
+
+- [Security Guidelines](./security/SECURITY.md) - Helmet.js, CORS, authentication, XSS, CSRF protection
+
+## 🧪 Testing Documentation
+
+- [Test Coverage Enhancement Plan](./testing/test-coverage-enhancement-plan.md) - 3 phases, 616+ tests
+- [Testing Scale Solutions](./testing/testing-scale-solutions.md) - Handling 3000+ tests, memory management, CI/CD
+- [Audio Pipeline Integration Tests](./testing/AUDIO-PIPELINE-INTEGRATION-TESTS.md) - Complete audio pipeline validation
+- [E2E Testing Complete Guide](./2.%20Technical%20docs/8.%20E2E-Testing-Complete-Guide.md) - Playwright E2E tests
+
+## 🎨 UI & Frontend
+
+- [UI Component Inventory](./developer-handbook/ui-component-inventory.md) - All UI components catalog
+- [Fretboard Grid Connections](./developer-handbook/fretboard-grid-connections.md) - 11 connection types, visual guide
+- [React Rendering Gotchas](./developer-handbook/REACT-RENDERING-GOTCHAS.md) - **CRITICAL** - Prevent infinite loops
+
+## 🎵 Audio & Instruments
+
+- [Sample Loading Flow](./developer-handbook/SAMPLE-LOADING-FLOW.md) - Audio sample loading pipeline
+- [Pattern System Guide](./developer-handbook/PATTERN_SYSTEM_GUIDE.md) - MIDI pattern library
+- [Audio Samples Upload](./implementations/audio-samples-upload-guide.md) - Supabase upload guide
 
 ## 📊 Architecture Analysis & Planning
 
-### System Analysis (from root → architecture/analysis/)
+### System Analysis
 - [BassNotion Architecture Analysis](./architecture/analysis/BASSNOTION-ARCHITECTURE-ANALYSIS.md)
 - [Playback Domain Analysis](./architecture/analysis/PLAYBACK_DOMAIN_ANALYSIS.md)
 - [Exercise Repository FAANG Analysis](./architecture/analysis/EXERCISE_REPOSITORY_FAANG_ANALYSIS.md)
@@ -100,15 +110,21 @@ Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
 - [Phase 7 Deep Investigation](./architecture/analysis/PHASE_7_DEEP_INVESTIGATION.md)
 - [Phase 7 Migration Analysis](./architecture/analysis/PHASE_7_MIGRATION_ANALYSIS.md)
 - [Root Files Audit](./architecture/analysis/ROOT_FILES_AUDIT.md) - Audit of files in root directory
+- [Legacy Widget Investigation](./architecture/analysis/LEGACY_WIDGET_INVESTIGATION_REPORT.md)
 
 ### Architecture Plans
+- [Playback System Architecture](./architecture/PLAYBACK_SYSTEM_ARCHITECTURE.md) - **NEW** Complete playback domain architecture reference
+- [Professional DAW Synchronization](./architecture/professional-daw-synchronization-architecture.md) - Logic Pro X & Ableton analysis
+- [Drum Kit Architecture](./architecture/drum-kit-architecture.md) - FAANG-style drum kit manifest system
+- [Unified Transport Technical Architecture](./architecture/unified-transport-technical-architecture.md) - Complete technical architecture
+- [Unified Transport Data Flow](./architecture/unified-transport-data-flow.md) - Data flow diagrams
 - [Multi-Track Timing Extraction Plan](./architecture/MULTI_TRACK_TIMING_EXTRACTION_PLAN.md)
 - [Pattern Scheduling Extraction Plan](./architecture/PATTERN_SCHEDULING_EXTRACTION_PLAN.md)
 - [Widget Sync Extraction Plan](./architecture/WIDGET_SYNC_EXTRACTION_PLAN.md)
 
 ## 📦 Implementation Summaries
 
-### Completed Implementations (from root → implementations/)
+### Completed Implementations
 - [Phase 2 Hybrid Architecture Progress](./implementations/PHASE_2_HYBRID_ARCHITECTURE_PROGRESS.md) - **NEW** Breaking down 3,301-line god object
 - [Phase 1 Data Extraction Summary](./implementations/PHASE_1_DATA_EXTRACTION_SUMMARY.md) - 75% code reduction via JSON configs
 - [Playback Domain Migration Summary](./implementations/PLAYBACK-DOMAIN-MIGRATION-SUMMARY.md) - Complete modular architecture migration
@@ -116,15 +132,27 @@ Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
 - [Log Aggregation Complete](./implementations/LOG_AGGREGATION_COMPLETE.md)
 - [Structured Logging Implementation Summary](./implementations/STRUCTURED_LOGGING_IMPLEMENTATION_SUMMARY.md)
 - [Structured Logging Migration Complete](./implementations/STRUCTURED_LOGGING_MIGRATION_COMPLETE.md)
-- [Widget Consolidation Summary](./implementations/WIDGET_CONSOLIDATION_SUMMARY.md)
+- [Widget Consolidation Summary](./implementations/WIDGET_CONSOLIDATION_COMPLETE.md)
 - [Widget Sync Extraction Complete](./implementations/WIDGET_SYNC_EXTRACTION_COMPLETE.md)
 
+### Feature Implementations
+- [Unified Transport & Track System](./implementations/UNIFIED-TRANSPORT-TRACK-SYSTEM.md) - Core playback architecture
+- [3D Fretboard Implementation](./implementations/fretboard-3d-implementation.md) - Three.js 3D fretboard
+- [Professional Instruments](./implementations/professional-instruments-implementation.md) - Salamander Piano, Rhodes, Organ, Warm Pad
+- [Salamander Piano](./implementations/salamander-piano-implementation.md) - Grand piano samples
+- [Audio Samples Upload](./implementations/audio-samples-upload-guide.md) - Supabase upload guide
+- [Harmony Widget Audio](./implementations/harmony-widget-audio-status.md) - Current status & soundfonts
+
 ### Migration Guides
-- [Playback Module Migration](./implementations/playback-module-migration.md) - **NEW** Services to modules architecture migration
+- [Playback Module Migration](./implementations/playback-module-migration.md) - Services to modules architecture migration
 - [Storage Modules Migration Guide](./implementations/MIGRATION-GUIDE-STORAGE-MODULES.md) - Migrating from SupabaseAssetClient to SupabaseProviderAdvanced
 - [Migration Plan: SupabaseAssetClient](./implementations/MIGRATION-PLAN-SUPABASE-ASSET-CLIENT.md) - Detailed migration phases and status
 - [Migration Plan: BaseAudioPlugin](./implementations/MIGRATION-PLAN-BASE-AUDIO-PLUGIN.md) - Plugin system migration
 - [Migration Completed: Phase 1](./implementations/MIGRATION-COMPLETED-PHASE-1.md) - Phase 1 completion summary
+- [Unified Transport Implementation Plan](./implementations/unified-transport-implementation-plan.md) - 3 transport systems → UnifiedTransport
+- [Old Transport Files Migration](./implementations/old-transport-files-migration.md) - Transport consolidation tracking
+- [Transport Compatibility Report](./implementations/transport-compatibility-report.md) - Backward compatibility
+- [Region Migration Guide](./implementations/REGION_MIGRATION_GUIDE.md) - Pattern-based to region-based sequencer
 
 ## 🚨 Deprecated/Archive
 
@@ -138,15 +166,15 @@ Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
 - [Test Transport Restart](./archived/fixes/test-transport-restart.md)
 - [TODO Revert](./archived/fixes/TODO-revert.md)
 
+### Debugging Sessions (Archived)
+- [Click Blocking Debug Progress](./archived/debugging/CLICK-BLOCKING-DEBUG-PROGRESS.md) - 43+ test versions investigation (50KB)
+
 ### Old Documentation (DO NOT USE)
 - `archived/claude-code-trash-bin-2024-08-25/` - Historical fixes from August 2024
 - `archived/project-planning-memory-bank/` - Historical project planning docs (pre-2025)
-- `CLAUDE CODE TRASH BIN/` - Deprecated docs
-
-### Migration Guides (Historical)
-- [Old Transport Files Migration](./old-transport-files-migration.md)
-- [Transport Compatibility Report](./transport-compatibility-report.md)
-- [Region Migration Guide](./REGION_MIGRATION_GUIDE.md)
+- `archived/LAST CLAUDE.md` - Archived session notes
+- `archived/todo.md` - Completed track system migration (2024-08-10)
+- `CLAUDE CODE TRASH BIN/` - Deprecated docs (to be consolidated)
 
 ## 📝 Templates & Examples
 
@@ -172,5 +200,6 @@ Located in `2. Stories/2. 🚧 in-progress/EPIC 3/`:
 
 ---
 
-**Last Updated**: September 2025
+**Last Updated**: December 2025
+**Last Major Reorganization**: December 2, 2025 - Moved 39 files from root to categorized subdirectories
 **Maintained By**: Development Team

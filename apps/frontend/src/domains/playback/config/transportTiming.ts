@@ -14,6 +14,15 @@ const logger = createStructuredLogger('TransportTiming');
 
 export const TRANSPORT_TIMING_CONFIG = {
   /**
+   * Startup lookahead in seconds
+   * This is the buffer time added when starting playback to ensure
+   * all instruments and samples are loaded before the first audio plays.
+   * This offset MUST be accounted for in the visual clock display
+   * to keep the clock synchronized with audio playback.
+   */
+  startupLookahead: 0.3, // 300ms - buffer for stable playback start
+
+  /**
    * Look-ahead time in seconds
    * This is how far ahead the scheduler looks to schedule events.
    * Professional DAWs typically use 50-200ms.

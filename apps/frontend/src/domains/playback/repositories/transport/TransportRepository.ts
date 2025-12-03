@@ -36,15 +36,13 @@ interface StoredTransportState {
 export class TransportRepository implements ITransportRepository {
   /**
    * Get the current transport state
+   *
+   * CRITICAL FIX: Always return initial state to ensure countdown starts at -1:1:1
+   * Previous behavior: Restored persisted position from localStorage, causing random
+   * start positions (5:3:1, 3:1:1, 1:3:1) instead of always -1:1:1 for countdown
    */
   async get(): Promise<TransportState> {
-    const stored = await this.loadTransportState();
-
-    if (!stored) {
-      return TransportState.createInitial();
-    }
-
-    return this.fromStorage(stored);
+    return TransportState.createInitial();
   }
 
   /**

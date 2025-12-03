@@ -6,6 +6,9 @@
  * - Bar:Beat:Sixteenth calculations
  * - Position conversion utilities
  * - Looping support
+ *
+ * NOTE: Countdown functionality has been removed from Timeline.
+ * Use MusicalPositionManager (via TransportController) for countdown features.
  */
 
 import {
@@ -15,6 +18,7 @@ import {
 } from '../types/index.js';
 import { TimelineError } from '../types/errors.js';
 import { createStructuredLogger } from '../../shared/index.js';
+import { musicalTruth } from '../../tempo/MusicalTruthAuthority.js';
 
 const logger = createStructuredLogger('TransportTimeline');
 
@@ -26,17 +30,11 @@ export class Timeline {
     ticks: 0,
   };
 
-  private timeSignature: TimeSignature = {
-    numerator: 4,
-    denominator: 4,
-  };
+  // ❌ REMOVED: NO tempo/timeSignature storage
+  // ✅ All values now read from musicalTruth singleton
 
-  private tempo = 120; // BPM
   private loopEnabled = false;
 
-  // COUNTDOWN OFFSET: Track countdown duration for display adjustment
-  // When countdownBeats > 0, the first N beats are pre-roll (measure -1 or 0)
-  private countdownBeats = 0; // Number of beats in countdown (e.g., 4 for one measure of 4/4)
   private loopStart: MusicalPosition = {
     bars: 0,
     beats: 0,
@@ -56,93 +54,64 @@ export class Timeline {
 
   /**
    * Set the current tempo
+   * @deprecated Use musicalTruth.setFromExercise() instead
    */
   setTempo(bpm: number): void {
-    if (bpm <= 0 || bpm > 999) {
-      throw new TimelineError(
-        `Invalid tempo: ${bpm}. Must be between 1 and 999.`,
-      );
-    }
-    this.tempo = bpm;
-    logger.info('Tempo updated', { bpm });
+    // This method is kept for backward compatibility but does nothing
+    // The actual tempo is managed by MusicalTruthAuthority
+    logger.warn('⚠️ setTempo() called - use musicalTruth.setFromExercise() instead', { bpm });
   }
 
   /**
    * Get the current tempo
    */
   getTempo(): number {
-    return this.tempo;
+    return musicalTruth.getBPM();
   }
 
   /**
    * Set the time signature
+   * @deprecated Use musicalTruth.setFromExercise() instead
    */
   setTimeSignature(timeSignature: TimeSignature): void {
-    if (timeSignature.numerator <= 0 || timeSignature.denominator <= 0) {
-      throw new TimelineError('Invalid time signature');
-    }
-    this.timeSignature = { ...timeSignature };
-    logger.info('Time signature updated', { timeSignature });
+    // This method is kept for backward compatibility but does nothing
+    // The actual time signature is managed by MusicalTruthAuthority
+    logger.warn('⚠️ setTimeSignature() called - use musicalTruth.setFromExercise() instead', { timeSignature });
   }
 
   /**
    * Get the current time signature
    */
   getTimeSignature(): TimeSignature {
-    return { ...this.timeSignature };
+    return musicalTruth.getTimeSignature();
   }
-
-  /**
-   * Set countdown offset (number of beats in pre-roll)
-   * This adjusts position display so countdown shows as measure -1 or 0
-   */
-  setCountdownBeats(beats: number): void {
-    this.countdownBeats = beats;
-    logger.info('Countdown offset set', { countdownBeats: beats });
-  }
-
-  /**
-   * Get countdown offset
-   */
-  getCountdownBeats(): number {
-    return this.countdownBeats;
-  }
-
-  // Exercise duration tracking for auto-stop functionality
-  private exerciseDurationBeats = 0;
 
   /**
    * Set exercise duration (in beats) for auto-stop functionality
-   * This includes countdown beats + actual exercise beats
-   * @param totalBars - Total number of bars (including countdown)
-   * @param beatsPerBar - Beats per bar from time signature
+   * @deprecated Use musicalTruth.setFromExercise() instead - duration is calculated automatically
    */
   setExerciseDuration(totalBars: number, beatsPerBar: number): void {
-    this.exerciseDurationBeats = totalBars * beatsPerBar;
-    logger.info('Exercise duration set', {
+    // This method is kept for backward compatibility but does nothing
+    // Duration is managed by MusicalTruthAuthority
+    logger.warn('⚠️ setExerciseDuration() called - use musicalTruth.setFromExercise() instead', {
       totalBars,
-      beatsPerBar,
-      totalBeats: this.exerciseDurationBeats,
+      beatsPerBar
     });
   }
 
   /**
    * Get exercise duration in beats
-   * Returns 0 if no duration has been set (infinite playback)
    */
   getExerciseDurationBeats(): number {
-    return this.exerciseDurationBeats;
+    return musicalTruth.getTotalBeats();
   }
 
   /**
    * Get exercise duration in seconds based on current tempo
-   * Returns 0 if no duration has been set (infinite playback)
    */
   getExerciseDurationSeconds(): number {
-    if (this.exerciseDurationBeats === 0) {
-      return 0;
-    }
-    return (this.exerciseDurationBeats / this.tempo) * 60;
+    const totalBeats = musicalTruth.getTotalBeats();
+    return musicalTruth.beatsToSeconds(totalBeats);
   }
 
   /**
@@ -160,43 +129,15 @@ export class Timeline {
   }
 
   /**
-   * Get the display position (adjusted for countdown offset)
-   * This is what should be shown in the UI to match DAW conventions
+   * Get the display position (same as raw position - no countdown adjustment)
    *
-   * Example with 4-beat countdown (one measure of 4/4):
-   * - Raw position 0:0:0 → Display -1:0:0 (or 0:0:0 if using 0-based countdown)
-   * - Raw position 0:3:0 → Display -1:3:0 (last beat of countdown)
-   * - Raw position 0:4:0 → Display 1:0:0 (first beat of exercise)
-   * - Raw position 1:0:0 → Display 2:0:0 (second measure of exercise)
+   * NOTE: Countdown display logic has been moved to MusicalPositionManager.
+   * This method now returns the raw position without any adjustments.
+   * For countdown-aware position display, use:
+   *   CoreServices.getTransportController().getDisplayPosition()
    */
   getDisplayPosition(): MusicalPosition {
-    const pos = this.getPosition();
-
-    if (this.countdownBeats === 0) {
-      // No countdown - return as-is
-      return pos;
-    }
-
-    // Convert position to total beats
-    const beatsPerBar = this.timeSignature.numerator;
-    const totalBeats = pos.bars * beatsPerBar + pos.beats + pos.sixteenths / 4;
-
-    // Subtract countdown offset
-    const adjustedBeats = totalBeats - this.countdownBeats;
-
-    // Convert back to bars:beats:sixteenths
-    const adjustedBars = Math.floor(adjustedBeats / beatsPerBar);
-    const beatsInBar = adjustedBeats % beatsPerBar;
-    const adjustedBeatsInt = Math.floor(beatsInBar);
-    const fractionalBeat = beatsInBar % 1;
-    const adjustedSixteenths = Math.floor(fractionalBeat * 4);
-
-    return {
-      bars: adjustedBars,
-      beats: adjustedBeatsInt,
-      sixteenths: adjustedSixteenths,
-      ticks: Math.floor(adjustedSixteenths * 240), // 240 ticks per sixteenth
-    };
+    return this.getPosition();
   }
 
   /**
@@ -211,17 +152,18 @@ export class Timeline {
    * Update position from seconds
    */
   updatePositionFromSeconds(seconds: number, _sampleRate?: number): void {
-    const bpm = this.tempo;
+    const bpm = musicalTruth.getBPM();
     const beatsPerSecond = bpm / 60;
     const totalBeats = seconds * beatsPerSecond;
-    const beatsPerBar = this.timeSignature.numerator;
+    const beatsPerBar = musicalTruth.getTimeSignature().numerator;
 
     // DIAGNOSTIC: Log if we're about to create NaN values
     if (isNaN(beatsPerBar) || beatsPerBar === 0) {
+      const timeSignature = musicalTruth.getTimeSignature();
       logger.warn('🔍 DIAGNOSTIC: beatsPerBar is NaN or 0!', {
-        timeSignature: this.timeSignature,
-        numerator: this.timeSignature.numerator,
-        denominator: this.timeSignature.denominator,
+        timeSignature,
+        numerator: timeSignature.numerator,
+        denominator: timeSignature.denominator,
         bpm,
         seconds,
       });
@@ -295,9 +237,10 @@ export class Timeline {
    */
   positionToSeconds(position?: MusicalPosition): number {
     const pos = position || this.musicalPosition;
-    const beatsPerBar = this.timeSignature.numerator;
+    const beatsPerBar = musicalTruth.getTimeSignature().numerator;
     const totalBeats = pos.bars * beatsPerBar + pos.beats + pos.sixteenths / 4;
-    const beatsPerSecond = this.tempo / 60;
+    const bpm = musicalTruth.getBPM();
+    const beatsPerSecond = bpm / 60;
     return totalBeats / beatsPerSecond;
   }
 
@@ -306,7 +249,7 @@ export class Timeline {
    */
   positionToSixteenths(position?: MusicalPosition): number {
     const pos = position || this.musicalPosition;
-    const beatsPerBar = this.timeSignature.numerator;
+    const beatsPerBar = musicalTruth.getTimeSignature().numerator;
     const sixteenthsPerBeat = 4;
 
     return (
@@ -320,7 +263,7 @@ export class Timeline {
    * Convert total sixteenths to musical position
    */
   sixteenthsToPosition(totalSixteenths: number): MusicalPosition {
-    const beatsPerBar = this.timeSignature.numerator;
+    const beatsPerBar = musicalTruth.getTimeSignature().numerator;
     const sixteenthsPerBeat = 4;
     const sixteenthsPerBar = beatsPerBar * sixteenthsPerBeat;
 
@@ -413,8 +356,6 @@ export class Timeline {
       sixteenths: 0,
       ticks: 0,
     };
-    this.tempo = 120;
-    this.timeSignature = { numerator: 4, denominator: 4 };
     this.loopEnabled = false;
     logger.info('Timeline reset');
   }
@@ -423,8 +364,9 @@ export class Timeline {
    * Calculate the duration of one bar in seconds
    */
   getBarDuration(): number {
-    const beatsPerBar = this.timeSignature.numerator;
-    const beatsPerSecond = this.tempo / 60;
+    const beatsPerBar = musicalTruth.getTimeSignature().numerator;
+    const bpm = musicalTruth.getBPM();
+    const beatsPerSecond = bpm / 60;
     return beatsPerBar / beatsPerSecond;
   }
 
@@ -432,7 +374,8 @@ export class Timeline {
    * Calculate the duration of one beat in seconds
    */
   getBeatDuration(): number {
-    return 60 / this.tempo;
+    const bpm = musicalTruth.getBPM();
+    return 60 / bpm;
   }
 
   /**

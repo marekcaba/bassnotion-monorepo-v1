@@ -4,9 +4,9 @@ import React from 'react';
 import { YouTubeWidgetPage } from '@/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { ScrollTriggerLoader } from '@/domains/playback/components/ScrollTriggerLoader';
-import { createLogger } from '@/utils/logger';
+import { getLogger } from '@/utils/logger';
 
-const logger = createLogger('TutorialPage');
+const logger = getLogger('TutorialPage');
 
 // Error boundary component
 class ErrorBoundary extends React.Component<

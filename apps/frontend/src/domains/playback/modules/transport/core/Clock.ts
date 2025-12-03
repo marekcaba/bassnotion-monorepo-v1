@@ -429,61 +429,20 @@ export class Clock {
         baseTime = contextTime + this.hardwareClockOffset;
         timeSource = 'AudioContext (FALLBACK - STUCK)';
         fallbackTriggered = true;
-
-        console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() FALLBACK - AudioWorklet STUCK', {
-          workletTime: workletTime.toFixed(6),
-          contextTime: contextTime.toFixed(6),
-          hardwareClockOffset: this.hardwareClockOffset.toFixed(6),
-          returnedTime: baseTime.toFixed(6),
-          updateCount,
-          timeSinceLastUpdate: timeSinceLastUpdate.toFixed(2) + 'ms',
-          reason: 'AudioWorklet stopped sending updates (stuck)',
-        });
       } else if (workletTime === 0 && contextTime > 0 && updateCount === 0 && !isRunning) {
         // AudioWorklet initialized but NOT started yet - fallback to hardware clock
         baseTime = contextTime + this.hardwareClockOffset;
         timeSource = 'AudioContext (FALLBACK - NOT STARTED)';
         fallbackTriggered = true;
-
-        console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() FALLBACK - Not Started', {
-          workletTime: workletTime.toFixed(6),
-          contextTime: contextTime.toFixed(6),
-          hardwareClockOffset: this.hardwareClockOffset.toFixed(6),
-          returnedTime: baseTime.toFixed(6),
-          updateCount,
-          isRunning,
-          reason: 'AudioWorklet initialized but not started (isRunning=false)',
-          explanation: 'Using hardware clock until AudioWorklet starts',
-        });
       } else if (workletTime === 0 && contextTime > 0 && updateCount === 0 && isRunning) {
         // AudioWorklet IS running but no updates yet - trust 0 (race condition fix)
         baseTime = workletTime;
         timeSource = 'AudioWorklet (STARTUP - isRunning=true)';
-
-        console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() TRUSTING ZERO - Just Started', {
-          workletTime: workletTime.toFixed(6),
-          contextTime: contextTime.toFixed(6),
-          returnedTime: baseTime.toFixed(6),
-          updateCount,
-          isRunning,
-          reason: 'AudioWorklet started, no updates yet (RACE CONDITION FIX)',
-          explanation: 'Returning 0 for fresh start, not falling back to AudioContext',
-        });
       } else {
         // Normal case - AudioWorklet is running and providing updates
         baseTime = workletTime;
         timeSource = 'AudioWorklet';
       }
-
-      console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() from AudioWorklet path', {
-        workletTime: workletTime.toFixed(6),
-        contextTime: contextTime.toFixed(6),
-        timeSource,
-        fallbackTriggered,
-        returnedTime: baseTime.toFixed(6),
-        updateCount,
-        timeSinceLastUpdate: timeSinceLastUpdate > 0 ? timeSinceLastUpdate.toFixed(2) + 'ms' : 'N/A',
-      });
     }
     // Use Web Worker time if active
     else if (this.webWorkerActive && this.workerTimingManager) {
@@ -523,6 +482,18 @@ export class Clock {
     }
 
     return baseTime;
+  }
+
+  /**
+   * Get raw AudioContext time without hardware clock offset
+   * Use this for transport timing to avoid hardware clock drift affecting position calculations
+   */
+  getRawAudioTime(): number {
+    if (!this.audioContext) {
+      throw new ClockSyncError('AudioContext not initialized');
+    }
+
+    return this.audioContext.currentTime;
   }
 
   /**
