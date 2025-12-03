@@ -90,7 +90,7 @@ const chordProgressions = {
   ],
 };
 
-export function HarmonyWidget({
+const HarmonyWidgetComponent = ({
   progression = ['CMaj7', 'Am7', 'Dm7', 'G7'], // Default progression
   currentChord = 0,
   isPlaying,
@@ -2323,4 +2323,7 @@ export function HarmonyWidget({
       )}
     </div>
   );
-}
+};
+
+// Phase 5.1: Wrap in React.memo to prevent unnecessary re-renders
+export const HarmonyWidget = React.memo(HarmonyWidgetComponent);

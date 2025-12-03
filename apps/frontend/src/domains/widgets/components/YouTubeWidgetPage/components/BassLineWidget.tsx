@@ -80,7 +80,7 @@ const bassPatterns = {
 
 const logger = getLogger('bassline-widget');
 
-export function BassLineWidget({
+const BassLineWidgetComponent = ({
   pattern,
   isVisible,
   isPlaying,
@@ -89,7 +89,7 @@ export function BassLineWidget({
   onToggleVisibility,
   onTogglePlay,
   isAdminMode = false,
-}: BassLineWidgetProps) {
+}: BassLineWidgetProps) => {
   // Get tempo directly from Transport (single source of truth)
   const transport = useTransportContext();
   const tempo = transport.tempo;
@@ -728,4 +728,7 @@ export function BassLineWidget({
       )}
     </div>
   );
-}
+};
+
+// Phase 5.1: Wrap in React.memo to prevent unnecessary re-renders
+export const BassLineWidget = React.memo(BassLineWidgetComponent);

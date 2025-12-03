@@ -55,13 +55,13 @@ const initialDots: MetronomeDot[] = Array.from({ length: 8 }, (_, i) => ({
 
 const logger = getLogger('metronome-widget');
 
-export function MetronomeWidget({
+const MetronomeWidgetComponent = ({
   isVisible,
   isPlaying: isPlayingProp,
   onToggleVisibility,
   onTogglePlay,
   timeSignature,
-}: MetronomeWidgetProps) {
+}: MetronomeWidgetProps) => {
   const { correlationId, logger: componentLogger } =
     useCorrelation('MetronomeWidget');
 
@@ -934,4 +934,7 @@ export function MetronomeWidget({
       )}
     </div>
   );
-}
+};
+
+// Phase 5.1: Wrap in React.memo to prevent unnecessary re-renders
+export const MetronomeWidget = React.memo(MetronomeWidgetComponent);

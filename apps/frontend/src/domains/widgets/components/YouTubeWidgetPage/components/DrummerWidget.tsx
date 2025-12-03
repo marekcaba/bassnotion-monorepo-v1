@@ -143,7 +143,7 @@ function convertMidiToDrumPattern(parsedData: any): DrumPattern {
   return pattern;
 }
 
-export function DrummerWidget({
+const DrummerWidgetComponent = ({
   pattern,
   isVisible,
   isPlaying: isPlayingProp,
@@ -1195,4 +1195,8 @@ export function DrummerWidget({
       )}
     </div>
   );
-}
+};
+
+// Phase 5.1: Wrap in React.memo to prevent unnecessary re-renders
+// Only re-render when props actually change
+export const DrummerWidget = React.memo(DrummerWidgetComponent);
