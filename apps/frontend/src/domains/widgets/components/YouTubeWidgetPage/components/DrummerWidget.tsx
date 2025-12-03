@@ -153,7 +153,7 @@ const DrummerWidgetComponent = ({
   onToggleVisibility,
   onTogglePlay,
   isAdminMode = false,
-}: DrummerWidgetProps) {
+}: DrummerWidgetProps) => {
   const { correlationId, logger: componentLogger } =
     useCorrelation('DrummerWidget');
 

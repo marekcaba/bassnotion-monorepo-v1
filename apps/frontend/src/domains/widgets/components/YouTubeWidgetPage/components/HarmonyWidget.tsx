@@ -103,7 +103,7 @@ const HarmonyWidgetComponent = ({
   onToggleVisibility,
   onTogglePlay,
   isAdminMode = false,
-}: HarmonyWidgetProps) {
+}: HarmonyWidgetProps) => {
   // CRITICAL DEBUG: Log at TOP of render function
   // console.log('🔍 [STATE-FLOW-4] HarmonyWidget RENDER (top of function):', {
   //   harmonyInstrument,

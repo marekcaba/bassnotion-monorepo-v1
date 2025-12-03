@@ -15,7 +15,7 @@ import { TransportSyncManager } from './TransportSyncManager.js';
 import { PluginManager, registerExistingPlugins } from './PluginManager.js';
 import { AudioEventRouter } from './AudioEventRouter.js';
 import { InstrumentRegistry } from './InstrumentRegistry.js';
-import { RegionProcessor } from './RegionProcessor.js';
+// Phase 3.2: RegionProcessor deleted - PlaybackEngine is at 100% rollout
 import { PlaybackEngine } from './PlaybackEngine.js';
 import { RegionProcessorAdapter } from './RegionProcessorAdapter.js';
 import { AudioDebugger } from './AudioDebugger.js';
@@ -51,7 +51,7 @@ export class CoreServices {
   private pluginManager: PluginManager;
   private audioEventRouter: AudioEventRouter;
   private instrumentRegistry: InstrumentRegistry;
-  private regionProcessor: RegionProcessor | null = null; // Legacy - only created if PlaybackEngine is disabled
+  // Phase 3.2: regionProcessor property removed - RegionProcessor deleted
   private playbackEngine: PlaybackEngine | null = null; // Phase 1 Task 1.4: New PlaybackEngine (feature flag)
   private isInitialized = false;
   private isPreInitialized = false;
@@ -91,30 +91,18 @@ export class CoreServices {
     this.audioEventRouter = new AudioEventRouter();
     this.instrumentRegistry = new InstrumentRegistry(this.eventBus);
 
-    // Phase 1 Task 1.4: Create PlaybackEngine if feature flag is enabled
-    // CRITICAL: Only create ONE of RegionProcessor OR PlaybackEngine, never both!
-    if (isNewPlaybackEngineEnabled()) {
-      this.playbackEngine = new PlaybackEngine(this.eventBus, {
-        countdownBeats: 4,
-        countdownEnabled: false,
-        lookAheadTime: 0.1,
-      });
-      logPlaybackEngineMigrationEvent('PlaybackEngine created', {
-        instanceId: (this.playbackEngine as any).instanceId,
-      });
+    // Phase 3.2: PlaybackEngine is at 100% rollout - always created, no feature flag check
+    this.playbackEngine = new PlaybackEngine(this.eventBus, {
+      countdownBeats: 4,
+      countdownEnabled: false,
+      lookAheadTime: 0.1,
+    });
+    logPlaybackEngineMigrationEvent('PlaybackEngine created', {
+      instanceId: (this.playbackEngine as any).instanceId,
+    });
 
-      // Register PlaybackEngine in WindowRegistry for debugging
-      WindowRegistry.setPlaybackEngine(this.playbackEngine);
-    } else {
-      // Only create RegionProcessor if new PlaybackEngine is disabled (legacy fallback)
-      this.regionProcessor = new RegionProcessor(this.eventBus);
-      logPlaybackEngineMigrationEvent('Using legacy RegionProcessor', {
-        reason: 'PlaybackEngine feature flag disabled',
-      });
-
-      // Register RegionProcessor in WindowRegistry for debugging
-      WindowRegistry.setRegionProcessor(this.regionProcessor);
-    }
+    // Register PlaybackEngine in WindowRegistry for debugging
+    WindowRegistry.setPlaybackEngine(this.playbackEngine);
 
     // Register services with dependencies
     this.registerServices();
@@ -580,23 +568,22 @@ export class CoreServices {
     return this.unifiedTransport;
   }
 
-  getRegionProcessor(): RegionProcessor | RegionProcessorAdapter {
-    // MIGRATION: When feature flag is enabled, return adapter wrapping PlaybackEngine
-    // This allows GlobalControls and other widgets to work without code changes
-    if (isNewPlaybackEngineEnabled() && this.playbackEngine) {
-      logPlaybackEngineMigrationEvent('getRegionProcessor() returning adapter', {
-        playbackEngineId: (this.playbackEngine as any).instanceId,
-      });
-      return new RegionProcessorAdapter(this.playbackEngine);
-    }
-
-    // Legacy: Return actual RegionProcessor when flag is off
-    if (!this.regionProcessor) {
+  /**
+   * Phase 3.2: getRegionProcessor() always returns adapter
+   * RegionProcessor is deleted - PlaybackEngine is at 100% rollout
+   * This method will be removed in Phase 3.3 along with RegionProcessorAdapter
+   */
+  getRegionProcessor(): RegionProcessorAdapter {
+    if (!this.playbackEngine) {
       throw new CoreServicesError(
-        'RegionProcessor not available - feature flag may be misconfigured'
+        'PlaybackEngine not available - CoreServices may not be initialized'
       );
     }
-    return this.regionProcessor;
+
+    logPlaybackEngineMigrationEvent('getRegionProcessor() returning adapter', {
+      playbackEngineId: (this.playbackEngine as any).instanceId,
+    });
+    return new RegionProcessorAdapter(this.playbackEngine);
   }
 
   /**

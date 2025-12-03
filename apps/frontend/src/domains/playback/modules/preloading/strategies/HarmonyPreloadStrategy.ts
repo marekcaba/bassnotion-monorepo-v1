@@ -14,7 +14,7 @@ import grandPianoConfig from '@/domains/playback/data/instruments/piano/grand-pi
 import grandPianoKeyboardMap from '@/domains/playback/data/instruments/piano/grandpiano-keyboard-map.json';
 import wurlitzerConfig from '@/domains/playback/data/instruments/wurlitzer/wurlitzer-piano.json';
 import rhodesConfig from '@/domains/playback/data/instruments/rhodes/rhodes-piano.json';
-import { midiToNoteName } from '../../utils/midiUtils.js';
+import { midiToNoteName } from '@/domains/playback/utils/midiUtils';
 
 const logger = getLogger('HarmonyPreloadStrategy');
 

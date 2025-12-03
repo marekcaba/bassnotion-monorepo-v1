@@ -29,6 +29,7 @@ import { WurlitzerVelocitySampler } from '../../implementations/harmony/Wurlitze
 import { GrandPianoVelocitySampler } from '../../implementations/harmony/GrandPianoVelocitySampler.js';
 import { GlobalSampleCache } from '../../../storage/cache/GlobalSampleCache.js';
 import { createStructuredLogger } from '../../../shared/index.js';
+import { midiToNoteName } from '../../../../utils/midiUtils.js';
 
 // Create structured logger for this module
 const logger = createStructuredLogger('WamKeyboard');
