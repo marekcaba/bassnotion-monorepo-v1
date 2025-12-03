@@ -54,6 +54,11 @@ export class TransportController implements Service {
   private config: TransportControllerConfig;
   private autoStopTimerId: ReturnType<typeof setTimeout> | null = null;
 
+  // Phase 2: Event-driven position updates
+  private lastPositionEmitTime = 0;
+  private readonly positionUpdateInterval: number;
+  private useClockOnTick = false;
+
   // Singleton
   private static instance: TransportController | null = null;
 
@@ -70,6 +75,17 @@ export class TransportController implements Service {
       enableLegacyCompatibility: config.enableLegacyCompatibility ?? true,
     };
 
+    // Phase 2: Configure event-driven position updates
+    const updateHz =
+      typeof process !== 'undefined' &&
+      process.env.NEXT_PUBLIC_POSITION_UPDATE_HZ
+        ? parseInt(process.env.NEXT_PUBLIC_POSITION_UPDATE_HZ, 10)
+        : 120;
+    this.positionUpdateInterval = 1000 / updateHz; // Default: 8.3ms = 120 Hz
+    this.useClockOnTick =
+      typeof process !== 'undefined' &&
+      process.env.NEXT_PUBLIC_USE_CLOCK_ONTICK === 'true';
+
     // Create modules
     this.transport = new Transport(config);
     this.positionManager = new MusicalPositionManager({
@@ -79,9 +95,16 @@ export class TransportController implements Service {
 
     this.setupEventListeners();
 
+    // Phase 2: Setup Clock.onTick subscription if enabled
+    if (this.useClockOnTick) {
+      this.setupClockSubscription();
+    }
+
     logger.info('TransportController created', {
       useModular: this.config.useModularArchitecture,
       legacyCompat: this.config.enableLegacyCompatibility,
+      clockOnTick: this.useClockOnTick,
+      updateHz: Math.round(1000 / this.positionUpdateInterval),
     });
   }
 
@@ -682,6 +705,71 @@ export class TransportController implements Service {
 
     this.positionManager.on('tempoChange', ({ current }) => {
       logger.debug('Tempo changed via position manager', { bpm: current });
+    });
+  }
+
+  /**
+   * Setup Clock.onTick subscription for event-driven position updates (Phase 2)
+   *
+   * This replaces the polling-based Transport.startPositionUpdates() with direct
+   * AudioWorklet timing updates. The AudioWorklet sends updates at 374 Hz, which
+   * we throttle to a configurable rate (default: 120 Hz) before emitting to EventBus.
+   *
+   * **Benefits**:
+   * - Eliminates 50 Hz setInterval polling loop
+   * - Uses high-frequency AudioWorklet timing more efficiently
+   * - Reduces CPU overhead (no redundant clock reads)
+   * - More responsive UI updates (120 Hz vs 50 Hz)
+   *
+   * **Throttling**: AudioWorklet produces 374 updates/sec, we emit at 120 Hz (configurable)
+   * to balance smoothness vs performance.
+   */
+  private setupClockSubscription(): void {
+    const clock = this.transport.getClock();
+
+    // Subscribe to high-frequency AudioWorklet updates (374 Hz)
+    clock.setOnTick((time: number) => {
+      // Only process position updates when playing
+      if (this.state !== 'playing') {
+        return;
+      }
+
+      // Throttle to configured update rate (default: 120 Hz = 8.3ms)
+      const now = performance.now();
+      if (now - this.lastPositionEmitTime < this.positionUpdateInterval) {
+        return; // Drop this update (throttling)
+      }
+
+      this.lastPositionEmitTime = now;
+
+      // Update position using AudioWorklet timing
+      this.positionManager.updatePosition(time);
+
+      // Get display position (adjusted for countdown)
+      const displayPosition = this.positionManager.getDisplayPosition();
+
+      // DIAGNOSTIC: Log throttled update rate (10% sample)
+      if (Math.random() < 0.1) {
+        logger.debug('Clock.onTick position update', {
+          time: time.toFixed(3),
+          displayPosition: `${displayPosition.bars}:${displayPosition.beats}:${displayPosition.sixteenths}`,
+          throttleMs: this.positionUpdateInterval.toFixed(2),
+          note: 'Event-driven from AudioWorklet (Phase 2)',
+        });
+      }
+
+      // Emit position update to EventBus
+      this.eventBus.emit('transport:position-updated', {
+        position: displayPosition,
+        seconds: time,
+        timestamp: now,
+      });
+    });
+
+    logger.info('Clock.onTick subscription enabled', {
+      updateHz: Math.round(1000 / this.positionUpdateInterval),
+      intervalMs: this.positionUpdateInterval.toFixed(2),
+      source: 'AudioWorklet (374 Hz throttled)',
     });
   }
 
