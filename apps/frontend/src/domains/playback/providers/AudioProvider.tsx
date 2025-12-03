@@ -141,10 +141,8 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
           );
           services = existingInstance;
 
-          // ✅ PHASE 1 TASK 1.5: Register engines when reusing existing instance
-          const regionProcessor = services.getRegionProcessor();
+          // Phase 3.3: Register PlaybackEngine when reusing existing instance
           const playbackEngine = services.getPlaybackEngine();
-          WindowRegistry.setRegionProcessor(regionProcessor);
           if (playbackEngine) {
             WindowRegistry.setPlaybackEngine(playbackEngine);
           }
@@ -269,10 +267,8 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
         setServicesReady(true);
         setCoreServicesReady(true);
 
-        // ✅ PHASE 1 TASK 1.5: Register playback engines for cleanup tracking
-        const regionProcessor = services.getRegionProcessor();
+        // Phase 3.3: Register PlaybackEngine for cleanup tracking
         const playbackEngine = services.getPlaybackEngine();
-        WindowRegistry.setRegionProcessor(regionProcessor);
         if (playbackEngine) {
           WindowRegistry.setPlaybackEngine(playbackEngine);
         }

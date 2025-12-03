@@ -26,7 +26,7 @@ export default function TestAudioFlow() {
 
       addLog('Getting services...');
       const eventBus = coreServices.getEventBus();
-      const regionProcessor = coreServices.getRegionProcessor();
+      const playbackEngine = coreServices.getPlaybackEngine();
       const instrumentRegistry = coreServices.getInstrumentRegistry();
       const audioEventRouter = coreServices.getAudioEventRouter();
 
@@ -61,7 +61,7 @@ export default function TestAudioFlow() {
 
       // Register track with RegionProcessor
       addLog('Registering track with RegionProcessor...');
-      regionProcessor.registerTracks([{
+      playbackEngine.registerTracks([{
         id: 'test-metronome-track',
         name: 'Test Metronome',
         instrumentType: 'metronome',
@@ -76,7 +76,7 @@ export default function TestAudioFlow() {
 
       // Start the region processor
       addLog('Starting RegionProcessor...');
-      regionProcessor.start();
+      playbackEngine.start();
 
       setIsInitialized(true);
       addLog('Initialization complete!');
@@ -119,10 +119,10 @@ export default function TestAudioFlow() {
       addLog('Stopping transport...');
       const coreServices = await GlobalAudioSystem.getPreInitializedInstance();
       const transport = coreServices.getUnifiedTransport();
-      const regionProcessor = coreServices.getRegionProcessor();
+      const playbackEngine = coreServices.getPlaybackEngine();
 
       await transport.stop();
-      regionProcessor.stop();
+      playbackEngine.stop();
       setIsPlaying(false);
       addLog('Transport stopped!');
 

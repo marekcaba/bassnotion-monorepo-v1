@@ -16,8 +16,8 @@ import { PluginManager, registerExistingPlugins } from './PluginManager.js';
 import { AudioEventRouter } from './AudioEventRouter.js';
 import { InstrumentRegistry } from './InstrumentRegistry.js';
 // Phase 3.2: RegionProcessor deleted - PlaybackEngine is at 100% rollout
+// Phase 3.3: RegionProcessorAdapter deleted - all widgets use PlaybackEngine directly
 import { PlaybackEngine } from './PlaybackEngine.js';
-import { RegionProcessorAdapter } from './RegionProcessorAdapter.js';
 import { AudioDebugger } from './AudioDebugger.js';
 import { getLogger } from '@/utils/logger.js';
 import { getPreloadableRegistry } from './PreloadableInstrumentRegistry.js';
@@ -569,26 +569,8 @@ export class CoreServices {
   }
 
   /**
-   * Phase 3.2: getRegionProcessor() always returns adapter
-   * RegionProcessor is deleted - PlaybackEngine is at 100% rollout
-   * This method will be removed in Phase 3.3 along with RegionProcessorAdapter
-   */
-  getRegionProcessor(): RegionProcessorAdapter {
-    if (!this.playbackEngine) {
-      throw new CoreServicesError(
-        'PlaybackEngine not available - CoreServices may not be initialized'
-      );
-    }
-
-    logPlaybackEngineMigrationEvent('getRegionProcessor() returning adapter', {
-      playbackEngineId: (this.playbackEngine as any).instanceId,
-    });
-    return new RegionProcessorAdapter(this.playbackEngine);
-  }
-
-  /**
-   * Get PlaybackEngine instance (Phase 1 Task 1.4)
-   * Returns null if feature flag is disabled
+   * Phase 3.3: Get PlaybackEngine instance (ONLY playback engine)
+   * RegionProcessor and RegionProcessorAdapter have been deleted
    */
   getPlaybackEngine(): PlaybackEngine | null {
     return this.playbackEngine;

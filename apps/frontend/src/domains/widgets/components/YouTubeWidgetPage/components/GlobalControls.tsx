@@ -854,21 +854,22 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           }
         }
 
-        // STEP 2: CRITICAL - Get RegionProcessor from CoreServices (the one with buffers injected!)
+        // STEP 2: CRITICAL - Get PlaybackEngine from CoreServices (the one with buffers injected!)
         // ✅ FIX: Use WindowRegistry instead of direct window access
         const coreServicesRef = WindowRegistry.getCoreServices();
-        let regionProcessor = null;
+        // Phase 3.3: Use PlaybackEngine directly instead of RegionProcessorAdapter
+        let playbackEngine = null;
 
-        if (coreServicesRef && coreServicesRef.getRegionProcessor) {
-          regionProcessor = coreServicesRef.getRegionProcessor();
-          logger.info('✅ Using RegionProcessor from CoreServices (has FAANG buffers)');
+        if (coreServicesRef && coreServicesRef.getPlaybackEngine) {
+          playbackEngine = coreServicesRef.getPlaybackEngine();
+          logger.info('✅ Using PlaybackEngine from CoreServices (has FAANG buffers)');
         } else {
-          logger.error('❌ CRITICAL: CoreServices.getRegionProcessor() not available!', {
+          logger.error('❌ CRITICAL: CoreServices.getPlaybackEngine() not available!', {
             hasCoreServices: !!coreServicesRef,
-            hasMethod: !!(coreServicesRef && coreServicesRef.getRegionProcessor)
+            hasMethod: !!(coreServicesRef && coreServicesRef.getPlaybackEngine)
           });
           // Don't create fallback instance - FAANG solution won't work without CoreServices instance
-          throw new Error('CoreServices RegionProcessor required for FAANG solution');
+          throw new Error('CoreServices PlaybackEngine required for FAANG solution');
         }
 
         // CRITICAL FIX: If metronome regions are empty, create them NOW with correct tempo
@@ -932,7 +933,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           },
         });
 
-        if (regionProcessor && (currentMetronomeTrack.regions.length > 0 || currentDrumTrack.regions.length > 0)) {
+        if (playbackEngine && (currentMetronomeTrack.regions.length > 0 || currentDrumTrack.regions.length > 0)) {
             const tracksToRegister = [];
             if (currentMetronomeTrack.regions.length > 0) {
               tracksToRegister.push({
@@ -959,13 +960,13 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               });
             }
 
-            if (regionProcessor && tracksToRegister.length > 0) {
-              regionProcessor.registerTracks(tracksToRegister);
-              logger.debug(`🎵 Registered ${tracksToRegister.length} tracks with RegionProcessor`);
+            if (playbackEngine && tracksToRegister.length > 0) {
+              playbackEngine.registerTracks(tracksToRegister);
+              logger.debug(`🎵 Registered ${tracksToRegister.length} tracks with PlaybackEngine`);
             }
         } else {
-          logger.warn('🎵 No tracks with regions to register or no RegionProcessor', {
-            hasProcessor: !!regionProcessor,
+          logger.warn('🎵 No tracks with regions to register or no PlaybackEngine', {
+            hasEngine: !!playbackEngine,
             metronomeRegions: currentMetronomeTrack?.regions?.length || 0,
             drumRegions: currentDrumTrack?.regions?.length || 0,
           });
@@ -980,11 +981,11 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
         // STEP 4: FAANG COUNTDOWN SOLUTION - Enable countdown offset BEFORE scheduling
         const timeSignature = selectedExercise.timeSignature || { numerator: 4, denominator: 4 };
-        if (regionProcessor) {
+        if (playbackEngine) {
           logger.info('🎵 Enabling FAANG countdown system');
 
           // Enable countdown offset (all events will be pushed forward by one measure)
-          regionProcessor.enableCountdown(timeSignature);
+          playbackEngine.enableCountdown(timeSignature);
 
           logger.info('✅ Countdown offset enabled', {
             timeSignature,
@@ -996,31 +997,31 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // See STEP 0 above (around line 786) - moved there to prevent race condition
 
         // STEP 4.5: Add countdown region AFTER tracks are registered
-        if (regionProcessor) {
+        if (playbackEngine) {
           // Add countdown region (metronome clicks at beats 0-3)
           // This REPLACES the normal metronome to avoid duplicates
-          regionProcessor.addCountdownRegion(timeSignature);
+          playbackEngine.addCountdownRegion(timeSignature);
 
           // Add voice cue countdown region (voice samples "one", "two", "three", "four")
           // Plays alongside metronome countdown for verbal guidance
-          regionProcessor.addVoiceCountdownRegion(timeSignature);
+          playbackEngine.addVoiceCountdownRegion(timeSignature);
         }
 
-        // STEP 5: Start RegionProcessor BEFORE transport
+        // STEP 5: Start PlaybackEngine BEFORE transport
         // This must happen here because tracks are registered asynchronously by widgets (MetronomeWidget, etc.)
         // If we wait for transport:start event, tracks won't be registered yet
-        console.log('[PLAYBACK-DIAGNOSTIC] About to call regionProcessor.start()', {
-          hasRegionProcessor: !!regionProcessor,
-          regionProcessorType: regionProcessor?.constructor?.name,
+        console.log('[PLAYBACK-DIAGNOSTIC] About to call playbackEngine.start()', {
+          hasPlaybackEngine: !!playbackEngine,
+          playbackEngineType: playbackEngine?.constructor?.name,
         });
 
-        if (regionProcessor) {
-          console.log('[PLAYBACK-DIAGNOSTIC] Calling regionProcessor.start() now!');
-          regionProcessor.start();
-          logger.debug('🎵 Started RegionProcessor');
-          console.log('[PLAYBACK-DIAGNOSTIC] regionProcessor.start() completed');
+        if (playbackEngine) {
+          console.log('[PLAYBACK-DIAGNOSTIC] Calling playbackEngine.start() now!');
+          playbackEngine.start();
+          logger.debug('🎵 Started PlaybackEngine');
+          console.log('[PLAYBACK-DIAGNOSTIC] playbackEngine.start() completed');
         } else {
-          console.error('[PLAYBACK-DIAGNOSTIC] No regionProcessor available!');
+          console.error('[PLAYBACK-DIAGNOSTIC] No playbackEngine available!');
         }
 
         // STEP 6: Start visual countdown BEFORE transport.start()
@@ -1387,12 +1388,12 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                 // Bass and harmony will be added when those instruments are ready
               }
 
-              // Register tracks with RegionProcessor
-              const regionProcessor = coreServices.getRegionProcessor();
+              // Phase 3.3: Register tracks with PlaybackEngine
+              const playbackEngine = coreServices.getPlaybackEngine();
               const tracks = [];
               if (metronomeTrackRef.current.regions?.length > 0) {
                 tracks.push(metronomeTrackRef.current.track);
-                logger.info('🎮 GlobalControls: Registering metronome track with RegionProcessor');
+                logger.info('🎮 GlobalControls: Registering metronome track with PlaybackEngine');
               }
               if (drumTrackRef.current.regions?.length > 0) {
                 tracks.push(drumTrackRef.current.track);
@@ -1400,7 +1401,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               }
 
               if (tracks.length > 0) {
-                regionProcessor.registerTracks(tracks);
+                playbackEngine.registerTracks(tracks);
                 logger.info('🎮 GlobalControls: Registered', tracks.length, 'tracks with RegionProcessor');
               }
 
@@ -1456,13 +1457,13 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
             // Register tracks with RegionProcessor
             const coreServicesForRegion = (window as any).__globalCoreServices;
             if (coreServicesForRegion) {
-              const regionProcessor = coreServices.getRegionProcessor();
+              const playbackEngine = coreServices.getPlaybackEngine();
 
               // Build tracks array with regions
               const tracks = [];
               if (metronomeTrackRef.current.regions?.length > 0) {
                 tracks.push(metronomeTrackRef.current.track);
-                logger.info('🎮 GlobalControls: Registering metronome track with RegionProcessor');
+                logger.info('🎮 GlobalControls: Registering metronome track with PlaybackEngine');
               }
               if (drumTrackRef.current.regions?.length > 0) {
                 tracks.push(drumTrackRef.current.track);
@@ -1470,7 +1471,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               }
 
               if (tracks.length > 0) {
-                regionProcessor.registerTracks(tracks);
+                playbackEngine.registerTracks(tracks);
                 logger.info('🎮 GlobalControls: Registered', tracks.length, 'tracks with RegionProcessor');
               }
             }
@@ -1615,12 +1616,12 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
             // Register tracks with RegionProcessor if we loaded any regions
             if (allRegions.length > 0) {
-              const regionProcessor = coreServices.getRegionProcessor();
+              const playbackEngine = coreServices.getPlaybackEngine();
               const tracks = [];
 
               if (metronomeTrackRef.current.regions?.length > 0) {
                 tracks.push(metronomeTrackRef.current.track);
-                logger.info('🎮 GlobalControls: Registering metronome track with RegionProcessor');
+                logger.info('🎮 GlobalControls: Registering metronome track with PlaybackEngine');
               }
 
               if (drumTrackRef.current.regions?.length > 0) {
@@ -1629,7 +1630,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
               }
 
               if (tracks.length > 0) {
-                regionProcessor.registerTracks(tracks);
+                playbackEngine.registerTracks(tracks);
                 logger.info('🎮 GlobalControls: Registered', tracks.length, 'tracks from per-widget MIDI files');
               }
 
@@ -1831,10 +1832,10 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
           }
         }
 
-          // Register tracks with RegionProcessor for fallback patterns
+          // Phase 3.3: Register tracks with PlaybackEngine for fallback patterns
           const coreServicesRef = (window as any).__globalCoreServices;
           if (coreServicesRef) {
-            const regionProcessor = coreServicesRef.getRegionProcessor();
+            const playbackEngine = coreServicesRef.getPlaybackEngine();
 
             // Build tracks array with regions
             const tracks = [];
