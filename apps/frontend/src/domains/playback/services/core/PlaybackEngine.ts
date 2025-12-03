@@ -430,6 +430,48 @@ export class PlaybackEngine {
   }
 
   /**
+   * Register multiple tracks at once
+   * Phase 3.3: Added for compatibility with GlobalControls and HarmonyWidget
+   */
+  registerTracks(tracks: Track[], metadata?: { harmonyInstrument?: string }): void {
+    // Store harmony instrument if provided
+    if (metadata?.harmonyInstrument) {
+      (this as any).currentHarmonyInstrument = metadata.harmonyInstrument;
+    }
+
+    tracks.forEach(track => this.registerTrack(track));
+
+    // If already running, reschedule all regions to include new tracks
+    if (this.state === 'playing') {
+      this.scheduleAllRegions();
+    }
+  }
+
+  /**
+   * Update tracks while playing
+   * Phase 3.3: Added for compatibility with GlobalControls and HarmonyWidget
+   */
+  updateTracks(tracks: Track[], metadata?: { harmonyInstrument?: string }): void {
+    // Store harmony instrument if provided
+    if (metadata?.harmonyInstrument) {
+      (this as any).currentHarmonyInstrument = metadata.harmonyInstrument;
+    }
+
+    // Unregister old tracks and register new ones
+    tracks.forEach(track => {
+      if (this.tracks.has(track.id)) {
+        this.unregisterTrack(track.id);
+      }
+      this.registerTrack(track);
+    });
+
+    // If playing, reschedule all regions to include updated tracks
+    if (this.state === 'playing') {
+      this.scheduleAllRegions();
+    }
+  }
+
+  /**
    * Unregister a track
    */
   unregisterTrack(trackId: string): void {
