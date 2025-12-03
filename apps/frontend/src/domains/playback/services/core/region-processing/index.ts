@@ -50,7 +50,8 @@ export {
 // Import directly from there if needed
 
 // Buffer management
-export { BufferManager } from './buffers/index.js';
+// Phase 3.2: BufferManager deleted (was RegionProcessor-specific)
+// Buffer management now handled directly by PlaybackEngine
 
 // Countdown system - not yet extracted, handled inline in RegionScheduler
 // export { CountdownManager } from './countdown/index.js';
