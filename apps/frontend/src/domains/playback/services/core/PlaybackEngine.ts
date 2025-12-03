@@ -197,10 +197,82 @@ export class PlaybackEngine {
       this.lookAheadTime = config.lookAheadTime;
     }
 
+    // Subscribe to tempo change events (Bug #6 fix: with debouncing)
+    this.subscribeToTempoChanges();
+
     this.logger.info('PlaybackEngine initialized', {
       instanceId: this.instanceId,
       config,
     });
+  }
+
+  /**
+   * Subscribe to tempo change events from transport
+   * Bug #6 fix: Debouncing prevents excessive rescheduling during tempo slider drag
+   */
+  private subscribeToTempoChanges(): void {
+    this.unsubscribeTempoChange = this.eventBus.on(
+      'transport:tempo-change',
+      (data: { tempo: number; bpm: number }) => {
+        const newTempo = data.tempo || data.bpm;
+
+        this.logger.info('🎵 PlaybackEngine: Received tempo-change event', {
+          newTempo,
+          isRunning: this.isRunning,
+          state: this.state,
+          instanceId: this.instanceId,
+        });
+
+        if (!this.isRunning) {
+          this.logger.info(
+            '⚠️ PlaybackEngine: Tempo changed while stopped - will apply on next play',
+            {
+              newTempo,
+              instanceId: this.instanceId,
+            },
+          );
+          return;
+        }
+
+        // Debounce rapid changes (e.g., user dragging tempo slider)
+        if (this.tempoChangeDebounce) {
+          clearTimeout(this.tempoChangeDebounce);
+          this.logger.debug('🎵 PlaybackEngine: Debouncing tempo change', {
+            newTempo,
+          });
+        }
+
+        this.tempoChangeDebounce = window.setTimeout(() => {
+          this.logger.info('🎵 PlaybackEngine: Applying debounced tempo change', {
+            newTempo,
+            instanceId: this.instanceId,
+          });
+          this.reschedulePendingEvents();
+          this.tempoChangeDebounce = null;
+        }, this.TEMPO_DEBOUNCE_MS);
+      },
+    );
+  }
+
+  /**
+   * Reschedule pending events (called after tempo change)
+   */
+  private reschedulePendingEvents(): void {
+    if (!this.isRunning || !this.regionScheduler) {
+      return;
+    }
+
+    this.logger.info('🔄 PlaybackEngine: Rescheduling pending events after tempo change');
+
+    // Clear existing scheduled events
+    this.clearScheduledState();
+
+    // Reschedule all tracks from current position
+    const tracks = Array.from(this.tracks.values());
+    if (tracks.length > 0) {
+      // Use scheduleAll instead of scheduleRegions (matches PlaybackEngine architecture)
+      this.scheduleAllRegions();
+    }
   }
 
   /**
