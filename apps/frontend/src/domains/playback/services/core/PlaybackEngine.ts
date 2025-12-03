@@ -496,6 +496,16 @@ export class PlaybackEngine {
   }
 
   /**
+   * Enable countdown with time signature
+   * Phase 3.3: Added for compatibility with GlobalControls
+   */
+  enableCountdown(timeSignature: { numerator: number; denominator: number }): void {
+    this.countdownBeats = timeSignature.numerator;
+    this.countdownEnabled = true;
+    this.logger.info('Countdown enabled', { beats: timeSignature.numerator });
+  }
+
+  /**
    * Add metronome countdown region (accent on beat 1, clicks on beats 2-4)
    */
   addCountdownRegion(timeSignature: { numerator: number; denominator: number }): void {
