@@ -419,34 +419,51 @@ export class Clock {
       const lastUpdateTime = this.sampleAccurateClock.getLastUpdateTime();
       const timeSinceLastUpdate = lastUpdateTime > 0 ? performance.now() - lastUpdateTime : 0;
 
-      // 🔧 RACE CONDITION FIX: Distinguish between states
-      // - Running + no updates yet: Trust 0 (just started, race condition fix)
-      // - Not running + no updates: Fallback to hardware clock (not started)
-      // - Running + has updates but stopped: Fallback to hardware clock (stuck)
+      // 🔧 RACE CONDITION DETECTION: Distinguish between AudioWorklet states
+      // This provides a SECONDARY DEFENSE against race conditions.
+      // PRIMARY FIX: Transport.start() now calls waitForFirstUpdate() before capturing transportStartTime.
+      //
+      // State machine:
+      // 1. STUCK: Has received updates before but stopped updating (>100ms) → Fallback to AudioContext
+      // 2. NOT STARTED: Initialized but not running, no updates → Fallback to AudioContext
+      // 3. STARTUP RACE: Running but no updates yet → Trust 0 (should be rare with waitForFirstUpdate())
+      // 4. NORMAL: Running and receiving updates → Use AudioWorklet time
       const isRunning = this.sampleAccurateClock.getState().isRunning;
       const isStuck =
         updateCount > 0 && // Has received updates before
         timeSinceLastUpdate > 100; // But hasn't updated in >100ms (stuck!)
 
       if (workletTime === 0 && contextTime > 0 && isStuck) {
-        // AudioWorklet is STUCK - fallback to raw AudioContext time
+        // STATE 1: AudioWorklet is STUCK - fallback to raw AudioContext time
         baseTime = contextTime;
         timeSource = 'AudioContext (FALLBACK - STUCK)';
         fallbackTriggered = true;
         console.warn('⚠️ [CLOCK] AudioWorklet stuck - falling back to AudioContext', {
           timeSinceLastUpdate: timeSinceLastUpdate.toFixed(0) + 'ms',
+          updateCount,
+        });
+        logger.warn('AudioWorklet stuck, falling back to AudioContext', {
+          timeSinceLastUpdate,
+          updateCount,
         });
       } else if (workletTime === 0 && contextTime > 0 && updateCount === 0 && !isRunning) {
-        // AudioWorklet initialized but NOT started yet - fallback to AudioContext
+        // STATE 2: AudioWorklet initialized but NOT started yet - fallback to AudioContext
         baseTime = contextTime;
         timeSource = 'AudioContext (FALLBACK - NOT STARTED)';
         fallbackTriggered = true;
       } else if (workletTime === 0 && contextTime > 0 && updateCount === 0 && isRunning) {
-        // AudioWorklet IS running but no updates yet - trust 0 (race condition fix)
+        // STATE 3: AudioWorklet IS running but no updates yet (STARTUP RACE)
+        // This should be RARE now that Transport.start() calls waitForFirstUpdate()
+        // If we see this log frequently, it indicates waitForFirstUpdate() may be timing out
         baseTime = workletTime;
-        timeSource = 'AudioWorklet (STARTUP - isRunning=true)';
+        timeSource = 'AudioWorklet (STARTUP - NO UPDATES YET)';
+        logger.debug('AudioWorklet startup race detected (secondary defense)', {
+          note: 'This should be rare with waitForFirstUpdate() barrier',
+          contextTime: contextTime.toFixed(6),
+          workletTime: workletTime.toFixed(6),
+        });
       } else {
-        // Normal case - AudioWorklet is running and providing updates
+        // STATE 4: Normal case - AudioWorklet is running and providing updates
         baseTime = workletTime;
         timeSource = 'AudioWorklet';
       }
@@ -806,6 +823,15 @@ export class Clock {
    */
   isUsingAudioWorklet(): boolean {
     return this.audioWorkletActive;
+  }
+
+  /**
+   * Get the SampleAccurateClock instance (for advanced timing operations)
+   *
+   * @returns SampleAccurateClock instance if AudioWorklet is active, null otherwise
+   */
+  getSampleAccurateClock(): SampleAccurateClock | null {
+    return this.sampleAccurateClock;
   }
 
   /**

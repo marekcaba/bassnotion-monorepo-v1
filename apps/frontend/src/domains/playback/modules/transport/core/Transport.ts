@@ -177,12 +177,34 @@ export class Transport {
     // Start clock timing (for AudioWorklet mode)
     this.clock.start();
 
-    console.log('🚀 [TRANSPORT DIAGNOSTIC] Clock started, about to capture transportStartTime', {
+    console.log('🚀 [TRANSPORT DIAGNOSTIC] Clock started, waiting for AudioWorklet first update', {
       timestamp: performance.now(),
-      warning: '⚠️ RACE CONDITION ZONE: AudioWorklet may not have sent first update yet',
+      note: '🔧 RACE CONDITION FIX: Wait for AudioWorklet to send first timing update',
     });
 
-    // 🔧 COUNTDOWN TIME FIX: Capture transport start time BEFORE starting position updates
+    // 🔧 RACE CONDITION FIX: Wait for AudioWorklet first update before capturing transportStartTime
+    // Without this, transportStartTime may be captured as 0 while AudioContext.currentTime is ~32ms,
+    // causing negative elapsed time calculations that corrupt the clock display.
+    // This barrier ensures the AudioWorklet has sent its first timing update (~3ms delay).
+    if (this.clock.isUsingAudioWorklet()) {
+      const sampleAccurateClock = this.clock.getSampleAccurateClock();
+      if (sampleAccurateClock) {
+        try {
+          await sampleAccurateClock.waitForFirstUpdate(50); // Wait max 50ms
+          console.log('🚀 [RACE CONDITION FIX] First AudioWorklet update received', {
+            timestamp: performance.now(),
+            updateCount: sampleAccurateClock.getUpdateCount(),
+          });
+        } catch (error) {
+          console.warn('🚀 [RACE CONDITION FIX] Timeout waiting for first update, using AudioContext time', {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          logger.warn('AudioWorklet first update timeout, using AudioContext time', error as Error);
+        }
+      }
+    }
+
+    // 🔧 COUNTDOWN TIME FIX: Capture transport start time AFTER waiting for first update
     // This creates a reference point (t=0) for calculating elapsed time
     // Without this, position updates use audioContext.currentTime directly (~2.5s)
     // which causes the countdown to be skipped entirely

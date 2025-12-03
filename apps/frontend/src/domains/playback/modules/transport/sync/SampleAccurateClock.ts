@@ -267,6 +267,63 @@ export class SampleAccurateClock {
   }
 
   /**
+   * Wait for the first timing update from AudioWorklet
+   *
+   * This method resolves once the AudioWorklet has sent its first timing update,
+   * ensuring that getCurrentTime() returns an accurate value instead of 0.
+   *
+   * **Critical for avoiding race conditions**: When starting playback, the Transport
+   * captures `transportStartTime` immediately after calling start(). If this happens
+   * before the AudioWorklet sends its first update (~3ms delay), the captured time
+   * will be 0 while AudioContext.currentTime is already ~32ms, causing negative
+   * elapsed time calculations.
+   *
+   * @param timeoutMs Maximum time to wait in milliseconds (default: 50ms)
+   * @returns Promise that resolves when first update is received or rejects on timeout
+   *
+   * @example
+   * ```typescript
+   * clock.start();
+   * await clock.waitForFirstUpdate(50); // Wait max 50ms
+   * const startTime = clock.getCurrentTime(); // Now guaranteed to be accurate
+   * ```
+   */
+  async waitForFirstUpdate(timeoutMs = 50): Promise<void> {
+    // If we already have updates, no need to wait
+    if (this.state.updateCount > 0) {
+      logger.debug('waitForFirstUpdate: Already have updates', {
+        updateCount: this.state.updateCount,
+      });
+      return;
+    }
+
+    return new Promise((resolve, reject) => {
+      const startTime = performance.now();
+      const checkInterval = 1; // Check every 1ms
+
+      const intervalId = setInterval(() => {
+        if (this.state.updateCount > 0) {
+          clearInterval(intervalId);
+          const elapsed = performance.now() - startTime;
+          logger.info('waitForFirstUpdate: First update received', {
+            elapsed: `${elapsed.toFixed(2)}ms`,
+            updateCount: this.state.updateCount,
+            currentTime: this.state.currentTime.toFixed(6),
+          });
+          resolve();
+        } else if (performance.now() - startTime > timeoutMs) {
+          clearInterval(intervalId);
+          const error = new Error(
+            `AudioWorklet first update timeout after ${timeoutMs}ms`,
+          );
+          logger.error('waitForFirstUpdate: Timeout', error);
+          reject(error);
+        }
+      }, checkInterval);
+    });
+  }
+
+  /**
    * Seek to a specific time
    */
   seek(seconds: number): void {
