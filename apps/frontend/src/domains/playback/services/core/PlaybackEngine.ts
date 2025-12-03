@@ -40,6 +40,7 @@ import { SustainPedalManager } from './region-processing/sustain/SustainPedalMan
 import { TrackInstrumentUtils } from './utils/TrackInstrumentUtils.js';
 import { TRANSPORT_TIMING_CONFIG } from '../../config/transportTiming.js';
 import { WindowRegistry } from '../WindowRegistry.js';
+import { DiagnosticLogger } from './region-processing/diagnostics/DiagnosticLogger.js';
 
 /**
  * Playback engine state machine
@@ -160,6 +161,7 @@ export class PlaybackEngine {
   private musicalTimeConverter: MusicalTimeConverter | null = null;
   private sustainPedalManager: SustainPedalManager | null = null;
   private scheduleCache: ScheduleCache | null = null;
+  private diagnosticLogger: DiagnosticLogger | null = null;
 
   // Instrument schedulers
   private metronomeScheduler: MetronomeScheduler | null = null;
@@ -301,6 +303,15 @@ export class PlaybackEngine {
       this.musicalTimeConverter = new MusicalTimeConverter();
       this.sustainPedalManager = new SustainPedalManager();
       this.scheduleCache = new ScheduleCache();
+
+      // Initialize diagnostic logger for CC64 debugging
+      this.diagnosticLogger = new DiagnosticLogger(
+        this.instanceId,
+        this.currentCC64Timeline,
+        this.musicalTimeConverter.parsePosition.bind(this.musicalTimeConverter),
+        this.sustainPedalManager.findCC64DownDuringNote.bind(this.sustainPedalManager),
+        this.sustainPedalManager.findNextCC64Up.bind(this.sustainPedalManager),
+      );
 
       // Initialize harmony scheduler with CC64 support
       // SustainPedalManager acts as both CC64TimelineBuilder and SustainPedalAnalyzer
@@ -1137,6 +1148,7 @@ export class PlaybackEngine {
     this.musicalTimeConverter = null;
     this.sustainPedalManager = null;
     this.scheduleCache = null;
+    this.diagnosticLogger = null;
     this.metronomeScheduler = null;
     this.drumScheduler = null;
     this.bassScheduler = null;
