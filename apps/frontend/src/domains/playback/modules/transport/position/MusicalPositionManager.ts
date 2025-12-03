@@ -1,13 +1,73 @@
 /**
- * MusicalPositionManager - Handles musical time representation
+ * MusicalPositionManager - Handles musical time representation and countdown display
  *
- * Converts between musical time (bars:beats:sixteenths) and seconds,
- * manages loop points, and tracks position state.
+ * ## Responsibilities
+ * - Converts between musical time (bars:beats:sixteenths) and seconds
+ * - Manages loop points and tracks position state
+ * - **SINGLE SOURCE OF TRUTH** for countdown display logic
  *
- * Musical time format: "bars:beats:sixteenths"
- * - bars: 0-based bar number
- * - beats: 0-based beat within bar (0 to timeSignature-1)
+ * ## Countdown Architecture
+ *
+ * This class is the **ONLY** place where countdown offset is applied for display purposes.
+ * The separation of concerns is:
+ *
+ * ```
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │ MusicalPositionManager (THIS CLASS)                         │
+ * │ - Stores countdownBeats (e.g., 4 beats = 1 measure)        │
+ * │ - getDisplayPosition() applies offset for UI display        │
+ * │ - Raw position 0:0:0 → Display -1:4:0 (countdown visible)   │
+ * │ - Raw position 1:0:0 → Display 1:1:0 (exercise starts)      │
+ * │ ✅ SINGLE SOURCE OF TRUTH for display logic                 │
+ * └─────────────────────────────────────────────────────────────┘
+ *                              ▲
+ *                              │ gets countdown duration
+ *                              │
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │ TransportController (COORDINATOR)                           │
+ * │ - Reads countdownBeats from MusicalPositionManager          │
+ * │ - Converts beats to seconds: (beats / BPM) * 60            │
+ * │ - Calls Transport.setCountdownOffset(seconds)               │
+ * │ ✅ COORDINATION LAYER - no display logic                    │
+ * └─────────────────────────────────────────────────────────────┘
+ *                              │
+ *                              ▼ sets offset in seconds
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │ Transport (TIMING)                                           │
+ * │ - Stores countdownOffsetSeconds (for elapsed time tracking) │
+ * │ - Used to calculate: elapsedTime = currentTime - startTime  │
+ * │ - Ensures position updates start from 0s (not 32ms)         │
+ * │ ✅ TIMING REFERENCE - no display logic                      │
+ * └─────────────────────────────────────────────────────────────┘
+ * ```
+ *
+ * ## Key Insight: NOT Duplicate Logic
+ *
+ * Although countdown appears in multiple files, each has a DISTINCT responsibility:
+ * - **MusicalPositionManager**: Display transformation (raw → display position)
+ * - **TransportController**: Coordination (beats → seconds conversion)
+ * - **Transport**: Timing reference (elapsed time calculation)
+ *
+ * This is proper separation of concerns, NOT code duplication.
+ *
+ * ## Musical Time Format
+ * - bars: 1-based bar number in display (0-based internal)
+ * - beats: 1-based beat within bar (1 to timeSignature)
  * - sixteenths: 0-based sixteenth within beat (0-3)
+ *
+ * @example
+ * ```typescript
+ * const manager = new MusicalPositionManager();
+ * manager.setCountdownBeats(4); // One measure of 4/4 time
+ *
+ * // During countdown:
+ * manager.updatePosition(0); // seconds = 0
+ * manager.getDisplayPosition(); // Returns: { bars: -1, beats: 4, sixteenths: 0 }
+ *
+ * // After countdown (at exercise start):
+ * manager.updatePosition(2); // seconds = 2 (after 4-beat countdown @ 120 BPM)
+ * manager.getDisplayPosition(); // Returns: { bars: 1, beats: 1, sixteenths: 0 }
+ * ```
  */
 
 import * as Tone from 'tone';

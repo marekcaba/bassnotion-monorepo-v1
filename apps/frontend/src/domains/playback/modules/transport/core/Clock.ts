@@ -13,9 +13,6 @@ import { ClockSyncData } from '../types/index.js';
 import { ClockSyncError } from '../types/errors.js';
 import { createStructuredLogger } from '../shared/index.js';
 import { SampleAccurateClock } from '../sync/SampleAccurateClock.js';
-// Phase 2.2: AdaptiveDriftCompensator deprecated - AudioWorklet provides sample accuracy
-// Only used when driftCompensation === 'adaptive' (default is 'basic')
-import { AdaptiveDriftCompensator } from '../sync/AdaptiveDriftCompensator.js';
 import { WorkerTimingManager } from '../sync/WorkerTimingManager.js';
 
 const logger = createStructuredLogger('TransportClock');
@@ -27,7 +24,7 @@ export interface ClockConfig {
   syncIntervalMs?: number;
   audioWorkletPath?: string;
   workerPath?: string;
-  driftCompensation?: 'off' | 'basic' | 'adaptive';
+  driftCompensation?: 'off' | 'basic'; // 'adaptive' removed - AdaptiveDriftCompensator deprecated
 }
 
 export class Clock {
@@ -54,12 +51,6 @@ export class Clock {
   private currentTime = 0;
   private currentFrame = 0;
   private lastUpdateTime = 0;
-
-  // Drift compensation
-  // Phase 2.2: DEPRECATED - Only used when config.driftCompensation === 'adaptive' (default: 'basic')
-  // AudioWorklet provides sample-accurate timing without drift compensation
-  private driftCompensator: AdaptiveDriftCompensator | null = null;
-  private driftMeasurementInterval: number | null = null;
 
   // Configuration
   private config: ClockConfig;
@@ -408,8 +399,8 @@ export class Clock {
     }
 
     let baseTime: number;
-    let timeSource: string;
-    let fallbackTriggered = false;
+    let _timeSource: string; // Prefixed with _ to indicate intentionally unused (for debugging)
+    let _fallbackTriggered = false; // Prefixed with _ to indicate intentionally unused (for debugging)
 
     // Use AudioWorklet time if active AND providing updates
     if (this.audioWorkletActive && this.sampleAccurateClock) {
@@ -436,12 +427,8 @@ export class Clock {
       if (workletTime === 0 && contextTime > 0 && isStuck) {
         // STATE 1: AudioWorklet is STUCK - fallback to raw AudioContext time
         baseTime = contextTime;
-        timeSource = 'AudioContext (FALLBACK - STUCK)';
-        fallbackTriggered = true;
-        console.warn('⚠️ [CLOCK] AudioWorklet stuck - falling back to AudioContext', {
-          timeSinceLastUpdate: timeSinceLastUpdate.toFixed(0) + 'ms',
-          updateCount,
-        });
+        _timeSource = 'AudioContext (FALLBACK - STUCK)';
+        _fallbackTriggered = true;
         logger.warn('AudioWorklet stuck, falling back to AudioContext', {
           timeSinceLastUpdate,
           updateCount,
@@ -449,14 +436,14 @@ export class Clock {
       } else if (workletTime === 0 && contextTime > 0 && updateCount === 0 && !isRunning) {
         // STATE 2: AudioWorklet initialized but NOT started yet - fallback to AudioContext
         baseTime = contextTime;
-        timeSource = 'AudioContext (FALLBACK - NOT STARTED)';
-        fallbackTriggered = true;
+        _timeSource = 'AudioContext (FALLBACK - NOT STARTED)';
+        _fallbackTriggered = true;
       } else if (workletTime === 0 && contextTime > 0 && updateCount === 0 && isRunning) {
         // STATE 3: AudioWorklet IS running but no updates yet (STARTUP RACE)
         // This should be RARE now that Transport.start() calls waitForFirstUpdate()
         // If we see this log frequently, it indicates waitForFirstUpdate() may be timing out
         baseTime = workletTime;
-        timeSource = 'AudioWorklet (STARTUP - NO UPDATES YET)';
+        _timeSource = 'AudioWorklet (STARTUP - NO UPDATES YET)';
         logger.debug('AudioWorklet startup race detected (secondary defense)', {
           note: 'This should be rare with waitForFirstUpdate() barrier',
           contextTime: contextTime.toFixed(6),
@@ -465,22 +452,22 @@ export class Clock {
       } else {
         // STATE 4: Normal case - AudioWorklet is running and providing updates
         baseTime = workletTime;
-        timeSource = 'AudioWorklet';
+        _timeSource = 'AudioWorklet';
       }
     }
     // Use Web Worker time if active
     else if (this.webWorkerActive && this.workerTimingManager) {
       baseTime = this.workerTimingManager.getCurrentTime();
-      timeSource = 'WebWorker';
-      console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() from WebWorker', {
+      _timeSource = 'WebWorker';
+      logger.debug('getAudioTime() from WebWorker', {
         returnedTime: baseTime.toFixed(6),
       });
     }
     // Fallback to raw AudioContext time
     else {
       baseTime = this.audioContext.currentTime;
-      timeSource = 'AudioContext (fallback)';
-      console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() from AudioContext fallback', {
+      _timeSource = 'AudioContext (fallback)';
+      logger.debug('getAudioTime() from AudioContext fallback', {
         returnedTime: baseTime.toFixed(6),
         reason: this.useHardwareClock ? 'useHardwareClock enabled but offset removed' : 'AudioWorklet/WebWorker not active',
       });
@@ -491,7 +478,7 @@ export class Clock {
     if (this.driftCompensator && this.config.driftCompensation === 'adaptive') {
       const compensation = this.driftCompensator.getCompensation();
       const finalTime = baseTime + compensation / 1000;
-      console.warn('⚠️ [CLOCK] DEPRECATED: Using adaptive drift compensation', {
+      logger.warn('DEPRECATED: Using adaptive drift compensation', {
         baseTime: baseTime.toFixed(6),
         compensation: compensation.toFixed(3) + 'ms',
         finalTime: finalTime.toFixed(6),
