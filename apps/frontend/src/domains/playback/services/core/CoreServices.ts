@@ -101,12 +101,18 @@ export class CoreServices {
       logPlaybackEngineMigrationEvent('PlaybackEngine created', {
         instanceId: (this.playbackEngine as any).instanceId,
       });
+
+      // Register PlaybackEngine in WindowRegistry for debugging
+      WindowRegistry.setPlaybackEngine(this.playbackEngine);
     } else {
       // Only create RegionProcessor if new PlaybackEngine is disabled (legacy fallback)
       this.regionProcessor = new RegionProcessor(this.eventBus);
       logPlaybackEngineMigrationEvent('Using legacy RegionProcessor', {
         reason: 'PlaybackEngine feature flag disabled',
       });
+
+      // Register RegionProcessor in WindowRegistry for debugging
+      WindowRegistry.setRegionProcessor(this.regionProcessor);
     }
 
     // Register services with dependencies
