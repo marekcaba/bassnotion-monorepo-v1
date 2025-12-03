@@ -19,6 +19,7 @@ import {
   type HarmonyInstrument,
   type PerNoteVelocityRanges,
 } from './scheduling/VelocityLayerSelector.js';
+import { midiToNoteName } from '../../utils/midiUtils.js';
 
 /**
  * Instrument types supported by the scheduler
@@ -380,7 +381,7 @@ export class Scheduler {
     // If MIDI note provided but no noteName, calculate note name after octave shift
     if (midiNote !== undefined && !noteName) {
       const adjustedMidiNote = midiNote - octaveShift;
-      noteName = this.midiToNoteName(adjustedMidiNote);
+      noteName = midiToNoteName(adjustedMidiNote);
     }
 
     // Default to C4 if still no note name
@@ -566,30 +567,5 @@ export class Scheduler {
     };
   }
 
-  /**
-   * Convert MIDI note number to note name with 's' for sharps
-   * Example: 60 → 'C4', 61 → 'Cs4', 62 → 'D4'
-   *
-   * Uses 's' for sharps (not '#') to match buffer cache keys
-   * Grand Piano keyboard map uses: 'Cs4', 'Ds4', 'Fs4', 'Gs4', 'As4'
-   */
-  private midiToNoteName(midiNote: number): string {
-    const noteNames = [
-      'C',
-      'Cs',
-      'D',
-      'Ds',
-      'E',
-      'F',
-      'Fs',
-      'G',
-      'Gs',
-      'A',
-      'As',
-      'B',
-    ];
-    const octave = Math.floor(midiNote / 12) - 1;
-    const noteIndex = midiNote % 12;
-    return `${noteNames[noteIndex]}${octave}`;
-  }
+  // Phase 4.1: midiToNoteName() extracted to shared utils/midiUtils.ts
 }

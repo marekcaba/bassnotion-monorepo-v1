@@ -34,6 +34,7 @@ import { createStructuredLogger } from '../../../modules/shared/index.js';
 import type { PatternEvent } from '../types/region.types.js';
 import type { CC64TimelineBuilder } from '../sustain/CC64TimelineBuilder.js';
 import type { SustainPedalAnalyzer } from '../sustain/SustainPedalAnalyzer.js';
+import { midiToNoteName } from '../../../utils/midiUtils.js';
 
 // Extracted modules
 import { VelocityLayerSelector } from './VelocityLayerSelector.js';
@@ -268,7 +269,7 @@ export class HarmonySchedulerV2 {
     const duration = event.duration || 2; // Default 2 seconds
 
     // STEP 2: Convert MIDI note to note name (C4, Cs4, D4, etc.)
-    const noteName = this.midiToNoteName(midiNote);
+    const noteName = midiToNoteName(midiNote);
 
     // STEP 3: Select velocity layer using VelocityLayerSelector
     const layer = this.velocityLayerSelector.selectLayer(velocity, noteName);
@@ -501,30 +502,7 @@ export class HarmonySchedulerV2 {
     });
   }
 
-  /**
-   * Convert MIDI note number to note name with 's' for sharps
-   * Example: 60 → 'C4', 61 → 'Cs4', 62 → 'D4'
-   * @private
-   */
-  private midiToNoteName(midiNote: number): string {
-    const noteNames = [
-      'C',
-      'Cs',
-      'D',
-      'Ds',
-      'E',
-      'F',
-      'Fs',
-      'G',
-      'Gs',
-      'A',
-      'As',
-      'B',
-    ];
-    const octave = Math.floor(midiNote / 12) - 1;
-    const noteIndex = midiNote % 12;
-    return `${noteNames[noteIndex]}${octave}`;
-  }
+  // Phase 4.1: midiToNoteName() extracted to shared utils/midiUtils.ts
 
   /**
    * Cleanup source after playback ends

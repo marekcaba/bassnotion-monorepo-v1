@@ -14,6 +14,7 @@ import grandPianoConfig from '@/domains/playback/data/instruments/piano/grand-pi
 import grandPianoKeyboardMap from '@/domains/playback/data/instruments/piano/grandpiano-keyboard-map.json';
 import wurlitzerConfig from '@/domains/playback/data/instruments/wurlitzer/wurlitzer-piano.json';
 import rhodesConfig from '@/domains/playback/data/instruments/rhodes/rhodes-piano.json';
+import { midiToNoteName } from '../../utils/midiUtils.js';
 
 const logger = getLogger('HarmonyPreloadStrategy');
 
@@ -351,16 +352,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
     return `${noteName}${octave}`;
   }
 
-  /**
-   * Convert MIDI pitch to note name for file URLs (e.g., 60 -> 'C4', 61 -> 'Cs4')
-   * Uses 's' for sharps to avoid URL encoding issues (Cs, Ds, Fs, Gs, As)
-   */
-  private midiToNoteName(midi: number): string {
-    const noteNames = ['C', 'Cs', 'D', 'Ds', 'E', 'F', 'Fs', 'G', 'Gs', 'A', 'As', 'B'];
-    const octave = Math.floor(midi / 12) - 1;
-    const noteName = noteNames[midi % 12];
-    return `${noteName}${octave}`;
-  }
+  // Phase 4.1: midiToNoteName() extracted to shared utils/midiUtils.ts
 
   /**
    * Load instrument configuration from imported JSON modules
@@ -522,12 +514,12 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
       }
 
       // Use 's' notation for file URLs (Cs4.ogg instead of C#4.ogg)
-      const noteNameForFile = this.midiToNoteName(adjustedPitch);
+      const noteNameForFile = midiToNoteName(adjustedPitch);
 
       // CRITICAL: Also track original note name BEFORE octave shift (needed for Wurlitzer cache aliases)
       // Example: Exercise has MIDI 46 (As2), after shift becomes MIDI 34 (As1)
       //          We load As1.ogg but need alias As2 → As1 for RegionProcessor
-      const originalNoteName = octaveShift !== 0 ? this.midiToNoteName(note.pitch) : noteNameForFile;
+      const originalNoteName = octaveShift !== 0 ? midiToNoteName(note.pitch) : noteNameForFile;
 
       // DEBUG: Log first 3 converted note names
       if (noteCount <= 3 && octaveShift !== 0) {
@@ -909,7 +901,7 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
     // Build a simple map with mid-range velocity layer
     const genericSampleMap = new Map<string, Set<string>>();
     for (const pitch of genericPitches) {
-      const noteName = this.midiToNoteName(pitch);
+      const noteName = midiToNoteName(pitch);
       genericSampleMap.set(noteName, new Set(['v10']));
     }
 
