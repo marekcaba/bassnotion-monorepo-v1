@@ -210,21 +210,28 @@ export class WindowRegistry {
 
   /**
    * Set the RegionProcessor instance
-   * This is the legacy playback engine that will eventually be replaced
+   * @deprecated RegionProcessor has been removed. Use setPlaybackEngine() instead.
+   * This method is a no-op and kept only for backward compatibility.
+   * Phase 3.3: RegionProcessor deleted, PlaybackEngine is at 100% rollout
    */
   static setRegionProcessor(processor: any): void {
-    if (typeof window === 'undefined') return;
-
-    window.__bassnotion_regionProcessor = processor;
+    // No-op - RegionProcessor no longer exists
+    // This method is kept for backward compatibility during migration
+    return;
   }
 
   /**
    * Get the RegionProcessor instance
+   * @deprecated RegionProcessor has been removed. Use getPlaybackEngine() instead.
+   * This method is kept only for backward compatibility in tests.
+   * Phase 3.3: RegionProcessor deleted, PlaybackEngine is at 100% rollout
    */
   static getRegionProcessor(): any {
     if (typeof window === 'undefined') return null;
 
-    return window.__bassnotion_regionProcessor || null;
+    // Return null - RegionProcessor no longer exists
+    // Tests should migrate to getPlaybackEngine()
+    return null;
   }
 
   /**
