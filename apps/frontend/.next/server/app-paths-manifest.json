@@ -1,5 +1,5 @@
 {
-  "/library/[tutorialId]/page": "app/library/[tutorialId]/page.js",
   "/library/page": "app/library/page.js",
-  "/dashboard/page": "app/dashboard/page.js"
+  "/dashboard/page": "app/dashboard/page.js",
+  "/library/[tutorialId]/page": "app/library/[tutorialId]/page.js"
 }

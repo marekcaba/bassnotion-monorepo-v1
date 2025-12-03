@@ -31,7 +31,7 @@ export interface ClockConfig {
 export class Clock {
   private audioContext: AudioContext | null = null;
   private useHardwareClock = true;
-  private hardwareClockOffset = 0;
+  // hardwareClockOffset removed - Phase 2: Legacy timing cleanup
   private clockSyncInterval: number | null = null;
   private clockSyncHistory: number[] = [];
   private readonly clockSyncHistorySize = 10;
@@ -425,13 +425,16 @@ export class Clock {
         timeSinceLastUpdate > 100; // But hasn't updated in >100ms (stuck!)
 
       if (workletTime === 0 && contextTime > 0 && isStuck) {
-        // AudioWorklet is STUCK - fallback to AudioContext
-        baseTime = contextTime + this.hardwareClockOffset;
+        // AudioWorklet is STUCK - fallback to raw AudioContext time
+        baseTime = contextTime;
         timeSource = 'AudioContext (FALLBACK - STUCK)';
         fallbackTriggered = true;
+        console.warn('⚠️ [CLOCK] AudioWorklet stuck - falling back to AudioContext', {
+          timeSinceLastUpdate: timeSinceLastUpdate.toFixed(0) + 'ms',
+        });
       } else if (workletTime === 0 && contextTime > 0 && updateCount === 0 && !isRunning) {
-        // AudioWorklet initialized but NOT started yet - fallback to hardware clock
-        baseTime = contextTime + this.hardwareClockOffset;
+        // AudioWorklet initialized but NOT started yet - fallback to AudioContext
+        baseTime = contextTime;
         timeSource = 'AudioContext (FALLBACK - NOT STARTED)';
         fallbackTriggered = true;
       } else if (workletTime === 0 && contextTime > 0 && updateCount === 0 && isRunning) {
@@ -452,20 +455,13 @@ export class Clock {
         returnedTime: baseTime.toFixed(6),
       });
     }
-    // Use hardware clock if enabled
-    else if (this.useHardwareClock) {
-      baseTime = this.audioContext.currentTime + this.hardwareClockOffset;
-      timeSource = 'Hardware Clock';
-      console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() from Hardware Clock', {
-        contextTime: this.audioContext.currentTime.toFixed(6),
-        hardwareClockOffset: this.hardwareClockOffset.toFixed(6),
-        returnedTime: baseTime.toFixed(6),
-      });
-    } else {
+    // Fallback to raw AudioContext time
+    else {
       baseTime = this.audioContext.currentTime;
-      timeSource = 'AudioContext (default)';
-      console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() from AudioContext default', {
+      timeSource = 'AudioContext (fallback)';
+      console.log('🔄 [CLOCK DIAGNOSTIC] getAudioTime() from AudioContext fallback', {
         returnedTime: baseTime.toFixed(6),
+        reason: this.useHardwareClock ? 'useHardwareClock enabled but offset removed' : 'AudioWorklet/WebWorker not active',
       });
     }
 
@@ -531,11 +527,12 @@ export class Clock {
         this.clockSyncHistory.reduce((sum, val) => sum + val, 0) /
         this.clockSyncHistory.length;
 
-      this.hardwareClockOffset = avgOffset;
+      // hardwareClockOffset assignment removed - Phase 2: Legacy timing cleanup
 
-      logger.debug('Clock synced', {
+      logger.debug('Clock synced (offset calculation disabled)', {
         offset: avgOffset,
         samples: this.clockSyncHistory.length,
+        note: 'hardwareClockOffset removed - using raw AudioContext time',
       });
     } catch (error) {
       logger.error('Clock sync failed', error as Error);
@@ -696,7 +693,7 @@ export class Clock {
    */
   reset(): void {
     this.clockSyncHistory = [];
-    this.hardwareClockOffset = 0;
+    // hardwareClockOffset = 0 removed - Phase 2: Legacy timing cleanup
     this.currentTime = 0;
     this.currentFrame = 0;
     this.lastUpdateTime = 0;
@@ -826,10 +823,8 @@ export class Clock {
     else if (this.webWorkerActive && this.workerTimingManager) {
       return this.workerTimingManager.getCurrentTime();
     }
-    // Use hardware clock if enabled
-    else if (this.useHardwareClock) {
-      return this.audioContext.currentTime + this.hardwareClockOffset;
-    } else {
+    // Fallback to raw AudioContext time
+    else {
       return this.audioContext.currentTime;
     }
   }
