@@ -1323,10 +1323,10 @@ const HarmonyWidgetComponent = ({
   );
 
   // Schedule harmony notes from exercise data
-  // FAANG-STYLE SOLUTION: Use RegionProcessor for harmony scheduling (matches DrummerWidget architecture)
-  const registerHarmonyWithRegionProcessor = useCallback(async () => {
+  // FAANG-STYLE SOLUTION: Use PlaybackEngine for harmony scheduling (matches DrummerWidget architecture)
+  const registerHarmonyWithPlaybackEngine = useCallback(async () => {
     const timestamp = new Date().toISOString();
-    console.log('🎹🎹🎹 [HARMONY-WIDGET] registerHarmonyWithRegionProcessor CALLED', {
+    console.log('🎹🎹🎹 [HARMONY-WIDGET] registerHarmonyWithPlaybackEngine CALLED', {
       timestamp,
       callStack: new Error().stack?.split('\n').slice(1, 4),
     });
@@ -1350,7 +1350,7 @@ const HarmonyWidgetComponent = ({
     // NEW PLAYBACK ENGINE: Plugin is optional now - only needed for legacy manual chord progression
     // The new Scheduler handles harmony directly using buffers, not the WAM plugin
     if (!plugin || !plugin.audioNode) {
-      console.warn('⚠️ [HARMONY-WIDGET] No WAM plugin available - using Scheduler-only mode (buffers + RegionProcessor)', {
+      console.warn('⚠️ [HARMONY-WIDGET] No WAM plugin available - using Scheduler-only mode (buffers + PlaybackEngine)', {
         hasPlugin: !!plugin,
         hasAudioNode: !!plugin?.audioNode,
         usingNewPlaybackEngine: true
@@ -1369,10 +1369,10 @@ const HarmonyWidgetComponent = ({
     }
     console.log('✅ [HARMONY-WIDGET] Exercise has harmony notes:', exercise.harmonyNotes.length);
 
-    console.log('🎹 [HARMONY-WIDGET] Registering harmony with RegionProcessor');
+    console.log('🎹 [HARMONY-WIDGET] Registering harmony with PlaybackEngine');
 
-    // Get CoreServices and RegionProcessor
-    // ✅ FIX: Use WindowRegistry instead of direct window access
+    // Get CoreServices and PlaybackEngine
+    // Phase 3.3: Use PlaybackEngine instead of RegionProcessor
     const coreServices = WindowRegistry.getCoreServices();
     if (!coreServices) {
       console.error('❌ [HARMONY-WIDGET] No core services available');
@@ -1380,14 +1380,14 @@ const HarmonyWidgetComponent = ({
     }
     console.log('✅ [HARMONY-WIDGET] Core services available');
 
-    const regionProcessor = coreServices.getRegionProcessor?.();
-    if (!regionProcessor) {
-      console.error('❌ [HARMONY-WIDGET] No RegionProcessor available');
+    const playbackEngine = coreServices.getPlaybackEngine();
+    if (!playbackEngine) {
+      console.error('❌ [HARMONY-WIDGET] No PlaybackEngine available');
       return;
     }
-    console.log('✅ [HARMONY-WIDGET] RegionProcessor available');
+    console.log('✅ [HARMONY-WIDGET] PlaybackEngine available');
 
-    // CRITICAL: Inject harmony buffers into RegionProcessor for direct scheduling
+    // CRITICAL: Inject harmony buffers into PlaybackEngine for direct scheduling
     // This enables instant stop functionality by tracking AudioBufferSourceNodes
     console.log('🔧 [HARMONY-WIDGET] Starting buffer injection...');
     try {
@@ -1493,7 +1493,7 @@ const HarmonyWidgetComponent = ({
       for (const cacheKey of harmonyCachedKeys) {
         const buffer = sampleCache.getCachedBuffer(cacheKey);
         if (buffer) {
-          // Convert 'wurlitzer-v3-Cs4' to 'v3-Cs4' for RegionProcessor
+          // Convert 'wurlitzer-v3-Cs4' to 'v3-Cs4' for PlaybackEngine
           // Remove the instrument prefix to get the layer-note format
           const keyWithoutPrefix = cacheKey.replace(`${instrument}-`, '');
           harmonyBuffers.set(keyWithoutPrefix, buffer);
@@ -1518,7 +1518,7 @@ const HarmonyWidgetComponent = ({
 
         if (audioContext?.destination) {
           // Load instrument config to get per-note velocity ranges
-          // This tells RegionProcessor which velocity layer each note actually has
+          // This tells PlaybackEngine which velocity layer each note actually has
           // (instrument variable already defined above at line 1205)
           console.log('📖 [HARMONY-WIDGET] Loading instrument config:', instrument);
 
@@ -1544,8 +1544,8 @@ const HarmonyWidgetComponent = ({
             console.error('❌ [HARMONY-WIDGET] Failed to load instrument config', error);
           }
 
-          regionProcessor.setHarmonyBuffers(harmonyBuffers, audioContext.destination, perNoteVelocityRanges, instrument);
-          console.log('✅ [HARMONY-WIDGET] Harmony buffers injected into RegionProcessor', {
+          playbackEngine.setHarmonyBuffers(harmonyBuffers, audioContext.destination, perNoteVelocityRanges, instrument);
+          console.log('✅ [HARMONY-WIDGET] Harmony buffers injected into PlaybackEngine', {
             instrument,
             buffersInjected: buffersFound,
             audioContextState: audioContext.state,
@@ -1578,11 +1578,11 @@ const HarmonyWidgetComponent = ({
       } else {
         // CRITICAL FIX: Clear old buffers to prevent playing wrong instrument
         // When switching exercises, if new instrument's buffers aren't cached yet,
-        // we must clear RegionProcessor's old buffers to avoid playing wrong instrument
+        // we must clear PlaybackEngine's old buffers to avoid playing wrong instrument
         const audioEngine = coreServices.getAudioEngine();
         const audioContext = await audioEngine.getContext();
         if (audioContext?.destination) {
-          regionProcessor.setHarmonyBuffers(new Map(), audioContext.destination, undefined, instrument);
+          playbackEngine.setHarmonyBuffers(new Map(), audioContext.destination, undefined, instrument);
           console.warn('⚠️ [HARMONY-WIDGET] No harmony buffers found in cache - cleared old buffers to prevent wrong instrument playing');
         } else {
           console.warn('⚠️ [HARMONY-WIDGET] No harmony buffers found in cache');
@@ -1593,7 +1593,7 @@ const HarmonyWidgetComponent = ({
     }
 
     // Convert harmony notes to Region format
-    // RegionProcessor now accepts objects for MIDI tick precision (480 PPQ)
+    // PlaybackEngine now accepts objects for MIDI tick precision (480 PPQ)
 
     // CRITICAL: Find the earliest event position (note OR control change) to normalize MIDI start to 1:1:0
     // MIDI files may be recorded starting at measure 9, 17, etc.
@@ -1829,7 +1829,7 @@ const HarmonyWidgetComponent = ({
       }
     };
 
-    // Register track with RegionProcessor
+    // Register track with PlaybackEngine
     // Use updateTracks if already running, registerTracks if not
     try {
       const trackData = [{
@@ -1841,10 +1841,10 @@ const HarmonyWidgetComponent = ({
         audioNode: plugin?.audioNode, // Optional: only used for legacy manual chord progression mode
       }];
 
-      // Check if RegionProcessor is already running (play button was clicked before harmony was ready)
-      const isRunning = (regionProcessor as any).isRunning;
+      // Check if PlaybackEngine is already running (play button was clicked before harmony was ready)
+      const isRunning = (playbackEngine as any).isRunning;
 
-      // FAANG FIX: Pass exercise metadata to RegionProcessor for early instrument detection
+      // FAANG FIX: Pass exercise metadata to PlaybackEngine for early instrument detection
       const exerciseMetadata = {
         harmonyInstrument: exercise.harmonyInstrument || 'wurlitzer'
       };
@@ -1859,27 +1859,27 @@ const HarmonyWidgetComponent = ({
       });
 
       if (isRunning) {
-        console.log('⚡ [HARMONY-WIDGET] RegionProcessor already running - using updateTracks()');
-        regionProcessor.updateTracks(trackData, exerciseMetadata);
+        console.log('⚡ [HARMONY-WIDGET] PlaybackEngine already running - using updateTracks()');
+        playbackEngine.updateTracks(trackData, exerciseMetadata);
       } else {
-        console.log('📝 [HARMONY-WIDGET] RegionProcessor not running yet - using registerTracks()');
-        regionProcessor.registerTracks(trackData);
+        console.log('📝 [HARMONY-WIDGET] PlaybackEngine not running yet - using registerTracks()');
+        playbackEngine.registerTracks(trackData);
         // Also set instrument type early for registerTracks path
-        (regionProcessor as any).currentHarmonyInstrument = exerciseMetadata.harmonyInstrument;
+        (playbackEngine as any).currentHarmonyInstrument = exerciseMetadata.harmonyInstrument;
       }
 
       console.log('✅✅✅ [TIMING-DIAGNOSTIC] Harmony track registration completed!', {
         timestamp: new Date().toISOString(),
       });
 
-      console.log('✅ [HARMONY-WIDGET] Harmony registered with RegionProcessor', {
+      console.log('✅ [HARMONY-WIDGET] Harmony registered with PlaybackEngine', {
         eventsCount: harmonyEvents.length,
         duration: harmonyRegion.duration,
         bpm,
         method: isRunning ? 'updateTracks' : 'registerTracks',
       });
 
-      logger.info('🎹 Harmony registered with RegionProcessor', {
+      logger.info('🎹 Harmony registered with PlaybackEngine', {
         noteCount: harmonyEvents.length,
         exerciseId: exercise.id?.value,
         bpm,
@@ -1887,7 +1887,7 @@ const HarmonyWidgetComponent = ({
       });
     } catch (error) {
       console.error('❌ [HARMONY-WIDGET] Failed to register harmony:', error);
-      logger.error('Failed to register harmony with RegionProcessor', error as Error);
+      logger.error('Failed to register harmony with PlaybackEngine', error as Error);
     }
   }, [exercise, bpm]); // Removed logger - it's only used for side effects, doesn't affect callback behavior
 
@@ -1942,7 +1942,7 @@ const HarmonyWidgetComponent = ({
     lastScheduledTimeRef.current = scheduleTime;
   }, [selectedProgression, bpm, onNextChord]); // Removed track.isPlaying - it's checked inside the function, no need as dependency
 
-  // CHECKPOINT 10: RegionProcessor registration - track when and why registration runs
+  // CHECKPOINT 10: PlaybackEngine registration - track when and why registration runs
   useEffect(() => {
     const timestamp = Date.now();
     const currentExercise = exerciseRef.current;
@@ -1975,7 +1975,7 @@ const HarmonyWidgetComponent = ({
     });
 
     // CRITICAL FIX: Register harmony buffers when exercise changes, regardless of playing state
-    // This ensures RegionProcessor always has the correct instrument's buffers loaded
+    // This ensures PlaybackEngine always has the correct instrument's buffers loaded
     // We need to register in two scenarios:
     // 1. When exercise changes (to update buffers) - even if not playing
     // 2. When playback starts (to ensure buffers are ready)
@@ -1994,7 +1994,7 @@ const HarmonyWidgetComponent = ({
     });
 
     if (shouldRegister) {
-      logger.debug('🔍 [CHECKPOINT-10-WILL-REGISTER] All conditions met, calling registerHarmonyWithRegionProcessor');
+      logger.debug('🔍 [CHECKPOINT-10-WILL-REGISTER] All conditions met, calling registerHarmonyWithPlaybackEngine');
       console.log('🔥🔥🔥 [HARMONY-WIDGET] ALL CONDITIONS MET - Registering harmony buffers!', {
         timestamp,
         exerciseId: currentExercise?.id,
@@ -2004,9 +2004,9 @@ const HarmonyWidgetComponent = ({
       });
 
       // Register harmony events and buffers for this exercise
-      // This updates RegionProcessor with the correct instrument's buffers
+      // This updates PlaybackEngine with the correct instrument's buffers
       // Note: WamKeyboard automatically disconnects old instrument and connects new one
-      registerHarmonyWithRegionProcessor();
+      registerHarmonyWithPlaybackEngine();
     } else {
       const missingConditions = [];
       if (!track.isReady) missingConditions.push('track not ready');
@@ -2015,7 +2015,7 @@ const HarmonyWidgetComponent = ({
 
       console.log('⏳ [HARMONY-WIDGET] Waiting for conditions:', missingConditions.join(', '));
     }
-  }, [track.isReady, wamPluginLoaded, registerHarmonyWithRegionProcessor, exercise?.id, samplesLoadedTrigger]);
+  }, [track.isReady, wamPluginLoaded, registerHarmonyWithPlaybackEngine, exercise?.id, samplesLoadedTrigger]);
   // CRITICAL: Include exercise?.id to re-register when switching exercises
   // CRITICAL FIX: Include samplesLoadedTrigger to re-register when samples finish loading
 
@@ -2030,8 +2030,8 @@ const HarmonyWidgetComponent = ({
       }
     }
 
-    // RegionProcessor handles stop automatically - no custom stop logic needed!
-    // When stop is clicked, RegionProcessor.stop() cancels all scheduled sources
+    // PlaybackEngine handles stop automatically - no custom stop logic needed!
+    // When stop is clicked, PlaybackEngine.stop() cancels all scheduled sources
   }, [isPlaying, track.isReady, wamPluginLoaded, exercise, scheduleProgression, logger]);
 
   // Handle progression changes
