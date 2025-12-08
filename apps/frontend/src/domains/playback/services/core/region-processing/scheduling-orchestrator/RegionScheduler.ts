@@ -262,13 +262,17 @@ export class RegionScheduler {
 
           // Calculate absolute time
           const eventData = (event as any).data;
-          const originalBpm =
-            eventData?.originalBpm || Tone.Transport.bpm.value;
+          // CRITICAL FIX: Always use current Tone.Transport.bpm for timing calculations
+          // The originalBpm from MIDI file was incorrectly used for scheduling,
+          // causing harmony to play at exercise BPM (69) even when user changed to 100
+          // Now we ALWAYS use the current transport BPM for scheduling audio times
+          const currentBpm = Tone.Transport.bpm.value;
+          const originalBpm = eventData?.originalBpm; // Keep for debug logging only
           let eventTime: number;
 
           if (eventData?.ticks !== undefined) {
-            // Use absolute ticks
-            const secondsPerBeat = 60 / originalBpm;
+            // Use absolute ticks with CURRENT BPM (not original)
+            const secondsPerBeat = 60 / currentBpm;
             const ticksPerBeat = 480;
             const absoluteTicks = eventData.ticks;
             eventTime = (absoluteTicks / ticksPerBeat) * secondsPerBeat;
@@ -282,7 +286,8 @@ export class RegionScheduler {
                 `[ABSOLUTE TICK SCHEDULING] Harmony Note ${harmonyNoteCount + 1}:`,
                 {
                   absoluteTicks,
-                  originalBpm,
+                  originalBpm: originalBpm || 'N/A',
+                  currentBpm,
                   eventTime: eventTime.toFixed(6),
                   position: event.position,
                   noteName: eventData?.noteName,

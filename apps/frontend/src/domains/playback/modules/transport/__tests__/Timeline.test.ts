@@ -15,12 +15,14 @@ describe('Timeline', () => {
   });
 
   describe('tempo management', () => {
-    it('should set and get tempo', () => {
+    // DEPRECATED: setTempo() is now a no-op - use musicalTruth.setFromExercise() instead
+    it.skip('should set and get tempo', () => {
       timeline.setTempo(140);
       expect(timeline.getTempo()).toBe(140);
     });
 
-    it('should throw error for invalid tempo', () => {
+    // DEPRECATED: setTempo() no longer validates - use musicalTruth.setFromExercise() instead
+    it.skip('should throw error for invalid tempo', () => {
       expect(() => timeline.setTempo(0)).toThrow(TimelineError);
       expect(() => timeline.setTempo(-1)).toThrow(TimelineError);
       expect(() => timeline.setTempo(1000)).toThrow(TimelineError);
@@ -32,13 +34,15 @@ describe('Timeline', () => {
   });
 
   describe('time signature management', () => {
-    it('should set and get time signature', () => {
+    // DEPRECATED: setTimeSignature() is now a no-op - use musicalTruth.setFromExercise() instead
+    it.skip('should set and get time signature', () => {
       const sig: TimeSignature = { numerator: 3, denominator: 4 };
       timeline.setTimeSignature(sig);
       expect(timeline.getTimeSignature()).toEqual(sig);
     });
 
-    it('should throw error for invalid time signature', () => {
+    // DEPRECATED: setTimeSignature() no longer validates - use musicalTruth.setFromExercise() instead
+    it.skip('should throw error for invalid time signature', () => {
       expect(() =>
         timeline.setTimeSignature({ numerator: 0, denominator: 4 }),
       ).toThrow(TimelineError);

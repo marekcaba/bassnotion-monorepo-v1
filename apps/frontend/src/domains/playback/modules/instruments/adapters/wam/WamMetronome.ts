@@ -330,9 +330,8 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
       return (window as any).Tone;
     }
 
-    // Try to get from CoreServices
-    const coreServices =
-      (window as any).__coreServices || (window as any).__globalCoreServices;
+    // Try to get from CoreServices (using WindowRegistry key)
+    const coreServices = (window as any).__bassnotion_coreServices;
     if (coreServices && typeof coreServices.getAudioEngine === 'function') {
       const audioEngine = coreServices.getAudioEngine();
       if (audioEngine && typeof audioEngine.getTone === 'function') {
@@ -823,11 +822,14 @@ export class WamMetronome extends WebAudioModuleBase {
 
   /**
    * Set tempo (for standalone use)
+   * @deprecated Tempo is now managed by musicalTruth singleton.
+   * This method is a no-op kept for backward compatibility.
+   * Use musicalTruth.setBPM(bpm) to change tempo.
    */
-  setTempo(bpm: number): void {
-    if (this.audioNode) {
-      (this.audioNode as any).tempo = bpm;
-    }
+  setTempo(_bpm: number): void {
+    // No-op: Tempo is read from musicalTruth.getBPM() via the private getter
+    // The metronome will automatically use the new tempo on next beat calculation
+    this.logger.debug('setTempo() called but ignored - tempo comes from musicalTruth');
   }
 
   /**

@@ -17,7 +17,14 @@ export function getPersistentAudioContext(): AudioContext | null {
     return null;
   }
 
-  // Check for the persistent context stored by AudioEngine
+  // PRIORITY 1: Check for the context stored by AudioEngine via WindowRegistry
+  // This is the primary location where AudioEngine stores the context
+  const bassnotiontContext = (window as any).__bassnotion_audioContext;
+  if (bassnotiontContext && bassnotiontContext.state !== 'closed') {
+    return bassnotiontContext;
+  }
+
+  // PRIORITY 2: Check legacy persistent context key
   const persistentContext = (window as any).__persistentAudioContext;
   if (persistentContext && persistentContext.state !== 'closed') {
     return persistentContext;
@@ -76,7 +83,10 @@ export async function getOrCreatePersistentAudioContext(): Promise<AudioContext>
     sampleRate: 48000,
   });
 
-  // Store as persistent context
+  // Store in BOTH locations for compatibility
+  // Primary: WindowRegistry standard location
+  (window as any).__bassnotion_audioContext = context;
+  // Legacy: For backward compatibility
   (window as any).__persistentAudioContext = context;
 
   // Resume if needed

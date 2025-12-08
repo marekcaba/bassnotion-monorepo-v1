@@ -25,6 +25,9 @@ interface BassNotionWindow {
   __bassnotion_audioContext?: AudioContext;
   __bassnotion_audioContextUnsubscribe?: () => void;
 
+  // Tone.js Singleton
+  __bassnotion_tone?: any;
+
   // Playback Engines (Phase 1 Task 1.5 - Dual-Engine Tracking)
   __bassnotion_regionProcessor?: any;
   __bassnotion_playbackEngine?: any;
@@ -43,6 +46,7 @@ interface BassNotionWindow {
   __serviceRegistry?: any;
   __persistentAudioContext?: AudioContext;
   __globalEventBus?: any;
+  __globalTone?: any;
   __samplesReady?: boolean;
   __essentialSamplesLoaded?: boolean;
   __initializationFailed?: boolean;
@@ -73,25 +77,25 @@ export class WindowRegistry {
 
     window.__bassnotion_coreServices = services;
 
-    // Clean up legacy keys
-    delete (window as any).__globalCoreServices;
-    delete (window as any).__coreServices;
+    // Clean up legacy keys (wrapped in try-catch for non-configurable properties)
+    try {
+      delete (window as any).__globalCoreServices;
+      delete (window as any).__coreServices;
+    } catch {
+      // Properties may be non-configurable, ignore
+    }
   }
 
   /**
    * Get the global CoreServices instance
-   * Checks new key first, falls back to legacy for migration
+   * Note: Legacy fallback removed - markDeprecatedGlobals() already redirects
+   * legacy keys to __bassnotion_coreServices, so checking them here would
+   * trigger double warnings and is redundant.
    */
   static getCoreServices(): any {
     if (typeof window === 'undefined') return null;
 
-    // Check new key first
-    return (
-      window.__bassnotion_coreServices ||
-      // Fallback to legacy for migration period
-      (window as any).__globalCoreServices ||
-      (window as any).__coreServices
-    );
+    return window.__bassnotion_coreServices || null;
   }
 
   // ============================================================================
@@ -106,8 +110,12 @@ export class WindowRegistry {
 
     window.__bassnotion_serviceRegistry = registry;
 
-    // Clean up legacy key
-    delete (window as any).__serviceRegistry;
+    // Clean up legacy key (wrapped in try-catch for non-configurable properties)
+    try {
+      delete (window as any).__serviceRegistry;
+    } catch {
+      // Property may be non-configurable, ignore
+    }
   }
 
   /**
@@ -116,10 +124,7 @@ export class WindowRegistry {
   static getServiceRegistry(): any {
     if (typeof window === 'undefined') return null;
 
-    return (
-      window.__bassnotion_serviceRegistry ||
-      (window as any).__serviceRegistry
-    );
+    return window.__bassnotion_serviceRegistry || null;
   }
 
   // ============================================================================
@@ -134,8 +139,12 @@ export class WindowRegistry {
 
     window.__bassnotion_eventBus = eventBus;
 
-    // Clean up legacy key
-    delete (window as any).__globalEventBus;
+    // Clean up legacy key (wrapped in try-catch for non-configurable properties)
+    try {
+      delete (window as any).__globalEventBus;
+    } catch {
+      // Property may be non-configurable, ignore
+    }
   }
 
   /**
@@ -144,8 +153,39 @@ export class WindowRegistry {
   static getEventBus(): any {
     if (typeof window === 'undefined') return null;
 
+    return window.__bassnotion_eventBus || null;
+  }
+
+  // ============================================================================
+  // TONE.JS SINGLETON
+  // ============================================================================
+
+  /**
+   * Set the global Tone.js instance
+   * Migration from window.__globalTone to WindowRegistry
+   */
+  static setTone(tone: any): void {
+    if (typeof window === 'undefined') return;
+
+    window.__bassnotion_tone = tone;
+
+    // Also set legacy key for backward compatibility with code using window.__globalTone
+    // This is needed because some code paths still check __globalTone directly
+    (window as any).__globalTone = tone;
+  }
+
+  /**
+   * Get the global Tone.js instance
+   * Checks new key first, falls back to legacy and window.Tone
+   */
+  static getTone(): any {
+    if (typeof window === 'undefined') return null;
+
     return (
-      window.__bassnotion_eventBus || (window as any).__globalEventBus
+      window.__bassnotion_tone ||
+      (window as any).__globalTone ||
+      (window as any).Tone ||
+      null
     );
   }
 
@@ -161,8 +201,12 @@ export class WindowRegistry {
 
     window.__bassnotion_audioContext = context;
 
-    // Clean up legacy key
-    delete (window as any).__persistentAudioContext;
+    // Clean up legacy key (wrapped in try-catch for non-configurable properties)
+    try {
+      delete (window as any).__persistentAudioContext;
+    } catch {
+      // Property may be non-configurable, ignore
+    }
   }
 
   /**
@@ -171,11 +215,7 @@ export class WindowRegistry {
   static getAudioContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
 
-    return (
-      window.__bassnotion_audioContext ||
-      (window as any).__persistentAudioContext ||
-      null
-    );
+    return window.__bassnotion_audioContext || null;
   }
 
   /**
@@ -187,8 +227,12 @@ export class WindowRegistry {
     window.__bassnotion_audioContextUnsubscribe = unsubscribe;
 
     if (!unsubscribe) {
-      delete window.__bassnotion_audioContextUnsubscribe;
-      delete (window as any).__audioContextUnsubscribe;
+      try {
+        delete window.__bassnotion_audioContextUnsubscribe;
+        delete (window as any).__audioContextUnsubscribe;
+      } catch {
+        // Properties may be non-configurable, ignore
+      }
     }
   }
 
@@ -198,10 +242,7 @@ export class WindowRegistry {
   static getAudioContextUnsubscribe(): (() => void) | undefined {
     if (typeof window === 'undefined') return undefined;
 
-    return (
-      window.__bassnotion_audioContextUnsubscribe ||
-      (window as any).__audioContextUnsubscribe
-    );
+    return window.__bassnotion_audioContextUnsubscribe;
   }
 
   // ============================================================================
@@ -276,11 +317,7 @@ export class WindowRegistry {
   static getSamplesReady(): boolean {
     if (typeof window === 'undefined') return false;
 
-    return (
-      window.__bassnotion_samplesReady ||
-      (window as any).__samplesReady ||
-      false
-    );
+    return window.__bassnotion_samplesReady || false;
   }
 
   /**
@@ -291,8 +328,12 @@ export class WindowRegistry {
 
     window.__bassnotion_essentialSamplesLoaded = loaded;
 
-    // Clean up legacy key
-    delete (window as any).__essentialSamplesLoaded;
+    // Clean up legacy key (wrapped in try-catch for non-configurable properties)
+    try {
+      delete (window as any).__essentialSamplesLoaded;
+    } catch {
+      // Property may be non-configurable, ignore
+    }
   }
 
   /**
@@ -301,11 +342,7 @@ export class WindowRegistry {
   static getEssentialSamplesLoaded(): boolean {
     if (typeof window === 'undefined') return false;
 
-    return (
-      window.__bassnotion_essentialSamplesLoaded ||
-      (window as any).__essentialSamplesLoaded ||
-      false
-    );
+    return window.__bassnotion_essentialSamplesLoaded || false;
   }
 
   /**
@@ -316,8 +353,12 @@ export class WindowRegistry {
 
     window.__bassnotion_initializationFailed = failed;
 
-    // Clean up legacy key
-    delete (window as any).__initializationFailed;
+    // Clean up legacy key (wrapped in try-catch for non-configurable properties)
+    try {
+      delete (window as any).__initializationFailed;
+    } catch {
+      // Property may be non-configurable, ignore
+    }
   }
 
   /**
@@ -326,11 +367,7 @@ export class WindowRegistry {
   static getInitializationFailed(): boolean {
     if (typeof window === 'undefined') return false;
 
-    return (
-      window.__bassnotion_initializationFailed ||
-      (window as any).__initializationFailed ||
-      false
-    );
+    return window.__bassnotion_initializationFailed || false;
   }
 
   // ============================================================================
@@ -344,23 +381,37 @@ export class WindowRegistry {
   static cleanup(): void {
     if (typeof window === 'undefined') return;
 
-    // Clean up all BassNotion-prefixed keys
+    // Clean up all BassNotion-prefixed keys (wrapped in try-catch for non-configurable properties)
     Object.keys(window).forEach((key) => {
       if (key.startsWith(WindowRegistry.PREFIX)) {
-        delete (window as any)[key];
+        try {
+          delete (window as any)[key];
+        } catch {
+          // Property may be non-configurable, ignore
+        }
       }
     });
 
-    // Clean up legacy keys
-    delete (window as any).__globalCoreServices;
-    delete (window as any).__coreServices;
-    delete (window as any).__serviceRegistry;
-    delete (window as any).__persistentAudioContext;
-    delete (window as any).__globalEventBus;
-    delete (window as any).__samplesReady;
-    delete (window as any).__essentialSamplesLoaded;
-    delete (window as any).__initializationFailed;
-    delete (window as any).__audioContextUnsubscribe;
+    // Clean up legacy keys (wrapped in try-catch for non-configurable properties)
+    const legacyKeys = [
+      '__globalCoreServices',
+      '__coreServices',
+      '__serviceRegistry',
+      '__persistentAudioContext',
+      '__globalEventBus',
+      '__globalTone',
+      '__samplesReady',
+      '__essentialSamplesLoaded',
+      '__initializationFailed',
+      '__audioContextUnsubscribe',
+    ];
+    for (const key of legacyKeys) {
+      try {
+        delete (window as any)[key];
+      } catch {
+        // Property may be non-configurable, ignore
+      }
+    }
   }
 
   /**
@@ -393,6 +444,7 @@ export class WindowRegistry {
       '__serviceRegistry',
       '__persistentAudioContext',
       '__globalEventBus',
+      '__globalTone',
       '__samplesReady',
       '__essentialSamplesLoaded',
       '__initializationFailed',

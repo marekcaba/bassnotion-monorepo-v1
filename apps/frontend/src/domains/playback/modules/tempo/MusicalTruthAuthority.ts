@@ -45,6 +45,17 @@ export interface Exercise {
 }
 
 /**
+ * Options for setFromExercise method
+ */
+export interface SetFromExerciseOptions {
+  /**
+   * If true, preserves the current user-set BPM instead of using exercise.bpm
+   * Use this when user has manually modified tempo and clicks Play again
+   */
+  preserveBPM?: boolean;
+}
+
+/**
  * Calculate actual exercise duration from note positions
  * This is the most accurate way since it reflects actual content
  */
@@ -95,28 +106,41 @@ export class MusicalTruthAuthority {
   /**
    * THE ONE METHOD to set all musical parameters from exercise data
    * This is the ONLY way to update the musical truth
+   *
+   * @param exercise - The exercise to load
+   * @param options - Optional settings
+   * @param options.preserveBPM - If true, keeps current BPM (for user tempo preference)
    */
-  setFromExercise(exercise: Exercise): void {
+  setFromExercise(exercise: Exercise, options?: SetFromExerciseOptions): void {
     const durationBars = calculateActualBarsFromNotes(exercise);
+    const currentBpm = this.truth.bpm;
+    const shouldPreserveBpm = options?.preserveBPM === true;
 
     this.truth = {
-      bpm: exercise.bpm,
+      // TEMPO FIX: Preserve user's BPM if they manually modified it
+      bpm: shouldPreserveBpm ? currentBpm : exercise.bpm,
       timeSignature: exercise.timeSignature,
       durationBars: durationBars,
       countdownBars: 1, // Always 1 bar of countdown
       totalBars: durationBars + 1, // Exercise + countdown
     };
 
-    console.log('🎵 [MUSICAL TRUTH] Setting from exercise:', this.truth);
+    // [TEMPO-FIX] Debug logs commented out after fix verification
+    // console.log('🎯 [TEMPO-FIX] MusicalTruthAuthority.setFromExercise()', {...});
 
     // Synchronize Tone.Transport immediately
     // This ensures the Web Audio API timing matches our truth
-    Tone.Transport.bpm.value = this.truth.bpm;
+    // Only update BPM if we're not preserving user's tempo
+    if (!shouldPreserveBpm) {
+      Tone.Transport.bpm.value = this.truth.bpm;
+    }
+    // Note: When preserveBPM=true, we skip Tone.Transport.bpm update to preserve user's tempo
     Tone.Transport.timeSignature = this.truth.timeSignature.numerator;
 
     console.log('🎵 [MUSICAL TRUTH] Tone.Transport synchronized:', {
       'Tone.Transport.bpm.value': Tone.Transport.bpm.value,
       'Tone.Transport.timeSignature': Tone.Transport.timeSignature,
+      'preservedUserBpm': shouldPreserveBpm,
     });
 
     // Notify all listeners (systems that need to react to changes)
@@ -129,6 +153,38 @@ export class MusicalTruthAuthority {
    */
   getBPM(): number {
     return this.truth.bpm;
+  }
+
+  /**
+   * Set BPM (tempo) without changing other values
+   * Use this for user tempo changes via slider during playback.
+   * For exercise selection, use setFromExercise() instead.
+   *
+   * This updates:
+   * - Internal truth.bpm
+   * - Tone.Transport.bpm.value
+   * - Notifies all listeners
+   */
+  setBPM(bpm: number): void {
+    if (bpm < 20 || bpm > 300) {
+      console.warn('🎵 [MUSICAL TRUTH] Invalid BPM ignored:', bpm);
+      return;
+    }
+
+    const previousBpm = this.truth.bpm;
+    this.truth.bpm = bpm;
+
+    // Synchronize Tone.Transport immediately
+    Tone.Transport.bpm.value = bpm;
+
+    console.log('🎵 [MUSICAL TRUTH] BPM updated via setBPM():', {
+      previousBpm,
+      newBpm: bpm,
+      'Tone.Transport.bpm.value': Tone.Transport.bpm.value,
+    });
+
+    // Notify all listeners (systems that need to react to tempo changes)
+    this.listeners.forEach((fn) => fn(this.truth));
   }
 
   /**
@@ -228,6 +284,120 @@ export class MusicalTruthAuthority {
    */
   beatsToBars(beats: number): number {
     return beats / this.truth.timeSignature.numerator;
+  }
+
+  /**
+   * Create a scoped subscription manager.
+   * All subscriptions made through the scope will be automatically
+   * unsubscribed when the scope is disposed.
+   */
+  createScope(name?: string): MusicalTruthScope {
+    return new MusicalTruthScope(this, name);
+  }
+
+  /**
+   * Clear all listeners (use with caution - mainly for testing)
+   */
+  clearListeners(): void {
+    const count = this.listeners.size;
+    this.listeners.clear();
+    console.log(`[MusicalTruthAuthority] Cleared ${count} listeners`);
+  }
+
+  /**
+   * Get listener count (for debugging)
+   */
+  getListenerCount(): number {
+    return this.listeners.size;
+  }
+}
+
+/**
+ * MusicalTruthScope - Scoped subscriptions with automatic cleanup
+ *
+ * Similar to EventScope, this prevents listener accumulation by
+ * tracking all subscriptions made through this scope and automatically
+ * unsubscribing them when the scope is disposed.
+ */
+export class MusicalTruthScope {
+  private authority: MusicalTruthAuthority;
+  private subscriptions: Array<() => void> = [];
+  private isDisposed = false;
+  private scopeId: string;
+
+  constructor(authority: MusicalTruthAuthority, name?: string) {
+    this.authority = authority;
+    this.scopeId = name || `truth-scope-${Date.now()}`;
+  }
+
+  /**
+   * Subscribe to musical truth changes through this scope.
+   * Will be automatically unsubscribed when scope is disposed.
+   */
+  subscribe(callback: (truth: MusicalTruth) => void): () => void {
+    if (this.isDisposed) {
+      console.warn(`[MusicalTruthScope] ${this.scopeId} already disposed`);
+      return () => {};
+    }
+
+    const unsubscribe = this.authority.subscribe(callback);
+    this.subscriptions.push(unsubscribe);
+    return unsubscribe;
+  }
+
+  /**
+   * Dispose this scope, removing ALL subscriptions made through it.
+   */
+  dispose(): void {
+    if (this.isDisposed) return;
+    this.isDisposed = true;
+
+    const count = this.subscriptions.length;
+    for (const unsubscribe of this.subscriptions) {
+      try {
+        unsubscribe();
+      } catch (e) {
+        console.error(`[MusicalTruthScope] Error unsubscribing:`, e);
+      }
+    }
+    this.subscriptions = [];
+
+    console.log(`[MusicalTruthScope] ${this.scopeId} disposed, removed ${count} subscriptions`);
+  }
+
+  /**
+   * Get current BPM (delegated to authority)
+   */
+  getBPM(): number {
+    return this.authority.getBPM();
+  }
+
+  /**
+   * Get time signature (delegated to authority)
+   */
+  getTimeSignature(): TimeSignature {
+    return this.authority.getTimeSignature();
+  }
+
+  /**
+   * Get the complete truth (delegated to authority)
+   */
+  getTruth(): Readonly<MusicalTruth> {
+    return this.authority.getTruth();
+  }
+
+  /**
+   * Convert seconds to beats (delegated to authority)
+   */
+  secondsToBeats(seconds: number): number {
+    return this.authority.secondsToBeats(seconds);
+  }
+
+  /**
+   * Convert beats to seconds (delegated to authority)
+   */
+  beatsToSeconds(beats: number): number {
+    return this.authority.beatsToSeconds(beats);
   }
 }
 

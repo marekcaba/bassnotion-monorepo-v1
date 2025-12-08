@@ -1,48 +1,40 @@
 'use client';
 
-import { Button } from '@/shared/components/ui/button';
+import Image from 'next/image';
 import { ResponsiveDebug } from '@/shared/components/ui/responsive-debug';
-import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { HomeNavbar } from './_components/HomeNavbar';
 
 export default function HomePage() {
-  const { navigateWithTransition } = useViewTransitionRouter();
-
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-4 py-8 sm:p-24">
-      {/* Add debug component for responsive testing */}
-      <ResponsiveDebug showAlways={true} />
+    <>
+      <main className="min-h-screen flex flex-col bg-black">
+        {/* Add debug component for responsive testing */}
+        <ResponsiveDebug showAlways={true} />
 
-      <div className="z-10 max-w-6xl w-full">
-        {/* Responsive layout: vertical on mobile (< 600px), horizontal on desktop */}
-        <div className="flex flex-col items-center text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
-          {/* Left side: Title and subtitle */}
-          <div className="mb-6 sm:mb-0 sm:flex-1">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
-              Welcome to BassNotion
-            </h1>
-            <p className="mt-2 text-lg sm:text-xl text-muted-foreground">
+        {/* Header with Logo */}
+        <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
+          <Image
+            src="/BASSICOLOGY BIG.png"
+            alt="Bassicology"
+            width={600}
+            height={150}
+            className="w-[220px] sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-auto"
+            priority
+          />
+        </header>
+
+        {/* Navbar under logo */}
+        <HomeNavbar />
+
+        {/* Main content */}
+        <div className="z-10 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+          <div className="flex flex-col items-center text-center">
+            <p className="text-base sm:text-lg lg:text-xl text-gray-400 max-w-md sm:max-w-lg">
               Your Bass Learning Platform
             </p>
           </div>
-
-          {/* Right side: Button group */}
-          <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 sm:flex-shrink-0">
-            <Button
-              className="w-full sm:w-auto min-w-[160px]"
-              onClick={() => navigateWithTransition('/dashboard')}
-            >
-              Go to Dashboard
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto min-w-[160px]"
-              onClick={() => navigateWithTransition('/library')}
-            >
-              YouTube Exerciser
-            </Button>
-          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }

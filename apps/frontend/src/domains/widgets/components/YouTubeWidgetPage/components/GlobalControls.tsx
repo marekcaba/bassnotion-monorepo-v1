@@ -26,7 +26,7 @@ import type {
 } from '@bassnotion/contracts';
 import { MIDIFileParser } from '@bassnotion/contracts';
 import { Button } from '@/shared/components/ui/button';
-import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
+import { useTransportState, useTransportPosition } from '@/domains/playback/contexts/TransportContext';
 import { useTrack } from '@/domains/playback/hooks';
 import type { CoreServices } from '@/domains/playback/services/core/CoreServices.js';
 import * as Tone from 'tone';
@@ -44,6 +44,8 @@ import { SheetMusicDisplay } from '../../SheetMusic/index.js';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { useCountdown } from '@/domains/widgets/hooks/useCountdown';
 import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
+import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAuthority';
+import { useExerciseSession } from '@/domains/playback/hooks';
 
 const logger = getLogger('global-controls');
 
@@ -263,6 +265,8 @@ interface GlobalControlsProps {
   isLoopEnabled?: boolean;
   // Play state callback - called when transport starts/stops
   onPlayStateChange?: (isPlaying: boolean) => void;
+  // TEMPO FIX: External ref to track if user manually modified tempo (from parent)
+  externalHasUserModifiedTempo?: React.MutableRefObject<boolean>;
 }
 
 // Add a render counter for GlobalControls
@@ -281,11 +285,30 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   loopRegion,
   isLoopEnabled = false,
   onPlayStateChange,
+  externalHasUserModifiedTempo,
 }) => {
   globalControlsRenderCount++;
 
   // ✅ FIX: Get services directly from AudioProvider context (no race conditions)
   const { coreServices: contextCoreServices, audioEngine: contextAudioEngine, eventBus: contextEventBus, coreServicesReady } = useAudioServices();
+
+  // ✅ PlaybackSession Architecture: Automatic session management
+  // Creates session when exercise changes, disposes on unmount
+  // This solves the "Singleton Soup" problem by encapsulating run-lifetime state
+  const { session: playbackSession, hasActiveSession, getMetrics: getSessionMetrics } = useExerciseSession(
+    selectedExercise?.id,
+    selectedExercise ? {
+      bpm: selectedExercise.bpm || 120,
+      timeSignature: selectedExercise.timeSignature || { numerator: 4, denominator: 4 },
+      total_bars: selectedExercise.total_bars,
+      duration_beats: selectedExercise.duration_beats,
+      notes: selectedExercise.notes,
+    } : undefined,
+    {
+      countdownEnabled: true,
+      countdownBeats: selectedExercise?.timeSignature?.numerator || 4,
+    },
+  );
 
   // Log renders every 10th time
   if (globalControlsRenderCount % 10 === 0) {
@@ -294,6 +317,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       duration,
       is3DMode,
       coreServicesReady, // Log readiness state
+      hasActiveSession, // PlaybackSession integration
+      sessionId: playbackSession?.id,
       timestamp: Date.now(),
     });
   }
@@ -372,7 +397,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
       loopRegion,
       isLoopEnabled,
     };
-  });
+  }, [selectedExercise, duration, is3DMode, tiltAngle, hasSelectedDots, cameraMode, loopRegion, isLoopEnabled]);
   // Core DAW state
   const [coreServices, setCoreServices] = useState<CoreServices | null>(null);
   const [systemInitialized, setSystemInitialized] = useState(false);
@@ -380,8 +405,22 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   const [isLoadingExercise, setIsLoadingExercise] = useState(false);
   const loadingRef = useRef(false);
 
-  // Use transport directly for playback control
-  const transport = useTransportContext();
+  // PERFORMANCE FIX: Only use transportState to prevent 60Hz re-renders
+  // Position updates are handled separately via direct subscription in useEffects
+  const transportState = useTransportState();
+
+  // Position ref for effects that need it (scrolling, highlighting)
+  // Updated via direct EventBus subscription, not React context
+  const positionRef = useRef({ bars: 0, beats: 0, sixteenths: 0, ticks: 0, seconds: 0 });
+
+  // Create transport object for backward compatibility
+  // Position is accessed via ref (doesn't trigger re-renders)
+  const transport = {
+    ...transportState,
+    get position() {
+      return positionRef.current;
+    },
+  };
   // Create tracks using hooks
   const metronomeTrack = useTrack({
     trackId: 'metronome',
@@ -467,8 +506,50 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
 
   // FAANG SOLUTION: Track if user manually modified tempo
   // "Last explicit user action wins" - user tempo changes take priority over exercise defaults
-  const hasUserModifiedTempo = useRef(false);
+  // TEMPO FIX: Use external ref from parent if provided (allows TransportClock to set the flag)
+  const localHasUserModifiedTempo = useRef(false);
+  const hasUserModifiedTempo = externalHasUserModifiedTempo || localHasUserModifiedTempo;
   const currentExerciseId = useRef<string | null>(null);
+
+  // SYNC FIX: Dedicated effect to sync localTempo AND musicalTruth with exercise BPM
+  // This ensures:
+  // 1. BPM display updates when exercise is selected
+  // 2. Audio engine (Tone.Transport.bpm) is synced immediately, not just on play click
+  // 3. TransportContext receives the tempo change event to update its state
+  useEffect(() => {
+    console.log('[BPM_DEBUG] 1-effect-triggered', { exerciseBpm: selectedExercise?.bpm, localTempo });
+    if (selectedExercise?.bpm && !hasUserModifiedTempo.current) {
+      console.log('[BPM_DEBUG] 2-setLocalTempo', selectedExercise.bpm);
+      setLocalTempo(selectedExercise.bpm);
+      lastUserTempo.current = selectedExercise.bpm;
+
+      // Sync to audio engine
+      try {
+        const exerciseForTruth = {
+          bpm: selectedExercise.bpm,
+          timeSignature: selectedExercise.timeSignature ||
+                        (selectedExercise as any).time_signature ||
+                        { numerator: 4, denominator: 4 },
+          total_bars: selectedExercise.total_bars,
+          duration_beats: selectedExercise.duration_beats,
+          notes: selectedExercise.notes,
+        };
+        musicalTruth.setFromExercise(exerciseForTruth);
+
+        // CRITICAL: Emit tempo change event so TransportContext updates its state
+        // This ensures the BPM display in TransportClock shows the correct value
+        if (contextEventBus) {
+          contextEventBus.emit('transport:tempo-change', { tempo: selectedExercise.bpm });
+          console.log('[BPM_DEBUG] 3-emitted-tempo-change', selectedExercise.bpm);
+        }
+
+        console.log('[BPM_DEBUG] 4-musicalTruth-synced', { bpm: musicalTruth.getBPM(), toneBpm: Tone.Transport.bpm.value });
+      } catch (error) {
+        console.error('[BPM_DEBUG] ERROR', error);
+      }
+    }
+  }, [selectedExercise?.id, selectedExercise?.bpm, contextEventBus]);
+
   // Sheet music state
   const [currentPosition, setCurrentPosition] = useState(2);
   const currentPositionRef = useRef(currentPosition);
@@ -1051,7 +1132,17 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // - transport.setCountdownBeats()
         // All systems will now read from musicalTruth singleton
         const { musicalTruth } = await import('@/domains/playback/modules/tempo/MusicalTruthAuthority.js');
-        musicalTruth.setFromExercise(selectedExercise);
+
+        // TEMPO FIX: Preserve user's BPM if they manually modified it
+        // This prevents the bug where clicking Play resets tempo to exercise default
+        // Debug logs commented out after fix verification (see Step 3/3b comments below)
+        musicalTruth.setFromExercise(selectedExercise, {
+          preserveBPM: hasUserModifiedTempo.current,
+        });
+
+        // [TEMPO-FIX] Debug logs commented out after fix verification:
+        // Step 3: Log BEFORE setFromExercise - check hasUserModifiedTempo flag
+        // Step 3b: Log AFTER setFromExercise - verify tempo was preserved
 
         console.log('✅ [MUSICAL TRUTH] Set from exercise - ALL systems synchronized:', {
           bpm: musicalTruth.getBPM(),
@@ -1134,15 +1225,21 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   );
 
   // Sync local state with transport tempo
+  // IMPORTANT: Skip sync if we have an exercise with explicit BPM - let the exercise BPM effect handle it
   useEffect(() => {
+    // If exercise has explicit BPM and user hasn't modified tempo, don't sync from transport
+    if (selectedExercise?.bpm && !hasUserModifiedTempo.current) {
+      return; // Skip - exercise BPM sync effect handles this case
+    }
+
     if (!isDraggingTempo && !ignoreNextSyncTempo.current && transport.tempo) {
-      // Only update if the value is significantly different
       const tempoThreshold = 1;
       if (Math.abs(transport.tempo - localTempo) > tempoThreshold) {
+        console.log('[BPM_DEBUG] 4-transport-sync-override', transport.tempo);
         setLocalTempo(transport.tempo);
       }
     }
-  }, [transport.tempo, isDraggingTempo]);
+  }, [transport.tempo, isDraggingTempo, selectedExercise?.bpm]);
 
   // Update position based on transport
   useEffect(() => {
@@ -1326,7 +1423,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // ✅ SET THE ONE SINGLE SOURCE OF MUSICAL TRUTH
         // This establishes tempo, time signature, and duration from the exercise
         // Note: User tempo modifications are not yet supported with musicalTruth - future enhancement
-        const { musicalTruth } = await import('@/domains/playback/modules/tempo/MusicalTruthAuthority.js');
+        // Using static import (imported at top of file) to ensure same Tone.js instance
 
         const exerciseIdChanged = currentExerciseId.current !== selectedExercise.id;
         if (exerciseIdChanged) {
@@ -1335,7 +1432,17 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         }
 
         // Set musical truth from exercise (replaces setTempo, setTimeSignature, etc.)
-        musicalTruth.setFromExercise(selectedExercise);
+        // Normalize exercise object to ensure timeSignature is present (DB may have time_signature)
+        const normalizedExercise = {
+          bpm: selectedExercise.bpm,
+          timeSignature: selectedExercise.timeSignature ||
+                        (selectedExercise as any).time_signature ||
+                        { numerator: 4, denominator: 4 }, // Default 4/4
+          total_bars: selectedExercise.total_bars,
+          duration_beats: selectedExercise.duration_beats,
+          notes: selectedExercise.notes,
+        };
+        musicalTruth.setFromExercise(normalizedExercise);
         logger.info('✅ [loadExercise] Musical truth established:', musicalTruth.getTruth());
 
 
@@ -1358,7 +1465,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
             });
 
             // Initialize with EventBus from CoreServices
-            const coreServicesForSupabase = (window as any).__globalCoreServices;
+            const coreServicesForSupabase = WindowRegistry.getCoreServices();
             if (coreServicesForSupabase) {
               const eventBus = coreServicesForSupabase.getEventBus();
               await exerciseLoader.initialize(eventBus);
@@ -1422,7 +1529,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
             const exerciseLoader = ExerciseLoader.getInstance();
 
             // Initialize with EventBus from CoreServices
-            const coreServicesForDirect = (window as any).__globalCoreServices;
+            const coreServicesForDirect = WindowRegistry.getCoreServices();
             if (coreServicesForDirect) {
               const eventBus = coreServicesForDirect.getEventBus();
               await exerciseLoader.initialize(eventBus);
@@ -1455,7 +1562,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
             }
 
             // Register tracks with RegionProcessor
-            const coreServicesForRegion = (window as any).__globalCoreServices;
+            const coreServicesForRegion = WindowRegistry.getCoreServices();
             if (coreServicesForRegion) {
               const playbackEngine = coreServices.getPlaybackEngine();
 
@@ -1506,7 +1613,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
             const exerciseLoader = ExerciseLoader.getInstance();
 
             // Initialize with EventBus from CoreServices
-            const coreServicesForSupabase = (window as any).__globalCoreServices;
+            const coreServicesForSupabase = WindowRegistry.getCoreServices();
             if (coreServicesForSupabase) {
               const eventBus = coreServicesForSupabase.getEventBus();
               await exerciseLoader.initialize(eventBus);
@@ -1833,7 +1940,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         }
 
           // Phase 3.3: Register tracks with PlaybackEngine for fallback patterns
-          const coreServicesRef = (window as any).__globalCoreServices;
+          const coreServicesRef = WindowRegistry.getCoreServices();
           if (coreServicesRef) {
             const playbackEngine = coreServicesRef.getPlaybackEngine();
 
@@ -1859,11 +1966,12 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // FAANG SOLUTION: Only update UI if we actually changed the tempo
         if (exerciseIdChanged || !hasUserModifiedTempo.current) {
           if (selectedExercise.bpm) {
+            console.log('[BPM_DEBUG] 5-loadExercise-setBpm', selectedExercise.bpm);
             setLocalTempo(selectedExercise.bpm);
             lastUserTempo.current = selectedExercise.bpm;
           }
         } else {
-          // User modified tempo - keep UI showing current transport tempo
+          console.log('[BPM_DEBUG] 6-loadExercise-useTransport', transport.tempo);
           setLocalTempo(transport.tempo);
         }
 
@@ -3539,6 +3647,7 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                   alignItems: 'center',
                 }}
               >
+                {console.log('[GlobalControls] activeExercise.total_bars:', activeExercise?.total_bars, 'full exercise:', activeExercise)}
                 <SheetMusicDisplay
                   notes={exerciseNotes}
                   bpm={exerciseBpm}
@@ -3546,7 +3655,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
                   title={activeExercise?.title}
                   width={undefined}
                   height={150}
-                  maxMeasuresPerSystem={2}
+                  maxMeasuresPerSystem={undefined}
+                  totalBars={activeExercise?.total_bars}
                   onReady={() => {
                     logger.debug('Sheet music rendered successfully');
                   }}
@@ -3583,11 +3693,16 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
   );
 };
 
+// Track arePropsEqual call count for throttled logging
+let arePropsEqualCallCount = 0;
+
 // Create a custom comparison function for React.memo
 const arePropsEqual = (
   prevProps: GlobalControlsProps,
   nextProps: GlobalControlsProps,
 ) => {
+  arePropsEqualCallCount++;
+
   // Check each prop individually for better debugging
   const checks = {
     selectedExerciseId:
@@ -3611,23 +3726,16 @@ const arePropsEqual = (
 
   const allEqual = Object.values(checks).every((check) => check);
 
-  // ALWAYS log props comparison for debugging
-  logger.info('🔍 GlobalControls arePropsEqual check:', {
-    allEqual,
-    selectedExerciseChanged: !checks.selectedExercise,
-    prevExerciseId: prevProps.selectedExercise?.id,
-    nextExerciseId: nextProps.selectedExercise?.id,
-    renderCount: globalControlsRenderCount,
-  });
-
-  // Log what changed every 10th check
-  if (!allEqual && globalControlsRenderCount % 10 === 0) {
+  // Only log when props actually change (not every call - reduces spam)
+  if (!allEqual) {
     const changedProps = Object.entries(checks)
       .filter(([_, equal]) => !equal)
       .map(([key]) => key);
-    logger.info('🎯 GlobalControls props changed:', {
+    logger.info('🔍 GlobalControls props CHANGED, will re-render:', {
       changedProps,
-      renderCount: globalControlsRenderCount,
+      prevExerciseId: prevProps.selectedExercise?.id,
+      nextExerciseId: nextProps.selectedExercise?.id,
+      arePropsEqualCallCount,
     });
   }
 

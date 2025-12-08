@@ -12,6 +12,7 @@ import { InstrumentRegistry } from './InstrumentRegistry.js';
 import { AudioDebugger } from './AudioDebugger.js';
 import { GlobalSampleCache } from '../../modules/storage/cache/GlobalSampleCache.js';
 import { getPreloadableRegistry } from './PreloadableInstrumentRegistry.js';
+import { WindowRegistry } from '../WindowRegistry.js';
 import {
   DrumTriggerEvent,
   MetronomeTriggerEvent,
@@ -84,7 +85,7 @@ export class AudioEventRouter {
 
     // Get InstrumentRegistry from CoreServices if available
     try {
-      const globalServices = (window as any).__coreServices || (window as any).__globalCoreServices;
+      const globalServices = WindowRegistry.getCoreServices();
       if (globalServices?.getInstrumentRegistry) {
         this.instrumentRegistry = globalServices.getInstrumentRegistry();
         this.logger.info('Got InstrumentRegistry from CoreServices');
@@ -773,7 +774,7 @@ export class AudioEventRouter {
     // Try to get InstrumentRegistry if we don't have it yet
     if (!this.instrumentRegistry) {
       try {
-        const globalServices = (window as any).__coreServices || (window as any).__globalCoreServices;
+        const globalServices = WindowRegistry.getCoreServices();
         if (globalServices?.getInstrumentRegistry) {
           this.instrumentRegistry = globalServices.getInstrumentRegistry();
           this.logger.info('Got InstrumentRegistry from CoreServices on start');

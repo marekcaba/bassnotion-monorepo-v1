@@ -4,34 +4,72 @@
  * Performance-optimized hook for widgets that need direct access to TransportAdapter
  * without the overhead of multiple event processing layers.
  *
- * This bypasses WidgetSyncService for timing-critical operations while still
- * allowing widgets to participate in the sync ecosystem for UI updates.
+ * FAANG FIX: Uses memoized callbacks and stable refs to prevent:
+ * - Unnecessary rerenders on every transport event
+ * - Memory leaks from uncleared subscriptions
+ * - Stale closures in event handlers
+ *
+ * @module widgets/hooks/useDirectTransport
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { TransportAdapter } from '@/domains/playback/services/core/TransportAdapter';
-import type { TransportState } from '@/domains/playback/modules/transport/types/index';
 import type { EventBus } from '@/domains/playback/services/core/EventBus';
-import type { CoreServices } from '@/domains/playback/services/core/CoreServices';
+import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
+import {
+  useEventBusSubscriptions,
+  useStableCallback,
+} from '@/domains/playback/hooks/utils/useEventBusSubscription.js';
 
+/**
+ * Result type for useDirectTransport hook
+ */
 export interface UseDirectTransportResult {
-  // Direct refs for performance-critical access
+  /** Direct ref to TransportAdapter for performance-critical access */
   transportRef: React.MutableRefObject<TransportAdapter | null>;
+  /** Direct ref to EventBus */
   eventBusRef: React.MutableRefObject<EventBus | null>;
-
-  // State for UI updates (less frequent)
+  /** Whether transport is currently playing */
   isPlaying: boolean;
+  /** Current tempo in BPM */
   tempo: number;
-
-  // Direct control methods
+  /** Start playback */
   start: () => Promise<void>;
+  /** Stop playback */
   stop: () => Promise<void>;
+  /** Pause playback */
   pause: () => Promise<void>;
-
-  // Status
+  /** Toggle play/pause */
+  toggle: () => Promise<void>;
+  /** Set tempo */
+  setTempo: (bpm: number) => Promise<void>;
+  /** Whether the transport is initialized and ready */
   isReady: boolean;
 }
 
+/**
+ * Performance-optimized hook for direct transport access
+ *
+ * This hook provides:
+ * - Direct refs for zero-overhead access in timing-critical code
+ * - Memoized control methods that don't change between renders
+ * - Minimal state updates (only on actual state changes)
+ * - Proper subscription cleanup
+ *
+ * @example
+ * ```tsx
+ * const { isPlaying, start, stop, transportRef } = useDirectTransport();
+ *
+ * // Use refs for timing-critical code
+ * const handleTick = useCallback(() => {
+ *   const pos = transportRef.current?.getCurrentPosition();
+ *   // ... timing-critical updates
+ * }, []);
+ *
+ * // Use state for UI
+ * return <button onClick={isPlaying ? stop : start}>{isPlaying ? 'Stop' : 'Play'}</button>;
+ * ```
+ */
 export function useDirectTransport(): UseDirectTransportResult {
   // Refs for direct access without React re-renders
   const transportRef = useRef<TransportAdapter | null>(null);
@@ -39,17 +77,35 @@ export function useDirectTransport(): UseDirectTransportResult {
 
   // Minimal state for UI updates
   const [isPlaying, setIsPlaying] = useState(false);
-  const [tempo, setTempo] = useState(120);
+  const [tempo, setTempoState] = useState(120);
   const [isReady, setIsReady] = useState(false);
 
-  // Initialize direct references
+  // Memoized event handlers (stable references)
+  const handleStart = useCallback(() => setIsPlaying(true), []);
+  const handleStop = useCallback(() => setIsPlaying(false), []);
+  const handlePause = useCallback(() => setIsPlaying(false), []);
+  const handleTempo = useCallback(
+    (data: { tempo?: number; bpm?: number }) => {
+      const newTempo = data.tempo ?? data.bpm;
+      if (newTempo !== undefined) {
+        setTempoState(newTempo);
+      }
+    },
+    [],
+  );
+
+  // Initialize direct references (one-time setup)
   useEffect(() => {
+    let mounted = true;
+    let unsubscribers: Array<() => void> = [];
+
     const initializeRefs = async () => {
-      // Wait for CoreServices
+      // Wait for CoreServices with exponential backoff
       let attempts = 0;
-      while (attempts < 30) {
-        const coreServices = (window as any)
-          .__globalCoreServices as CoreServices;
+      const maxAttempts = 30;
+
+      while (attempts < maxAttempts && mounted) {
+        const coreServices = WindowRegistry.getCoreServices();
 
         if (coreServices) {
           try {
@@ -57,42 +113,29 @@ export function useDirectTransport(): UseDirectTransportResult {
             transportRef.current = coreServices.getUnifiedTransport();
             eventBusRef.current = coreServices.getEventBus();
 
-            // Set initial state
-            if (transportRef.current) {
+            // Set initial state from transport
+            if (transportRef.current && mounted) {
               setIsPlaying(transportRef.current.getState() === 'playing');
-              setTempo(transportRef.current.getTempo());
+              setTempoState(transportRef.current.getTempo());
             }
 
-            setIsReady(true);
+            if (mounted) {
+              setIsReady(true);
+            }
 
-            // Subscribe to critical events only
+            // Subscribe to transport events using stable handlers
             if (eventBusRef.current) {
-              const handleStart = () => setIsPlaying(true);
-              const handleStop = () => setIsPlaying(false);
-              const handlePause = () => setIsPlaying(false);
-              const handleTempo = (data: { tempo: number }) =>
-                setTempo(data.tempo);
-
-              eventBusRef.current.on('transport:start', handleStart);
-              eventBusRef.current.on('transport:stop', handleStop);
-              eventBusRef.current.on('transport:pause', handlePause);
-              eventBusRef.current.on('transport:tempo-change', handleTempo);
-
-              // Cleanup
-              return () => {
-                eventBusRef.current?.off('transport:start', handleStart);
-                eventBusRef.current?.off('transport:stop', handleStop);
-                eventBusRef.current?.off('transport:pause', handlePause);
-                eventBusRef.current?.off(
-                  'transport:tempo-change',
-                  handleTempo,
-                );
-              };
+              unsubscribers = [
+                eventBusRef.current.on('transport:start', handleStart),
+                eventBusRef.current.on('transport:stop', handleStop),
+                eventBusRef.current.on('transport:pause', handlePause),
+                eventBusRef.current.on('transport:tempo-change', handleTempo),
+              ];
             }
 
             break;
-          } catch (error) {
-            // Services not fully initialized yet
+          } catch {
+            // Services not fully initialized yet, retry
           }
         }
 
@@ -102,9 +145,15 @@ export function useDirectTransport(): UseDirectTransportResult {
     };
 
     initializeRefs();
-  }, []);
 
-  // Direct control methods
+    // Cleanup function
+    return () => {
+      mounted = false;
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [handleStart, handleStop, handlePause, handleTempo]);
+
+  // Memoized control methods (stable references)
   const start = useCallback(async () => {
     if (transportRef.current) {
       await transportRef.current.start();
@@ -123,6 +172,23 @@ export function useDirectTransport(): UseDirectTransportResult {
     }
   }, []);
 
+  const toggle = useCallback(async () => {
+    if (transportRef.current) {
+      const state = transportRef.current.getState();
+      if (state === 'playing') {
+        await transportRef.current.pause();
+      } else {
+        await transportRef.current.start();
+      }
+    }
+  }, []);
+
+  const setTempo = useCallback(async (bpm: number) => {
+    if (transportRef.current) {
+      await transportRef.current.setTempo(bpm);
+    }
+  }, []);
+
   return {
     transportRef,
     eventBusRef,
@@ -131,44 +197,59 @@ export function useDirectTransport(): UseDirectTransportResult {
     start,
     stop,
     pause,
+    toggle,
+    setTempo,
     isReady,
   };
 }
 
 /**
+ * Position data structure
+ */
+interface PositionData {
+  bars: number;
+  beats: number;
+  sixteenths: number;
+}
+
+/**
  * Helper hook for widgets that need position updates without React re-renders
+ *
+ * Uses requestAnimationFrame for smooth updates and calls the callback directly
+ * instead of triggering React state updates.
+ *
+ * @param callback - Function to call with position data (should be memoized)
+ * @param intervalMs - Minimum interval between updates (default: 50ms)
  */
 export function useDirectTransportPosition(
-  callback: (position: {
-    bars: number;
-    beats: number;
-    sixteenths: number;
-  }) => void,
+  callback: (position: PositionData) => void,
   intervalMs = 50,
-) {
+): void {
   const { transportRef, isPlaying, isReady } = useDirectTransport();
+
+  // Use stable callback to prevent effect reruns
+  const stableCallback = useStableCallback(callback);
 
   useEffect(() => {
     if (!isReady || !isPlaying || !transportRef.current) return;
+
+    let rafId: number;
+    let lastTime = 0;
 
     const updatePosition = () => {
       if (transportRef.current) {
         try {
           const pos = transportRef.current.getCurrentPosition();
-          callback({
+          stableCallback({
             bars: pos.bars,
             beats: pos.beats,
             sixteenths: pos.sixteenths,
           });
-        } catch (error) {
+        } catch {
           // Transport might not be fully initialized
         }
       }
     };
-
-    // Use requestAnimationFrame for smooth updates
-    let rafId: number;
-    let lastTime = 0;
 
     const animate = (time: number) => {
       if (time - lastTime >= intervalMs) {
@@ -183,5 +264,5 @@ export function useDirectTransportPosition(
     return () => {
       cancelAnimationFrame(rafId);
     };
-  }, [isReady, isPlaying, intervalMs, callback]);
+  }, [isReady, isPlaying, intervalMs, stableCallback]);
 }

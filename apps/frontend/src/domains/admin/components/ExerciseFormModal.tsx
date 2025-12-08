@@ -1038,6 +1038,10 @@ export function ExerciseFormModal({
                           delete updated.drummerMidiUrl;
                           return updated;
                         });
+                        // Clear converted drum data
+                        setDrumPattern([]);
+                        setDrumPatternStats(null);
+                        setDrumPatternValidation(null);
                       }}
                     >
                       <X className="h-4 w-4" />
@@ -1097,6 +1101,8 @@ export function ExerciseFormModal({
                           delete updated.basslineMidiUrl;
                           return updated;
                         });
+                        // Clear converted bass notes
+                        setGeneratedNotes([]);
                       }}
                     >
                       <X className="h-4 w-4" />
@@ -1114,9 +1120,10 @@ export function ExerciseFormModal({
                     size="sm"
                     onClick={handleConvertMidi}
                     className="w-full bg-white hover:bg-blue-50"
+                    disabled={uploadingMidi === 'bassline' || (!midiUrls.basslineMidiUrl && !!midiFiles.bassline)}
                   >
                     <Wand2 className="h-4 w-4 mr-2" />
-                    Convert MIDI to Fretboard Positions
+                    {uploadingMidi === 'bassline' ? 'Uploading MIDI...' : 'Convert MIDI to Fretboard Positions'}
                   </Button>
                   {generatedNotes.length > 0 && (
                     <p className="text-xs text-green-700 mt-2 flex items-center gap-1">
@@ -1220,6 +1227,10 @@ export function ExerciseFormModal({
                           delete updated.harmonyMidiUrl;
                           return updated;
                         });
+                        // Clear converted harmony data
+                        setHarmonyNotes([]);
+                        setHarmonyControlChanges([]);
+                        setHarmonyAnalysis(null);
                       }}
                     >
                       <X className="h-4 w-4" />

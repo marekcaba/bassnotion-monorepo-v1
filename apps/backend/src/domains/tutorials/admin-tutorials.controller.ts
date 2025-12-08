@@ -113,6 +113,22 @@ export class AdminTutorialsController {
     return tutorial;
   }
 
+  @Get('slug/:slug/exercises')
+  async findExercisesBySlug(
+    @Param('slug') slug: string,
+    @CorrelationId() correlationId?: string,
+  ) {
+    this.logger.log(`Finding exercises for tutorial slug: ${slug}`, { correlationId });
+
+    const tutorial = await this.tutorialsService.findBySlug(slug);
+    if (!tutorial) {
+      throw new NotFoundException(`Tutorial with slug ${slug} not found`);
+    }
+
+    const exercises = await this.tutorialsService.findExercisesByTutorialId(tutorial.id);
+    return { tutorial, exercises };
+  }
+
   @Post()
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.CREATED)

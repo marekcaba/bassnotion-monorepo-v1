@@ -65,46 +65,107 @@
 export function markDeprecatedGlobals() {
   if (typeof window === 'undefined') return;
 
-  // Add deprecation warnings
+  // Deprecate legacy drum sample globals
   Object.defineProperty(window, '__preloadedDrumPads', {
     get() {
-      logger.warn(
-        '⚠️ window.__preloadedDrumPads is deprecated. Use GlobalSampleCache instead.',
+      console.warn(
+        '⚠️ DEPRECATED: window.__preloadedDrumPads is deprecated. Use GlobalSampleCache instead.',
       );
       return undefined;
     },
     set(value) {
-      logger.warn(
-        '⚠️ Setting window.__preloadedDrumPads is deprecated. Use GlobalSampleCache.cacheInstrument() instead.',
+      console.warn(
+        '⚠️ DEPRECATED: Setting window.__preloadedDrumPads is deprecated. Use GlobalSampleCache.cacheInstrument() instead.',
       );
     },
   });
 
   Object.defineProperty(window, '__samplesLoadOnDemand', {
     get() {
-      logger.warn(
-        '⚠️ window.__samplesLoadOnDemand is deprecated. Samples always load on demand now.',
+      console.warn(
+        '⚠️ DEPRECATED: window.__samplesLoadOnDemand is deprecated. Samples always load on demand now.',
       );
       return true;
     },
     set(value) {
-      logger.warn(
-        '⚠️ Setting window.__samplesLoadOnDemand is deprecated and has no effect.',
+      console.warn(
+        '⚠️ DEPRECATED: Setting window.__samplesLoadOnDemand is deprecated and has no effect.',
       );
     },
   });
 
   Object.defineProperty(window, '__drumsLoadOnDemand', {
     get() {
-      logger.warn(
-        '⚠️ window.__drumsLoadOnDemand is deprecated. Drums always load on demand now.',
+      console.warn(
+        '⚠️ DEPRECATED: window.__drumsLoadOnDemand is deprecated. Drums always load on demand now.',
       );
       return true;
     },
     set(value) {
-      logger.warn(
-        '⚠️ Setting window.__drumsLoadOnDemand is deprecated and has no effect.',
+      console.warn(
+        '⚠️ DEPRECATED: Setting window.__drumsLoadOnDemand is deprecated and has no effect.',
       );
+    },
+  });
+
+  // Deprecate WindowRegistry legacy globals (BUG #8 - Window Object Pollution Prevention)
+  Object.defineProperty(window, '__globalCoreServices', {
+    get() {
+      console.warn(
+        '⚠️ DEPRECATED: window.__globalCoreServices is deprecated. Use WindowRegistry.getCoreServices() instead.',
+      );
+      return (window as any).__bassnotion_coreServices;
+    },
+    set(value) {
+      console.warn(
+        '⚠️ DEPRECATED: Setting window.__globalCoreServices is deprecated. Use WindowRegistry.setCoreServices() instead.',
+      );
+      (window as any).__bassnotion_coreServices = value;
+    },
+  });
+
+  Object.defineProperty(window, '__coreServices', {
+    get() {
+      console.warn(
+        '⚠️ DEPRECATED: window.__coreServices is deprecated. Use WindowRegistry.getCoreServices() instead.',
+      );
+      return (window as any).__bassnotion_coreServices;
+    },
+    set(value) {
+      console.warn(
+        '⚠️ DEPRECATED: Setting window.__coreServices is deprecated. Use WindowRegistry.setCoreServices() instead.',
+      );
+      (window as any).__bassnotion_coreServices = value;
+    },
+  });
+
+  Object.defineProperty(window, '__globalTone', {
+    get() {
+      console.warn(
+        '⚠️ DEPRECATED: window.__globalTone is deprecated. Use WindowRegistry.getTone() instead.',
+      );
+      return (window as any).__bassnotion_tone;
+    },
+    set(value) {
+      console.warn(
+        '⚠️ DEPRECATED: Setting window.__globalTone is deprecated. Use WindowRegistry.setTone() instead.',
+      );
+      (window as any).__bassnotion_tone = value;
+    },
+  });
+
+  Object.defineProperty(window, '__globalEventBus', {
+    get() {
+      console.warn(
+        '⚠️ DEPRECATED: window.__globalEventBus is deprecated. Use WindowRegistry.getEventBus() instead.',
+      );
+      return (window as any).__bassnotion_eventBus;
+    },
+    set(value) {
+      console.warn(
+        '⚠️ DEPRECATED: Setting window.__globalEventBus is deprecated. Use WindowRegistry.setEventBus() instead.',
+      );
+      (window as any).__bassnotion_eventBus = value;
     },
   });
 }
@@ -128,11 +189,12 @@ declare global {
 
 /**
  * Export type guard to check if core services are available
+ * Uses WindowRegistry to avoid triggering deprecation warnings
  */
 export function hasGlobalCoreServices(): boolean {
-  return (
-    typeof window !== 'undefined' && window.__globalCoreServices !== undefined
-  );
+  if (typeof window === 'undefined') return false;
+  // Access the new key directly to avoid deprecation warning
+  return (window as any).__bassnotion_coreServices !== undefined;
 }
 
 /**

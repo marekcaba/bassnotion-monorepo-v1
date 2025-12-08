@@ -10,6 +10,10 @@
  * - WAM Plugin = Instrument/Effect loaded into track
  */
 
+/**
+ * FAANG FIX (Issue #5): Event handlers are now extracted to useCallback hooks
+ * to prevent unnecessary resubscriptions on each render.
+ */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Track } from '../services/core/Track.js';
 import { serviceRegistry } from '../services/core/ServiceRegistry.js';
@@ -25,9 +29,7 @@ import type { Region, Pattern, MusicalPosition } from '../types/index.js';
 import { getLogger } from '@/utils/logger.js';
 
 const logger = getLogger('track');
-import { createRegion } from '../utils/regionUtils.js';
 import { nanoid } from 'nanoid';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { WindowRegistry } from '../services/WindowRegistry.js';
 
 // Helper to wait for services to be available
@@ -174,9 +176,23 @@ export function useTrack(options: UseTrackOptions): UseTrackReturn {
 
   // Refs for services
   const trackManagerRef = useRef<TrackManager | null>(null);
-  const transportRef = useRef<UnifiedTransport | null>(null);
+  const transportRef = useRef<TransportAdapter | null>(null);
   const eventBusRef = useRef<EventBus | null>(null);
   const unsubscribersRef = useRef<Array<() => void>>([]);
+
+  // FAANG FIX: Memoized event handlers to prevent resubscription
+  const handleTransportStart = useCallback(() => setIsPlaying(true), []);
+  const handleTransportResume = useCallback(() => setIsPlaying(true), []);
+  const handleTransportStop = useCallback(() => setIsPlaying(false), []);
+  const handleTransportPause = useCallback(() => setIsPlaying(false), []);
+  const handleTempoChange = useCallback(
+    (newTempo: number) => setTempo(newTempo),
+    [],
+  );
+  const handleTimeUpdate = useCallback(
+    (time: number) => setCurrentTime(time),
+    [],
+  );
 
   // Debug logging
   const debug = useCallback(
@@ -244,24 +260,16 @@ export function useTrack(options: UseTrackOptions): UseTrackReturn {
 
         debug('Track initialized successfully', { trackId, name, type });
 
-        // Subscribe to transport events
+        // Subscribe to transport events using memoized handlers
+        // FAANG FIX: Using pre-defined handlers instead of inline functions
         if (eventBusRef.current) {
           unsubscribersRef.current = [
-            eventBusRef.current.on('transport:start', () => setIsPlaying(true)),
-            eventBusRef.current.on('transport:resume', () =>
-              setIsPlaying(true),
-            ),
-            eventBusRef.current.on('transport:stop', () => setIsPlaying(false)),
-            eventBusRef.current.on('transport:pause', () =>
-              setIsPlaying(false),
-            ),
-            eventBusRef.current.on(
-              'transport:tempo-change',
-              (newTempo: number) => setTempo(newTempo),
-            ),
-            eventBusRef.current.on('transport:time-update', (time: number) =>
-              setCurrentTime(time),
-            ),
+            eventBusRef.current.on('transport:start', handleTransportStart),
+            eventBusRef.current.on('transport:resume', handleTransportResume),
+            eventBusRef.current.on('transport:stop', handleTransportStop),
+            eventBusRef.current.on('transport:pause', handleTransportPause),
+            eventBusRef.current.on('transport:tempo-change', handleTempoChange),
+            eventBusRef.current.on('transport:time-update', handleTimeUpdate),
           ];
         }
       } catch (err) {
@@ -283,7 +291,19 @@ export function useTrack(options: UseTrackOptions): UseTrackReturn {
       unsubscribersRef.current.forEach((unsubscribe) => unsubscribe());
       unsubscribersRef.current = [];
     };
-  }, [trackId, name, type, autoInit, debug]);
+  }, [
+    trackId,
+    name,
+    type,
+    autoInit,
+    debug,
+    handleTransportStart,
+    handleTransportResume,
+    handleTransportStop,
+    handleTransportPause,
+    handleTempoChange,
+    handleTimeUpdate,
+  ]);
 
   /**
    * Play track

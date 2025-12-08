@@ -157,9 +157,11 @@ export class Clock {
       });
 
       // If context just became running and we're not using AudioWorklet yet, try to initialize it
+      // IDEMPOTENT: Also check !this.sampleAccurateClock to prevent duplicate initialization
       if (
         audioContext.state === 'running' &&
         !this.audioWorkletActive &&
+        !this.sampleAccurateClock &&
         this.useAudioWorklet
       ) {
         logger.info('Attempting to initialize AudioWorklet now that context is running');
@@ -202,10 +204,27 @@ export class Clock {
 
   /**
    * Initialize AudioWorklet for sample-accurate timing
+   * IDEMPOTENT: Safe to call multiple times, will skip if already initialized
    */
   private async initializeAudioWorklet(): Promise<void> {
     if (!this.audioContext) {
       throw new Error('AudioContext not initialized');
+    }
+
+    // IDEMPOTENT CHECK: Skip if already initialized
+    if (this.audioWorkletActive && this.sampleAccurateClock) {
+      logger.debug('AudioWorklet already initialized - skipping duplicate initialization', {
+        clockInstance: !!this.sampleAccurateClock,
+        audioWorkletActive: this.audioWorkletActive,
+      });
+      return;
+    }
+
+    // Cleanup existing instance if present (edge case: active flag reset but instance exists)
+    if (this.sampleAccurateClock) {
+      logger.warn('Found orphaned SampleAccurateClock - cleaning up before reinitializing');
+      this.sampleAccurateClock.destroy();
+      this.sampleAccurateClock = null;
     }
 
     logger.debug('Initializing AudioWorklet clock...');
@@ -617,6 +636,75 @@ export class Clock {
    */
   setOnTick(callback: (time: number) => void): void {
     this.onTick = callback;
+  }
+
+  /**
+   * Reinitialize AudioWorklet if context is running but AudioWorklet is inactive
+   *
+   * This handles the case where Clock was initialized with a suspended AudioContext,
+   * but a new running context was created later (e.g., after user gesture).
+   * Phase 2: Required for Clock.onTick event-driven updates to work.
+   */
+  async reinitializeIfNeeded(): Promise<void> {
+    // CRITICAL FIX: Check if there's a newer persistent AudioContext we should use
+    // This handles the case where AudioEngine creates context #1 (suspended), then
+    // a different context is created/resumed after user gesture
+    if (typeof window !== 'undefined') {
+      // Check primary location first (WindowRegistry standard)
+      const bassnotiontContext = (window as any).__bassnotion_audioContext;
+      // Then check legacy location
+      const persistentContext = (window as any).__persistentAudioContext;
+
+      const newerContext = bassnotiontContext || persistentContext;
+
+      if (
+        newerContext &&
+        newerContext !== this.audioContext &&
+        newerContext.state !== 'closed'
+      ) {
+        logger.info('Detected newer persistent AudioContext - updating Clock reference', {
+          oldContextState: this.audioContext?.state,
+          newContextState: newerContext.state,
+          audioWorkletActive: this.audioWorkletActive,
+          sourceKey: bassnotiontContext ? '__bassnotion_audioContext' : '__persistentAudioContext',
+        });
+        this.audioContext = newerContext;
+      }
+    }
+
+    if (!this.audioContext) {
+      logger.debug('Cannot reinitialize - no AudioContext');
+      return;
+    }
+
+    // Only reinitialize if all conditions are met AND we don't already have an instance
+    // The !this.sampleAccurateClock check prevents creating duplicate instances
+    if (
+      this.audioContext.state === 'running' &&
+      !this.audioWorkletActive &&
+      !this.sampleAccurateClock &&
+      this.useAudioWorklet
+    ) {
+      logger.info('AudioContext is running but AudioWorklet inactive - initializing now', {
+        contextState: this.audioContext.state,
+        audioWorkletActive: this.audioWorkletActive,
+        hasSampleClock: !!this.sampleAccurateClock,
+        useAudioWorklet: this.useAudioWorklet,
+      });
+
+      try {
+        await this.initializeAudioWorklet();
+        logger.info('✅ AudioWorklet initialized successfully via reinitializeIfNeeded');
+      } catch (error) {
+        logger.error('Failed to initialize AudioWorklet in reinitializeIfNeeded', error as Error);
+      }
+    } else {
+      logger.debug('Reinitialize check - no action needed', {
+        contextState: this.audioContext.state,
+        audioWorkletActive: this.audioWorkletActive,
+        useAudioWorklet: this.useAudioWorklet,
+      });
+    }
   }
 
   /**

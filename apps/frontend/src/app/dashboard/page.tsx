@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Home, Edit, Trash2, Library, Settings } from 'lucide-react';
+import Image from 'next/image';
+import { Edit, Trash2, Settings } from 'lucide-react';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { authService } from '@/domains/user/api/auth';
 import { profileService } from '@/domains/user/api/profile';
@@ -39,6 +40,7 @@ export default function DashboardPage() {
     avatarUrl?: string;
   } | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     // Don't redirect during sign out process - let the sign out handler control navigation
@@ -230,10 +232,10 @@ export default function DashboardPage() {
   // TODO: Review non-null assertion - consider null safety
   if (!isReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="min-h-screen flex items-center justify-center px-4 bg-black">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Loading...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ffc700] mx-auto"></div>
+          <p className="mt-2 text-gray-400">Loading...</p>
         </div>
       </div>
     );
@@ -246,79 +248,237 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black">
       {/* Add debug component for responsive testing */}
       <ResponsiveDebug showAlways={true} />
 
-      {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4">
-          {/* Mobile-first responsive header */}
-          <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-center sm:text-left">
-              BassNotion Dashboard
-            </h1>
-            <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-              <Button
-                onClick={handleGoHome}
-                variant="outline"
-                className="w-full sm:w-auto"
+      {/* Header with Logo - same as homepage */}
+      <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
+        <button onClick={handleGoHome} className="cursor-pointer">
+          <Image
+            src="/BASSICOLOGY BIG.png"
+            alt="Bassicology"
+            width={600}
+            height={150}
+            className="w-[220px] sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-auto"
+            priority
+          />
+        </button>
+      </header>
+
+      {/* Navbar - same style as homepage */}
+      <nav className="w-full bg-black py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          {/* Spacer for left side to balance layout */}
+          <div className="hidden md:block w-24" />
+
+          {/* Desktop Navigation - Center */}
+          <div className="hidden md:flex items-center gap-8">
+            <button
+              onClick={handleGoToLibrary}
+              className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
+            >
+              Practice
+            </button>
+            <button
+              className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
+              disabled
+            >
+              College
+            </button>
+            <button
+              className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
+              disabled
+            >
+              Blog
+            </button>
+            {profile?.role === 'admin' && (
+              <button
+                onClick={handleGoToWurlitzerAdmin}
+                className="text-gray-300 hover:text-white transition-colors text-sm font-medium flex items-center gap-1"
               >
-                <Home className="h-4 w-4 mr-2" />
-                Home
-              </Button>
-              <Button
-                onClick={handleGoToLibrary}
-                variant="outline"
-                className="w-full sm:w-auto"
+                <Settings className="h-4 w-4" />
+                Admin
+              </button>
+            )}
+          </div>
+
+          {/* Desktop Auth Buttons - Right */}
+          <div className="hidden md:flex items-center gap-2">
+            <span className="text-[#ffc700] text-sm font-medium px-3">
+              Dashboard
+            </span>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="border border-[#ffc700] text-[#ffc700] hover:bg-[#ffc700] hover:text-black w-8 h-8 rounded transition-colors flex items-center justify-center"
+              aria-label="Log out"
+              title="Log out"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <Library className="h-4 w-4 mr-2" />
-                Library
-              </Button>
-              {profile?.role === 'admin' && (
-                <Button
-                  onClick={handleGoToWurlitzerAdmin}
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Wurlitzer Config
-                </Button>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden p-2 text-white"
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            aria-label="Toggle menu"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              {showMobileMenu ? (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              ) : (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               )}
-              <Button
-                onClick={handleSignOut}
-                variant="outline"
-                className="w-full sm:w-auto"
+            </svg>
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Overlay */}
+      {showMobileMenu && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div
+            className="fixed inset-0 bg-black/80"
+            onClick={() => setShowMobileMenu(false)}
+          />
+          <div className="fixed top-0 right-0 h-full w-72 xs:w-80 bg-zinc-900 shadow-xl">
+            <div className="flex justify-end p-4">
+              <button
+                onClick={() => setShowMobileMenu(false)}
+                className="p-2 text-white"
+                aria-label="Close menu"
               >
-                Sign Out
-              </Button>
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="flex flex-col px-6 space-y-4">
+              <button
+                onClick={() => {
+                  setShowMobileMenu(false);
+                  handleGoToLibrary();
+                }}
+                className="text-gray-300 hover:text-white transition-colors text-left py-2 text-lg"
+              >
+                Practice
+              </button>
+              <button
+                className="text-gray-500 text-left py-2 text-lg"
+                disabled
+              >
+                College
+              </button>
+              <button
+                className="text-gray-500 text-left py-2 text-lg"
+                disabled
+              >
+                Blog
+              </button>
+              {profile?.role === 'admin' && (
+                <button
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    handleGoToWurlitzerAdmin();
+                  }}
+                  className="text-gray-300 hover:text-white transition-colors text-left py-2 text-lg flex items-center gap-2"
+                >
+                  <Settings className="h-5 w-5" />
+                  Admin
+                </button>
+              )}
+              <div className="pt-4 border-t border-zinc-700">
+                <span className="text-[#ffc700] text-lg font-medium block py-2">
+                  Dashboard
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMobileMenu(false);
+                  handleSignOut();
+                }}
+                className="mt-2 border border-gray-500 text-gray-400 hover:border-red-500 hover:text-red-500 px-4 py-2 rounded transition-colors text-center flex items-center justify-center gap-2"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+                Log out
+              </button>
             </div>
           </div>
         </div>
-      </header>
+      )}
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 sm:py-8">
         <div className="max-w-4xl mx-auto">
           {/* Welcome Section with Profile Information */}
-          <div className="bg-card rounded-lg border p-4 sm:p-6 mb-6 sm:mb-8">
+          <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 sm:p-6 mb-6 sm:mb-8">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h2 className="text-lg sm:text-xl font-semibold mb-2">
-                  // TODO: Review non-null assertion - consider null safety
+                <h2 className="text-lg sm:text-xl font-semibold mb-2 text-white">
                   Welcome back!
                 </h2>
-                <p className="text-muted-foreground text-sm sm:text-base">
+                <p className="text-gray-400 text-sm sm:text-base">
                   You're successfully signed in to BassNotion.
                 </p>
               </div>
-              // TODO: Review non-null assertion - consider null safety
               {!showProfileDialog && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowProfileDialog(true)}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 border-[#ffc700] text-[#ffc700] hover:bg-[#ffc700] hover:text-black"
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Profile
@@ -330,40 +490,40 @@ export default function DashboardPage() {
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Left Column - Account Info */}
                 <div className="space-y-3 text-sm">
-                  <h3 className="font-semibold text-base mb-3">
+                  <h3 className="font-semibold text-base mb-3 text-white">
                     Account Information
                   </h3>
                   <div>
-                    <span className="font-medium text-muted-foreground">
+                    <span className="font-medium text-gray-500">
                       Email:
                     </span>
-                    <p className="mt-1 break-all">{user.email}</p>
+                    <p className="mt-1 break-all text-gray-300">{user.email}</p>
                   </div>
                   <div>
-                    <span className="font-medium text-muted-foreground">
+                    <span className="font-medium text-gray-500">
                       Email Status:
                     </span>
                     <p className="mt-1">
                       {user.email_confirmed_at ? (
-                        <span className="text-green-600">✓ Confirmed</span>
+                        <span className="text-green-500">✓ Confirmed</span>
                       ) : (
-                        <span className="text-amber-600">⏳ Pending</span>
+                        <span className="text-amber-500">⏳ Pending</span>
                       )}
                     </p>
                   </div>
                   <div>
-                    <span className="font-medium text-muted-foreground">
+                    <span className="font-medium text-gray-500">
                       Member Since:
                     </span>
-                    <p className="mt-1">
+                    <p className="mt-1 text-gray-300">
                       {new Date(user.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div>
-                    <span className="font-medium text-muted-foreground">
+                    <span className="font-medium text-gray-500">
                       User ID:
                     </span>
-                    <p className="mt-1 font-mono text-xs break-all text-muted-foreground">
+                    <p className="mt-1 font-mono text-xs break-all text-gray-500">
                       {user.id}
                     </p>
                   </div>
@@ -371,29 +531,29 @@ export default function DashboardPage() {
 
                 {/* Right Column - Profile Info */}
                 <div className="space-y-3 text-sm">
-                  <h3 className="font-semibold text-base mb-3">
+                  <h3 className="font-semibold text-base mb-3 text-white">
                     Profile Information
                   </h3>
                   {profileData && (
                     <>
                       <div>
-                        <span className="font-medium text-muted-foreground">
+                        <span className="font-medium text-gray-500">
                           Display Name:
                         </span>
-                        <p className="mt-1">{profileData.displayName}</p>
+                        <p className="mt-1 text-gray-300">{profileData.displayName}</p>
                       </div>
 
                       <div>
-                        <span className="font-medium text-muted-foreground">
+                        <span className="font-medium text-gray-500">
                           Bio:
                         </span>
-                        <p className="mt-1 text-muted-foreground">
+                        <p className="mt-1 text-gray-400">
                           {profileData.bio || 'No bio added yet'}
                         </p>
                       </div>
 
                       <div>
-                        <span className="font-medium text-muted-foreground">
+                        <span className="font-medium text-gray-500">
                           Profile Picture:
                         </span>
                         <div className="mt-2">
@@ -415,11 +575,11 @@ export default function DashboardPage() {
 
           {/* Interactive Features with AutoAnimate Demo */}
           <div className="mt-6 sm:mt-8">
-            <h2 className="text-lg sm:text-xl font-semibold mb-4">
+            <h2 className="text-lg sm:text-xl font-semibold mb-4 text-white">
               🎸 Features & Animation Demo
             </h2>
-            <div className="bg-card rounded-lg border p-4 sm:p-6">
-              <p className="text-sm text-muted-foreground mb-4">
+            <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 sm:p-6">
+              <p className="text-sm text-gray-400 mb-4">
                 Interactive BassNotion features with smooth layout animations
                 powered by AutoAnimate
               </p>
@@ -429,27 +589,27 @@ export default function DashboardPage() {
 
           {/* Account Settings */}
           <div className="mt-6 sm:mt-8">
-            <h2 className="text-lg sm:text-xl font-semibold mb-4">
+            <h2 className="text-lg sm:text-xl font-semibold mb-4 text-white">
               Account Settings
             </h2>
 
             {/* Password Section */}
-            <div className="bg-card rounded-lg border p-4 sm:p-6 mb-4">
-              <h3 className="font-semibold mb-4">Password & Security</h3>
+            <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 sm:p-6 mb-4">
+              <h3 className="font-semibold mb-4 text-white">Password & Security</h3>
               <Button
                 onClick={() => setShowPasswordDialog(true)}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto bg-[#ffc700] text-black hover:bg-[#e6b300]"
               >
                 Change Password
               </Button>
             </div>
 
             {/* Danger Zone */}
-            <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-4 sm:p-6">
-              <h3 className="font-semibold text-destructive mb-2">
+            <div className="bg-red-950/30 border border-red-900/50 rounded-lg p-4 sm:p-6">
+              <h3 className="font-semibold text-red-500 mb-2">
                 Danger Zone
               </h3>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-gray-400 mb-4">
                 Once you delete your account, there is no going back. Please be
                 certain.
               </p>
@@ -465,11 +625,11 @@ export default function DashboardPage() {
           </div>
 
           {/* Debug Info */}
-          <div className="mt-6 sm:mt-8 bg-muted rounded-lg p-4">
-            <h3 className="font-semibold mb-2 text-sm sm:text-base">
+          <div className="mt-6 sm:mt-8 bg-zinc-800/50 rounded-lg p-4">
+            <h3 className="font-semibold mb-2 text-sm sm:text-base text-gray-300">
               Debug Information
             </h3>
-            <div className="text-xs space-y-1 font-mono break-all">
+            <div className="text-xs space-y-1 font-mono break-all text-gray-500">
               <p>
                 Auth Status:{' '}
                 {isAuthenticated ? 'Authenticated' : 'Not Authenticated'}

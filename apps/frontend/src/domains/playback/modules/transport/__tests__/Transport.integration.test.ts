@@ -17,6 +17,7 @@ vi.mock('tone', () => ({
     schedule: vi.fn(() => 'mock-schedule-id'),
     scheduleRepeat: vi.fn(() => 'mock-schedule-repeat-id'),
     clear: vi.fn(),
+    cancel: vi.fn(),
     start: vi.fn().mockResolvedValue(undefined),
     stop: vi.fn().mockResolvedValue(undefined),
     pause: vi.fn().mockResolvedValue(undefined),
@@ -46,6 +47,14 @@ class MockAudioContext {
         this.currentTime += 0.001;
       }
     }, 1);
+  }
+
+  addEventListener(event: string, listener: Function) {
+    // Mock implementation - no-op for tests
+  }
+
+  removeEventListener(event: string, listener: Function) {
+    // Mock implementation - no-op for tests
   }
 }
 

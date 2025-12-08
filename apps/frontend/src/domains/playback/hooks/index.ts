@@ -43,6 +43,10 @@ export type {
 export { useAudioContext } from './useAudioContext.js';
 export type { UseAudioContextReturn } from './useAudioContext.js';
 
+// PlaybackSession Architecture hooks
+export { usePlaybackSession, useExerciseSession } from './usePlaybackSession.js';
+export type { UsePlaybackSessionReturn } from './usePlaybackSession.js';
+
 // Legacy hooks (will be deprecated)
 export { useAssetLoading } from './useAssetLoading.js';
 export { usePlaybackState } from './usePlaybackState.js';

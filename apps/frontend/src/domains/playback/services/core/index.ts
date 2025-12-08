@@ -63,6 +63,21 @@ export type {
   IsolationReport,
 } from './TimingIsolationManager.js';
 
+// PlaybackSession Architecture (Story: Fix Singleton Soup)
+export { EventScope } from './EventScope.js';
+export type { EventScopeConfig } from './EventScope.js';
+export {
+  PlaybackSession,
+  type PlaybackSessionConfig,
+  type SessionState,
+} from './PlaybackSession.js';
+export {
+  PlaybackSessionManager,
+  getPlaybackSessionManager,
+  playbackSessionManager,
+  type SessionMetrics,
+} from './PlaybackSessionManager.js';
+
 // Error types
 export { ServiceError } from './ServiceRegistry.js';
 export { EventBusError } from './EventBus.js';

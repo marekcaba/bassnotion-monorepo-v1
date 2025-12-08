@@ -266,8 +266,15 @@ export class PlaybackEngine {
 
     this.logger.info('🔄 PlaybackEngine: Rescheduling pending events after tempo change');
 
-    // Clear existing scheduled events
+    // Clear existing scheduled events (Tone.Transport)
     this.clearScheduledState();
+
+    // CRITICAL FIX: Stop harmony AudioBufferSourceNodes scheduled at old tempo
+    // These are separate from Tone.Transport events and must be cleared explicitly
+    if (this.harmonyScheduler) {
+      this.logger.info('🎹 PlaybackEngine: Stopping harmony sources for tempo reschedule');
+      this.harmonyScheduler.stopAll();
+    }
 
     // Reschedule all tracks from current position
     const tracks = Array.from(this.tracks.values());

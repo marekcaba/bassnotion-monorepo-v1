@@ -345,6 +345,8 @@ export default function AdminTutorialEditPage({ params }: AdminTutorialPageProps
         const deleteResult = await exerciseRepo.deleteMany(deleteIds);
         if (!deleteResult.ok) {
           logger.error('Failed to delete exercises', deleteResult.error);
+          // IMPORTANT: Throw error to stop the save if delete fails
+          throw new Error(`Failed to delete exercises: ${deleteResult.getError?.() || 'Unknown error'}`);
         }
       }
 
@@ -404,8 +406,13 @@ export default function AdminTutorialEditPage({ params }: AdminTutorialPageProps
 
         // Invalidate React Query cache to ensure fresh data on tutorial page
         // This fixes the issue where drummer MIDI URLs weren't showing after save
-        queryClient.invalidateQueries({ queryKey: ['tutorial-exercises', tutorialSlug] });
-        logger.info('Invalidated React Query cache for tutorial exercises', {
+        // Invalidate ALL tutorial-exercises queries (not just this slug) to ensure
+        // viewer page gets fresh data when user navigates there
+        queryClient.invalidateQueries({
+          queryKey: ['tutorial-exercises'],
+          exact: false, // Invalidate all queries starting with this key
+        });
+        logger.info('Invalidated React Query cache globally for all tutorial exercises', {
           tutorialSlug,
         });
 

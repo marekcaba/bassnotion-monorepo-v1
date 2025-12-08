@@ -1638,18 +1638,23 @@ const HarmonyWidgetComponent = ({
       // - 60 / bpm = seconds per quarter note
       // - durationTicks / 480 = number of quarter notes
       // - result = duration in seconds
+      // CRITICAL FIX: Use exercise.bpm (original MIDI tempo) instead of transport.tempo
+      // This avoids race condition where bpm state hasn't updated yet from transport
+      // MIDI ticks must be converted using the original file's BPM for correct duration
       const durationSeconds = note.durationTicks
-        ? (note.durationTicks / 480) * (60 / bpm)
+        ? (note.durationTicks / 480) * (60 / (exercise.bpm || 120))
         : 2; // Fallback to 2 seconds if durationTicks missing
 
       // DIAGNOSTIC: Log first 3 notes to verify BPM and duration calculation
       if (index < 3) {
+        const exerciseBpm = exercise.bpm || 120;
         console.log(`[HARMONY DURATION DIAGNOSTIC] Note ${index + 1}:`, {
           durationTicks: note.durationTicks,
-          bpm,
-          calculation: `(${note.durationTicks} / 480) * (60 / ${bpm})`,
+          exerciseBpm,
+          transportBpm: bpm,
+          calculation: `(${note.durationTicks} / 480) * (60 / ${exerciseBpm})`,
           durationSeconds,
-          expectedAt69BPM: (note.durationTicks / 480) * (60 / 69),
+          note: 'Using exercise.bpm for tick-to-time conversion (MIDI best practice)',
         });
       }
 

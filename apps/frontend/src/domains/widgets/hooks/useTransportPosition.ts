@@ -1,8 +1,22 @@
-import { useEffect, useRef, useCallback } from 'react';
-import type { EventBus } from '@/domains/playback/services/core/EventBus';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
+/**
+ * useTransportPosition Hook
+ *
+ * Direct subscription to EventBus transport position updates for timing-critical audio playback.
+ * This bypasses WidgetSyncService for minimal latency.
+ *
+ * FAANG FIX: Uses stable callback pattern via useEventBusSubscription to prevent
+ * unnecessary resubscriptions and rerenders.
+ *
+ * @module widgets/hooks/useTransportPosition
+ */
 
-interface TransportPosition {
+import { useCallback } from 'react';
+import { useEventBusSubscription } from '@/domains/playback/hooks/utils/useEventBusSubscription.js';
+
+/**
+ * Transport position structure
+ */
+export interface TransportPosition {
   bars: number;
   beats: number;
   sixteenths: number;
@@ -10,88 +24,73 @@ interface TransportPosition {
   seconds: number;
 }
 
-interface UseTransportPositionOptions {
+/**
+ * Position update event data from EventBus
+ */
+interface PositionUpdateEvent {
+  position?: TransportPosition;
+  bars?: number;
+  beats?: number;
+  sixteenths?: number;
+  ticks?: number;
+  seconds?: number;
+}
+
+/**
+ * Options for useTransportPosition hook
+ */
+export interface UseTransportPositionOptions {
+  /** Callback invoked on each position update */
   onPositionUpdate: (position: TransportPosition) => void;
+  /** Whether the subscription is active (default: true) */
   enabled?: boolean;
 }
 
 /**
  * Direct subscription to EventBus transport position updates for timing-critical audio playback.
- * This bypasses WidgetSyncService for minimal latency.
+ *
+ * This hook uses a stable callback pattern to prevent:
+ * - Unnecessary resubscriptions when callback changes
+ * - Stale closure issues
+ * - Memory leaks from leaked subscriptions
+ *
+ * @example
+ * ```tsx
+ * const handlePositionUpdate = useCallback((position: TransportPosition) => {
+ *   setCurrentPosition(position);
+ * }, []);
+ *
+ * useTransportPosition({
+ *   onPositionUpdate: handlePositionUpdate,
+ *   enabled: isPlaying,
+ * });
+ * ```
  */
 export function useTransportPosition({
   onPositionUpdate,
   enabled = true,
-}: UseTransportPositionOptions) {
-  const callbackRef = useRef(onPositionUpdate);
-
-  // Update callback ref to avoid stale closures
-  useEffect(() => {
-    callbackRef.current = onPositionUpdate;
-  });
-
-  useEffect(() => {
-    if (!enabled) {
-      return;
-    }
-
-    // Removed console.log to prevent performance issues
-    // logger.info('[useTransportPosition] Hook enabled, attempting to connect to EventBus...');
-
-    // Get EventBus directly from CoreServices
-    const coreServices =
-      (window as any).__coreServices || (window as any).__globalCoreServices;
-    if (!coreServices || typeof coreServices.getEventBus !== 'function') {
-      // Only log warnings once, not on every render
-      // logger.warn('useTransportPosition: EventBus not available', {
-      //   hasCoreServices: !!coreServices,
-      //   hasGetEventBus:
-      //     coreServices && typeof coreServices.getEventBus === 'function',
-      // });
-      return;
-    }
-
-    const eventBus = coreServices.getEventBus() as EventBus;
-    if (!eventBus) {
-      // logger.warn('useTransportPosition: EventBus not initialized');
-      return;
-    }
-
-    // Removed console.log to prevent performance issues
-    // logger.info('[useTransportPosition] Successfully connected to EventBus, subscribing to transport:position-updated');
-
-    // Subscribe directly to transport position updates
-    const handlePositionUpdate = (data: any) => {
+}: UseTransportPositionOptions): void {
+  // Memoize the handler to extract position from event data
+  // The useEventBusSubscription hook stores this in a ref, so changes don't cause resubscription
+  const handlePositionUpdate = useCallback(
+    (data: PositionUpdateEvent) => {
       // The event data might be wrapped in a 'position' property
       const positionData = data?.position || data;
-
-      // Removed console.log that fires on every position update (50ms) - causes massive performance issues!
-      // logger.info('[useTransportPosition] Received position update:', positionData);
 
       if (
         positionData &&
         typeof positionData === 'object' &&
         'bars' in positionData
       ) {
-        callbackRef.current(positionData as TransportPosition);
+        onPositionUpdate(positionData as TransportPosition);
       }
-    };
+    },
+    [onPositionUpdate],
+  );
 
-    // EventBus.on returns an unsubscribe function
-    const unsubscribe = eventBus.on(
-      'transport:position-updated',
-      handlePositionUpdate,
-    );
-
-    // Removed console.log to prevent performance issues
-    // logger.info('[useTransportPosition] Subscribed to transport:position-updated events');
-
-    return () => {
-      // Removed console.log to prevent performance issues
-      // logger.info('[useTransportPosition] Unsubscribing from transport:position-updated');
-      unsubscribe();
-    };
-  }, [enabled]);
+  // Use the stable subscription utility
+  // This stores the handler in a ref, preventing resubscription when onPositionUpdate changes
+  useEventBusSubscription('transport:position-updated', handlePositionUpdate, enabled);
 }
 
 /**

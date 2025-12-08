@@ -77,49 +77,41 @@
   backface-visibility: hidden;
 }
 
-/* Exit animation (old page) - Framer Commerce style */
+/* Old page stays fully visible, then fades out after new page is visible */
 ::view-transition-old(*),
 ::view-transition-old(root) {
-  animation-name: view-transition-exit;
-  animation-duration: 0.2s;
-  animation-delay: 0s;
-  animation-timing-function: cubic-bezier(0.27, 0, 0.51, 1);
+  animation-name: view-transition-fade-out;
+  animation-duration: 0.1s;
+  animation-delay: 0.2s; /* Wait for new page to fade in first */
+  animation-timing-function: ease-out;
   animation-fill-mode: both;
 }
 
-/* Enter animation (new page) - Framer Commerce style */
+/* New page fades in on top of the old page */
 ::view-transition-new(*),
 ::view-transition-new(root) {
-  animation-name: view-transition-enter;
+  animation-name: view-transition-fade-in;
   animation-duration: 0.2s;
   animation-delay: 0s;
-  animation-timing-function: cubic-bezier(0.27, 0, 0.51, 1);
+  animation-timing-function: ease-out;
   animation-fill-mode: both;
 }
 
-@keyframes view-transition-exit {
+@keyframes view-transition-fade-in {
   0% {
-    opacity: 1;
-    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg)
-      rotateX(0deg) rotateY(0deg);
+    opacity: 0;
   }
   100% {
-    opacity: 0;
-    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg)
-      rotateX(0deg) rotateY(0deg);
+    opacity: 1;
   }
 }
 
-@keyframes view-transition-enter {
+@keyframes view-transition-fade-out {
   0% {
-    opacity: 0;
-    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg)
-      rotateX(0deg) rotateY(0deg);
+    opacity: 1;
   }
   100% {
-    opacity: 1;
-    transform: translateX(0px) translateY(0px) scale(1) rotate(0deg)
-      rotateX(0deg) rotateY(0deg);
+    opacity: 0;
   }
 }
 

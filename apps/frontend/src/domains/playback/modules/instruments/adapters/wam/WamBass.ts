@@ -327,8 +327,8 @@ export class WamBassNode implements WamNode {
       return (window as any).Tone;
     }
 
-    const coreServices =
-      (window as any).__coreServices || (window as any).__globalCoreServices;
+    // Use WindowRegistry key (modules cannot import from services)
+    const coreServices = (window as any).__bassnotion_coreServices;
     if (coreServices && typeof coreServices.getAudioEngine === 'function') {
       const audioEngine = coreServices.getAudioEngine();
       if (audioEngine && typeof audioEngine.getTone === 'function') {

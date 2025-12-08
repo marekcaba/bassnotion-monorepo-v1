@@ -8,6 +8,7 @@
 
 // Epic 3.18: UnifiedTransportController removed - use UnifiedTransport stub instead
 import { TransportAdapter } from '@/domains/playback/services/core/index.js';
+import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 
 // Stub types
 type TransportState = 'stopped' | 'playing' | 'paused';
@@ -39,7 +40,7 @@ class UnifiedTransportController {
 
   constructor() {
     // Try to get UnifiedTransport from CoreServices
-    const coreServices = (window as any).__coreServices;
+    const coreServices = WindowRegistry.getCoreServices();
     if (coreServices) {
       try {
         this.unifiedTransport =

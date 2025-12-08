@@ -6,7 +6,6 @@ import { YouTubeVideoSection } from './YouTubeVideoSection';
 import { TutorialInfoCard } from './TutorialInfoCard';
 import { ExerciseSelector } from './ExerciseSelector';
 import { FretboardCard } from './FretboardCard';
-import Fretboard3D from './FretboardCard/components/Fretboard3D';
 
 import { FourWidgetsCard } from './components/FourWidgetsCard';
 import { GlobalControlsCard } from './components/GlobalControlsCard';
@@ -301,16 +300,34 @@ function YouTubeWidgetPageContent({
     string | null
   >(null);
 
+  // REFACTORED: Derive selectedExercise from exercises array (single source of truth)
+  const selectedExercise = React.useMemo(() => {
+    if (!selectedExerciseId || !exercises) return null;
+    const exercise = exercises.find((ex) => ex.id === selectedExerciseId);
+    console.log('[YOUTUBE-WIDGET] Derived selectedExercise:', {
+      selectedExerciseId,
+      found: !!exercise,
+      exerciseTitle: exercise?.title,
+      noteCount: exercise?.notes?.length || 0,
+    });
+    return exercise || null;
+  }, [selectedExerciseId, exercises]);
+
   // Use refs to track previous values and prevent infinite loops
   const prevSelectedExerciseRef = useRef<any>(null);
   const prevTempoRef = useRef<number>(120);
   const prevVolumeRef = useRef<number>(80);
 
+  // TEMPO FIX: Track if user manually modified tempo
+  // "Last explicit user action wins" - user tempo changes take priority over exercise defaults
+  const hasUserModifiedTempo = useRef(false);
+  const currentExerciseIdRef = useRef<string | null>(null);
+
   // Audio fretboard integration for 3D mode
   const { triggerNote } = useAudioFretboard({
     stringCount,
     autoPlayOnClick: true,
-    exercise: widgetState.selectedExercise,
+    exercise: selectedExercise || undefined, // Use derived exercise
   });
 
   // FIX: Store exercises in a ref to prevent callback recreation on data changes
@@ -339,22 +356,9 @@ function YouTubeWidgetPageContent({
               hasHarmonyNotes: !!firstExercise.harmonyNotes,
             },
           );
-          // Update state gradually
+          // REFACTORED: Only set ID - exercise will be derived and loaded via useEffect
           setSelectedExerciseId(firstExercise.id);
-          // Update widget state after a frame
-          requestAnimationFrame(() => {
-            // console.log('🔍 [STATE-FLOW-0] Calling setSelectedExercise with:', {
-            //   exerciseId: firstExercise.id,
-            //   exerciseTitle: firstExercise.title,
-            //   harmonyInstrument: firstExercise.harmonyInstrument,
-            //   harmony_instrument: firstExercise.harmony_instrument,
-            //   hasHarmonyInstrument: !!firstExercise.harmonyInstrument,
-            //   allKeys: Object.keys(firstExercise),
-            // });
-            widgetStateRef.current.setSelectedExercise(firstExercise);
-            console.log('✅ [YOUTUBE-WIDGET] Exercise set in widgetState');
-            // REMOVED: globalExerciseSelection update - not needed
-          });
+          console.log('✅ [YOUTUBE-WIDGET] Auto-selected exercise ID:', firstExercise.id);
         }
       }, 150); // 150ms delay to let FretboardCard initialize first
 
@@ -420,14 +424,10 @@ function YouTubeWidgetPageContent({
           harmonyInstrument: exercise.harmonyInstrument,
         });
 
-        // Update parent state (single source of truth)
+        // REFACTORED: Only update exercise ID - exercise will be derived and loaded via useEffect
         setSelectedExerciseId(exerciseId);
 
-        // Update widget state with the selected exercise
-        widgetStateRef.current.setSelectedExercise(exercise);
-
-        // REMOVED: globalExerciseSelection update - causes circular updates
-        // Only emit to sync context for widget synchronization
+        // Emit event for widget synchronization
         emitGlobalEvent('exercise:selected', { exerciseId, exercise });
 
         // 🆕 CRITICAL FIX: Load samples for new instrument on-demand
@@ -539,7 +539,7 @@ function YouTubeWidgetPageContent({
   }, []);
 
   // Extract specific values from syncState to prevent excessive re-renders
-  const selectedExercise = syncState.exercise.selectedExercise;
+  // REFACTORED: selectedExercise now derived from exercises array at top of component
   const syncTempo = syncState.playback.tempo;
   const syncMasterVolume = syncState.ui.masterVolume;
 
@@ -566,11 +566,20 @@ function YouTubeWidgetPageContent({
 
       prevSelectedExerciseRef.current = selectedExercise;
 
-      // Update global tempo if exercise has BPM
+      // TEMPO FIX: Check if exercise ID changed - if so, reset user tempo flag
+      const exerciseIdChanged = currentExerciseIdRef.current !== selectedExercise.id;
+      if (exerciseIdChanged) {
+        currentExerciseIdRef.current = selectedExercise.id;
+        hasUserModifiedTempo.current = false;
+        logger.info('🎛️ YouTubeWidgetPage: New exercise, resetting tempo preference');
+      }
+
+      // Update global tempo if exercise has BPM - only if user hasn't manually modified
       if (
         selectedExercise.bpm &&
         selectedExercise.bpm > 0 &&
-        selectedExercise.bpm !== prevTempoRef.current
+        selectedExercise.bpm !== prevTempoRef.current &&
+        !hasUserModifiedTempo.current
       ) {
         // Debug log (disabled to reduce console noise)
         // logger.info(
@@ -579,13 +588,32 @@ function YouTubeWidgetPageContent({
         // );
         widgetStateRef.current.setTempo(selectedExercise.bpm);
         prevTempoRef.current = selectedExercise.bpm;
+        logger.info('🎛️ YouTubeWidgetPage: Set tempo to exercise BPM:', selectedExercise.bpm);
+      } else if (hasUserModifiedTempo.current) {
+        logger.info('🎛️ YouTubeWidgetPage: Keeping user tempo (user modified)');
       }
 
-      // Update selected exercise in widget state
-      // COMMENTED OUT: This line causes infinite loop and blocks all clicks
-      // widgetStateRef.current.setSelectedExercise(selectedExercise);
+      // REFACTORED: Load exercise data into timeline and extract harmony instrument
+      // This replaces the old setSelectedExercise which stored exercise in state
+      widgetStateRef.current.setSelectedExercise(selectedExercise);
+
+      // FIX: Sync exercise data to Transport (clock was showing 0:0:00 because Transport never got exercise data)
+      // Only set tempo from exercise if user hasn't manually changed it
+      if (!hasUserModifiedTempo.current && selectedExercise.bpm) {
+        console.log('[EXERCISE-SYNC] Setting transport tempo from exercise:', selectedExercise.bpm);
+        transport.setTempo(selectedExercise.bpm);
+      }
+
+      // Set exercise duration for countdown position calculation
+      if (selectedExercise.duration_beats && selectedExercise.timeSignature) {
+        const beatsPerBar = selectedExercise.timeSignature.numerator;
+        const totalBars = Math.ceil(selectedExercise.duration_beats / beatsPerBar);
+        console.log('[EXERCISE-SYNC] Setting transport exercise duration:', { totalBars, beatsPerBar });
+        transport.setExerciseDuration(totalBars, beatsPerBar);
+        transport.setTimeSignature(selectedExercise.timeSignature);
+      }
     }
-  }, [selectedExercise]); // Removed widgetState - using ref
+  }, [selectedExercise, transport]); // Added transport to dependencies
 
   // Listen for tempo changes in sync state
   useEffect(() => {
@@ -608,8 +636,15 @@ function YouTubeWidgetPageContent({
     ) {
       widgetStateRef.current.setTempo(syncTempo);
       prevTempoRef.current = syncTempo;
+
+      // TEMPO FIX: If tempo sync differs from exercise default, assume user modified it
+      // This catches tempo changes from GlobalControls propagating through syncState
+      if (selectedExercise?.bpm && syncTempo !== selectedExercise.bpm) {
+        hasUserModifiedTempo.current = true;
+        logger.info('🎛️ YouTubeWidgetPage: Marking tempo as user-modified (sync differs from exercise)');
+      }
     }
-  }, [syncTempo, widgetState.tempo]); // Removed widgetState - using ref
+  }, [syncTempo, widgetState.tempo, selectedExercise?.bpm]); // Added selectedExercise.bpm dependency
 
   // Listen for volume changes in sync state
   useEffect(() => {
@@ -758,6 +793,14 @@ function YouTubeWidgetPageContent({
                 logger.info(`🎵 Seeking to position: ${position}s`);
               }
             }}
+            onUserTempoChange={(tempo) => {
+              // TEMPO FIX: Mark that user manually changed tempo
+              // This prevents Play button from resetting to exercise default
+              hasUserModifiedTempo.current = true;
+              // Debug logs commented out after fix verification
+              // console.log('🎯 [TEMPO-FIX] Step 2: YouTubeWidgetPage received onUserTempoChange callback', {...});
+              logger.info('🎛️ YouTubeWidgetPage: User modified tempo via TransportClock', { tempo });
+            }}
           />
 
           {/* 5. Interactive Fretboard Card - Now without Exercise Selector */}
@@ -777,12 +820,13 @@ function YouTubeWidgetPageContent({
             tutorialSlug={tutorialSlug}
             exercises={exercises}
             selectedExerciseId={selectedExerciseId}
+            selectedExercise={selectedExercise}
             onExerciseSelect={handleExerciseSelect}
           />
 
           {/* 6. Global Playback Controls Card - Dedicated panel for global controls */}
           <GlobalControlsCard
-            selectedExercise={widgetState.selectedExercise}
+            selectedExercise={selectedExercise}
             exercises={exercises}
             is3DMode={is3DMode}
             tiltAngle={tiltAngle}
@@ -794,12 +838,14 @@ function YouTubeWidgetPageContent({
             loopRegion={widgetState.loopRegion}
             isLoopEnabled={widgetState.isLoopEnabled}
             onPlayStateChange={handlePlayStateChange}
+            hasUserModifiedTempo={hasUserModifiedTempo}
           />
 
           {/* 7. Four Widgets Card - 4 essential widgets */}
           <FourWidgetsCard
             widgetState={widgetState}
             tutorialId={tutorialData?.id}
+            selectedExercise={selectedExercise}
           />
 
           {/* 8. Teaching Takeaway Card - Lesson summaries */}

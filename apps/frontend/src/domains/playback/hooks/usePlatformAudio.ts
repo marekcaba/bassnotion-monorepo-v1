@@ -13,9 +13,12 @@
  * 2. Fallback to global singleton (universal)
  *
  * This ensures your 4-day audio system works identically everywhere.
+ *
+ * FAANG FIX (Issue #5): Uses threshold-based progress updates to prevent
+ * unnecessary rerenders. Progress is only updated if changed by >1%.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAudioServices } from '../providers/AudioProvider.js';
 import {
   getSamplePreloader,
@@ -23,7 +26,13 @@ import {
 } from '../services/InitialSamplePreloader.js';
 import type { CoreServices } from '../services/core/CoreServices.js';
 import type { TransportAdapter } from '../services/core/TransportAdapter.js';
-import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { WindowRegistry } from '../services/WindowRegistry.js';
+import { getLogger } from '@/utils/logger.js';
+
+const logger = getLogger('usePlatformAudio');
+
+/** Threshold for sample progress updates (1% = 0.01) */
+const PROGRESS_UPDATE_THRESHOLD = 0.01;
 
 export interface PlatformAudioState {
   /** Core services instance (from AudioProvider or global) */
@@ -116,8 +125,7 @@ export function usePlatformAudio(): PlatformAudioState {
 
         // Strategy 2: Fallback to global singleton (universal access)
         if (!coreServices) {
-          const globalServices = (window as any)
-            .__globalCoreServices as CoreServices;
+          const globalServices = WindowRegistry.getCoreServices() as CoreServices;
           if (globalServices) {
             coreServices = globalServices;
             logger.info(
@@ -139,8 +147,7 @@ export function usePlatformAudio(): PlatformAudioState {
                 }, 10000);
 
                 const checkServices = () => {
-                  const services = (window as any)
-                    .__globalCoreServices as CoreServices;
+                  const services = WindowRegistry.getCoreServices() as CoreServices;
                   if (services) {
                     clearTimeout(timeout);
                     window.removeEventListener(
@@ -232,16 +239,29 @@ export function usePlatformAudio(): PlatformAudioState {
           });
         }
 
-        // Set up sample loading progress updates
+        // Set up sample loading progress updates with threshold-based updates
+        // FAANG FIX: Only update if progress changed significantly (>1%)
         if (sampleLoader) {
+          let lastProgress = getSampleProgress();
+
           const progressInterval = setInterval(() => {
-            if (mounted) {
+            if (!mounted) {
+              clearInterval(progressInterval);
+              return;
+            }
+
+            const newProgress = getSampleProgress();
+
+            // Only update state if overall progress changed significantly
+            if (
+              Math.abs(newProgress.overall - lastProgress.overall) >
+              PROGRESS_UPDATE_THRESHOLD
+            ) {
+              lastProgress = newProgress;
               setAudioState((prev) => ({
                 ...prev,
-                sampleProgress: getSampleProgress(),
+                sampleProgress: newProgress,
               }));
-            } else {
-              clearInterval(progressInterval);
             }
           }, 1000);
         }

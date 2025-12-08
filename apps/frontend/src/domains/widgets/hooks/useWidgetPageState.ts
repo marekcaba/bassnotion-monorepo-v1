@@ -19,7 +19,8 @@ export interface WidgetPageState {
   };
 
   // Exercise Data
-  selectedExercise?: Exercise;
+  // REFACTORED: selectedExercise removed - use single source of truth from exercises array
+  // Exercise is now derived in YouTubeWidgetPage and passed down as prop
   playbackMode: 'practice' | 'performance';
   harmonyInstrument?: 'grandpiano' | 'rhodes' | 'wurlitzer' | 'pad';
 
@@ -86,7 +87,7 @@ const initialState: WidgetPageState = {
   },
 
   // Exercise Data
-  selectedExercise: undefined,
+  // REFACTORED: selectedExercise removed from initial state
   playbackMode: 'practice',
 
   // Widget States - MVP requirements
@@ -142,8 +143,7 @@ export function useWidgetPageState() {
         changes.push(`isPlaying: ${prevStateRef.isPlaying} -> ${state.isPlaying}`);
       if (prevStateRef.tempo !== state.tempo)
         changes.push(`tempo: ${prevStateRef.tempo} -> ${state.tempo}`);
-      if (prevStateRef.selectedExercise?.id !== state.selectedExercise?.id)
-        changes.push(`exercise: ${prevStateRef.selectedExercise?.id} -> ${state.selectedExercise?.id}`);
+      // REFACTORED: selectedExercise removed from state (now derived in parent)
 
       if (changes.length > 0) {
         logger.debug('State changes:', changes);
@@ -205,7 +205,7 @@ export function useWidgetPageState() {
         await exerciseTimelineIntegrator.clearExercise();
         setState((prev) => ({
           ...prev,
-          selectedExercise: undefined,
+          // REFACTORED: selectedExercise removed from state
           harmonyInstrument: undefined,
         }));
         return;
@@ -300,17 +300,9 @@ export function useWidgetPageState() {
       setState((prev) => {
         const newState = {
           ...prev,
-          selectedExercise: exercise,
+          // REFACTORED: selectedExercise removed from state (now derived in parent)
           harmonyInstrument: extractedHarmonyInstrument,
         };
-
-        // console.log('🔍 [STATE-FLOW-3] New state object created:', {
-        //   selectedExerciseId: newState.selectedExercise?.id.value,
-        //   selectedExerciseTitle: newState.selectedExercise?.title,
-        //   stateHarmonyInstrument: newState.harmonyInstrument,
-        //   exerciseHarmonyInstrument: newState.selectedExercise?.harmonyInstrument,
-        //   prevHarmonyInstrument: prev.harmonyInstrument,
-        // });
 
         // Update widget states based on exercise data
         if (exercise) {
@@ -474,7 +466,7 @@ export function useWidgetPageState() {
     isPlaying: state.isPlaying,
     currentTime: state.currentTime,
     tempo: state.tempo,
-    selectedExercise: state.selectedExercise,
+    // REFACTORED: selectedExercise removed - now derived in parent component
     widgets: state.widgets,
     syncEnabled: state.syncEnabled,
     fretboardAnimation: state.fretboardAnimation,

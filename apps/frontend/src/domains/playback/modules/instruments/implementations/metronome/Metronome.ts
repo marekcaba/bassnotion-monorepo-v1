@@ -81,11 +81,9 @@ export class Metronome extends BaseInstrument {
   async initialize(_context?: any): Promise<void> {
     if (this._state.isInitialized) return;
 
-    // Try to get audioEngine from global DI if not already set
+    // Try to get audioEngine from global DI if not already set (using WindowRegistry key)
     if (!this.audioEngine && typeof window !== 'undefined') {
-      const globalServices =
-        (window as any)?.__coreServices ||
-        (window as any)?.__globalCoreServices;
+      const globalServices = (window as any)?.__bassnotion_coreServices;
       if (globalServices && globalServices.getAudioEngine) {
         this.audioEngine = globalServices.getAudioEngine();
       }

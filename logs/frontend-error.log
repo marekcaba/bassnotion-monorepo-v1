@@ -1,149 +1,434 @@
-2025-12-03 00:06:53 +01:00:  [31m[1m⨯[22m[39m ./src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:06:53 +01:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:06:53 +01:00: Caused by:
-2025-12-03 00:06:53 +01:00:     No such file or directory (os error 2)
-2025-12-03 00:06:53 +01:00: Import trace for requested module:
-2025-12-03 00:06:53 +01:00: ./src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:06:53 +01:00: ./src/domains/playback/modules/transport/core/Transport.ts
-2025-12-03 00:06:53 +01:00: ./src/domains/playback/modules/transport/core/TransportController.ts
-2025-12-03 00:06:53 +01:00: ./src/domains/playback/services/core/TransportAdapter.ts
-2025-12-03 00:06:53 +01:00: ./src/domains/playback/services/core/index.ts
-2025-12-03 00:06:53 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
-2025-12-03 00:06:55 +01:00:  [31m[1m⨯[22m[39m ./src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:06:55 +01:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:06:55 +01:00: Caused by:
-2025-12-03 00:06:55 +01:00:     No such file or directory (os error 2)
-2025-12-03 00:06:55 +01:00: Import trace for requested module:
-2025-12-03 00:06:55 +01:00: ./src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:06:55 +01:00: ./src/domains/playback/modules/transport/core/Transport.ts
-2025-12-03 00:06:55 +01:00: ./src/domains/playback/modules/transport/core/TransportController.ts
-2025-12-03 00:06:55 +01:00: ./src/domains/playback/services/core/TransportAdapter.ts
-2025-12-03 00:06:55 +01:00: ./src/domains/playback/services/core/index.ts
-2025-12-03 00:06:55 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
-2025-12-03 00:07:47 +01:00:  [31m[1m⨯[22m[39m ./src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:07:47 +01:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:07:47 +01:00: Caused by:
-2025-12-03 00:07:47 +01:00:     No such file or directory (os error 2)
-2025-12-03 00:07:47 +01:00: Import trace for requested module:
-2025-12-03 00:07:47 +01:00: ./src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:07:47 +01:00: ./src/domains/playback/modules/transport/core/Transport.ts
-2025-12-03 00:07:47 +01:00: ./src/domains/playback/modules/transport/core/TransportController.ts
-2025-12-03 00:07:47 +01:00: ./src/domains/playback/services/core/TransportAdapter.ts
-2025-12-03 00:07:47 +01:00: ./src/domains/playback/services/core/index.ts
-2025-12-03 00:07:47 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
-2025-12-03 00:09:04 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:04 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:09:04 +01:00: Import trace for requested module:
-2025-12-03 00:09:04 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:04 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:09:04 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:09:04 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:09:04 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:09:04 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:09:04 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:09:04 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:09:05 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:05 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:09:05 +01:00: Import trace for requested module:
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:09:05 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:09:05 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:05 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:09:05 +01:00: Import trace for requested module:
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:09:05 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:09:05 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:05 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:09:05 +01:00: Import trace for requested module:
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:09:05 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:09:06 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
-2025-12-03 00:10:51 +01:00: Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
-2025-12-03 00:10:51 +01:00:   npx update-browserslist-db@latest
-2025-12-03 00:10:51 +01:00:   Why you should do it regularly: https://github.com/browserslist/update-db#readme
-2025-12-03 00:10:56 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:10:56 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:10:56 +01:00: Import trace for requested module:
-2025-12-03 00:10:56 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:10:56 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:10:56 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:10:56 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:10:56 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:10:56 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:10:56 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:10:56 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:11:02 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:02 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:11:02 +01:00: Import trace for requested module:
-2025-12-03 00:11:02 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:02 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:11:02 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:11:02 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:11:02 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:11:02 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:11:02 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:11:02 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:11:05 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:05 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:11:05 +01:00: Import trace for requested module:
-2025-12-03 00:11:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:11:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:11:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:11:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:11:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:11:05 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:11:05 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:11:06 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:06 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:11:06 +01:00: Import trace for requested module:
-2025-12-03 00:11:06 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:06 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:11:06 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:11:06 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:11:06 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:11:06 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:11:06 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:11:06 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:11:07 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-03 00:11:12 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:12 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:11:12 +01:00: Import trace for requested module:
-2025-12-03 00:11:12 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:12 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:11:12 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:11:12 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:11:12 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:11:12 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:11:12 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:11:12 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:11:16 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:16 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:11:16 +01:00: Import trace for requested module:
-2025-12-03 00:11:16 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:16 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:11:16 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:11:16 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:11:16 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:11:16 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:11:16 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:11:16 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:11:16 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:01:48 +01:00: Failed to get source map: [Error: Failed to read file contents of /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js.] {
+2025-12-08 00:01:48 +01:00:   [cause]: [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'] {
+2025-12-08 00:01:48 +01:00:     errno: [33m-2[39m,
+2025-12-08 00:01:48 +01:00:     code: [32m'ENOENT'[39m,
+2025-12-08 00:01:48 +01:00:     syscall: [32m'open'[39m,
+2025-12-08 00:01:48 +01:00:     path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'[39m
+2025-12-08 00:01:48 +01:00:   }
+2025-12-08 00:01:48 +01:00: }
+2025-12-08 00:01:48 +01:00: Failed to get source map: [Error: Failed to read file contents of /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js.] {
+2025-12-08 00:01:48 +01:00:   [cause]: [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'] {
+2025-12-08 00:01:48 +01:00:     errno: [33m-2[39m,
+2025-12-08 00:01:48 +01:00:     code: [32m'ENOENT'[39m,
+2025-12-08 00:01:48 +01:00:     syscall: [32m'open'[39m,
+2025-12-08 00:01:48 +01:00:     path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'[39m
+2025-12-08 00:01:48 +01:00:   }
+2025-12-08 00:01:48 +01:00: }
+2025-12-08 00:01:48 +01:00: Failed to get source map: [Error: Failed to read file contents of /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js.] {
+2025-12-08 00:01:48 +01:00:   [cause]: [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'] {
+2025-12-08 00:01:48 +01:00:     errno: [33m-2[39m,
+2025-12-08 00:01:48 +01:00:     code: [32m'ENOENT'[39m,
+2025-12-08 00:01:48 +01:00:     syscall: [32m'open'[39m,
+2025-12-08 00:01:48 +01:00:     path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'[39m
+2025-12-08 00:01:48 +01:00:   }
+2025-12-08 00:01:48 +01:00: }
+2025-12-08 00:01:48 +01:00: Failed to get source map: [Error: Failed to read file contents of /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js.] {
+2025-12-08 00:01:48 +01:00:   [cause]: [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'] {
+2025-12-08 00:01:48 +01:00:     errno: [33m-2[39m,
+2025-12-08 00:01:48 +01:00:     code: [32m'ENOENT'[39m,
+2025-12-08 00:01:48 +01:00:     syscall: [32m'open'[39m,
+2025-12-08 00:01:48 +01:00:     path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'[39m
+2025-12-08 00:01:48 +01:00:   }
+2025-12-08 00:01:48 +01:00: }
+2025-12-08 00:01:48 +01:00: Failed to get source map: [Error: Failed to read file contents of /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js.] {
+2025-12-08 00:01:48 +01:00:   [cause]: [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'] {
+2025-12-08 00:01:48 +01:00:     errno: [33m-2[39m,
+2025-12-08 00:01:48 +01:00:     code: [32m'ENOENT'[39m,
+2025-12-08 00:01:48 +01:00:     syscall: [32m'open'[39m,
+2025-12-08 00:01:48 +01:00:     path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'[39m
+2025-12-08 00:01:48 +01:00:   }
+2025-12-08 00:01:48 +01:00: }
+2025-12-08 00:01:48 +01:00: Failed to get source map: [Error: Failed to read file contents of /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js.] {
+2025-12-08 00:01:48 +01:00:   [cause]: [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'] {
+2025-12-08 00:01:48 +01:00:     errno: [33m-2[39m,
+2025-12-08 00:01:48 +01:00:     code: [32m'ENOENT'[39m,
+2025-12-08 00:01:48 +01:00:     syscall: [32m'open'[39m,
+2025-12-08 00:01:48 +01:00:     path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'[39m
+2025-12-08 00:01:48 +01:00:   }
+2025-12-08 00:01:48 +01:00: }
+2025-12-08 00:01:48 +01:00: Failed to get source map: [Error: Failed to read file contents of /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js.] {
+2025-12-08 00:01:48 +01:00:   [cause]: [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'] {
+2025-12-08 00:01:48 +01:00:     errno: [33m-2[39m,
+2025-12-08 00:01:48 +01:00:     code: [32m'ENOENT'[39m,
+2025-12-08 00:01:48 +01:00:     syscall: [32m'open'[39m,
+2025-12-08 00:01:48 +01:00:     path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'[39m
+2025-12-08 00:01:48 +01:00:   }
+2025-12-08 00:01:48 +01:00: }
+2025-12-08 00:01:48 +01:00: Failed to get source map: [Error: Failed to read file contents of /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js.] {
+2025-12-08 00:01:48 +01:00:   [cause]: [Error: ENOENT: no such file or directory, open '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'] {
+2025-12-08 00:01:48 +01:00:     errno: [33m-2[39m,
+2025-12-08 00:01:48 +01:00:     code: [32m'ENOENT'[39m,
+2025-12-08 00:01:48 +01:00:     syscall: [32m'open'[39m,
+2025-12-08 00:01:48 +01:00:     path: [32m'/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/static/chunks/webpack.js'[39m
+2025-12-08 00:01:48 +01:00:   }
+2025-12-08 00:01:48 +01:00: }
+2025-12-08 00:08:32 +01:00:  [31m[1m⨯[22m[39m Error: Cannot find module './3712.js'
+2025-12-08 00:08:32 +01:00: Require stack:
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/require.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/load-components.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/utils.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/swc/options.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/swc/index.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/analysis/parse-module.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/router-server.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/start-server.js
+2025-12-08 00:08:32 +01:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:206:28)
+2025-12-08 00:08:32 +01:00:     at <unknown> (.next/server/webpack-runtime.js:114:40)
+2025-12-08 00:08:32 +01:00:     at Array.reduce (<anonymous>)
+2025-12-08 00:08:32 +01:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:113:67)
+2025-12-08 00:08:32 +01:00:     at Array.map (<anonymous>)
+2025-12-08 00:08:32 +01:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:165:22)
+2025-12-08 00:08:32 +01:00:     at <unknown> (.next/server/app/_not-found/page.js:1:3699)
+2025-12-08 00:08:32 +01:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:3747) {
+2025-12-08 00:08:32 +01:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-12-08 00:08:32 +01:00:   requireStack: [36m[Array][39m
+2025-12-08 00:08:32 +01:00: }
+2025-12-08 00:08:32 +01:00:  [31m[1m⨯[22m[39m Error: Cannot find module './3712.js'
+2025-12-08 00:08:32 +01:00: Require stack:
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/require.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/load-components.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/utils.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/swc/options.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/swc/index.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/analysis/parse-module.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/router-server.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/start-server.js
+2025-12-08 00:08:32 +01:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:206:28)
+2025-12-08 00:08:32 +01:00:     at <unknown> (.next/server/webpack-runtime.js:114:40)
+2025-12-08 00:08:32 +01:00:     at Array.reduce (<anonymous>)
+2025-12-08 00:08:32 +01:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:113:67)
+2025-12-08 00:08:32 +01:00:     at Array.map (<anonymous>)
+2025-12-08 00:08:32 +01:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:165:22)
+2025-12-08 00:08:32 +01:00:     at <unknown> (.next/server/app/_not-found/page.js:1:3699)
+2025-12-08 00:08:32 +01:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:3747) {
+2025-12-08 00:08:32 +01:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-12-08 00:08:32 +01:00:   requireStack: [36m[Array][39m
+2025-12-08 00:08:32 +01:00: }
+2025-12-08 00:08:32 +01:00:  [31m[1m⨯[22m[39m Error: Cannot find module './3712.js'
+2025-12-08 00:08:32 +01:00: Require stack:
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/require.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/load-components.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/utils.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/swc/options.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/swc/index.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/analysis/parse-module.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/router-server.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/start-server.js
+2025-12-08 00:08:32 +01:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:206:28)
+2025-12-08 00:08:32 +01:00:     at <unknown> (.next/server/webpack-runtime.js:114:40)
+2025-12-08 00:08:32 +01:00:     at Array.reduce (<anonymous>)
+2025-12-08 00:08:32 +01:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:113:67)
+2025-12-08 00:08:32 +01:00:     at Array.map (<anonymous>)
+2025-12-08 00:08:32 +01:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:165:22)
+2025-12-08 00:08:32 +01:00:     at <unknown> (.next/server/app/_not-found/page.js:1:3699)
+2025-12-08 00:08:32 +01:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:3747) {
+2025-12-08 00:08:32 +01:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-12-08 00:08:32 +01:00:   requireStack: [36m[Array][39m
+2025-12-08 00:08:32 +01:00: }
+2025-12-08 00:08:32 +01:00:  [31m[1m⨯[22m[39m Error: Cannot find module './3712.js'
+2025-12-08 00:08:32 +01:00: Require stack:
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/require.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/load-components.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/utils.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/swc/options.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/swc/index.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/analysis/parse-module.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/router-server.js
+2025-12-08 00:08:32 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/start-server.js
+2025-12-08 00:08:32 +01:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:206:28)
+2025-12-08 00:08:32 +01:00:     at <unknown> (.next/server/webpack-runtime.js:114:40)
+2025-12-08 00:08:32 +01:00:     at Array.reduce (<anonymous>)
+2025-12-08 00:08:32 +01:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:113:67)
+2025-12-08 00:08:32 +01:00:     at Array.map (<anonymous>)
+2025-12-08 00:08:32 +01:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:165:22)
+2025-12-08 00:08:32 +01:00:     at <unknown> (.next/server/app/_not-found/page.js:1:3699)
+2025-12-08 00:08:32 +01:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:3747) {
+2025-12-08 00:08:32 +01:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-12-08 00:08:32 +01:00:   requireStack: [36m[Array][39m
+2025-12-08 00:08:32 +01:00: }
+2025-12-08 00:08:33 +01:00:  [31m[1m⨯[22m[39m Error: Cannot find module './3712.js'
+2025-12-08 00:08:33 +01:00: Require stack:
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/require.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/load-components.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/utils.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/swc/options.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/swc/index.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/analysis/parse-module.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/router-server.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/start-server.js
+2025-12-08 00:08:33 +01:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:206:28)
+2025-12-08 00:08:33 +01:00:     at <unknown> (.next/server/webpack-runtime.js:114:40)
+2025-12-08 00:08:33 +01:00:     at Array.reduce (<anonymous>)
+2025-12-08 00:08:33 +01:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:113:67)
+2025-12-08 00:08:33 +01:00:     at Array.map (<anonymous>)
+2025-12-08 00:08:33 +01:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:165:22)
+2025-12-08 00:08:33 +01:00:     at <unknown> (.next/server/app/_not-found/page.js:1:3699)
+2025-12-08 00:08:33 +01:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:3747) {
+2025-12-08 00:08:33 +01:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-12-08 00:08:33 +01:00:   requireStack: [36m[Array][39m
+2025-12-08 00:08:33 +01:00: }
+2025-12-08 00:08:33 +01:00:  [31m[1m⨯[22m[39m Error: Cannot find module './3712.js'
+2025-12-08 00:08:33 +01:00: Require stack:
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/webpack-runtime.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/server/app/_not-found/page.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/require.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/load-components.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/utils.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/swc/options.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/swc/index.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/analysis/parse-module.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/build/analysis/get-page-static-info.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/router-server.js
+2025-12-08 00:08:33 +01:00: - /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/node_modules/.pnpm/next@15.1.8_@babel+core@7.28.5_@opentelemetry+api@1.9.0_@playwright+test@1.57.0_babel-p_7c5f95385b735061832c783e327d6ee3/node_modules/next/dist/server/lib/start-server.js
+2025-12-08 00:08:33 +01:00:     at __webpack_require__.f.require (.next/server/webpack-runtime.js:206:28)
+2025-12-08 00:08:33 +01:00:     at <unknown> (.next/server/webpack-runtime.js:114:40)
+2025-12-08 00:08:33 +01:00:     at Array.reduce (<anonymous>)
+2025-12-08 00:08:33 +01:00:     at __webpack_require__.e (.next/server/webpack-runtime.js:113:67)
+2025-12-08 00:08:33 +01:00:     at Array.map (<anonymous>)
+2025-12-08 00:08:33 +01:00:     at __webpack_require__.X (.next/server/webpack-runtime.js:165:22)
+2025-12-08 00:08:33 +01:00:     at <unknown> (.next/server/app/_not-found/page.js:1:3699)
+2025-12-08 00:08:33 +01:00:     at Object.<anonymous> (.next/server/app/_not-found/page.js:1:3747) {
+2025-12-08 00:08:33 +01:00:   code: [32m'MODULE_NOT_FOUND'[39m,
+2025-12-08 00:08:33 +01:00:   requireStack: [36m[Array][39m
+2025-12-08 00:08:33 +01:00: }
+2025-12-08 00:08:37 +01:00: <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development-fallback/1.pack.gz_' -> '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development-fallback/1.pack.gz'
+2025-12-08 00:08:37 +01:00: <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development-fallback/1.pack.gz_' -> '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development-fallback/1.pack.gz'
+2025-12-08 00:08:37 +01:00: <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development-fallback/1.pack.gz_' -> '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development-fallback/1.pack.gz'
+2025-12-08 00:08:38 +01:00: <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development-fallback/1.pack.gz_' -> '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development-fallback/1.pack.gz'
+2025-12-08 00:08:38 +01:00: <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development-fallback/1.pack.gz_' -> '/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/.next/cache/webpack/client-development-fallback/1.pack.gz'
+2025-12-08 00:14:43 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:14:50 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:14:54 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:15:02 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:15:02 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:15:18 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:15:18 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:15:38 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:15:38 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:15:46 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:15:46 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:15:57 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:15:57 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:16:07 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:16:07 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:16:22 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:16:22 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:16:46 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:16:46 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:17:08 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:17:08 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:21:08 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:28:15 +01:00:  [33m[1m⚠[22m[39m ./src/app/layout.tsx
+2025-12-08 00:28:15 +01:00: Attempted import error: 'bebasNeue' is not exported from './layout.constants' (imported as 'bebasNeue').
+2025-12-08 00:28:15 +01:00: Import trace for requested module:
+2025-12-08 00:28:15 +01:00: ./src/app/layout.tsx
+2025-12-08 00:28:15 +01:00:  [31m[1m⨯[22m[39m TypeError: Cannot read properties of undefined (reading 'variable')
+2025-12-08 00:28:15 +01:00:     at bebasNeue (src/app/layout.tsx:32:66)
+2025-12-08 00:28:15 +01:00:   30 |       </head>
+2025-12-08 00:28:15 +01:00:   31 |       <body
+2025-12-08 00:28:15 +01:00: > 32 |         className={`${inter.className} ${courierPrime.variable} ${bebasNeue.variable}`}
+2025-12-08 00:28:15 +01:00:      |                                                                  ^
+2025-12-08 00:28:15 +01:00:   33 |       >
+2025-12-08 00:28:15 +01:00:   34 |         <ErrorBoundary>
+2025-12-08 00:28:15 +01:00:   35 |           <AudioProvider> {
+2025-12-08 00:28:15 +01:00:   digest: [32m'866542730'[39m
+2025-12-08 00:28:15 +01:00: }
+2025-12-08 00:28:15 +01:00:  [31m[1m⨯[22m[39m TypeError: Cannot read properties of undefined (reading 'variable')
+2025-12-08 00:28:15 +01:00:     at bebasNeue (src/app/layout.tsx:32:66)
+2025-12-08 00:28:15 +01:00:   30 |       </head>
+2025-12-08 00:28:15 +01:00:   31 |       <body
+2025-12-08 00:28:15 +01:00: > 32 |         className={`${inter.className} ${courierPrime.variable} ${bebasNeue.variable}`}
+2025-12-08 00:28:15 +01:00:      |                                                                  ^
+2025-12-08 00:28:15 +01:00:   33 |       >
+2025-12-08 00:28:15 +01:00:   34 |         <ErrorBoundary>
+2025-12-08 00:28:15 +01:00:   35 |           <AudioProvider> {
+2025-12-08 00:28:15 +01:00:   digest: [32m'866542730'[39m
+2025-12-08 00:28:15 +01:00: }
+2025-12-08 00:28:24 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-12-08 00:28:24 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-12-08 00:29:32 +01:00:  [33m[1m⚠[22m[39m ./src/app/layout.tsx
+2025-12-08 00:29:32 +01:00: Attempted import error: 'anton' is not exported from './layout.constants' (imported as 'anton').
+2025-12-08 00:29:32 +01:00: Import trace for requested module:
+2025-12-08 00:29:32 +01:00: ./src/app/layout.tsx
+2025-12-08 00:29:32 +01:00:  [31m[1m⨯[22m[39m TypeError: Cannot read properties of undefined (reading 'variable')
+2025-12-08 00:29:32 +01:00:     at anton (src/app/layout.tsx:32:66)
+2025-12-08 00:29:32 +01:00:   30 |       </head>
+2025-12-08 00:29:32 +01:00:   31 |       <body
+2025-12-08 00:29:32 +01:00: > 32 |         className={`${inter.className} ${courierPrime.variable} ${anton.variable}`}
+2025-12-08 00:29:32 +01:00:      |                                                                  ^
+2025-12-08 00:29:32 +01:00:   33 |       >
+2025-12-08 00:29:32 +01:00:   34 |         <ErrorBoundary>
+2025-12-08 00:29:32 +01:00:   35 |           <AudioProvider> {
+2025-12-08 00:29:32 +01:00:   digest: [32m'2440439814'[39m
+2025-12-08 00:29:32 +01:00: }
+2025-12-08 00:29:34 +01:00:  [33m[1m⚠[22m[39m ./src/app/layout.tsx
+2025-12-08 00:29:34 +01:00: Attempted import error: 'anton' is not exported from './layout.constants' (imported as 'anton').
+2025-12-08 00:29:34 +01:00: Import trace for requested module:
+2025-12-08 00:29:34 +01:00: ./src/app/layout.tsx
+2025-12-08 00:29:34 +01:00:  [31m[1m⨯[22m[39m TypeError: Cannot read properties of undefined (reading 'variable')
+2025-12-08 00:29:34 +01:00:     at anton (src/app/layout.tsx:32:66)
+2025-12-08 00:29:34 +01:00:   30 |       </head>
+2025-12-08 00:29:34 +01:00:   31 |       <body
+2025-12-08 00:29:34 +01:00: > 32 |         className={`${inter.className} ${courierPrime.variable} ${anton.variable}`}
+2025-12-08 00:29:34 +01:00:      |                                                                  ^
+2025-12-08 00:29:34 +01:00:   33 |       >
+2025-12-08 00:29:34 +01:00:   34 |         <ErrorBoundary>
+2025-12-08 00:29:34 +01:00:   35 |           <AudioProvider> {
+2025-12-08 00:29:34 +01:00:   digest: [32m'2440439814'[39m
+2025-12-08 00:29:34 +01:00: }
+2025-12-08 00:29:34 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-12-08 00:29:38 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-12-08 00:29:49 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:29:56 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:31:24 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload when (app-pages-browser)/../../node_modules/.pnpm/lucide-react@0.263.1_react@18.3.1/node_modules/lucide-react/dist/esm/icons/alert-circle.mjs changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:31:36 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:31:36 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:35:36 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:35:45 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:42:58 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:47:02 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 00:47:03 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 10:25:49 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 10:25:55 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 10:26:13 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 10:26:23 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 11:53:48 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 11:53:59 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:08:47 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:08:55 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload when (app-pages-browser)/../../node_modules/.pnpm/lucide-react@0.263.1_react@18.3.1/node_modules/lucide-react/dist/esm/createLucideIcon.mjs changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:09:35 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:14:22 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload when (app-pages-browser)/../../node_modules/.pnpm/lucide-react@0.263.1_react@18.3.1/node_modules/lucide-react/dist/esm/createLucideIcon.mjs changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:14:37 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:14:38 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:14:47 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:14:47 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:17:11 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:17:42 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:20:45 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:20:45 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:22:33 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:23:54 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:24:21 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload when (app-pages-browser)/../../node_modules/.pnpm/lucide-react@0.263.1_react@18.3.1/node_modules/lucide-react/dist/esm/createLucideIcon.mjs changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:31:05 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:31:06 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:31:22 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:31:22 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:31:32 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:31:32 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:32:00 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:32:00 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:32:15 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:32:20 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:32:20 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:32:34 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:32:34 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:32:48 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:32:48 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:33:03 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:33:03 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:33:10 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:33:11 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:34:14 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 12:34:21 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 13:53:14 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-12-08 15:37:34 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 15:39:34 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 15:39:35 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 15:47:13 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 15:47:13 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 16:00:33 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 16:00:33 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 16:02:34 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 16:19:12 +01:00:  [31m[1m⨯[22m[39m ./src/domains/playback/modules/tempo/MusicalTruthAuthority.ts
+2025-12-08 16:19:12 +01:00: Error:   [31mx[0m Unexpected token `SetFromExerciseOptions`. Expected * for generator, private key, identifier or async
+2025-12-08 16:19:12 +01:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/modules/tempo/MusicalTruthAuthority.ts[0m:98:1]
+2025-12-08 16:19:12 +01:00:  [2m 95[0m |   /**
+2025-12-08 16:19:12 +01:00:  [2m 96[0m |    * Options for setFromExercise method
+2025-12-08 16:19:12 +01:00:  [2m 97[0m |    */
+2025-12-08 16:19:12 +01:00:  [2m 98[0m |   interface SetFromExerciseOptions {
+2025-12-08 16:19:12 +01:00:      : [35;1m            ^^^^^^^^^^^^^^^^^^^^^^[0m
+2025-12-08 16:19:12 +01:00:  [2m 99[0m |     /**
+2025-12-08 16:19:12 +01:00:  [2m100[0m |      * If true, preserves the current user-set BPM instead of using exercise.bpm
+2025-12-08 16:19:12 +01:00:  [2m101[0m |      * Use this when user has manually modified tempo and clicks Play again
+2025-12-08 16:19:12 +01:00:      `----
+2025-12-08 16:19:12 +01:00: Caused by:
+2025-12-08 16:19:12 +01:00:     Syntax Error
+2025-12-08 16:19:12 +01:00: Import trace for requested module:
+2025-12-08 16:19:12 +01:00: ./src/domains/playback/modules/tempo/MusicalTruthAuthority.ts
+2025-12-08 16:19:12 +01:00: ./src/domains/playback/services/core/PlaybackSession.ts
+2025-12-08 16:19:12 +01:00: ./src/domains/playback/services/core/index.ts
+2025-12-08 16:19:12 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-12-08 16:19:18 +01:00:  [31m[1m⨯[22m[39m ./src/domains/playback/modules/tempo/MusicalTruthAuthority.ts
+2025-12-08 16:19:18 +01:00: Error:   [31mx[0m Unexpected token `SetFromExerciseOptions`. Expected * for generator, private key, identifier or async
+2025-12-08 16:19:18 +01:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/modules/tempo/MusicalTruthAuthority.ts[0m:109:1]
+2025-12-08 16:19:18 +01:00:  [2m106[0m |   /**
+2025-12-08 16:19:18 +01:00:  [2m107[0m |    * Options for setFromExercise method
+2025-12-08 16:19:18 +01:00:  [2m108[0m |    */
+2025-12-08 16:19:18 +01:00:  [2m109[0m |   interface SetFromExerciseOptions {
+2025-12-08 16:19:18 +01:00:      : [35;1m            ^^^^^^^^^^^^^^^^^^^^^^[0m
+2025-12-08 16:19:18 +01:00:  [2m110[0m |     /**
+2025-12-08 16:19:18 +01:00:  [2m111[0m |      * If true, preserves the current user-set BPM instead of using exercise.bpm
+2025-12-08 16:19:18 +01:00:  [2m112[0m |      * Use this when user has manually modified tempo and clicks Play again
+2025-12-08 16:19:18 +01:00:      `----
+2025-12-08 16:19:18 +01:00: Caused by:
+2025-12-08 16:19:18 +01:00:     Syntax Error
+2025-12-08 16:19:18 +01:00: Import trace for requested module:
+2025-12-08 16:19:18 +01:00: ./src/domains/playback/modules/tempo/MusicalTruthAuthority.ts
+2025-12-08 16:19:18 +01:00: ./src/domains/playback/services/core/PlaybackSession.ts
+2025-12-08 16:19:18 +01:00: ./src/domains/playback/services/core/index.ts
+2025-12-08 16:19:18 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-12-08 16:19:27 +01:00:  [31m[1m⨯[22m[39m ./src/domains/playback/modules/tempo/MusicalTruthAuthority.ts
+2025-12-08 16:19:27 +01:00: Error:   [31mx[0m Unexpected token `SetFromExerciseOptions`. Expected * for generator, private key, identifier or async
+2025-12-08 16:19:27 +01:00:      ,-[[36;1;4m/Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/modules/tempo/MusicalTruthAuthority.ts[0m:109:1]
+2025-12-08 16:19:27 +01:00:  [2m106[0m |   /**
+2025-12-08 16:19:27 +01:00:  [2m107[0m |    * Options for setFromExercise method
+2025-12-08 16:19:27 +01:00:  [2m108[0m |    */
+2025-12-08 16:19:27 +01:00:  [2m109[0m |   interface SetFromExerciseOptions {
+2025-12-08 16:19:27 +01:00:      : [35;1m            ^^^^^^^^^^^^^^^^^^^^^^[0m
+2025-12-08 16:19:27 +01:00:  [2m110[0m |     /**
+2025-12-08 16:19:27 +01:00:  [2m111[0m |      * If true, preserves the current user-set BPM instead of using exercise.bpm
+2025-12-08 16:19:27 +01:00:  [2m112[0m |      * Use this when user has manually modified tempo and clicks Play again
+2025-12-08 16:19:27 +01:00:      `----
+2025-12-08 16:19:27 +01:00: Caused by:
+2025-12-08 16:19:27 +01:00:     Syntax Error
+2025-12-08 16:19:27 +01:00: Import trace for requested module:
+2025-12-08 16:19:27 +01:00: ./src/domains/playback/modules/tempo/MusicalTruthAuthority.ts
+2025-12-08 16:19:27 +01:00: ./src/domains/playback/services/core/PlaybackSession.ts
+2025-12-08 16:19:27 +01:00: ./src/domains/playback/services/core/index.ts
+2025-12-08 16:19:27 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
+2025-12-08 16:19:32 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+2025-12-08 16:19:32 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 16:19:37 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 16:19:38 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 16:28:28 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 16:31:02 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 16:32:31 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 16:32:31 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 16:35:43 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 16:35:44 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 16:49:28 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 16:49:28 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 17:10:32 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 17:30:38 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-08 17:30:38 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload

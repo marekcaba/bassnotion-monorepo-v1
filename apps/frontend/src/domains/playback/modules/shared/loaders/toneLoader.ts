@@ -6,6 +6,7 @@
 
 import { getAudioArchitectureFlags } from '@/domains/playback/config/featureFlags';
 import { createStructuredLogger } from '../index.js';
+import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 
 const logger = createStructuredLogger('toneLoader');
 
@@ -68,8 +69,7 @@ export async function loadGlobalTone(
   }
 
   // Use CoreServices if available (new approach)
-  const coreServices =
-    (window as any).__coreServices || (window as any).__globalCoreServices;
+  const coreServices = WindowRegistry.getCoreServices();
 
   if (coreServices?.getAudioEngine) {
     try {
@@ -117,8 +117,7 @@ export async function loadGlobalTone(
  */
 export function getToneSync(): any {
   // Try CoreServices first
-  const coreServices =
-    (window as any).__coreServices || (window as any).__globalCoreServices;
+  const coreServices = WindowRegistry.getCoreServices();
 
   if (coreServices?.getAudioEngine) {
     try {

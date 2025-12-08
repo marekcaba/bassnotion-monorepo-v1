@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { RegistrationData } from '@bassnotion/contracts';
 
 import { RegistrationForm } from '@/domains/user/components/auth';
@@ -12,6 +13,7 @@ import { Button } from '@/shared/components/ui/button';
 import { useToast } from '@/shared/hooks/use-toast';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { HomeNavbar } from '../_components/HomeNavbar';
 
 function RegisterPageContent() {
   const [isLoading, setIsLoading] = useState(false);
@@ -33,6 +35,7 @@ function RegisterPageContent() {
   const { setUser, setSession } = useAuth();
   const { redirectAfterAuth } = useAuthRedirect();
   const { toast } = useToast();
+  const { logger } = useCorrelation('RegisterPage');
 
   // Check if we should use backend API for testing
   const useBackendAuth = process.env.NEXT_PUBLIC_USE_BACKEND_AUTH === 'true';
@@ -117,34 +120,48 @@ function RegisterPageContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight">Join BassNotion</h1>
-          <p className="mt-2 text-muted-foreground">
-            {prefilledEmail
-              ? 'Complete your account creation'
-              : 'Create your account to start your bass learning journey'}
-          </p>
-        </div>
-
-        {/* Registration Form */}
-        <div className="bg-card rounded-lg border p-6 shadow-sm">
-          <RegistrationForm
-            onSubmit={handleRegistration}
-            onGoogleSignIn={handleGoogleSignIn}
-            isLoading={isLoading}
-            isGoogleLoading={isGoogleLoading}
-            initialValues={initialValues}
+    <div className="min-h-screen bg-black">
+      {/* Header with Logo - same as homepage */}
+      <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
+        <button onClick={() => navigateWithTransition('/')} className="cursor-pointer">
+          <Image
+            src="/BASSICOLOGY BIG.png"
+            alt="Bassicology"
+            width={600}
+            height={150}
+            className="w-[220px] sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-auto"
+            priority
           />
-        </div>
+        </button>
+      </header>
 
-        {/* Back to Home */}
-        <div className="text-center">
-          <Button variant="ghost" onClick={() => navigateWithTransition('/')}>
-            ← Back to Home
-          </Button>
+      {/* Navbar - use shared HomeNavbar component */}
+      <HomeNavbar />
+
+      {/* Main Content */}
+      <div className="flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-md space-y-6 sm:space-y-8">
+          {/* Registration Form */}
+          <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 sm:p-6 shadow-sm">
+            <RegistrationForm
+              onSubmit={handleRegistration}
+              onGoogleSignIn={handleGoogleSignIn}
+              isLoading={isLoading}
+              isGoogleLoading={isGoogleLoading}
+              initialValues={initialValues}
+            />
+          </div>
+
+          {/* Back to Home */}
+          <div className="text-center">
+            <Button
+              variant="ghost"
+              className="text-xs sm:text-sm text-gray-400 hover:text-white"
+              onClick={() => navigateWithTransition('/')}
+            >
+              ← Back to Home
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -155,9 +172,7 @@ export default function RegisterPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          Loading...
-        </div>
+        <div className="min-h-screen bg-black" />
       }
     >
       <RegisterPageContent />

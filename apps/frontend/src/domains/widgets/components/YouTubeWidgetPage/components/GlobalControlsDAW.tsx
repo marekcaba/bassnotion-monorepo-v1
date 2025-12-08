@@ -28,6 +28,7 @@ import { Button } from '@/shared/components/ui/button';
 import { useTransportContext } from '@/domains/playback/contexts/TransportContext';
 import { useTrack } from '@/domains/playback/hooks';
 import { serviceRegistry } from '@/domains/playback/services/core/ServiceRegistry.js';
+import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 import type { MusicalExercise as Exercise } from '@bassnotion/contracts';
 import type { CoreServices } from '@/domains/playback/services/core/CoreServices.js';
 import type { ExerciseLoader } from '@/domains/playback/services/core/ExerciseLoader.js';
@@ -112,13 +113,18 @@ export const GlobalControlsDAW: React.FC<GlobalControlsDAWProps> = ({
   const lastUserVolume = useRef(1.0);
   const tempoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // TEMPO FIX: Track if user manually modified tempo
+  // "Last explicit user action wins" - user tempo changes take priority over exercise defaults
+  const hasUserModifiedTempo = useRef(false);
+  const currentExerciseId = useRef<string | null>(null);
+
   // Initialize DAW system
   useEffect(() => {
     const initializeDAW = async () => {
       logger.info('🎵 GlobalControlsDAW: Initializing DAW system...');
 
       // Get CoreServices
-      const services = (window as any).__globalCoreServices;
+      const services = WindowRegistry.getCoreServices();
       if (!services) {
         logger.error('🎵 GlobalControlsDAW: CoreServices not available');
         return;
@@ -160,6 +166,14 @@ export const GlobalControlsDAW: React.FC<GlobalControlsDAWProps> = ({
       if (loadingRef.current) return; // Prevent concurrent loads
       loadingRef.current = true;
       setIsLoadingExercise(true);
+
+      // TEMPO FIX: Check if exercise changed - if so, reset user tempo flag
+      const exerciseIdChanged = currentExerciseId.current !== selectedExercise.id;
+      if (exerciseIdChanged) {
+        currentExerciseId.current = selectedExercise.id;
+        hasUserModifiedTempo.current = false;
+        logger.info('🎵 GlobalControlsDAW: New exercise, resetting tempo preference');
+      }
 
       logger.info(
         '🎵 GlobalControlsDAW: Loading exercise:',
@@ -307,11 +321,19 @@ export const GlobalControlsDAW: React.FC<GlobalControlsDAWProps> = ({
           logger.info('🎵 GlobalControlsDAW: Added metronome pattern');
         }
 
-        // Update tempo from exercise
-        if (selectedExercise.bpm) {
+        // Update tempo from exercise - only if user hasn't manually modified it
+        // [TEMPO-DEBUG] logs commented out after fix verification
+        // console.log('[TEMPO-DEBUG] Step 1: loadExerciseData - BPM decision', {...});
+
+        if (selectedExercise.bpm && !hasUserModifiedTempo.current) {
+          // console.log('[TEMPO-DEBUG] Step 1b: Setting exercise BPM', { bpm: selectedExercise.bpm });
           await transport.setTempo(selectedExercise.bpm);
           setLocalTempo(selectedExercise.bpm);
           lastUserTempo.current = selectedExercise.bpm;
+          logger.info('🎵 GlobalControlsDAW: Set tempo to exercise BPM:', selectedExercise.bpm);
+        } else if (hasUserModifiedTempo.current) {
+          // console.log('[TEMPO-DEBUG] Step 1c: SKIPPING exercise BPM - user modified tempo', {...});
+          logger.info('🎵 GlobalControlsDAW: Keeping user tempo:', lastUserTempo.current, '(user modified)');
         }
 
         logger.info('🎵 GlobalControlsDAW: Exercise loaded successfully');
@@ -381,8 +403,14 @@ export const GlobalControlsDAW: React.FC<GlobalControlsDAWProps> = ({
   // Handle tempo change
   const handleTempoChange = useCallback(
     async (newTempo: number) => {
+      // [TEMPO-DEBUG] logs commented out after fix verification
+      // console.log('[TEMPO-DEBUG] Step 0: User changed tempo via slider', {...});
+
       setLocalTempo(newTempo);
       lastUserTempo.current = newTempo;
+
+      // TEMPO FIX: Mark that user manually changed tempo
+      hasUserModifiedTempo.current = true;
 
       // Clear any pending sync
       if (tempoTimeoutRef.current) {
@@ -391,11 +419,12 @@ export const GlobalControlsDAW: React.FC<GlobalControlsDAWProps> = ({
 
       // Debounce the actual tempo change
       tempoTimeoutRef.current = setTimeout(async () => {
+        // console.log('[TEMPO-DEBUG] Step 0b: Calling transport.setTempo()', {...});
         await transport.setTempo(newTempo);
-        logger.info('🎵 GlobalControlsDAW: Tempo updated to', newTempo);
+        logger.info('🎵 GlobalControlsDAW: Tempo updated to', newTempo, '(user modified)');
       }, 100);
     },
-    [transport],
+    [transport, localTempo],
   );
 
   // Handle volume change

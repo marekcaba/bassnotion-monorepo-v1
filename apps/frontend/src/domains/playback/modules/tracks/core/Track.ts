@@ -220,21 +220,21 @@ export class Track implements ITrack, TrackLifecycle {
       this._eventBus = serviceRegistry.get<EventBus>('eventBus');
     } catch {
       // EventBus is optional - might not be registered in tests or during initialization
-      // Try multiple fallback methods
+      // Try multiple fallback methods using new __bassnotion_* keys
       if (!this._eventBus && typeof window !== 'undefined') {
-        // Try global EventBus singleton first
-        if ((window as any).__globalEventBus) {
-          this._eventBus = (window as any).__globalEventBus;
+        // Try __bassnotion_eventBus first (new WindowRegistry pattern)
+        if ((window as any).__bassnotion_eventBus) {
+          this._eventBus = (window as any).__bassnotion_eventBus;
           logger.info(
-            `🎵 Track ${this.name}: Got EventBus from __globalEventBus`,
+            `🎵 Track ${this.name}: Got EventBus from __bassnotion_eventBus`,
             { correlationId: 'system' },
           );
         }
-        // Try global services
-        else if ((window as any).__globalCoreServices?.getEventBus) {
-          this._eventBus = (window as any).__globalCoreServices.getEventBus();
+        // Try CoreServices from __bassnotion_coreServices
+        else if ((window as any).__bassnotion_coreServices?.getEventBus) {
+          this._eventBus = (window as any).__bassnotion_coreServices.getEventBus();
           logger.info(
-            `🎵 Track ${this.name}: Got EventBus from __globalCoreServices`,
+            `🎵 Track ${this.name}: Got EventBus from __bassnotion_coreServices`,
             { correlationId: 'system' },
           );
         }
@@ -792,7 +792,7 @@ export class Track implements ITrack, TrackLifecycle {
       });
     } else {
       // Try to get EventBus from global services if not available
-      const globalServices = (window as any).__globalCoreServices;
+      const globalServices = (window as any).__bassnotion_coreServices;
       if (globalServices && globalServices.getEventBus) {
         const eventBus = globalServices.getEventBus();
         if (eventBus) {

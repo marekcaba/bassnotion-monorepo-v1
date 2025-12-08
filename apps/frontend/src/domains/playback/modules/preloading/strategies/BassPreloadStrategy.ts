@@ -90,8 +90,8 @@ export class BassPreloadStrategy implements PreloadStrategy {
         savingsPercentage: `${Math.round((1 - (requiredNotes.length / 24)) * 100)}%`
       });
 
-      // 2. Check if CoreServices and AudioEngine are available
-      const coreServices = (window as any).__globalCoreServices || (window as any).__coreServices;
+      // 2. Check if CoreServices and AudioEngine are available (use new __bassnotion_ keys)
+      const coreServices = (window as any).__bassnotion_coreServices;
 
       if (!coreServices) {
         logger.warn('CoreServices not available - bass samples will load on widget initialization');

@@ -18,7 +18,7 @@ const logger = getLogger('app');
 // Story 3.18.3: Replaced initializeAudio import with AudioProvider component
 // The AudioProvider handles all audio initialization with clean dependency injection
 
-import { inter, courierPrime, metadata } from './layout.constants';
+import { inter, courierPrime, bebasNeue, metadata } from './layout.constants';
 
 export const generateMetadata = () => metadata;
 
@@ -26,9 +26,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className={`${inter.className} ${courierPrime.variable}`}>
+      <body
+        className={`${inter.className} ${courierPrime.variable} ${bebasNeue.variable}`}
+      >
         <ErrorBoundary>
           <AudioProvider>
             {/* Phase 1: PreloadInitializer removed - samples will load on user interaction */}

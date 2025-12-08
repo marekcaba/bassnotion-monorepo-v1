@@ -106,6 +106,10 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
   // ✅ BUG #1 FIX: Track when CoreServices is ready to prevent race conditions
   const [coreServicesReady, setCoreServicesReady] = useState(false);
 
+  // iOS Background Audio: Track playback state before interruption
+  const wasPlayingBeforeInterruptRef = useRef(false);
+  const savedPositionBeforeInterruptRef = useRef(0);
+
   const shouldUseLegacyProvider = !isNewAudioArchitectureEnabled();
 
   useEffect(() => {
@@ -233,6 +237,13 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
         // Store unsubscribe function using WindowRegistry
         WindowRegistry.setAudioContextUnsubscribe(unsubscribe);
 
+        // ✅ DEPRECATION SYSTEM: Activate warnings for legacy globals
+        // This marks window.__preloadedDrumPads, __samplesLoadOnDemand, __drumsLoadOnDemand
+        // with getter/setter proxies that emit console warnings when accessed
+        const { markDeprecatedGlobals } = await import('../utils/cleanupGlobals.js');
+        markDeprecatedGlobals();
+        logger.info('AudioProvider: Deprecated globals marked with warnings');
+
         try {
           initSeq.log('services-init-start');
           logger.info('AudioProvider: Starting services.initialize() - will create AudioContext in suspended state');
@@ -345,6 +356,11 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
             logger.info(
               'AudioProvider: Cleanup called but preserving global singleton',
             );
+
+            // ✅ DEPRECATION SYSTEM: Clean up ALL window globals on unmount
+            // This includes all __bassnotion_* prefixed globals and legacy keys
+            WindowRegistry.cleanup();
+            logger.info('AudioProvider: All window globals cleaned up');
           }
         }, 100); // Small delay to see if component re-mounts
       }
@@ -397,6 +413,43 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
           };
 
           context.addEventListener('statechange', stateChangeHandler);
+
+          // iOS Background Audio: Listen for 'interrupted' state (iOS-specific)
+          // This fires when the app is backgrounded on iOS
+          const interruptionHandler = () => {
+            if (context.state === 'interrupted') {
+              // Save current playback state before interruption
+              const transport = coreServices.getUnifiedTransport();
+              wasPlayingBeforeInterruptRef.current = transport.getState() === 'playing';
+
+              try {
+                // TransportAdapter.getPosition() returns number (seconds)
+                const position = transport.getPosition();
+                savedPositionBeforeInterruptRef.current = position || 0;
+              } catch {
+                savedPositionBeforeInterruptRef.current = 0;
+              }
+
+              // Pause transport if it was playing
+              if (wasPlayingBeforeInterruptRef.current) {
+                transport.pause();
+              }
+
+              // Emit event for UI to show resume overlay
+              coreServices.getEventBus().emit('audio:interrupted', {
+                wasPlaying: wasPlayingBeforeInterruptRef.current,
+                position: savedPositionBeforeInterruptRef.current,
+                timestamp: Date.now(),
+              });
+
+              logger.info('AudioProvider: iOS interrupted audio', {
+                wasPlaying: wasPlayingBeforeInterruptRef.current,
+                position: savedPositionBeforeInterruptRef.current,
+              });
+            }
+          };
+
+          context.addEventListener('statechange', interruptionHandler);
 
           // Call resume() synchronously within the event handler call stack
           // This is CRITICAL for Safari/iOS - the resume() call must happen
@@ -454,6 +507,66 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
         document.removeEventListener(eventType, resumeAudioContext);
       });
       logger.info('[INIT] Gesture listeners cleaned up');
+    };
+  }, [isInitialized, coreServices, logger]);
+
+  // iOS Background Audio: Silently re-enable audio resume on next user gesture
+  // when returning from background. Works like YouTube/Spotify - no overlay needed.
+  //
+  // When iOS backgrounds the app, AudioContext becomes 'interrupted'.
+  // When user returns, we just need to resume on their next tap/click.
+  // This is invisible to the user - they just tap to play and it works.
+  useEffect(() => {
+    if (!isInitialized || !coreServices) {
+      return;
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          const audioEngine = coreServices.getAudioEngine();
+          const context = audioEngine.getContext();
+
+          // If context is not running, re-register gesture listeners to resume it
+          // This happens silently - user just interacts normally and audio works
+          if (context.state !== 'running') {
+            logger.info('AudioProvider: App returned to foreground, re-enabling gesture resume', {
+              contextState: context.state,
+            });
+
+            // Re-register gesture listeners (same pattern as initial activation)
+            const silentResume = () => {
+              if (context.state !== 'running') {
+                context.resume().then(() => {
+                  logger.info('AudioProvider: AudioContext silently resumed after background');
+
+                  // If user was playing before, optionally auto-resume playback
+                  // For now, just resume context - user can press play again
+                  coreServices.getEventBus().emit('audio:resumed-from-background', {
+                    timestamp: Date.now(),
+                  });
+                }).catch(err => {
+                  logger.error('AudioProvider: Failed to resume after background', err as Error);
+                });
+              }
+            };
+
+            // Listen for next user gesture to resume (one-time)
+            const gestureEvents = ['click', 'touchstart', 'keydown'];
+            gestureEvents.forEach(eventType => {
+              document.addEventListener(eventType, silentResume, { once: true });
+            });
+          }
+        } catch (error) {
+          logger.error('AudioProvider: Error handling visibility change', error as Error);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isInitialized, coreServices, logger]);
 

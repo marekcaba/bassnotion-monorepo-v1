@@ -7,6 +7,7 @@ export default {
       // Custom font families
       fontFamily: {
         'mono-display': ['var(--font-courier-prime)', 'ui-monospace', 'monospace'],
+        'display': ['var(--font-display)', 'sans-serif'],
       },
       // Enhanced breakpoint system for better responsive design
       screens: {

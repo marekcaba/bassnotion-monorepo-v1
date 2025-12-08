@@ -594,6 +594,65 @@ export class MIDIFileParser {
   }
 
   /**
+   * Merge adjacent same-pitch notes into single notes
+   * This handles MIDI files where DAWs export tied notes as separate note events
+   *
+   * Two notes are merged if:
+   * 1. They have the same pitch (MIDI note number)
+   * 2. The second note starts exactly where the first note ends (within tolerance)
+   */
+  private mergeAdjacentSamePitchNotes(notes: MIDIFileNote[]): MIDIFileNote[] {
+    if (notes.length <= 1) return notes;
+
+    // Sort by start tick position first
+    const sorted = [...notes].sort((a, b) => a.startTick - b.startTick);
+
+    const merged: MIDIFileNote[] = [];
+    let i = 0;
+
+    while (i < sorted.length) {
+      const current = { ...sorted[i] };
+
+      // Look ahead for adjacent same-pitch notes
+      let j = i + 1;
+      while (j < sorted.length) {
+        const next = sorted[j];
+
+        // Must be same pitch
+        if (next.pitch !== current.pitch) break;
+
+        // Must be adjacent (next starts where current ends, within 1 tick tolerance)
+        if (Math.abs(next.startTick - current.endTick) > 1) break;
+
+        // Merge: extend duration to include next note
+        current.endTick = next.endTick;
+        current.duration = next.startTime + next.duration - current.startTime;
+
+        logger.info('Merging adjacent same-pitch notes', {
+          pitch: current.pitch,
+          originalEndTick: sorted[i].endTick,
+          mergedEndTick: current.endTick,
+          notesMerged: j - i + 1,
+          correlationId: 'midi-parser',
+        });
+
+        j++;
+      }
+
+      merged.push(current);
+      i = j;
+    }
+
+    if (merged.length < notes.length) {
+      logger.info(`Reduced note count from ${notes.length} to ${merged.length}`, {
+        correlationId: 'midi-parser',
+      });
+    }
+
+    return merged;
+  }
+
+  /**
    * Convert MIDI track to Exercise format
    */
   private convertToExercise(
@@ -604,7 +663,10 @@ export class MIDIFileParser {
     const initialTempo =
       metadata.tempoMap.length > 0 ? metadata.tempoMap[0].bpm : 120;
 
-    const notes: ExerciseNote[] = track.notes.map((midiNote, index) => {
+    // Merge adjacent same-pitch notes before converting (handles DAW exported tied notes)
+    const mergedNotes = this.mergeAdjacentSamePitchNotes(track.notes);
+
+    const notes: ExerciseNote[] = mergedNotes.map((midiNote, index) => {
       // Convert MIDI note to note name
       const noteName = this.midiNoteToNoteName(midiNote.pitch);
 
@@ -621,6 +683,11 @@ export class MIDIFileParser {
         metadata.division,
       );
 
+      // Calculate duration in milliseconds for precise timing
+      // Also store duration in quarter notes for the MusicXML renderer
+      const durationInQuarters = durationInTicks / metadata.division;
+      const durationMs = (durationInQuarters / initialTempo) * 60 * 1000;
+
       const exerciseNote: ExerciseNote = {
         id: `note-${index}`,
         note: noteName,
@@ -628,7 +695,15 @@ export class MIDIFileParser {
         string: (midiNote.bassString || 1) as 1 | 2 | 3 | 4 | 5 | 6,
         color: 'blue', // Default color
         duration,
-        position,
+        position: {
+          ...position,
+          // tick is the original position tick (not duration)
+          // Already set by calculateMusicalTiming, but ensure it's there
+          tick: position.tick,
+        },
+        // Store ACTUAL duration in ticks for MusicXML renderer (480 PPQ)
+        durationTicks: durationInTicks,
+        duration_ms: durationMs,
         techniques: midiNote.articulation
           ? [this.articulationToTechnique(midiNote.articulation)]
           : undefined,
@@ -990,35 +1065,79 @@ export class MIDIFileParser {
     return 'thirty-second';
   }
 
+  /**
+   * Standard note durations in quarter notes for quantization
+   * Ordered from longest to shortest for efficient lookup
+   */
+  private static readonly STANDARD_DURATIONS: { duration: NoteDuration; quarters: number }[] = [
+    { duration: 'dotted-whole', quarters: 6 },
+    { duration: 'whole', quarters: 4 },
+    { duration: 'dotted-half', quarters: 3 },
+    { duration: 'half', quarters: 2 },
+    { duration: 'dotted-quarter', quarters: 1.5 },
+    { duration: 'quarter', quarters: 1 },
+    { duration: 'dotted-eighth', quarters: 0.75 },
+    { duration: 'eighth', quarters: 0.5 },
+    { duration: 'dotted-sixteenth', quarters: 0.375 },
+    { duration: 'sixteenth', quarters: 0.25 },
+    { duration: 'thirty-second', quarters: 0.125 },
+    { duration: 'sixty-fourth', quarters: 0.0625 },
+  ];
+
   private ticksToNoteDuration(
     durationTicks: number,
     division: number,
   ): NoteDuration {
-    // Calculate duration as a fraction of a quarter note
-    // division = ticks per quarter note (from MIDI header)
-    const relativeLength = durationTicks / division;
+    // Quantize duration ticks to 16th note grid first
+    const quantizedTicks = this.quantizeTicks(durationTicks, division, 4);
 
-    // Map to note durations with tolerance for quantization errors
-    if (relativeLength >= 3.75) return 'whole'; // 4 quarter notes
-    if (relativeLength >= 1.875) return 'half'; // 2 quarter notes
-    if (relativeLength >= 0.9375) return 'quarter'; // 1 quarter note
-    if (relativeLength >= 0.46875) return 'eighth'; // 0.5 quarter note
-    if (relativeLength >= 0.234375) return 'sixteenth'; // 0.25 quarter note
-    return 'thirty-second'; // 0.125 quarter note or less
+    // Calculate duration as a fraction of a quarter note
+    const relativeLength = quantizedTicks / division;
+
+    // Find the closest standard duration
+    let closestDuration: NoteDuration = 'quarter';
+    let closestDiff = Infinity;
+
+    for (const { duration, quarters } of MIDIFileParser.STANDARD_DURATIONS) {
+      const diff = Math.abs(relativeLength - quarters);
+      if (diff < closestDiff) {
+        closestDiff = diff;
+        closestDuration = duration;
+      }
+    }
+
+    return closestDuration;
+  }
+
+  /**
+   * Quantize tick position to nearest grid value
+   * Default grid is 16th notes (division / 4)
+   */
+  private quantizeTicks(ticks: number, division: number, gridSize: number = 4): number {
+    const gridTicks = division / gridSize; // e.g., 480/4 = 120 ticks per 16th note
+    return Math.round(ticks / gridTicks) * gridTicks;
   }
 
   private calculateMusicalTiming(startTick: number, division: number) {
+    // Quantize to 16th note grid first
+    const quantizedTick = this.quantizeTicks(startTick, division, 4);
+
     // Convert to quarter note positions
-    const quarterNotes = startTick / division;
-    const measure = Math.floor(quarterNotes / 4) + 1;
-    const beat = Math.floor(quarterNotes % 4) + 1;
-    const subdivision = Math.round((quarterNotes % 1) * 16); // 16th note subdivisions
+    const quarterNotes = quantizedTick / division;
+    const measure = Math.floor(quarterNotes / 4); // 0-based measure index
+    const beatInMeasure = quarterNotes % 4; // Position within measure in quarter notes
+    const beat = Math.floor(beatInMeasure); // 0-based beat (0, 1, 2, 3)
+
+    // Subdivision as 16th note index (0-3) within the beat
+    // beatInMeasure % 1 gives fractional part (0, 0.25, 0.5, 0.75)
+    // Multiply by 4 to get 16th note index (0, 1, 2, 3)
+    const subdivision = Math.round((beatInMeasure % 1) * 4);
 
     return {
       measure,
       beat,
       subdivision,
-      ticks: startTick,
+      tick: startTick, // Use 'tick' (singular) to match MusicalPosition type
     };
   }
 

@@ -26,6 +26,8 @@ interface GlobalControlsCardProps {
   isLoopEnabled?: boolean;
   // Play state callback
   onPlayStateChange?: (isPlaying: boolean) => void;
+  // TEMPO FIX: External ref to track if user manually modified tempo
+  hasUserModifiedTempo?: React.MutableRefObject<boolean>;
 }
 
 export function GlobalControlsCard({
@@ -41,6 +43,7 @@ export function GlobalControlsCard({
   loopRegion,
   isLoopEnabled,
   onPlayStateChange,
+  hasUserModifiedTempo,
 }: GlobalControlsCardProps) {
   // Calculate duration from exercise data
   const calculateDuration = (exercise: any): number => {
@@ -98,6 +101,7 @@ export function GlobalControlsCard({
           loopRegion={loopRegion}
           isLoopEnabled={isLoopEnabled}
           onPlayStateChange={onPlayStateChange}
+          externalHasUserModifiedTempo={hasUserModifiedTempo}
         />
       </CardContent>
     </Card>

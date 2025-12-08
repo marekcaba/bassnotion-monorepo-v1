@@ -173,6 +173,76 @@ export class MidiParserService {
   }
 
   /**
+   * Merge adjacent same-pitch notes into single notes
+   * This handles MIDI files where DAWs export tied notes as separate note events
+   *
+   * Two notes are merged if:
+   * 1. They have the same pitch (MIDI note number)
+   * 2. The second note starts exactly where the first note ends (within tolerance)
+   */
+  private mergeAdjacentSamePitchNotes(noteEvents: MidiNoteEvent[]): MidiNoteEvent[] {
+    if (noteEvents.length <= 1) return noteEvents;
+
+    // Filter to only notes with valid tick data, then sort by start tick position
+    const sorted = [...noteEvents]
+      .filter((n) => n.ticks !== undefined && n.durationTicks !== undefined)
+      .sort((a, b) => (a.ticks ?? 0) - (b.ticks ?? 0));
+
+    const merged: MidiNoteEvent[] = [];
+    let i = 0;
+
+    while (i < sorted.length) {
+      const current = { ...sorted[i] };
+      const currentTicks = current.ticks ?? 0;
+      const currentDuration = current.durationTicks ?? 0;
+      let endTicks = currentTicks + currentDuration;
+
+      // Look ahead for adjacent same-pitch notes
+      let j = i + 1;
+      while (j < sorted.length) {
+        const next = sorted[j];
+        const nextTicks = next.ticks ?? 0;
+        const nextDuration = next.durationTicks ?? 0;
+
+        // Must be same pitch
+        if (next.pitch !== current.pitch) break;
+
+        // Must be adjacent (next starts where current ends, within 1 tick tolerance)
+        if (Math.abs(nextTicks - endTicks) > 1) break;
+
+        // Merge: extend duration to include next note
+        const nextEndTicks = nextTicks + nextDuration;
+        current.durationTicks = nextEndTicks - currentTicks;
+        endTicks = nextEndTicks;
+
+        this.logger.log(`🔗 [MERGE] Merging adjacent same-pitch notes`, {
+          pitch: current.pitch,
+          name: current.name,
+          originalDuration: sorted[i].durationTicks,
+          mergedDuration: current.durationTicks,
+          notesmerged: j - i + 1,
+        });
+
+        j++;
+      }
+
+      // Re-infer duration after merging
+      if (j > i + 1 && current.durationTicks !== undefined) {
+        current.noteDuration = inferNoteDurationFromTicks(current.durationTicks);
+      }
+
+      merged.push(current);
+      i = j;
+    }
+
+    if (merged.length < noteEvents.length) {
+      this.logger.log(`✅ [MERGE] Reduced note count from ${noteEvents.length} to ${merged.length}`);
+    }
+
+    return merged;
+  }
+
+  /**
    * Extract note events from MIDI file with musical timing
    */
   private extractNoteEvents(
@@ -318,7 +388,10 @@ export class MidiParserService {
       }, {} as Record<number, number>),
     });
 
-    return noteEvents;
+    // Merge adjacent same-pitch notes (handles DAW exported tied notes)
+    const mergedNotes = this.mergeAdjacentSamePitchNotes(noteEvents);
+
+    return mergedNotes;
   }
 
   /**

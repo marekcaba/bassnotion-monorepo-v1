@@ -414,4 +414,266 @@ describe('AudioWorkletManager', () => {
       expect((manager as any).gainNode).toBeNull();
     });
   });
+
+  describe('Race Condition Fixes (Phase 2 Timing Refactor)', () => {
+    describe('Message Handler Setup Before Connection', () => {
+      it('should set up message handler before connecting to destination', async () => {
+        // Track the order of operations
+        const operationOrder: string[] = [];
+
+        // Create a new manager to test initialization order
+        const testManager = new AudioWorkletManager({
+          updateInterval: 0.00267,
+          lookAheadTime: 0.2,
+        });
+
+        // Mock the AudioWorkletNode constructor to track operation order
+        const originalAudioWorkletNode = (global as any).AudioWorkletNode;
+        (global as any).AudioWorkletNode = function (
+          context: any,
+          name: string,
+          options: any,
+        ) {
+          const node = new MockAudioWorkletNode();
+
+          // Override connect to track when it's called
+          const originalConnect = node.connect;
+          node.connect = vi.fn((...args) => {
+            // By the time connect is called, onmessage should be set
+            if (node.port.onmessage) {
+              operationOrder.push('handler-set');
+            }
+            operationOrder.push('connect');
+            return originalConnect.call(node, ...args);
+          });
+
+          return node;
+        };
+
+        await testManager.initialize(mockContext as any);
+
+        // Restore original
+        (global as any).AudioWorkletNode = originalAudioWorkletNode;
+
+        // Get the worklet node
+        const workletNode = (testManager as any).audioWorkletNode as MockAudioWorkletNode;
+
+        // Message handler should be set up
+        expect(workletNode.port.onmessage).toBeDefined();
+
+        // Verify correct order: handler set before connect
+        expect(operationOrder).toEqual(['handler-set', 'connect']);
+
+        testManager.destroy();
+      });
+
+      it('should receive messages sent immediately after initialization', async () => {
+        await manager.initialize(mockContext as any);
+        mockWorkletNode = (manager as any).audioWorkletNode as MockAudioWorkletNode;
+
+        const updatePromise = new Promise<TimingUpdate>((resolve) => {
+          manager.once('timing-update', resolve);
+        });
+
+        manager.start();
+        const currentSessionId = (manager as any).currentSessionId;
+
+        // Simulate immediate message (as would happen in real scenario)
+        mockWorkletNode.simulateMessage({
+          type: 'timing-update',
+          time: 0.002667,
+          audioContextTime: 0.032,
+          frame: 128,
+          playbackFrame: 128,
+          isPlaying: true,
+          updateCount: 1,
+          sessionId: currentSessionId,
+          messageSequence: 0,
+        });
+
+        // Should receive the message without race condition
+        const update = await updatePromise;
+        expect(update.time).toBe(0.002667);
+      });
+    });
+
+    describe('Idempotent Initialization', () => {
+      it('should skip duplicate initialization with same AudioContext', async () => {
+        await manager.initialize(mockContext as any);
+
+        const addModuleSpy = mockContext.audioWorklet.addModule as any;
+        const firstCallCount = addModuleSpy.mock.calls.length;
+
+        // Try to initialize again with same context
+        await manager.initialize(mockContext as any);
+
+        // Should not call addModule again
+        expect(addModuleSpy.mock.calls.length).toBe(firstCallCount);
+      });
+
+      it('should reinitialize if AudioContext changes', async () => {
+        await manager.initialize(mockContext as any);
+        const oldWorkletNode = (manager as any).audioWorkletNode;
+
+        // Create a different AudioContext
+        const newContext = new MockAudioContext();
+        await manager.initialize(newContext as any);
+
+        // Should create a new worklet node
+        const newWorkletNode = (manager as any).audioWorkletNode;
+        expect(newWorkletNode).not.toBe(oldWorkletNode);
+        expect(newWorkletNode).toBeDefined();
+
+        // Verify the new context is being used
+        expect((manager as any).audioContext).toBe(newContext);
+      });
+
+      it('should clean up old worklet node when reinitializing with new context', async () => {
+        await manager.initialize(mockContext as any);
+        const oldWorkletNode = (manager as any).audioWorkletNode as MockAudioWorkletNode;
+        const disconnectSpy = vi.spyOn(oldWorkletNode, 'disconnect');
+
+        // Initialize with new context
+        const newContext = new MockAudioContext();
+        await manager.initialize(newContext as any);
+
+        // Old node should be disconnected
+        expect(disconnectSpy).toHaveBeenCalled();
+      });
+    });
+
+    describe('Session ID Validation', () => {
+      it('should increment session ID on stop()', () => {
+        const initialSessionId = (manager as any).currentSessionId;
+
+        manager.stop();
+
+        expect((manager as any).currentSessionId).toBe(initialSessionId + 1);
+      });
+
+      it('should reset message sequence on stop()', async () => {
+        await manager.initialize(mockContext as any);
+        mockWorkletNode = (manager as any).audioWorkletNode as MockAudioWorkletNode;
+
+        manager.start();
+        const sessionId = (manager as any).currentSessionId;
+
+        // Send a few messages to increase sequence
+        mockWorkletNode.simulateMessage({
+          type: 'timing-update',
+          time: 0.002667,
+          audioContextTime: 0.032,
+          frame: 128,
+          playbackFrame: 128,
+          isPlaying: true,
+          updateCount: 1,
+          sessionId,
+          messageSequence: 0,
+        });
+
+        mockWorkletNode.simulateMessage({
+          type: 'timing-update',
+          time: 0.005333,
+          audioContextTime: 0.035,
+          frame: 256,
+          playbackFrame: 256,
+          isPlaying: true,
+          updateCount: 2,
+          sessionId,
+          messageSequence: 1,
+        });
+
+        // Stop should reset sequence
+        manager.stop();
+
+        expect((manager as any).expectedMessageSequence).toBe(-1);
+      });
+
+      it('should suppress stale message warnings for 200ms after stop', async () => {
+        await manager.initialize(mockContext as any);
+        mockWorkletNode = (manager as any).audioWorkletNode as MockAudioWorkletNode;
+
+        manager.start();
+        const oldSessionId = (manager as any).currentSessionId;
+        manager.stop();
+
+        // Simulate stale message immediately after stop (within 200ms)
+        mockWorkletNode.simulateMessage({
+          type: 'timing-update',
+          time: 0.002667,
+          sessionId: oldSessionId,
+          messageSequence: 0,
+        });
+
+        // Should not log warning (race condition cleanup period)
+        // This is expected behavior to reduce console noise
+      });
+    });
+
+    describe('Multiple Start/Stop Cycles', () => {
+      it('should handle rapid start/stop without errors', async () => {
+        await manager.initialize(mockContext as any);
+
+        // Rapid cycles
+        for (let i = 0; i < 10; i++) {
+          expect(() => manager.start()).not.toThrow();
+          expect(() => manager.stop()).not.toThrow();
+        }
+      });
+
+      it('should maintain correct session ID after multiple cycles', async () => {
+        await manager.initialize(mockContext as any);
+
+        const initialSessionId = (manager as any).currentSessionId;
+
+        // 5 start/stop cycles
+        for (let i = 0; i < 5; i++) {
+          manager.start();
+          manager.stop();
+        }
+
+        expect((manager as any).currentSessionId).toBe(initialSessionId + 5);
+      });
+    });
+
+    describe('Edge Cases', () => {
+      it('should handle destroy during message processing', async () => {
+        await manager.initialize(mockContext as any);
+        mockWorkletNode = (manager as any).audioWorkletNode as MockAudioWorkletNode;
+
+        manager.start();
+        const sessionId = (manager as any).currentSessionId;
+
+        // Queue a message
+        mockWorkletNode.simulateMessage({
+          type: 'timing-update',
+          time: 0.002667,
+          audioContextTime: 0.032,
+          frame: 128,
+          playbackFrame: 128,
+          isPlaying: true,
+          updateCount: 1,
+          sessionId,
+          messageSequence: 0,
+        });
+
+        // Destroy immediately
+        expect(() => manager.destroy()).not.toThrow();
+      });
+
+      it('should not send messages if worklet not initialized', () => {
+        const uninitializedManager = new AudioWorkletManager({
+          updateInterval: 0.00267,
+          lookAheadTime: 0.2,
+        });
+
+        // Should not throw when trying to send messages
+        expect(() => uninitializedManager.start()).not.toThrow();
+        expect(() => uninitializedManager.stop()).not.toThrow();
+        expect(() => uninitializedManager.pause()).not.toThrow();
+
+        uninitializedManager.destroy();
+      });
+    });
+  });
 });

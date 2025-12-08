@@ -15,6 +15,7 @@ import {
   PluginManager,
 } from '../services/core/index.js';
 import { logger } from '../utils/logger.js';
+import { WindowRegistry } from '../services/WindowRegistry.js';
 import type {
   PlaybackState,
   AudioContextState,
@@ -181,7 +182,7 @@ export function useCoreServices(
       setError(null);
 
       // Check if services already exist globally
-      let services = (window as any).__globalCoreServices;
+      let services = WindowRegistry.getCoreServices();
 
       if (!services) {
         logger.info('Creating new CoreServices instance...');
@@ -196,7 +197,7 @@ export function useCoreServices(
         await services.preInitialize();
 
         // Store globally
-        (window as any).__globalCoreServices = services;
+        WindowRegistry.setCoreServices(services);
       }
 
       coreServicesRef.current = services;
@@ -328,8 +329,8 @@ export function useCoreServices(
       await coreServicesRef.current.dispose();
 
       // Remove from global
-      if ((window as any).__globalCoreServices === coreServicesRef.current) {
-        delete (window as any).__globalCoreServices;
+      if (WindowRegistry.getCoreServices() === coreServicesRef.current) {
+        WindowRegistry.cleanup();
       }
 
       coreServicesRef.current = null;

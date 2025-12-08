@@ -12,10 +12,14 @@ interface FourWidgetsCardProps {
   widgetState: UseWidgetPageStateReturn;
   tutorialId?: string;
   isAdminMode?: boolean;
+  selectedExercise?: Exercise | null; // REFACTORED: Passed from parent (single source of truth)
 }
 
-export function FourWidgetsCard({ widgetState, tutorialId, isAdminMode = false }: FourWidgetsCardProps) {
-  const { state, selectedExercise, setState, harmonyInstrument } = widgetState;
+// Import Exercise type
+import type { Exercise } from '@bassnotion/contracts';
+
+export function FourWidgetsCard({ widgetState, tutorialId, isAdminMode = false, selectedExercise }: FourWidgetsCardProps) {
+  const { state, setState, harmonyInstrument } = widgetState; // REFACTORED: selectedExercise now from props
 
   // CRITICAL DEBUG: Log every render
   // console.log('🔍 [STATE-FLOW-3.5] FourWidgetsCard render:', {

@@ -10,6 +10,7 @@
 
 import { createStructuredLogger } from '../../shared/index.js';
 import { ToneModule, SamplerConfig, AudioSampler } from '../types/index.js';
+import { WindowRegistry } from '../../../services/WindowRegistry.js';
 
 const logger = createStructuredLogger('ToneWrapper');
 
@@ -77,9 +78,10 @@ export class ToneWrapper {
    * Perform the actual Tone.js load
    */
   private async performLoad(): Promise<void> {
-    // Check global storage first
-    if (typeof window !== 'undefined' && window.__globalTone) {
-      this.tone = window.__globalTone as ToneModule;
+    // Check global storage first via WindowRegistry
+    const existingTone = WindowRegistry.getTone();
+    if (existingTone) {
+      this.tone = existingTone as ToneModule;
       this.isLoaded = true;
       logger.info('Tone.js loaded from global storage');
       return;
@@ -98,10 +100,8 @@ export class ToneWrapper {
         throw new Error('Invalid Tone.js module structure');
       }
 
-      // Store globally for other instances
-      if (typeof window !== 'undefined') {
-        window.__globalTone = this.tone;
-      }
+      // Store globally for other instances via WindowRegistry
+      WindowRegistry.setTone(this.tone);
 
       this.isLoaded = true;
       logger.info('Tone.js loaded successfully');
@@ -148,10 +148,8 @@ export class ToneWrapper {
         Sampler,
       } as ToneModule;
 
-      // Store globally
-      if (typeof window !== 'undefined') {
-        window.__globalTone = this.tone;
-      }
+      // Store globally via WindowRegistry
+      WindowRegistry.setTone(this.tone);
 
       this.isLoaded = true;
       logger.info('Minimal Tone.js modules loaded successfully');

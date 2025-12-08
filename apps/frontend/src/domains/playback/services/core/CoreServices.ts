@@ -72,6 +72,9 @@ export class CoreServices {
 
     // Create core services
     this.eventBus = new EventBus();
+    console.log('🏗️ [CoreServices] EventBus created', {
+      eventBusId: (this.eventBus as any)._instanceId || 'no-id',
+    });
     this.audioEngine = new AudioEngine(this.eventBus, {
       sampleRate: this.config.sampleRate,
       latencyHint: this.config.audioLatencyHint,

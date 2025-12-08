@@ -122,9 +122,10 @@ export class SustainPedalManager {
         }
 
         // Calculate event time from ABSOLUTE ticks (not relative position)
-        // 🚨 CRITICAL FIX: Use original MIDI file BPM, not current transport BPM
-        const originalBpm = (event.data as any)?.originalBpm || Tone.Transport.bpm.value;
-        const secondsPerBeat = 60 / originalBpm;
+        // CRITICAL FIX: Always use current transport BPM (user-adjustable tempo)
+        // The originalBpm was incorrectly used, causing CC64 timeline mismatch with notes
+        const currentBpm = Tone.Transport.bpm.value;
+        const secondsPerBeat = 60 / currentBpm;
         const ticksPerBeat = 480; // PPQ standard
         const eventTime = (absoluteTicks / ticksPerBeat) * secondsPerBeat;
 

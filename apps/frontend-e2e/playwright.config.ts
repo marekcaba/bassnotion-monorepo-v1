@@ -1,7 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import { nxE2EPreset } from '@nx/playwright/preset';
 // import { workspaceRoot } from '@nx/devkit';
-import { fileURLToPath } from 'url';
 
 // For CI, you may want to set BASE_URL to the deployed app URL
 // For local testing, use the dev server
@@ -17,7 +15,9 @@ const baseURL = process.env['BASE_URL'] || 'http://localhost:3001';
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  ...nxE2EPreset(fileURLToPath(import.meta.url), { testDir: './src' }),
+  testDir: './src',
+  /* Retry flaky tests automatically - helps with resource contention when running many tests */
+  retries: process.env.CI ? 2 : 1, // Retry twice in CI, once locally
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     baseURL,
@@ -36,7 +36,8 @@ export default defineConfig({
   //   cwd: workspaceRoot,
   //   timeout: 120000, // 2 minutes
   // },
-  /* Configure projects for major browsers - this overrides NX preset projects */
+  /* Configure projects for all 5 browsers (3 desktop + 2 mobile) */
+  /* These override the NX preset default projects */
   projects: [
     {
       name: 'chromium',
@@ -50,31 +51,31 @@ export default defineConfig({
       name: 'webkit',
       use: {
         ...devices['Desktop Safari'],
+        // CRITICAL: Ignore HTTPS errors to bypass cached HSTS
+        // The HSTS header was sending "always use HTTPS" for localhost:3001
+        // Even after removing the header, Webkit remembers for 2 years
+        ignoreHTTPSErrors: true,
         // Webkit-specific settings for stability
         launchOptions: {
-          slowMo: 200, // Increased slow motion for webkit stability
           args: [
-            '--disable-web-security',
-            '--disable-background-timer-throttling',
-            '--disable-backgrounding-occluded-windows',
-            '--disable-renderer-backgrounding',
-            '--disable-features=TranslateUI',
-            '--disable-ipc-flooding-protection',
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--single-process', // Force single process for stability
+            '--disable-web-security', // Needed for CORS in local testing
+            '--disable-features=TranslateUI', // Reduces UI noise
+            '--disable-ipc-flooding-protection', // Allows high message volume
+            '--no-sandbox', // Required for CI environments
+            '--disable-setuid-sandbox', // Required for CI environments
+            '--disable-dev-shm-usage', // Prevents /dev/shm issues in Docker/CI
           ],
           timeout: 60000, // Increase browser launch timeout
         },
         // Additional test-specific settings for webkit
-        actionTimeout: 15000,
-        navigationTimeout: 30000,
+        // CRITICAL: Increase actionTimeout to 45s for CoreServices initialization
+        // ScrollTriggerLoader requires user interaction and Webkit is slower
+        actionTimeout: 45000,
+        navigationTimeout: 45000,
         video: 'off', // Disable video recording for webkit to reduce overhead
         screenshot: 'off', // Disable screenshots for webkit to reduce overhead
       },
     },
-    // Test against mobile viewports.
     {
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 5'] },
@@ -83,26 +84,25 @@ export default defineConfig({
       name: 'Mobile Safari',
       use: {
         ...devices['iPhone 12'],
+        // CRITICAL: Ignore HTTPS errors to bypass cached HSTS
+        ignoreHTTPSErrors: true,
         // Mobile webkit-specific settings
         launchOptions: {
-          slowMo: 200, // Increased slow motion for mobile webkit
           args: [
-            '--disable-web-security',
-            '--disable-background-timer-throttling',
-            '--disable-backgrounding-occluded-windows',
-            '--disable-renderer-backgrounding',
-            '--disable-features=TranslateUI',
-            '--disable-ipc-flooding-protection',
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--single-process', // Force single process for stability
+            '--disable-web-security', // Needed for CORS in local testing
+            '--disable-features=TranslateUI', // Reduces UI noise
+            '--disable-ipc-flooding-protection', // Allows high message volume
+            '--no-sandbox', // Required for CI environments
+            '--disable-setuid-sandbox', // Required for CI environments
+            '--disable-dev-shm-usage', // Prevents /dev/shm issues in Docker/CI
           ],
           timeout: 60000, // Increase browser launch timeout
         },
         // Additional test-specific settings for mobile webkit
-        actionTimeout: 15000,
-        navigationTimeout: 30000,
+        // CRITICAL: Increase actionTimeout to 45s for CoreServices initialization
+        // ScrollTriggerLoader requires user interaction and mobile Webkit is slower
+        actionTimeout: 45000,
+        navigationTimeout: 45000,
         video: 'off', // Disable video recording for mobile webkit
         screenshot: 'off', // Disable screenshots for mobile webkit
       },

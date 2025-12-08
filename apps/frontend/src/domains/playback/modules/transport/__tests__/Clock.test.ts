@@ -13,6 +13,7 @@ class MockAudioContext {
   baseLatency = 0.01;
   outputLatency = 0.02;
   private startTime = Date.now() / 1000;
+  state: 'suspended' | 'running' | 'closed' = 'running';
 
   constructor() {
     // Simulate time progression based on Date.now() which works with fake timers
@@ -21,6 +22,14 @@ class MockAudioContext {
         return Date.now() / 1000 - this.startTime;
       },
     });
+  }
+
+  addEventListener(event: string, listener: Function) {
+    // Mock implementation - no-op for tests
+  }
+
+  removeEventListener(event: string, listener: Function) {
+    // Mock implementation - no-op for tests
   }
 }
 

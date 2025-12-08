@@ -105,10 +105,8 @@ export class DrumKit extends BaseInstrument {
     if (audioEngine) {
       this.audioEngine = audioEngine;
     } else if (!this.audioEngine && typeof window !== 'undefined') {
-      // Try to get from global DI if no audioEngine provided
-      const globalServices =
-        (window as any)?.__coreServices ||
-        (window as any)?.__globalCoreServices;
+      // Try to get from global DI if no audioEngine provided (using WindowRegistry key)
+      const globalServices = (window as any)?.__bassnotion_coreServices;
       if (globalServices && globalServices.getAudioEngine) {
         this.audioEngine = globalServices.getAudioEngine();
       }

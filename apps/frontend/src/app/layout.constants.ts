@@ -1,4 +1,4 @@
-import { Inter, Courier_Prime } from 'next/font/google';
+import { Inter, Courier_Prime, Bebas_Neue } from 'next/font/google';
 
 export const inter = Inter({ subsets: ['latin'] });
 
@@ -8,6 +8,12 @@ export const courierPrime = Courier_Prime({
   style: ['normal', 'italic'],
   variable: '--font-courier-prime',
   display: 'swap',
+});
+
+export const bebasNeue = Bebas_Neue({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-display',
 });
 
 export const metadata = {

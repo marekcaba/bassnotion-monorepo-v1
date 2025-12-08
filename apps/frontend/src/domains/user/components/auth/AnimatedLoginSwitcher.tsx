@@ -35,15 +35,15 @@ export function AnimatedLoginSwitcher({
   return (
     <div className={cn('space-y-4 sm:space-y-6', className)}>
       {/* Tab List */}
-      <div className="inline-flex h-10 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground w-full">
+      <div className="inline-flex h-10 items-center justify-center rounded-lg bg-zinc-800 p-1 text-gray-400 w-full">
         <button
           type="button"
           onClick={() => handleModeChange('password')}
           className={cn(
-            'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex-1',
+            'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffc700] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 disabled:pointer-events-none disabled:opacity-50 flex-1',
             activeMode === 'password'
-              ? 'bg-background text-foreground shadow'
-              : 'hover:bg-background/50',
+              ? 'bg-zinc-700 text-white shadow'
+              : 'hover:bg-zinc-700/50 hover:text-gray-300',
           )}
           disabled={isTransitioning}
         >
@@ -53,10 +53,10 @@ export function AnimatedLoginSwitcher({
           type="button"
           onClick={() => handleModeChange('magic-link')}
           className={cn(
-            'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex-1',
+            'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffc700] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 disabled:pointer-events-none disabled:opacity-50 flex-1',
             activeMode === 'magic-link'
-              ? 'bg-background text-foreground shadow'
-              : 'hover:bg-background/50',
+              ? 'bg-zinc-700 text-white shadow'
+              : 'hover:bg-zinc-700/50 hover:text-gray-300',
           )}
           disabled={isTransitioning}
         >

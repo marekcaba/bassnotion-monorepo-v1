@@ -64,9 +64,26 @@ export class AudioWorkletManager extends EventEmitter {
 
   /**
    * Initialize the AudioWorklet with the provided AudioContext
+   * IDEMPOTENT: Safe to call multiple times, will skip if already initialized
    */
   async initialize(audioContext: AudioContext): Promise<void> {
     try {
+      // IDEMPOTENT CHECK: Skip if already initialized with a valid node
+      if (this.audioWorkletNode && this.audioContext === audioContext) {
+        logger.debug('AudioWorklet already initialized with this AudioContext - skipping', {
+          nodeExists: !!this.audioWorkletNode,
+          sameContext: this.audioContext === audioContext,
+          contextState: audioContext.state,
+        });
+        return;
+      }
+
+      // If we have a node but different context, clean up the old one
+      if (this.audioWorkletNode && this.audioContext !== audioContext) {
+        logger.warn('AudioContext changed - cleaning up old AudioWorklet node');
+        this.destroy();
+      }
+
       this.audioContext = audioContext;
 
       // Ensure AudioContext is running
@@ -114,14 +131,16 @@ export class AudioWorkletManager extends EventEmitter {
         },
       );
 
+      // CRITICAL: Set up message handling BEFORE connecting to destination
+      // This prevents race condition where processor starts sending messages
+      // before the handler is attached
+      this.setupMessageHandler();
+
       // Connect to destination to start processing
       this.audioWorkletNode.connect(audioContext.destination);
 
       // Create silent oscillator to ensure audio graph is running
       this.createSilentOscillator();
-
-      // Set up message handling
-      this.setupMessageHandler();
 
       // Send initial stats request to verify communication
       this.sendControlMessage({ type: 'get-stats' });
@@ -182,6 +201,7 @@ export class AudioWorkletManager extends EventEmitter {
     };
 
     this.audioWorkletNode.port.onmessage = this.messageHandler;
+    logger.debug('Message handler attached to AudioWorkletNode port');
   }
 
   /**

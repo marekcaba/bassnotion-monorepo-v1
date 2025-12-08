@@ -67,6 +67,7 @@ export function ScrollTriggerLoader({
 
           // ✅ BUG #8 FIX: Store globally using WindowRegistry
           WindowRegistry.setCoreServices(coreServices);
+          WindowRegistry.setServiceRegistry(coreServices.getServiceRegistry());
           logger.info('✅ CoreServices pre-initialized and stored globally');
         } else {
           logger.info('✅ CoreServices already exists');
@@ -146,7 +147,15 @@ export function ScrollTriggerLoader({
     return () => {
       removeAllListeners();
     };
-  }, [exercises, tutorialId]);
+  }, [
+    // CRITICAL FIX: Don't depend on exercises array reference - use stable primitive values
+    // exercises?.length catches array size changes
+    // exercises?.map(e => e.id).join(',') catches exercise ID changes
+    // This prevents re-running effect when parent passes new array reference with same data
+    exercises?.length,
+    exercises?.map(e => e.id).join(','),
+    tutorialId
+  ]);
 
   // This component doesn't render anything
   return null;

@@ -266,7 +266,43 @@ export class HarmonySchedulerV2 {
     const octaveShift = this.currentHarmonyInstrument === 'grandpiano' ? 0 : 12;
     const midiNote = eventData.midiNote - octaveShift;
     const velocity = eventData.velocity || event.velocity * 127;
-    const duration = event.duration || 2; // Default 2 seconds
+
+    // DEFENSE IN DEPTH: Calculate duration with fallback to tick-based calculation
+    // This ensures correct duration even if event.duration was calculated with wrong BPM
+    let duration: number;
+    const currentBpm = Tone.Transport.bpm.value;
+
+    // 🔴 [TEMPO-DURATION-BUG] Diagnostic: Check if duration needs recalculation
+    if (eventData?.durationTicks) {
+      // CORRECT: Recalculate duration using CURRENT BPM, not cached value
+      const recalculatedDuration = (eventData.durationTicks / 480) * (60 / currentBpm);
+      const cachedDuration = event.duration;
+      const originalBpm = eventData?.originalBpm || 'unknown';
+
+      // Log every 20th note to avoid spam
+      if (Math.random() < 0.05) {
+        console.log('🔴 [TEMPO-DURATION-BUG] Duration comparison:', {
+          midiNote: eventData.midiNote,
+          durationTicks: eventData.durationTicks,
+          originalBpm,
+          currentBpm,
+          cachedDuration: cachedDuration?.toFixed(3),
+          recalculatedDuration: recalculatedDuration.toFixed(3),
+          difference: cachedDuration ? ((cachedDuration - recalculatedDuration) * 1000).toFixed(1) + 'ms' : 'N/A',
+          USING: 'recalculated (FIX APPLIED)',
+        });
+      }
+
+      // USE RECALCULATED DURATION (the fix)
+      duration = recalculatedDuration;
+    } else if (typeof event.duration === 'number' && event.duration > 0) {
+      // Fallback to cached duration if no ticks available
+      console.warn('🔴 [TEMPO-DURATION-BUG] No durationTicks, using cached duration:', event.duration);
+      duration = event.duration;
+    } else {
+      duration = 2; // Last resort fallback
+      console.warn('🔴 [TEMPO-DURATION-BUG] No duration data, using fallback: 2s');
+    }
 
     // STEP 2: Convert MIDI note to note name (C4, Cs4, D4, etc.)
     const noteName = midiToNoteName(midiNote);
@@ -391,25 +427,10 @@ export class HarmonySchedulerV2 {
         hasStopScheduled: true,
       });
 
-      console.log('[🔥 HARMONY-V2 NEW CODE LOADED 🔥] Source tracked!', {
-        instanceId: this.instanceId,
-        noteName,
-        mapSize: this.scheduledAudioSources.size,
-        audioTime,
-      });
-
       // CRITICAL: DO NOT auto-cleanup on onended during normal playback!
       // We need to keep ALL sources tracked so stopAll() can cancel future scheduled notes.
       // Only clean up the active harmony sources (for polyphony), not the tracking Map.
       source.onended = () => {
-        console.log('[✅ ONENDED FIRED - NOT REMOVING FROM MAP ✅]', {
-          instanceId: this.instanceId,
-          noteName,
-          audioTime,
-          currentMapSize: this.scheduledAudioSources.size,
-          keepingSourceInMap: true,
-        });
-
         // Only clean up the activeHarmonySources for polyphony management
         // DO NOT remove from scheduledAudioSources - we need it for stopAll()
         const activeSources = this.activeHarmonySources.get(noteName);

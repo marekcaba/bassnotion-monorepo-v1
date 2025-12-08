@@ -17,6 +17,7 @@ import { AudioProvider } from '@/domains/playback/providers/AudioProvider';
 import { YouTubeWidgetPage } from './YouTubeWidgetPage';
 import type { Tutorial } from '@bassnotion/contracts';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 
 // Simple logging function
 const log = (message: string, data?: any) => {
@@ -104,12 +105,12 @@ function AudioEnabledTutorialContent({
         if (attempts === 0 || attempts % 5 === 0) {
           addLog(`🔍 Attempt ${attempts + 1}: Checking for CoreServices...`);
           addLog(
-            `Global vars: __globalCoreServices=${!!(window as any).__globalCoreServices}, __coreServices=${!!(window as any).__coreServices}`,
+            `Global vars: WindowRegistry.getCoreServices()=${!!WindowRegistry.getCoreServices()}`,
           );
         }
 
-        if ((window as any).__globalCoreServices) {
-          const services = (window as any).__globalCoreServices;
+        const services = WindowRegistry.getCoreServices();
+        if (services) {
           coreServicesRef.current = services;
 
           try {
@@ -182,10 +183,8 @@ function AudioEnabledTutorialContent({
   // Debug logging
   log('🔍 AudioEnabledTutorial render:', {
     audioInitialized,
-    hasGlobalCoreServices:
-      typeof window !== 'undefined' && !!(window as any).__globalCoreServices,
-    hasLegacyCoreServices:
-      typeof window !== 'undefined' && !!(window as any).__coreServices,
+    hasCoreServices:
+      typeof window !== 'undefined' && !!WindowRegistry.getCoreServices(),
     coreServices: !!coreServicesRef.current,
   });
 

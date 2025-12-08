@@ -484,7 +484,7 @@ const MetronomeWidgetComponent = ({
       });
 
       // Update PlaybackEngine with new pattern
-      const globalServices = (window as any).__globalCoreServices || (window as any).__coreServices;
+      const globalServices = WindowRegistry.getCoreServices();
       if (globalServices && globalServices.getPlaybackEngine) {
         const playbackEngine = globalServices.getPlaybackEngine();
         if (playbackEngine) {

@@ -407,8 +407,9 @@ export class InitialSamplePreloader {
         // CRITICAL: Inject harmony buffers into PlaybackEngine immediately after loading
         // This enables direct AudioBufferSourceNode scheduling for instant stop functionality
         try {
-          // ✅ FIX: Use WindowRegistry key instead of legacy __globalCoreServices
-          const coreServices = (window as any).__bassnotion_coreServices || (window as any).__globalCoreServices;
+          // ✅ FIX: Use WindowRegistry instead of legacy globals
+          const { WindowRegistry } = await import('./WindowRegistry.js');
+          const coreServices = WindowRegistry.getCoreServices();
 
           if (!coreServices) {
             logger.warn('⚠️ CoreServices not initialized yet - harmony buffers will be injected later');
@@ -497,7 +498,8 @@ export class InitialSamplePreloader {
         // CRITICAL FIX: Inject voice cue buffers into PlaybackEngine
         // Voice cue samples are preloaded (lines 1518-1533) but were never injected
         try {
-          const coreServices = (window as any).__bassnotion_coreServices || (window as any).__globalCoreServices;
+          const { WindowRegistry } = await import('./WindowRegistry.js');
+          const coreServices = WindowRegistry.getCoreServices();
 
           if (coreServices) {
             // Phase 3.1: Use PlaybackEngine instead of RegionProcessor
@@ -1462,10 +1464,8 @@ export class InitialSamplePreloader {
    */
   private async setupRegionProcessorWithTracks(): Promise<void> {
     try {
-      const coreServices =
-        (window as any).__globalCoreServices ||
-        (window as any).__coreServices ||
-        (window as any).__bassnotion_coreServices;
+      const { WindowRegistry } = await import('./WindowRegistry.js');
+      const coreServices = WindowRegistry.getCoreServices();
 
       if (!coreServices) {
         logger.info('CoreServices not available yet, setup will be done on play');

@@ -686,9 +686,7 @@ const DrummerWidgetComponent = ({
   // Cleanup on unmount - remove from InstrumentRegistry
   useEffect(() => {
     return () => {
-      const globalServices =
-        (window as any).__globalCoreServices ||
-        (window as any).__coreServices;
+      const globalServices = WindowRegistry.getCoreServices();
       if (globalServices && globalServices.getInstrumentRegistry) {
         const instrumentRegistry = globalServices.getInstrumentRegistry();
         if (instrumentRegistry.getActive('drums') === drummerPluginRef.current) {

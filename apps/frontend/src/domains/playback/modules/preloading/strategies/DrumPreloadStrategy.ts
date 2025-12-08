@@ -34,9 +34,8 @@ export class DrumPreloadStrategy implements PreloadStrategy {
     logger.info('Loading essential drum samples...');
 
     try {
-      // Check if CoreServices and AudioEngine are available
-      const coreServices =
-        (window as any).__globalCoreServices || (window as any).__coreServices;
+      // Check if CoreServices and AudioEngine are available (use new __bassnotion_ keys)
+      const coreServices = (window as any).__bassnotion_coreServices;
 
       if (!coreServices) {
         return this.fallbackToUrlCaching();

@@ -17,6 +17,8 @@ import { Service } from '../../../services/core/ServiceRegistry.js';
 import { EventBus } from '../../../services/core/EventBus.js';
 import { AudioEngine } from '../../../services/core/AudioEngine.js';
 import { createStructuredLogger } from '../../shared/index.js';
+import { PositionUpdateScheduler } from '../scheduling/PositionUpdateScheduler.js';
+import type { PositionUpdate } from '../scheduling/types/scheduler.types.js';
 import type {
   TransportConfig,
   TransportState,
@@ -25,6 +27,7 @@ import type {
   TimeSignature,
 } from '../types/index.js';
 import * as Tone from 'tone';
+import { musicalTruth } from '../../tempo/MusicalTruthAuthority.js';
 
 const logger = createStructuredLogger('TransportController');
 
@@ -54,13 +57,15 @@ export class TransportController implements Service {
   private config: TransportControllerConfig;
   private autoStopTimerId: ReturnType<typeof setTimeout> | null = null;
 
-  // Phase 2: Event-driven position updates
-  private lastPositionEmitTime = 0;
-  private readonly positionUpdateInterval: number;
+  // Position Update Scheduler (replaces dual-pathway system)
+  private positionUpdateScheduler: PositionUpdateScheduler;
   private useClockOnTick = false;
 
   // Singleton
   private static instance: TransportController | null = null;
+
+  // Instance tracking for debugging
+  private readonly instanceId = Math.random().toString(36).slice(2, 7);
 
   private constructor(
     eventBus: EventBus,
@@ -75,16 +80,19 @@ export class TransportController implements Service {
       enableLegacyCompatibility: config.enableLegacyCompatibility ?? true,
     };
 
-    // Phase 2: Configure event-driven position updates
+    // Configure position update strategy
     const updateHz =
       typeof process !== 'undefined' &&
       process.env.NEXT_PUBLIC_POSITION_UPDATE_HZ
         ? parseInt(process.env.NEXT_PUBLIC_POSITION_UPDATE_HZ, 10)
         : 120;
-    this.positionUpdateInterval = 1000 / updateHz; // Default: 8.3ms = 120 Hz
     this.useClockOnTick =
       typeof process !== 'undefined' &&
       process.env.NEXT_PUBLIC_USE_CLOCK_ONTICK === 'true';
+
+    // Debug: Log env variable value
+    console.log('[ENV DEBUG] NEXT_PUBLIC_USE_CLOCK_ONTICK =', process.env.NEXT_PUBLIC_USE_CLOCK_ONTICK);
+    console.log('[ENV DEBUG] useClockOnTick =', this.useClockOnTick);
 
     // Create modules
     this.transport = new Transport(config);
@@ -93,18 +101,33 @@ export class TransportController implements Service {
       timeSignature: config.timeSignature || { numerator: 4, denominator: 4 },
     });
 
+    // Create PositionUpdateScheduler (FAANG FIX: Mutual exclusion for position updates)
+    // This replaces the dual-pathway system that could run polling AND event-driven simultaneously
+    this.positionUpdateScheduler = new PositionUpdateScheduler(
+      this.transport.getClock(),
+      this.transport.getTimeline(),
+      {
+        pollingIntervalMs: 20, // 50 Hz (fallback)
+        eventDrivenThrottleMs: 1000 / updateHz, // 120 Hz (default)
+        preferEventDriven: this.useClockOnTick,
+      },
+    );
+
+    // Configure scheduler callback
+    this.positionUpdateScheduler.setUpdateCallback((update: PositionUpdate) => {
+      this.handlePositionUpdate(update);
+    });
+
     this.setupEventListeners();
 
-    // Phase 2: Setup Clock.onTick subscription if enabled
-    if (this.useClockOnTick) {
-      this.setupClockSubscription();
-    }
-
+    console.log('🚀 [TransportController] Created with EventBus', {
+      eventBusId: (this.eventBus as any)._instanceId || 'no-id',
+    });
     logger.info('TransportController created', {
       useModular: this.config.useModularArchitecture,
       legacyCompat: this.config.enableLegacyCompatibility,
-      clockOnTick: this.useClockOnTick,
-      updateHz: Math.round(1000 / this.positionUpdateInterval),
+      preferEventDriven: this.useClockOnTick,
+      updateHz,
     });
   }
 
@@ -173,6 +196,8 @@ export class TransportController implements Service {
    */
   setTransportStartTime(time: number): void {
     this.transport.setTransportStartTime(time);
+    // Also update scheduler so strategies calculate elapsed time correctly
+    this.positionUpdateScheduler.setTransportStartTime(time);
     logger.info('TransportController: Transport start time set', {
       transportStartTime: time,
       source: 'PlaybackEngine',
@@ -183,11 +208,23 @@ export class TransportController implements Service {
    * Start playback
    */
   async start(): Promise<void> {
+    // [TEMPO-DEBUG] logs commented out after fix verification
+    // console.log('[TEMPO-DEBUG] TransportController.start() CALLED', {...});
+
     if (!this.isInitialized) {
       await this.initialize();
     }
 
     logger.info('Starting playback...');
+
+    // FIX #4b: Clear any stale auto-stop timer from previous playback run
+    // This prevents the bug where a timer from run #1 (at 100 BPM) fires during run #3 (at 50 BPM)
+    // because the timer was calculated at the old tempo and never properly cleared
+    if (this.autoStopTimerId !== null) {
+      clearTimeout(this.autoStopTimerId);
+      this.autoStopTimerId = null;
+      logger.info('🎵 Cleared stale auto-stop timer from previous playback');
+    }
 
     // FAANG FIX: ALWAYS reset Tone.Transport.position to 0 before starting playback
     // This prevents position accumulation bugs from previous stop() calls.
@@ -209,7 +246,6 @@ export class TransportController implements Service {
     // position update callback, but TransportController state is still 'stopped',
     // causing the callback to filter out all position updates
     this.state = 'playing';
-    console.log('🎯 [CONTROLLER FIX] State set to playing BEFORE transport.start()');
 
     // COUNTDOWN FIX: Set countdown offset before starting transport
     // Transport.start() will apply this offset right before starting position updates
@@ -236,8 +272,14 @@ export class TransportController implements Service {
       });
     }
 
-    // Start transport
-    this.transport.start();
+    // Start transport (position updates now handled by PositionUpdateScheduler)
+    this.transport.start({ skipPositionUpdates: true }); // Always skip - scheduler handles this
+
+    // Start position update scheduler (FAANG FIX: Mutual exclusion - only ONE pathway active)
+    this.positionUpdateScheduler.start();
+    logger.info('🎯 [SCHEDULER] Started position updates', {
+      activeStrategy: this.positionUpdateScheduler.getActiveStrategy(),
+    });
 
     // Start Tone.Transport for legacy compatibility
     if (this.config.enableLegacyCompatibility && Tone.Transport.state !== 'started') {
@@ -302,13 +344,12 @@ export class TransportController implements Service {
 
     logger.info('🎵 Stopping playback...', { previousState: this.state, graceful });
 
+    // Stop position update scheduler FIRST (before transport)
+    this.positionUpdateScheduler.stop();
+    logger.info('🎯 [SCHEDULER] Stopped position updates');
+
     // Stop transport
     this.transport.stop();
-
-    // NOTE: No longer clearing position update callback here
-    // The callback needs to persist across start/stop cycles so position updates
-    // work on second and subsequent playback rounds. The interval timer is cleared
-    // in transport.stop() which is sufficient to stop position updates.
 
     // Stop Tone.Transport for legacy compatibility
     if (this.config.enableLegacyCompatibility && Tone.Transport.state !== 'stopped') {
@@ -362,6 +403,9 @@ export class TransportController implements Service {
   async pause(): Promise<void> {
     logger.info('Pausing playback...');
 
+    // Pause position update scheduler
+    this.positionUpdateScheduler.pause();
+
     // Pause transport
     this.transport.pause();
 
@@ -389,6 +433,9 @@ export class TransportController implements Service {
 
     // Resume transport
     this.transport.resume();
+
+    // Resume position update scheduler
+    this.positionUpdateScheduler.resume();
 
     // Update state
     this.state = 'playing';
@@ -437,6 +484,9 @@ export class TransportController implements Service {
    * Set tempo
    */
   async setTempo(bpm: number): Promise<void> {
+    // [TEMPO-DEBUG] logs commented out after fix verification
+    // console.log('[TEMPO-DEBUG] Step 4: TransportController.setTempo() ENTRY', {...});
+
     if (bpm < 20 || bpm > 999) {
       throw new Error(`Invalid tempo: ${bpm}`);
     }
@@ -444,20 +494,38 @@ export class TransportController implements Service {
     logger.info('🎵 TransportController.setTempo START', {
       bpm,
       currentToneBpm: Tone.Transport.bpm.value,
+      currentMusicalTruthBpm: musicalTruth.getBPM(),
       transportState: this.state
     });
 
-    // ⚠️ DEPRECATED: This method should not be called
-    // Tempo is now managed exclusively by MusicalTruthAuthority
-    // Log warning to help identify callers
-    logger.warn('⚠️ TransportController.setTempo() called - use musicalTruth.setFromExercise() instead', {
+    // CRITICAL FIX: Update musicalTruth.bpm (single source of truth)
+    // This ensures Timeline.updatePositionFromSeconds() uses the new tempo
+    // Previously only Tone.Transport.bpm was updated, but musicalTruth.getBPM()
+    // returned stale value causing position display to use wrong tempo
+    musicalTruth.setBPM(bpm);
+
+    // [TEMPO-DEBUG] Step 4b logs commented out after fix verification
+    // console.log('[TEMPO-DEBUG] Step 4b: TransportController - Tone.Transport.bpm updated', {...});
+
+    logger.info('🎵 TransportController.setTempo: musicalTruth.setBPM updated', {
       requestedBpm: bpm,
-      stack: new Error().stack?.split('\n').slice(2, 4).join(' <- ')
+      newMusicalTruthBpm: musicalTruth.getBPM(),
+      newToneBpm: Tone.Transport.bpm.value,
+      success: musicalTruth.getBPM() === bpm && Tone.Transport.bpm.value === bpm
     });
 
-    // ✅ REMOVED: Direct Tone.Transport.bpm write
-    // musicalTruth.setFromExercise() handles Tone.js synchronization
-    // Transport.setTempo() and positionManager.setTempo() are now deprecated (do nothing)
+    // TEMPO COMPENSATION: Notify position scheduler of tempo change
+    // This prevents position jumps when tempo changes during playback by
+    // snapshotting accumulated beats and resetting timing reference
+    //
+    // FIX: Always notify the scheduler, even when stopped!
+    // When stopped, onTempoChange() will just update currentBPM for the next session.
+    // When playing, it will also snapshot accumulated beats to prevent position jumps.
+    // [TEMPO-DEBUG] Step 4c log commented out
+    this.positionUpdateScheduler.onTempoChange(bpm);
+    logger.info('🎵 TransportController: Position scheduler notified of tempo change', {
+      state: this.state,
+    });
 
     // FAANG FIX: Recalculate loop end if loop is enabled
     // When tempo changes, the loop end time in seconds changes even though musical position stays same
@@ -482,6 +550,62 @@ export class TransportController implements Service {
     // Emit event (both 'tempo' and 'bpm' properties for compatibility with different listeners)
     this.eventBus.emit('transport:tempo-change', { tempo: bpm, bpm });
     logger.info('🎵 TransportController: Event emitted', { event: 'transport:tempo-change', data: { tempo: bpm, bpm } });
+
+    // FIX #4: Reschedule auto-stop timer when tempo changes during playback
+    // The original timer was calculated at the old BPM, so we need to recalculate
+    // based on remaining BEATS at the new tempo (not elapsed wall-clock time)
+    if (this.state === 'playing' && this.autoStopTimerId !== null) {
+      // Clear old timer
+      clearTimeout(this.autoStopTimerId);
+      this.autoStopTimerId = null;
+
+      // Get total exercise beats and current position in beats
+      const timeline = this.transport.getTimeline();
+      const totalBeats = timeline.getExerciseDurationBeats();
+
+      if (totalBeats > 0) {
+        // Get current musical position in beats (not wall-clock time!)
+        // This correctly reflects how many beats have been played, regardless of tempo changes
+        const currentPosition = this.positionManager.getPosition();
+        const beatsPerBar = this.positionManager.getTimeSignature().numerator;
+        const currentBeats = currentPosition.bars * beatsPerBar +
+                            currentPosition.beats +
+                            currentPosition.sixteenths / 4;
+
+        // Calculate remaining beats
+        const remainingBeats = Math.max(0, totalBeats - currentBeats);
+
+        if (remainingBeats > 0) {
+          // Convert remaining beats to seconds at NEW tempo
+          const secondsPerBeat = 60 / bpm;
+          const remainingSeconds = remainingBeats * secondsPerBeat;
+          const remainingMs = remainingSeconds * 1000;
+
+          logger.info('🎵 Rescheduling auto-stop for new tempo', {
+            newBpm: bpm,
+            totalBeats,
+            currentBeats: currentBeats.toFixed(2),
+            remainingBeats: remainingBeats.toFixed(2),
+            remainingSeconds: remainingSeconds.toFixed(2),
+            remainingMs,
+          });
+
+          this.autoStopTimerId = setTimeout(() => {
+            if (this.state === 'playing') {
+              logger.info('🎵 Auto-stop triggered at exercise end (rescheduled)');
+              this.autoStopTimerId = null;
+              this.stop(true);
+            } else {
+              this.autoStopTimerId = null;
+            }
+          }, remainingMs);
+        } else {
+          // Exercise already complete at new tempo - stop immediately
+          logger.info('🎵 Exercise complete at new tempo - stopping');
+          this.stop(true);
+        }
+      }
+    }
   }
 
   /**
@@ -659,45 +783,11 @@ export class TransportController implements Service {
 
   /**
    * Setup event listeners
+   *
+   * NOTE: Position update callbacks are now handled by PositionUpdateScheduler,
+   * not by Transport.onPositionUpdate(). This eliminates the dual-pathway problem.
    */
   private setupEventListeners(): void {
-    // Listen to transport position updates from internal timing (sample-accurate)
-    this.transport.onPositionUpdate((seconds) => {
-      // POSITION RESET BUG FIX: Ignore position updates when not playing
-      // This prevents stale callbacks from overwriting the reset position after stop()
-      // Race condition: timing worker fires final update AFTER stop() resets position
-      if (this.state !== 'playing') {
-        return;
-      }
-
-      // Update position using internal transport timing (AudioContext.currentTime)
-      // This is sample-accurate and reliable, unlike Tone.Transport.position
-      this.positionManager.updatePosition(seconds);
-
-      // Get display position (adjusted for countdown using SIMPLIFIED logic)
-      // The simplified getDisplayPosition() eliminates Math.floor() jumps
-      const displayPosition = this.positionManager.getDisplayPosition();
-      const rawPosition = this.positionManager.getPosition();
-
-      // POSITION DEBUG: Log the transformation (reduced frequency)
-      if (Math.random() < 0.1) { // 10% of updates
-        console.log('🎵 [POSITION UPDATE] Internal timing', {
-          seconds: seconds.toFixed(3),
-          rawPosition: `${rawPosition.bars}:${rawPosition.beats}:${rawPosition.sixteenths}`,
-          displayPosition: `${displayPosition.bars}:${displayPosition.beats}:${displayPosition.sixteenths}`,
-          countdownBeats: this.positionManager.getCountdownBeats(),
-          note: 'Sample-accurate timing + simplified countdown = smooth clock!',
-        });
-      }
-
-      // Emit position update (using the correct event name that useTransport expects)
-      this.eventBus.emit('transport:position-updated', {
-        position: displayPosition,
-        seconds,
-        timestamp: performance.now(),
-      });
-    });
-
     // Listen to position manager events
     this.positionManager.on('loopChange', (loop) => {
       logger.debug('Loop changed', loop);
@@ -709,67 +799,42 @@ export class TransportController implements Service {
   }
 
   /**
-   * Setup Clock.onTick subscription for event-driven position updates (Phase 2)
+   * Handle position updates from PositionUpdateScheduler
    *
-   * This replaces the polling-based Transport.startPositionUpdates() with direct
-   * AudioWorklet timing updates. The AudioWorklet sends updates at 374 Hz, which
-   * we throttle to a configurable rate (default: 120 Hz) before emitting to EventBus.
-   *
-   * **Benefits**:
-   * - Eliminates 50 Hz setInterval polling loop
-   * - Uses high-frequency AudioWorklet timing more efficiently
-   * - Reduces CPU overhead (no redundant clock reads)
-   * - More responsive UI updates (120 Hz vs 50 Hz)
-   *
-   * **Throttling**: AudioWorklet produces 374 updates/sec, we emit at 120 Hz (configurable)
-   * to balance smoothness vs performance.
+   * This is the single entry point for all position updates, regardless of
+   * whether they come from polling or event-driven strategy.
+   * FAANG FIX: Eliminates dual-pathway emission problem.
    */
-  private setupClockSubscription(): void {
-    const clock = this.transport.getClock();
-
-    // Subscribe to high-frequency AudioWorklet updates (374 Hz)
-    clock.setOnTick((time: number) => {
-      // Only process position updates when playing
-      if (this.state !== 'playing') {
-        return;
-      }
-
-      // Throttle to configured update rate (default: 120 Hz = 8.3ms)
-      const now = performance.now();
-      if (now - this.lastPositionEmitTime < this.positionUpdateInterval) {
-        return; // Drop this update (throttling)
-      }
-
-      this.lastPositionEmitTime = now;
-
-      // Update position using AudioWorklet timing
-      this.positionManager.updatePosition(time);
-
-      // Get display position (adjusted for countdown)
-      const displayPosition = this.positionManager.getDisplayPosition();
-
-      // DIAGNOSTIC: Log throttled update rate (10% sample)
-      if (Math.random() < 0.1) {
-        logger.debug('Clock.onTick position update', {
-          time: time.toFixed(3),
-          displayPosition: `${displayPosition.bars}:${displayPosition.beats}:${displayPosition.sixteenths}`,
-          throttleMs: this.positionUpdateInterval.toFixed(2),
-          note: 'Event-driven from AudioWorklet (Phase 2)',
-        });
-      }
-
-      // Emit position update to EventBus
-      this.eventBus.emit('transport:position-updated', {
-        position: displayPosition,
-        seconds: time,
-        timestamp: now,
+  private handlePositionUpdate(update: PositionUpdate): void {
+    // DIAGNOSTIC: Always log entry (5% sample)
+    if (Math.random() < 0.05) {
+      console.log('🔄 [TransportController] handlePositionUpdate ENTRY', {
+        state: this.state,
+        seconds: update.seconds.toFixed(3),
       });
-    });
+    }
 
-    logger.info('Clock.onTick subscription enabled', {
-      updateHz: Math.round(1000 / this.positionUpdateInterval),
-      intervalMs: this.positionUpdateInterval.toFixed(2),
-      source: 'AudioWorklet (374 Hz throttled)',
+    // Guard: Ignore updates when not playing (prevents race conditions)
+    if (this.state !== 'playing') {
+      // DIAGNOSTIC: Log when updates are blocked (always log when blocked)
+      console.log('🚫 [TransportController] handlePositionUpdate blocked (not playing)', {
+        state: this.state,
+        seconds: update.seconds.toFixed(3),
+      });
+      return;
+    }
+
+    // Update position using the elapsed time from scheduler
+    this.positionManager.updatePosition(update.seconds);
+
+    // Get display position (adjusted for countdown)
+    const displayPosition = this.positionManager.getDisplayPosition();
+
+    // Emit position update to EventBus
+    this.eventBus.emit('transport:position-updated', {
+      position: displayPosition,
+      seconds: update.seconds,
+      timestamp: update.timestamp,
     });
   }
 

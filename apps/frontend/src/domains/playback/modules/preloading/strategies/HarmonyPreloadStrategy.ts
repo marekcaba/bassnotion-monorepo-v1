@@ -52,9 +52,8 @@ export class HarmonyPreloadStrategy implements PreloadStrategy {
     logger.info('Loading essential harmony samples...');
 
     try {
-      // Check if CoreServices and AudioEngine are available
-      const coreServices =
-        (window as any).__globalCoreServices || (window as any).__coreServices;
+      // Check if CoreServices and AudioEngine are available (use new __bassnotion_ keys)
+      const coreServices = (window as any).__bassnotion_coreServices;
 
       if (!coreServices) {
         // Use generic essential notes when no exercise data available

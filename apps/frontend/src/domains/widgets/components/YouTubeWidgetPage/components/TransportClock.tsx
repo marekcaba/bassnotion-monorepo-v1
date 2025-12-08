@@ -7,6 +7,7 @@ import { LoopGridStrip } from './LoopGridStrip';
 import type { LoopRegion } from './LoopGridStrip';
 import type { Exercise } from '@bassnotion/contracts';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 
 interface TransportClockProps {
   selectedExercise?: Exercise;
@@ -14,6 +15,11 @@ interface TransportClockProps {
   onLoopRegionChange?: (region: LoopRegion | null) => void;
   currentTime?: number;
   onSeek?: (position: number) => void;
+  /**
+   * Callback when user manually changes tempo via the BPM input
+   * Used to set hasUserModifiedTempo flag in parent component
+   */
+  onUserTempoChange?: (tempo: number) => void;
 }
 
 // Track render count at module level for logging
@@ -29,6 +35,7 @@ export function TransportClock({
   onLoopRegionChange,
   currentTime = 0,
   onSeek,
+  onUserTempoChange,
 }: TransportClockProps) {
   const { correlationId, logger } = useCorrelation('TransportClock');
   transportClockRenderCount++;
@@ -139,7 +146,7 @@ export function TransportClock({
 
       checkCount++;
 
-      const coreServices = (window as any).__globalCoreServices;
+      const coreServices = WindowRegistry.getCoreServices();
       if (coreServices?.getAudioEngine) {
         try {
           const audioEngine = coreServices.getAudioEngine();
@@ -334,8 +341,26 @@ export function TransportClock({
     async (newTempo: number) => {
       if (newTempo >= 40 && newTempo <= 300) {
         try {
+          // [TEMPO-FIX] Step 1: User changed tempo via TransportClock
+          // console.log('🎯 [TEMPO-FIX] Step 1: TransportClock.handleTempoChange()', {
+          //   newTempo,
+          //   previousUserTempo: userTempo,
+          //   hasCallback: !!onUserTempoChange,
+          //   action: onUserTempoChange ? 'WILL notify parent → hasUserModifiedTempo=true' : 'NO callback - flag NOT set!',
+          //   timestamp: Date.now(),
+          // });
+
           // Save user tempo first
           setUserTempo(newTempo);
+
+          // TEMPO FIX: Notify parent that user manually changed tempo
+          // This sets hasUserModifiedTempo flag to prevent Play button from resetting
+          if (onUserTempoChange) {
+            // console.log('🎯 [TEMPO-FIX] Step 1b: Calling onUserTempoChange callback to parent');
+            onUserTempoChange(newTempo);
+          }
+          // Note: removed warning log - callback is optional, no warning needed
+
           // Then update transport
           await transport.setTempo(newTempo);
           logger.info('🎵 Tempo updated:', { newTempo });
@@ -344,7 +369,7 @@ export function TransportClock({
         }
       }
     },
-    [transport, logger],
+    [transport, logger, userTempo, onUserTempoChange],
   );
 
   // Handle input submission

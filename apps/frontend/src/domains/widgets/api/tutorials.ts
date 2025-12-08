@@ -88,7 +88,7 @@ export async function fetchTutorialExercises(
   }
 
   const result = await fetchWithErrorHandling<TutorialExercisesResponse>(
-    `${API_BASE_URL}/tutorials/${encodeURIComponent(slug)}/exercises`,
+    `${API_BASE_URL}/api/v1/tutorials/slug/${encodeURIComponent(slug)}/exercises`,
   );
 
   // DEBUG: Log exercise notes and MIDI URLs to trace data flow

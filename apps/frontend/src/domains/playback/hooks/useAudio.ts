@@ -18,6 +18,7 @@ import {
 } from '../services/core/AudioEngine.js';
 import { AudioError } from '../errors/AudioErrors.js';
 import { getLogger } from '@/utils/logger';
+import { WindowRegistry } from '../services/WindowRegistry.js';
 
 // Create logger instance for this hook
 const fallbackLogger = getLogger('useAudio');
@@ -62,7 +63,7 @@ export function useAudio(serviceRegistry?: ServiceRegistry): UseAudioResult {
         }
 
         // Try CoreServices first (new approach)
-        const coreServices = (window as any).__globalCoreServices;
+        const coreServices = WindowRegistry.getCoreServices();
         if (coreServices) {
           audioEngineRef.current = coreServices.getAudioEngine();
           // Check if already initialized
@@ -155,11 +156,10 @@ export function useAudio(serviceRegistry?: ServiceRegistry): UseAudioResult {
     }
 
     // Check if we have CoreServices
-    const coreServices = (window as any).__globalCoreServices;
+    const coreServices = WindowRegistry.getCoreServices();
     logger.info('useAudio.initialize(): Checking for CoreServices:', {
-      hasGlobalCoreServices: !!(window as any).__globalCoreServices,
-      hasCoreServices: !!(window as any).__coreServices,
-      hasServiceRegistry: !!(window as any).__serviceRegistry,
+      hasCoreServices: !!coreServices,
+      hasServiceRegistry: !!WindowRegistry.getServiceRegistry(),
       coreServicesValue: coreServices,
     });
 

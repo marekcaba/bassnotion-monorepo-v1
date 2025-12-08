@@ -102,18 +102,24 @@ const nextConfig = {
       connectSrc.push('https://backend-production-612c.up.railway.app');
     }
 
-    return [
+    // Build headers array conditionally
+    const headers = [
       {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload',
-          },
+        key: 'X-DNS-Prefetch-Control',
+        value: 'on',
+      },
+    ];
+
+    // CRITICAL: Only enable HSTS in production
+    // HSTS forces HTTPS, which breaks local HTTP development and Webkit E2E tests
+    if (!isDev) {
+      headers.push({
+        key: 'Strict-Transport-Security',
+        value: 'max-age=63072000; includeSubDomains; preload',
+      });
+    }
+
+    headers.push(
           {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin',
@@ -131,27 +137,36 @@ const nextConfig = {
           // Content Security Policy - Tightened for iframe-only YouTube
           {
             key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              // Removed YouTube from script-src - much more secure! Added blob: for AudioWorklet
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://vercel.live https://*.supabase.co https://cdn.jsdelivr.net",
-              // Allow Web Workers for Tone.js audio processing
-              "worker-src 'self' blob:",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' data: https://fonts.gstatic.com",
-              // YouTube thumbnails only (no metadata services needed)
-              "img-src 'self' data: https: blob: https://i.ytimg.com https://img.youtube.com https://yt3.ggpht.com https://yt4.ggpht.com https://lh3.googleusercontent.com",
-              // Allow audio/video from self and Supabase storage
-              "media-src 'self' https://*.supabase.co https://htuztkrbuewheehjspcz.supabase.co blob:",
-              `connect-src ${connectSrc.join(' ')}`,
-              // Allow YouTube iframes - sandboxed and secure
-              "frame-src 'self' https://www.youtube.com https://youtube.com",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-ancestors 'none'",
-              'upgrade-insecure-requests',
-            ].join('; '),
+            value: (() => {
+              const cspDirectives = [
+                "default-src 'self'",
+                // Removed YouTube from script-src - much more secure! Added blob: for AudioWorklet
+                "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://vercel.live https://*.supabase.co https://cdn.jsdelivr.net",
+                // Allow Web Workers for Tone.js audio processing
+                "worker-src 'self' blob:",
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+                "font-src 'self' data: https://fonts.gstatic.com",
+                // YouTube thumbnails only (no metadata services needed)
+                "img-src 'self' data: https: blob: https://i.ytimg.com https://img.youtube.com https://yt3.ggpht.com https://yt4.ggpht.com https://lh3.googleusercontent.com",
+                // Allow audio/video from self and Supabase storage
+                "media-src 'self' https://*.supabase.co https://htuztkrbuewheehjspcz.supabase.co blob:",
+                `connect-src ${connectSrc.join(' ')}`,
+                // Allow YouTube iframes - sandboxed and secure
+                "frame-src 'self' https://www.youtube.com https://youtube.com",
+                "object-src 'none'",
+                "base-uri 'self'",
+                "form-action 'self'",
+                "frame-ancestors 'none'",
+              ];
+
+              // CRITICAL: Only upgrade to HTTPS in production
+              // In development, HTTP is required for Webkit E2E tests
+              if (!isDev) {
+                cspDirectives.push('upgrade-insecure-requests');
+              }
+
+              return cspDirectives.join('; ');
+            })(),
           },
           // Additional security headers
           {
@@ -172,7 +187,12 @@ const nextConfig = {
             key: 'Set-Cookie',
             value: 'SameSite=Strict; Secure; HttpOnly',
           },
-        ],
+    );
+
+    return [
+      {
+        source: '/(.*)',
+        headers,
       },
     ];
   },

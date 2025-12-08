@@ -30,9 +30,23 @@ import { ExerciseProgressBar } from './components/ExerciseProgressBar';
 import { FretboardControls } from './components/FretboardControls';
 import { FretboardModeControls } from './components/FretboardModeControls';
 import { FretboardGrid } from './components/FretboardGrid';
-import Fretboard3D from './components/Fretboard3D';
 import { convertTo3DFormat } from './utils/formatConversion';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import dynamic from 'next/dynamic';
+
+// Lazy-load Fretboard3D to reduce initial bundle size (saves 9.4 MB Three.js chunk)
+// Only loaded when user toggles 3D mode
+const Fretboard3D = dynamic(() => import('./components/Fretboard3D'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+        <p className="text-sm text-slate-400">Loading 3D view...</p>
+      </div>
+    </div>
+  ),
+});
 
 // Render counter for debugging
 let fretboardCardRenderCount = 0;
@@ -95,9 +109,13 @@ interface FretboardCardProps {
   tutorialData?: any;
   tutorialSlug?: string;
   exercises?: any[];
-  selectedExerciseId?: string | null; // Add this prop from parent
+  selectedExerciseId?: string | null; // Keep for backwards compatibility
+  selectedExercise?: Exercise | null; // REFACTORED: Passed from parent (single source of truth)
   onExerciseSelect?: (exerciseId: string) => void;
 }
+
+// Import Exercise type
+import type { Exercise } from '@bassnotion/contracts';
 
 export const FretboardCard = React.memo(
   function FretboardCard({
@@ -117,12 +135,22 @@ export const FretboardCard = React.memo(
     tutorialSlug,
     exercises,
     selectedExerciseId,
+    selectedExercise: selectedExerciseProp, // REFACTORED: Use prop instead of local lookup
     onExerciseSelect,
   }: FretboardCardProps) {
     const { correlationId, logger } = useCorrelation('FretboardCard');
-    // Find the selected exercise object from the exercises list
-    const selectedExercise =
-      exercises?.find((ex) => ex.id === selectedExerciseId) || null;
+
+    // REFACTORED: Use passed exercise (single source of truth) or fallback to local lookup
+    const selectedExercise = selectedExerciseProp ||
+      (exercises?.find((ex) => ex.id === selectedExerciseId) || null);
+
+    // Add diagnostic logging
+    logger.debug('[FRETBOARD-CARD] Exercise data:', {
+      selectedExerciseId,
+      hasExerciseProp: !!selectedExerciseProp,
+      exerciseTitle: selectedExercise?.title,
+      noteCount: selectedExercise?.notes?.length || 0,
+    });
 
     return (
       <SyncedWidget

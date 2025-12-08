@@ -5,6 +5,14 @@
  * consuming components. Reduces event subscriptions from N×8 to 1×8 where N is
  * the number of components using transport.
  *
+ * PERFORMANCE OPTIMIZATION (Dec 2024):
+ * Split into two contexts to prevent 60Hz re-renders across all consumers:
+ * - TransportStateContext: Slow-changing state (isPlaying, tempo, etc.)
+ * - TransportPositionContext: Fast-changing position (60Hz updates)
+ *
+ * Components that don't need position should use useTransportState() to avoid
+ * re-rendering at 60Hz.
+ *
  * Benefits:
  * - Single EventBus subscription (8 events instead of 56+)
  * - Reduced position updates (60Hz instead of 420Hz across all components)
@@ -39,14 +47,20 @@ import { WindowRegistry } from '../services/WindowRegistry.js';
 
 const logger = getLogger('transport');
 
-// Context value type
-export interface TransportContextValue {
+// ============================================================================
+// SPLIT CONTEXT TYPES
+// ============================================================================
+
+/**
+ * State context - contains slow-changing values
+ * Components using only this won't re-render at 60Hz
+ */
+export interface TransportStateContextValue {
   isPlaying: boolean;
   isPaused: boolean;
   isStopped: boolean;
   tempo: number;
   timeSignature: TimeSignature;
-  position: TransportPosition;
   start: () => Promise<void>;
   stop: () => Promise<void>;
   pause: () => Promise<void>;
@@ -59,7 +73,29 @@ export interface TransportContextValue {
   servicesReady: boolean;
 }
 
-// Create context with undefined default (requires provider)
+/**
+ * Position context - contains fast-changing position (60Hz)
+ * Only components that need position should subscribe
+ */
+export interface TransportPositionContextValue {
+  position: TransportPosition;
+}
+
+// Legacy combined type for backward compatibility
+export interface TransportContextValue extends TransportStateContextValue {
+  position: TransportPosition;
+}
+
+// Create separate contexts
+const TransportStateContext = createContext<TransportStateContextValue | undefined>(
+  undefined,
+);
+
+const TransportPositionContext = createContext<TransportPositionContextValue | undefined>(
+  undefined,
+);
+
+// Legacy combined context (for backward compatibility)
 const TransportContext = createContext<TransportContextValue | undefined>(
   undefined,
 );
@@ -103,16 +139,38 @@ export function TransportProvider({
   // Initialize transport and EventBus (runs once)
   useEffect(() => {
     // Prevent double initialization in React Strict Mode
-    if (initRef.current) return;
+    if (initRef.current) {
+      return;
+    }
     initRef.current = true;
 
-    const initializeTransport = () => {
+    logger.info('[TransportContext] useEffect starting initialization...');
+
+    // Track if initialization succeeded to stop polling
+    let initSucceeded = false;
+
+    const initializeTransport = (): boolean => {
+      console.log('🔧 [TransportContext] initializeTransport() CALLED', {
+        hasTransportRef: !!transportRef.current,
+        hasEventBusRef: !!eventBusRef.current,
+      });
+
+      // Guard: already initialized - don't set state again
+      if (transportRef.current && eventBusRef.current) {
+        logger.debug('[TransportContext] Already initialized, skipping');
+        return true;
+      }
+
       try {
         // Try CoreServices first (new approach)
         const coreServices = WindowRegistry.getCoreServices();
+        console.log('🔧 [TransportContext] CoreServices check:', { hasCoreServices: !!coreServices });
         if (coreServices) {
           transportRef.current = coreServices.getUnifiedTransport();
           eventBusRef.current = coreServices.getEventBus();
+          console.log('🔧 [TransportContext] Got EventBus from CoreServices', {
+            eventBusId: (eventBusRef.current as any)?._instanceId || 'no-id',
+          });
           logger.info('[TransportContext] Got services from CoreServices');
         } else {
           // Fallback to registry
@@ -142,19 +200,33 @@ export function TransportProvider({
 
         // Set initial state from transport
         if (transportRef.current) {
-          setState(transportRef.current.getState());
-          setTempo(transportRef.current.getTempo());
-          setTimeSignature(transportRef.current.getTimeSignature());
+          const initialState = transportRef.current.getState();
+          const initialTempo = transportRef.current.getTempo();
+          const initialTimeSignature = transportRef.current.getTimeSignature();
+
+          console.log('🔧 [TransportContext] Setting initial state from transport', {
+            state: initialState,
+            tempo: initialTempo,
+            timeSignature: initialTimeSignature,
+          });
+
+          setState(initialState);
+          setTempo(initialTempo);
+          setTimeSignature(initialTimeSignature);
 
           // Get initial position
           try {
             const initialPosition = transportRef.current.getDisplayPosition();
+            console.log('🔧 [TransportContext] Got initial position from transport', {
+              position: `${initialPosition.bars}:${initialPosition.beats}:${initialPosition.sixteenths}`,
+            });
             logger.info('[TransportContext] Got initial position from transport', {
               position: `${initialPosition.bars}:${initialPosition.beats}:${initialPosition.sixteenths}`,
             });
             setPosition(initialPosition);
           } catch (error) {
             // AudioEngine not fully initialized yet, use default position
+            console.log('🔧 [TransportContext] Using default position (AudioEngine not ready)', error);
             logger.info('[TransportContext] Using default position (AudioEngine not ready)');
             setPosition({
               bars: 1,
@@ -170,6 +242,7 @@ export function TransportProvider({
 
         // Mark services as ready
         setServicesReady(true);
+        initSucceeded = true;
         logger.info('[TransportContext] Services initialized and ready');
 
         return true;
@@ -180,17 +253,52 @@ export function TransportProvider({
     };
 
     // Try immediately
-    if (!initializeTransport()) {
+    const immediateResult = initializeTransport();
+
+    if (!immediateResult) {
+      logger.info('[TransportContext] Waiting for audioServicesReady event...');
+
       // Wait for audioServicesReady event
       const handleReady = () => {
+        if (initSucceeded) return; // Already initialized
         logger.info('[TransportContext] Received audioServicesReady event');
         initializeTransport();
       };
 
       window.addEventListener('audioServicesReady', handleReady);
 
+      // Polling fallback with proper guards to prevent infinite loops
+      let pollCount = 0;
+      const maxPolls = 20; // 10 seconds max
+      const pollInterval = setInterval(() => {
+        // Guard 1: Already succeeded
+        if (initSucceeded || transportRef.current) {
+          clearInterval(pollInterval);
+          return;
+        }
+
+        pollCount++;
+
+        // Guard 2: Max polls reached
+        if (pollCount >= maxPolls) {
+          logger.warn('[TransportContext] Polling timed out after 10 seconds');
+          clearInterval(pollInterval);
+          return;
+        }
+
+        const coreServices = WindowRegistry.getCoreServices();
+        if (coreServices) {
+          const pollResult = initializeTransport();
+          if (pollResult) {
+            logger.info('[TransportContext] Polling init succeeded');
+            clearInterval(pollInterval);
+          }
+        }
+      }, 500);
+
       return () => {
         window.removeEventListener('audioServicesReady', handleReady);
+        clearInterval(pollInterval);
       };
     }
   }, [registry]);
@@ -217,6 +325,8 @@ export function TransportProvider({
   }, []);
 
   const handleTempoChange = useCallback((data: { tempo: number }) => {
+    // [TEMPO-DEBUG] logs commented out after fix verification
+    // console.log('[TEMPO-DEBUG] Step 9: TransportContext received tempo-change event', {...});
     logger.debug('[TransportContext] Received tempo change', { tempo: data.tempo });
     setTempo(data.tempo);
   }, []);
@@ -233,6 +343,17 @@ export function TransportProvider({
     (data: { position: TransportPosition }) => {
       // Position updates are already throttled at 60Hz by Transport
       // No additional throttling needed here
+
+      // DIAGNOSTIC: Log position updates
+      if (Math.random() < 0.05) { // 5% sample rate
+        console.log('📍 [TransportContext] handlePositionUpdate received', {
+          bars: data.position?.bars,
+          beats: data.position?.beats,
+          sixteenths: data.position?.sixteenths,
+          timestamp: Date.now(),
+        });
+      }
+
       setPosition(data.position);
     },
     [],
@@ -254,6 +375,10 @@ export function TransportProvider({
     }
 
     const eventBus = eventBusRef.current;
+    console.log('🔔 [TransportContext] Setting up EventBus subscription', {
+      eventBusId: (eventBus as any)._instanceId || 'no-id',
+      timestamp: Date.now(),
+    });
     logger.info('[TransportContext] Setting up single EventBus subscription');
 
     // Subscribe to all 8 transport events (ONCE for entire app)
@@ -342,10 +467,15 @@ export function TransportProvider({
   }, []);
 
   const setTempoValue = useCallback(async (bpm: number) => {
+    // [TEMPO-DEBUG] logs commented out after fix verification
+    // console.log('[TEMPO-DEBUG] Step 2: TransportContext.setTempoValue()', {...});
+
     if (!transportRef.current) {
+      // console.warn('[TEMPO-DEBUG] Step 2 WARNING: Transport not ready!');
       logger.debug(`[TransportContext] Transport not ready yet, cannot set tempo to ${bpm}`);
       return;
     }
+
     await transportRef.current.setTempo(bpm);
   }, []);
 
@@ -374,7 +504,11 @@ export function TransportProvider({
   const setExerciseDuration = useCallback(
     (totalBars: number, beatsPerBar: number) => {
       if (!transportRef.current) {
-        throw new Error('Transport not available');
+        // Defensive: Return early instead of throwing during initialization race
+        logger.debug(
+          '[TransportContext] Transport not ready yet, cannot set exercise duration',
+        );
+        return;
       }
       if (typeof transportRef.current.setExerciseDuration === 'function') {
         transportRef.current.setExerciseDuration(totalBars, beatsPerBar);
@@ -403,15 +537,19 @@ export function TransportProvider({
     return safe;
   }, [timeSignature]);
 
-  // Memoize context value to prevent unnecessary re-renders
-  const contextValue = useMemo<TransportContextValue>(
+  // ============================================================================
+  // SPLIT CONTEXT VALUES - Prevents 60Hz re-renders for non-position consumers
+  // ============================================================================
+
+  // State context - SLOW changing (only on play/stop/tempo changes)
+  // Components using useTransportState() won't re-render at 60Hz
+  const stateContextValue = useMemo<TransportStateContextValue>(
     () => ({
       isPlaying: state === 'playing',
       isPaused: state === 'paused',
       isStopped: state === 'stopped',
       tempo,
       timeSignature: safeTimeSignature,
-      position,
       start,
       stop,
       pause,
@@ -427,7 +565,6 @@ export function TransportProvider({
       state,
       tempo,
       safeTimeSignature,
-      position,
       start,
       stop,
       pause,
@@ -441,15 +578,89 @@ export function TransportProvider({
     ],
   );
 
+  // Position context - FAST changing (60Hz during playback)
+  // Only components that need position should use useTransportPosition()
+  const positionContextValue = useMemo<TransportPositionContextValue>(
+    () => ({ position }),
+    [position],
+  );
+
+  // Legacy combined context for backward compatibility
+  // WARNING: Using useTransportContext() will re-render at 60Hz!
+  const contextValue = useMemo<TransportContextValue>(
+    () => ({
+      ...stateContextValue,
+      position,
+    }),
+    [stateContextValue, position],
+  );
+
   return (
-    <TransportContext.Provider value={contextValue}>
-      {children}
-    </TransportContext.Provider>
+    <TransportStateContext.Provider value={stateContextValue}>
+      <TransportPositionContext.Provider value={positionContextValue}>
+        <TransportContext.Provider value={contextValue}>
+          {children}
+        </TransportContext.Provider>
+      </TransportPositionContext.Provider>
+    </TransportStateContext.Provider>
   );
 }
 
+// ============================================================================
+// HOOKS - Use the appropriate hook based on what you need
+// ============================================================================
+
 /**
- * Hook to access transport state and controls from context
+ * Hook to access transport STATE only (no position)
+ *
+ * USE THIS for components that don't need position updates!
+ * This hook will NOT re-render at 60Hz during playback.
+ *
+ * Includes: isPlaying, isPaused, isStopped, tempo, timeSignature, controls
+ * Excludes: position (use useTransportPosition for that)
+ *
+ * @throws Error if used outside TransportProvider
+ */
+export function useTransportState(): TransportStateContextValue {
+  const context = useContext(TransportStateContext);
+
+  if (context === undefined) {
+    throw new Error(
+      'useTransportState must be used within a TransportProvider. ' +
+      'Wrap your component tree with <TransportProvider>...</TransportProvider>'
+    );
+  }
+
+  return context;
+}
+
+/**
+ * Hook to access transport POSITION only
+ *
+ * Use this when you ONLY need position and nothing else.
+ * WARNING: This will re-render at 60Hz during playback!
+ *
+ * @throws Error if used outside TransportProvider
+ */
+export function useTransportPosition(): TransportPositionContextValue {
+  const context = useContext(TransportPositionContext);
+
+  if (context === undefined) {
+    throw new Error(
+      'useTransportPosition must be used within a TransportProvider. ' +
+      'Wrap your component tree with <TransportProvider>...</TransportProvider>'
+    );
+  }
+
+  return context;
+}
+
+/**
+ * Hook to access ALL transport state and controls from context
+ *
+ * WARNING: This hook will re-render at 60Hz during playback because it
+ * includes position! Consider using useTransportState() instead if you
+ * don't need position updates.
  *
  * @throws Error if used outside TransportProvider
  */
@@ -469,6 +680,8 @@ export function useTransportContext(): TransportContextValue {
 /**
  * Hook variant that matches the old useTransport API exactly
  * This is for backward compatibility during migration
+ *
+ * WARNING: Re-renders at 60Hz! Use useTransportState() for better performance.
  */
 export function useTransport() {
   return useTransportContext();

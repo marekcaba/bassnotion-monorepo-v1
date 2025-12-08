@@ -17,6 +17,7 @@
  */
 
 import { createStructuredLogger } from '@bassnotion/contracts';
+import { WindowRegistry } from './WindowRegistry.js';
 
 const logger = createStructuredLogger('InstrumentDependencyManager');
 
@@ -78,10 +79,11 @@ export class InstrumentDependencyManager {
    * Internal: Load Tone.js with multiple fallback strategies
    */
   private static async loadTone(): Promise<any> {
-    // Strategy 1: Check window.__globalTone (set by ToneWrapper)
-    if (typeof window !== 'undefined' && (window as any).__globalTone) {
-      logger.info('🎵 Found Tone.js at window.__globalTone');
-      return (window as any).__globalTone;
+    // Strategy 1: Check WindowRegistry.getTone() (set by ToneWrapper)
+    const existingTone = WindowRegistry.getTone();
+    if (existingTone) {
+      logger.info('🎵 Found Tone.js via WindowRegistry');
+      return existingTone;
     }
 
     // Strategy 2: Check window.Tone (legacy/manual script tag)
@@ -92,7 +94,7 @@ export class InstrumentDependencyManager {
 
     // Strategy 3: Try to get from CoreServices (if initialized)
     try {
-      const coreServices = (window as any).__globalCoreServices || (window as any).__coreServices;
+      const coreServices = WindowRegistry.getCoreServices();
       if (coreServices) {
         logger.info('🎵 Attempting to get Tone.js from CoreServices...');
         const audioEngine = coreServices.getAudioEngine?.();
@@ -115,9 +117,10 @@ export class InstrumentDependencyManager {
       const ToneModule = await import('tone');
       const tone = ToneModule.default || ToneModule;
 
-      // Set on window for compatibility with other code
+      // Store via WindowRegistry for compatibility with other code
+      WindowRegistry.setTone(tone);
+      // Keep window.Tone for legacy script tags (Strategy 2 fallback)
       if (typeof window !== 'undefined') {
-        (window as any).__globalTone = tone;
         (window as any).Tone = tone;
       }
 
@@ -204,7 +207,7 @@ export class InstrumentDependencyManager {
 
     // Strategy 2: Get from CoreServices (if available)
     try {
-      const coreServices = (window as any).__globalCoreServices || (window as any).__coreServices;
+      const coreServices = WindowRegistry.getCoreServices();
       if (coreServices) {
         logger.info('🎵 Attempting to get AudioContext from CoreServices...');
         const audioEngine = coreServices.getAudioEngine?.();
@@ -269,7 +272,7 @@ export class InstrumentDependencyManager {
   static isToneLoaded(): boolean {
     return this.toneInstance !== null ||
            (typeof window !== 'undefined' && (
-             !!(window as any).__globalTone ||
+             !!WindowRegistry.getTone() ||
              !!(window as any).Tone
            ));
   }

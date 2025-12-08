@@ -15,6 +15,7 @@ interface SheetMusicDisplayProps {
   width?: number; // Parent container width - will be used to calculate optimal size
   height?: number; // Base height per system
   maxMeasuresPerSystem?: number; // Maximum measures per line (default: 2)
+  totalBars?: number; // Total number of bars from exercise metadata
 }
 
 /**
@@ -37,7 +38,8 @@ export function SheetMusicDisplay({
   onReady,
   width,
   height = 150,
-  maxMeasuresPerSystem = 2,
+  maxMeasuresPerSystem = undefined, // No limit - all measures in one system
+  totalBars, // Total bars from exercise metadata
 }: SheetMusicDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const parentRef = useRef<HTMLDivElement>(null);
@@ -46,14 +48,24 @@ export function SheetMusicDisplay({
   const [error, setError] = useState<string | null>(null);
   const [actualWidth, setActualWidth] = useState(width || 700);
 
-  // Calculate number of measures from notes
+  // Calculate number of measures - use totalBars from exercise metadata if available
   const calculateMeasures = () => {
+    // If totalBars is provided from exercise metadata, use it as source of truth
+    if (totalBars !== undefined && totalBars > 0) {
+      return totalBars;
+    }
+
+    // Fallback: calculate from notes (handles 0-based indexing)
     if (notes.length === 0) return 1;
     const maxMeasure = Math.max(...notes.map(n => n.position?.measure || 1));
-    return maxMeasure;
+    // If max measure is 0-based (e.g., 0,1,2,3...), add 1 to get total count
+    // If max measure is small relative to notes, assume 0-based
+    const measuresFromNotes = maxMeasure < notes.length ? maxMeasure + 1 : maxMeasure;
+    return measuresFromNotes;
   };
 
   const totalMeasures = calculateMeasures();
+  console.log('[SheetMusicDisplay] totalBars prop:', totalBars, 'calculated totalMeasures:', totalMeasures);
   // Single system - all measures on one horizontal line
   const calculatedHeight = height;
 
@@ -98,6 +110,7 @@ export function SheetMusicDisplay({
           timeSignature,
           title,
           maxMeasuresPerSystem,
+          totalBars, // Pass exercise's total bar count
         });
 
         // MusicXML generated
@@ -120,11 +133,18 @@ export function SheetMusicDisplay({
           drawMeasureNumbers: false,
 
           // Quality options
-          // renderSingleHorizontalStaffline: true, // DISABLED - testing if this causes duplication
+          renderSingleHorizontalStaffline: true, // Force single horizontal line - no system breaks
         });
 
         // Disable OSMD auto-beaming - we use manual beam tags in MusicXML for precise control
         osmd.EngravingRules.AutoBeamNotes = false;
+
+        // FONT CONFIGURATION NOTE:
+        // OSMD 1.9.x uses VexFlow 1.2.93 internally, which only supports Bravura font.
+        // Petaluma (jazz/handwritten style) requires VexFlow 4.x which is coming in
+        // a future OSMD release (currently on feat/vexflow4 branch).
+        // Once OSMD updates to VexFlow 4.x, uncomment the line below:
+        // osmd.EngravingRules.DefaultVexFlowNoteFont = 'petaluma';
 
         // Minimize page margins to reduce internal padding
         osmd.EngravingRules.PageLeftMargin = 0.1; // Near-zero left margin
@@ -133,9 +153,20 @@ export function SheetMusicDisplay({
         osmd.EngravingRules.PageBottomMargin = 0.5;
 
         // Force single horizontal line - no line breaks
-        // Note: MaxMeasureToDrawIndex uses 0-based indexing, but if totalMeasures=1, it would render 2 measures (0 and 1)
-        // So we subtract 1. But actually, let's not limit it at all - the MusicXML already has the correct number of measures
-        // osmd.EngravingRules.MaxMeasureToDrawIndex = totalMeasures - 1;
+        // Set very large page width to prevent OSMD from auto-breaking into multiple systems
+        osmd.EngravingRules.PageWidth = 10000; // Large enough to fit all measures on one line
+
+        // Force OSMD to fit all measures on one line by making measures very compact
+        osmd.EngravingRules.MinMeasureWidth = 10; // Very small minimum width
+        osmd.EngravingRules.MinimumDistanceBetweenSystems = 1;
+        osmd.EngravingRules.SystemLabelsRightMargin = 0;
+        osmd.EngravingRules.SystemComposerDistance = 0;
+
+        // Explicitly set MaxMeasureToDrawIndex to ensure all measures render
+        // OSMD uses 0-based indexing, so for 8 measures we need index 7
+        osmd.EngravingRules.MaxMeasureToDrawIndex = totalMeasures - 1;
+        console.log('[SheetMusic] Setting MaxMeasureToDrawIndex to:', totalMeasures - 1, 'for', totalMeasures, 'measures');
+
         osmd.EngravingRules.NewSystemAtXMLNewSystemAttribute = false; // Ignore system breaks
         osmd.EngravingRules.NewPageAtXMLNewPageAttribute = false;
         osmd.EngravingRules.MaxSystemToDrawNumber = 1; // Only render one system (horizontal line)
@@ -151,6 +182,45 @@ export function SheetMusicDisplay({
 
         // Render the score
         osmd.render();
+
+        // Diagnostic: Check what OSMD actually rendered
+        console.log('[SheetMusic DIAGNOSTIC] OSMD Rendering Info:');
+        console.log('  - MaxSystemToDrawNumber:', osmd.EngravingRules.MaxSystemToDrawNumber);
+        console.log('  - MaxMeasureToDrawIndex:', osmd.EngravingRules.MaxMeasureToDrawIndex);
+        console.log('  - PageWidth:', osmd.EngravingRules.PageWidth);
+
+        // Explore osmd.graphic structure (lowercase properties!)
+        if (osmd.graphic) {
+          const graphic = osmd.graphic as any;
+
+          // Check musicPages (lowercase!)
+          if (graphic.musicPages) {
+            console.log('  - musicPages count:', graphic.musicPages.length);
+            graphic.musicPages.forEach((page: any, i: number) => {
+              if (page.musicSystems) {
+                console.log(`    - Page ${i} has ${page.musicSystems.length} systems`);
+                page.musicSystems.forEach((system: any, j: number) => {
+                  const measures = system.staffLines?.[0]?.measures || [];
+                  console.log(`      - System ${j}: ${measures.length} measures`);
+                });
+              }
+            });
+          }
+
+          // Check measureList
+          if (graphic.measureList) {
+            console.log('  - measureList length:', graphic.measureList.length);
+            console.log('  - measureList:', graphic.measureList);
+          }
+        }
+
+        // Check osmd.sheet (lowercase properties!)
+        if (osmd.sheet) {
+          const sheet = osmd.sheet as any;
+          if (sheet.sourceMeasures) {
+            console.log('  - sourceMeasures count:', sheet.sourceMeasures.length);
+          }
+        }
 
         // Check if effect is still active after async render
         if (!isActive) {
@@ -185,7 +255,7 @@ export function SheetMusicDisplay({
     };
     // Use stringified keys to detect actual content changes, not reference changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notesKey, bpm, timeSignatureKey, title, maxMeasuresPerSystem]);
+  }, [notesKey, bpm, timeSignatureKey, title, maxMeasuresPerSystem, totalBars]);
 
   // Handle playback highlighting
   useEffect(() => {

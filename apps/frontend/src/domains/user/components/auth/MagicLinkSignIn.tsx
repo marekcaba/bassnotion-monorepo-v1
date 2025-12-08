@@ -188,28 +188,29 @@ export function MagicLinkSignIn() {
             onChange={(e) => setEmail(e.target.value)}
             disabled={isLoading}
             required
+            className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
           />
         </div>
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading} className="bg-[#ffc700] text-black hover:bg-[#e6b300]">
           {isLoading ? 'Processing...' : 'Continue with Magic Link'}
         </Button>
       </form>
 
       {noAccountFound && (
-        <div className="mt-2 p-4 border rounded-lg bg-muted">
-          <p className="text-sm mb-2">No account exists for {email}.</p>
+        <div className="mt-2 p-4 border border-zinc-700 rounded-lg bg-zinc-800">
+          <p className="text-sm mb-2 text-gray-300">No account exists for {email}.</p>
           <Button
             onClick={() => handleMagicLink(true)}
             disabled={isLoading}
             variant="secondary"
-            className="w-full"
+            className="w-full bg-zinc-700 text-white hover:bg-zinc-600"
           >
             Create New Account
           </Button>
         </div>
       )}
 
-      <p className="text-sm text-muted-foreground text-center">
+      <p className="text-sm text-gray-400 text-center">
         We'll send you a magic link to sign in instantly.
       </p>
     </div>

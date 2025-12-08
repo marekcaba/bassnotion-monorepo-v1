@@ -11,6 +11,7 @@
 
 import { EventEmitter } from 'events';
 import { createStructuredLogger } from '@bassnotion/contracts';
+import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 
 const logger = createStructuredLogger('WidgetSyncService');
 
@@ -774,8 +775,7 @@ export class WidgetSyncService {
       connectionAttempts++;
 
       // Check for both old and new global service locations
-      const coreServices =
-        (window as any).__coreServices || (window as any).__globalCoreServices;
+      const coreServices = WindowRegistry.getCoreServices();
 
       if (!coreServices || typeof coreServices.getEventBus !== 'function') {
         if (connectionAttempts < maxConnectionAttempts) {

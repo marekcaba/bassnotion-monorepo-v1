@@ -22,6 +22,7 @@ import { MIDIUpload } from '../shared/MIDIUpload';
 // VexFlow imports
 import * as VF from 'vexflow';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { WindowRegistry } from '@/domains/playback/services/WindowRegistry.js';
 
 // VexFlow utility functions
 const convertNoteDurationToVexFlow = (
@@ -310,9 +311,7 @@ function SheetPlayerCardContent({ syncProps }: SheetPlayerCardContentProps) {
         const timeInSeconds = (beatPosition * 60) / tempo / 4; // Convert to seconds based on tempo
 
         // Get EventBus and emit seek event
-        const coreServices =
-          (window as any).__coreServices ||
-          (window as any).__globalCoreServices;
+        const coreServices = WindowRegistry.getCoreServices();
         if (coreServices && coreServices.getEventBus) {
           const eventBus = coreServices.getEventBus();
           if (eventBus) {

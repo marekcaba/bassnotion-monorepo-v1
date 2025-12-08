@@ -134,6 +134,9 @@ export class TransportAdapter {
    * Set tempo
    */
   setTempo(bpm: number): void {
+    // [TEMPO-DEBUG] logs commented out after fix verification
+    // console.log('[TEMPO-DEBUG] Step 3: TransportAdapter.setTempo()', {...});
+
     // Update internal config so getTempo() returns the correct value
     this.config.tempo = bpm;
 

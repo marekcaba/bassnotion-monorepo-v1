@@ -115,10 +115,9 @@ export class DiagnosticLogger {
         let eventTime: number;
         if (event.data?.ticks !== undefined) {
           // Use absolute ticks if available (new method)
-          // 🚨 CRITICAL FIX: Use original MIDI file BPM, not current transport BPM
-          const originalBpm =
-            event.data?.originalBpm || Tone.Transport.bpm.value;
-          const secondsPerBeat = 60 / originalBpm;
+          // CRITICAL FIX: Always use current transport BPM (user-adjustable tempo)
+          const currentBpm = Tone.Transport.bpm.value;
+          const secondsPerBeat = 60 / currentBpm;
           const ticksPerBeat = 480; // PPQ standard
           eventTime = (event.data.ticks / ticksPerBeat) * secondsPerBeat;
         } else {
