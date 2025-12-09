@@ -105,7 +105,6 @@ function injectTransitionStyles() {
       // Use enhanced CSS manager
       cssManager.set('@media (prefers-reduced-motion)', {
         '::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*)':
-          // TODO: Review non-null assertion - consider null safety
           'animation: none !important;',
       });
 
@@ -114,41 +113,43 @@ function injectTransitionStyles() {
         'backface-visibility': 'hidden',
       });
 
-      const exitKeyframes = `
-        @keyframes view-transition-exit {
-          0% { opacity: ${TRANSITION_CONFIG.exit.opacity}; transform: translateX(${TRANSITION_CONFIG.exit.x}) translateY(${TRANSITION_CONFIG.exit.y}) scale(${TRANSITION_CONFIG.exit.scale}) rotate(${TRANSITION_CONFIG.exit.rotate}deg); }
-          100% { opacity: 0; transform: translateX(${TRANSITION_CONFIG.exit.x}) translateY(${TRANSITION_CONFIG.exit.y}) scale(${TRANSITION_CONFIG.exit.scale}) rotate(${TRANSITION_CONFIG.exit.rotate}deg); }
+      // Seamless crossfade: old stays visible while new fades in on top
+      // This prevents any background flash during transition
+      const fadeInKeyframes = `
+        @keyframes view-transition-fade-in {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
         }
       `;
 
-      const enterKeyframes = `
-        @keyframes view-transition-enter {
-          0% { opacity: 0; transform: translateX(${TRANSITION_CONFIG.enter.x}) translateY(${TRANSITION_CONFIG.enter.y}) scale(${TRANSITION_CONFIG.enter.scale}) rotate(${TRANSITION_CONFIG.enter.rotate}deg); }
-          100% { opacity: ${TRANSITION_CONFIG.enter.opacity}; transform: translateX(${TRANSITION_CONFIG.enter.x}) translateY(${TRANSITION_CONFIG.enter.y}) scale(${TRANSITION_CONFIG.enter.scale}) rotate(${TRANSITION_CONFIG.enter.rotate}deg); }
+      const fadeOutKeyframes = `
+        @keyframes view-transition-fade-out {
+          0% { opacity: 1; }
+          100% { opacity: 0; }
         }
       `;
 
-      const easing = `cubic-bezier(${TRANSITION_CONFIG.exit.transition.ease.join(',')})`;
-
+      // Old page stays fully visible, then fades out after new page is visible
       cssManager.set('::view-transition-old(root)', {
-        'animation-name': 'view-transition-exit',
-        'animation-duration': `${TRANSITION_CONFIG.exit.transition.duration}s`,
-        'animation-delay': `${TRANSITION_CONFIG.exit.transition.delay}s`,
-        'animation-timing-function': easing,
+        'animation-name': 'view-transition-fade-out',
+        'animation-duration': '0.1s',
+        'animation-delay': '0.2s',
+        'animation-timing-function': 'ease-out',
         'animation-fill-mode': 'both',
       });
 
+      // New page fades in on top of the old page
       cssManager.set('::view-transition-new(root)', {
-        'animation-name': 'view-transition-enter',
-        'animation-duration': `${TRANSITION_CONFIG.enter.transition.duration}s`,
-        'animation-delay': `${TRANSITION_CONFIG.enter.transition.delay}s`,
-        'animation-timing-function': easing,
+        'animation-name': 'view-transition-fade-in',
+        'animation-duration': '0.2s',
+        'animation-delay': '0s',
+        'animation-timing-function': 'ease-out',
         'animation-fill-mode': 'both',
       });
 
       // Inject keyframes as text (they can't be set via object syntax)
-      cssManager.setRaw('@keyframes-exit', exitKeyframes);
-      cssManager.setRaw('@keyframes-enter', enterKeyframes);
+      cssManager.setRaw('@keyframes-fade-in', fadeInKeyframes);
+      cssManager.setRaw('@keyframes-fade-out', fadeOutKeyframes);
 
       cssManager.commit();
       resolve();

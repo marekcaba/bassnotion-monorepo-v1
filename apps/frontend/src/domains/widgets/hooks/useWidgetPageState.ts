@@ -47,6 +47,7 @@ export interface WidgetPageState {
 // Import Exercise type from contracts
 import type { Exercise } from '@bassnotion/contracts';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { musicalTruth } from '@/domains/playback/modules/tempo/MusicalTruthAuthority.js';
 // Epic 3.18: ExerciseTimelineIntegrator removed
 // import { exerciseTimelineIntegrator } from '@/domains/playback/services/ExerciseTimelineIntegrator';
 
@@ -316,6 +317,11 @@ export function useWidgetPageState() {
         if (exercise) {
           // Update tempo from exercise BPM
           if (exercise.bpm && exercise.bpm > 0) {
+            // Defer musicalTruth update to avoid "setState during render" error
+            queueMicrotask(() => {
+              musicalTruth.setFromExercise(exercise);
+            });
+
             newState.tempo = exercise.bpm;
             newState.widgets = {
               ...prev.widgets,

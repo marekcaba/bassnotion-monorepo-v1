@@ -39,7 +39,7 @@ export function RegistrationForm({
   initialValues,
   className,
 }: RegistrationFormProps) {
-  const { correlationId, logger } = useCorrelation('RegistrationForm');
+  const { logger } = useCorrelation('RegistrationForm');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -74,17 +74,15 @@ export function RegistrationForm({
     }
   };
 
-  // TODO: Review non-null assertion - consider null safety
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () =>
-    // TODO: Review non-null assertion - consider null safety
     setShowConfirmPassword(!showConfirmPassword);
 
   return (
     <div className={className}>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-center">Create Account</h2>
-        <p className="text-muted-foreground text-center mt-2">
+        <h2 className="text-2xl font-bold text-center text-white">Create Account</h2>
+        <p className="text-gray-400 text-center mt-2">
           {initialValues?.email
             ? `Create account for ${initialValues.email}`
             : 'Join BassNotion to start your bass learning journey'}
@@ -102,13 +100,14 @@ export function RegistrationForm({
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel className="text-gray-300">Email</FormLabel>
                 <FormControl>
                   <Input
                     type="email"
                     placeholder="Enter your email"
                     autoComplete="email"
                     disabled={isLoading}
+                    className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
                     {...field}
                   />
                 </FormControl>
@@ -122,7 +121,7 @@ export function RegistrationForm({
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel className="text-gray-300">Password</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input
@@ -130,13 +129,14 @@ export function RegistrationForm({
                       placeholder="Create a strong password"
                       autoComplete="new-password"
                       disabled={isLoading}
+                      className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
                       {...field}
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-gray-400"
                       onClick={togglePasswordVisibility}
                       disabled={isLoading}
                     >
@@ -161,7 +161,7 @@ export function RegistrationForm({
             name="confirmPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Confirm Password</FormLabel>
+                <FormLabel className="text-gray-300">Confirm Password</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input
@@ -169,13 +169,14 @@ export function RegistrationForm({
                       placeholder="Confirm your password"
                       autoComplete="new-password"
                       disabled={isLoading}
+                      className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
                       {...field}
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-gray-400"
                       onClick={toggleConfirmPasswordVisibility}
                       disabled={isLoading}
                     >
@@ -197,7 +198,7 @@ export function RegistrationForm({
             )}
           />
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full bg-[#ffc700] text-black hover:bg-[#e6b300]" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -210,10 +211,10 @@ export function RegistrationForm({
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+              <span className="w-full border-t border-zinc-700" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
+              <span className="bg-zinc-900 px-2 text-gray-500">
                 Or continue with
               </span>
             </div>
@@ -227,9 +228,9 @@ export function RegistrationForm({
       </Form>
 
       <div className="mt-6 text-center">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-gray-400">
           Already have an account?{' '}
-          <Button variant="link" asChild className="p-0 h-auto">
+          <Button variant="link" asChild className="p-0 h-auto text-[#ffc700] hover:text-[#e6b300]">
             <TransitionLink href="/login">Sign in</TransitionLink>
           </Button>
         </p>

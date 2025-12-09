@@ -67,6 +67,7 @@ export function ScrollTriggerLoader({
 
           // ✅ BUG #8 FIX: Store globally using WindowRegistry
           WindowRegistry.setCoreServices(coreServices);
+          WindowRegistry.setServiceRegistry(coreServices.getServiceRegistry());
           logger.info('✅ CoreServices pre-initialized and stored globally');
         } else {
           logger.info('✅ CoreServices already exists');

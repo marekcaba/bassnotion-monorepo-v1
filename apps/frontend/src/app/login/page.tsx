@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { LoginData } from '@bassnotion/contracts';
 
 import { LoginForm } from '@/domains/user/components/auth';
@@ -14,6 +15,7 @@ import { Button } from '@/shared/components/ui/button';
 import { useToast } from '@/shared/hooks/use-toast';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { HomeNavbar } from '../_components/HomeNavbar';
 
 function LoginPageContent() {
   const _router = useRouter();
@@ -47,7 +49,6 @@ function LoginPageContent() {
       setIsLoading(true);
 
       // Validate input data before sending
-      // TODO: Review non-null assertion - consider null safety
       if (!data.email || !data.password) {
         throw new Error('Email and password are required');
       }
@@ -122,48 +123,68 @@ function LoginPageContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-6 sm:space-y-8">
-        {/* Login Options */}
-        <div className="bg-card rounded-lg border p-4 sm:p-6 shadow-sm">
-          <AnimatedLoginSwitcher>
-            {{
-              password: (
-                <LoginForm
-                  onSubmit={handleSubmit}
-                  onGoogleSignIn={handleGoogleSignIn}
-                  isLoading={isLoading}
-                  isGoogleLoading={isGoogleLoading}
-                />
-              ),
-              magicLink: <MagicLinkSignIn />,
-            }}
-          </AnimatedLoginSwitcher>
-        </div>
+    <div className="min-h-screen bg-black">
+      {/* Header with Logo - same as homepage */}
+      <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
+        <button onClick={() => navigateWithTransition('/')} className="cursor-pointer">
+          <Image
+            src="/BASSICOLOGY BIG.png"
+            alt="Bassicology"
+            width={600}
+            height={150}
+            className="w-[220px] sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-auto"
+            priority
+          />
+        </button>
+      </header>
 
-        {/* Register Link */}
-        <div className="text-center">
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Don't have an account?{' '}
+      {/* Navbar - use shared HomeNavbar component */}
+      <HomeNavbar />
+
+      {/* Main Content */}
+      <div className="flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-md space-y-6 sm:space-y-8">
+          {/* Login Options */}
+          <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 sm:p-6 shadow-sm">
+            <AnimatedLoginSwitcher>
+              {{
+                password: (
+                  <LoginForm
+                    onSubmit={handleSubmit}
+                    onGoogleSignIn={handleGoogleSignIn}
+                    isLoading={isLoading}
+                    isGoogleLoading={isGoogleLoading}
+                  />
+                ),
+                magicLink: <MagicLinkSignIn />,
+              }}
+            </AnimatedLoginSwitcher>
+          </div>
+
+          {/* Register Link */}
+          <div className="text-center">
+            <p className="text-xs sm:text-sm text-gray-400">
+              Don't have an account?{' '}
+              <Button
+                variant="link"
+                className="p-0 h-auto text-xs sm:text-sm text-[#ffc700] hover:text-[#e6b300]"
+                onClick={() => navigateWithTransition('/register')}
+              >
+                Create account
+              </Button>
+            </p>
+          </div>
+
+          {/* Back to Home */}
+          <div className="text-center">
             <Button
-              variant="link"
-              className="p-0 h-auto text-xs sm:text-sm"
-              onClick={() => navigateWithTransition('/register')}
+              variant="ghost"
+              className="text-xs sm:text-sm text-gray-400 hover:text-white"
+              onClick={() => navigateWithTransition('/')}
             >
-              Create account
+              ← Back to Home
             </Button>
-          </p>
-        </div>
-
-        {/* Back to Home */}
-        <div className="text-center">
-          <Button
-            variant="ghost"
-            className="text-xs sm:text-sm"
-            onClick={() => navigateWithTransition('/')}
-          >
-            ← Back to Home
-          </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -174,9 +195,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          Loading...
-        </div>
+        <div className="min-h-screen bg-black" />
       }
     >
       <LoginPageContent />

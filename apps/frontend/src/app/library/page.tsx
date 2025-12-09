@@ -1,13 +1,13 @@
 'use client';
 
+import Image from 'next/image';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
-import { Clock, User, ArrowLeft, Loader2, AlertCircle, Plus } from 'lucide-react';
+import { Clock, Loader2, AlertCircle, Plus } from 'lucide-react';
 import { useTutorials } from '@/domains/widgets/hooks/useTutorials';
-import { UserIndicator } from '@/domains/user/components/UserIndicator';
-import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
+import { HomeNavbar } from '../_components/HomeNavbar';
 import type { TutorialSummary } from '@bassnotion/contracts';
 
 // YouTube Thumbnail Component
@@ -106,63 +106,51 @@ export default function LibraryPage() {
   const { navigateWithTransition } = useViewTransitionRouter();
   const { tutorials, total, isLoading, error, isError, refetch } =
     useTutorials();
-  const { isAuthenticated } = useAuth();
   const { profile } = useUserProfile();
 
   const isAdmin = profile?.role === 'admin';
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="min-h-screen bg-black">
+        {/* Header with Logo */}
+        <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
+          <button onClick={() => navigateWithTransition('/')} className="cursor-pointer">
+            <Image
+              src="/BASSICOLOGY BIG.png"
+              alt="Bassicology"
+              width={600}
+              height={150}
+              className="w-[220px] sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-auto"
+              priority
+            />
+          </button>
+        </header>
+
+        {/* Navbar */}
+        <HomeNavbar />
+
         <div className="container mx-auto px-4 py-6 max-w-2xl">
           <div className="space-y-6">
-            {/* Header */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigateWithTransition('/')}
-                  className="text-white/70 hover:text-white"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Home
-                </Button>
-
-                <div className="flex items-center gap-3">
-                  {isAdmin && (
-                    <Button
-                      onClick={() => navigateWithTransition('/admin/tutorials/new')}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      New Tutorial
-                    </Button>
-                  )}
-                  <UserIndicator />
-                </div>
-              </div>
-
-              <Card className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 shadow-2xl">
-                <CardContent className="p-8 text-center">
-                  <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent mb-4">
-                    YouTube Tutorial Library
-                  </h1>
-                  <p className="text-white/70 text-lg">
-                    Choose from our collection of interactive bass tutorials.
-                    Each lesson includes advanced widgets, sheet music,
-                    fretboard visualization, and personalized takeaways.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Title Section */}
+            <Card className="bg-zinc-900 border border-zinc-800">
+              <CardContent className="p-8 text-center">
+                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                  Tutorial Library
+                </h1>
+                <p className="text-gray-400 text-lg">
+                  Choose from our collection of interactive bass tutorials.
+                  Each lesson includes advanced widgets, sheet music,
+                  fretboard visualization, and personalized takeaways.
+                </p>
+              </CardContent>
+            </Card>
 
             {/* Loading State */}
-            <Card className="bg-white/5 backdrop-blur-md border-white/10">
+            <Card className="bg-zinc-900 border-zinc-800">
               <CardContent className="p-8 text-center">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-400" />
-                <p className="text-white/70">Loading tutorials...</p>
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#ffc700]" />
+                <p className="text-gray-400">Loading tutorials...</p>
               </CardContent>
             </Card>
           </div>
@@ -173,51 +161,40 @@ export default function LibraryPage() {
 
   if (isError || error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="min-h-screen bg-black">
+        {/* Header with Logo */}
+        <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
+          <button onClick={() => navigateWithTransition('/')} className="cursor-pointer">
+            <Image
+              src="/BASSICOLOGY BIG.png"
+              alt="Bassicology"
+              width={600}
+              height={150}
+              className="w-[220px] sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-auto"
+              priority
+            />
+          </button>
+        </header>
+
+        {/* Navbar */}
+        <HomeNavbar />
+
         <div className="container mx-auto px-4 py-6 max-w-2xl">
           <div className="space-y-6">
-            {/* Header */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigateWithTransition('/')}
-                  className="text-white/70 hover:text-white"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Home
-                </Button>
-
-                <div className="flex items-center gap-3">
-                  {isAdmin && (
-                    <Button
-                      onClick={() => navigateWithTransition('/admin/tutorials/new')}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      New Tutorial
-                    </Button>
-                  )}
-                  <UserIndicator />
-                </div>
-              </div>
-
-              <Card className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 shadow-2xl">
-                <CardContent className="p-8 text-center">
-                  <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent mb-4">
-                    YouTube Tutorial Library
-                  </h1>
-                  <p className="text-white/70 text-lg">
-                    Choose from our collection of interactive bass tutorials.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Title Section */}
+            <Card className="bg-zinc-900 border border-zinc-800">
+              <CardContent className="p-8 text-center">
+                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                  Tutorial Library
+                </h1>
+                <p className="text-gray-400 text-lg">
+                  Choose from our collection of interactive bass tutorials.
+                </p>
+              </CardContent>
+            </Card>
 
             {/* Error State */}
-            <Card className="bg-red-900/20 backdrop-blur-md border-red-500/30">
+            <Card className="bg-red-900/20 border-red-500/30">
               <CardContent className="p-8 text-center">
                 <AlertCircle className="w-8 h-8 mx-auto mb-4 text-red-400" />
                 <h3 className="text-lg font-semibold text-red-300 mb-2">
@@ -242,64 +219,61 @@ export default function LibraryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Instagram-style scrollable container - same as exerciser pages */}
+    <div className="min-h-screen bg-black">
+      {/* Header with Logo */}
+      <header className="w-full pt-8 sm:pt-12 pb-5 flex justify-center">
+        <button onClick={() => navigateWithTransition('/')} className="cursor-pointer">
+          <Image
+            src="/BASSICOLOGY BIG.png"
+            alt="Bassicology"
+            width={600}
+            height={150}
+            className="w-[220px] sm:w-[320px] md:w-[400px] lg:w-[500px] xl:w-[600px] h-auto"
+            priority
+          />
+        </button>
+      </header>
+
+      {/* Navbar */}
+      <HomeNavbar />
+
+      {/* Main content */}
       <div className="container mx-auto px-4 py-6 max-w-2xl">
         <div className="space-y-6">
-          {/* Header Card */}
-          <div className="space-y-4">
-            {/* Top Navigation Bar */}
-            <div className="flex items-center justify-between">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigateWithTransition('/')}
-                className="text-white/70 hover:text-white"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
-              </Button>
-
-              <div className="flex items-center gap-3">
-                {isAdmin && (
-                  <Button
-                    onClick={() => navigateWithTransition('/admin/tutorials/new')}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                    size="sm"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    New Tutorial
-                  </Button>
-                )}
-                <UserIndicator />
-              </div>
-            </div>
-
-            {/* Title Section */}
-            <Card className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 shadow-2xl">
-              <CardContent className="p-8 text-center">
-                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent mb-4">
-                  YouTube Tutorial Library
-                </h1>
-                <p className="text-white/70 text-lg">
-                  Choose from our collection of interactive bass tutorials. Each
-                  lesson includes advanced widgets, sheet music, fretboard
-                  visualization, and personalized takeaways.
+          {/* Title Section */}
+          <Card className="bg-zinc-900 border border-zinc-800">
+            <CardContent className="p-8 text-center">
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                Tutorial Library
+              </h1>
+              <p className="text-gray-400 text-lg">
+                Choose from our collection of interactive bass tutorials. Each
+                lesson includes advanced widgets, sheet music, fretboard
+                visualization, and personalized takeaways.
+              </p>
+              {total > 0 && (
+                <p className="text-gray-500 text-sm mt-2">
+                  {total} tutorial{total !== 1 ? 's' : ''} available
                 </p>
-                {total > 0 && (
-                  <p className="text-white/50 text-sm mt-2">
-                    {total} tutorial{total !== 1 ? 's' : ''} available
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+              )}
+              {isAdmin && (
+                <Button
+                  onClick={() => navigateWithTransition('/admin/tutorials/new')}
+                  className="mt-4 bg-[#ffc700] text-black hover:bg-[#e6b300]"
+                  size="sm"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  New Tutorial
+                </Button>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Tutorial Cards - Centered and scrollable */}
           {tutorials.length === 0 ? (
-            <Card className="bg-white/5 backdrop-blur-md border-white/10">
+            <Card className="bg-zinc-900 border-zinc-800">
               <CardContent className="p-8 text-center">
-                <p className="text-white/70">
+                <p className="text-gray-400">
                   No tutorials available at the moment.
                 </p>
               </CardContent>
@@ -311,14 +285,14 @@ export default function LibraryPage() {
                 className="relative overflow-hidden rounded-3xl cursor-pointer group"
                 onClick={() => navigateWithTransition(`/library/${tutorial.slug}`)}
               >
-                {/* Background gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-800/90 via-blue-900/80 to-blue-800/90 backdrop-blur-xl" />
+                {/* Background */}
+                <div className="absolute inset-0 bg-zinc-900" />
 
                 {/* Glow effect on hover */}
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-blue-500/0 to-purple-500/0 group-hover:from-cyan-500/20 group-hover:via-blue-500/20 group-hover:to-purple-500/20 transition-all duration-500" />
+                <div className="absolute inset-0 bg-[#ffc700]/0 group-hover:bg-[#ffc700]/5 transition-all duration-500" />
 
-                {/* Card border glow */}
-                <div className="absolute inset-0 rounded-3xl border border-white/10 group-hover:border-cyan-400/50 transition-all duration-500" />
+                {/* Card border */}
+                <div className="absolute inset-0 rounded-3xl border border-zinc-800 group-hover:border-[#ffc700]/50 transition-all duration-500" />
 
                 {/* Container with no padding - full bleed layout - Fixed height 157.5px */}
                 <div className="relative flex items-stretch h-[157.5px]">
@@ -331,18 +305,18 @@ export default function LibraryPage() {
                       className="w-full h-full object-cover rounded-l-3xl"
                     />
                     {/* Thumbnail overlay gradient - blends to transparent on the right edge only */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent from-70% via-slate-800/30 via-85% to-slate-800/90" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent from-70% via-zinc-900/30 via-85% to-zinc-900/90" />
                   </div>
 
                   {/* Right Side: Content with 18px padding */}
                   <div className="flex-1 p-[18px] flex flex-col justify-between">
                       {/* Top Content: Title, Description */}
                       <div className="space-y-2">
-                        <h3 className="text-2xl font-bold text-white leading-tight group-hover:text-cyan-300 transition-colors duration-300">
+                        <h3 className="text-2xl font-bold text-white leading-tight group-hover:text-[#ffc700] transition-colors duration-300">
                           {tutorial.title}
                         </h3>
                         {tutorial.description && (
-                          <p className="text-white/70 text-sm leading-relaxed line-clamp-2">
+                          <p className="text-gray-400 text-sm leading-relaxed line-clamp-2">
                             {tutorial.description}
                           </p>
                         )}
@@ -358,13 +332,13 @@ export default function LibraryPage() {
                         </span>
                       )}
                       {tutorial.duration && (
-                        <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold bg-white/10 text-white/80 border-white/20">
+                        <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold bg-zinc-800 text-gray-300 border-zinc-700">
                           <Clock className="w-3 h-3 mr-1" />
                           {tutorial.duration}
                         </span>
                       )}
                       {tutorial.exercise_count > 0 && (
-                        <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold bg-blue-500/20 text-blue-300 border-blue-500/30">
+                        <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold bg-[#ffc700]/20 text-[#ffc700] border-[#ffc700]/30">
                           {tutorial.exercise_count} exercise{tutorial.exercise_count !== 1 ? 's' : ''}
                         </span>
                       )}
@@ -373,7 +347,7 @@ export default function LibraryPage() {
                 </div>
 
                 {/* CTA Button - Fixed to Bottom Right - Arrow Only */}
-                <button className="absolute bottom-[18px] right-[18px] w-10 h-7 rounded-lg border-2 border-white/20 bg-white/5 hover:bg-white/10 hover:border-cyan-400/50 text-white font-medium transition-all duration-300 group-hover:scale-110 flex items-center justify-center">
+                <button className="absolute bottom-[18px] right-[18px] w-10 h-7 rounded-lg border-2 border-zinc-700 bg-zinc-800 hover:bg-[#ffc700] hover:border-[#ffc700] text-white hover:text-black font-medium transition-all duration-300 group-hover:scale-110 flex items-center justify-center">
                   →
                 </button>
               </div>

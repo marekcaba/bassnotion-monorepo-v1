@@ -24,6 +24,7 @@ import { TransportError } from '../types/errors.js';
 import { createStructuredLogger } from '../../shared/index.js';
 import { TRANSPORT_TIMING_CONFIG } from '../../../config/transportTiming.js';
 import * as Tone from 'tone';
+import { musicalTruth } from '../../tempo/MusicalTruthAuthority.js';
 
 const logger = createStructuredLogger('Transport');
 
@@ -442,9 +443,13 @@ export class Transport {
 
   /**
    * Get current tempo
+   * 🔧 FIX: Read from musicalTruth (single source of truth) instead of stale config.tempo
+   * This fixes the bug where UI showed 120 BPM instead of exercise BPM
    */
   getTempo(): number {
-    return this.config.tempo;
+    // musicalTruth is the source of truth for BPM
+    // config.tempo may be stale (defaults to 120)
+    return musicalTruth.getBPM();
   }
 
   /**

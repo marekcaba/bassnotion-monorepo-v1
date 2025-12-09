@@ -262,13 +262,16 @@ export class RegionScheduler {
 
           // Calculate absolute time
           const eventData = (event as any).data;
-          const originalBpm =
-            eventData?.originalBpm || Tone.Transport.bpm.value;
+          // FIX: Always use live BPM from Tone.Transport (source of truth)
+          // The eventData.originalBpm is stale - cached at event creation time
+          // When user changes tempo via UI, Tone.Transport.bpm.value is updated
+          // by musicalTruth.setBPM() and we must use that live value
+          const currentBpm = Tone.Transport.bpm.value;
           let eventTime: number;
 
           if (eventData?.ticks !== undefined) {
-            // Use absolute ticks
-            const secondsPerBeat = 60 / originalBpm;
+            // Use absolute ticks with LIVE BPM (not stale originalBpm)
+            const secondsPerBeat = 60 / currentBpm;
             const ticksPerBeat = 480;
             const absoluteTicks = eventData.ticks;
             eventTime = (absoluteTicks / ticksPerBeat) * secondsPerBeat;
@@ -282,7 +285,7 @@ export class RegionScheduler {
                 `[ABSOLUTE TICK SCHEDULING] Harmony Note ${harmonyNoteCount + 1}:`,
                 {
                   absoluteTicks,
-                  originalBpm,
+                  currentBpm,
                   eventTime: eventTime.toFixed(6),
                   position: event.position,
                   noteName: eventData?.noteName,

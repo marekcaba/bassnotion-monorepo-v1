@@ -8,7 +8,7 @@ import { authService, AuthError } from '../../api/auth';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 // Import the same error handling function used by other auth methods
-function getAuthErrorMessage(error: AuthError): string {
+function getAuthErrorMessage(error: AuthError, logger: ReturnType<typeof useCorrelation>['logger']): string {
   logger.error('[Auth Debug] Original error:', {
     message: error.message,
     status: error.status,
@@ -72,7 +72,7 @@ function getAuthErrorMessage(error: AuthError): string {
 }
 
 export function MagicLinkSignIn() {
-  const { correlationId, logger } = useCorrelation('MagicLinkSignIn');
+  const { logger } = useCorrelation('MagicLinkSignIn');
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [noAccountFound, setNoAccountFound] = useState(false);
@@ -97,13 +97,13 @@ export function MagicLinkSignIn() {
       });
 
       setNoAccountFound(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Use the same error handling as other auth methods
       let userFriendlyMessage = 'Failed to send magic link';
 
       // More robust error handling for production builds
-      const errorMessage = error?.message || '';
-      const errorStatus = error?.status;
+      const errorMessage = (error as { message?: string })?.message || '';
+      const errorStatus = (error as { status?: number })?.status;
 
       // Check for rate limit errors first (most specific)
       if (
@@ -120,7 +120,7 @@ export function MagicLinkSignIn() {
         userFriendlyMessage =
           'Too many requests. Please wait a moment and try again.';
       } else if (error instanceof AuthError) {
-        userFriendlyMessage = getAuthErrorMessage(error);
+        userFriendlyMessage = getAuthErrorMessage(error, logger);
       } else if (error instanceof Error) {
         userFriendlyMessage = error.message;
       }
@@ -148,7 +148,6 @@ export function MagicLinkSignIn() {
 
       if (checkError) throw checkError;
 
-      // TODO: Review non-null assertion - consider null safety
       if (!exists) {
         // Show inline message for new user
         setNoAccountFound(true);
@@ -162,7 +161,7 @@ export function MagicLinkSignIn() {
       let userFriendlyMessage = 'Failed to check email';
 
       if (error instanceof AuthError) {
-        userFriendlyMessage = getAuthErrorMessage(error);
+        userFriendlyMessage = getAuthErrorMessage(error, logger);
       } else if (error instanceof Error) {
         userFriendlyMessage = error.message;
       }
@@ -188,28 +187,29 @@ export function MagicLinkSignIn() {
             onChange={(e) => setEmail(e.target.value)}
             disabled={isLoading}
             required
+            className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
           />
         </div>
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading} className="bg-[#ffc700] text-black hover:bg-[#e6b300]">
           {isLoading ? 'Processing...' : 'Continue with Magic Link'}
         </Button>
       </form>
 
       {noAccountFound && (
-        <div className="mt-2 p-4 border rounded-lg bg-muted">
-          <p className="text-sm mb-2">No account exists for {email}.</p>
+        <div className="mt-2 p-4 border border-zinc-700 rounded-lg bg-zinc-800">
+          <p className="text-sm mb-2 text-gray-300">No account exists for {email}.</p>
           <Button
             onClick={() => handleMagicLink(true)}
             disabled={isLoading}
             variant="secondary"
-            className="w-full"
+            className="w-full bg-zinc-700 text-white hover:bg-zinc-600"
           >
             Create New Account
           </Button>
         </div>
       )}
 
-      <p className="text-sm text-muted-foreground text-center">
+      <p className="text-sm text-gray-400 text-center">
         We'll send you a magic link to sign in instantly.
       </p>
     </div>

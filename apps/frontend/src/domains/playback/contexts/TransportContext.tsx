@@ -36,6 +36,7 @@ import type {
 } from '@bassnotion/contracts/types/musical-time';
 import { getLogger } from '@/utils/logger.js';
 import { WindowRegistry } from '../services/WindowRegistry.js';
+import { musicalTruth } from '../modules/tempo/MusicalTruthAuthority.js';
 
 const logger = getLogger('transport');
 
@@ -81,7 +82,8 @@ export function TransportProvider({
   registry,
 }: TransportProviderProps) {
   const [state, setState] = useState<TransportState>('stopped');
-  const [tempo, setTempo] = useState(120);
+  // 🔧 FIX: Initialize tempo from musicalTruth (source of truth) instead of hardcoded 120
+  const [tempo, setTempo] = useState(() => musicalTruth.getBPM());
   const [timeSignature, setTimeSignature] = useState<TimeSignature>({
     numerator: 4,
     denominator: 4,
@@ -195,6 +197,16 @@ export function TransportProvider({
     }
   }, [registry]);
 
+  // Subscribe to musicalTruth changes to sync tempo when exercise is selected
+  // This ensures TransportContext updates when exercise BPM is set
+  useEffect(() => {
+    const unsubscribe = musicalTruth.subscribe((truth) => {
+      setTempo(truth.bpm);
+    });
+
+    return unsubscribe;
+  }, []);
+
   // Memoized event handlers to prevent recreation
   const handleStart = useCallback(() => {
     logger.debug('[TransportContext] Received transport:start event');
@@ -217,6 +229,10 @@ export function TransportProvider({
   }, []);
 
   const handleTempoChange = useCallback((data: { tempo: number }) => {
+    console.log('🎵 [TEMPO DEBUG] TransportContext received tempo change event', {
+      newTempo: data.tempo,
+      timestamp: Date.now(),
+    });
     logger.debug('[TransportContext] Received tempo change', { tempo: data.tempo });
     setTempo(data.tempo);
   }, []);

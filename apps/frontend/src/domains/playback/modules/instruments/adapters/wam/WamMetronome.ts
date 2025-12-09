@@ -823,11 +823,12 @@ export class WamMetronome extends WebAudioModuleBase {
 
   /**
    * Set tempo (for standalone use)
+   * NOTE: Tempo is managed by musicalTruth singleton. This method updates musicalTruth
+   * and the WamMetronomeNode.tempo getter will automatically read the new value.
    */
   setTempo(bpm: number): void {
-    if (this.audioNode) {
-      (this.audioNode as any).tempo = bpm;
-    }
+    // Update the single source of truth - WamMetronomeNode.tempo getter reads from musicalTruth
+    musicalTruth.setBPM(bpm);
   }
 
   /**

@@ -111,8 +111,8 @@ export function TransportClock({
   const audioContextStateRef = React.useRef(audioContextState);
   audioContextStateRef.current = audioContextState;
 
-  // Get current display tempo - prioritize user-set tempo, then transport, then exercise default
-  const displayTempo = userTempo || tempo || selectedExercise?.bpm;
+  // Get current display tempo - prioritize transport tempo, then user-set, then exercise default
+  const displayTempo = tempo || userTempo || selectedExercise?.bpm;
 
   // Initialize user tempo when exercise changes
   useEffect(() => {
@@ -120,6 +120,13 @@ export function TransportClock({
       setUserTempo(selectedExercise.bpm);
     }
   }, [selectedExercise?.bpm, userTempo]);
+
+  // Sync userTempo when context tempo changes from external source
+  useEffect(() => {
+    if (tempo && tempo !== userTempo) {
+      setUserTempo(tempo);
+    }
+  }, [tempo]);
 
   // Monitor AudioContext state using singleton pattern
   useEffect(() => {

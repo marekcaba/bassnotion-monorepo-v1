@@ -1,149 +1,39 @@
-2025-12-03 00:06:53 +01:00:  [31m[1m⨯[22m[39m ./src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:06:53 +01:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:06:53 +01:00: Caused by:
-2025-12-03 00:06:53 +01:00:     No such file or directory (os error 2)
-2025-12-03 00:06:53 +01:00: Import trace for requested module:
-2025-12-03 00:06:53 +01:00: ./src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:06:53 +01:00: ./src/domains/playback/modules/transport/core/Transport.ts
-2025-12-03 00:06:53 +01:00: ./src/domains/playback/modules/transport/core/TransportController.ts
-2025-12-03 00:06:53 +01:00: ./src/domains/playback/services/core/TransportAdapter.ts
-2025-12-03 00:06:53 +01:00: ./src/domains/playback/services/core/index.ts
-2025-12-03 00:06:53 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
-2025-12-03 00:06:55 +01:00:  [31m[1m⨯[22m[39m ./src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:06:55 +01:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:06:55 +01:00: Caused by:
-2025-12-03 00:06:55 +01:00:     No such file or directory (os error 2)
-2025-12-03 00:06:55 +01:00: Import trace for requested module:
-2025-12-03 00:06:55 +01:00: ./src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:06:55 +01:00: ./src/domains/playback/modules/transport/core/Transport.ts
-2025-12-03 00:06:55 +01:00: ./src/domains/playback/modules/transport/core/TransportController.ts
-2025-12-03 00:06:55 +01:00: ./src/domains/playback/services/core/TransportAdapter.ts
-2025-12-03 00:06:55 +01:00: ./src/domains/playback/services/core/index.ts
-2025-12-03 00:06:55 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
-2025-12-03 00:07:47 +01:00:  [31m[1m⨯[22m[39m ./src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:07:47 +01:00: Error: Failed to read source code from /Users/marekcaba/Documents/Projekty 2024/🟣 BassNotion/4. Cursor Project Folder/bassnotion-monorepo-v1/apps/frontend/src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:07:47 +01:00: Caused by:
-2025-12-03 00:07:47 +01:00:     No such file or directory (os error 2)
-2025-12-03 00:07:47 +01:00: Import trace for requested module:
-2025-12-03 00:07:47 +01:00: ./src/domains/playback/modules/transport/core/Scheduler.ts
-2025-12-03 00:07:47 +01:00: ./src/domains/playback/modules/transport/core/Transport.ts
-2025-12-03 00:07:47 +01:00: ./src/domains/playback/modules/transport/core/TransportController.ts
-2025-12-03 00:07:47 +01:00: ./src/domains/playback/services/core/TransportAdapter.ts
-2025-12-03 00:07:47 +01:00: ./src/domains/playback/services/core/index.ts
-2025-12-03 00:07:47 +01:00: ./src/domains/playback/providers/AudioProvider.tsx
-2025-12-03 00:09:04 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:04 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:09:04 +01:00: Import trace for requested module:
-2025-12-03 00:09:04 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:04 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:09:04 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:09:04 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:09:04 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:09:04 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:09:04 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:09:04 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:09:05 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:05 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:09:05 +01:00: Import trace for requested module:
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:09:05 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:09:05 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:05 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:09:05 +01:00: Import trace for requested module:
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:09:05 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:09:05 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:05 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:09:05 +01:00: Import trace for requested module:
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:09:05 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:09:05 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:09:06 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
-2025-12-03 00:10:51 +01:00: Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
-2025-12-03 00:10:51 +01:00:   npx update-browserslist-db@latest
-2025-12-03 00:10:51 +01:00:   Why you should do it regularly: https://github.com/browserslist/update-db#readme
-2025-12-03 00:10:56 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:10:56 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:10:56 +01:00: Import trace for requested module:
-2025-12-03 00:10:56 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:10:56 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:10:56 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:10:56 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:10:56 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:10:56 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:10:56 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:10:56 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:11:02 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:02 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:11:02 +01:00: Import trace for requested module:
-2025-12-03 00:11:02 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:02 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:11:02 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:11:02 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:11:02 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:11:02 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:11:02 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:11:02 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:11:05 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:05 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:11:05 +01:00: Import trace for requested module:
-2025-12-03 00:11:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:11:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:11:05 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:11:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:11:05 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:11:05 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:11:05 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:11:06 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:06 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:11:06 +01:00: Import trace for requested module:
-2025-12-03 00:11:06 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:06 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:11:06 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:11:06 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:11:06 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:11:06 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:11:06 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:11:06 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:11:07 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-2025-12-03 00:11:12 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:12 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:11:12 +01:00: Import trace for requested module:
-2025-12-03 00:11:12 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:12 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:11:12 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:11:12 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:11:12 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:11:12 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:11:12 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:11:12 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:11:16 +01:00:  [33m[1m⚠[22m[39m ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:16 +01:00: Critical dependency: the request of a dependency is an expression
-2025-12-03 00:11:16 +01:00: Import trace for requested module:
-2025-12-03 00:11:16 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
-2025-12-03 00:11:16 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
-2025-12-03 00:11:16 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
-2025-12-03 00:11:16 +01:00: ../../node_modules/.pnpm/@opentelemetry+instrumentation@0.203.0_@opentelemetry+api@1.9.0/node_modules/@opentelemetry/instrumentation/build/esm/index.js
-2025-12-03 00:11:16 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
-2025-12-03 00:11:16 +01:00: ../../node_modules/.pnpm/@sentry+node@10.8.0/node_modules/@sentry/node/build/cjs/index.js
-2025-12-03 00:11:16 +01:00: ../../node_modules/.pnpm/@sentry+nextjs@10.8.0_@opentelemetry+context-async-hooks@2.0.1_@opentelemetry+api@1.9.0_b934a6992fb5c1a506685183536028dd/node_modules/@sentry/nextjs/build/cjs/index.server.js
-2025-12-03 00:11:16 +01:00: ./src/shared/components/ErrorBoundary.tsx
-2025-12-03 00:11:16 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:27:49 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:27:50 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:29:55 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:29:55 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:30:25 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:30:25 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:30:56 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:30:57 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:31:11 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:31:11 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:34:40 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:36:23 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload when (app-pages-browser)/../../node_modules/.pnpm/lucide-react@0.263.1_react@18.3.1/node_modules/lucide-react/dist/esm/createLucideIcon.mjs changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:50:39 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:50:39 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:56:12 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:56:12 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:56:20 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload when (app-pages-browser)/../../node_modules/.pnpm/lucide-react@0.263.1_react@18.3.1/node_modules/lucide-react/dist/esm/createLucideIcon.mjs changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 00:56:20 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload when (app-pages-browser)/../../node_modules/.pnpm/lucide-react@0.263.1_react@18.3.1/node_modules/lucide-react/dist/esm/createLucideIcon.mjs changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 01:00:04 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 01:00:04 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 01:00:16 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 01:00:16 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 01:01:32 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 01:01:48 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 01:21:49 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 01:25:54 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 09:21:06 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 09:28:32 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 09:28:32 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 09:28:45 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 09:28:45 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 09:31:49 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 09:32:11 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload when (app-pages-browser)/../../node_modules/.pnpm/lucide-react@0.263.1_react@18.3.1/node_modules/lucide-react/dist/esm/createLucideIcon.mjs changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 09:32:38 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 09:42:52 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 09:49:22 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 09:53:10 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 09:53:31 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+2025-12-09 09:53:44 +01:00:  [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
