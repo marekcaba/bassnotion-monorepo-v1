@@ -58,6 +58,9 @@ export class Clock {
   // Callbacks
   private onTick?: (time: number) => void;
 
+  // CLEANUP FIX: Store listener reference for proper cleanup
+  private stateChangeListener: (() => void) | null = null;
+
   constructor(config: ClockConfig = {}) {
     // Handle legacy config options
     const legacyConfig = config as any;
@@ -146,7 +149,8 @@ export class Clock {
 
     // FIGHTING CLOCKS FIX: Monitor AudioContext state changes and retry AudioWorklet initialization
     // when context resumes from suspended state (e.g., after user interaction)
-    audioContext.addEventListener('statechange', async () => {
+    // CLEANUP FIX: Store listener reference for proper removal in dispose()
+    this.stateChangeListener = async () => {
       logger.info('AudioContext state changed', {
         newState: audioContext.state,
         currentMode: this.audioWorkletActive
@@ -182,7 +186,8 @@ export class Clock {
           }
         }
       }
-    });
+    };
+    audioContext.addEventListener('statechange', this.stateChangeListener);
 
     logger.info('Clock initialized', {
       sampleRate: audioContext.sampleRate,
@@ -730,6 +735,13 @@ export class Clock {
       this.driftMeasurementInterval = null;
     }
 
+    // CLEANUP FIX: Remove AudioContext statechange listener to prevent memory leak
+    if (this.stateChangeListener && this.audioContext) {
+      this.audioContext.removeEventListener('statechange', this.stateChangeListener);
+      this.stateChangeListener = null;
+      logger.info('Removed AudioContext statechange listener');
+    }
+
     if (this.sampleAccurateClock) {
       this.sampleAccurateClock.dispose();
       this.sampleAccurateClock = null;
@@ -767,6 +779,12 @@ export class Clock {
    */
   destroy(): void {
     this.stopSync();
+
+    // CLEANUP FIX: Remove AudioContext statechange listener to prevent memory leak
+    if (this.stateChangeListener && this.audioContext) {
+      this.audioContext.removeEventListener('statechange', this.stateChangeListener);
+      this.stateChangeListener = null;
+    }
 
     if (this.sampleAccurateClock) {
       this.sampleAccurateClock.destroy();

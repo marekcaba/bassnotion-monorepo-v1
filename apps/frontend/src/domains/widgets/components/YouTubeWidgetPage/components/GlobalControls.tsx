@@ -1051,7 +1051,8 @@ const GlobalControlsComponent: React.FC<GlobalControlsProps> = ({
         // - transport.setCountdownBeats()
         // All systems will now read from musicalTruth singleton
         const { musicalTruth } = await import('@/domains/playback/modules/tempo/MusicalTruthAuthority.js');
-        musicalTruth.setFromExercise(selectedExercise);
+        // TEMPO FIX: preserveBPM=true keeps user's tempo slider value instead of resetting to exercise.bpm
+        musicalTruth.setFromExercise(selectedExercise, { preserveBPM: true });
 
         console.log('✅ [MUSICAL TRUTH] Set from exercise - ALL systems synchronized:', {
           bpm: musicalTruth.getBPM(),

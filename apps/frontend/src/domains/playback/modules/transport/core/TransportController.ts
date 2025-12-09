@@ -17,6 +17,7 @@ import { Service } from '../../../services/core/ServiceRegistry.js';
 import { EventBus } from '../../../services/core/EventBus.js';
 import { AudioEngine } from '../../../services/core/AudioEngine.js';
 import { createStructuredLogger } from '../../shared/index.js';
+import { musicalTruth } from '../../tempo/MusicalTruthAuthority.js';
 import type {
   TransportConfig,
   TransportState,
@@ -187,6 +188,14 @@ export class TransportController implements Service {
       await this.initialize();
     }
 
+    // TEMPO FIX: Clear any existing auto-stop timer from previous playback
+    // This prevents stale timers (calculated at old tempo) from stopping playback early
+    if (this.autoStopTimerId !== null) {
+      clearTimeout(this.autoStopTimerId);
+      this.autoStopTimerId = null;
+      logger.info('Cleared stale auto-stop timer from previous playback');
+    }
+
     logger.info('Starting playback...');
 
     // FAANG FIX: ALWAYS reset Tone.Transport.position to 0 before starting playback
@@ -256,7 +265,8 @@ export class TransportController implements Service {
     const exerciseDurationSeconds = timeline.getExerciseDurationSeconds();
     if (exerciseDurationSeconds > 0) {
       const durationMs = exerciseDurationSeconds * 1000;
-      logger.info('🎵 Scheduling auto-stop', {
+
+      logger.info('Scheduling auto-stop', {
         durationSeconds: exerciseDurationSeconds.toFixed(2),
         durationMs,
         durationBeats: timeline.getExerciseDurationBeats(),
@@ -265,19 +275,19 @@ export class TransportController implements Service {
       this.autoStopTimerId = setTimeout(() => {
         // Only stop if still playing (user might have stopped manually)
         if (this.state === 'playing') {
-          logger.info('🎵 Auto-stop triggered at exercise end');
+          logger.info('Auto-stop triggered at exercise end');
           this.autoStopTimerId = null;
           // GRACEFUL STOP: Let one-shot samples (drums, metronome) finish naturally
           this.stop(true);
         } else {
-          logger.debug('🎵 Auto-stop skipped - transport not playing', {
+          logger.debug('Auto-stop skipped - transport not playing', {
             currentState: this.state,
           });
           this.autoStopTimerId = null;
         }
       }, durationMs);
     } else {
-      logger.debug('🎵 No exercise duration set - playback will continue until manually stopped');
+      logger.debug('No exercise duration set - playback will continue until manually stopped');
     }
   }
 
@@ -434,34 +444,37 @@ export class TransportController implements Service {
   }
 
   /**
-   * Set tempo
+   * Set tempo (for UI-initiated tempo changes)
+   *
+   * This method is called when the user changes tempo via the UI slider.
+   * It updates the single source of truth (MusicalTruthAuthority) which
+   * in turn synchronizes Tone.Transport.bpm.value.
    */
   async setTempo(bpm: number): Promise<void> {
     if (bpm < 20 || bpm > 999) {
       throw new Error(`Invalid tempo: ${bpm}`);
     }
 
+    const previousBpm = Tone.Transport.bpm.value;
+
     logger.info('🎵 TransportController.setTempo START', {
-      bpm,
-      currentToneBpm: Tone.Transport.bpm.value,
+      requestedBpm: bpm,
+      previousBpm,
       transportState: this.state
     });
 
-    // ⚠️ DEPRECATED: This method should not be called
-    // Tempo is now managed exclusively by MusicalTruthAuthority
-    // Log warning to help identify callers
-    logger.warn('⚠️ TransportController.setTempo() called - use musicalTruth.setFromExercise() instead', {
-      requestedBpm: bpm,
-      stack: new Error().stack?.split('\n').slice(2, 4).join(' <- ')
-    });
+    // FIX: Update the single source of truth
+    // This updates both musicalTruth.bpm AND Tone.Transport.bpm.value
+    musicalTruth.setBPM(bpm);
 
-    // ✅ REMOVED: Direct Tone.Transport.bpm write
-    // musicalTruth.setFromExercise() handles Tone.js synchronization
-    // Transport.setTempo() and positionManager.setTempo() are now deprecated (do nothing)
+    logger.info('🎵 TransportController.setTempo: musicalTruth.setBPM() called', {
+      newBpm: bpm,
+      toneBpmAfter: Tone.Transport.bpm.value,
+      musicalTruthBpm: musicalTruth.getBPM()
+    });
 
     // FAANG FIX: Recalculate loop end if loop is enabled
     // When tempo changes, the loop end time in seconds changes even though musical position stays same
-    // Note: Loop recalculation still works because positionManager reads from musicalTruth
     if (this.config.enableLegacyCompatibility && Tone.Transport.loop) {
       const loopRegion = this.positionManager.getLoop();
       if (loopRegion.enabled) {
@@ -481,7 +494,11 @@ export class TransportController implements Service {
 
     // Emit event (both 'tempo' and 'bpm' properties for compatibility with different listeners)
     this.eventBus.emit('transport:tempo-change', { tempo: bpm, bpm });
-    logger.info('🎵 TransportController: Event emitted', { event: 'transport:tempo-change', data: { tempo: bpm, bpm } });
+    logger.info('🎵 TransportController.setTempo COMPLETE', {
+      bpm,
+      previousBpm,
+      toneBpmVerify: Tone.Transport.bpm.value
+    });
   }
 
   /**
